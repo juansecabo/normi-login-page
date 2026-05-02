@@ -440,6 +440,11 @@ const EnviarComunicadoAdmin = () => {
   const templateBodyLength = mensaje.length + WA_TEMPLATE_OVERHEAD;
   const bodyOverLimit = templateBodyLength > MAX_WA_TEMPLATE_BODY;
 
+  // El baseline del admin es solo el overhead de la plantilla (49 chars). No tiene encabezados
+  // ni remitente personal, así que su límite efectivo es el mismo para todos los admins.
+  const personalMax = MAX_WA_TEMPLATE_BODY - WA_TEMPLATE_OVERHEAD;
+  const usedChars = mensaje.length;
+
   const canSend = algunPerfilMarcado && (mensaje.trim() || archivosSeleccionados.length > 0);
 
   const handleEnviar = async () => {
@@ -934,7 +939,7 @@ const EnviarComunicadoAdmin = () => {
               <div className="space-y-2 mb-6">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-foreground">Mensaje</h3>
-                  <CharCircle value={templateBodyLength} max={MAX_WA_TEMPLATE_BODY} />
+                  <CharCircle value={usedChars} max={personalMax} />
                 </div>
                 <Textarea
                   value={mensaje}

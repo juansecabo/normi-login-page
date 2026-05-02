@@ -449,6 +449,18 @@ const EnviarComunicado = () => {
   }).length + WA_TEMPLATE_OVERHEAD;
   const bodyOverLimit = templateBodyLength > MAX_WA_TEMPLATE_BODY;
 
+  // El "baseline" es lo que ya ocupa la plantilla + encabezados + remitente
+  // antes de que el usuario marque destinatarios, escriba mensaje o adjunte archivos.
+  // Es estático para una misma persona, pero varía entre personas (largo del nombre).
+  const baselineLength = buildTemplateBodyPreview({
+    remitente,
+    destinatarios: "",
+    mensaje: "",
+    archivos: [],
+  }).length + WA_TEMPLATE_OVERHEAD;
+  const personalMax = MAX_WA_TEMPLATE_BODY - baselineLength;
+  const usedChars = Math.max(0, templateBodyLength - baselineLength);
+
   const canSend = algunPerfilMarcado && (mensaje.trim() || archivosSeleccionados.length > 0);
 
   const handleEnviar = async () => {
@@ -953,7 +965,7 @@ const EnviarComunicado = () => {
               <div className="space-y-2 mb-6">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-foreground">Mensaje</h3>
-                  <CharCircle value={templateBodyLength} max={MAX_WA_TEMPLATE_BODY} />
+                  <CharCircle value={usedChars} max={personalMax} />
                 </div>
                 <Textarea
                   value={mensaje}
