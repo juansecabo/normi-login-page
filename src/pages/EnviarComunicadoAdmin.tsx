@@ -18,7 +18,7 @@ import { Loader2, Send, Clock, Trash2, Search, Users, Eye, Paperclip, X, FileTex
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import CharCircle from "@/components/CharCircle";
-import { buildTemplateBodyPreview, MAX_WA_TEMPLATE_BODY } from "@/lib/wapBody";
+import { MAX_WA_TEMPLATE_BODY } from "@/lib/wapBody";
 
 const WEBHOOK_URL =
   "https://n8n.notasnormy.com/webhook/9bd1a575-84f9-4b7f-989a-b2a3d1814721";
@@ -435,12 +435,9 @@ const EnviarComunicadoAdmin = () => {
   const destinatariosTexto = buildDestinatarios();
   const algunPerfilMarcado = Object.values(perfilesMarcados).some(Boolean);
 
-  const templateBodyLength = buildTemplateBodyPreview({
-    remitente: "Normy",
-    destinatarios: destinatariosTexto,
-    mensaje,
-    archivos: archivosSeleccionados,
-  }).length;
+  // El comunicado del admin se envía como Normy sin encabezados (*COMUNICADO*, *Remitente*, etc.),
+  // así que solo cuenta el mensaje en sí.
+  const templateBodyLength = mensaje.length;
   const bodyOverLimit = templateBodyLength > MAX_WA_TEMPLATE_BODY;
 
   const canSend = algunPerfilMarcado && (mensaje.trim() || archivosSeleccionados.length > 0);
