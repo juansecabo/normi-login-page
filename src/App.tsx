@@ -30,6 +30,7 @@ import EstudiantesEnRiesgo from "./pages/rector/EstudiantesEnRiesgo";
 import PanelControl from "./pages/rector/PanelControl";
 import UsoNormy from "./pages/rector/UsoNormy";
 import ComunicadosRecibidos from "./pages/rector/ComunicadosRecibidos";
+import DocumentosRecibidos from "./pages/rector/DocumentosRecibidos";
 
 // Rutas para Admin
 import Sugerencias from "./pages/admin/Sugerencias";
@@ -113,6 +114,7 @@ const App = () => (
           <Route path="/profesor/programar-actividad" element={<ProgramarActividad />} />
           <Route path="/profesor/comunicados" element={<ComunicadosProfesor />} />
           <Route path="/rector/comunicados-recibidos" element={<ComunicadosRecibidos />} />
+          <Route path="/rector/documentos-recibidos" element={<DocumentosRecibidos />} />
           <Route path="/profesor/documentos" element={<DocumentosProfesor />} />
           <Route path="/registro-normy" element={<RegistroNormy />} />
 
