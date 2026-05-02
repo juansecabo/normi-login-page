@@ -2,8 +2,12 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import normyExaminadoraImg from "@/assets/normy-examinadora.webp";
+import iconActividades from "@/assets/icons/actividades.webp";
+import iconComunicados from "@/assets/icons/comunicados.webp";
+import iconEstadisticas from "@/assets/icons/estadisticas.webp";
+import iconRegistroAgente from "@/assets/icons/registro-agente.webp";
+import iconDocumentos from "@/assets/icons/documentos.webp";
 import { getSession, isProfesor, isAdmin, isRectorOrCoordinador, isEstudiante, isPadreDeFamilia } from "@/hooks/useSession";
-import { BarChart3, Megaphone, UserCheck, CalendarPlus, Mail, FileText } from "lucide-react";
 import HeaderNormy from "@/components/HeaderNormy";
 import BuzonSugerencias from "@/components/BuzonSugerencias";
 import { getAllLastSeen, countNewItems } from "@/utils/notificaciones";
@@ -28,7 +32,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     const session = getSession();
-    
+
     if (!session.codigo) {
       navigate("/");
       return;
@@ -81,7 +85,7 @@ const Dashboard = () => {
 
         // Combinar todas las asignaturas de todos los registros sin duplicados
         console.log("Asignaturas antes de aplanar:", asignaciones?.map(a => a['Asignatura(s)']));
-        
+
         const todasAsignaturas = asignaciones
           ?.flatMap(a => a['Asignatura(s)'] || [])
           .flat() || [];
@@ -120,7 +124,7 @@ const Dashboard = () => {
           <h3 className="text-xl font-bold text-foreground mb-6 text-center">
             Elige tu asignatura:
           </h3>
-          
+
           {loadingAsignaturas ? (
             <div className="text-center text-muted-foreground">
               Cargando asignaturas...
@@ -145,8 +149,8 @@ const Dashboard = () => {
                     className={`
                       p-6 rounded-lg border-2 text-center transition-all duration-200
                       hover:shadow-md hover:border-primary hover:bg-primary/10
-                      ${isSelected 
-                        ? 'border-primary bg-primary/20 shadow-md ring-2 ring-primary/30' 
+                      ${isSelected
+                        ? 'border-primary bg-primary/20 shadow-md ring-2 ring-primary/30'
                         : 'border-border bg-background'
                       }
                     `}
@@ -160,62 +164,70 @@ const Dashboard = () => {
         </div>
 
         {/* Botones de acciones */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mt-8 max-w-[1400px] mx-auto">
-          <button
-            onClick={() => navigate("/profesor/programar-actividad")}
-            className="flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-3 p-4 lg:p-6 rounded-lg bg-gradient-to-r from-cyan-500 to-sky-600 text-white font-bold text-sm lg:text-base transition-all duration-200 hover:shadow-md hover:scale-[1.02] hover:from-cyan-600 hover:to-sky-500 text-center"
-          >
-            <CalendarPlus className="w-5 h-5 lg:w-6 lg:h-6 shrink-0" />
-            <span>Programar Actividad</span>
-          </button>
-          <button
-            onClick={() => navigate("/enviar-comunicado")}
-            className="flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-3 p-4 lg:p-6 rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 text-white font-bold text-sm lg:text-base transition-all duration-200 hover:shadow-md hover:scale-[1.02] hover:from-purple-600 hover:to-purple-500 text-center"
-          >
-            <Megaphone className="w-5 h-5 lg:w-6 lg:h-6 shrink-0" />
-            <span>Enviar Comunicado</span>
-          </button>
-          <button
-            onClick={() => navigate("/normy-examinadora")}
-            className="relative overflow-hidden flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-3 p-4 lg:p-6 rounded-lg bg-gradient-to-r from-green-400 to-green-500 text-white font-bold text-sm lg:text-base transition-all duration-200 hover:shadow-md hover:scale-[1.02] hover:from-green-500 hover:to-green-400 text-center"
-          >
-            <span className="relative z-10">Normy Examinadora</span>
-            <img
-              src={normyExaminadoraImg}
-              alt="Normy Examinadora"
-              className="absolute right-0 bottom-0 h-full w-auto object-contain opacity-40"
-            />
-          </button>
-          <button
-            onClick={() => navigate("/profesor/estadisticas")}
-            className="flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-3 p-4 lg:p-6 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold text-sm lg:text-base transition-all duration-200 hover:shadow-md hover:scale-[1.02] hover:from-orange-600 hover:to-orange-500 text-center"
-          >
-            <BarChart3 className="w-5 h-5 lg:w-6 lg:h-6 shrink-0" />
-            <span>Estadísticas</span>
-          </button>
-          <button
-            onClick={() => navigate("/registro-normy")}
-            className="flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-3 p-4 lg:p-6 rounded-lg bg-gradient-to-r from-teal-500 to-teal-600 text-white font-bold text-sm lg:text-base transition-all duration-200 hover:shadow-md hover:scale-[1.02] hover:from-teal-600 hover:to-teal-500 text-center"
-          >
-            <UserCheck className="w-5 h-5 lg:w-6 lg:h-6 shrink-0" />
-            <span>Registro en Normy</span>
-          </button>
-          <button
-            onClick={() => navigate("/profesor/comunicados")}
-            className="relative flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-3 p-4 lg:p-6 rounded-lg bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-bold text-sm lg:text-base transition-all duration-200 hover:shadow-md hover:scale-[1.02] hover:from-indigo-600 hover:to-indigo-500 text-center"
-          >
-            <Badge count={badges.comunicados} />
-            <Mail className="w-5 h-5 lg:w-6 lg:h-6 shrink-0" />
-            <span>Comunicados Recibidos</span>
-          </button>
-          <button
-            onClick={() => navigate("/profesor/documentos")}
-            className="relative flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-3 p-4 lg:p-6 rounded-lg bg-gradient-to-r from-rose-500 to-rose-600 text-white font-bold text-sm lg:text-base transition-all duration-200 hover:shadow-md hover:scale-[1.02] hover:from-rose-600 hover:to-rose-500 text-center"
-          >
-            <Badge count={badges.documentos} />
-            <FileText className="w-5 h-5 lg:w-6 lg:h-6 shrink-0" />
-            <span>Documentos Recibidos</span>
-          </button>
+        <div className="bg-card rounded-lg shadow-soft p-8 max-w-5xl mx-auto mt-8">
+          <h3 className="text-xl font-bold text-foreground mb-6 text-center">
+            ¿Qué deseas hacer?
+          </h3>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
+            <button
+              onClick={() => navigate("/profesor/programar-actividad")}
+              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-cyan-100 transition-all duration-200 hover:shadow-md hover:bg-cyan-200"
+            >
+              <img src={iconActividades} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground text-center">Programar Actividad</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/enviar-comunicado")}
+              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 transition-all duration-200 hover:shadow-md hover:bg-teal-200"
+            >
+              <img src={iconComunicados} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground text-center">Enviar Comunicado</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/normy-examinadora")}
+              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-green-100 transition-all duration-200 hover:shadow-md hover:bg-green-200"
+            >
+              <img src={normyExaminadoraImg} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground text-center">Normy Examinadora</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/profesor/estadisticas")}
+              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-orange-100 transition-all duration-200 hover:shadow-md hover:bg-orange-200"
+            >
+              <img src={iconEstadisticas} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground text-center">Estadísticas</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/registro-normy")}
+              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-cyan-100 transition-all duration-200 hover:shadow-md hover:bg-cyan-200"
+            >
+              <img src={iconRegistroAgente} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground text-center">Registro en Normy</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/profesor/comunicados")}
+              className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-indigo-100 transition-all duration-200 hover:shadow-md hover:bg-indigo-200"
+            >
+              <Badge count={badges.comunicados} />
+              <img src={iconComunicados} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground text-center">Comunicados Recibidos</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/profesor/documentos")}
+              className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-amber-100 transition-all duration-200 hover:shadow-md hover:bg-amber-200"
+            >
+              <Badge count={badges.documentos} />
+              <img src={iconDocumentos} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground text-center">Documentos Recibidos</span>
+            </button>
+          </div>
         </div>
 
         <div className="flex items-start justify-center gap-8 mt-8">
