@@ -187,6 +187,15 @@ const Dashboard = () => {
             </button>
 
             <button
+              onClick={() => navigate("/profesor/comunicados")}
+              className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-indigo-100 transition-all duration-200 hover:shadow-md hover:bg-indigo-200"
+            >
+              <Badge count={badges.comunicados} />
+              <img src={iconComunicados} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground text-center">Comunicados Recibidos</span>
+            </button>
+
+            <button
               onClick={() => navigate("/normy-examinadora")}
               className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-green-100 transition-all duration-200 hover:shadow-md hover:bg-green-200"
             >
@@ -208,15 +217,6 @@ const Dashboard = () => {
             >
               <img src={iconRegistroAgente} alt="" className="w-12 h-12 object-contain" />
               <span className="font-semibold text-foreground text-center">Registro en Normy</span>
-            </button>
-
-            <button
-              onClick={() => navigate("/profesor/comunicados")}
-              className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-indigo-100 transition-all duration-200 hover:shadow-md hover:bg-indigo-200"
-            >
-              <Badge count={badges.comunicados} />
-              <img src={iconComunicados} alt="" className="w-12 h-12 object-contain" />
-              <span className="font-semibold text-foreground text-center">Comunicados Recibidos</span>
             </button>
 
             <button
