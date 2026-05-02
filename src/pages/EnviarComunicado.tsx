@@ -12,7 +12,7 @@ import { Loader2, Send, Clock, Trash2, Search, Users, Eye, Paperclip, X, FileTex
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import CharCircle from "@/components/CharCircle";
-import { buildTemplateBodyPreview, MAX_WA_TEMPLATE_BODY } from "@/lib/wapBody";
+import { buildTemplateBodyPreview, MAX_WA_TEMPLATE_BODY, WA_TEMPLATE_OVERHEAD } from "@/lib/wapBody";
 
 const WEBHOOK_URL =
   "https://n8n.notasnormy.com/webhook/ae459f1c-7e94-45f4-9909-aaddc82a7552";
@@ -446,7 +446,7 @@ const EnviarComunicado = () => {
     destinatarios: destinatariosTexto,
     mensaje,
     archivos: archivosSeleccionados,
-  }).length;
+  }).length + WA_TEMPLATE_OVERHEAD;
   const bodyOverLimit = templateBodyLength > MAX_WA_TEMPLATE_BODY;
 
   const canSend = algunPerfilMarcado && (mensaje.trim() || archivosSeleccionados.length > 0);

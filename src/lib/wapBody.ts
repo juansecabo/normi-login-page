@@ -3,6 +3,11 @@ const BUCKET = "documentos";
 
 export const MAX_WA_TEMPLATE_BODY = 1024;
 
+// La plantilla fija de WhatsApp envuelve a {{1}} con:
+//   *Notificación académica:*\n\n{{1}}\n\nEstoy a tu servicio.
+// El texto fijo (todo menos {{1}}) ocupa 49 chars del límite total de 1024.
+export const WA_TEMPLATE_OVERHEAD = 49;
+
 const sanitizeForTemplate = (text: string) =>
   text.replace(/\t/g, " ").replace(/\n+/g, " ").replace(/ {5,}/g, "    ");
 
