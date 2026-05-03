@@ -51,8 +51,9 @@ const DashboardEstudiante = () => {
       const b = { notas: 0, actividades: 0, comunicados: 0, documentos: 0 };
 
       try {
-        const [lastSeen, msgResult, actResult, notasResult] = await Promise.all([
-          getAllLastSeen(codigo),
+        const lastSeen = await getAllLastSeen(codigo);
+
+        const [msgResult, actResult, notasResult] = await Promise.all([
           supabase
             .from('Comunicados')
             .select('id, tipo, perfil, nivel, grado, salon, codigo_estudiantil, archivo_url')
