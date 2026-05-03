@@ -101,12 +101,15 @@ const DashboardPadre = () => {
                 return new RegExp(`\\b${cod}\\b`).test(c.destinatarios || "");
               });
 
+            const grados = c.grados ?? (c.grado ? [c.grado] : null);
+            const salones = c.salones ?? (c.salon ? [c.salon] : null);
+
             const matchAula =
-              (c.nivel || c.grado || c.salon) &&
+              (c.nivel || grados || salones) &&
               hijosData.some(h => {
                 if (c.nivel && c.nivel !== h.nivel) return false;
-                if (c.grado && c.grado !== h.grado) return false;
-                if (c.salon && c.salon !== h.salon) return false;
+                if (grados && !grados.includes(h.grado)) return false;
+                if (salones && !salones.includes(h.salon)) return false;
                 return true;
               });
 
@@ -114,7 +117,7 @@ const DashboardPadre = () => {
 
             const noHayFiltros =
               (!c.id_destinatarios || c.id_destinatarios.length === 0) &&
-              !c.codigo_estudiantil && !c.nivel && !c.grado && !c.salon;
+              !c.codigo_estudiantil && !c.nivel && !grados && !salones;
             if (!noHayFiltros) return false;
 
             const destLower = (c.destinatarios || "").trim().toLowerCase();

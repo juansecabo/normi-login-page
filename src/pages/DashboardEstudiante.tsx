@@ -93,17 +93,20 @@ const DashboardEstudiante = () => {
               (c.codigo_estudiantil && c.codigo_estudiantil === codigo) ||
               (!!codigo && new RegExp(`\\b${String(codigo)}\\b`).test(c.destinatarios || ""));
 
+            const grados = c.grados ?? (c.grado ? [c.grado] : null);
+            const salones = c.salones ?? (c.salon ? [c.salon] : null);
+
             const matchAula =
-              (c.nivel || c.grado || c.salon) &&
+              (c.nivel || grados || salones) &&
               (!c.nivel || c.nivel === session.nivel) &&
-              (!c.grado || c.grado === session.grado) &&
-              (!c.salon || c.salon === session.salon);
+              (!grados || grados.includes(session.grado || "")) &&
+              (!salones || salones.includes(session.salon || ""));
 
             if (matchIds || matchAula) return true;
 
             const noHayFiltros =
               (!c.id_destinatarios || c.id_destinatarios.length === 0) &&
-              !c.codigo_estudiantil && !c.nivel && !c.grado && !c.salon;
+              !c.codigo_estudiantil && !c.nivel && !grados && !salones;
             if (!noHayFiltros) return false;
 
             const destLower = (c.destinatarios || "").trim().toLowerCase();

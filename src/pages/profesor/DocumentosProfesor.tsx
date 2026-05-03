@@ -17,6 +17,8 @@ interface Comunicado {
   nivel: string | null;
   grado: string | null;
   salon: string | null;
+  grados: string[] | null;
+  salones: string[] | null;
   codigo_estudiantil: string | null;
   id_destinatarios: string[] | null;
 }
@@ -67,10 +69,12 @@ const DocumentosProfesor = () => {
               return c.id_destinatarios.includes(String(session.codigo));
             }
             if (c.codigo_estudiantil && c.codigo_estudiantil !== session.codigo) return false;
-            if (c.grado || c.salon || c.nivel) {
+            const grados = c.grados ?? (c.grado ? [c.grado] : null);
+            const salones = c.salones ?? (c.salon ? [c.salon] : null);
+            if (grados || salones || c.nivel) {
               const algunaFilaMatch = rows.some(r => {
-                if (c.grado && !r.grados.includes(c.grado)) return false;
-                if (c.salon && !r.salones.includes(c.salon)) return false;
+                if (grados && !grados.some(g => r.grados.includes(g))) return false;
+                if (salones && !salones.some(s => r.salones.includes(s))) return false;
                 if (c.nivel) {
                   const gradosDelNivel = NIVELES_GRADOS[c.nivel] || [];
                   if (!r.grados.some(g => gradosDelNivel.includes(g))) return false;
