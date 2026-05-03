@@ -15,6 +15,7 @@ interface Comunicado {
   archivo_url: string | null;
   perfil: string[] | null;
   id_destinatarios: string[] | null;
+  grupo_comunicado_id: number | null;
 }
 
 const perfilesDelCargo = (cargo: string | undefined): string[] => {
@@ -61,8 +62,16 @@ const DocumentosRecibidos = () => {
             }
             return true;
           });
-          setDocumentos(filtrados);
-          const maxId = filtrados.length > 0 ? Math.max(...filtrados.map((c: Comunicado) => c.id)) : 0;
+          // Dedup por grupo_comunicado_id
+          const seen = new Set<number>();
+          const dedup = filtrados.filter((c: Comunicado) => {
+            const key = c.grupo_comunicado_id ?? c.id;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+          setDocumentos(dedup);
+          const maxId = dedup.length > 0 ? Math.max(...dedup.map((c: Comunicado) => c.id)) : 0;
           if (maxId > 0) markLastSeen('documentos', session.codigo!, maxId);
         }
       } catch (err) {
