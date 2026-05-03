@@ -13,11 +13,12 @@ interface Comunicado {
   mensaje: string;
   fecha: string;
   archivo_url: string | null;
-  perfil: string | null;
+  perfil: string[] | null;
   nivel: string | null;
   grado: string | null;
   salon: string | null;
   codigo_estudiantil: string | null;
+  id_destinatarios: string[] | null;
 }
 
 const DocumentosPadre = () => {
@@ -40,20 +41,52 @@ const DocumentosPadre = () => {
           .from('Comunicados')
           .select('*')
           .not('archivo_url', 'is', null)
-          .in('perfil', ['Padres de familia', 'Estudiantes y Padres de familia'])
+          .overlaps('perfil', ['Padres de familia'])
           .order('fecha', { ascending: false });
 
         if (!error && data) {
+          const norm = (s: string) =>
+            s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
           const filtrados = data.filter((c: Comunicado) => {
-            if (c.codigo_estudiantil) {
-              return hijos.some(h => h.codigo === c.codigo_estudiantil);
-            }
-            if (!c.nivel && !c.grado && !c.salon) return true;
+            // Misma logica que ComunicadosPadre — un comunicado con archivo es un
+            // documento; el filtro de visibilidad debe ser identico al de comunicados.
+            const matchIds =
+              (c.id_destinatarios && c.id_destinatarios.length > 0 &&
+                hijos.some(h => c.id_destinatarios!.includes(String(h.codigo)))) ||
+              (c.codigo_estudiantil && hijos.some(h => h.codigo === c.codigo_estudiantil)) ||
+              hijos.some(h => {
+                if (!h.codigo) return false;
+                const cod = String(h.codigo);
+                return new RegExp(`\\b${cod}\\b`).test(c.destinatarios || "");
+              });
+
+            const matchAula =
+              (c.nivel || c.grado || c.salon) &&
+              hijos.some(h => {
+                if (c.nivel && c.nivel !== h.nivel) return false;
+                if (c.grado && c.grado !== h.grado) return false;
+                if (c.salon && c.salon !== h.salon) return false;
+                return true;
+              });
+
+            if (matchIds || matchAula) return true;
+
+            const noHayFiltros =
+              (!c.id_destinatarios || c.id_destinatarios.length === 0) &&
+              !c.codigo_estudiantil && !c.nivel && !c.grado && !c.salon;
+            if (!noHayFiltros) return false;
+
+            const destLower = (c.destinatarios || "").trim().toLowerCase();
+            if (destLower === "padres de familia") return true;
+            const destNorm = norm(c.destinatarios || "");
             return hijos.some(h => {
-              if (c.nivel && c.nivel !== h.nivel) return false;
-              if (c.grado && c.grado !== h.grado) return false;
-              if (c.salon && c.salon !== h.salon) return false;
-              return true;
+              if (!h.nombre || !h.apellidos) return false;
+              const nombreNorm = norm(h.nombre);
+              const apellidosParts = norm(h.apellidos).split(/\s+/).filter(p => p.length > 2);
+              const hasNombre = nombreNorm.length > 0 && destNorm.includes(nombreNorm);
+              const hasApellido = apellidosParts.some(p => destNorm.includes(p));
+              return hasNombre && hasApellido;
             });
           });
           setDocumentos(filtrados);
