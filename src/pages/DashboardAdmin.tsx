@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getSession, isAdmin } from "@/hooks/useSession";
 import iconNotas from "@/assets/icons/notas.webp";
 import iconEstadisticas from "@/assets/icons/estadisticas.webp";
-import iconComunicados from "@/assets/icons/comunicados.webp";
+import iconEnviarComunicado from "@/assets/icons/enviar-comunicado.webp";
 import iconPanelControl from "@/assets/icons/panel-de-control.webp";
 import iconRegistroAgente from "@/assets/icons/registro-agente.webp";
 import iconUsoAgente from "@/assets/icons/uso-agente.webp";
@@ -77,7 +77,7 @@ const DashboardAdmin = () => {
               onClick={() => navigate("/enviar-comunicado-admin")}
               className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-teal-100 transition-all duration-200 hover:shadow-md hover:bg-teal-200"
             >
-              <img src={iconComunicados} alt="" className="w-16 h-16 object-contain" />
+              <img src={iconEnviarComunicado} alt="" className="w-16 h-16 object-contain" />
               <span className="font-semibold text-lg text-foreground text-center">Enviar Comunicado</span>
             </button>
 

@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { getSession, isAdmin, puedeAccederDashboard, isAdministrativo } from "@/hooks/useSession";
 import iconNotas from "@/assets/icons/notas.webp";
 import iconEstadisticas from "@/assets/icons/estadisticas.webp";
-import iconComunicados from "@/assets/icons/comunicados.webp";
+import iconEnviarComunicado from "@/assets/icons/enviar-comunicado.webp";
+import iconComunicadosRecibidos from "@/assets/icons/comunicados-recibidos.webp";
 import iconDocumentos from "@/assets/icons/documentos.webp";
 import iconPanelControl from "@/assets/icons/panel-de-control.webp";
 import iconRegistroAgente from "@/assets/icons/registro-agente.webp";
@@ -136,7 +137,7 @@ const DashboardRector = () => {
               onClick={() => navigate("/enviar-comunicado")}
               className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-teal-100 transition-all duration-200 hover:shadow-md hover:bg-teal-200"
             >
-              <img src={iconComunicados} alt="" className="w-16 h-16 object-contain" />
+              <img src={iconEnviarComunicado} alt="" className="w-16 h-16 object-contain" />
               <span className="font-semibold text-lg text-foreground text-center">Enviar Comunicado</span>
             </button>
 
@@ -145,7 +146,7 @@ const DashboardRector = () => {
               className="relative flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-teal-100 transition-all duration-200 hover:shadow-md hover:bg-teal-200"
             >
               <Badge count={badges.comunicados} />
-              <img src={iconComunicados} alt="" className="w-16 h-16 object-contain" />
+              <img src={iconComunicadosRecibidos} alt="" className="w-16 h-16 object-contain" />
               <span className="font-semibold text-lg text-foreground text-center">Comunicados Recibidos</span>
             </button>
 
