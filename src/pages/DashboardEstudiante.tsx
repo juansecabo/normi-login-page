@@ -61,7 +61,7 @@ const DashboardEstudiante = () => {
         const [msgResult, actResult, notasResult] = await Promise.all([
           supabase
             .from('Comunicados')
-            .select('id, nivel, grado, salon, codigo_estudiantil, archivo_url')
+            .select('id, nivel, grado, salon, codigo_estudiantil, archivo_url, destinatarios, id_destinatarios')
             .overlaps('perfil', ['Estudiantes'])
             .gt('id', minComLastSeen),
           supabase
@@ -80,12 +80,38 @@ const DashboardEstudiante = () => {
         ]);
 
         if (msgResult.data) {
+          // MISMA logica de visibilidad que ComunicadosEstudiante/DocumentosEstudiante.
+          const norm = (s: string) =>
+            s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          const nombreNorm = norm(session.nombres || "");
+          const apellidosParts = norm(session.apellidos || "").split(/\s+/).filter(p => p.length > 2);
+
           const misFiltrados = msgResult.data.filter((c: any) => {
-            if (c.codigo_estudiantil && c.codigo_estudiantil !== codigo) return false;
-            if (c.nivel && c.nivel !== session.nivel) return false;
-            if (c.grado && c.grado !== session.grado) return false;
-            if (c.salon && c.salon !== session.salon) return false;
-            return true;
+            const matchIds =
+              (c.id_destinatarios && c.id_destinatarios.length > 0 &&
+                c.id_destinatarios.includes(String(codigo))) ||
+              (c.codigo_estudiantil && c.codigo_estudiantil === codigo) ||
+              (!!codigo && new RegExp(`\\b${String(codigo)}\\b`).test(c.destinatarios || ""));
+
+            const matchAula =
+              (c.nivel || c.grado || c.salon) &&
+              (!c.nivel || c.nivel === session.nivel) &&
+              (!c.grado || c.grado === session.grado) &&
+              (!c.salon || c.salon === session.salon);
+
+            if (matchIds || matchAula) return true;
+
+            const noHayFiltros =
+              (!c.id_destinatarios || c.id_destinatarios.length === 0) &&
+              !c.codigo_estudiantil && !c.nivel && !c.grado && !c.salon;
+            if (!noHayFiltros) return false;
+
+            const destLower = (c.destinatarios || "").trim().toLowerCase();
+            if (destLower === "estudiantes") return true;
+            const destNorm = norm(c.destinatarios || "");
+            const hasNombre = nombreNorm.length > 0 && destNorm.includes(nombreNorm);
+            const hasApellido = apellidosParts.some(p => destNorm.includes(p));
+            return hasNombre && hasApellido;
           });
           b.comunicados = misFiltrados.filter((c: any) => c.id > (lastSeen['comunicados'] ?? 0)).length;
           b.documentos = misFiltrados.filter((c: any) => c.archivo_url && c.id > (lastSeen['documentos'] ?? 0)).length;

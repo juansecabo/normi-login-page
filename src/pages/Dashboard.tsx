@@ -51,23 +51,57 @@ const Dashboard = () => {
     setNombres(session.nombres || "");
     setApellidos(session.apellidos || "");
 
-    // Fetch badges — count en el servidor, viaja un solo numero por query.
+    // Fetch badges — los Comunicados deben usar la MISMA logica de filtro que
+    // ComunicadosProfesor / DocumentosProfesor (que considera asignaciones del
+    // profesor), si no el dashboard sobre-cuenta y el badge no se borra al entrar.
     const fetchBadges = async () => {
       try {
         const lastSeen = await getAllLastSeen(session.id!);
-        const [comunicadosRes, documentosRes] = await Promise.all([
-          supabase.from('Comunicados').select('*', { count: 'exact', head: true })
+        const minComLastSeen = Math.min(lastSeen['comunicados'] ?? 0, lastSeen['documentos'] ?? 0);
+        const [asignacionesRes, msgRes] = await Promise.all([
+          supabase.from('Asignación Profesores').select('"Grado(s)", "Salon(es)"').eq('codigo', parseInt(session.codigo!)),
+          supabase.from('Comunicados')
+            .select('id, nivel, grado, salon, codigo_estudiantil, id_destinatarios, archivo_url')
             .overlaps('perfil', ['Profesores'])
-            .gt('id', lastSeen['comunicados'] ?? 0),
-          supabase.from('Comunicados').select('*', { count: 'exact', head: true })
-            .overlaps('perfil', ['Profesores'])
-            .not('archivo_url', 'is', null)
-            .gt('id', lastSeen['documentos'] ?? 0),
+            .gt('id', minComLastSeen),
         ]);
-        setBadges({
-          comunicados: comunicadosRes.count ?? 0,
-          documentos: documentosRes.count ?? 0,
-        });
+
+        const NIVELES_GRADOS: Record<string, string[]> = {
+          Preescolar: ["Prejardín", "Jardín", "Transición"],
+          Primaria: ["Primero", "Segundo", "Tercero", "Cuarto", "Quinto"],
+          Secundaria: ["Sexto", "Séptimo", "Octavo", "Noveno"],
+          Media: ["Décimo", "Undécimo"],
+        };
+        const rows = (asignacionesRes.data || []).map((row: any) => ({
+          grados: ((row["Grado(s)"] as string[] | null) || []),
+          salones: ((row["Salon(es)"] as string[] | null) || []),
+        }));
+
+        if (msgRes.data) {
+          const filtrados = msgRes.data.filter((c: any) => {
+            if (c.id_destinatarios && c.id_destinatarios.length > 0) {
+              return c.id_destinatarios.includes(String(session.codigo));
+            }
+            if (c.codigo_estudiantil && c.codigo_estudiantil !== session.codigo) return false;
+            if (c.grado || c.salon || c.nivel) {
+              const algunaFilaMatch = rows.some(r => {
+                if (c.grado && !r.grados.includes(c.grado)) return false;
+                if (c.salon && !r.salones.includes(c.salon)) return false;
+                if (c.nivel) {
+                  const gradosDelNivel = NIVELES_GRADOS[c.nivel] || [];
+                  if (!r.grados.some(g => gradosDelNivel.includes(g))) return false;
+                }
+                return true;
+              });
+              if (!algunaFilaMatch) return false;
+            }
+            return true;
+          });
+          setBadges({
+            comunicados: filtrados.filter((c: any) => c.id > (lastSeen['comunicados'] ?? 0)).length,
+            documentos: filtrados.filter((c: any) => c.archivo_url && c.id > (lastSeen['documentos'] ?? 0)).length,
+          });
+        }
       } catch {}
     };
     fetchBadges();
