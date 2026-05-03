@@ -200,6 +200,15 @@ const Dashboard = () => {
             </button>
 
             <button
+              onClick={() => navigate("/profesor/documentos")}
+              className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-amber-100 transition-all duration-200 hover:shadow-md hover:bg-amber-200"
+            >
+              <Badge count={badges.documentos} />
+              <img src={iconDocumentos} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground text-center">Documentos Recibidos</span>
+            </button>
+
+            <button
               onClick={() => navigate("/normy-examinadora")}
               className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-green-100 transition-all duration-200 hover:shadow-md hover:bg-green-200"
             >
@@ -221,15 +230,6 @@ const Dashboard = () => {
             >
               <img src={iconRegistroAgente} alt="" className="w-12 h-12 object-contain" />
               <span className="font-semibold text-foreground text-center">Registro en Normy</span>
-            </button>
-
-            <button
-              onClick={() => navigate("/profesor/documentos")}
-              className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-amber-100 transition-all duration-200 hover:shadow-md hover:bg-amber-200"
-            >
-              <Badge count={badges.documentos} />
-              <img src={iconDocumentos} alt="" className="w-12 h-12 object-contain" />
-              <span className="font-semibold text-foreground text-center">Documentos Recibidos</span>
             </button>
           </div>
         </div>

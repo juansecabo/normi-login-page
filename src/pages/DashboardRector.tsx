@@ -133,14 +133,6 @@ const DashboardRector = () => {
             )}
 
             <button
-              onClick={() => navigate("/rector/estadisticas")}
-              className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-green-100 transition-all duration-200 hover:shadow-md hover:bg-green-200"
-            >
-              <img src={iconEstadisticas} alt="" className="w-16 h-16 object-contain" />
-              <span className="font-semibold text-lg text-foreground">Estadísticas</span>
-            </button>
-
-            <button
               onClick={() => navigate("/enviar-comunicado")}
               className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-teal-100 transition-all duration-200 hover:shadow-md hover:bg-teal-200"
             >
@@ -164,6 +156,14 @@ const DashboardRector = () => {
               <Badge count={badges.documentos} />
               <img src={iconDocumentos} alt="" className="w-16 h-16 object-contain" />
               <span className="font-semibold text-lg text-foreground text-center">Documentos Recibidos</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/rector/estadisticas")}
+              className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-green-100 transition-all duration-200 hover:shadow-md hover:bg-green-200"
+            >
+              <img src={iconEstadisticas} alt="" className="w-16 h-16 object-contain" />
+              <span className="font-semibold text-lg text-foreground">Estadísticas</span>
             </button>
 
             {cargo === 'Rector' && (
