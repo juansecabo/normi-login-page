@@ -100,9 +100,17 @@ const Dashboard = () => {
             }
             return true;
           });
+          // Dedup por grupo_comunicado_id antes de contar badges
+          const seen = new Set<number>();
+          const dedup = filtrados.filter((c: any) => {
+            const key = c.grupo_comunicado_id ?? c.id;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
           setBadges({
-            comunicados: filtrados.filter((c: any) => c.id > (lastSeen['comunicados'] ?? 0)).length,
-            documentos: filtrados.filter((c: any) => c.archivo_url && c.id > (lastSeen['documentos'] ?? 0)).length,
+            comunicados: dedup.filter((c: any) => c.id > (lastSeen['comunicados'] ?? 0)).length,
+            documentos: dedup.filter((c: any) => c.archivo_url && c.id > (lastSeen['documentos'] ?? 0)).length,
           });
         }
       } catch {}

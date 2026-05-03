@@ -132,8 +132,16 @@ const DashboardPadre = () => {
               return hasNombre && hasApellido;
             });
           });
-          b.comunicados = filtrados.filter((c: any) => c.id > (lastSeenPadre['comunicados'] ?? 0)).length;
-          b.documentos = filtrados.filter((c: any) => c.archivo_url && c.id > (lastSeenPadre['documentos'] ?? 0)).length;
+          // Dedup por grupo_comunicado_id antes de contar badges
+          const seen = new Set<number>();
+          const dedup = filtrados.filter((c: any) => {
+            const key = c.grupo_comunicado_id ?? c.id;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+          b.comunicados = dedup.filter((c: any) => c.id > (lastSeenPadre['comunicados'] ?? 0)).length;
+          b.documentos = dedup.filter((c: any) => c.archivo_url && c.id > (lastSeenPadre['documentos'] ?? 0)).length;
         }
 
         // Cada hijo aportó 2 entradas: actResult, notasResult.

@@ -116,8 +116,16 @@ const DashboardEstudiante = () => {
             const hasApellido = apellidosParts.some(p => destNorm.includes(p));
             return hasNombre && hasApellido;
           });
-          b.comunicados = misFiltrados.filter((c: any) => c.id > (lastSeen['comunicados'] ?? 0)).length;
-          b.documentos = misFiltrados.filter((c: any) => c.archivo_url && c.id > (lastSeen['documentos'] ?? 0)).length;
+          // Dedup por grupo_comunicado_id antes de contar badges
+          const seen = new Set<number>();
+          const dedup = misFiltrados.filter((c: any) => {
+            const key = c.grupo_comunicado_id ?? c.id;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+          b.comunicados = dedup.filter((c: any) => c.id > (lastSeen['comunicados'] ?? 0)).length;
+          b.documentos = dedup.filter((c: any) => c.archivo_url && c.id > (lastSeen['documentos'] ?? 0)).length;
         }
 
         b.actividades = actResult.count ?? 0;

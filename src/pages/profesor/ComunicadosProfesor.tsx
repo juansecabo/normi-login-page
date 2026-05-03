@@ -21,6 +21,7 @@ interface Comunicado {
   salones: string[] | null;
   codigo_estudiantil: string | null;
   id_destinatarios: string[] | null;
+  grupo_comunicado_id: number | null;
 }
 
 const NIVELES_GRADOS: Record<string, string[]> = {
@@ -88,8 +89,16 @@ const ComunicadosProfesor = () => {
             }
             return true;
           });
-          setComunicados(filtrados);
-          const maxId = filtrados.length > 0 ? Math.max(...filtrados.map((c: Comunicado) => c.id)) : 0;
+          // Dedup por grupo_comunicado_id
+          const seen = new Set<number>();
+          const dedup = filtrados.filter((c: Comunicado) => {
+            const key = c.grupo_comunicado_id ?? c.id;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+          setComunicados(dedup);
+          const maxId = dedup.length > 0 ? Math.max(...dedup.map((c: Comunicado) => c.id)) : 0;
           if (maxId > 0) markLastSeen('comunicados', session.codigo!, maxId);
         }
       } catch (err) {
