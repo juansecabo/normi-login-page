@@ -51,18 +51,18 @@ const Dashboard = () => {
     setNombres(session.nombres || "");
     setApellidos(session.apellidos || "");
 
-    // Fetch badges
+    // Fetch badges — todas las queries en paralelo
     const fetchBadges = async () => {
       try {
-        const lastSeen = await getAllLastSeen(session.id!);
-        const { data: msgData } = await supabase
-          .from('Comunicados')
-          .select('id, tipo, perfil, archivo_url')
-          .in('perfil', ['Profesores', 'Coordinadores', 'Todo el personal interno', 'Toda la comunidad']);
-        if (msgData) {
+        const [lastSeen, msgRes] = await Promise.all([
+          getAllLastSeen(session.id!),
+          supabase.from('Comunicados').select('id, tipo, perfil, archivo_url')
+            .in('perfil', ['Profesores', 'Coordinadores', 'Todo el personal interno', 'Toda la comunidad']),
+        ]);
+        if (msgRes.data) {
           setBadges({
-            comunicados: countNewItems(msgData.map((c: any) => c.id), lastSeen['comunicados']),
-            documentos: countNewItems(msgData.filter((c: any) => c.archivo_url).map((c: any) => c.id), lastSeen['documentos']),
+            comunicados: countNewItems(msgRes.data.map((c: any) => c.id), lastSeen['comunicados']),
+            documentos: countNewItems(msgRes.data.filter((c: any) => c.archivo_url).map((c: any) => c.id), lastSeen['documentos']),
           });
         }
       } catch {}

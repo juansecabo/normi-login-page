@@ -53,15 +53,32 @@ const DashboardPadre = () => {
       const b = { notas: 0, actividades: 0, comunicados: 0, documentos: 0 };
 
       try {
-        const lastSeenPadre = await getAllLastSeen(codigo);
+        // TODAS las queries en paralelo (padre + por cada hijo).
+        const [lastSeenPadre, msgRes, ...hijosResults] = await Promise.all([
+          getAllLastSeen(codigo),
+          supabase
+            .from('Comunicados')
+            .select('id, tipo, perfil, nivel, grado, salon, codigo_estudiantil, archivo_url')
+            .in('perfil', ['Padres de familia', 'Estudiantes y Padres de familia']),
+          ...hijosData.flatMap(hijo => [
+            getAllLastSeen(hijo.codigo),
+            supabase
+              .from('Calendario Actividades')
+              .select('auto_id')
+              .eq('Grado', hijo.grado)
+              .eq('Salon', hijo.salon),
+            supabase
+              .from('Notas')
+              .select('fecha_modificacion')
+              .eq('codigo_estudiantil', hijo.codigo)
+              .eq('grado', hijo.grado)
+              .eq('salon', hijo.salon)
+              .not('nombre_actividad', 'in', '("Definitiva Periodo","Definitiva Anual")'),
+          ]),
+        ]);
 
-        const { data: msgData } = await supabase
-          .from('Comunicados')
-          .select('id, tipo, perfil, nivel, grado, salon, codigo_estudiantil, archivo_url')
-          .in('perfil', ['Padres de familia', 'Estudiantes y Padres de familia']);
-
-        if (msgData) {
-          const filtrados = msgData.filter((c: any) => {
+        if (msgRes.data) {
+          const filtrados = msgRes.data.filter((c: any) => {
             if (c.codigo_estudiantil) {
               return hijosData.some(h => h.codigo === c.codigo_estudiantil);
             }
@@ -83,23 +100,11 @@ const DashboardPadre = () => {
           );
         }
 
-        for (const hijo of hijosData) {
-          const lastSeenHijo = await getAllLastSeen(hijo.codigo);
-
-          const [actResult, notasResult] = await Promise.all([
-            supabase
-              .from('Calendario Actividades')
-              .select('auto_id')
-              .eq('Grado', hijo.grado)
-              .eq('Salon', hijo.salon),
-            supabase
-              .from('Notas')
-              .select('fecha_modificacion')
-              .eq('codigo_estudiantil', hijo.codigo)
-              .eq('grado', hijo.grado)
-              .eq('salon', hijo.salon)
-              .not('nombre_actividad', 'in', '("Definitiva Periodo","Definitiva Anual")'),
-          ]);
+        // Cada hijo aportó 3 entradas en orden: lastSeen, actResult, notasResult.
+        for (let i = 0; i < hijosData.length; i++) {
+          const lastSeenHijo = hijosResults[i * 3] as Record<string, number>;
+          const actResult = hijosResults[i * 3 + 1] as any;
+          const notasResult = hijosResults[i * 3 + 2] as any;
 
           if (actResult.data) {
             b.actividades += countNewItems(actResult.data.map((a: any) => a.auto_id), lastSeenHijo['actividades']);
