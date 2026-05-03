@@ -13,9 +13,20 @@ interface Comunicado {
   mensaje: string;
   fecha: string;
   archivo_url: string | null;
-  perfil: string | null;
+  perfil: string[] | null;
+  nivel: string | null;
+  grado: string | null;
+  salon: string | null;
   codigo_estudiantil: string | null;
+  id_destinatarios: string[] | null;
 }
+
+const NIVELES_GRADOS: Record<string, string[]> = {
+  Preescolar: ["Prejardín", "Jardín", "Transición"],
+  Primaria: ["Primero", "Segundo", "Tercero", "Cuarto", "Quinto"],
+  Secundaria: ["Sexto", "Séptimo", "Octavo", "Noveno"],
+  Media: ["Décimo", "Undécimo"],
+};
 
 const DocumentosProfesor = () => {
   const navigate = useNavigate();
@@ -31,21 +42,48 @@ const DocumentosProfesor = () => {
 
     const cargar = async () => {
       try {
+        // Misma logica que ComunicadosProfesor — un comunicado con archivo es un
+        // documento; el filtro de visibilidad debe ser identico.
+        const { data: asignaciones } = await supabase
+          .from('Asignación Profesores')
+          .select('"Grado(s)", "Salon(es)"')
+          .eq('codigo', parseInt(session.codigo!));
+
+        const rows = (asignaciones || []).map(row => ({
+          grados: ((row["Grado(s)"] as string[] | null) || []),
+          salones: ((row["Salon(es)"] as string[] | null) || []),
+        }));
+
         const { data, error } = await supabase
           .from('Comunicados')
           .select('*')
           .not('archivo_url', 'is', null)
-          .in('perfil', ['Profesores', 'Todo el personal interno', 'Toda la comunidad'])
+          .overlaps('perfil', ['Profesores'])
           .order('fecha', { ascending: false });
 
         if (!error && data) {
           const filtrados = data.filter((c: Comunicado) => {
+            if (c.id_destinatarios && c.id_destinatarios.length > 0) {
+              return c.id_destinatarios.includes(String(session.codigo));
+            }
             if (c.codigo_estudiantil && c.codigo_estudiantil !== session.codigo) return false;
+            if (c.grado || c.salon || c.nivel) {
+              const algunaFilaMatch = rows.some(r => {
+                if (c.grado && !r.grados.includes(c.grado)) return false;
+                if (c.salon && !r.salones.includes(c.salon)) return false;
+                if (c.nivel) {
+                  const gradosDelNivel = NIVELES_GRADOS[c.nivel] || [];
+                  if (!r.grados.some(g => gradosDelNivel.includes(g))) return false;
+                }
+                return true;
+              });
+              if (!algunaFilaMatch) return false;
+            }
             return true;
           });
           setDocumentos(filtrados);
           const maxId = filtrados.length > 0 ? Math.max(...filtrados.map((c: Comunicado) => c.id)) : 0;
-          if (maxId > 0) markLastSeen('documentos', session.id!, maxId);
+          if (maxId > 0) markLastSeen('documentos', session.codigo!, maxId);
         }
       } catch (err) {
         console.error('Error:', err);

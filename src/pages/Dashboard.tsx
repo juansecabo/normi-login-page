@@ -55,13 +55,12 @@ const Dashboard = () => {
     const fetchBadges = async () => {
       try {
         const lastSeen = await getAllLastSeen(session.id!);
-        const perfiles = ['Profesores', 'Coordinadores', 'Todo el personal interno', 'Toda la comunidad'];
         const [comunicadosRes, documentosRes] = await Promise.all([
           supabase.from('Comunicados').select('*', { count: 'exact', head: true })
-            .in('perfil', perfiles)
+            .overlaps('perfil', ['Profesores'])
             .gt('id', lastSeen['comunicados'] ?? 0),
           supabase.from('Comunicados').select('*', { count: 'exact', head: true })
-            .in('perfil', perfiles)
+            .overlaps('perfil', ['Profesores'])
             .not('archivo_url', 'is', null)
             .gt('id', lastSeen['documentos'] ?? 0),
         ]);

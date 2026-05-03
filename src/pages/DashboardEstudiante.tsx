@@ -62,7 +62,7 @@ const DashboardEstudiante = () => {
           supabase
             .from('Comunicados')
             .select('id, nivel, grado, salon, codigo_estudiantil, archivo_url')
-            .in('perfil', ['Estudiantes', 'Estudiantes y Padres de familia'])
+            .overlaps('perfil', ['Estudiantes'])
             .gt('id', minComLastSeen),
           supabase
             .from('Calendario Actividades')
