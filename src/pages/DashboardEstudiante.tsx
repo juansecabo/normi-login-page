@@ -9,7 +9,7 @@ import iconDocumentos from "@/assets/icons/documentos.webp";
 import HeaderNormy from "@/components/HeaderNormy";
 import BuzonSugerencias from "@/components/BuzonSugerencias";
 import { supabase } from "@/integrations/supabase/client";
-import { getAllLastSeen, countNewItems } from "@/utils/notificaciones";
+import { getAllLastSeen } from "@/utils/notificaciones";
 
 const Badge = ({ count }: { count: number }) => {
   if (count <= 0) return null;
@@ -51,24 +51,32 @@ const DashboardEstudiante = () => {
       const b = { notas: 0, actividades: 0, comunicados: 0, documentos: 0 };
 
       try {
-        const [lastSeen, msgResult, actResult, notasResult] = await Promise.all([
-          getAllLastSeen(codigo),
+        const lastSeen = await getAllLastSeen(codigo);
+        const minComLastSeen = Math.min(lastSeen['comunicados'] ?? 0, lastSeen['documentos'] ?? 0);
+        const lastNotasIso = lastSeen['notas']
+          ? new Date((lastSeen['notas'] as number) * 1000).toISOString()
+          : new Date(0).toISOString();
+
+        const [msgResult, actResult, notasResult] = await Promise.all([
           supabase
             .from('Comunicados')
-            .select('id, tipo, perfil, nivel, grado, salon, codigo_estudiantil, archivo_url')
-            .in('perfil', ['Estudiantes', 'Estudiantes y Padres de familia']),
+            .select('id, nivel, grado, salon, codigo_estudiantil, archivo_url')
+            .in('perfil', ['Estudiantes', 'Estudiantes y Padres de familia'])
+            .gt('id', minComLastSeen),
           supabase
             .from('Calendario Actividades')
-            .select('auto_id')
+            .select('*', { count: 'exact', head: true })
             .eq('Grado', session.grado)
-            .eq('Salon', session.salon),
+            .eq('Salon', session.salon)
+            .gt('auto_id', lastSeen['actividades'] ?? 0),
           supabase
             .from('Notas')
-            .select('fecha_modificacion')
+            .select('*', { count: 'exact', head: true })
             .eq('codigo_estudiantil', codigo)
             .eq('grado', session.grado)
             .eq('salon', session.salon)
-            .not('nombre_actividad', 'in', '("Definitiva Periodo","Definitiva Anual")'),
+            .not('nombre_actividad', 'in', '("Definitiva Periodo","Definitiva Anual")')
+            .gt('fecha_modificacion', lastNotasIso),
         ]);
 
         if (msgResult.data) {
@@ -79,26 +87,12 @@ const DashboardEstudiante = () => {
             if (c.salon && c.salon !== session.salon) return false;
             return true;
           });
-          b.comunicados = countNewItems(
-            misFiltrados.map((c: any) => c.id),
-            lastSeen['comunicados']
-          );
-          b.documentos = countNewItems(
-            misFiltrados.filter((c: any) => c.archivo_url).map((c: any) => c.id),
-            lastSeen['documentos']
-          );
+          b.comunicados = misFiltrados.filter((c: any) => c.id > (lastSeen['comunicados'] ?? 0)).length;
+          b.documentos = misFiltrados.filter((c: any) => c.archivo_url && c.id > (lastSeen['documentos'] ?? 0)).length;
         }
 
-        if (actResult.data) {
-          b.actividades = countNewItems(actResult.data.map((a: any) => a.auto_id), lastSeen['actividades']);
-        }
-
-        if (notasResult.data) {
-          const notasEpochs = notasResult.data
-            .map((n: any) => n.fecha_modificacion ? Math.floor(new Date(n.fecha_modificacion).getTime() / 1000) : 0)
-            .filter((e: number) => e > 0);
-          b.notas = countNewItems(notasEpochs, lastSeen['notas']);
-        }
+        b.actividades = actResult.count ?? 0;
+        b.notas = notasResult.count ?? 0;
       } catch (err) {
         console.error('Error fetching badges:', err);
       }

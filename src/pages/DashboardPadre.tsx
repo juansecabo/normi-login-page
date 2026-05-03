@@ -9,7 +9,7 @@ import iconDocumentos from "@/assets/icons/documentos.webp";
 import HeaderNormy from "@/components/HeaderNormy";
 import BuzonSugerencias from "@/components/BuzonSugerencias";
 import { supabase } from "@/integrations/supabase/client";
-import { getAllLastSeen, countNewItems } from "@/utils/notificaciones";
+import { getAllLastSeen } from "@/utils/notificaciones";
 
 const Badge = ({ count }: { count: number }) => {
   if (count <= 0) return null;
@@ -53,28 +53,41 @@ const DashboardPadre = () => {
       const b = { notas: 0, actividades: 0, comunicados: 0, documentos: 0 };
 
       try {
-        // TODAS las queries en paralelo (padre + por cada hijo).
-        const [lastSeenPadre, msgRes, ...hijosResults] = await Promise.all([
+        // Paso 1: lastSeen del padre y de cada hijo, en paralelo.
+        const [lastSeenPadre, ...lastSeenHijos] = await Promise.all([
           getAllLastSeen(codigo),
+          ...hijosData.map(h => getAllLastSeen(h.codigo)),
+        ]);
+
+        // Paso 2: queries de datos en paralelo (count puro o filas nuevas via .gt).
+        const minComLastSeen = Math.min(lastSeenPadre['comunicados'] ?? 0, lastSeenPadre['documentos'] ?? 0);
+        const [msgRes, ...hijosResults] = await Promise.all([
           supabase
             .from('Comunicados')
-            .select('id, tipo, perfil, nivel, grado, salon, codigo_estudiantil, archivo_url')
-            .in('perfil', ['Padres de familia', 'Estudiantes y Padres de familia']),
-          ...hijosData.flatMap(hijo => [
-            getAllLastSeen(hijo.codigo),
-            supabase
-              .from('Calendario Actividades')
-              .select('auto_id')
-              .eq('Grado', hijo.grado)
-              .eq('Salon', hijo.salon),
-            supabase
-              .from('Notas')
-              .select('fecha_modificacion')
-              .eq('codigo_estudiantil', hijo.codigo)
-              .eq('grado', hijo.grado)
-              .eq('salon', hijo.salon)
-              .not('nombre_actividad', 'in', '("Definitiva Periodo","Definitiva Anual")'),
-          ]),
+            .select('id, nivel, grado, salon, codigo_estudiantil, archivo_url')
+            .in('perfil', ['Padres de familia', 'Estudiantes y Padres de familia'])
+            .gt('id', minComLastSeen),
+          ...hijosData.flatMap((hijo, i) => {
+            const lastNotasIso = lastSeenHijos[i]['notas']
+              ? new Date((lastSeenHijos[i]['notas'] as number) * 1000).toISOString()
+              : new Date(0).toISOString();
+            return [
+              supabase
+                .from('Calendario Actividades')
+                .select('*', { count: 'exact', head: true })
+                .eq('Grado', hijo.grado)
+                .eq('Salon', hijo.salon)
+                .gt('auto_id', lastSeenHijos[i]['actividades'] ?? 0),
+              supabase
+                .from('Notas')
+                .select('*', { count: 'exact', head: true })
+                .eq('codigo_estudiantil', hijo.codigo)
+                .eq('grado', hijo.grado)
+                .eq('salon', hijo.salon)
+                .not('nombre_actividad', 'in', '("Definitiva Periodo","Definitiva Anual")')
+                .gt('fecha_modificacion', lastNotasIso),
+            ];
+          }),
         ]);
 
         if (msgRes.data) {
@@ -90,32 +103,16 @@ const DashboardPadre = () => {
               return true;
             });
           });
-          b.comunicados = countNewItems(
-            filtrados.map((c: any) => c.id),
-            lastSeenPadre['comunicados']
-          );
-          b.documentos = countNewItems(
-            filtrados.filter((c: any) => c.archivo_url).map((c: any) => c.id),
-            lastSeenPadre['documentos']
-          );
+          b.comunicados = filtrados.filter((c: any) => c.id > (lastSeenPadre['comunicados'] ?? 0)).length;
+          b.documentos = filtrados.filter((c: any) => c.archivo_url && c.id > (lastSeenPadre['documentos'] ?? 0)).length;
         }
 
-        // Cada hijo aportó 3 entradas en orden: lastSeen, actResult, notasResult.
+        // Cada hijo aportó 2 entradas: actResult, notasResult.
         for (let i = 0; i < hijosData.length; i++) {
-          const lastSeenHijo = hijosResults[i * 3] as Record<string, number>;
-          const actResult = hijosResults[i * 3 + 1] as any;
-          const notasResult = hijosResults[i * 3 + 2] as any;
-
-          if (actResult.data) {
-            b.actividades += countNewItems(actResult.data.map((a: any) => a.auto_id), lastSeenHijo['actividades']);
-          }
-
-          if (notasResult.data) {
-            const notasEpochs = notasResult.data
-              .map((n: any) => n.fecha_modificacion ? Math.floor(new Date(n.fecha_modificacion).getTime() / 1000) : 0)
-              .filter((e: number) => e > 0);
-            b.notas += countNewItems(notasEpochs, lastSeenHijo['notas']);
-          }
+          const actResult = hijosResults[i * 2] as any;
+          const notasResult = hijosResults[i * 2 + 1] as any;
+          b.actividades += actResult.count ?? 0;
+          b.notas += notasResult.count ?? 0;
         }
       } catch (err) {
         console.error('Error fetching badges:', err);

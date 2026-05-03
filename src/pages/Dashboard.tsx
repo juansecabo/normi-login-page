@@ -10,7 +10,7 @@ import iconDocumentos from "@/assets/icons/documentos.webp";
 import { getSession, isProfesor, isAdmin, isRectorOrCoordinador, isEstudiante, isPadreDeFamilia } from "@/hooks/useSession";
 import HeaderNormy from "@/components/HeaderNormy";
 import BuzonSugerencias from "@/components/BuzonSugerencias";
-import { getAllLastSeen, countNewItems } from "@/utils/notificaciones";
+import { getAllLastSeen } from "@/utils/notificaciones";
 
 const Badge = ({ count }: { count: number }) => {
   if (count <= 0) return null;
@@ -51,20 +51,24 @@ const Dashboard = () => {
     setNombres(session.nombres || "");
     setApellidos(session.apellidos || "");
 
-    // Fetch badges — todas las queries en paralelo
+    // Fetch badges — count en el servidor, viaja un solo numero por query.
     const fetchBadges = async () => {
       try {
-        const [lastSeen, msgRes] = await Promise.all([
-          getAllLastSeen(session.id!),
-          supabase.from('Comunicados').select('id, tipo, perfil, archivo_url')
-            .in('perfil', ['Profesores', 'Coordinadores', 'Todo el personal interno', 'Toda la comunidad']),
+        const lastSeen = await getAllLastSeen(session.id!);
+        const perfiles = ['Profesores', 'Coordinadores', 'Todo el personal interno', 'Toda la comunidad'];
+        const [comunicadosRes, documentosRes] = await Promise.all([
+          supabase.from('Comunicados').select('*', { count: 'exact', head: true })
+            .in('perfil', perfiles)
+            .gt('id', lastSeen['comunicados'] ?? 0),
+          supabase.from('Comunicados').select('*', { count: 'exact', head: true })
+            .in('perfil', perfiles)
+            .not('archivo_url', 'is', null)
+            .gt('id', lastSeen['documentos'] ?? 0),
         ]);
-        if (msgRes.data) {
-          setBadges({
-            comunicados: countNewItems(msgRes.data.map((c: any) => c.id), lastSeen['comunicados']),
-            documentos: countNewItems(msgRes.data.filter((c: any) => c.archivo_url).map((c: any) => c.id), lastSeen['documentos']),
-          });
-        }
+        setBadges({
+          comunicados: comunicadosRes.count ?? 0,
+          documentos: documentosRes.count ?? 0,
+        });
       } catch {}
     };
     fetchBadges();

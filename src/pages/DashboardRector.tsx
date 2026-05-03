@@ -11,7 +11,7 @@ import iconRegistroAgente from "@/assets/icons/registro-agente.webp";
 import iconUsoAgente from "@/assets/icons/uso-agente.webp";
 import iconConversaciones from "@/assets/icons/conversaciones.webp";
 import HeaderNormy from "@/components/HeaderNormy";
-import { getAllLastSeen, countNewItems } from "@/utils/notificaciones";
+import { getAllLastSeen } from "@/utils/notificaciones";
 
 const perfilesDelCargo = (cargo: string | undefined): string[] => {
   switch (cargo) {
@@ -69,21 +69,25 @@ const DashboardRector = () => {
         const perfiles = perfilesDelCargo(session.cargo);
         if (perfiles.length === 0) return;
 
-        const [lastSeen, msgRes] = await Promise.all([
-          getAllLastSeen(session.codigo!),
-          supabase.from('Comunicados').select('id, archivo_url, perfil, id_destinatarios')
-            .overlaps('perfil', perfiles),
-        ]);
-        if (msgRes.data) {
-          const filtrados = msgRes.data.filter((c: any) => {
+        const lastSeen = await getAllLastSeen(session.codigo!);
+        // Comunicados: filtro JS por destinatarios pero limito a filas nuevas (.gt id).
+        const minComLastSeen = Math.min(lastSeen['comunicados'] ?? 0, lastSeen['documentos'] ?? 0);
+        const { data: msgData } = await supabase
+          .from('Comunicados')
+          .select('id, archivo_url, id_destinatarios')
+          .overlaps('perfil', perfiles)
+          .gt('id', minComLastSeen);
+
+        if (msgData) {
+          const filtrados = msgData.filter((c: any) => {
             if (c.id_destinatarios && c.id_destinatarios.length > 0) {
               return c.id_destinatarios.includes(String(session.codigo));
             }
             return true;
           });
           setBadges({
-            comunicados: countNewItems(filtrados.map((c: any) => c.id), lastSeen['comunicados']),
-            documentos: countNewItems(filtrados.filter((c: any) => c.archivo_url).map((c: any) => c.id), lastSeen['documentos']),
+            comunicados: filtrados.filter((c: any) => c.id > (lastSeen['comunicados'] ?? 0)).length,
+            documentos: filtrados.filter((c: any) => c.archivo_url && c.id > (lastSeen['documentos'] ?? 0)).length,
           });
         }
       } catch (err) {
