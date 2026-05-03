@@ -26,23 +26,25 @@ const NotasPadre = () => {
     if (hijosData.length === 1) {
       seleccionar(hijosData[0]);
     } else {
-      // Calcular badges por hijo
+      // Calcular badges por hijo — todas las queries en paralelo.
       const fetchBadges = async () => {
+        const results = await Promise.all(hijosData.map(async (h) => {
+          const [lastSeen, { data }] = await Promise.all([
+            getAllLastSeen(h.codigo),
+            supabase
+              .from('Notas')
+              .select('fecha_modificacion')
+              .eq('codigo_estudiantil', h.codigo)
+              .eq('grado', h.grado)
+              .eq('salon', h.salon)
+              .not('nombre_actividad', 'in', '("Definitiva Periodo","Definitiva Anual")'),
+          ]);
+          if (!data) return [h.codigo, 0] as const;
+          const epochs = data.map((n: any) => n.fecha_modificacion ? Math.floor(new Date(n.fecha_modificacion).getTime() / 1000) : 0).filter((e: number) => e > 0);
+          return [h.codigo, countNewItems(epochs, lastSeen['notas'])] as const;
+        }));
         const b: Record<string, number> = {};
-        for (const h of hijosData) {
-          const lastSeen = await getAllLastSeen(h.codigo);
-          const { data } = await supabase
-            .from('Notas')
-            .select('fecha_modificacion')
-            .eq('codigo_estudiantil', h.codigo)
-            .eq('grado', h.grado)
-            .eq('salon', h.salon)
-            .not('nombre_actividad', 'in', '("Definitiva Periodo","Definitiva Anual")');
-          if (data) {
-            const epochs = data.map((n: any) => n.fecha_modificacion ? Math.floor(new Date(n.fecha_modificacion).getTime() / 1000) : 0).filter((e: number) => e > 0);
-            b[h.codigo] = countNewItems(epochs, lastSeen['notas']);
-          }
-        }
+        results.forEach(([codigo, count]) => { b[codigo] = count; });
         setBadgesPorHijo(b);
       };
       fetchBadges();

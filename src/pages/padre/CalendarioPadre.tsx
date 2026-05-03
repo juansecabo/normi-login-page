@@ -96,16 +96,19 @@ const CalendarioPadre = () => {
 
     const cargar = async () => {
       try {
-        const todasActividades: ActividadConHijo[] = [];
-
-        for (const hijo of hijosData) {
-          const { data, error } = await supabase
+        // Queries por hijo en paralelo — todas se piden al mismo tiempo.
+        const resultados = await Promise.all(hijosData.map(hijo =>
+          supabase
             .from('Calendario Actividades')
             .select('*')
             .eq('Grado', hijo.grado)
             .eq('Salon', hijo.salon)
-            .order('fecha_de_presentacion', { ascending: true });
+            .order('fecha_de_presentacion', { ascending: true })
+            .then(res => ({ hijo, ...res }))
+        ));
 
+        const todasActividades: ActividadConHijo[] = [];
+        for (const { hijo, data, error } of resultados) {
           if (!error && data) {
             data.forEach((a: ActividadCalendario) => {
               todasActividades.push({ ...a, hijo });
