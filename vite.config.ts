@@ -46,6 +46,10 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,woff2}"],
+        // Activa la nueva version del SW inmediatamente sin esperar a que el usuario
+        // cierre todas las pestañas / la PWA. Asi los cambios llegan a todos rapido.
+        skipWaiting: true,
+        clientsClaim: true,
       },
     }),
   ].filter(Boolean),
