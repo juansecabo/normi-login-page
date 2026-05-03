@@ -66,16 +66,16 @@ const DashboardRector = () => {
 
     const fetchBadges = async () => {
       try {
+        const lastSeen = await getAllLastSeen(session.codigo!);
         const perfiles = perfilesDelCargo(session.cargo);
         if (perfiles.length === 0) return;
 
-        const [lastSeen, msgRes] = await Promise.all([
-          getAllLastSeen(session.codigo!),
-          supabase.from('Comunicados').select('id, archivo_url, perfil, id_destinatarios')
-            .overlaps('perfil', perfiles),
-        ]);
-        if (msgRes.data) {
-          const filtrados = msgRes.data.filter((c: any) => {
+        const { data: msgData } = await supabase
+          .from('Comunicados')
+          .select('id, archivo_url, perfil, id_destinatarios')
+          .overlaps('perfil', perfiles);
+        if (msgData) {
+          const filtrados = msgData.filter((c: any) => {
             if (c.id_destinatarios && c.id_destinatarios.length > 0) {
               return c.id_destinatarios.includes(String(session.codigo));
             }
