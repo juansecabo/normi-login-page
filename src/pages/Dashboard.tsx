@@ -15,7 +15,7 @@ import { getAllLastSeen, countNewItems } from "@/utils/notificaciones";
 const Badge = ({ count }: { count: number }) => {
   if (count <= 0) return null;
   return (
-    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 shadow-sm z-10">
+    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 shadow-sm z-10 animate-badge-pop">
       {count > 99 ? '99+' : count}
     </span>
   );
