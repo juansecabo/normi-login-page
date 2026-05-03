@@ -9,7 +9,7 @@ import iconDocumentos from "@/assets/icons/documentos.webp";
 import HeaderNormy from "@/components/HeaderNormy";
 import BuzonSugerencias from "@/components/BuzonSugerencias";
 import { supabase } from "@/integrations/supabase/client";
-import { getAllLastSeen } from "@/utils/notificaciones";
+import { getAllLastSeen, countNewItems } from "@/utils/notificaciones";
 
 const Badge = ({ count }: { count: number }) => {
   if (count <= 0) return null;
@@ -67,27 +67,22 @@ const DashboardPadre = () => {
             .select('id, nivel, grado, salon, codigo_estudiantil, archivo_url')
             .in('perfil', ['Padres de familia', 'Estudiantes y Padres de familia'])
             .gt('id', minComLastSeen),
-          ...hijosData.flatMap((hijo, i) => {
-            const lastNotasIso = lastSeenHijos[i]['notas']
-              ? new Date((lastSeenHijos[i]['notas'] as number) * 1000).toISOString()
-              : new Date(0).toISOString();
-            return [
-              supabase
-                .from('Calendario Actividades')
-                .select('*', { count: 'exact', head: true })
-                .eq('Grado', hijo.grado)
-                .eq('Salon', hijo.salon)
-                .gt('auto_id', lastSeenHijos[i]['actividades'] ?? 0),
-              supabase
-                .from('Notas')
-                .select('*', { count: 'exact', head: true })
-                .eq('codigo_estudiantil', hijo.codigo)
-                .eq('grado', hijo.grado)
-                .eq('salon', hijo.salon)
-                .not('nombre_actividad', 'in', '("Definitiva Periodo","Definitiva Anual")')
-                .gt('fecha_modificacion', lastNotasIso),
-            ];
-          }),
+          ...hijosData.flatMap((hijo, i) => [
+            supabase
+              .from('Calendario Actividades')
+              .select('*', { count: 'exact', head: true })
+              .eq('Grado', hijo.grado)
+              .eq('Salon', hijo.salon)
+              .gt('auto_id', lastSeenHijos[i]['actividades'] ?? 0),
+            // Notas: fetch+JS (ver explicacion en DashboardEstudiante.tsx).
+            supabase
+              .from('Notas')
+              .select('fecha_modificacion')
+              .eq('codigo_estudiantil', hijo.codigo)
+              .eq('grado', hijo.grado)
+              .eq('salon', hijo.salon)
+              .not('nombre_actividad', 'in', '("Definitiva Periodo","Definitiva Anual")'),
+          ]),
         ]);
 
         if (msgRes.data) {
@@ -112,7 +107,13 @@ const DashboardPadre = () => {
           const actResult = hijosResults[i * 2] as any;
           const notasResult = hijosResults[i * 2 + 1] as any;
           b.actividades += actResult.count ?? 0;
-          b.notas += notasResult.count ?? 0;
+
+          if (notasResult.data) {
+            const notasEpochs = notasResult.data
+              .map((n: any) => n.fecha_modificacion ? Math.floor(new Date(n.fecha_modificacion).getTime() / 1000) : 0)
+              .filter((e: number) => e > 0);
+            b.notas += countNewItems(notasEpochs, lastSeenHijos[i]['notas']);
+          }
         }
       } catch (err) {
         console.error('Error fetching badges:', err);

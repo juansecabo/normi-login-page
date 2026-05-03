@@ -9,7 +9,7 @@ import iconDocumentos from "@/assets/icons/documentos.webp";
 import HeaderNormy from "@/components/HeaderNormy";
 import BuzonSugerencias from "@/components/BuzonSugerencias";
 import { supabase } from "@/integrations/supabase/client";
-import { getAllLastSeen } from "@/utils/notificaciones";
+import { getAllLastSeen, countNewItems } from "@/utils/notificaciones";
 
 const Badge = ({ count }: { count: number }) => {
   if (count <= 0) return null;
@@ -53,10 +53,11 @@ const DashboardEstudiante = () => {
       try {
         const lastSeen = await getAllLastSeen(codigo);
         const minComLastSeen = Math.min(lastSeen['comunicados'] ?? 0, lastSeen['documentos'] ?? 0);
-        const lastNotasIso = lastSeen['notas']
-          ? new Date((lastSeen['notas'] as number) * 1000).toISOString()
-          : new Date(0).toISOString();
 
+        // Notas: NO se puede usar count en servidor con .gt('fecha_modificacion', isoString)
+        // porque Notas.fecha_modificacion no tiene timezone y JS guarda el epoch usando
+        // hora local del navegador. SQL lo trataria como UTC y daria offset incorrecto.
+        // Mantengo fetch+JS para que la comparacion use la misma logica de timezone.
         const [msgResult, actResult, notasResult] = await Promise.all([
           supabase
             .from('Comunicados')
@@ -71,12 +72,11 @@ const DashboardEstudiante = () => {
             .gt('auto_id', lastSeen['actividades'] ?? 0),
           supabase
             .from('Notas')
-            .select('*', { count: 'exact', head: true })
+            .select('fecha_modificacion')
             .eq('codigo_estudiantil', codigo)
             .eq('grado', session.grado)
             .eq('salon', session.salon)
-            .not('nombre_actividad', 'in', '("Definitiva Periodo","Definitiva Anual")')
-            .gt('fecha_modificacion', lastNotasIso),
+            .not('nombre_actividad', 'in', '("Definitiva Periodo","Definitiva Anual")'),
         ]);
 
         if (msgResult.data) {
@@ -92,7 +92,13 @@ const DashboardEstudiante = () => {
         }
 
         b.actividades = actResult.count ?? 0;
-        b.notas = notasResult.count ?? 0;
+
+        if (notasResult.data) {
+          const notasEpochs = notasResult.data
+            .map((n: any) => n.fecha_modificacion ? Math.floor(new Date(n.fecha_modificacion).getTime() / 1000) : 0)
+            .filter((e: number) => e > 0);
+          b.notas = countNewItems(notasEpochs, lastSeen['notas']);
+        }
       } catch (err) {
         console.error('Error fetching badges:', err);
       }
