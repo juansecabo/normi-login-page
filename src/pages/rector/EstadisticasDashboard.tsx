@@ -28,7 +28,7 @@ const EstadisticasDashboard = () => {
 
   useEffect(() => {
     const session = getSession();
-    if (!session.codigo) {
+    if (!session.id) {
       navigate("/");
       return;
     }
@@ -53,7 +53,7 @@ const EstadisticasDashboard = () => {
   }, [gradoSeleccionado, salonSeleccionado, asignaturas, getAsignaturasFiltradas]);
 
   // Obtener lista de estudiantes del salón seleccionado (query directa a Supabase)
-  const [estudiantesDelSalon, setEstudiantesDelSalon] = useState<{ codigo: string; nombre: string }[]>([]);
+  const [estudiantesDelSalon, setEstudiantesDelSalon] = useState<{ id: string; nombre: string }[]>([]);
 
   useEffect(() => {
     if (!gradoSeleccionado || !salonSeleccionado) {
@@ -63,14 +63,14 @@ const EstadisticasDashboard = () => {
     const fetchEstudiantes = async () => {
       const { data } = await supabase
         .from('Estudiantes')
-        .select('codigo_estudiantil, apellidos_estudiante, nombre_estudiante')
+        .select('id_estudiantil, apellidos_estudiante, nombre_estudiante')
         .eq('grado_estudiante', gradoSeleccionado)
         .eq('salon_estudiante', salonSeleccionado)
         .order('apellidos_estudiante')
         .order('nombre_estudiante');
       setEstudiantesDelSalon(
         (data || []).map(e => ({
-          codigo: String(e.codigo_estudiantil),
+          id: String(e.id_estudiantil),
           nombre: `${e.apellidos_estudiante} ${e.nombre_estudiante}`
         }))
       );
@@ -119,7 +119,7 @@ const EstadisticasDashboard = () => {
     }
     
     if (nivelAnalisis === "estudiante") {
-      const estudiante = estudiantesDelSalon.find(e => e.codigo === estudianteSeleccionado);
+      const estudiante = estudiantesDelSalon.find(e => e.id === estudianteSeleccionado);
       const nombreEstudiante = estudiante?.nombre || "Estudiante";
       return `${nombreEstudiante} - ${periodoTexto}`;
     }
@@ -194,7 +194,7 @@ const EstadisticasDashboard = () => {
             )}
             {nivelAnalisis === "estudiante" && estudianteSeleccionado && (
               <AnalisisEstudiante 
-                codigoEstudiante={estudianteSeleccionado} 
+                idEstudiante={estudianteSeleccionado} 
                 periodo={periodoNumerico}
                 titulo={getTituloDinamico()}
               />

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface NotaCompleta {
-  codigo_estudiantil: string;
+  id_estudiantil: string;
   asignatura: string;
   grado: string;
   salon: string;
@@ -13,7 +13,7 @@ export interface NotaCompleta {
 }
 
 export interface EstudianteInfo {
-  codigo_estudiantil: string;
+  id_estudiantil: string;
   nombre_estudiante: string;
   apellidos_estudiante: string;
   grado_estudiante: string;
@@ -21,7 +21,7 @@ export interface EstudianteInfo {
 }
 
 export interface PromedioEstudiante {
-  codigo_estudiantil: string;
+  id_estudiantil: string;
   nombre_completo: string;
   grado: string;
   salon: string;
@@ -262,7 +262,7 @@ export const useEstadisticas = () => {
 
   // Calcular promedio de un estudiante por período usando promedio relativo
   const calcularPromedioPeriodo = (
-    codigoEstudiantil: string,
+    idEstudiantil: string,
     periodo: number,
     asignatura?: string,
     grado?: string,
@@ -273,7 +273,7 @@ export const useEstadisticas = () => {
     const salonFiltro = salon && salon !== "all" ? salon : undefined;
     
     let notasFiltradas = notas.filter(n => 
-      n.codigo_estudiantil === codigoEstudiantil &&
+      n.id_estudiantil === idEstudiantil &&
       n.periodo === periodo
     );
 
@@ -311,7 +311,7 @@ export const useEstadisticas = () => {
   };
 
   // Calcular promedio general de un estudiante (acumulado anual)
-  const calcularPromedioEstudiante = (codigoEstudiantil: string): { 
+  const calcularPromedioEstudiante = (idEstudiantil: string): { 
     promedio: number | null; 
     sumaPorcentajes: number; 
     cantidadActividades: number 
@@ -321,7 +321,7 @@ export const useEstadisticas = () => {
     let cantidadActividadesTotal = 0;
 
     for (let periodo = 1; periodo <= 4; periodo++) {
-      const resultado = calcularPromedioPeriodo(codigoEstudiantil, periodo);
+      const resultado = calcularPromedioPeriodo(idEstudiantil, periodo);
       if (resultado.promedio !== null) {
         promedios.push(resultado.promedio);
         sumaPorcentajesTotal += resultado.sumaPorcentajes;
@@ -357,14 +357,14 @@ export const useEstadisticas = () => {
     return estudiantesFiltrados.map(est => {
       const promediosPorPeriodo: { [periodo: number]: number } = {};
       for (let p = 1; p <= 4; p++) {
-        const resultado = calcularPromedioPeriodo(est.codigo_estudiantil, p);
+        const resultado = calcularPromedioPeriodo(est.id_estudiantil, p);
         if (resultado.promedio !== null) promediosPorPeriodo[p] = resultado.promedio;
       }
 
       // Promedios por asignatura con promedio relativo (filtrado por período)
       const promediosPorAsignatura: { [asignatura: string]: number } = {};
       const notasEstudiante = notas.filter(n =>
-        n.codigo_estudiantil === est.codigo_estudiantil &&
+        n.id_estudiantil === est.id_estudiantil &&
         n.porcentaje !== null && n.porcentaje > 0 &&
         (periodo === "anual" || !periodo || n.periodo === periodo)
       );
@@ -380,13 +380,13 @@ export const useEstadisticas = () => {
 
       let resultado: { promedio: number | null; sumaPorcentajes: number; cantidadActividades: number };
       if (periodo === "anual" || !periodo) {
-        resultado = calcularPromedioEstudiante(est.codigo_estudiantil);
+        resultado = calcularPromedioEstudiante(est.id_estudiantil);
       } else {
-        resultado = calcularPromedioPeriodo(est.codigo_estudiantil, periodo);
+        resultado = calcularPromedioPeriodo(est.id_estudiantil, periodo);
       }
 
       return {
-        codigo_estudiantil: String(est.codigo_estudiantil),
+        id_estudiantil: String(est.id_estudiantil),
         nombre_completo: `${est.apellidos_estudiante} ${est.nombre_estudiante}`,
         grado: est.grado_estudiante,
         salon: est.salon_estudiante,
@@ -576,7 +576,7 @@ export const useEstadisticas = () => {
 
           // Calcular suma de porcentajes específica para la asignatura
           const notasAsignatura = notas.filter(n =>
-            n.codigo_estudiantil === e.codigo_estudiantil &&
+            n.id_estudiantil === e.id_estudiantil &&
             n.asignatura === asignatura &&
             n.porcentaje !== null && n.porcentaje > 0 &&
             (periodo === "anual" || n.periodo === periodo)
@@ -664,7 +664,7 @@ export const useEstadisticas = () => {
     periodo: number | "anual",
     grado?: string,
     salon?: string,
-    codigoEstudiante?: string,
+    idEstudiante?: string,
     asignatura?: string
   ): { completo: boolean; detalles: DetalleIncompleto[] } => {
     const detalles: DetalleIncompleto[] = [];
@@ -673,7 +673,7 @@ export const useEstadisticas = () => {
     let estudiantesFiltrados = estudiantes;
     if (grado) estudiantesFiltrados = estudiantesFiltrados.filter(e => e.grado_estudiante === grado);
     if (salon) estudiantesFiltrados = estudiantesFiltrados.filter(e => e.salon_estudiante === salon);
-    if (codigoEstudiante) estudiantesFiltrados = estudiantesFiltrados.filter(e => e.codigo_estudiantil === codigoEstudiante);
+    if (idEstudiante) estudiantesFiltrados = estudiantesFiltrados.filter(e => e.id_estudiantil === idEstudiante);
 
     const periodos = periodo === "anual" ? [1, 2, 3, 4] : [periodo];
 
@@ -681,7 +681,7 @@ export const useEstadisticas = () => {
       const nombreCompleto = `${est.apellidos_estudiante} ${est.nombre_estudiante}`;
       
       // Obtener las asignaturas del estudiante
-      const notasEstudiante = notas.filter(n => n.codigo_estudiantil === est.codigo_estudiantil);
+      const notasEstudiante = notas.filter(n => n.id_estudiantil === est.id_estudiantil);
       const asignaturasEstudiante = asignatura
         ? [asignatura]
         : [...new Set(notasEstudiante.map(n => n.asignatura))];

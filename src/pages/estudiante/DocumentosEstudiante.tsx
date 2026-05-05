@@ -19,7 +19,7 @@ interface Comunicado {
   salon: string | null;
   grados: string[] | null;
   salones: string[] | null;
-  codigo_estudiantil: string | null;
+  id_estudiantil: string | null;
   id_destinatarios: string[] | null;
   grupo_comunicado_id: number | null;
 }
@@ -31,7 +31,7 @@ const DocumentosEstudiante = () => {
 
   useEffect(() => {
     const session = getSession();
-    if (!session.codigo || !isEstudiante()) {
+    if (!session.id || !isEstudiante()) {
       navigate("/");
       return;
     }
@@ -55,9 +55,9 @@ const DocumentosEstudiante = () => {
             // Misma logica que ComunicadosEstudiante.
             const matchIds =
               (c.id_destinatarios && c.id_destinatarios.length > 0 &&
-                c.id_destinatarios.includes(String(session.codigo))) ||
-              (c.codigo_estudiantil && c.codigo_estudiantil === session.codigo) ||
-              (!!session.codigo && new RegExp(`\\b${String(session.codigo)}\\b`).test(c.destinatarios || ""));
+                c.id_destinatarios.includes(String(session.id))) ||
+              (c.id_estudiantil && c.id_estudiantil === session.id) ||
+              (!!session.id && new RegExp(`\\b${String(session.id)}\\b`).test(c.destinatarios || ""));
 
             const grados = c.grados ?? (c.grado ? [c.grado] : null);
             const salones = c.salones ?? (c.salon ? [c.salon] : null);
@@ -72,7 +72,7 @@ const DocumentosEstudiante = () => {
 
             const noHayFiltros =
               (!c.id_destinatarios || c.id_destinatarios.length === 0) &&
-              !c.codigo_estudiantil && !c.nivel && !grados && !salones;
+              !c.id_estudiantil && !c.nivel && !grados && !salones;
             if (!noHayFiltros) return false;
 
             const destLower = (c.destinatarios || "").trim().toLowerCase();
@@ -92,7 +92,7 @@ const DocumentosEstudiante = () => {
           });
           setDocumentos(dedup);
           const maxId = Math.max(...dedup.map((c: Comunicado) => c.id), 0);
-          markLastSeen('documentos', session.codigo!, maxId);
+          markLastSeen('documentos', session.id!, maxId);
         }
       } catch (err) {
         console.error('Error:', err);

@@ -34,7 +34,7 @@ const Dashboard = () => {
   useEffect(() => {
     const session = getSession();
 
-    if (!session.codigo) {
+    if (!session.id) {
       navigate("/");
       return;
     }
@@ -60,9 +60,9 @@ const Dashboard = () => {
         const lastSeen = await getAllLastSeen(session.id!);
         const minComLastSeen = Math.min(lastSeen['comunicados'] ?? 0, lastSeen['documentos'] ?? 0);
         const [asignacionesRes, msgRes] = await Promise.all([
-          supabase.from('Asignación Profesores').select('"Grado(s)", "Salon(es)"').eq('codigo', parseInt(session.codigo!)),
+          supabase.from('Asignación Profesores').select('"Grado(s)", "Salon(es)"').eq('id', parseInt(session.id!)),
           supabase.from('Comunicados')
-            .select('id, nivel, grado, salon, codigo_estudiantil, id_destinatarios, archivo_url')
+            .select('id, nivel, grado, salon, id_estudiantil, id_destinatarios, archivo_url')
             .overlaps('perfil', ['Profesores'])
             .gt('id', minComLastSeen),
         ]);
@@ -81,9 +81,9 @@ const Dashboard = () => {
         if (msgRes.data) {
           const filtrados = msgRes.data.filter((c: any) => {
             if (c.id_destinatarios && c.id_destinatarios.length > 0) {
-              return c.id_destinatarios.includes(String(session.codigo));
+              return c.id_destinatarios.includes(String(session.id));
             }
-            if (c.codigo_estudiantil && c.codigo_estudiantil !== session.codigo) return false;
+            if (c.id_estudiantil && c.id_estudiantil !== session.id) return false;
             const grados = c.grados ?? (c.grado ? [c.grado] : null);
             const salones = c.salones ?? (c.salon ? [c.salon] : null);
             if (grados || salones || c.nivel) {
@@ -120,11 +120,11 @@ const Dashboard = () => {
     // Fetch asignaturas del profesor
     const fetchAsignaturas = async () => {
       try {
-        // Buscar las asignaturas en Asignación Profesores directamente por codigo
+        // Buscar las asignaturas en Asignación Profesores directamente por id
         const { data: asignaciones, error: asignacionError } = await supabase
           .from('Asignación Profesores')
           .select('"Asignatura(s)", "Grado(s)"')
-          .eq('codigo', parseInt(session.codigo!));
+          .eq('id', parseInt(session.id!));
 
         if (asignacionError || !asignaciones) {
           setLoadingAsignaturas(false);

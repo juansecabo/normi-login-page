@@ -8,7 +8,7 @@ import ComentarioModalReadOnly from "@/components/notas/ComentarioModalReadOnly"
 import { MessageSquare } from "lucide-react";
 
 interface Estudiante {
-  codigo_estudiantil: string;
+  id_estudiantil: string;
   apellidos_estudiante: string;
   nombre_estudiante: string;
 }
@@ -21,7 +21,7 @@ interface Actividad {
 }
 
 type NotasEstudiantes = {
-  [codigoEstudiantil: string]: {
+  [idEstudiantil: string]: {
     [periodo: number]: {
       [actividadId: string]: number;
     };
@@ -29,7 +29,7 @@ type NotasEstudiantes = {
 };
 
 type ComentariosEstudiantes = {
-  [codigoEstudiantil: string]: {
+  [idEstudiantil: string]: {
     [periodo: number]: {
       [actividadId: string]: string | null;
     };
@@ -62,7 +62,7 @@ const TablaNotasReadOnly = () => {
     const inicializar = async () => {
       const session = getSession();
 
-      if (!session.codigo) {
+      if (!session.id) {
         navigate('/');
         return;
       }
@@ -89,7 +89,7 @@ const TablaNotasReadOnly = () => {
         // Buscar el profesor que da esta asignatura en este grado/salón
         const { data: asignaciones } = await supabase
           .from('Asignación Profesores')
-          .select('codigo, "Asignatura(s)", "Grado(s)", "Salon(es)"');
+          .select('id, "Asignatura(s)", "Grado(s)", "Salon(es)"');
 
         if (asignaciones) {
           // Encontrar la asignación que coincide
@@ -102,12 +102,12 @@ const TablaNotasReadOnly = () => {
                    salones.includes(storedSalon);
           });
 
-          if (asignacionCorrecta && asignacionCorrecta.codigo) {
-            // Buscar el nombre del profesor en la tabla Internos usando codigo
+          if (asignacionCorrecta && asignacionCorrecta.id) {
+            // Buscar el nombre del profesor en la tabla Internos usando id
             const { data: profesorData } = await supabase
               .from('Internos')
               .select('nombres, apellidos')
-              .eq('codigo', asignacionCorrecta.codigo)
+              .eq('id', asignacionCorrecta.id)
               .maybeSingle();
 
             if (profesorData) {
@@ -119,7 +119,7 @@ const TablaNotasReadOnly = () => {
         // Fetch estudiantes
         const { data: estudiantesData, error: estudiantesError } = await supabase
           .from('Estudiantes')
-          .select('codigo_estudiantil, apellidos_estudiante, nombre_estudiante')
+          .select('id_estudiantil, apellidos_estudiante, nombre_estudiante')
           .eq('grado_estudiante', storedGrado)
           .eq('salon_estudiante', storedSalon)
           .order('apellidos_estudiante', { ascending: true })
@@ -165,7 +165,7 @@ const TablaNotasReadOnly = () => {
           const comentariosFormateados: ComentariosEstudiantes = {};
 
           notasData.forEach((nota) => {
-            const { codigo_estudiantil, periodo, nombre_actividad, nota: valorNota, comentario } = nota;
+            const { id_estudiantil, periodo, nombre_actividad, nota: valorNota, comentario } = nota;
 
             if (nombre_actividad === "Definitiva Anual" || nombre_actividad === "Definitiva Periodo") {
               return;
@@ -174,23 +174,23 @@ const TablaNotasReadOnly = () => {
             const actividadId = `${periodo}-${nombre_actividad}`;
 
             // Notas
-            if (!notasFormateadas[codigo_estudiantil]) {
-              notasFormateadas[codigo_estudiantil] = {};
+            if (!notasFormateadas[id_estudiantil]) {
+              notasFormateadas[id_estudiantil] = {};
             }
-            if (!notasFormateadas[codigo_estudiantil][periodo]) {
-              notasFormateadas[codigo_estudiantil][periodo] = {};
+            if (!notasFormateadas[id_estudiantil][periodo]) {
+              notasFormateadas[id_estudiantil][periodo] = {};
             }
-            notasFormateadas[codigo_estudiantil][periodo][actividadId] = valorNota;
+            notasFormateadas[id_estudiantil][periodo][actividadId] = valorNota;
 
             // Comentarios
             if (comentario) {
-              if (!comentariosFormateados[codigo_estudiantil]) {
-                comentariosFormateados[codigo_estudiantil] = {};
+              if (!comentariosFormateados[id_estudiantil]) {
+                comentariosFormateados[id_estudiantil] = {};
               }
-              if (!comentariosFormateados[codigo_estudiantil][periodo]) {
-                comentariosFormateados[codigo_estudiantil][periodo] = {};
+              if (!comentariosFormateados[id_estudiantil][periodo]) {
+                comentariosFormateados[id_estudiantil][periodo] = {};
               }
-              comentariosFormateados[codigo_estudiantil][periodo][actividadId] = comentario;
+              comentariosFormateados[id_estudiantil][periodo][actividadId] = comentario;
             }
           });
 
@@ -233,7 +233,7 @@ const TablaNotasReadOnly = () => {
     return Math.round(promedio * 100) / 100;
   };
 
-  const calcularFinalPeriodo = (codigoEstudiantil: string, periodo: number): number | null => {
+  const calcularFinalPeriodo = (idEstudiantil: string, periodo: number): number | null => {
     const actividadesDelPeriodo = getActividadesPorPeriodo(periodo);
     const actividadesConPorcentaje = actividadesDelPeriodo.filter(a => a.porcentaje !== null && a.porcentaje > 0);
 
@@ -243,7 +243,7 @@ const TablaNotasReadOnly = () => {
     let porcentajeCalificado = 0;
 
     actividadesConPorcentaje.forEach((actividad) => {
-      const nota = notas[codigoEstudiantil]?.[periodo]?.[actividad.id];
+      const nota = notas[idEstudiantil]?.[periodo]?.[actividad.id];
       if (nota !== undefined) {
         suma += nota * ((actividad.porcentaje || 0) / 100);
         porcentajeCalificado += actividad.porcentaje || 0;
@@ -255,12 +255,12 @@ const TablaNotasReadOnly = () => {
     return Math.round((suma / (porcentajeCalificado / 100)) * 10) / 10;
   };
 
-  const calcularFinalDefinitiva = (codigoEstudiantil: string): number | null => {
+  const calcularFinalDefinitiva = (idEstudiantil: string): number | null => {
     let suma = 0;
     let periodosConNota = 0;
 
     for (let periodo = 1; periodo <= 4; periodo++) {
-      const finalPeriodo = calcularFinalPeriodo(codigoEstudiantil, periodo);
+      const finalPeriodo = calcularFinalPeriodo(idEstudiantil, periodo);
       if (finalPeriodo !== null) {
         suma += finalPeriodo;
         periodosConNota++;
@@ -418,9 +418,9 @@ const TablaNotasReadOnly = () => {
                     const rowBg = studentIndex % 2 === 0 ? 'bg-background' : 'bg-muted/30';
 
                     return (
-                      <tr key={estudiante.codigo_estudiantil} className={rowBg}>
+                      <tr key={estudiante.id_estudiantil} className={rowBg}>
                         <td className={`md:sticky md:left-0 z-10 border-r border-b border-border p-2 md:p-3 text-xs md:text-sm ${studentIndex % 2 === 0 ? 'bg-background' : 'bg-muted'}`}>
-                          {estudiante.codigo_estudiantil}
+                          {estudiante.id_estudiantil}
                         </td>
                         <td className={`md:sticky md:left-[100px] z-10 border-r border-b border-border p-2 md:p-3 text-xs md:text-sm font-medium ${studentIndex % 2 === 0 ? 'bg-background' : 'bg-muted'}`}>
                           {estudiante.apellidos_estudiante}
@@ -430,8 +430,8 @@ const TablaNotasReadOnly = () => {
                         </td>
 
                             {getActividadesPorPeriodo(periodoActivo).map((actividad) => {
-                              const nota = notas[estudiante.codigo_estudiantil]?.[periodoActivo]?.[actividad.id];
-                              const comentario = comentarios[estudiante.codigo_estudiantil]?.[periodoActivo]?.[actividad.id];
+                              const nota = notas[estudiante.id_estudiantil]?.[periodoActivo]?.[actividad.id];
+                              const comentario = comentarios[estudiante.id_estudiantil]?.[periodoActivo]?.[actividad.id];
                               const tieneComentario = !!comentario;
 
                               return (
@@ -463,7 +463,7 @@ const TablaNotasReadOnly = () => {
                               );
                             })}
                             <td className="border-r border-b border-border p-2 text-center text-sm font-semibold bg-primary/5">
-                              {calcularFinalPeriodo(estudiante.codigo_estudiantil, periodoActivo)?.toFixed(1) || '—'}
+                              {calcularFinalPeriodo(estudiante.id_estudiantil, periodoActivo)?.toFixed(1) || '—'}
                             </td>
                       </tr>
                     );

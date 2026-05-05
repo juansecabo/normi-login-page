@@ -31,7 +31,7 @@ const EstadisticasProfesor = () => {
 
   useEffect(() => {
     const session = getSession();
-    if (!session.codigo) { navigate("/"); return; }
+    if (!session.id) { navigate("/"); return; }
     if (!isProfesor()) { navigate("/dashboard"); return; }
 
     const fetchAsignaciones = async () => {
@@ -39,7 +39,7 @@ const EstadisticasProfesor = () => {
         const { data: rows } = await supabase
           .from("Asignación Profesores")
           .select('"Asignatura(s)", "Grado(s)", "Salon(es)"')
-          .eq("codigo", parseInt(session.codigo!));
+          .eq('id', parseInt(session.id!));
 
         if (rows) {
           setAsignaciones(rows.map((r: any) => ({
@@ -106,7 +106,7 @@ const EstadisticasProfesor = () => {
   }, [trios, asignaturaSeleccionada, gradoSeleccionado]);
 
   // Estudiantes del salón (query directa a Supabase para obtener TODOS)
-  const [estudiantesDelSalon, setEstudiantesDelSalon] = useState<{ codigo: string; nombre: string }[]>([]);
+  const [estudiantesDelSalon, setEstudiantesDelSalon] = useState<{ id: string; nombre: string }[]>([]);
 
   useEffect(() => {
     if (!gradoSeleccionado || gradoSeleccionado === "all" || !salonSeleccionado || salonSeleccionado === "all") {
@@ -116,14 +116,14 @@ const EstadisticasProfesor = () => {
     const fetchEstudiantes = async () => {
       const { data } = await supabase
         .from('Estudiantes')
-        .select('codigo_estudiantil, apellidos_estudiante, nombre_estudiante')
+        .select('id_estudiantil, apellidos_estudiante, nombre_estudiante')
         .eq('grado_estudiante', gradoSeleccionado)
         .eq('salon_estudiante', salonSeleccionado)
         .order('apellidos_estudiante')
         .order('nombre_estudiante');
       setEstudiantesDelSalon(
         (data || []).map(e => ({
-          codigo: String(e.codigo_estudiantil),
+          id: String(e.id_estudiantil),
           nombre: `${e.apellidos_estudiante} ${e.nombre_estudiante}`
         }))
       );
@@ -143,7 +143,7 @@ const EstadisticasProfesor = () => {
   const getTitulo = () => {
     const periodoTexto = periodoSeleccionado === "anual" ? "Acumulado Anual" : `Período ${periodoSeleccionado}`;
     if (estudianteSeleccionado && estudianteSeleccionado !== "all") {
-      const est = estudiantesDelSalon.find(e => e.codigo === estudianteSeleccionado);
+      const est = estudiantesDelSalon.find(e => e.id === estudianteSeleccionado);
       return `${est?.nombre || "Estudiante"} - ${periodoTexto}`;
     }
     const partes = [asignaturaSeleccionada || "Asignatura"];
@@ -264,7 +264,7 @@ const EstadisticasProfesor = () => {
                       <SelectContent>
                         <SelectItem value="all">Todos</SelectItem>
                         {estudiantesDelSalon.map(e => (
-                          <SelectItem key={e.codigo} value={e.codigo}>{e.nombre}</SelectItem>
+                          <SelectItem key={e.id} value={e.id}>{e.nombre}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -276,7 +276,7 @@ const EstadisticasProfesor = () => {
             {/* Resultados */}
             {estudianteSeleccionado ? (
               <AnalisisEstudiante
-                codigoEstudiante={estudianteSeleccionado}
+                idEstudiante={estudianteSeleccionado}
                 periodo={periodoNumerico}
                 titulo={getTitulo()}
               />

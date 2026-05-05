@@ -5,7 +5,7 @@ import { getSession, isRectorOrCoordinador } from "@/hooks/useSession";
 import HeaderNormy from "@/components/HeaderNormy";
 
 interface Estudiante {
-  codigo_estudiantil: string;
+  id_estudiantil: string;
   apellidos_estudiante: string;
   nombre_estudiante: string;
 }
@@ -20,7 +20,7 @@ const ListaEstudiantes = () => {
   useEffect(() => {
     const session = getSession();
     
-    if (!session.codigo) {
+    if (!session.id) {
       navigate("/");
       return;
     }
@@ -52,7 +52,7 @@ const ListaEstudiantes = () => {
     try {
       const { data, error } = await supabase
         .from('Estudiantes')
-        .select('codigo_estudiantil, apellidos_estudiante, nombre_estudiante')
+        .select('id_estudiantil, apellidos_estudiante, nombre_estudiante')
         .eq('grado_estudiante', grado)
         .eq('salon_estudiante', salon)
         .order('apellidos_estudiante', { ascending: true })
@@ -136,7 +136,7 @@ const ListaEstudiantes = () => {
             <div className="space-y-2">
               {estudiantes.map((estudiante) => (
                 <button
-                  key={estudiante.codigo_estudiantil}
+                  key={estudiante.id_estudiantil}
                   onClick={() => handleSelectEstudiante(estudiante)}
                   className="w-full p-4 rounded-lg border-2 text-left transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/10 border-border bg-background flex items-center justify-between"
                 >
@@ -146,7 +146,7 @@ const ListaEstudiantes = () => {
                     </span>
                   </div>
                   <span className="text-sm text-muted-foreground">
-                    {estudiante.codigo_estudiantil}
+                    {estudiante.id_estudiantil}
                   </span>
                 </button>
               ))}

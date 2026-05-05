@@ -23,7 +23,7 @@ const Index = () => {
   // Si ya hay sesión activa, redirigir sin pedir contraseña
   useEffect(() => {
     const session = getSession();
-    if (session.codigo) {
+    if (session.id) {
       if (session.cargo === 'Administrador') {
         navigate("/dashboard-admin", { replace: true });
       } else if (session.cargo === 'Rector' || session.cargo === 'Coordinador(a)' || session.cargo === 'Administrativo(a)') {
@@ -60,7 +60,7 @@ const Index = () => {
       const { data: usuario, error } = await supabase
         .from('Internos')
         .select('*')
-        .eq('codigo', parseInt(idInput))
+        .eq('id', parseInt(idInput))
         .maybeSingle();
 
       if (error) {
@@ -78,7 +78,7 @@ const Index = () => {
         // Verificar contraseña de interno
         const contrasenaCorrecta = usuario.contrasena
           ? usuario.contrasena === passInput
-          : String(usuario.codigo) === passInput;
+          : String(usuario.id) === passInput;
 
         if (contrasenaCorrecta) {
           const cargosPermitidos = ['Profesor(a)', 'Rector', 'Coordinador(a)', 'Administrador', 'Administrativo(a)'];
@@ -88,7 +88,7 @@ const Index = () => {
             return;
           }
 
-          saveSession(String(usuario.codigo), usuario.nombres || "", usuario.apellidos || "", usuario.cargo || "");
+          saveSession(String(usuario.id), usuario.nombres || "", usuario.apellidos || "", usuario.cargo || "");
 
           if (usuario.cargo === 'Administrador') {
             navigate("/dashboard-admin");
@@ -107,7 +107,7 @@ const Index = () => {
       const { data: perfilEstudiante, error: errEstudiante } = await supabase
         .from('Perfiles_Generales')
         .select('*')
-        .eq('estudiante_codigo', idInput)
+        .eq('estudiante_id', idInput)
         .not('perfil', 'is', null)
         .maybeSingle();
 
@@ -124,7 +124,7 @@ const Index = () => {
           const { data: estData } = await supabase
             .from('Estudiantes')
             .select('*')
-            .eq('codigo_estudiantil', idInput)
+            .eq('id_estudiantil', idInput)
             .maybeSingle();
 
           const nivel = estData?.nivel_estudiante || perfilEstudiante.estudiante_nivel || '';
@@ -144,7 +144,7 @@ const Index = () => {
       const { data: perfilPadre, error: errPadre } = await supabase
         .from('Perfiles_Generales')
         .select('*')
-        .eq('padre_codigo', idInput)
+        .eq('padre_id', idInput)
         .not('perfil', 'is', null)
         .maybeSingle();
 
@@ -166,19 +166,19 @@ const Index = () => {
         const numHijos = numMap[perfilPadre.padre_numero_de_estudiantes] || 0;
 
         for (let i = 1; i <= numHijos; i++) {
-          const codigoHijo = perfilPadre[`padre_estudiante${i}_codigo` as keyof typeof perfilPadre];
-          if (!codigoHijo) continue;
+          const idHijo = perfilPadre[`padre_estudiante${i}_id` as keyof typeof perfilPadre];
+          if (!idHijo) continue;
 
           // Buscar datos actualizados del hijo en Estudiantes
           const { data: hijoData } = await supabase
             .from('Estudiantes')
             .select('*')
-            .eq('codigo_estudiantil', String(codigoHijo))
+            .eq('id_estudiantil', String(idHijo))
             .maybeSingle();
 
           if (hijoData) {
             hijos.push({
-              codigo: String(hijoData.codigo_estudiantil),
+              id: String(hijoData.id_estudiantil),
               nombre: hijoData.nombre_estudiante || '',
               apellidos: hijoData.apellidos_estudiante || '',
               nivel: hijoData.nivel_estudiante || '',
@@ -188,7 +188,7 @@ const Index = () => {
           } else {
             // Fallback: usar datos del perfil
             hijos.push({
-              codigo: String(codigoHijo),
+              id: String(idHijo),
               nombre: (perfilPadre as any)[`padre_estudiante${i}_nombre`] || '',
               apellidos: (perfilPadre as any)[`padre_estudiante${i}_apellidos`] || '',
               nivel: (perfilPadre as any)[`padre_estudiante${i}_nivel`] || '',

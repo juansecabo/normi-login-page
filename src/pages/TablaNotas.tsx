@@ -44,7 +44,7 @@ import NotificacionModal, { TipoNotificacion } from "@/components/notas/Notifica
 const N8N_WEBHOOK_URL = 'https://n8n.notasnormy.com/webhook/notificar-notas';
 
 interface Estudiante {
-  codigo_estudiantil: string;
+  id_estudiantil: string;
   apellidos_estudiante: string;
   nombre_estudiante: string;
 }
@@ -56,18 +56,18 @@ interface Actividad {
   porcentaje: number | null;
 }
 
-// Estructura: { [codigo_estudiantil]: { [periodo]: { [actividad_id]: nota } } }
+// Estructura: { [id_estudiantil]: { [periodo]: { [actividad_id]: nota } } }
 type NotasEstudiantes = {
-  [codigoEstudiantil: string]: {
+  [idEstudiantil: string]: {
     [periodo: number]: {
       [actividadId: string]: number;
     };
   };
 };
 
-// Estructura para comentarios: { [codigo_estudiantil]: { [periodo]: { [actividad_id]: comentario } } }
+// Estructura para comentarios: { [id_estudiantil]: { [periodo]: { [actividad_id]: comentario } } }
 type ComentariosEstudiantes = {
-  [codigoEstudiantil: string]: {
+  [idEstudiantil: string]: {
     [periodo: number]: {
       [actividadId: string]: string | null;
     };
@@ -75,13 +75,13 @@ type ComentariosEstudiantes = {
 };
 
 interface CeldaEditando {
-  codigoEstudiantil: string;
+  idEstudiantil: string;
   actividadId: string;
   periodo: number;
 }
 
 interface ComentarioEditando {
-  codigoEstudiantil: string;
+  idEstudiantil: string;
   nombreEstudiante: string;
   actividadId: string;
   nombreActividad: string;
@@ -153,12 +153,12 @@ const TablaNotas = () => {
       // 1. Verificar sesión
       const session = getSession();
       
-      console.log('🔐 Verificando sesión en TablaNotas:', { 
-        codigo: session.codigo,
-        nombres: session.nombres 
+      console.log('🔐 Verificando sesión en TablaNotas:', {
+        id: session.id,
+        nombres: session.nombres
       });
       
-      if (!session.codigo) {
+      if (!session.id) {
         console.log('❌ No hay sesión, redirigiendo a login');
         navigate('/');
         return;
@@ -191,7 +191,7 @@ const TablaNotas = () => {
       setSalonSeleccionado(storedSalon);
 
       // 3. Cargar datos
-      const codigoProfesor = session.codigo;
+      const idProfesor = session.id;
       
       try {
         console.log("=== DEBUG FILTRO ESTUDIANTES ===");
@@ -201,7 +201,7 @@ const TablaNotas = () => {
         // Fetch estudiantes
         const { data: estudiantesData, error: estudiantesError } = await supabase
           .from('Estudiantes')
-          .select('codigo_estudiantil, apellidos_estudiante, nombre_estudiante')
+          .select('id_estudiantil, apellidos_estudiante, nombre_estudiante')
           .eq('grado_estudiante', storedGrado)
           .eq('salon_estudiante', storedSalon)
           .order('apellidos_estudiante', { ascending: true })
@@ -222,7 +222,7 @@ const TablaNotas = () => {
         const { data: actividadesData, error: actividadesError } = await supabase
           .from('Nombre de Actividades')
           .select('*')
-          .eq('codigo_profesor', codigoProfesor)
+          .eq('id_profesor', idProfesor)
           .eq('asignatura', storedAsignatura)
           .eq('grado', storedGrado)
           .eq('salon', storedSalon)
@@ -261,19 +261,19 @@ const TablaNotas = () => {
           const comentariosFormateados: ComentariosEstudiantes = {};
           
           notasData.forEach((nota) => {
-            const { codigo_estudiantil, periodo, nombre_actividad, nota: valorNota, comentario } = nota;
+            const { id_estudiantil, periodo, nombre_actividad, nota: valorNota, comentario } = nota;
             
             // Cargar comentarios de Definitiva Anual(periodo = 0)
             if (nombre_actividad === "Definitiva Anual" && periodo === 0) {
               if (comentario) {
                 const actividadId = '0-Definitiva Anual';
-                if (!comentariosFormateados[codigo_estudiantil]) {
-                  comentariosFormateados[codigo_estudiantil] = {};
+                if (!comentariosFormateados[id_estudiantil]) {
+                  comentariosFormateados[id_estudiantil] = {};
                 }
-                if (!comentariosFormateados[codigo_estudiantil][0]) {
-                  comentariosFormateados[codigo_estudiantil][0] = {};
+                if (!comentariosFormateados[id_estudiantil][0]) {
+                  comentariosFormateados[id_estudiantil][0] = {};
                 }
-                comentariosFormateados[codigo_estudiantil][0][actividadId] = comentario;
+                comentariosFormateados[id_estudiantil][0][actividadId] = comentario;
               }
               return;
             }
@@ -283,13 +283,13 @@ const TablaNotas = () => {
               // Solo cargar el comentario si existe
               if (comentario) {
                 const actividadId = `${periodo}-Definitiva Periodo`;
-                if (!comentariosFormateados[codigo_estudiantil]) {
-                  comentariosFormateados[codigo_estudiantil] = {};
+                if (!comentariosFormateados[id_estudiantil]) {
+                  comentariosFormateados[id_estudiantil] = {};
                 }
-                if (!comentariosFormateados[codigo_estudiantil][periodo]) {
-                  comentariosFormateados[codigo_estudiantil][periodo] = {};
+                if (!comentariosFormateados[id_estudiantil][periodo]) {
+                  comentariosFormateados[id_estudiantil][periodo] = {};
                 }
-                comentariosFormateados[codigo_estudiantil][periodo][actividadId] = comentario;
+                comentariosFormateados[id_estudiantil][periodo][actividadId] = comentario;
               }
               return;
             }
@@ -298,23 +298,23 @@ const TablaNotas = () => {
             const actividadId = `${periodo}-${nombre_actividad}`;
             
             // Agregar nota al estado
-            if (!notasFormateadas[codigo_estudiantil]) {
-              notasFormateadas[codigo_estudiantil] = {};
+            if (!notasFormateadas[id_estudiantil]) {
+              notasFormateadas[id_estudiantil] = {};
             }
-            if (!notasFormateadas[codigo_estudiantil][periodo]) {
-              notasFormateadas[codigo_estudiantil][periodo] = {};
+            if (!notasFormateadas[id_estudiantil][periodo]) {
+              notasFormateadas[id_estudiantil][periodo] = {};
             }
-            notasFormateadas[codigo_estudiantil][periodo][actividadId] = valorNota;
+            notasFormateadas[id_estudiantil][periodo][actividadId] = valorNota;
             
             // Agregar comentario al estado si existe
             if (comentario) {
-              if (!comentariosFormateados[codigo_estudiantil]) {
-                comentariosFormateados[codigo_estudiantil] = {};
+              if (!comentariosFormateados[id_estudiantil]) {
+                comentariosFormateados[id_estudiantil] = {};
               }
-              if (!comentariosFormateados[codigo_estudiantil][periodo]) {
-                comentariosFormateados[codigo_estudiantil][periodo] = {};
+              if (!comentariosFormateados[id_estudiantil][periodo]) {
+                comentariosFormateados[id_estudiantil][periodo] = {};
               }
-              comentariosFormateados[codigo_estudiantil][periodo][actividadId] = comentario;
+              comentariosFormateados[id_estudiantil][periodo][actividadId] = comentario;
             }
           });
           
@@ -334,7 +334,7 @@ const TablaNotas = () => {
         const { data: asignaciones } = await supabase
           .from('Asignación Profesores')
           .select('"Asignatura(s)", "Grado(s)", "Salon(es)"')
-          .eq('codigo', parseInt(session.codigo!));
+          .eq('id', parseInt(session.id!));
 
         if (asignaciones) {
             const asignacionesFiltradas = asignaciones.filter(a => {
@@ -387,14 +387,14 @@ const TablaNotas = () => {
   };
 
   // Verificar si al menos un período tiene porcentaje completo (100%) Y el estudiante tiene TODAS las notas
-  const tieneAlMenosUnPeriodoCompletoConTodasNotas = (codigoEstudiantil: string): boolean => {
+  const tieneAlMenosUnPeriodoCompletoConTodasNotas = (idEstudiantil: string): boolean => {
     for (let periodo = 1; periodo <= 4; periodo++) {
       // 1. Verificar que el período esté al 100%
       const porcentajeUsado = getPorcentajeUsado(periodo);
       if (porcentajeUsado !== 100) continue;
       
       // 2. Verificar que el estudiante tenga Definitiva Periodo calculado
-      const finalPeriodo = calcularFinalPeriodo(codigoEstudiantil, periodo);
+      const finalPeriodo = calcularFinalPeriodo(idEstudiantil, periodo);
       if (finalPeriodo === null) continue;
       
       // 3. Verificar que el estudiante tenga TODAS las actividades con porcentaje calificadas
@@ -402,7 +402,7 @@ const TablaNotas = () => {
       const actividadesConPorcentaje = actividadesDelPeriodo.filter(a => a.porcentaje !== null && a.porcentaje > 0);
       
       const todasCalificadas = actividadesConPorcentaje.every(actividad => {
-        const nota = notas[codigoEstudiantil]?.[periodo]?.[actividad.id];
+        const nota = notas[idEstudiantil]?.[periodo]?.[actividad.id];
         return nota !== undefined;
       });
       
@@ -430,7 +430,7 @@ const TablaNotas = () => {
     const { data } = await supabase
       .from('Nombre de Actividades')
       .select('salon')
-      .eq('codigo_profesor', session.codigo)
+      .eq('id_profesor', session.id)
       .eq('asignatura', asignaturaSeleccionada)
       .eq('grado', gradoSeleccionado)
       .eq('periodo', periodo)
@@ -509,7 +509,7 @@ const TablaNotas = () => {
         const { data: freshData } = await supabase
           .from('Nombre de Actividades')
           .select('salon')
-          .eq('codigo_profesor', session.codigo)
+          .eq('id_profesor', session.id)
           .eq('asignatura', asignaturaSeleccionada)
           .eq('grado', gradoSeleccionado)
           .eq('periodo', actividadEditando.periodo)
@@ -528,7 +528,7 @@ const TablaNotas = () => {
             nombre_actividad: nombreNuevo,
             porcentaje: porcentaje
           })
-          .eq('codigo_profesor', session.codigo)
+          .eq('id_profesor', session.id)
           .eq('asignatura', asignaturaSeleccionada)
           .eq('grado', gradoSeleccionado)
           .in('salon', salonesAEditar)
@@ -591,11 +591,11 @@ const TablaNotas = () => {
       if (nombreAntiguo !== nombreNuevo) {
         setNotas(prev => {
           const nuevasNotas = { ...prev };
-          Object.keys(nuevasNotas).forEach(codigo => {
-            if (nuevasNotas[codigo]?.[actividadEditando.periodo]?.[actividadEditando.id] !== undefined) {
-              const valorNota = nuevasNotas[codigo][actividadEditando.periodo][actividadEditando.id];
-              delete nuevasNotas[codigo][actividadEditando.periodo][actividadEditando.id];
-              nuevasNotas[codigo][actividadEditando.periodo][nuevoId] = valorNota;
+          Object.keys(nuevasNotas).forEach(id => {
+            if (nuevasNotas[id]?.[actividadEditando.periodo]?.[actividadEditando.id] !== undefined) {
+              const valorNota = nuevasNotas[id][actividadEditando.periodo][actividadEditando.id];
+              delete nuevasNotas[id][actividadEditando.periodo][actividadEditando.id];
+              nuevasNotas[id][actividadEditando.periodo][nuevoId] = valorNota;
             }
           });
           return nuevasNotas;
@@ -626,7 +626,7 @@ const TablaNotas = () => {
           const { data: actividadesOtros, error: errorOtros } = await supabase
             .from('Nombre de Actividades')
             .select('salon, porcentaje')
-            .eq('codigo_profesor', session.codigo)
+            .eq('id_profesor', session.id)
             .eq('asignatura', asignaturaSeleccionada)
             .eq('grado', gradoSeleccionado)
             .in('salon', otrosSalones)
@@ -670,7 +670,7 @@ const TablaNotas = () => {
 
       // Construir filas para insertar
       const filasParaInsertar = salonesParaCrear.map(salon => ({
-        codigo_profesor: session.codigo,
+        id_profesor: session.id,
         asignatura: asignaturaSeleccionada,
         grado: gradoSeleccionado,
         salon: salon,
@@ -754,7 +754,7 @@ const TablaNotas = () => {
     try {
       // PRIMERO: Eliminar de "Nombre de Actividades"
       console.log('Eliminando actividad:', {
-        codigo_profesor: session.codigo,
+        id_profesor: session.id,
         asignatura: asignaturaSeleccionada,
         grado: gradoSeleccionado,
         salones: salonesAEliminar,
@@ -764,7 +764,7 @@ const TablaNotas = () => {
       const { data: deletedRows, error: errorActividad } = await supabase
         .from('Nombre de Actividades')
         .delete()
-        .eq('codigo_profesor', session.codigo)
+        .eq('id_profesor', session.id)
         .eq('asignatura', asignaturaSeleccionada)
         .eq('grado', gradoSeleccionado)
         .in('salon', salonesAEliminar)
@@ -820,9 +820,9 @@ const TablaNotas = () => {
 
       // Eliminar del estado local de notas y obtener nuevas notas
       const nuevasNotas = { ...notas };
-      Object.keys(nuevasNotas).forEach(codigo => {
-        if (nuevasNotas[codigo]?.[actividadAEliminar.periodo]) {
-          delete nuevasNotas[codigo][actividadAEliminar.periodo][actividadAEliminar.id];
+      Object.keys(nuevasNotas).forEach(id => {
+        if (nuevasNotas[id]?.[actividadAEliminar.periodo]) {
+          delete nuevasNotas[id][actividadAEliminar.periodo][actividadAEliminar.id];
         }
       });
       setNotas(nuevasNotas);
@@ -845,7 +845,7 @@ const TablaNotas = () => {
           // Calcular Definitiva Periodo con las nuevas actividades
           const actividadesDelPeriodo = nuevasActividades.filter(a => a.periodo === periodoEliminado);
           const actividadesConPorcentaje = actividadesDelPeriodo.filter(a => a.porcentaje !== null && a.porcentaje > 0);
-          const notasEstudiante = nuevasNotas[est.codigo_estudiantil]?.[periodoEliminado] || {};
+          const notasEstudiante = nuevasNotas[est.id_estudiantil]?.[periodoEliminado] || {};
           
           let notaFinal: number | null = null;
           if (actividadesConPorcentaje.length > 0) {
@@ -862,7 +862,7 @@ const TablaNotas = () => {
             }
           }
 
-          await guardarFinalPeriodo(est.codigo_estudiantil, periodoEliminado, notaFinal);
+          await guardarFinalPeriodo(est.id_estudiantil, periodoEliminado, notaFinal);
           
           // Recalcular Definitiva Anual
           let suma = 0;
@@ -871,7 +871,7 @@ const TablaNotas = () => {
             // Usar nuevas actividades para calcular
             const actsPeriodo = nuevasActividades.filter(a => a.periodo === p);
             const actsConPorc = actsPeriodo.filter(a => a.porcentaje !== null && a.porcentaje > 0);
-            const notasEst = nuevasNotas[est.codigo_estudiantil]?.[p] || {};
+            const notasEst = nuevasNotas[est.id_estudiantil]?.[p] || {};
             
             let fp: number | null = null;
             if (actsConPorc.length > 0) {
@@ -896,9 +896,9 @@ const TablaNotas = () => {
 
           if (tieneAlgunaNota) {
             const finalDef = Math.round((suma / 4) * 10) / 10;
-            await guardarFinalDefinitiva(est.codigo_estudiantil, finalDef);
+            await guardarFinalDefinitiva(est.id_estudiantil, finalDef);
           } else {
-            await guardarFinalDefinitiva(est.codigo_estudiantil, null);
+            await guardarFinalDefinitiva(est.id_estudiantil, null);
           }
         }
         console.log('✅ Finales recalculados después de eliminar actividad');
@@ -929,11 +929,11 @@ const TablaNotas = () => {
 
   // Calcular nota final del periodo para un estudiante (usando notas proporcionadas o estado)
   // FÓRMULA: Σ(nota * porcentaje/100) - Solo actividades con porcentaje
-  const calcularFinalPeriodoConNotas = useCallback((notasParam: NotasEstudiantes, codigoEstudiantil: string, periodo: number): number | null => {
+  const calcularFinalPeriodoConNotas = useCallback((notasParam: NotasEstudiantes, idEstudiantil: string, periodo: number): number | null => {
     const actividadesDelPeriodo = getActividadesPorPeriodo(periodo);
     if (actividadesDelPeriodo.length === 0) return null;
     
-    const notasEstudiante = notasParam[codigoEstudiantil]?.[periodo] || {};
+    const notasEstudiante = notasParam[idEstudiantil]?.[periodo] || {};
     
     // Solo considerar actividades que tienen porcentaje asignado
     const actividadesConPorcentaje = actividadesDelPeriodo.filter(a => a.porcentaje !== null && a.porcentaje > 0);
@@ -962,17 +962,17 @@ const TablaNotas = () => {
   }, [actividades]);
 
   // Versión que usa el estado actual
-  const calcularFinalPeriodo = useCallback((codigoEstudiantil: string, periodo: number): number | null => {
-    return calcularFinalPeriodoConNotas(notas, codigoEstudiantil, periodo);
+  const calcularFinalPeriodo = useCallback((idEstudiantil: string, periodo: number): number | null => {
+    return calcularFinalPeriodoConNotas(notas, idEstudiantil, periodo);
   }, [calcularFinalPeriodoConNotas, notas]);
 
   // Calcular Definitiva Anual (promedio de las notas relativas de los períodos que tienen datos)
-  const calcularFinalDefinitiva = useCallback((codigoEstudiantil: string): number | null => {
+  const calcularFinalDefinitiva = useCallback((idEstudiantil: string): number | null => {
     let suma = 0;
     let periodosConNota = 0;
 
     for (let p = 1; p <= 4; p++) {
-      const finalPeriodo = calcularFinalPeriodo(codigoEstudiantil, p);
+      const finalPeriodo = calcularFinalPeriodo(idEstudiantil, p);
       if (finalPeriodo !== null) {
         suma += finalPeriodo;
         periodosConNota++;
@@ -989,8 +989,8 @@ const TablaNotas = () => {
 
   // Verificar si un estudiante tiene AL MENOS UNA NOTA registrada en un período
   // Independientemente de si la actividad tiene porcentaje asignado o no
-  const tieneAlgunaNotaEnPeriodo = useCallback((codigoEstudiantil: string, periodo: number): boolean => {
-    const notasEstudiante = notas[codigoEstudiantil]?.[periodo];
+  const tieneAlgunaNotaEnPeriodo = useCallback((idEstudiantil: string, periodo: number): boolean => {
+    const notasEstudiante = notas[idEstudiantil]?.[periodo];
     if (!notasEstudiante) return false;
     
     // Verificar si hay al menos una nota definida (diferente de undefined)
@@ -998,8 +998,8 @@ const TablaNotas = () => {
   }, [notas]);
 
   // Verificar si un estudiante tiene AL MENOS UNA NOTA en CUALQUIER período del año
-  const tieneAlgunaNotaEnAnio = useCallback((codigoEstudiantil: string): boolean => {
-    return [1, 2, 3, 4].some(periodo => tieneAlgunaNotaEnPeriodo(codigoEstudiantil, periodo));
+  const tieneAlgunaNotaEnAnio = useCallback((idEstudiantil: string): boolean => {
+    return [1, 2, 3, 4].some(periodo => tieneAlgunaNotaEnPeriodo(idEstudiantil, periodo));
   }, [tieneAlgunaNotaEnPeriodo]);
 
   // === Funciones de descarga ===
@@ -1029,15 +1029,15 @@ const TablaNotas = () => {
 
         estudiantes.forEach(est => {
           const fila: (string | number | null)[] = [
-            est.codigo_estudiantil,
+            est.id_estudiantil,
             est.apellidos_estudiante,
             est.nombre_estudiante,
           ];
           periodos.forEach(p => {
-            const fp = calcularFinalPeriodo(est.codigo_estudiantil, p.numero);
+            const fp = calcularFinalPeriodo(est.id_estudiantil, p.numero);
             fila.push(fp !== null ? fp : null);
           });
-          const fd = calcularFinalDefinitiva(est.codigo_estudiantil);
+          const fd = calcularFinalDefinitiva(est.id_estudiantil);
           fila.push(fd !== null ? fd : null);
           rows.push(fila);
         });
@@ -1050,15 +1050,15 @@ const TablaNotas = () => {
 
         estudiantes.forEach(est => {
           const fila: (string | number | null)[] = [
-            est.codigo_estudiantil,
+            est.id_estudiantil,
             est.apellidos_estudiante,
             est.nombre_estudiante,
           ];
           actividadesPeriodo.forEach(a => {
-            const nota = notas[est.codigo_estudiantil]?.[periodoActivo]?.[a.id];
+            const nota = notas[est.id_estudiantil]?.[periodoActivo]?.[a.id];
             fila.push(nota !== undefined ? nota : null);
           });
-          const fp = calcularFinalPeriodo(est.codigo_estudiantil, periodoActivo);
+          const fp = calcularFinalPeriodo(est.id_estudiantil, periodoActivo);
           fila.push(fp !== null ? fp : null);
           rows.push(fila);
         });
@@ -1135,10 +1135,10 @@ const TablaNotas = () => {
             est.nombre_estudiante,
           ];
           periodos.forEach(p => {
-            const fp = calcularFinalPeriodo(est.codigo_estudiantil, p.numero);
+            const fp = calcularFinalPeriodo(est.id_estudiantil, p.numero);
             fila.push(fp !== null ? fp.toString() : "—");
           });
-          const fd = calcularFinalDefinitiva(est.codigo_estudiantil);
+          const fd = calcularFinalDefinitiva(est.id_estudiantil);
           fila.push(fd !== null ? fd.toString() : "—");
           rows.push(fila);
         });
@@ -1155,10 +1155,10 @@ const TablaNotas = () => {
             est.nombre_estudiante,
           ];
           actividadesPeriodo.forEach(a => {
-            const nota = notas[est.codigo_estudiantil]?.[periodoActivo]?.[a.id];
+            const nota = notas[est.id_estudiantil]?.[periodoActivo]?.[a.id];
             fila.push(nota !== undefined ? nota.toString() : "—");
           });
-          const fp = calcularFinalPeriodo(est.codigo_estudiantil, periodoActivo);
+          const fp = calcularFinalPeriodo(est.id_estudiantil, periodoActivo);
           fila.push(fp !== null ? fp.toString() : "—");
           rows.push(fila);
         });
@@ -1332,15 +1332,15 @@ const TablaNotas = () => {
   };
 
   // Guardar nota final en Supabase
-  const guardarFinalPeriodo = async (codigoEstudiantil: string, periodo: number, notaFinal: number | null) => {
+  const guardarFinalPeriodo = async (idEstudiantil: string, periodo: number, notaFinal: number | null) => {
     console.log('=== INICIANDO guardarFinalPeriodo ===');
-    console.log('Parámetros:', { codigoEstudiantil, periodo, notaFinal });
+    console.log('Parámetros:', { idEstudiantil, periodo, notaFinal });
     
     // Primero verificar si existe alguna nota para este estudiante en este periodo
     const { data: notasExistentes } = await supabase
       .from('Notas')
       .select('id')
-      .eq('codigo_estudiantil', codigoEstudiantil)
+      .eq('id_estudiantil', idEstudiantil)
       .eq('asignatura', asignaturaSeleccionada)
       .eq('grado', gradoSeleccionado)
       .eq('salon', salonSeleccionado)
@@ -1355,20 +1355,20 @@ const TablaNotas = () => {
       const { error } = await supabase
         .from('Notas')
         .delete()
-        .eq('codigo_estudiantil', codigoEstudiantil)
+        .eq('id_estudiantil', idEstudiantil)
         .eq('asignatura', asignaturaSeleccionada)
         .eq('grado', gradoSeleccionado)
         .eq('salon', salonSeleccionado)
         .eq('periodo', periodo)
         .eq('nombre_actividad', 'Definitiva Periodo');
       
-      console.log('Definitiva Periodo eliminado para:', codigoEstudiantil, 'Error:', error);
+      console.log('Definitiva Periodo eliminado para:', idEstudiantil, 'Error:', error);
     } else {
       // Hay notas, hacer upsert (con nota NULL o con valor)
       const { data: existente } = await supabase
         .from('Notas')
         .select('comentario')
-        .eq('codigo_estudiantil', codigoEstudiantil)
+        .eq('id_estudiantil', idEstudiantil)
         .eq('asignatura', asignaturaSeleccionada)
         .eq('grado', gradoSeleccionado)
         .eq('salon', salonSeleccionado)
@@ -1381,7 +1381,7 @@ const TablaNotas = () => {
       const { data, error } = await supabase
         .from('Notas')
         .upsert({
-          codigo_estudiantil: codigoEstudiantil,
+          id_estudiantil: idEstudiantil,
           asignatura: asignaturaSeleccionada,
           grado: gradoSeleccionado,
           salon: salonSeleccionado,
@@ -1392,28 +1392,28 @@ const TablaNotas = () => {
           comentario: comentarioExistente,
           notificado: false,
         }, {
-          onConflict: 'codigo_estudiantil,asignatura,grado,salon,periodo,nombre_actividad'
+          onConflict: 'id_estudiantil,asignatura,grado,salon,periodo,nombre_actividad'
         })
         .select();
       
       if (error) {
         console.error('ERROR guardando Definitiva Periodo:', error);
       } else {
-        console.log('✅ Definitiva Periodo guardado en Supabase:', codigoEstudiantil, periodo, notaFinal);
+        console.log('✅ Definitiva Periodo guardado en Supabase:', idEstudiantil, periodo, notaFinal);
       }
     }
   };
 
   // Guardar Definitiva Anualen Supabase (preservando comentario existente)
-  const guardarFinalDefinitiva = async (codigoEstudiantil: string, notaFinal: number | null) => {
+  const guardarFinalDefinitiva = async (idEstudiantil: string, notaFinal: number | null) => {
     console.log('=== INICIANDO guardarFinalDefinitiva ===');
-    console.log('Parámetros:', { codigoEstudiantil, notaFinal, asignatura: asignaturaSeleccionada, grado: gradoSeleccionado, salon: salonSeleccionado });
+    console.log('Parámetros:', { idEstudiantil, notaFinal, asignatura: asignaturaSeleccionada, grado: gradoSeleccionado, salon: salonSeleccionado });
     
     // Verificar si existe algún Definitiva Periodo para este estudiante
     const { data: finalesPeriodo } = await supabase
       .from('Notas')
       .select('id')
-      .eq('codigo_estudiantil', codigoEstudiantil)
+      .eq('id_estudiantil', idEstudiantil)
       .eq('asignatura', asignaturaSeleccionada)
       .eq('grado', gradoSeleccionado)
       .eq('salon', salonSeleccionado)
@@ -1427,19 +1427,19 @@ const TablaNotas = () => {
       const { error } = await supabase
         .from('Notas')
         .delete()
-        .eq('codigo_estudiantil', codigoEstudiantil)
+        .eq('id_estudiantil', idEstudiantil)
         .eq('asignatura', asignaturaSeleccionada)
         .eq('grado', gradoSeleccionado)
         .eq('salon', salonSeleccionado)
         .eq('periodo', 0)
         .eq('nombre_actividad', 'Definitiva Anual');
-      console.log('Definitiva Anualeliminada para:', codigoEstudiantil, 'Error:', error);
+      console.log('Definitiva Anualeliminada para:', idEstudiantil, 'Error:', error);
     } else {
       // Hay períodos, hacer upsert (con nota NULL o con valor)
       const { data: existente, error: errorConsulta } = await supabase
         .from('Notas')
         .select('comentario')
-        .eq('codigo_estudiantil', codigoEstudiantil)
+        .eq('id_estudiantil', idEstudiantil)
         .eq('asignatura', asignaturaSeleccionada)
         .eq('grado', gradoSeleccionado)
         .eq('salon', salonSeleccionado)
@@ -1452,7 +1452,7 @@ const TablaNotas = () => {
       const comentarioExistente = existente?.comentario || null;
       
       const datosUpsert = {
-        codigo_estudiantil: codigoEstudiantil,
+        id_estudiantil: idEstudiantil,
         asignatura: asignaturaSeleccionada,
         grado: gradoSeleccionado,
         salon: salonSeleccionado,
@@ -1469,7 +1469,7 @@ const TablaNotas = () => {
       const { data, error } = await supabase
         .from('Notas')
         .upsert(datosUpsert, {
-          onConflict: 'codigo_estudiantil,asignatura,grado,salon,periodo,nombre_actividad'
+          onConflict: 'id_estudiantil,asignatura,grado,salon,periodo,nombre_actividad'
         })
         .select();
       
@@ -1480,21 +1480,21 @@ const TablaNotas = () => {
       if (error) {
         console.error('ERROR guardando Definitiva Anual:', error);
       } else {
-        console.log('✅ Definitiva Anualguardada exitosamente:', codigoEstudiantil, notaFinal);
+        console.log('✅ Definitiva Anualguardada exitosamente:', idEstudiantil, notaFinal);
       }
     }
   };
 
   // Abrir modal de comentario
   const handleAbrirComentario = (
-    codigoEstudiantil: string,
+    idEstudiantil: string,
     nombreEstudiante: string,
     actividadId: string,
     nombreActividad: string,
     periodo: number
   ) => {
     setComentarioEditando({
-      codigoEstudiantil,
+      idEstudiantil,
       nombreEstudiante,
       actividadId,
       nombreActividad,
@@ -1507,10 +1507,10 @@ const TablaNotas = () => {
   const handleGuardarComentario = async (nuevoComentario: string | null) => {
     if (!comentarioEditando) return;
     
-    const { codigoEstudiantil, actividadId, periodo, nombreActividad } = comentarioEditando;
+    const { idEstudiantil, actividadId, periodo, nombreActividad } = comentarioEditando;
     
     console.log('=== GUARDANDO COMENTARIO ===');
-    console.log('Datos:', { codigoEstudiantil, periodo, nombreActividad, nuevoComentario });
+    console.log('Datos:', { idEstudiantil, periodo, nombreActividad, nuevoComentario });
     
     try {
       // Para Definitiva Anual(periodo = 0), verificar si existe el registro
@@ -1518,7 +1518,7 @@ const TablaNotas = () => {
         const { data: existe } = await supabase
           .from('Notas')
           .select('id, nota')
-          .eq('codigo_estudiantil', codigoEstudiantil)
+          .eq('id_estudiantil', idEstudiantil)
           .eq('asignatura', asignaturaSeleccionada)
           .eq('grado', gradoSeleccionado)
           .eq('salon', salonSeleccionado)
@@ -1530,13 +1530,13 @@ const TablaNotas = () => {
         
         if (!existe) {
           // Calcular la nota actual y crear el registro
-          const finalDef = calcularFinalDefinitiva(codigoEstudiantil);
+          const finalDef = calcularFinalDefinitiva(idEstudiantil);
           console.log('Creando registro Definitiva Anualcon nota:', finalDef);
           
           const { data, error } = await supabase
             .from('Notas')
             .insert({
-              codigo_estudiantil: codigoEstudiantil,
+              id_estudiantil: idEstudiantil,
               asignatura: asignaturaSeleccionada,
               grado: gradoSeleccionado,
               salon: salonSeleccionado,
@@ -1565,7 +1565,7 @@ const TablaNotas = () => {
           const { data, error } = await supabase
             .from('Notas')
             .update({ comentario: nuevoComentario })
-            .eq('codigo_estudiantil', codigoEstudiantil)
+            .eq('id_estudiantil', idEstudiantil)
             .eq('asignatura', asignaturaSeleccionada)
             .eq('grado', gradoSeleccionado)
             .eq('salon', salonSeleccionado)
@@ -1590,7 +1590,7 @@ const TablaNotas = () => {
         const { error } = await supabase
           .from('Notas')
           .update({ comentario: nuevoComentario })
-          .eq('codigo_estudiantil', codigoEstudiantil)
+          .eq('id_estudiantil', idEstudiantil)
           .eq('asignatura', asignaturaSeleccionada)
           .eq('grado', gradoSeleccionado)
           .eq('salon', salonSeleccionado)
@@ -1611,10 +1611,10 @@ const TablaNotas = () => {
       // Actualizar estado local
       setComentarios(prev => ({
         ...prev,
-        [codigoEstudiantil]: {
-          ...prev[codigoEstudiantil],
+        [idEstudiantil]: {
+          ...prev[idEstudiantil],
           [periodo]: {
-            ...prev[codigoEstudiantil]?.[periodo],
+            ...prev[idEstudiantil]?.[periodo],
             [actividadId]: nuevoComentario,
           },
         },
@@ -1636,7 +1636,7 @@ const TablaNotas = () => {
 
   // Eliminar comentario
   const handleEliminarComentario = async (
-    codigoEstudiantil: string,
+    idEstudiantil: string,
     actividadId: string,
     nombreActividad: string,
     periodo: number
@@ -1645,7 +1645,7 @@ const TablaNotas = () => {
       const { error } = await supabase
         .from('Notas')
         .update({ comentario: null })
-        .eq('codigo_estudiantil', codigoEstudiantil)
+        .eq('id_estudiantil', idEstudiantil)
         .eq('asignatura', asignaturaSeleccionada)
         .eq('grado', gradoSeleccionado)
         .eq('salon', salonSeleccionado)
@@ -1665,8 +1665,8 @@ const TablaNotas = () => {
       // Actualizar estado local
       setComentarios(prev => {
         const nuevosComentarios = { ...prev };
-        if (nuevosComentarios[codigoEstudiantil]?.[periodo]) {
-          delete nuevosComentarios[codigoEstudiantil][periodo][actividadId];
+        if (nuevosComentarios[idEstudiantil]?.[periodo]) {
+          delete nuevosComentarios[idEstudiantil][periodo][actividadId];
         }
         return nuevosComentarios;
       });
@@ -1685,7 +1685,7 @@ const TablaNotas = () => {
   const getProfesorData = () => {
     const session = getSession();
     return {
-      codigo: session.codigo,
+      id: session.id,
       nombres: session.nombres,
       apellidos: session.apellidos,
     };
@@ -1700,14 +1700,14 @@ const TablaNotas = () => {
   ) => {
     const datos = [{
       estudiante: {
-        codigo: estudiante.codigo_estudiantil,
+        id: estudiante.id_estudiantil,
         nombres: estudiante.nombre_estudiante,
         apellidos: estudiante.apellidos_estudiante,
       },
       actividad: actividad.nombre,
       nota,
       porcentaje: actividad.porcentaje,
-      comentario: comentarios[estudiante.codigo_estudiantil]?.[periodo]?.[actividad.id] || null,
+      comentario: comentarios[estudiante.id_estudiantil]?.[periodo]?.[actividad.id] || null,
       notificado: false,
     }];
 
@@ -1733,7 +1733,7 @@ const TablaNotas = () => {
     
     // Verificar si este estudiante tiene todas las notas de actividades con porcentaje
     const estudianteTieneTodasNotas = actividadesConPorcentaje.every(act => 
-      notas[estudiante.codigo_estudiantil]?.[periodo]?.[act.id] !== undefined
+      notas[estudiante.id_estudiantil]?.[periodo]?.[act.id] !== undefined
     );
     
     const nombrePeriodo = periodos.find(p => p.numero === periodo)?.nombre;
@@ -1759,23 +1759,23 @@ const TablaNotas = () => {
     
     // Obtener detalle de actividades si es parcial
     const notasActividades = actividadesDelPeriodo
-      .filter(act => notas[estudiante.codigo_estudiantil]?.[periodo]?.[act.id] !== undefined)
+      .filter(act => notas[estudiante.id_estudiantil]?.[periodo]?.[act.id] !== undefined)
       .map(act => ({
         nombre: act.nombre,
-        nota: notas[estudiante.codigo_estudiantil][periodo][act.id],
+        nota: notas[estudiante.id_estudiantil][periodo][act.id],
         porcentaje: act.porcentaje,
       }));
     
     const datos = [{
       estudiante: {
-        codigo: estudiante.codigo_estudiantil,
+        id: estudiante.id_estudiantil,
         nombres: estudiante.nombre_estudiante,
         apellidos: estudiante.apellidos_estudiante,
       },
       actividad: `Final ${nombrePeriodo}`,
       nota: notaFinal,
       porcentaje: null,
-      comentario: comentarios[estudiante.codigo_estudiantil]?.[periodo]?.[`${periodo}-Definitiva Periodo`] || null,
+      comentario: comentarios[estudiante.id_estudiantil]?.[periodo]?.[`${periodo}-Definitiva Periodo`] || null,
       notificado: false,
       detalleActividades: notasActividades,
       tipo_reporte_estudiante: tipoReporte,
@@ -1806,7 +1806,7 @@ const TablaNotas = () => {
     
     // Verificar si este estudiante tiene notas en todos los períodos
     const estudianteTieneTodasNotas = todosCompletos && periodos.every(p => 
-      calcularFinalPeriodo(estudiante.codigo_estudiantil, p.numero) !== null
+      calcularFinalPeriodo(estudiante.id_estudiantil, p.numero) !== null
     );
     
     const nombreCompleto = `${estudiante.nombre_estudiante} ${estudiante.apellidos_estudiante}`;
@@ -1832,19 +1832,19 @@ const TablaNotas = () => {
     // Obtener detalle de períodos
     const finalesPeriodos = periodos.map(p => ({
       periodo: p.nombre,
-      nota: calcularFinalPeriodo(estudiante.codigo_estudiantil, p.numero),
+      nota: calcularFinalPeriodo(estudiante.id_estudiantil, p.numero),
     }));
     
     const datos = [{
       estudiante: {
-        codigo: estudiante.codigo_estudiantil,
+        id: estudiante.id_estudiantil,
         nombres: estudiante.nombre_estudiante,
         apellidos: estudiante.apellidos_estudiante,
       },
       actividad: "Definitiva Anual",
       nota: notaFinal,
       porcentaje: null,
-      comentario: comentarios[estudiante.codigo_estudiantil]?.[0]?.['0-Definitiva Anual'] || null,
+      comentario: comentarios[estudiante.id_estudiantil]?.[0]?.['0-Definitiva Anual'] || null,
       notificado: false,
       detallePeriodos: finalesPeriodos,
       tipo_reporte_estudiante: tipoReporte,
@@ -1864,20 +1864,20 @@ const TablaNotas = () => {
   const handleNotificarActividad = (actividad: Actividad) => {
     // Contar estudiantes con y sin nota
     const estudiantesConNota = estudiantes.filter(est => 
-      notas[est.codigo_estudiantil]?.[actividad.periodo]?.[actividad.id] !== undefined
+      notas[est.id_estudiantil]?.[actividad.periodo]?.[actividad.id] !== undefined
     );
     const estudiantesSinNota = estudiantes.length - estudiantesConNota.length;
     
     const datos = estudiantesConNota.map(est => ({
       estudiante: {
-        codigo: est.codigo_estudiantil,
+        id: est.id_estudiantil,
         nombres: est.nombre_estudiante,
         apellidos: est.apellidos_estudiante,
       },
       actividad: actividad.nombre,
-      nota: notas[est.codigo_estudiantil][actividad.periodo][actividad.id],
+      nota: notas[est.id_estudiantil][actividad.periodo][actividad.id],
       porcentaje: actividad.porcentaje,
-      comentario: comentarios[est.codigo_estudiantil]?.[actividad.periodo]?.[actividad.id] || null,
+      comentario: comentarios[est.id_estudiantil]?.[actividad.periodo]?.[actividad.id] || null,
       notificado: false,
       tipo_reporte_estudiante: "completo",
       razon_parcial: null,
@@ -1918,7 +1918,7 @@ const TablaNotas = () => {
     // Para Definitiva Periodo, SOLO verificar que tenga Definitiva Periodo calculado
     // NO importa si tiene todas las notas o no (unos tendrán reporte completo, otros parcial)
     const estudiantesElegibles = estudiantes.filter(est => {
-      const finalPeriodo = calcularFinalPeriodo(est.codigo_estudiantil, periodo);
+      const finalPeriodo = calcularFinalPeriodo(est.id_estudiantil, periodo);
       return finalPeriodo !== null;
     });
     
@@ -1928,7 +1928,7 @@ const TablaNotas = () => {
     // Contar estudiantes con TODAS las actividades completadas (para el mensaje)
     const estudiantesCompletos = estudiantesElegibles.filter(est => {
       return actividadesConPorcentaje.every(act => 
-        notas[est.codigo_estudiantil]?.[periodo]?.[act.id] !== undefined
+        notas[est.id_estudiantil]?.[periodo]?.[act.id] !== undefined
       );
     });
     
@@ -1936,27 +1936,27 @@ const TablaNotas = () => {
     
     const datos = estudiantesElegibles.map(est => {
       const notasActividades = actividadesDelPeriodo
-        .filter(act => notas[est.codigo_estudiantil]?.[periodo]?.[act.id] !== undefined)
+        .filter(act => notas[est.id_estudiantil]?.[periodo]?.[act.id] !== undefined)
         .map(act => ({
           nombre: act.nombre,
-          nota: notas[est.codigo_estudiantil][periodo][act.id],
+          nota: notas[est.id_estudiantil][periodo][act.id],
           porcentaje: act.porcentaje,
         }));
       
       const esteEstudianteCompleto = actividadesConPorcentaje.every(act => 
-        notas[est.codigo_estudiantil]?.[periodo]?.[act.id] !== undefined
+        notas[est.id_estudiantil]?.[periodo]?.[act.id] !== undefined
       );
 
       return {
         estudiante: {
-          codigo: est.codigo_estudiantil,
+          id: est.id_estudiantil,
           nombres: est.nombre_estudiante,
           apellidos: est.apellidos_estudiante,
         },
         actividad: `Final ${periodos.find(p => p.numero === periodo)?.nombre}`,
-        nota: calcularFinalPeriodo(est.codigo_estudiantil, periodo),
+        nota: calcularFinalPeriodo(est.id_estudiantil, periodo),
         porcentaje: null,
-        comentario: comentarios[est.codigo_estudiantil]?.[periodo]?.[`${periodo}-Definitiva Periodo`] || null,
+        comentario: comentarios[est.id_estudiantil]?.[periodo]?.[`${periodo}-Definitiva Periodo`] || null,
         notificado: false,
         detalleActividades: notasActividades,
         tipo_reporte_estudiante: (esCompleto && esteEstudianteCompleto) ? "completo" : "parcial",
@@ -2031,11 +2031,11 @@ const TablaNotas = () => {
     // 1. Tienen Definitiva Anualcalculada
     // 2. Tienen al menos un período completo (100%) con TODAS las notas
     const estudiantesElegibles = estudiantes.filter(est => {
-      const finalDef = calcularFinalDefinitiva(est.codigo_estudiantil);
+      const finalDef = calcularFinalDefinitiva(est.id_estudiantil);
       if (finalDef === null) return false;
       
       // Verificar que tenga al menos un período completo con todas las notas
-      return tieneAlMenosUnPeriodoCompletoConTodasNotas(est.codigo_estudiantil);
+      return tieneAlMenosUnPeriodoCompletoConTodasNotas(est.id_estudiantil);
     });
     
     if (estudiantesElegibles.length === 0) {
@@ -2057,13 +2057,13 @@ const TablaNotas = () => {
         const porcentaje = getPorcentajeUsado(p);
         if (porcentaje !== 100) return false;
         
-        const finalPeriodo = calcularFinalPeriodo(est.codigo_estudiantil, p);
+        const finalPeriodo = calcularFinalPeriodo(est.id_estudiantil, p);
         if (finalPeriodo === null) return false;
         
         const actividadesDelPeriodo = getActividadesPorPeriodo(p);
         const actividadesConPorcentaje = actividadesDelPeriodo.filter(a => a.porcentaje !== null && a.porcentaje > 0);
         const todasCalificadas = actividadesConPorcentaje.every(act => 
-          notas[est.codigo_estudiantil]?.[p]?.[act.id] !== undefined
+          notas[est.id_estudiantil]?.[p]?.[act.id] !== undefined
         );
         
         if (!todasCalificadas) return false;
@@ -2076,7 +2076,7 @@ const TablaNotas = () => {
     const datos = estudiantesElegibles.map(est => {
       const finalesPeriodos = periodos.map(p => ({
         periodo: p.nombre,
-        nota: calcularFinalPeriodo(est.codigo_estudiantil, p.numero),
+        nota: calcularFinalPeriodo(est.id_estudiantil, p.numero),
       }));
       
       // Verificar si este estudiante tiene todos los períodos completos con notas
@@ -2085,13 +2085,13 @@ const TablaNotas = () => {
           const porcentaje = getPorcentajeUsado(p);
           if (porcentaje !== 100) return false;
           
-          const finalPeriodo = calcularFinalPeriodo(est.codigo_estudiantil, p);
+          const finalPeriodo = calcularFinalPeriodo(est.id_estudiantil, p);
           if (finalPeriodo === null) return false;
           
           const actividadesDelPeriodo = getActividadesPorPeriodo(p);
           const actividadesConPorcentaje = actividadesDelPeriodo.filter(a => a.porcentaje !== null && a.porcentaje > 0);
           const todasCalificadas = actividadesConPorcentaje.every(act => 
-            notas[est.codigo_estudiantil]?.[p]?.[act.id] !== undefined
+            notas[est.id_estudiantil]?.[p]?.[act.id] !== undefined
           );
           
           if (!todasCalificadas) return false;
@@ -2101,14 +2101,14 @@ const TablaNotas = () => {
 
       return {
         estudiante: {
-          codigo: est.codigo_estudiantil,
+          id: est.id_estudiantil,
           nombres: est.nombre_estudiante,
           apellidos: est.apellidos_estudiante,
         },
         actividad: "Definitiva Anual",
-        nota: calcularFinalDefinitiva(est.codigo_estudiantil),
+        nota: calcularFinalDefinitiva(est.id_estudiantil),
         porcentaje: null,
-        comentario: comentarios[est.codigo_estudiantil]?.[0]?.['0-Definitiva Anual'] || null,
+        comentario: comentarios[est.id_estudiantil]?.[0]?.['0-Definitiva Anual'] || null,
         notificado: false,
         detallePeriodos: finalesPeriodos,
         tipo_reporte_estudiante: esteEstudianteCompleto ? "completo" : "parcial",
@@ -2195,7 +2195,7 @@ const TablaNotas = () => {
     if (!notificacionPendiente) return;
 
     const session = getSession();
-    if (!session.codigo) {
+    if (!session.id) {
       toast({
         title: "Error",
         description: "Código del profesor no encontrado",
@@ -2238,7 +2238,7 @@ const TablaNotas = () => {
     const payload = {
       tipo_boton: tipoBoton,
       profesor: {
-        codigo: session.codigo,
+        id: session.id,
         nombres: session.nombres,
         apellidos: session.apellidos,
       },
@@ -2249,7 +2249,7 @@ const TablaNotas = () => {
         periodo: periodoReal
       },
       actividad: esActividadFinal ? null : nombreActividad,
-      estudiantes_codigos: notificacionPendiente.datos.map((d: any) => d.estudiante.codigo)
+      estudiantes_ids: notificacionPendiente.datos.map((d: any) => d.estudiante.id)
     };
 
     // Cerrar modal
@@ -2257,7 +2257,7 @@ const TablaNotas = () => {
 
     // Mostrar loading
     const toastId = sonnerToast.loading(
-      `Enviando notificaciones a padres de ${payload.estudiantes_codigos.length} estudiante(s)...`
+      `Enviando notificaciones a padres de ${payload.estudiantes_ids.length} estudiante(s)...`
     );
 
     // Enviar a n8n
@@ -2269,7 +2269,7 @@ const TablaNotas = () => {
     // Mostrar resultado
     if (resultado.success) {
       sonnerToast.success(
-        `✅ Notificaciones enviadas a padres de ${payload.estudiantes_codigos.length} estudiante(s)`,
+        `✅ Notificaciones enviadas a padres de ${payload.estudiantes_ids.length} estudiante(s)`,
         { duration: 5000 }
       );
       
@@ -2291,7 +2291,7 @@ const TablaNotas = () => {
           await supabase
             .from('Notas')
             .update({ notificado: true })
-            .eq('codigo_estudiantil', dato.estudiante.codigo)
+            .eq('id_estudiantil', dato.estudiante.id)
             .eq('asignatura', asignaturaSeleccionada)
             .eq('grado', gradoSeleccionado)
             .eq('salon', salonSeleccionado)
@@ -2315,19 +2315,19 @@ const TablaNotas = () => {
   // Verificar si una actividad tiene al menos una nota
   const actividadTieneNotas = (actividad: Actividad): boolean => {
     return estudiantes.some(est => 
-      notas[est.codigo_estudiantil]?.[actividad.periodo]?.[actividad.id] !== undefined
+      notas[est.id_estudiantil]?.[actividad.periodo]?.[actividad.id] !== undefined
     );
   };
 
   // Verificar si un período tiene al menos un Final calculado
   const periodoTieneFinal = (periodo: number): boolean => {
-    return estudiantes.some(est => calcularFinalPeriodo(est.codigo_estudiantil, periodo) !== null);
+    return estudiantes.some(est => calcularFinalPeriodo(est.id_estudiantil, periodo) !== null);
   };
 
   // Verificar si hay al menos un estudiante que pueda recibir notificación de Definitiva Anual
   // (debe tener al menos un período completo al 100%)
   const hayFinalDefinitiva = (): boolean => {
-    return estudiantes.some(est => tieneAlMenosUnPeriodoCompletoConTodasNotas(est.codigo_estudiantil));
+    return estudiantes.some(est => tieneAlMenosUnPeriodoCompletoConTodasNotas(est.id_estudiantil));
   };
 
   // ========== FIN FUNCIONES DE NOTIFICACIÓN ==========
@@ -2340,18 +2340,18 @@ const TablaNotas = () => {
     if (nextStudentIndex >= estudiantes.length) return;
     
     const nextStudent = estudiantes[nextStudentIndex];
-    const nota = notas[nextStudent.codigo_estudiantil]?.[periodo]?.[actividadId];
+    const nota = notas[nextStudent.id_estudiantil]?.[periodo]?.[actividadId];
     
     // Activar edición en la siguiente celda
-    const celda = { codigoEstudiantil: nextStudent.codigo_estudiantil, actividadId, periodo };
+    const celda = { idEstudiantil: nextStudent.id_estudiantil, actividadId, periodo };
     setCeldaEditando(celda);
     celdaEditandoRef.current = celda;
     setValorEditando(nota !== undefined ? nota.toString() : "");
   }, [estudiantes, notas]);
 
   // Handlers para edición de notas
-  const handleClickCelda = (codigoEstudiantil: string, actividadId: string, periodo: number, notaActual: number | undefined) => {
-    const celda = { codigoEstudiantil, actividadId, periodo };
+  const handleClickCelda = (idEstudiantil: string, actividadId: string, periodo: number, notaActual: number | undefined) => {
+    const celda = { idEstudiantil, actividadId, periodo };
     setCeldaEditando(celda);
     celdaEditandoRef.current = celda;
     setValorEditando(notaActual !== undefined ? notaActual.toString() : "");
@@ -2370,7 +2370,7 @@ const TablaNotas = () => {
   const handleGuardarNota = async () => {
     if (!celdaEditando) return;
 
-    const { codigoEstudiantil, actividadId, periodo } = celdaEditando;
+    const { idEstudiantil, actividadId, periodo } = celdaEditando;
     
     // Encontrar la actividad para obtener nombre y porcentaje
     const actividad = actividades.find(a => a.id === actividadId);
@@ -2389,7 +2389,7 @@ const TablaNotas = () => {
         const { error } = await supabase
           .from('Notas')
           .delete()
-          .eq('codigo_estudiantil', codigoEstudiantil)
+          .eq('id_estudiantil', idEstudiantil)
           .eq('asignatura', asignaturaSeleccionada)
           .eq('grado', gradoSeleccionado)
           .eq('salon', salonSeleccionado)
@@ -2406,16 +2406,16 @@ const TablaNotas = () => {
         } else {
           // Actualizar estado local de notas
           let nuevasNotas = { ...notas };
-          if (nuevasNotas[codigoEstudiantil]?.[periodo]?.[actividadId] !== undefined) {
-            delete nuevasNotas[codigoEstudiantil][periodo][actividadId];
+          if (nuevasNotas[idEstudiantil]?.[periodo]?.[actividadId] !== undefined) {
+            delete nuevasNotas[idEstudiantil][periodo][actividadId];
           }
           setNotas(nuevasNotas);
           
           // IMPORTANTE: Eliminar comentario del estado local para quitar indicador naranja
           setComentarios(prev => {
             const nuevosComentarios = { ...prev };
-            if (nuevosComentarios[codigoEstudiantil]?.[periodo]?.[actividadId] !== undefined) {
-              delete nuevosComentarios[codigoEstudiantil][periodo][actividadId];
+            if (nuevosComentarios[idEstudiantil]?.[periodo]?.[actividadId] !== undefined) {
+              delete nuevosComentarios[idEstudiantil][periodo][actividadId];
             }
             return nuevosComentarios;
           });
@@ -2424,16 +2424,16 @@ const TablaNotas = () => {
           
           // Recalcular y guardar Definitiva Periodo y Definitiva Anual
           setTimeout(async () => {
-            const notaFinal = calcularFinalPeriodoConNotas(nuevasNotas, codigoEstudiantil, periodo);
-            await guardarFinalPeriodo(codigoEstudiantil, periodo, notaFinal);
+            const notaFinal = calcularFinalPeriodoConNotas(nuevasNotas, idEstudiantil, periodo);
+            await guardarFinalPeriodo(idEstudiantil, periodo, notaFinal);
             
             // Si ya no hay nota final, eliminar el comentario del Definitiva Periodo del estado local
             if (notaFinal === null) {
               setComentarios(prev => {
                 const nuevosComentarios = { ...prev };
                 const finalPeriodoId = `${periodo}-Definitiva Periodo`;
-                if (nuevosComentarios[codigoEstudiantil]?.[periodo]?.[finalPeriodoId] !== undefined) {
-                  delete nuevosComentarios[codigoEstudiantil][periodo][finalPeriodoId];
+                if (nuevosComentarios[idEstudiantil]?.[periodo]?.[finalPeriodoId] !== undefined) {
+                  delete nuevosComentarios[idEstudiantil][periodo][finalPeriodoId];
                 }
                 return nuevosComentarios;
               });
@@ -2443,7 +2443,7 @@ const TablaNotas = () => {
             let suma = 0;
             let tieneAlgunaNota = false;
             for (let p = 1; p <= 4; p++) {
-              const fp = calcularFinalPeriodoConNotas(nuevasNotas, codigoEstudiantil, p);
+              const fp = calcularFinalPeriodoConNotas(nuevasNotas, idEstudiantil, p);
               if (fp !== null) {
                 suma += fp;
                 tieneAlgunaNota = true;
@@ -2451,15 +2451,15 @@ const TablaNotas = () => {
             }
             if (tieneAlgunaNota) {
               const finalDef = Math.round((suma / 4) * 10) / 10;
-              await guardarFinalDefinitiva(codigoEstudiantil, finalDef);
+              await guardarFinalDefinitiva(idEstudiantil, finalDef);
             } else {
-              await guardarFinalDefinitiva(codigoEstudiantil, null);
+              await guardarFinalDefinitiva(idEstudiantil, null);
               // Eliminar comentario del Definitiva Anualdel estado local
               setComentarios(prev => {
                 const nuevosComentarios = { ...prev };
                 const finalDefId = '0-Definitiva Anual';
-                if (nuevosComentarios[codigoEstudiantil]?.[0]?.[finalDefId] !== undefined) {
-                  delete nuevosComentarios[codigoEstudiantil][0][finalDefId];
+                if (nuevosComentarios[idEstudiantil]?.[0]?.[finalDefId] !== undefined) {
+                  delete nuevosComentarios[idEstudiantil][0][finalDefId];
                 }
                 return nuevosComentarios;
               });
@@ -2496,7 +2496,7 @@ const TablaNotas = () => {
       try {
         console.log("=== GUARDANDO NOTA ===");
         console.log("Datos:", {
-          codigo_estudiantil: codigoEstudiantil,
+          id_estudiantil: idEstudiantil,
           asignatura: asignaturaSeleccionada,
           grado: gradoSeleccionado,
           salon: salonSeleccionado,
@@ -2509,7 +2509,7 @@ const TablaNotas = () => {
         const { error } = await supabase
           .from('Notas')
           .upsert({
-            codigo_estudiantil: codigoEstudiantil,
+            id_estudiantil: idEstudiantil,
             asignatura: asignaturaSeleccionada,
             grado: gradoSeleccionado,
             salon: salonSeleccionado,
@@ -2517,10 +2517,10 @@ const TablaNotas = () => {
             nombre_actividad: actividad.nombre,
             porcentaje: actividad.porcentaje,
             nota: notaRedondeada,
-            comentario: comentarios[codigoEstudiantil]?.[periodo]?.[actividadId] || null,
+            comentario: comentarios[idEstudiantil]?.[periodo]?.[actividadId] || null,
             notificado: false,
           }, {
-            onConflict: 'codigo_estudiantil,asignatura,grado,salon,periodo,nombre_actividad'
+            onConflict: 'id_estudiantil,asignatura,grado,salon,periodo,nombre_actividad'
           });
 
         if (error) {
@@ -2534,10 +2534,10 @@ const TablaNotas = () => {
           // Actualizar estado local
           const nuevasNotas = {
             ...notas,
-            [codigoEstudiantil]: {
-              ...notas[codigoEstudiantil],
+            [idEstudiantil]: {
+              ...notas[idEstudiantil],
               [periodo]: {
-                ...notas[codigoEstudiantil]?.[periodo],
+                ...notas[idEstudiantil]?.[periodo],
                 [actividadId]: notaRedondeada,
               },
             },
@@ -2547,14 +2547,14 @@ const TablaNotas = () => {
           
           // Calcular y guardar Definitiva Periodo y Definitiva Anualdespués de actualizar el estado
           setTimeout(async () => {
-            const notaFinal = calcularFinalPeriodoConNotas(nuevasNotas, codigoEstudiantil, periodo);
-            await guardarFinalPeriodo(codigoEstudiantil, periodo, notaFinal);
+            const notaFinal = calcularFinalPeriodoConNotas(nuevasNotas, idEstudiantil, periodo);
+            await guardarFinalPeriodo(idEstudiantil, periodo, notaFinal);
             
             // Recalcular y guardar Definitiva Anual(siempre divide entre 4)
             let suma = 0;
             let tieneAlgunaNota = false;
             for (let p = 1; p <= 4; p++) {
-              const fp = calcularFinalPeriodoConNotas(nuevasNotas, codigoEstudiantil, p);
+              const fp = calcularFinalPeriodoConNotas(nuevasNotas, idEstudiantil, p);
               if (fp !== null) {
                 suma += fp;
                 tieneAlgunaNota = true;
@@ -2563,9 +2563,9 @@ const TablaNotas = () => {
             }
             if (tieneAlgunaNota) {
               const finalDef = Math.round((suma / 4) * 10) / 10;
-              await guardarFinalDefinitiva(codigoEstudiantil, finalDef);
+              await guardarFinalDefinitiva(idEstudiantil, finalDef);
             } else {
-              await guardarFinalDefinitiva(codigoEstudiantil, null);
+              await guardarFinalDefinitiva(idEstudiantil, null);
             }
           }, 0);
         }
@@ -2581,7 +2581,7 @@ const TablaNotas = () => {
 
     // Solo limpiar si no se seleccionó otra celda durante el guardado async
     const current = celdaEditandoRef.current;
-    if (!current || (current.codigoEstudiantil === codigoEstudiantil && current.actividadId === actividadId)) {
+    if (!current || (current.idEstudiantil === idEstudiantil && current.actividadId === actividadId)) {
       setCeldaEditando(null);
       celdaEditandoRef.current = null;
       setValorEditando("");
@@ -2612,7 +2612,7 @@ const TablaNotas = () => {
   // Efecto para enfocar el input cuando cambia la celda editando
   useEffect(() => {
     if (celdaEditando) {
-      const key = `${celdaEditando.codigoEstudiantil}-${celdaEditando.actividadId}`;
+      const key = `${celdaEditando.idEstudiantil}-${celdaEditando.actividadId}`;
       // Pequeño delay para asegurar que el input se ha renderizado
       setTimeout(() => {
         const input = inputRefs.current[key];
@@ -2879,12 +2879,12 @@ const TablaNotas = () => {
                     
                     return (
                       <tr 
-                        key={estudiante.codigo_estudiantil}
+                        key={estudiante.id_estudiantil}
                         className={rowBg}
                       >
                         {/* Fixed columns on desktop, normal on mobile - with solid background */}
                         <td className={`md:sticky md:left-0 z-10 border-r border-b border-border p-2 md:p-3 text-xs md:text-sm ${studentIndex % 2 === 0 ? 'bg-background' : 'bg-muted'}`}>
-                          {estudiante.codigo_estudiantil}
+                          {estudiante.id_estudiantil}
                         </td>
                         <td className={`md:sticky md:left-[100px] z-10 border-r border-b border-border p-2 md:p-3 text-xs md:text-sm font-medium ${studentIndex % 2 === 0 ? 'bg-background' : 'bg-muted'}`}>
                           {estudiante.apellidos_estudiante}
@@ -2897,9 +2897,9 @@ const TablaNotas = () => {
                         {esFinalDefinitiva ? (
                           <>
                             {periodos.map((periodo) => {
-                              const finalPeriodo = calcularFinalPeriodo(estudiante.codigo_estudiantil, periodo.numero);
-                              const comentario = comentarios[estudiante.codigo_estudiantil]?.[periodo.numero]?.[`${periodo.numero}-Definitiva Periodo`] || null;
-                              const tieneNotas = tieneAlgunaNotaEnPeriodo(estudiante.codigo_estudiantil, periodo.numero);
+                              const finalPeriodo = calcularFinalPeriodo(estudiante.id_estudiantil, periodo.numero);
+                              const comentario = comentarios[estudiante.id_estudiantil]?.[periodo.numero]?.[`${periodo.numero}-Definitiva Periodo`] || null;
+                              const tieneNotas = tieneAlgunaNotaEnPeriodo(estudiante.id_estudiantil, periodo.numero);
                               return (
                                 <FinalPeriodoCelda
                                   key={periodo.numero}
@@ -2907,14 +2907,14 @@ const TablaNotas = () => {
                                   comentario={comentario}
                                   tieneAlgunaNota={tieneNotas}
                                   onAbrirComentario={() => handleAbrirComentario(
-                                    estudiante.codigo_estudiantil,
+                                    estudiante.id_estudiantil,
                                     `${estudiante.nombre_estudiante} ${estudiante.apellidos_estudiante}`,
                                     `${periodo.numero}-Definitiva Periodo`,
                                     `Final ${periodo.nombre}`,
                                     periodo.numero
                                   )}
                                   onEliminarComentario={() => handleEliminarComentario(
-                                    estudiante.codigo_estudiantil,
+                                    estudiante.id_estudiantil,
                                     `${periodo.numero}-Definitiva Periodo`,
                                     'Definitiva Periodo',
                                     periodo.numero
@@ -2925,9 +2925,9 @@ const TablaNotas = () => {
                             })}
                             {/* Celda Definitiva Anual*/}
                             {(() => {
-                              const finalDef = calcularFinalDefinitiva(estudiante.codigo_estudiantil);
-                              const comentario = comentarios[estudiante.codigo_estudiantil]?.[0]?.['0-Definitiva Anual'] || null;
-                              const tieneNotas = tieneAlgunaNotaEnAnio(estudiante.codigo_estudiantil);
+                              const finalDef = calcularFinalDefinitiva(estudiante.id_estudiantil);
+                              const comentario = comentarios[estudiante.id_estudiantil]?.[0]?.['0-Definitiva Anual'] || null;
+                              const tieneNotas = tieneAlgunaNotaEnAnio(estudiante.id_estudiantil);
                               return (
                                 <td className="border-r border-b border-border p-1 text-center text-sm min-w-[130px] bg-primary/20 font-bold relative group">
                                   <div className="relative flex items-center justify-center h-8">
@@ -2948,7 +2948,7 @@ const TablaNotas = () => {
                                           </DropdownMenuTrigger>
                                           <DropdownMenuContent align="end" className="bg-background z-50">
                                             <DropdownMenuItem onClick={() => handleAbrirComentario(
-                                              estudiante.codigo_estudiantil,
+                                              estudiante.id_estudiantil,
                                               `${estudiante.nombre_estudiante} ${estudiante.apellidos_estudiante}`,
                                               '0-Definitiva Anual',
                                               'Definitiva Anual',
@@ -2959,7 +2959,7 @@ const TablaNotas = () => {
                                             {comentario && (
                                               <DropdownMenuItem 
                                                 onClick={() => handleEliminarComentario(
-                                                  estudiante.codigo_estudiantil,
+                                                  estudiante.id_estudiantil,
                                                   '0-Definitiva Anual',
                                                   'Definitiva Anual',
                                                   0
@@ -2969,7 +2969,7 @@ const TablaNotas = () => {
                                                 Eliminar comentario
                                               </DropdownMenuItem>
                                             )}
-                                            {tieneAlMenosUnPeriodoCompletoConTodasNotas(estudiante.codigo_estudiantil) && (
+                                            {tieneAlMenosUnPeriodoCompletoConTodasNotas(estudiante.id_estudiantil) && (
                                               <DropdownMenuItem onClick={() => handleNotificarFinalDefinitivaIndividual(estudiante, finalDef)}>
                                                 <Send className="w-4 h-4 mr-2" />
                                                 Notificar a padre(s)
@@ -2988,16 +2988,16 @@ const TablaNotas = () => {
                           <>
                             {/* Celdas de actividades del período activo */}
                             {getActividadesPorPeriodo(periodoActivo).map((actividad) => {
-                              const nota = notas[estudiante.codigo_estudiantil]?.[periodoActivo]?.[actividad.id];
-                              const estaEditando = celdaEditando?.codigoEstudiantil === estudiante.codigo_estudiantil 
+                              const nota = notas[estudiante.id_estudiantil]?.[periodoActivo]?.[actividad.id];
+                              const estaEditando = celdaEditando?.idEstudiantil === estudiante.id_estudiantil 
                                 && celdaEditando?.actividadId === actividad.id;
-                              const inputKey = `${estudiante.codigo_estudiantil}-${actividad.id}`;
+                              const inputKey = `${estudiante.id_estudiantil}-${actividad.id}`;
                               
                               return (
                                 <NotaCelda
                                   key={inputKey}
                                   nota={nota}
-                                  comentario={comentarios[estudiante.codigo_estudiantil]?.[periodoActivo]?.[actividad.id] || null}
+                                  comentario={comentarios[estudiante.id_estudiantil]?.[periodoActivo]?.[actividad.id] || null}
                                   estaEditando={estaEditando}
                                   valorEditando={valorEditando}
                                   inputRef={(el) => { inputRefs.current[inputKey] = el; }}
@@ -3008,16 +3008,16 @@ const TablaNotas = () => {
                                     }
                                   }}
                                   onKeyDown={(e) => handleKeyDownNota(e, studentIndex, actividad.id, periodoActivo)}
-                                  onClick={() => handleClickCelda(estudiante.codigo_estudiantil, actividad.id, periodoActivo, nota)}
+                                  onClick={() => handleClickCelda(estudiante.id_estudiantil, actividad.id, periodoActivo, nota)}
                                   onAbrirComentario={() => handleAbrirComentario(
-                                    estudiante.codigo_estudiantil,
+                                    estudiante.id_estudiantil,
                                     `${estudiante.nombre_estudiante} ${estudiante.apellidos_estudiante}`,
                                     actividad.id,
                                     actividad.nombre,
                                     periodoActivo
                                   )}
                                   onEliminarComentario={() => handleEliminarComentario(
-                                    estudiante.codigo_estudiantil,
+                                    estudiante.id_estudiantil,
                                     actividad.id,
                                     actividad.nombre,
                                     periodoActivo
@@ -3032,22 +3032,22 @@ const TablaNotas = () => {
                             </td>
                             {/* Celda Definitiva Periodo */}
                             {(() => {
-                              const notaFinal = calcularFinalPeriodo(estudiante.codigo_estudiantil, periodoActivo);
-                              const tieneNotas = tieneAlgunaNotaEnPeriodo(estudiante.codigo_estudiantil, periodoActivo);
+                              const notaFinal = calcularFinalPeriodo(estudiante.id_estudiantil, periodoActivo);
+                              const tieneNotas = tieneAlgunaNotaEnPeriodo(estudiante.id_estudiantil, periodoActivo);
                               return (
                                 <FinalPeriodoCelda
                                   notaFinal={notaFinal}
-                                  comentario={comentarios[estudiante.codigo_estudiantil]?.[periodoActivo]?.[`${periodoActivo}-Definitiva Periodo`] || null}
+                                  comentario={comentarios[estudiante.id_estudiantil]?.[periodoActivo]?.[`${periodoActivo}-Definitiva Periodo`] || null}
                                   tieneAlgunaNota={tieneNotas}
                                   onAbrirComentario={() => handleAbrirComentario(
-                                    estudiante.codigo_estudiantil,
+                                    estudiante.id_estudiantil,
                                     `${estudiante.nombre_estudiante} ${estudiante.apellidos_estudiante}`,
                                     `${periodoActivo}-Definitiva Periodo`,
                                     'Definitiva Periodo',
                                     periodoActivo
                                   )}
                                   onEliminarComentario={() => handleEliminarComentario(
-                                    estudiante.codigo_estudiantil,
+                                    estudiante.id_estudiantil,
                                     `${periodoActivo}-Definitiva Periodo`,
                                     'Definitiva Periodo',
                                     periodoActivo
@@ -3258,7 +3258,7 @@ const TablaNotas = () => {
         onOpenChange={setComentarioModalOpen}
         nombreEstudiante={comentarioEditando?.nombreEstudiante || ""}
         nombreActividad={comentarioEditando?.nombreActividad || ""}
-        comentarioActual={comentarioEditando ? (comentarios[comentarioEditando.codigoEstudiantil]?.[comentarioEditando.periodo]?.[comentarioEditando.actividadId] || null) : null}
+        comentarioActual={comentarioEditando ? (comentarios[comentarioEditando.idEstudiantil]?.[comentarioEditando.periodo]?.[comentarioEditando.actividadId] || null) : null}
         onGuardar={handleGuardarComentario}
       />
 

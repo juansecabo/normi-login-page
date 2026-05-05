@@ -19,7 +19,7 @@ const getCookieOptions = () => {
 };
 
 export interface HijoData {
-  codigo: string;
+  id: string;
   nombre: string;
   apellidos: string;
   nivel: string;
@@ -28,7 +28,7 @@ export interface HijoData {
 }
 
 export interface SessionData {
-  codigo: string | null;
+  id: string | null;
   nombres: string | null;
   apellidos: string | null;
   cargo: string | null;
@@ -42,7 +42,7 @@ export interface SessionData {
 const SESSION_COOKIE = 'normy_session_active';
 
 export const saveSession = (
-  codigo: string,
+  id: string,
   nombres: string,
   apellidos: string,
   cargo: string = 'Profesor(a)',
@@ -54,7 +54,7 @@ export const saveSession = (
   const cookieOptions = getCookieOptions();
 
   // Guardar datos en localStorage (persiste entre pestañas)
-  localStorage.setItem("codigo", codigo);
+  localStorage.setItem("id", id);
   localStorage.setItem("nombres", nombres);
   localStorage.setItem("apellidos", apellidos);
   localStorage.setItem("cargo", cargo);
@@ -78,7 +78,7 @@ export const saveSession = (
 export const getSession = (): SessionData => {
   // Si la cookie de sesión no existe, el navegador se reinició → limpiar todo
   if (!Cookies.get(SESSION_COOKIE)) {
-    localStorage.removeItem("codigo");
+    localStorage.removeItem("id");
     localStorage.removeItem("nombres");
     localStorage.removeItem("apellidos");
     localStorage.removeItem("cargo");
@@ -86,10 +86,10 @@ export const getSession = (): SessionData => {
     localStorage.removeItem("grado");
     localStorage.removeItem("salon");
     localStorage.removeItem("hijos");
-    return { codigo: null, nombres: null, apellidos: null, cargo: null, nivel: null, grado: null, salon: null, hijos: null };
+    return { id: null, nombres: null, apellidos: null, cargo: null, nivel: null, grado: null, salon: null, hijos: null };
   }
 
-  const codigo = localStorage.getItem("codigo") || null;
+  const id = localStorage.getItem("id") || null;
   const nombres = localStorage.getItem("nombres") || null;
   const apellidos = localStorage.getItem("apellidos") || null;
   const cargo = localStorage.getItem("cargo") || null;
@@ -103,13 +103,13 @@ export const getSession = (): SessionData => {
     try { hijos = JSON.parse(hijosStr); } catch { hijos = null; }
   }
 
-  return { codigo, nombres, apellidos, cargo, nivel, grado, salon, hijos };
+  return { id, nombres, apellidos, cargo, nivel, grado, salon, hijos };
 };
 
 export const clearSession = () => {
   const cookieOptions = getCookieOptions();
 
-  localStorage.removeItem("codigo");
+  localStorage.removeItem("id");
   localStorage.removeItem("nombres");
   localStorage.removeItem("apellidos");
   localStorage.removeItem("cargo");
@@ -128,8 +128,8 @@ export const clearSession = () => {
 };
 
 export const hasValidSession = (): boolean => {
-  const { codigo } = getSession();
-  return !!codigo;
+  const { id } = getSession();
+  return !!id;
 };
 
 export const isAdmin = (): boolean => {

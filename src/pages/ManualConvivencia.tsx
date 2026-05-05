@@ -31,7 +31,7 @@ const ManualConvivencia = () => {
     : "/";
 
   useEffect(() => {
-    if (!session.codigo) {
+    if (!session.id) {
       navigate("/");
       return;
     }
@@ -43,7 +43,7 @@ const ManualConvivencia = () => {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [navigate, session.codigo]);
+  }, [navigate, session.id]);
 
   const resaltarResultados = useCallback(() => {
     const container = contenidoRef.current;

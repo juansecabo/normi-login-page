@@ -35,7 +35,7 @@ const DocumentosRecibidos = () => {
 
   useEffect(() => {
     const session = getSession();
-    if (!session.codigo) {
+    if (!session.id) {
       navigate("/");
       return;
     }
@@ -58,7 +58,7 @@ const DocumentosRecibidos = () => {
         if (!error && data) {
           const filtrados = data.filter((c: Comunicado) => {
             if (c.id_destinatarios && c.id_destinatarios.length > 0) {
-              return c.id_destinatarios.includes(String(session.codigo));
+              return c.id_destinatarios.includes(String(session.id));
             }
             return true;
           });
@@ -72,7 +72,7 @@ const DocumentosRecibidos = () => {
           });
           setDocumentos(dedup);
           const maxId = dedup.length > 0 ? Math.max(...dedup.map((c: Comunicado) => c.id)) : 0;
-          if (maxId > 0) markLastSeen('documentos', session.codigo!, maxId);
+          if (maxId > 0) markLastSeen('documentos', session.id!, maxId);
         }
       } catch (err) {
         console.error('Error:', err);

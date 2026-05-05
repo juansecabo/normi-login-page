@@ -19,7 +19,7 @@ interface Comunicado {
   salon: string | null;
   grados: string[] | null;
   salones: string[] | null;
-  codigo_estudiantil: string | null;
+  id_estudiantil: string | null;
   id_destinatarios: string[] | null;
   grupo_comunicado_id: number | null;
 }
@@ -38,7 +38,7 @@ const DocumentosProfesor = () => {
 
   useEffect(() => {
     const session = getSession();
-    if (!session.codigo || !isProfesor()) {
+    if (!session.id || !isProfesor()) {
       navigate("/");
       return;
     }
@@ -50,7 +50,7 @@ const DocumentosProfesor = () => {
         const { data: asignaciones } = await supabase
           .from('Asignación Profesores')
           .select('"Grado(s)", "Salon(es)"')
-          .eq('codigo', parseInt(session.codigo!));
+          .eq('id', parseInt(session.id!));
 
         const rows = (asignaciones || []).map(row => ({
           grados: ((row["Grado(s)"] as string[] | null) || []),
@@ -67,9 +67,9 @@ const DocumentosProfesor = () => {
         if (!error && data) {
           const filtrados = data.filter((c: Comunicado) => {
             if (c.id_destinatarios && c.id_destinatarios.length > 0) {
-              return c.id_destinatarios.includes(String(session.codigo));
+              return c.id_destinatarios.includes(String(session.id));
             }
-            if (c.codigo_estudiantil && c.codigo_estudiantil !== session.codigo) return false;
+            if (c.id_estudiantil && c.id_estudiantil !== session.id) return false;
             const grados = c.grados ?? (c.grado ? [c.grado] : null);
             const salones = c.salones ?? (c.salon ? [c.salon] : null);
             if (grados || salones || c.nivel) {
@@ -96,7 +96,7 @@ const DocumentosProfesor = () => {
           });
           setDocumentos(dedup);
           const maxId = dedup.length > 0 ? Math.max(...dedup.map((c: Comunicado) => c.id)) : 0;
-          if (maxId > 0) markLastSeen('documentos', session.codigo!, maxId);
+          if (maxId > 0) markLastSeen('documentos', session.id!, maxId);
         }
       } catch (err) {
         console.error('Error:', err);

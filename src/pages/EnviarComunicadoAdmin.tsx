@@ -96,7 +96,7 @@ const EnviarComunicadoAdmin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [codigoRemitente, setCodigoRemitente] = useState("");
+  const [idRemitente, setIdRemitente] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -155,7 +155,7 @@ const EnviarComunicadoAdmin = () => {
 
   useEffect(() => {
     const session = getSession();
-    if (!session.codigo) {
+    if (!session.id) {
       navigate("/");
       return;
     }
@@ -163,7 +163,7 @@ const EnviarComunicadoAdmin = () => {
       navigate("/dashboard");
       return;
     }
-    setCodigoRemitente(session.codigo!);
+    setIdRemitente(session.id!);
   }, [navigate]);
 
   // Cargar estudiantes según grados/salones marcados (solo si Est o Padres está marcado)
@@ -183,7 +183,7 @@ const EnviarComunicadoAdmin = () => {
       setLoadingListaEstudiantes(true);
       let q = supabase
         .from("Estudiantes")
-        .select("codigo_estudiantil, apellidos_estudiante, nombre_estudiante, grado_estudiante, salon_estudiante")
+        .select("id_estudiantil, apellidos_estudiante, nombre_estudiante, grado_estudiante, salon_estudiante")
         .in("grado_estudiante", gradosSel);
       if (salonesSel.length > 0) q = q.in("salon_estudiante", salonesSel);
       const { data } = await q
@@ -193,13 +193,13 @@ const EnviarComunicadoAdmin = () => {
         .order("nombre_estudiante", { ascending: true });
       setListaEstudiantesFiltrada(
         (data || []).map(e => ({
-          id: String(e.codigo_estudiantil),
+          id: String(e.id_estudiantil),
           nombre: `${e.apellidos_estudiante} ${e.nombre_estudiante}`,
           grado: e.grado_estudiante || "",
           salon: e.salon_estudiante || "",
         }))
       );
-      setEstudiantesSeleccionados(prev => prev.filter(id => (data || []).some(e => String(e.codigo_estudiantil) === id)));
+      setEstudiantesSeleccionados(prev => prev.filter(id => (data || []).some(e => String(e.id_estudiantil) === id)));
       setLoadingListaEstudiantes(false);
     };
     fetchLista();
@@ -222,7 +222,7 @@ const EnviarComunicadoAdmin = () => {
       // PostgREST malinterpreta "Grado(s)" (con paréntesis) en .overlaps, filtramos en JS
       const { data } = await supabase
         .from("Asignación Profesores")
-        .select("codigo, nombres, apellidos, \"Grado(s)\", \"Salon(es)\"");
+        .select("id, nombres, apellidos, \"Grado(s)\", \"Salon(es)\"");
       const filtered = (data || []).filter(r => {
         const grados = (r["Grado(s)"] as string[]) || [];
         const salones = (r["Salon(es)"] as string[]) || [];
@@ -232,7 +232,7 @@ const EnviarComunicadoAdmin = () => {
       });
       const byId = new Map<string, { id: string; nombre: string; grados: string[]; salones: string[] }>();
       for (const r of filtered) {
-        const rid = String(r.codigo);
+        const rid = String(r.id);
         if (!byId.has(rid)) {
           byId.set(rid, {
             id: rid,
@@ -265,14 +265,14 @@ const EnviarComunicadoAdmin = () => {
       setLoadingInternos(true);
       const { data } = await supabase
         .from("Internos")
-        .select("codigo, nombres, apellidos, cargo")
+        .select("id, nombres, apellidos, cargo")
         .in("cargo", ["Coordinador(a)", "Administrativo(a)", "Secretaria General"])
         .order("apellidos", { ascending: true })
         .order("nombres", { ascending: true });
       const rows = data || [];
-      setListaCoordinadores(rows.filter(r => r.cargo === "Coordinador(a)").map(r => ({ id: String(r.codigo), nombre: `${r.apellidos} ${r.nombres}` })));
-      setListaAdministrativos(rows.filter(r => r.cargo === "Administrativo(a)").map(r => ({ id: String(r.codigo), nombre: `${r.apellidos} ${r.nombres}` })));
-      setListaSecretarias(rows.filter(r => r.cargo === "Secretaria General").map(r => ({ id: String(r.codigo), nombre: `${r.apellidos} ${r.nombres}` })));
+      setListaCoordinadores(rows.filter(r => r.cargo === "Coordinador(a)").map(r => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}` })));
+      setListaAdministrativos(rows.filter(r => r.cargo === "Administrativo(a)").map(r => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}` })));
+      setListaSecretarias(rows.filter(r => r.cargo === "Secretaria General").map(r => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}` })));
       setLoadingInternos(false);
     };
     fetchInternos();
@@ -506,13 +506,13 @@ const EnviarComunicadoAdmin = () => {
           remitente: "Normy",
           destinatarios: destinatariosTexto,
           mensaje: mensaje.trim(),
-          codigo_remitente: codigoRemitente,
+          id_remitente: idRemitente,
           perfil: perfilArray.length > 0 ? perfilArray : null,
           id_destinatarios: idDestinatariosArray.length > 0 ? idDestinatariosArray : null,
           nivel: null,
           grado: null,
           salon: null,
-          codigo_estudiantil: null,
+          id_estudiantil: null,
           ...(archivoUrl ? { archivo_url: archivoUrl } : {}),
         }),
       });
@@ -581,7 +581,7 @@ const EnviarComunicadoAdmin = () => {
 
       const colCodigo = headersMasivo[0];
       const mensajes = filasParsed.map((fila) => ({
-        codigo: fila[colCodigo],
+        id: fila[colCodigo],
         mensaje: resolverPlantilla(plantillaMasivo, fila),
       }));
 
@@ -591,7 +591,7 @@ const EnviarComunicadoAdmin = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           remitente: "Normy",
-          codigo_remitente: codigoRemitente,
+          id_remitente: idRemitente,
           mensajes,
         }),
       });
@@ -602,7 +602,7 @@ const EnviarComunicadoAdmin = () => {
 
       await supabase.from("Comunicados").insert({
         remitente: "Normy",
-        codigo_remitente: codigoRemitente,
+        id_remitente: idRemitente,
         destinatarios: `Envío masivo personalizado a ${mensajes.length} estudiantes`,
         mensaje: plantillaMasivo.trim(),
       });

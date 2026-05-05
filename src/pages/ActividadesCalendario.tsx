@@ -146,12 +146,12 @@ const ActividadesCalendario = () => {
     const inicializar = async () => {
       const session = getSession();
       
-      if (!session.codigo) {
+      if (!session.id) {
         navigate('/');
         return;
       }
 
-      setProfesorCodigo(session.codigo);
+      setProfesorCodigo(session.id);
       setProfesorNombres(session.nombres);
       setProfesorApellidos(session.apellidos);
 
@@ -159,7 +159,7 @@ const ActividadesCalendario = () => {
       const { data: profesorData, error: profesorError } = await supabase
         .from('Internos')
         .select('numero_de_telefono')
-        .eq('codigo', session.codigo)
+        .eq('id', session.id)
         .single();
 
       if (profesorError || !profesorData) {

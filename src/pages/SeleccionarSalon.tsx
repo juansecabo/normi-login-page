@@ -17,7 +17,7 @@ const SeleccionarSalon = () => {
     const storedAsignatura = localStorage.getItem("asignaturaSeleccionada");
     const storedGrado = localStorage.getItem("gradoSeleccionado");
 
-    if (!session.codigo) {
+    if (!session.id) {
       navigate("/");
       return;
     }
@@ -37,11 +37,11 @@ const SeleccionarSalon = () => {
 
     const fetchSalones = async () => {
       try {
-        // Buscar asignaciones que contengan la asignatura y grado seleccionados directamente por codigo
+        // Buscar asignaciones que contengan la asignatura y grado seleccionados directamente por id
         const { data: asignaciones, error: asignacionError } = await supabase
           .from('Asignación Profesores')
           .select('"Asignatura(s)", "Grado(s)", "Salon(es)"')
-          .eq('codigo', parseInt(session.codigo!));
+          .eq('id', parseInt(session.id!));
 
         if (asignacionError || !asignaciones) {
           setLoadingSalones(false);

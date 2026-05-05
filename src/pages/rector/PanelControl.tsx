@@ -72,7 +72,7 @@ function getNivelFromGrado(grado: string): string | null {
 // ─── Interfaces ──────────────────────────────────────────────────────────────
 
 interface Estudiante {
-  codigo_estudiantil: number;
+  id_estudiantil: number;
   nombre_estudiante: string;
   apellidos_estudiante: string;
   nivel_estudiante: string;
@@ -81,7 +81,7 @@ interface Estudiante {
 }
 
 interface Interno {
-  codigo: number;
+  id: number;
   nombres: string;
   apellidos: string;
   cargo: string;
@@ -94,7 +94,7 @@ interface Asignacion {
   nombres: string;
   apellidos: string;
   numero_de_telefono: string;
-  codigo: number | null;
+  id: number | null;
   "Asignatura(s)": string[];
   "Grado(s)": string[];
   "Salon(es)": string[];
@@ -103,28 +103,28 @@ interface Asignacion {
 interface Perfil {
   numero_de_telefono: string;
   perfil: string;
-  estudiante_codigo: number | null;
+  estudiante_id: number | null;
   estudiante_nombre: string | null;
   estudiante_apellidos: string | null;
   estudiante_nivel: string | null;
   estudiante_grado: string | null;
   estudiante_salon: string | null;
   padre_nombre: string | null;
-  padre_codigo: string | null;
+  padre_id: string | null;
   padre_numero_de_estudiantes: string | null;
-  padre_estudiante1_codigo: number | null;
+  padre_estudiante1_id: number | null;
   padre_estudiante1_nombre: string | null;
   padre_estudiante1_apellidos: string | null;
   padre_estudiante1_nivel: string | null;
   padre_estudiante1_grado: string | null;
   padre_estudiante1_salon: string | null;
-  padre_estudiante2_codigo: number | null;
+  padre_estudiante2_id: number | null;
   padre_estudiante2_nombre: string | null;
   padre_estudiante2_apellidos: string | null;
   padre_estudiante2_nivel: string | null;
   padre_estudiante2_grado: string | null;
   padre_estudiante2_salon: string | null;
-  padre_estudiante3_codigo: number | null;
+  padre_estudiante3_id: number | null;
   padre_estudiante3_nombre: string | null;
   padre_estudiante3_apellidos: string | null;
   padre_estudiante3_nivel: string | null;
@@ -178,7 +178,7 @@ const PanelControl = () => {
   // Auth
   useEffect(() => {
     const session = getSession();
-    if (!session.codigo) { navigate("/"); return; }
+    if (!session.id) { navigate("/"); return; }
     if (!puedeAccederDashboard()) { navigate("/dashboard"); return; }
   }, [navigate]);
 
@@ -194,7 +194,7 @@ const PanelControl = () => {
   const [editingEst, setEditingEst] = useState<Estudiante | null>(null);
   const [showDeleteEst, setShowDeleteEst] = useState<Estudiante | null>(null);
   const [savingEst, setSavingEst] = useState(false);
-  const [estCodigo, setEstCodigo] = useState("");
+  const [estId, setEstId] = useState("");
   const [estNombre, setEstNombre] = useState("");
   const [estApellidos, setEstApellidos] = useState("");
   const [estGrado, setEstGrado] = useState("");
@@ -208,7 +208,7 @@ const PanelControl = () => {
   const [editingInt, setEditingInt] = useState<Interno | null>(null);
   const [showDeleteInt, setShowDeleteInt] = useState<Interno | null>(null);
   const [savingInt, setSavingInt] = useState(false);
-  const [intCodigo, setIntCodigo] = useState("");
+  const [intId, setIntId] = useState("");
   const [intNombres, setIntNombres] = useState("");
   const [intApellidos, setIntApellidos] = useState("");
   const [intCargo, setIntCargo] = useState("");
@@ -222,7 +222,7 @@ const PanelControl = () => {
   const [editingAsig, setEditingAsig] = useState<Asignacion | null>(null);
   const [showDeleteAsig, setShowDeleteAsig] = useState<Asignacion | null>(null);
   const [savingAsig, setSavingAsig] = useState(false);
-  const [asigProfesorCodigo, setAsigProfesorCodigo] = useState("");
+  const [asigProfesorId, setAsigProfesorId] = useState("");
   const [asigNombres, setAsigNombres] = useState("");
   const [asigApellidos, setAsigApellidos] = useState("");
   const [asigId, setAsigId] = useState("");
@@ -240,25 +240,25 @@ const PanelControl = () => {
   const [savingPerf, setSavingPerf] = useState(false);
   // Perfil form state
   const [perfTipo, setPerfTipo] = useState<string>("Estudiante");
-  const [perfEstCodigo, setPerfEstCodigo] = useState("");
+  const [perfEstId, setPerfEstId] = useState("");
   const [perfEstNombre, setPerfEstNombre] = useState("");
   const [perfEstApellidos, setPerfEstApellidos] = useState("");
   const [perfEstGrado, setPerfEstGrado] = useState("");
   const [perfEstSalon, setPerfEstSalon] = useState("");
   const [perfPadreNombre, setPerfPadreNombre] = useState("");
-  const [perfPadreCodigo, setPerfPadreCodigo] = useState("");
+  const [perfPadreId, setPerfPadreId] = useState("");
   const [perfNumEst, setPerfNumEst] = useState("1 (uno)");
-  const [perfHijo1Codigo, setPerfHijo1Codigo] = useState("");
+  const [perfHijo1Id, setPerfHijo1Id] = useState("");
   const [perfHijo1Nombre, setPerfHijo1Nombre] = useState("");
   const [perfHijo1Apellidos, setPerfHijo1Apellidos] = useState("");
   const [perfHijo1Grado, setPerfHijo1Grado] = useState("");
   const [perfHijo1Salon, setPerfHijo1Salon] = useState("");
-  const [perfHijo2Codigo, setPerfHijo2Codigo] = useState("");
+  const [perfHijo2Id, setPerfHijo2Id] = useState("");
   const [perfHijo2Nombre, setPerfHijo2Nombre] = useState("");
   const [perfHijo2Apellidos, setPerfHijo2Apellidos] = useState("");
   const [perfHijo2Grado, setPerfHijo2Grado] = useState("");
   const [perfHijo2Salon, setPerfHijo2Salon] = useState("");
-  const [perfHijo3Codigo, setPerfHijo3Codigo] = useState("");
+  const [perfHijo3Id, setPerfHijo3Id] = useState("");
   const [perfHijo3Nombre, setPerfHijo3Nombre] = useState("");
   const [perfHijo3Apellidos, setPerfHijo3Apellidos] = useState("");
   const [perfHijo3Grado, setPerfHijo3Grado] = useState("");
@@ -274,7 +274,7 @@ const PanelControl = () => {
     const data = await fetchAllPages((from, to) =>
       supabase
         .from("Estudiantes")
-        .select("codigo_estudiantil, nombre_estudiante, apellidos_estudiante, nivel_estudiante, grado_estudiante, salon_estudiante")
+        .select("id_estudiantil, nombre_estudiante, apellidos_estudiante, nivel_estudiante, grado_estudiante, salon_estudiante")
         .order("apellidos_estudiante")
         .order("nombre_estudiante")
         .range(from, to)
@@ -286,7 +286,7 @@ const PanelControl = () => {
   const fetchInternos = async () => {
     setLoadingInt(true);
     const data = await fetchAllPages((from, to) =>
-      supabase.from("Internos").select("codigo, nombres, apellidos, cargo, contrasena, numero_de_telefono").range(from, to)
+      supabase.from("Internos").select("id, nombres, apellidos, cargo, contrasena, numero_de_telefono").range(from, to)
     );
     setInternos(data.sort((a, b) => (a.apellidos || "").localeCompare(b.apellidos || "", "es")));
     setLoadingInt(false);
@@ -295,7 +295,7 @@ const PanelControl = () => {
   const fetchAsignaciones = async () => {
     setLoadingAsig(true);
     const data = await fetchAllPages<Asignacion>((from, to) =>
-      supabase.from("Asignación Profesores").select('row_id, nombres, apellidos, numero_de_telefono, codigo, "Asignatura(s)", "Grado(s)", "Salon(es)"').range(from, to)
+      supabase.from("Asignación Profesores").select('row_id, nombres, apellidos, numero_de_telefono, id, "Asignatura(s)", "Grado(s)", "Salon(es)"').range(from, to)
     );
     setAsignaciones(data.sort((a, b) => (a.apellidos || "").localeCompare(b.apellidos || "", "es")));
     setLoadingAsig(false);
@@ -324,14 +324,14 @@ const PanelControl = () => {
   const openEstDialog = (est?: Estudiante) => {
     if (est) {
       setEditingEst(est);
-      setEstCodigo(String(est.codigo_estudiantil));
+      setEstId(String(est.id_estudiantil));
       setEstNombre(est.nombre_estudiante || "");
       setEstApellidos(est.apellidos_estudiante || "");
       setEstGrado(est.grado_estudiante || "");
       setEstSalon(est.salon_estudiante || "");
     } else {
       setEditingEst(null);
-      setEstCodigo("");
+      setEstId("");
       setEstNombre("");
       setEstApellidos("");
       setEstGrado("");
@@ -341,7 +341,7 @@ const PanelControl = () => {
   };
 
   const saveEstudiante = async () => {
-    if (!estCodigo || !estNombre || !estApellidos || !estGrado || !estSalon) {
+    if (!estId || !estNombre || !estApellidos || !estGrado || !estSalon) {
       toast({ title: "Campos requeridos", description: "Completa todos los campos", variant: "destructive" });
       return;
     }
@@ -352,7 +352,7 @@ const PanelControl = () => {
     }
     setSavingEst(true);
     const payload = {
-      codigo_estudiantil: Number(estCodigo),
+      id_estudiantil: Number(estId),
       nombre_estudiante: estNombre.trim(),
       apellidos_estudiante: estApellidos.trim(),
       nivel_estudiante: nivel,
@@ -365,7 +365,7 @@ const PanelControl = () => {
       ({ error } = await supabase
         .from("Estudiantes")
         .update(payload)
-        .eq("codigo_estudiantil", editingEst.codigo_estudiantil));
+        .eq("id_estudiantil", editingEst.id_estudiantil));
     } else {
       ({ error } = await supabase.from("Estudiantes").insert(payload));
     }
@@ -373,7 +373,7 @@ const PanelControl = () => {
     setSavingEst(false);
     if (error) {
       if (error.code === "23505") {
-        toast({ title: "Error", description: `Ya existe un estudiante con el código ${estCodigo}`, variant: "destructive" });
+        toast({ title: "Error", description: `Ya existe un estudiante con el código ${estId}`, variant: "destructive" });
       } else {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       }
@@ -390,7 +390,7 @@ const PanelControl = () => {
     const { error } = await supabase
       .from("Estudiantes")
       .delete()
-      .eq("codigo_estudiantil", showDeleteEst.codigo_estudiantil);
+      .eq("id_estudiantil", showDeleteEst.id_estudiantil);
     setSavingEst(false);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -408,14 +408,14 @@ const PanelControl = () => {
   const openIntDialog = (int?: Interno) => {
     if (int) {
       setEditingInt(int);
-      setIntCodigo(String(int.codigo));
+      setIntId(String(int.id));
       setIntNombres(int.nombres || "");
       setIntApellidos(int.apellidos || "");
       setIntCargo(int.cargo || "");
       setIntContrasena(int.contrasena || "");
     } else {
       setEditingInt(null);
-      setIntCodigo("");
+      setIntId("");
       setIntNombres("");
       setIntApellidos("");
       setIntCargo("");
@@ -425,7 +425,7 @@ const PanelControl = () => {
   };
 
   const saveInterno = async () => {
-    if (!intCodigo || !intNombres || !intApellidos || !intCargo) {
+    if (!intId || !intNombres || !intApellidos || !intCargo) {
       toast({ title: "Campos requeridos", description: "Completa código, nombres, apellidos y cargo", variant: "destructive" });
       return;
     }
@@ -436,7 +436,7 @@ const PanelControl = () => {
 
     setSavingInt(true);
     const payload: Record<string, unknown> = {
-      codigo: Number(intCodigo),
+      id: Number(intId),
       nombres: intNombres.trim(),
       apellidos: intApellidos.trim(),
       cargo: intCargo,
@@ -448,7 +448,7 @@ const PanelControl = () => {
       ({ error } = await supabase
         .from("Internos")
         .update(payload)
-        .eq("codigo", editingInt.codigo));
+        .eq("id", editingInt.id));
     } else {
       ({ error } = await supabase.from("Internos").insert(payload));
     }
@@ -456,7 +456,7 @@ const PanelControl = () => {
     setSavingInt(false);
     if (error) {
       if (error.code === "23505") {
-        toast({ title: "Error", description: `Ya existe un funcionario con el código ${intCodigo}`, variant: "destructive" });
+        toast({ title: "Error", description: `Ya existe un funcionario con el código ${intId}`, variant: "destructive" });
       } else {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       }
@@ -473,7 +473,7 @@ const PanelControl = () => {
     const { error } = await supabase
       .from("Internos")
       .delete()
-      .eq("codigo", showDeleteInt.codigo);
+      .eq("id", showDeleteInt.id);
     setSavingInt(false);
     if (error) {
       if (error.code === "23503") {
@@ -499,7 +499,7 @@ const PanelControl = () => {
   const openAsigDialog = (asig?: Asignacion) => {
     if (asig) {
       setEditingAsig(asig);
-      setAsigProfesorCodigo(asig.codigo != null ? String(asig.codigo) : "");
+      setAsigProfesorId(asig.id != null ? String(asig.id) : "");
       setAsigNombres(asig.nombres || "");
       setAsigApellidos(asig.apellidos || "");
       setAsigId(asig.numero_de_telefono || "");
@@ -508,7 +508,7 @@ const PanelControl = () => {
       setAsigSalones(asig["Salon(es)"] || []);
     } else {
       setEditingAsig(null);
-      setAsigProfesorCodigo("");
+      setAsigProfesorId("");
       setAsigNombres("");
       setAsigApellidos("");
       setAsigId("");
@@ -519,9 +519,9 @@ const PanelControl = () => {
     setShowAsigDialog(true);
   };
 
-  const handleSelectProfesor = (codigoStr: string) => {
-    setAsigProfesorCodigo(codigoStr);
-    const prof = internos.find((i) => String(i.codigo) === codigoStr);
+  const handleSelectProfesor = (idStr: string) => {
+    setAsigProfesorId(idStr);
+    const prof = internos.find((i) => String(i.id) === idStr);
     if (prof) {
       setAsigNombres(prof.nombres || "");
       setAsigApellidos(prof.apellidos || "");
@@ -549,7 +549,7 @@ const PanelControl = () => {
       nombres: asigNombres.trim(),
       apellidos: asigApellidos.trim(),
       numero_de_telefono: asigId || null,
-      codigo: asigProfesorCodigo ? Number(asigProfesorCodigo) : null,
+      id: asigProfesorId ? Number(asigProfesorId) : null,
       "Asignatura(s)": asigAsignaturas,
       "Grado(s)": asigGrados,
       "Salon(es)": asigSalones,
@@ -600,25 +600,25 @@ const PanelControl = () => {
     if (p) {
       setEditingPerf(p);
       setPerfTipo(p.perfil || "Estudiante");
-      setPerfEstCodigo(p.estudiante_codigo != null ? String(p.estudiante_codigo) : "");
+      setPerfEstId(p.estudiante_id != null ? String(p.estudiante_id) : "");
       setPerfEstNombre(p.estudiante_nombre || "");
       setPerfEstApellidos(p.estudiante_apellidos || "");
       setPerfEstGrado(p.estudiante_grado || "");
       setPerfEstSalon(p.estudiante_salon || "");
       setPerfPadreNombre(p.padre_nombre || "");
-      setPerfPadreCodigo(p.padre_codigo || "");
+      setPerfPadreId(p.padre_id || "");
       setPerfNumEst(p.padre_numero_de_estudiantes || "1 (uno)");
-      setPerfHijo1Codigo(p.padre_estudiante1_codigo != null ? String(p.padre_estudiante1_codigo) : "");
+      setPerfHijo1Id(p.padre_estudiante1_id != null ? String(p.padre_estudiante1_id) : "");
       setPerfHijo1Nombre(p.padre_estudiante1_nombre || "");
       setPerfHijo1Apellidos(p.padre_estudiante1_apellidos || "");
       setPerfHijo1Grado(p.padre_estudiante1_grado || "");
       setPerfHijo1Salon(p.padre_estudiante1_salon || "");
-      setPerfHijo2Codigo(p.padre_estudiante2_codigo != null ? String(p.padre_estudiante2_codigo) : "");
+      setPerfHijo2Id(p.padre_estudiante2_id != null ? String(p.padre_estudiante2_id) : "");
       setPerfHijo2Nombre(p.padre_estudiante2_nombre || "");
       setPerfHijo2Apellidos(p.padre_estudiante2_apellidos || "");
       setPerfHijo2Grado(p.padre_estudiante2_grado || "");
       setPerfHijo2Salon(p.padre_estudiante2_salon || "");
-      setPerfHijo3Codigo(p.padre_estudiante3_codigo != null ? String(p.padre_estudiante3_codigo) : "");
+      setPerfHijo3Id(p.padre_estudiante3_id != null ? String(p.padre_estudiante3_id) : "");
       setPerfHijo3Nombre(p.padre_estudiante3_nombre || "");
       setPerfHijo3Apellidos(p.padre_estudiante3_apellidos || "");
       setPerfHijo3Grado(p.padre_estudiante3_grado || "");
@@ -627,14 +627,14 @@ const PanelControl = () => {
     } else {
       setEditingPerf(null);
       setPerfTipo("Estudiante");
-      setPerfEstCodigo(""); setPerfEstNombre(""); setPerfEstApellidos("");
+      setPerfEstId(""); setPerfEstNombre(""); setPerfEstApellidos("");
       setPerfEstGrado(""); setPerfEstSalon("");
-      setPerfPadreNombre(""); setPerfPadreCodigo(""); setPerfNumEst("1 (uno)");
-      setPerfHijo1Codigo(""); setPerfHijo1Nombre(""); setPerfHijo1Apellidos("");
+      setPerfPadreNombre(""); setPerfPadreId(""); setPerfNumEst("1 (uno)");
+      setPerfHijo1Id(""); setPerfHijo1Nombre(""); setPerfHijo1Apellidos("");
       setPerfHijo1Grado(""); setPerfHijo1Salon("");
-      setPerfHijo2Codigo(""); setPerfHijo2Nombre(""); setPerfHijo2Apellidos("");
+      setPerfHijo2Id(""); setPerfHijo2Nombre(""); setPerfHijo2Apellidos("");
       setPerfHijo2Grado(""); setPerfHijo2Salon("");
-      setPerfHijo3Codigo(""); setPerfHijo3Nombre(""); setPerfHijo3Apellidos("");
+      setPerfHijo3Id(""); setPerfHijo3Nombre(""); setPerfHijo3Apellidos("");
       setPerfHijo3Grado(""); setPerfHijo3Salon("");
       setPerfContrasena("");
     }
@@ -649,13 +649,13 @@ const PanelControl = () => {
     };
 
     if (perfTipo === "Estudiante") {
-      if (!perfEstCodigo || !perfEstNombre || !perfEstApellidos) {
+      if (!perfEstId || !perfEstNombre || !perfEstApellidos) {
         toast({ title: "Campos requeridos", description: "Completa código, nombres y apellidos del estudiante", variant: "destructive" });
         setSavingPerf(false);
         return;
       }
       const nivel = perfEstGrado ? getNivelFromGrado(perfEstGrado) : null;
-      payload.estudiante_codigo = Number(perfEstCodigo);
+      payload.estudiante_id = Number(perfEstId);
       payload.estudiante_nombre = perfEstNombre.trim();
       payload.estudiante_apellidos = perfEstApellidos.trim();
       payload.estudiante_nivel = nivel;
@@ -663,21 +663,21 @@ const PanelControl = () => {
       payload.estudiante_salon = perfEstSalon || null;
       // Clear padre fields
       payload.padre_nombre = null;
-      payload.padre_codigo = null;
+      payload.padre_id = null;
       payload.padre_numero_de_estudiantes = null;
-      payload.padre_estudiante1_codigo = null;
+      payload.padre_estudiante1_id = null;
       payload.padre_estudiante1_nombre = null;
       payload.padre_estudiante1_apellidos = null;
       payload.padre_estudiante1_nivel = null;
       payload.padre_estudiante1_grado = null;
       payload.padre_estudiante1_salon = null;
-      payload.padre_estudiante2_codigo = null;
+      payload.padre_estudiante2_id = null;
       payload.padre_estudiante2_nombre = null;
       payload.padre_estudiante2_apellidos = null;
       payload.padre_estudiante2_nivel = null;
       payload.padre_estudiante2_grado = null;
       payload.padre_estudiante2_salon = null;
-      payload.padre_estudiante3_codigo = null;
+      payload.padre_estudiante3_id = null;
       payload.padre_estudiante3_nombre = null;
       payload.padre_estudiante3_apellidos = null;
       payload.padre_estudiante3_nivel = null;
@@ -690,18 +690,18 @@ const PanelControl = () => {
         return;
       }
       // Clear estudiante fields
-      payload.estudiante_codigo = null;
+      payload.estudiante_id = null;
       payload.estudiante_nombre = null;
       payload.estudiante_apellidos = null;
       payload.estudiante_nivel = null;
       payload.estudiante_grado = null;
       payload.estudiante_salon = null;
       payload.padre_nombre = perfPadreNombre.trim();
-      payload.padre_codigo = perfPadreCodigo || null;
+      payload.padre_id = perfPadreId || null;
       payload.padre_numero_de_estudiantes = perfNumEst;
       // Hijo 1
       const n1 = getNivelFromGrado(perfHijo1Grado);
-      payload.padre_estudiante1_codigo = perfHijo1Codigo ? Number(perfHijo1Codigo) : null;
+      payload.padre_estudiante1_id = perfHijo1Id ? Number(perfHijo1Id) : null;
       payload.padre_estudiante1_nombre = perfHijo1Nombre || null;
       payload.padre_estudiante1_apellidos = perfHijo1Apellidos || null;
       payload.padre_estudiante1_nivel = n1;
@@ -711,14 +711,14 @@ const PanelControl = () => {
       const numEst = parseInt(perfNumEst);
       if (numEst >= 2) {
         const n2 = getNivelFromGrado(perfHijo2Grado);
-        payload.padre_estudiante2_codigo = perfHijo2Codigo ? Number(perfHijo2Codigo) : null;
+        payload.padre_estudiante2_id = perfHijo2Id ? Number(perfHijo2Id) : null;
         payload.padre_estudiante2_nombre = perfHijo2Nombre || null;
         payload.padre_estudiante2_apellidos = perfHijo2Apellidos || null;
         payload.padre_estudiante2_nivel = n2;
         payload.padre_estudiante2_grado = perfHijo2Grado || null;
         payload.padre_estudiante2_salon = perfHijo2Salon || null;
       } else {
-        payload.padre_estudiante2_codigo = null;
+        payload.padre_estudiante2_id = null;
         payload.padre_estudiante2_nombre = null;
         payload.padre_estudiante2_apellidos = null;
         payload.padre_estudiante2_nivel = null;
@@ -728,14 +728,14 @@ const PanelControl = () => {
       // Hijo 3
       if (numEst >= 3) {
         const n3 = getNivelFromGrado(perfHijo3Grado);
-        payload.padre_estudiante3_codigo = perfHijo3Codigo ? Number(perfHijo3Codigo) : null;
+        payload.padre_estudiante3_id = perfHijo3Id ? Number(perfHijo3Id) : null;
         payload.padre_estudiante3_nombre = perfHijo3Nombre || null;
         payload.padre_estudiante3_apellidos = perfHijo3Apellidos || null;
         payload.padre_estudiante3_nivel = n3;
         payload.padre_estudiante3_grado = perfHijo3Grado || null;
         payload.padre_estudiante3_salon = perfHijo3Salon || null;
       } else {
-        payload.padre_estudiante3_codigo = null;
+        payload.padre_estudiante3_id = null;
         payload.padre_estudiante3_nombre = null;
         payload.padre_estudiante3_apellidos = null;
         payload.padre_estudiante3_nivel = null;
@@ -790,8 +790,8 @@ const PanelControl = () => {
   };
 
   const getPerfilDisplayCode = (p: Perfil) => {
-    if (p.perfil === "Estudiante") return p.estudiante_codigo != null ? String(p.estudiante_codigo) : "—";
-    return p.padre_codigo || "—";
+    if (p.perfil === "Estudiante") return p.estudiante_id != null ? String(p.estudiante_id) : "—";
+    return p.padre_id || "—";
   };
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -800,13 +800,13 @@ const PanelControl = () => {
 
   const filteredEst = estudiantes.filter((e) =>
     matchesSearch(
-      `${e.apellidos_estudiante} ${e.nombre_estudiante} ${e.codigo_estudiantil} ${e.grado_estudiante} ${e.salon_estudiante}`,
+      `${e.apellidos_estudiante} ${e.nombre_estudiante} ${e.id_estudiantil} ${e.grado_estudiante} ${e.salon_estudiante}`,
       searchEst
     )
   );
 
   const filteredInt = internos.filter((i) =>
-    matchesSearch(`${i.apellidos} ${i.nombres} ${i.codigo} ${i.cargo}`, searchInt)
+    matchesSearch(`${i.apellidos} ${i.nombres} ${i.id} ${i.cargo}`, searchInt)
   );
 
   const filteredAsig = asignaciones.filter((a) =>
@@ -826,7 +826,7 @@ const PanelControl = () => {
   // Helper: render hijo fields for Asignacion dialog
   const renderHijoFields = (
     num: number,
-    codigo: string, setCodigo: (v: string) => void,
+    id: string, setId: (v: string) => void,
     nombre: string, setNombre: (v: string) => void,
     apellidos: string, setApellidos: (v: string) => void,
     grado: string, setGrado: (v: string) => void,
@@ -837,7 +837,7 @@ const PanelControl = () => {
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label className="text-xs">Código</Label>
-          <Input type="number" value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="Código" />
+          <Input type="number" value={id} onChange={(e) => setId(e.target.value)} placeholder="Código" />
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Nombre</Label>
@@ -955,8 +955,8 @@ const PanelControl = () => {
                         </TableRow>
                       ) : (
                         filteredEst.map((e) => (
-                          <TableRow key={e.codigo_estudiantil}>
-                            <TableCell className="font-mono">{e.codigo_estudiantil}</TableCell>
+                          <TableRow key={e.id_estudiantil}>
+                            <TableCell className="font-mono">{e.id_estudiantil}</TableCell>
                             <TableCell>{e.apellidos_estudiante}</TableCell>
                             <TableCell>{e.nombre_estudiante}</TableCell>
                             <TableCell>{e.grado_estudiante}</TableCell>
@@ -1031,8 +1031,8 @@ const PanelControl = () => {
                         </TableRow>
                       ) : (
                         filteredInt.map((i) => (
-                          <TableRow key={i.codigo}>
-                            <TableCell className="font-mono">{i.codigo}</TableCell>
+                          <TableRow key={i.id}>
+                            <TableCell className="font-mono">{i.id}</TableCell>
                             <TableCell>{i.apellidos}</TableCell>
                             <TableCell>{i.nombres}</TableCell>
                             <TableCell>{i.cargo}</TableCell>
@@ -1250,8 +1250,8 @@ const PanelControl = () => {
               <Label>Código estudiantil</Label>
               <Input
                 type="number"
-                value={estCodigo}
-                onChange={(e) => setEstCodigo(e.target.value)}
+                value={estId}
+                onChange={(e) => setEstId(e.target.value)}
                 placeholder="Ej: 12345"
                 readOnly={!!editingEst}
                 className={editingEst ? "bg-muted" : ""}
@@ -1325,7 +1325,7 @@ const PanelControl = () => {
             <strong>
               {showDeleteEst?.apellidos_estudiante} {showDeleteEst?.nombre_estudiante}
             </strong>{" "}
-            (código {showDeleteEst?.codigo_estudiantil})?
+            (código {showDeleteEst?.id_estudiantil})?
           </p>
           <p className="text-sm text-destructive font-medium">
             Se eliminarán TODAS las notas de este estudiante.
@@ -1355,8 +1355,8 @@ const PanelControl = () => {
               <Label>Código</Label>
               <Input
                 type="number"
-                value={intCodigo}
-                onChange={(e) => setIntCodigo(e.target.value)}
+                value={intId}
+                onChange={(e) => setIntId(e.target.value)}
                 placeholder="Ej: 12345"
                 readOnly={!!editingInt}
                 className={editingInt ? "bg-muted" : ""}
@@ -1423,7 +1423,7 @@ const PanelControl = () => {
             <strong>
               {showDeleteInt?.apellidos} {showDeleteInt?.nombres}
             </strong>{" "}
-            (código {showDeleteInt?.codigo})?
+            (código {showDeleteInt?.id})?
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeleteInt(null)}>
@@ -1449,13 +1449,13 @@ const PanelControl = () => {
             {/* Seleccionar Profesor */}
             <div className="space-y-2">
               <Label>Profesor</Label>
-              <Select value={asigProfesorCodigo} onValueChange={handleSelectProfesor}>
+              <Select value={asigProfesorId} onValueChange={handleSelectProfesor}>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar profesor" />
                 </SelectTrigger>
                 <SelectContent>
                   {internos.map((i) => (
-                    <SelectItem key={i.codigo} value={String(i.codigo)}>
+                    <SelectItem key={i.id} value={String(i.id)}>
                       {i.apellidos} {i.nombres}
                     </SelectItem>
                   ))}
@@ -1463,7 +1463,7 @@ const PanelControl = () => {
               </Select>
               {asigNombres && (
                 <p className="text-xs text-muted-foreground">
-                  {asigApellidos} {asigNombres} — Código: {asigProfesorCodigo || "sin código"}
+                  {asigApellidos} {asigNombres} — Código: {asigProfesorId || "sin código"}
                 </p>
               )}
             </div>
@@ -1602,8 +1602,8 @@ const PanelControl = () => {
                   <Label>Código estudiantil</Label>
                   <Input
                     type="number"
-                    value={perfEstCodigo}
-                    onChange={(e) => setPerfEstCodigo(e.target.value)}
+                    value={perfEstId}
+                    onChange={(e) => setPerfEstId(e.target.value)}
                     placeholder="Código del estudiante"
                   />
                 </div>
@@ -1647,7 +1647,7 @@ const PanelControl = () => {
                   </div>
                   <div className="space-y-2">
                     <Label>Código padre</Label>
-                    <Input value={perfPadreCodigo} onChange={(e) => setPerfPadreCodigo(e.target.value)} placeholder="Código (opcional)" />
+                    <Input value={perfPadreId} onChange={(e) => setPerfPadreId(e.target.value)} placeholder="Código (opcional)" />
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -1660,21 +1660,21 @@ const PanelControl = () => {
                   </Select>
                 </div>
                 {renderHijoFields(1,
-                  perfHijo1Codigo, setPerfHijo1Codigo,
+                  perfHijo1Id, setPerfHijo1Id,
                   perfHijo1Nombre, setPerfHijo1Nombre,
                   perfHijo1Apellidos, setPerfHijo1Apellidos,
                   perfHijo1Grado, setPerfHijo1Grado,
                   perfHijo1Salon, setPerfHijo1Salon,
                 )}
                 {parseInt(perfNumEst) >= 2 && renderHijoFields(2,
-                  perfHijo2Codigo, setPerfHijo2Codigo,
+                  perfHijo2Id, setPerfHijo2Id,
                   perfHijo2Nombre, setPerfHijo2Nombre,
                   perfHijo2Apellidos, setPerfHijo2Apellidos,
                   perfHijo2Grado, setPerfHijo2Grado,
                   perfHijo2Salon, setPerfHijo2Salon,
                 )}
                 {parseInt(perfNumEst) >= 3 && renderHijoFields(3,
-                  perfHijo3Codigo, setPerfHijo3Codigo,
+                  perfHijo3Id, setPerfHijo3Id,
                   perfHijo3Nombre, setPerfHijo3Nombre,
                   perfHijo3Apellidos, setPerfHijo3Apellidos,
                   perfHijo3Grado, setPerfHijo3Grado,

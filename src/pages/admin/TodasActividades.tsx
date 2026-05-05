@@ -108,7 +108,7 @@ const TodasActividades = () => {
 
   useEffect(() => {
     const session = getSession();
-    if (!session.codigo || !isAdmin()) {
+    if (!session.id || !isAdmin()) {
       navigate("/");
       return;
     }

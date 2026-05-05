@@ -6,30 +6,30 @@ import { ListaComparativa } from "./ListaComparativa";
 import BotonDescarga from "./BotonDescarga";
 import { User, TrendingUp, Award, AlertTriangle, Medal, Star, ShieldAlert, ShieldCheck, Loader2 } from "lucide-react";
 
-interface AnalisisEstudianteProps { codigoEstudiante: string; periodo: number | "anual"; titulo?: string; }
+interface AnalisisEstudianteProps { idEstudiante: string; periodo: number | "anual"; titulo?: string; }
 
 // Umbral de porcentaje mínimo para evaluar riesgo (debe coincidir con useEstadisticas)
 const UMBRAL_PORCENTAJE_MINIMO = 40;
 const UMBRAL_PORCENTAJE_ANUAL = 160;
 
-export const AnalisisEstudiante = ({ codigoEstudiante, periodo, titulo }: AnalisisEstudianteProps) => {
+export const AnalisisEstudiante = ({ idEstudiante, periodo, titulo }: AnalisisEstudianteProps) => {
   const contenidoRef = useRef<HTMLDivElement>(null);
   const { loading, getPromediosEstudiantes, getPromediosAsignaturas, getPromedioInstitucional, getEvolucionPeriodos } = useEstadisticas();
 
-  if (!codigoEstudiante) return <div className="bg-card rounded-lg shadow-soft p-8 text-center text-muted-foreground">Selecciona un estudiante para ver su análisis</div>;
+  if (!idEstudiante) return <div className="bg-card rounded-lg shadow-soft p-8 text-center text-muted-foreground">Selecciona un estudiante para ver su análisis</div>;
 
   if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /><span className="ml-2 text-muted-foreground">Espere, por favor...</span></div>;
 
   const todosEstudiantes = getPromediosEstudiantes(periodo);
-  const estudiante = todosEstudiantes.find(e => e.codigo_estudiantil === codigoEstudiante);
+  const estudiante = todosEstudiantes.find(e => e.id_estudiantil === idEstudiante);
   if (!estudiante) return <div className="bg-card rounded-lg shadow-soft p-8 text-center text-muted-foreground">Este estudiante no tiene notas registradas</div>;
 
   const estudiantesSalon = getPromediosEstudiantes(periodo, estudiante.grado, estudiante.salon).sort((a, b) => b.promedio - a.promedio);
   const estudiantesGrado = getPromediosEstudiantes(periodo, estudiante.grado).sort((a, b) => b.promedio - a.promedio);
   const estudiantesInst = todosEstudiantes.sort((a, b) => b.promedio - a.promedio);
-  const posicionSalon = estudiantesSalon.findIndex(e => e.codigo_estudiantil === codigoEstudiante) + 1;
-  const posicionGrado = estudiantesGrado.findIndex(e => e.codigo_estudiantil === codigoEstudiante) + 1;
-  const posicionInst = estudiantesInst.findIndex(e => e.codigo_estudiantil === codigoEstudiante) + 1;
+  const posicionSalon = estudiantesSalon.findIndex(e => e.id_estudiantil === idEstudiante) + 1;
+  const posicionGrado = estudiantesGrado.findIndex(e => e.id_estudiantil === idEstudiante) + 1;
+  const posicionInst = estudiantesInst.findIndex(e => e.id_estudiantil === idEstudiante) + 1;
   const promedioInstitucional = getPromedioInstitucional(periodo);
   const promedioSalon = estudiantesSalon.length > 0 ? Math.round((estudiantesSalon.reduce((a, e) => a + e.promedio, 0) / estudiantesSalon.length) * 100) / 100 : 0;
   const promedioGrado = estudiantesGrado.length > 0 ? Math.round((estudiantesGrado.reduce((a, e) => a + e.promedio, 0) / estudiantesGrado.length) * 100) / 100 : 0;

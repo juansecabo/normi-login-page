@@ -6,7 +6,7 @@ import { getPeriodoActual } from "@/utils/periodoActual";
 import HeaderNormy from "@/components/HeaderNormy";
 
 interface Estudiante {
-  codigo_estudiantil: string;
+  id_estudiantil: string;
   apellidos_estudiante: string;
   nombre_estudiante: string;
 }
@@ -58,7 +58,7 @@ const EstudianteConsolidado = () => {
     const inicializar = async () => {
       const session = getSession();
 
-      if (!session.codigo) {
+      if (!session.id) {
         navigate('/');
         return;
       }
@@ -157,7 +157,7 @@ const EstudianteConsolidado = () => {
         const { data: notasData, error: notasError } = await supabase
           .from('Notas')
           .select('*')
-          .eq('codigo_estudiantil', estudianteData.codigo_estudiantil)
+          .eq('id_estudiantil', estudianteData.id_estudiantil)
           .eq('grado', storedGrado)
           .eq('salon', storedSalon)
           .in('asignatura', asignaturasDelGrado);
@@ -316,7 +316,7 @@ const EstudianteConsolidado = () => {
               {estudiante?.apellidos_estudiante} {estudiante?.nombre_estudiante}
             </h2>
             <p className="text-muted-foreground">
-              Código: {estudiante?.codigo_estudiantil} | {gradoSeleccionado} - {salonSeleccionado}
+              Código: {estudiante?.id_estudiantil} | {gradoSeleccionado} - {salonSeleccionado}
             </p>
           </div>
         </div>

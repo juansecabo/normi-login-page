@@ -1,7 +1,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface EstudianteOption {
-  codigo: string;
+  id: string;
   nombre: string;
 }
 
@@ -172,7 +172,7 @@ export const FiltrosEstadisticas = ({
               </SelectTrigger>
               <SelectContent>
                 {estudiantes.map(est => (
-                  <SelectItem key={est.codigo} value={est.codigo}>{est.nombre}</SelectItem>
+                  <SelectItem key={est.id} value={est.id}>{est.nombre}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

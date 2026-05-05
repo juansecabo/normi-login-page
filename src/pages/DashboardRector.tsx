@@ -44,7 +44,7 @@ const DashboardRector = () => {
   useEffect(() => {
     const session = getSession();
 
-    if (!session.codigo) {
+    if (!session.id) {
       navigate("/");
       return;
     }
@@ -70,7 +70,7 @@ const DashboardRector = () => {
         const perfiles = perfilesDelCargo(session.cargo);
         if (perfiles.length === 0) return;
 
-        const lastSeen = await getAllLastSeen(session.codigo!);
+        const lastSeen = await getAllLastSeen(session.id!);
         // Comunicados: filtro JS por destinatarios pero limito a filas nuevas (.gt id).
         const minComLastSeen = Math.min(lastSeen['comunicados'] ?? 0, lastSeen['documentos'] ?? 0);
         const { data: msgData } = await supabase
@@ -82,7 +82,7 @@ const DashboardRector = () => {
         if (msgData) {
           const filtrados = msgData.filter((c: any) => {
             if (c.id_destinatarios && c.id_destinatarios.length > 0) {
-              return c.id_destinatarios.includes(String(session.codigo));
+              return c.id_destinatarios.includes(String(session.id));
             }
             return true;
           });

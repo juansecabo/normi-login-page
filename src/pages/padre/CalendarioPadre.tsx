@@ -86,7 +86,7 @@ const CalendarioPadre = () => {
 
   useEffect(() => {
     const session = getSession();
-    if (!session.codigo || !isPadreDeFamilia()) {
+    if (!session.id || !isPadreDeFamilia()) {
       navigate("/");
       return;
     }
@@ -115,7 +115,7 @@ const CalendarioPadre = () => {
             });
             const ids = data.map((a: any) => Number(a.auto_id)).filter((id: number) => !isNaN(id) && id > 0);
             const maxId = ids.length > 0 ? Math.max(...ids) : 0;
-            markLastSeen('actividades', hijo.codigo, maxId);
+            markLastSeen('actividades', hijo.id, maxId);
           }
         }
 
@@ -156,7 +156,7 @@ const CalendarioPadre = () => {
   if (actividadesDelDia.length > 0) {
     for (const hijo of hijos) {
       const delHijo = actividadesDelDia
-        .filter(a => a.hijo.codigo === hijo.codigo)
+        .filter(a => a.hijo.id === hijo.id)
         .sort((a, b) => a.Asignatura.localeCompare(b.Asignatura));
       if (delHijo.length > 0) {
         actividadesPorHijo.push({ hijo, actividades: delHijo });
@@ -225,7 +225,7 @@ const CalendarioPadre = () => {
 
                     <div className="space-y-6">
                       {actividadesPorHijo.map(({ hijo, actividades: acts }) => (
-                        <div key={hijo.codigo}>
+                        <div key={hijo.id}>
                           <h4 className="text-lg font-bold text-primary mb-2">
                             Actividades de {hijo.nombre} {hijo.apellidos}
                             <span className="text-muted-foreground font-normal text-sm"> — {hijo.grado} {hijo.salon}</span>

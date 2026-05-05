@@ -175,7 +175,7 @@ const ProgramarActividad = () => {
     const inicializar = async () => {
       const session = getSession();
 
-      if (!session.codigo || !isProfesor()) {
+      if (!session.id || !isProfesor()) {
         navigate("/");
         return;
       }
@@ -189,7 +189,7 @@ const ProgramarActividad = () => {
         const { data: profesor, error: profesorError } = await supabase
           .from('Internos')
           .select('numero_de_telefono')
-          .eq('codigo', parseInt(session.codigo!))
+          .eq('id', parseInt(session.id!))
           .single();
 
         if (profesorError || !profesor) {
@@ -200,11 +200,11 @@ const ProgramarActividad = () => {
 
         setProfesorIdReal(profesor.numero_de_telefono);
 
-        // Get assignments directly by codigo
+        // Get assignments directly by id
         const { data: asignacionesData, error: asignacionError } = await supabase
           .from('Asignación Profesores')
           .select('"Asignatura(s)", "Grado(s)", "Salon(es)"')
-          .eq('codigo', parseInt(session.codigo!));
+          .eq('id', parseInt(session.id!));
 
         if (asignacionError || !asignacionesData) {
           setLoadingAsignaciones(false);

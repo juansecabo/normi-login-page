@@ -15,13 +15,13 @@ const EstadisticasEstudiantePage = () => {
 
   useEffect(() => {
     const session = getSession();
-    if (!session.codigo || !isEstudiante()) {
+    if (!session.id || !isEstudiante()) {
       navigate("/");
     }
   }, [navigate]);
 
   const session = getSession();
-  if (!session.codigo || !isEstudiante()) return null;
+  if (!session.id || !isEstudiante()) return null;
 
   const periodoNumerico = periodoSeleccionado === "anual"
     ? ("anual" as const)
@@ -72,7 +72,7 @@ const EstadisticasEstudiantePage = () => {
             </div>
 
             <AnalisisEstudiante
-              codigoEstudiante={session.codigo}
+              idEstudiante={session.id}
               periodo={periodoNumerico}
               titulo={`${session.nombres} ${session.apellidos} - ${periodoTexto}`}
             />

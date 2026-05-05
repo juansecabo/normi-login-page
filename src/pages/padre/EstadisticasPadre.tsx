@@ -17,7 +17,7 @@ const EstadisticasPadre = () => {
 
   useEffect(() => {
     const session = getSession();
-    if (!session.codigo || !isPadreDeFamilia()) {
+    if (!session.id || !isPadreDeFamilia()) {
       navigate("/");
       return;
     }
@@ -87,7 +87,7 @@ const EstadisticasPadre = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {hijos.map((h) => (
                 <button
-                  key={h.codigo}
+                  key={h.id}
                   onClick={() => seleccionar(h)}
                   className="flex items-center gap-3 p-4 rounded-lg border-2 border-border hover:border-primary/50 hover:bg-muted/50 transition-all duration-200 text-left"
                 >
@@ -132,7 +132,7 @@ const EstadisticasPadre = () => {
                 </div>
 
                 <AnalisisEstudiante
-                  codigoEstudiante={hijo.codigo}
+                  idEstudiante={hijo.id}
                   periodo={periodoNumerico}
                   titulo={`${hijo.nombre} ${hijo.apellidos} - ${periodoTexto}`}
                 />

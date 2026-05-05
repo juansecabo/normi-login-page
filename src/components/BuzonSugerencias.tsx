@@ -40,15 +40,15 @@ const BuzonSugerencias = () => {
         break;
       case "Profesor(a)":
         rol = "Profesor(a)";
-        contacto = session.codigo || "";
+        contacto = session.id || "";
         break;
       default:
         rol = session.cargo || "Desconocido";
-        contacto = session.codigo || "";
+        contacto = session.id || "";
     }
 
     const { error } = await supabase.from("Sugerencias").insert({
-      codigo: session.codigo,
+      id: session.id,
       nombres: session.nombres,
       apellidos: session.apellidos,
       rol,

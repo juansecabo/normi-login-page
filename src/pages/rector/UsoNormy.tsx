@@ -8,7 +8,7 @@ import { Loader2 } from "lucide-react";
 
 interface ProfesorStats {
   numero_de_telefono: string;
-  codigo: string;
+  id: string;
   nombre: string;
   notas: number;
   actividades: number;
@@ -40,7 +40,7 @@ const UsoNormy = () => {
 
   useEffect(() => {
     const session = getSession();
-    if (!session.codigo) { navigate("/"); return; }
+    if (!session.id) { navigate("/"); return; }
     if (!isAdmin() && !puedeAccederDashboard()) { navigate("/dashboard"); return; }
     cargarDatos();
   }, [navigate]);
@@ -50,27 +50,27 @@ const UsoNormy = () => {
       // 1. All professors
       const { data: internos } = await supabase
         .from("Internos")
-        .select("numero_de_telefono, codigo, nombres, apellidos")
+        .select("numero_de_telefono, id, nombres, apellidos")
         .eq("cargo", "Profesor(a)");
 
       if (!internos) { setLoading(false); return; }
 
-      const profCodigos = new Set(internos.map(p => String(p.codigo)));
+      const profCodigos = new Set(internos.map(p => String(p.id)));
 
-      // 2. Notas → count from "Nombre de Actividades" by codigo_profesor
+      // 2. Notas → count from "Nombre de Actividades" by id_profesor
       const { data: notasData } = await supabase
         .from("Nombre de Actividades")
-        .select("codigo_profesor, grado, salon");
+        .select("id_profesor, grado, salon");
 
       // 3. Actividades → persistent counter from Uso_Profesores
       const { data: usoData } = await supabase
         .from("Uso_Profesores")
         .select("profesor_id, actividades_programadas");
 
-      // 4. Comunicados by codigo_remitente
+      // 4. Comunicados by id_remitente
       const { data: comData } = await supabase
         .from("Comunicados")
-        .select("codigo_remitente, grado, salon");
+        .select("id_remitente, grado, salon");
 
       // 5. Current Calendario Actividades for salon breakdown
       const { data: calData } = await supabase
@@ -82,7 +82,7 @@ const UsoNormy = () => {
       const notasBySalon: Record<string, number> = {};
 
       (notasData || []).forEach(r => {
-        const cod = String(r.codigo_profesor);
+        const cod = String(r.id_profesor);
         notasByProf[cod] = (notasByProf[cod] || 0) + 1;
         if (r.grado && r.salon) {
           const key = `${r.grado}|${r.salon}`;
@@ -110,7 +110,7 @@ const UsoNormy = () => {
       const comBySalon: Record<string, number> = {};
 
       (comData || []).forEach(r => {
-        const cod = String(r.codigo_remitente);
+        const cod = String(r.id_remitente);
         if (profCodigos.has(cod)) {
           comByProf[cod] = (comByProf[cod] || 0) + 1;
           if (r.grado && r.salon) {
@@ -122,13 +122,13 @@ const UsoNormy = () => {
 
       // --- Build professor stats ---
       const profStats: ProfesorStats[] = internos.map(p => {
-        const cod = String(p.codigo);
+        const cod = String(p.id);
         const tel = String(p.numero_de_telefono);
         const notas = notasByProf[cod] || 0;
         const actividades = actByProf[tel] || 0;
         const comunicados = comByProf[cod] || 0;
         return {
-          numero_de_telefono: tel, codigo: cod,
+          numero_de_telefono: tel, id: cod,
           nombre: `${p.apellidos} ${p.nombres}`.trim(),
           notas, actividades, comunicados,
           total: notas + actividades + comunicados,

@@ -30,7 +30,7 @@ const SALONES = ["1", "2", "3", "4", "5", "6"];
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Estudiante {
-  codigo_estudiantil: number;
+  id_estudiantil: number;
   nombre_estudiante: string;
   apellidos_estudiante: string;
   grado_estudiante: string;
@@ -39,10 +39,10 @@ interface Estudiante {
 
 interface Perfil {
   perfil: string;
-  estudiante_codigo: number | null;
-  padre_estudiante1_codigo: number | null;
-  padre_estudiante2_codigo: number | null;
-  padre_estudiante3_codigo: number | null;
+  estudiante_id: number | null;
+  padre_estudiante1_id: number | null;
+  padre_estudiante2_id: number | null;
+  padre_estudiante3_id: number | null;
   padre_nombre: string | null;
   numero_de_telefono: string | null;
 }
@@ -82,7 +82,7 @@ const RegistroNormy = () => {
   // Auth
   useEffect(() => {
     const session = getSession();
-    if (!session.codigo) { navigate("/"); return; }
+    if (!session.id) { navigate("/"); return; }
     if (!isProfesor() && !puedeAccederDashboard()) { navigate("/dashboard"); return; }
   }, [navigate]);
 
@@ -106,7 +106,7 @@ const RegistroNormy = () => {
         fetchAllPages<Estudiante>((from, to) =>
           supabase
             .from("Estudiantes")
-            .select("codigo_estudiantil, nombre_estudiante, apellidos_estudiante, grado_estudiante, salon_estudiante")
+            .select("id_estudiantil, nombre_estudiante, apellidos_estudiante, grado_estudiante, salon_estudiante")
             .order("apellidos_estudiante")
             .order("nombre_estudiante")
             .range(from, to)
@@ -114,7 +114,7 @@ const RegistroNormy = () => {
         fetchAllPages<Perfil>((from, to) =>
           supabase
             .from("Perfiles_Generales")
-            .select("perfil, estudiante_codigo, padre_estudiante1_codigo, padre_estudiante2_codigo, padre_estudiante3_codigo, padre_nombre, numero_de_telefono")
+            .select("perfil, estudiante_id, padre_estudiante1_id, padre_estudiante2_id, padre_estudiante3_id, padre_nombre, numero_de_telefono")
             .range(from, to)
         ),
       ]);
@@ -126,17 +126,17 @@ const RegistroNormy = () => {
   }, []);
 
   // Build lookup sets
-  const estudianteCodigosRegistrados = useMemo(() => {
+  const estudianteIdsRegistrados = useMemo(() => {
     const set = new Set<number>();
     for (const p of perfiles) {
-      if (p.perfil === "Estudiante" && p.estudiante_codigo) {
-        set.add(p.estudiante_codigo);
+      if (p.perfil === "Estudiante" && p.estudiante_id) {
+        set.add(p.estudiante_id);
       }
     }
     return set;
   }, [perfiles]);
 
-  const padreInfoPorCodigo = useMemo(() => {
+  const padreInfoPorId = useMemo(() => {
     const map = new Map<number, ParentInfo[]>();
     for (const p of perfiles) {
       if (p.perfil === "Padre de familia") {
@@ -144,7 +144,7 @@ const RegistroNormy = () => {
           padre_nombre: p.padre_nombre || "Sin nombre",
           telefono: p.numero_de_telefono || "Sin teléfono",
         };
-        for (const cod of [p.padre_estudiante1_codigo, p.padre_estudiante2_codigo, p.padre_estudiante3_codigo]) {
+        for (const cod of [p.padre_estudiante1_id, p.padre_estudiante2_id, p.padre_estudiante3_id]) {
           if (cod) {
             const arr = map.get(cod) || [];
             arr.push(info);
@@ -162,7 +162,7 @@ const RegistroNormy = () => {
       if (gradoFilter !== "todos" && e.grado_estudiante !== gradoFilter) return false;
       if (salonFilter !== "todos" && e.salon_estudiante !== salonFilter) return false;
       if (search) {
-        const hay = normalize(`${e.apellidos_estudiante} ${e.nombre_estudiante} ${e.codigo_estudiantil}`);
+        const hay = normalize(`${e.apellidos_estudiante} ${e.nombre_estudiante} ${e.id_estudiantil}`);
         if (!hay.includes(normalize(search))) return false;
       }
       return true;
@@ -171,30 +171,30 @@ const RegistroNormy = () => {
 
   // Stats (based on filtered before estado filter, so the summary stays meaningful)
   const estRegistrados = useMemo(
-    () => filtered.filter((e) => estudianteCodigosRegistrados.has(e.codigo_estudiantil)).length,
-    [filtered, estudianteCodigosRegistrados]
+    () => filtered.filter((e) => estudianteIdsRegistrados.has(e.id_estudiantil)).length,
+    [filtered, estudianteIdsRegistrados]
   );
   const padRegistrados = useMemo(
-    () => filtered.filter((e) => padreInfoPorCodigo.has(e.codigo_estudiantil)).length,
-    [filtered, padreInfoPorCodigo]
+    () => filtered.filter((e) => padreInfoPorId.has(e.id_estudiantil)).length,
+    [filtered, padreInfoPorId]
   );
 
   // Displayed rows per tab (apply estadoFilter on top of filtered)
   const displayedEstudiantes = useMemo(() => {
     if (estadoFilter === "todos") return filtered;
     return filtered.filter((e) => {
-      const reg = estudianteCodigosRegistrados.has(e.codigo_estudiantil);
+      const reg = estudianteIdsRegistrados.has(e.id_estudiantil);
       return estadoFilter === "registrados" ? reg : !reg;
     });
-  }, [filtered, estadoFilter, estudianteCodigosRegistrados]);
+  }, [filtered, estadoFilter, estudianteIdsRegistrados]);
 
   const displayedPadres = useMemo(() => {
     if (estadoFilter === "todos") return filtered;
     return filtered.filter((e) => {
-      const reg = padreInfoPorCodigo.has(e.codigo_estudiantil);
+      const reg = padreInfoPorId.has(e.id_estudiantil);
       return estadoFilter === "registrados" ? reg : !reg;
     });
-  }, [filtered, estadoFilter, padreInfoPorCodigo]);
+  }, [filtered, estadoFilter, padreInfoPorId]);
 
   const [selectedParents, setSelectedParents] = useState<{ padres: ParentInfo[]; estudiante: string } | null>(null);
 
@@ -323,12 +323,12 @@ const RegistroNormy = () => {
         { header: "Estado", key: "estado", width: 18 },
       ];
       const rows: RowData[] = displayedEstudiantes.map((e) => ({
-        id: e.codigo_estudiantil,
+        id: e.id_estudiantil,
         apellidos: e.apellidos_estudiante,
         nombres: e.nombre_estudiante,
         grado: e.grado_estudiante,
         salon: e.salon_estudiante,
-        estado: estudianteCodigosRegistrados.has(e.codigo_estudiantil) ? "Registrado" : "No registrado",
+        estado: estudianteIdsRegistrados.has(e.id_estudiantil) ? "Registrado" : "No registrado",
       }));
       buildSheet("Estudiantes", "Registro en Normy — Estudiantes", cols, rows, "estado");
     } else {
@@ -344,10 +344,10 @@ const RegistroNormy = () => {
       ];
       const rows: RowData[] = [];
       for (const e of displayedPadres) {
-        const padres = padreInfoPorCodigo.get(e.codigo_estudiantil);
+        const padres = padreInfoPorId.get(e.id_estudiantil);
         if (!padres || padres.length === 0) {
           rows.push({
-            id: e.codigo_estudiantil,
+            id: e.id_estudiantil,
             apellidos: e.apellidos_estudiante,
             nombres: e.nombre_estudiante,
             grado: e.grado_estudiante,
@@ -359,7 +359,7 @@ const RegistroNormy = () => {
         } else {
           for (const p of padres) {
             rows.push({
-              id: e.codigo_estudiantil,
+              id: e.id_estudiantil,
               apellidos: e.apellidos_estudiante,
               nombres: e.nombre_estudiante,
               grado: e.grado_estudiante,
@@ -535,9 +535,9 @@ const RegistroNormy = () => {
                       </TableRow>
                     ) : (
                       displayedEstudiantes.map((e, i) => {
-                        const registrado = estudianteCodigosRegistrados.has(e.codigo_estudiantil);
+                        const registrado = estudianteIdsRegistrados.has(e.id_estudiantil);
                         return (
-                          <TableRow key={e.codigo_estudiantil}>
+                          <TableRow key={e.id_estudiantil}>
                             <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                             <TableCell className="font-medium whitespace-nowrap">
                               {e.apellidos_estudiante}, {e.nombre_estudiante}
@@ -598,9 +598,9 @@ const RegistroNormy = () => {
                       </TableRow>
                     ) : (
                       displayedPadres.map((e, i) => {
-                        const parentInfo = padreInfoPorCodigo.get(e.codigo_estudiantil);
+                        const parentInfo = padreInfoPorId.get(e.id_estudiantil);
                         return (
-                          <TableRow key={e.codigo_estudiantil}>
+                          <TableRow key={e.id_estudiantil}>
                             <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                             <TableCell className="font-medium whitespace-nowrap">
                               {e.apellidos_estudiante}, {e.nombre_estudiante}

@@ -14,7 +14,7 @@ const ListaAsignaturas = () => {
   useEffect(() => {
     const session = getSession();
 
-    if (!session.codigo) {
+    if (!session.id) {
       navigate("/");
       return;
     }

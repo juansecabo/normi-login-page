@@ -38,7 +38,7 @@ export interface ResultadoCompletitud {
 
 interface InternoProfesor {
   numero_de_telefono: string;
-  codigo: string;
+  id: string;
   nombres: string;
   apellidos: string;
   cargo: string;
@@ -48,7 +48,7 @@ interface AsignacionExpandida {
   asignatura: string;
   grado: string;
   salon: string;
-  codigoProfesor: string; // Internos.codigo
+  idProfesor: string; // Internos.id
   nombreCompleto: string; // "Apellidos Nombres"
 }
 
@@ -59,11 +59,11 @@ interface ActividadRegistrada {
   periodo: number;
   nombre_actividad: string;
   porcentaje: number | null;
-  codigo_profesor: string; // Internos.codigo
+  id_profesor: string; // Internos.id
 }
 
 interface NotaRegistrada {
-  codigo_estudiantil: string;
+  id_estudiantil: string;
   asignatura: string;
   grado: string;
   salon: string;
@@ -73,7 +73,7 @@ interface NotaRegistrada {
 }
 
 interface Estudiante {
-  codigo_estudiantil: string;
+  id_estudiantil: string;
   nombre_estudiante: string;
   apellidos_estudiante: string;
   grado_estudiante: string;
@@ -106,7 +106,7 @@ export const useCompletitud = () => {
         // 1) Internos
         const { data: internos, error: errorInternos } = await supabase
           .from("Internos")
-          .select("numero_de_telefono, codigo, nombres, apellidos, cargo");
+          .select("numero_de_telefono, id, nombres, apellidos, cargo");
 
         if (errorInternos) console.error("❌ Error obteniendo Internos:", errorInternos);
 
@@ -114,7 +114,7 @@ export const useCompletitud = () => {
           .filter((p: any) => p.cargo === "Profesor(a)")
           .map((p: any) => ({
             numero_de_telefono: String(p.numero_de_telefono || ""),
-            codigo: String(p.codigo || "").trim(),
+            id: String(p.id || "").trim(),
             nombres: String(p.nombres || "").trim(),
             apellidos: String(p.apellidos || "").trim(),
             cargo: p.cargo,
@@ -124,12 +124,12 @@ export const useCompletitud = () => {
         console.log("totalInternosProfesores:", soloProfesores.length);
         console.log("Cargos únicos en Internos:", [...new Set((internos || []).map((p: any) => p.cargo))]);
 
-        // Map para match rápido por codigo, numero_de_telefono y por nombre
-        const profByCodigo = new Map<string, InternoProfesor>();
+        // Map para match rápido por id, numero_de_telefono y por nombre
+        const profById = new Map<string, InternoProfesor>();
         const profByTel = new Map<string, InternoProfesor>();
         const profByName = new Map<string, InternoProfesor>();
         for (const p of soloProfesores) {
-          if (p.codigo) profByCodigo.set(String(p.codigo).trim(), p);
+          if (p.id) profById.set(String(p.id).trim(), p);
           profByTel.set(String(p.numero_de_telefono), p);
           profByName.set(`${normalize(p.apellidos)}|${normalize(p.nombres)}`, p);
         }
@@ -176,11 +176,11 @@ export const useCompletitud = () => {
           if (!asignaturas.length || !grados.length || !salones.length) continue;
           asignacionesValidas++;
 
-          // Encontrar profesor: por codigo si existe, sino por numero_de_telefono, sino por nombre
+          // Encontrar profesor: por id si existe, sino por numero_de_telefono, sino por nombre
           let prof: InternoProfesor | null = null;
 
-          if (asig.codigo != null && String(asig.codigo).trim() !== "") {
-            prof = profByCodigo.get(String(asig.codigo).trim()) || null;
+          if (asig.id != null && String(asig.id).trim() !== "") {
+            prof = profById.get(String(asig.id).trim()) || null;
           }
 
           if (!prof && asig.numero_de_telefono != null && String(asig.numero_de_telefono).trim() !== "") {
@@ -200,7 +200,7 @@ export const useCompletitud = () => {
 
           asignacionesAsociadasAInternos++;
           const nombreCompleto = `${prof.apellidos} ${prof.nombres}`.trim();
-          const codigoProfesor = prof.codigo;
+          const idProfesor = prof.id;
 
           const asignaturasTrim = asignaturas.map((x) => String(x).trim());
           const gradosTrim = grados.map((x) => String(x).trim());
@@ -217,7 +217,7 @@ export const useCompletitud = () => {
                 asignatura: asignaturasTrim[i],
                 grado: gradosTrim[i],
                 salon: salonesTrim[i],
-                codigoProfesor,
+                idProfesor,
                 nombreCompleto,
               });
             }
@@ -229,7 +229,7 @@ export const useCompletitud = () => {
                     asignatura: m,
                     grado: g,
                     salon: s,
-                    codigoProfesor,
+                    idProfesor,
                     nombreCompleto,
                   });
                 }
@@ -247,7 +247,7 @@ export const useCompletitud = () => {
         // 3) Actividades (nombre_actividad real)
         const { data: actividadesData, error: errorAct } = await supabase
           .from("Nombre de Actividades")
-          .select("asignatura, grado, salon, periodo, nombre_actividad, porcentaje, codigo_profesor");
+          .select("asignatura, grado, salon, periodo, nombre_actividad, porcentaje, id_profesor");
 
         if (errorAct) console.error("❌ Error obteniendo actividades:", errorAct);
 
@@ -258,7 +258,7 @@ export const useCompletitud = () => {
           periodo: Number(a.periodo),
           nombre_actividad: String(a.nombre_actividad || "").trim(),
           porcentaje: a.porcentaje != null ? Number(a.porcentaje) : null,
-          codigo_profesor: String(a.codigo_profesor || "").trim(),
+          id_profesor: String(a.id_profesor || "").trim(),
         }));
 
         console.log("Actividades cargadas:", actividadesProcesadas.length);
@@ -267,13 +267,13 @@ export const useCompletitud = () => {
         // 4) Notas
         const { data: notasData, error: errorNotas } = await supabase
           .from("Notas")
-          .select("codigo_estudiantil, asignatura, grado, salon, periodo, nombre_actividad, nota")
+          .select("id_estudiantil, asignatura, grado, salon, periodo, nombre_actividad, nota")
           .not("nombre_actividad", "in", '("Final Periodo","Final Definitiva")');
 
         if (errorNotas) console.error("❌ Error obteniendo notas:", errorNotas);
 
         const notasProcesadas: NotaRegistrada[] = (notasData || []).map((n: any) => ({
-          codigo_estudiantil: String(n.codigo_estudiantil || "").trim(),
+          id_estudiantil: String(n.id_estudiantil || "").trim(),
           asignatura: String(n.asignatura || "").trim(),
           grado: String(n.grado || "").trim(),
           salon: String(n.salon || "").trim(),
@@ -288,13 +288,13 @@ export const useCompletitud = () => {
         // 5) Estudiantes
         const { data: estudiantesData, error: errorEst } = await supabase
           .from("Estudiantes")
-          .select("codigo_estudiantil, nombre_estudiante, apellidos_estudiante, grado_estudiante, salon_estudiante")
+          .select("id_estudiantil, nombre_estudiante, apellidos_estudiante, grado_estudiante, salon_estudiante")
           .order("apellidos_estudiante");
 
         if (errorEst) console.error("❌ Error obteniendo estudiantes:", errorEst);
 
         const estudiantesProcesados: Estudiante[] = (estudiantesData || []).map((e: any) => ({
-          codigo_estudiantil: String(e.codigo_estudiantil || "").trim(),
+          id_estudiantil: String(e.id_estudiantil || "").trim(),
           nombre_estudiante: String(e.nombre_estudiante || "").trim(),
           apellidos_estudiante: String(e.apellidos_estudiante || "").trim(),
           grado_estudiante: String(e.grado_estudiante || "").trim(),
@@ -319,7 +319,7 @@ export const useCompletitud = () => {
     grado?: string,
     salon?: string,
     asignatura?: string,
-    codigoEstudiante?: string,
+    idEstudiante?: string,
   ): ResultadoCompletitud => {
     const detalles: DetalleIncompleto[] = [];
     const profesoresPendientes = new Set<string>();
@@ -387,14 +387,14 @@ export const useCompletitud = () => {
 
     const actividadesIndex = new Map<string, ActividadRegistrada[]>();
     for (const a of actividades) {
-      const key = `${a.codigo_profesor}|${normalize(a.asignatura)}|${normalize(a.grado)}|${normalize(a.salon)}|${a.periodo}`;
+      const key = `${a.id_profesor}|${normalize(a.asignatura)}|${normalize(a.grado)}|${normalize(a.salon)}|${a.periodo}`;
       if (!actividadesIndex.has(key)) actividadesIndex.set(key, []);
       actividadesIndex.get(key)!.push(a);
     }
 
     const notasIndex = new Map<string, NotaRegistrada>();
     for (const n of notas) {
-      const key = `${n.codigo_estudiantil}|${normalize(n.asignatura)}|${normalize(n.grado)}|${normalize(n.salon)}|${n.periodo}|${normalize(n.nombre_actividad)}`;
+      const key = `${n.id_estudiantil}|${normalize(n.asignatura)}|${normalize(n.grado)}|${normalize(n.salon)}|${n.periodo}|${normalize(n.nombre_actividad)}`;
       notasIndex.set(key, n);
     }
 
@@ -409,8 +409,8 @@ export const useCompletitud = () => {
       const salonKey = `${normalize(combo.grado)}|${normalize(combo.salon)}`;
       let estudiantesDelSalon = estudiantesPorSalon.get(salonKey) || [];
 
-      if (codigoEstudiante) {
-        estudiantesDelSalon = estudiantesDelSalon.filter((e) => e.codigo_estudiantil === codigoEstudiante);
+      if (idEstudiante) {
+        estudiantesDelSalon = estudiantesDelSalon.filter((e) => e.id_estudiantil === idEstudiante);
       }
 
       if (estudiantesDelSalon.length === 0) continue;
@@ -427,7 +427,7 @@ export const useCompletitud = () => {
       let profPendiente = false;
 
       for (const per of periodosAVerificar) {
-        const actKey = `${combo.codigoProfesor}|${normalize(combo.asignatura)}|${normalize(combo.grado)}|${normalize(combo.salon)}|${per}`;
+        const actKey = `${combo.idProfesor}|${normalize(combo.asignatura)}|${normalize(combo.grado)}|${normalize(combo.salon)}|${per}`;
         const actsAll = actividadesIndex.get(actKey) || [];
 
         // Actividades con peso
@@ -474,7 +474,7 @@ export const useCompletitud = () => {
         // 3) Notas: debe existir y no ser null
         for (const est of estudiantesDelSalon) {
           for (const act of actividadesConPeso) {
-            const nKey = `${est.codigo_estudiantil}|${normalize(combo.asignatura)}|${normalize(combo.grado)}|${normalize(combo.salon)}|${per}|${normalize(act.nombre_actividad)}`;
+            const nKey = `${est.id_estudiantil}|${normalize(combo.asignatura)}|${normalize(combo.grado)}|${normalize(combo.salon)}|${per}|${normalize(act.nombre_actividad)}`;
             const n = notasIndex.get(nKey);
 
             if (!n || n.nota == null) {
@@ -517,15 +517,15 @@ export const useCompletitud = () => {
           (e) =>
             normalize(e.grado_estudiante) === normalize(grado) && normalize(e.salon_estudiante) === normalize(salon),
         )
-        .forEach((e) => estudiantesUnicos.add(e.codigo_estudiantil));
+        .forEach((e) => estudiantesUnicos.add(e.id_estudiantil));
     } else if (grado) {
       estudiantes
         .filter((e) => normalize(e.grado_estudiante) === normalize(grado))
-        .forEach((e) => estudiantesUnicos.add(e.codigo_estudiantil));
-    } else if (codigoEstudiante) {
-      estudiantesUnicos.add(codigoEstudiante);
+        .forEach((e) => estudiantesUnicos.add(e.id_estudiantil));
+    } else if (idEstudiante) {
+      estudiantesUnicos.add(idEstudiante);
     } else {
-      estudiantes.forEach((e) => estudiantesUnicos.add(e.codigo_estudiantil));
+      estudiantes.forEach((e) => estudiantesUnicos.add(e.id_estudiantil));
     }
 
     const resumenCompleto: ResumenCompleto = {

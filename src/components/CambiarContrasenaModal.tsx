@@ -39,7 +39,7 @@ const CambiarContrasenaModal = ({ open, onOpenChange }: CambiarContrasenaModalPr
     setSuccess("");
 
     const session = getSession();
-    if (!session.codigo) return;
+    if (!session.id) return;
 
     if (!contrasenaActual || !nuevaContrasena || !confirmarContrasena) {
       setError("Todos los campos son obligatorios");
@@ -61,12 +61,12 @@ const CambiarContrasenaModal = ({ open, onOpenChange }: CambiarContrasenaModalPr
 
       if (isExterno) {
         // Estudiante o Padre: consultar/actualizar Perfiles_Generales
-        const column = cargo === 'Estudiante' ? 'estudiante_codigo' : 'padre_codigo';
+        const column = cargo === 'Estudiante' ? 'estudiante_id' : 'padre_id';
 
         const { data: perfil, error: fetchError } = await supabase
           .from("Perfiles_Generales")
           .select("numero_de_telefono, contrasena")
-          .eq(column, session.codigo)
+          .eq(column, session.id)
           .not('perfil', 'is', null)
           .maybeSingle();
 
@@ -97,8 +97,8 @@ const CambiarContrasenaModal = ({ open, onOpenChange }: CambiarContrasenaModalPr
         // Interno: consultar/actualizar Internos (flujo original)
         const { data: usuario, error: fetchError } = await supabase
           .from("Internos")
-          .select("codigo, contrasena")
-          .eq("codigo", parseInt(session.codigo))
+          .select("id, contrasena")
+          .eq("id", parseInt(session.id))
           .maybeSingle();
 
         if (fetchError || !usuario) {
@@ -107,7 +107,7 @@ const CambiarContrasenaModal = ({ open, onOpenChange }: CambiarContrasenaModalPr
           return;
         }
 
-        const contrasenaEsperada = usuario.contrasena ?? String(usuario.codigo);
+        const contrasenaEsperada = usuario.contrasena ?? String(usuario.id);
         if (contrasenaActual !== contrasenaEsperada) {
           setError("La contraseña actual es incorrecta");
           setLoading(false);
@@ -117,7 +117,7 @@ const CambiarContrasenaModal = ({ open, onOpenChange }: CambiarContrasenaModalPr
         const { data: updated, error: updateError } = await supabase
           .from("Internos")
           .update({ contrasena: nuevaContrasena })
-          .eq("codigo", parseInt(session.codigo))
+          .eq("id", parseInt(session.id))
           .select();
 
         if (updateError || !updated || updated.length === 0) {

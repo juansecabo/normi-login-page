@@ -41,7 +41,7 @@ const EnviarDocumento = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [remitente, setRemitente] = useState("");
-  const [codigoRemitente, setCodigoRemitente] = useState("");
+  const [idRemitente, setIdRemitente] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -52,11 +52,11 @@ const EnviarDocumento = () => {
   const [grado, setGrado] = useState("");
   const [salon, setSalon] = useState("");
   const [estudiante, setEstudiante] = useState("");
-  const [estudiantes, setEstudiantes] = useState<{ codigo: string; nombre: string }[]>([]);
+  const [estudiantes, setEstudiantes] = useState<{ id: string; nombre: string }[]>([]);
   const [loadingEstudiantes, setLoadingEstudiantes] = useState(false);
 
   // Internos (para selección individual)
-  const [internos, setInternos] = useState<{ codigo: string; nombre: string }[]>([]);
+  const [internos, setInternos] = useState<{ id: string; nombre: string }[]>([]);
   const [internoSeleccionado, setInternoSeleccionado] = useState("");
   const [loadingInternos, setLoadingInternos] = useState(false);
   const [cargo, setCargo] = useState("");
@@ -73,12 +73,12 @@ const EnviarDocumento = () => {
 
   useEffect(() => {
     const session = getSession();
-    if (!session.codigo) {
+    if (!session.id) {
       navigate("/");
       return;
     }
     setRemitente(`${session.cargo} ${session.nombres} ${session.apellidos}`);
-    setCodigoRemitente(session.codigo!);
+    setIdRemitente(session.id!);
     setCargo(session.cargo || "");
   }, [navigate]);
 
@@ -93,14 +93,14 @@ const EnviarDocumento = () => {
       setLoadingEstudiantes(true);
       const { data } = await supabase
         .from("Estudiantes")
-        .select("codigo_estudiantil, apellidos_estudiante, nombre_estudiante")
+        .select("id_estudiantil, apellidos_estudiante, nombre_estudiante")
         .eq("grado_estudiante", grado)
         .eq("salon_estudiante", salon)
         .order("apellidos_estudiante", { ascending: true })
         .order("nombre_estudiante", { ascending: true });
       setEstudiantes(
         data?.map((e) => ({
-          codigo: e.codigo_estudiantil,
+          id: e.id_estudiantil,
           nombre: `${e.apellidos_estudiante} ${e.nombre_estudiante}`,
         })) || []
       );
@@ -120,7 +120,7 @@ const EnviarDocumento = () => {
       setLoadingInternos(true);
       let query = supabase
         .from("Internos")
-        .select("codigo, nombres, apellidos, cargo")
+        .select("id, nombres, apellidos, cargo")
         .order("apellidos", { ascending: true })
         .order("nombres", { ascending: true });
 
@@ -133,7 +133,7 @@ const EnviarDocumento = () => {
       const { data } = await query;
       setInternos(
         data?.map((i) => ({
-          codigo: String(i.codigo),
+          id: String(i.id),
           nombre: `${i.apellidos} ${i.nombres}`,
         })) || []
       );
@@ -147,7 +147,7 @@ const EnviarDocumento = () => {
     const { data } = await supabase
       .from("Comunicados")
       .select("*")
-      .eq("codigo_remitente", codigoRemitente)
+      .eq("id_remitente", idRemitente)
       .eq("tipo", "documento")
       .order("fecha", { ascending: false });
     setHistorial((data as DocumentoEnviado[]) || []);
@@ -193,7 +193,7 @@ const EnviarDocumento = () => {
   const buildDestinatarios = (): string => {
     // Interno individual
     if (PERFILES_INTERNOS.includes(perfil) && internoSeleccionado && internoSeleccionado !== "Todos") {
-      const interno = internos.find(i => i.codigo === internoSeleccionado);
+      const interno = internos.find(i => i.id === internoSeleccionado);
       return interno ? `${interno.nombre}` : perfil;
     }
 
@@ -286,12 +286,12 @@ const EnviarDocumento = () => {
           destinatarios: destinatariosTexto,
           mensaje: mensaje.trim(),
           archivo_url: archivoUrl,
-          codigo_remitente: codigoRemitente,
+          id_remitente: idRemitente,
           perfil: perfil || null,
           nivel: (nivel && nivel !== "Todos") ? nivel : null,
           grado: grado || null,
           salon: (salon && salon !== "Todos") ? salon : null,
-          codigo_estudiantil: (internoSeleccionado && internoSeleccionado !== "Todos") ? internoSeleccionado : (estudiante && estudiante !== "Todos") ? estudiante : null,
+          id_estudiantil: (internoSeleccionado && internoSeleccionado !== "Todos") ? internoSeleccionado : (estudiante && estudiante !== "Todos") ? estudiante : null,
         }),
       });
 
@@ -401,7 +401,7 @@ const EnviarDocumento = () => {
                       placeholder={loadingInternos ? "Cargando..." : "Todos"}
                       options={[
                         { value: "Todos", label: "Todos" },
-                        ...internos.map((i) => ({ value: i.codigo, label: i.nombre })),
+                        ...internos.map((i) => ({ value: i.id, label: i.nombre })),
                       ]}
                     />
                   </div>
@@ -462,7 +462,7 @@ const EnviarDocumento = () => {
                       placeholder={loadingEstudiantes ? "Cargando..." : "Todos los estudiantes"}
                       options={[
                         { value: "Todos", label: "Todos los estudiantes" },
-                        ...estudiantes.map((e) => ({ value: e.codigo, label: e.nombre })),
+                        ...estudiantes.map((e) => ({ value: e.id, label: e.nombre })),
                       ]}
                     />
                   </div>

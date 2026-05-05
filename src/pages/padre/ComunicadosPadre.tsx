@@ -19,7 +19,7 @@ interface Comunicado {
   salon: string | null;
   grados: string[] | null;
   salones: string[] | null;
-  codigo_estudiantil: string | null;
+  id_estudiantil: string | null;
   id_destinatarios: string[] | null;
   grupo_comunicado_id: number | null;
 }
@@ -31,7 +31,7 @@ const ComunicadosPadre = () => {
 
   useEffect(() => {
     const session = getSession();
-    if (!session.codigo || !isPadreDeFamilia()) {
+    if (!session.id || !isPadreDeFamilia()) {
       navigate("/");
       return;
     }
@@ -53,13 +53,13 @@ const ComunicadosPadre = () => {
           const filtrados = data.filter((c: Comunicado) => {
             const matchIds =
               (c.id_destinatarios && c.id_destinatarios.length > 0 &&
-                hijos.some(h => c.id_destinatarios!.includes(String(h.codigo)))) ||
-              (c.codigo_estudiantil && hijos.some(h => h.codigo === c.codigo_estudiantil)) ||
+                hijos.some(h => c.id_destinatarios!.includes(String(h.id)))) ||
+              (c.id_estudiantil && hijos.some(h => h.id === c.id_estudiantil)) ||
               // Fallback: el AI a veces olvida poblar id_destinatarios aunque el
               // texto diga "estudiante con código X" — extraemos el código del texto.
               hijos.some(h => {
-                if (!h.codigo) return false;
-                const cod = String(h.codigo);
+                if (!h.id) return false;
+                const cod = String(h.id);
                 return new RegExp(`\\b${cod}\\b`).test(c.destinatarios || "");
               });
 
@@ -80,7 +80,7 @@ const ComunicadosPadre = () => {
 
             const noHayFiltros =
               (!c.id_destinatarios || c.id_destinatarios.length === 0) &&
-              !c.codigo_estudiantil && !c.nivel && !grados && !salones;
+              !c.id_estudiantil && !c.nivel && !grados && !salones;
             if (!noHayFiltros) return false;
 
             const destLower = (c.destinatarios || "").trim().toLowerCase();
@@ -105,7 +105,7 @@ const ComunicadosPadre = () => {
           });
           setComunicados(dedup);
           const maxId = Math.max(...dedup.map((c: Comunicado) => c.id), 0);
-          markLastSeen('comunicados', session.codigo!, maxId);
+          markLastSeen('comunicados', session.id!, maxId);
         }
       } catch (err) {
         console.error('Error:', err);

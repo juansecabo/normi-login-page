@@ -31,7 +31,7 @@ const DashboardEstudiante = () => {
   useEffect(() => {
     const session = getSession();
 
-    if (!session.codigo) {
+    if (!session.id) {
       navigate("/");
       return;
     }
@@ -47,11 +47,11 @@ const DashboardEstudiante = () => {
     setSalon(session.salon || "");
 
     const fetchBadges = async () => {
-      const codigo = session.codigo!;
+      const id = session.id!;
       const b = { notas: 0, actividades: 0, comunicados: 0, documentos: 0 };
 
       try {
-        const lastSeen = await getAllLastSeen(codigo);
+        const lastSeen = await getAllLastSeen(id);
         const minComLastSeen = Math.min(lastSeen['comunicados'] ?? 0, lastSeen['documentos'] ?? 0);
 
         // Notas: NO se puede usar count en servidor con .gt('fecha_modificacion', isoString)
@@ -61,7 +61,7 @@ const DashboardEstudiante = () => {
         const [msgResult, actResult, notasResult] = await Promise.all([
           supabase
             .from('Comunicados')
-            .select('id, nivel, grado, salon, codigo_estudiantil, archivo_url, destinatarios, id_destinatarios')
+            .select('id, nivel, grado, salon, id_estudiantil, archivo_url, destinatarios, id_destinatarios')
             .overlaps('perfil', ['Estudiantes'])
             .gt('id', minComLastSeen),
           supabase
@@ -73,7 +73,7 @@ const DashboardEstudiante = () => {
           supabase
             .from('Notas')
             .select('fecha_modificacion')
-            .eq('codigo_estudiantil', codigo)
+            .eq('id_estudiantil', id)
             .eq('grado', session.grado)
             .eq('salon', session.salon)
             .not('nombre_actividad', 'in', '("Definitiva Periodo","Definitiva Anual")'),
@@ -89,9 +89,9 @@ const DashboardEstudiante = () => {
           const misFiltrados = msgResult.data.filter((c: any) => {
             const matchIds =
               (c.id_destinatarios && c.id_destinatarios.length > 0 &&
-                c.id_destinatarios.includes(String(codigo))) ||
-              (c.codigo_estudiantil && c.codigo_estudiantil === codigo) ||
-              (!!codigo && new RegExp(`\\b${String(codigo)}\\b`).test(c.destinatarios || ""));
+                c.id_destinatarios.includes(String(id))) ||
+              (c.id_estudiantil && c.id_estudiantil === id) ||
+              (!!id && new RegExp(`\\b${String(id)}\\b`).test(c.destinatarios || ""));
 
             const grados = c.grados ?? (c.grado ? [c.grado] : null);
             const salones = c.salones ?? (c.salon ? [c.salon] : null);
@@ -106,7 +106,7 @@ const DashboardEstudiante = () => {
 
             const noHayFiltros =
               (!c.id_destinatarios || c.id_destinatarios.length === 0) &&
-              !c.codigo_estudiantil && !c.nivel && !grados && !salones;
+              !c.id_estudiantil && !c.nivel && !grados && !salones;
             if (!noHayFiltros) return false;
 
             const destLower = (c.destinatarios || "").trim().toLowerCase();

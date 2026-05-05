@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getPeriodoActual } from "@/utils/periodoActual";
 
 interface ConsolidadoNotasProps {
-  codigoEstudiante: string;
+  idEstudiante: string;
   nombreEstudiante: string;
   apellidosEstudiante: string;
   grado: string;
@@ -41,7 +41,7 @@ const periodos = [
   { numero: 4, nombre: "4°" },
 ];
 
-const ConsolidadoNotas = ({ codigoEstudiante, nombreEstudiante, apellidosEstudiante, grado, salon }: ConsolidadoNotasProps) => {
+const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante, grado, salon }: ConsolidadoNotasProps) => {
   const [asignaturas, setAsignaturas] = useState<string[]>([]);
   const [actividadesPorAsignatura, setActividadesPorAsignatura] = useState<ActividadesPorAsignatura>({});
   const [notas, setNotas] = useState<NotasEstudiante>({});
@@ -49,7 +49,7 @@ const ConsolidadoNotas = ({ codigoEstudiante, nombreEstudiante, apellidosEstudia
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!codigoEstudiante || !grado || !salon) {
+    if (!idEstudiante || !grado || !salon) {
       setLoading(false);
       return;
     }
@@ -127,7 +127,7 @@ const ConsolidadoNotas = ({ codigoEstudiante, nombreEstudiante, apellidosEstudia
         const { data: notasData, error: notasError } = await supabase
           .from('Notas')
           .select('*')
-          .eq('codigo_estudiantil', codigoEstudiante)
+          .eq('id_estudiantil', idEstudiante)
           .eq('grado', grado)
           .eq('salon', salon)
           .in('asignatura', asignaturasDelGrado);
@@ -153,7 +153,7 @@ const ConsolidadoNotas = ({ codigoEstudiante, nombreEstudiante, apellidosEstudia
     };
 
     cargarDatos();
-  }, [codigoEstudiante, grado, salon]);
+  }, [idEstudiante, grado, salon]);
 
   const getActividadesPorPeriodo = (asignatura: string, periodo: number) => {
     return (actividadesPorAsignatura[asignatura] || []).filter(a => a.periodo === periodo);
@@ -225,7 +225,7 @@ const ConsolidadoNotas = ({ codigoEstudiante, nombreEstudiante, apellidosEstudia
             {apellidosEstudiante} {nombreEstudiante}
           </h2>
           <p className="text-muted-foreground">
-            Código: {codigoEstudiante} | {grado} - {salon}
+            Código: {idEstudiante} | {grado} - {salon}
           </p>
         </div>
       </div>

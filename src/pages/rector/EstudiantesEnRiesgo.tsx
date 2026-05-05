@@ -40,7 +40,7 @@ const EstudiantesEnRiesgo = () => {
 
   useEffect(() => {
     const session = getSession();
-    if (!session.codigo) {
+    if (!session.id) {
       navigate("/");
       return;
     }
@@ -155,7 +155,7 @@ const EstudiantesEnRiesgo = () => {
                 {estudiantesEnRiesgo
                   .sort((a, b) => a.promedio - b.promedio)
                   .map((est, idx) => (
-                    <TableRow key={est.codigo_estudiantil}>
+                    <TableRow key={est.id_estudiantil}>
                       <TableCell className="font-medium text-muted-foreground">{idx + 1}</TableCell>
                       <TableCell className="font-medium">{est.nombre_completo}</TableCell>
                       <TableCell>{est.grado}</TableCell>

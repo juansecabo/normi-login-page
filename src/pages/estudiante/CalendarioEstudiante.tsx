@@ -82,7 +82,7 @@ const CalendarioEstudiante = () => {
 
   useEffect(() => {
     const session = getSession();
-    if (!session.codigo || !isEstudiante()) {
+    if (!session.id || !isEstudiante()) {
       navigate("/");
       return;
     }
@@ -100,7 +100,7 @@ const CalendarioEstudiante = () => {
           setActividades(data);
           const ids = data.map((a: any) => Number(a.auto_id)).filter((id: number) => !isNaN(id) && id > 0);
           const maxId = ids.length > 0 ? Math.max(...ids) : 0;
-          markLastSeen('actividades', session.codigo!, maxId);
+          markLastSeen('actividades', session.id!, maxId);
         }
       } catch (err) {
         console.error('Error:', err);
@@ -117,7 +117,7 @@ const CalendarioEstudiante = () => {
         const { data } = await supabase
           .from('Actividades_Marcas')
           .select('actividad_id, marca')
-          .eq('estudiante_codigo', session.codigo);
+          .eq('estudiante_id', session.id);
         if (data) {
           const m: Record<number, 'hecho' | 'estudiar'> = {};
           data.forEach((r: any) => { m[r.actividad_id] = r.marca; });
@@ -130,7 +130,7 @@ const CalendarioEstudiante = () => {
 
   const toggleMarca = async (columnId: number, tipo: 'hecho' | 'estudiar') => {
     const session = getSession();
-    const codigo = session.codigo!;
+    const id = session.id!;
     const yaEsta = marcas[columnId] === tipo;
 
     // Actualizar UI inmediatamente
@@ -150,14 +150,14 @@ const CalendarioEstudiante = () => {
         await supabase
           .from('Actividades_Marcas')
           .delete()
-          .eq('estudiante_codigo', codigo)
+          .eq('estudiante_id', id)
           .eq('actividad_id', columnId);
       } else {
         await supabase
           .from('Actividades_Marcas')
           .upsert(
-            { estudiante_codigo: codigo, actividad_id: columnId, marca: tipo, updated_at: new Date().toISOString() },
-            { onConflict: 'estudiante_codigo,actividad_id' }
+            { estudiante_id: id, actividad_id: columnId, marca: tipo, updated_at: new Date().toISOString() },
+            { onConflict: 'estudiante_id,actividad_id' }
           );
       }
     } catch {}

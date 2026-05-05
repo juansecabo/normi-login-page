@@ -1,12 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
 
 // Obtener el último ID visto para una sección
-export const getLastSeenId = async (seccion: string, codigo: string): Promise<number> => {
+export const getLastSeenId = async (seccion: string, id: string): Promise<number> => {
   try {
     const { data } = await supabase
       .from('Notificaciones_Vistas')
       .select('ultimo_id_visto')
-      .eq('usuario_codigo', codigo)
+      .eq('usuario_id', id)
       .eq('seccion', seccion)
       .single();
 
@@ -18,31 +18,31 @@ export const getLastSeenId = async (seccion: string, codigo: string): Promise<nu
 };
 
 // Guardar el último ID visto (se llama al entrar a una sección)
-export const markLastSeen = async (seccion: string, codigo: string, maxId: number) => {
+export const markLastSeen = async (seccion: string, id: string, maxId: number) => {
   if (!maxId || maxId <= 0 || !Number.isFinite(maxId)) return;
   try {
     await supabase
       .from('Notificaciones_Vistas')
       .upsert(
         {
-          usuario_codigo: codigo,
+          usuario_id: id,
           seccion: seccion,
           ultimo_id_visto: maxId,
           updated_at: new Date().toISOString(),
         },
-        { onConflict: 'usuario_codigo,seccion' }
+        { onConflict: 'usuario_id,seccion' }
       );
   } catch {}
 };
 
 // Obtener todos los últimos IDs vistos de un usuario de una vez (para el dashboard)
-export const getAllLastSeen = async (codigo: string): Promise<Record<string, number>> => {
+export const getAllLastSeen = async (id: string): Promise<Record<string, number>> => {
   const result: Record<string, number> = {};
   try {
     const { data } = await supabase
       .from('Notificaciones_Vistas')
       .select('seccion, ultimo_id_visto')
-      .eq('usuario_codigo', codigo);
+      .eq('usuario_id', id);
 
     data?.forEach((row: any) => {
       if (row.ultimo_id_visto !== null && row.ultimo_id_visto !== undefined) {

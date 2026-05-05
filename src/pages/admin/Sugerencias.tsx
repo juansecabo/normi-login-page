@@ -15,7 +15,7 @@ import { Search, Trash2, Loader2 } from "lucide-react";
 
 interface Sugerencia {
   id: number;
-  codigo: string;
+  id: string;
   nombres: string;
   apellidos: string | null;
   rol: string;
@@ -40,7 +40,7 @@ const Sugerencias = () => {
 
   useEffect(() => {
     const session = getSession();
-    if (!session.codigo) { navigate("/"); return; }
+    if (!session.id) { navigate("/"); return; }
     if (!isAdmin()) { navigate("/dashboard"); return; }
     fetchSugerencias();
   }, [navigate]);
@@ -145,7 +145,7 @@ const Sugerencias = () => {
                         const { data: perfil } = await supabase
                           .from('Perfiles_Generales')
                           .select('numero_de_telefono')
-                          .or(`estudiante_codigo.eq.${s.codigo},padre_codigo.eq.${s.codigo}`)
+                          .or(`estudiante_id.eq.${s.id},padre_id.eq.${s.id}`)
                           .maybeSingle();
                         if (perfil?.numero_de_telefono) {
                           setSelectedTelefono(perfil.numero_de_telefono);
@@ -153,7 +153,7 @@ const Sugerencias = () => {
                           const { data: interno } = await supabase
                             .from('Internos')
                             .select('numero_de_telefono')
-                            .eq('codigo', s.codigo)
+                            .eq('id', s.id)
                             .maybeSingle();
                           if (interno?.numero_de_telefono) setSelectedTelefono(interno.numero_de_telefono);
                         }

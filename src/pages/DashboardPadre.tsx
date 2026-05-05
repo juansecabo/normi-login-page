@@ -29,7 +29,7 @@ const DashboardPadre = () => {
   useEffect(() => {
     const session = getSession();
 
-    if (!session.codigo) {
+    if (!session.id) {
       navigate("/");
       return;
     }
@@ -48,15 +48,15 @@ const DashboardPadre = () => {
     }
 
     const fetchBadges = async () => {
-      const codigo = session.codigo!;
+      const id = session.id!;
       const hijosData = session.hijos || [];
       const b = { notas: 0, actividades: 0, comunicados: 0, documentos: 0 };
 
       try {
         // Paso 1: lastSeen del padre y de cada hijo, en paralelo.
         const [lastSeenPadre, ...lastSeenHijos] = await Promise.all([
-          getAllLastSeen(codigo),
-          ...hijosData.map(h => getAllLastSeen(h.codigo)),
+          getAllLastSeen(id),
+          ...hijosData.map(h => getAllLastSeen(h.id)),
         ]);
 
         // Paso 2: queries de datos en paralelo (count puro o filas nuevas via .gt).
@@ -64,7 +64,7 @@ const DashboardPadre = () => {
         const [msgRes, ...hijosResults] = await Promise.all([
           supabase
             .from('Comunicados')
-            .select('id, nivel, grado, salon, codigo_estudiantil, archivo_url, destinatarios, id_destinatarios')
+            .select('id, nivel, grado, salon, id_estudiantil, archivo_url, destinatarios, id_destinatarios')
             .overlaps('perfil', ['Padres de familia'])
             .gt('id', minComLastSeen),
           ...hijosData.flatMap((hijo, i) => [
@@ -78,7 +78,7 @@ const DashboardPadre = () => {
             supabase
               .from('Notas')
               .select('fecha_modificacion')
-              .eq('codigo_estudiantil', hijo.codigo)
+              .eq('id_estudiantil', hijo.id)
               .eq('grado', hijo.grado)
               .eq('salon', hijo.salon)
               .not('nombre_actividad', 'in', '("Definitiva Periodo","Definitiva Anual")'),
@@ -93,11 +93,11 @@ const DashboardPadre = () => {
           const filtrados = msgRes.data.filter((c: any) => {
             const matchIds =
               (c.id_destinatarios && c.id_destinatarios.length > 0 &&
-                hijosData.some(h => c.id_destinatarios.includes(String(h.codigo)))) ||
-              (c.codigo_estudiantil && hijosData.some(h => h.codigo === c.codigo_estudiantil)) ||
+                hijosData.some(h => c.id_destinatarios.includes(String(h.id)))) ||
+              (c.id_estudiantil && hijosData.some(h => h.id === c.id_estudiantil)) ||
               hijosData.some(h => {
-                if (!h.codigo) return false;
-                const cod = String(h.codigo);
+                if (!h.id) return false;
+                const cod = String(h.id);
                 return new RegExp(`\\b${cod}\\b`).test(c.destinatarios || "");
               });
 
@@ -117,7 +117,7 @@ const DashboardPadre = () => {
 
             const noHayFiltros =
               (!c.id_destinatarios || c.id_destinatarios.length === 0) &&
-              !c.codigo_estudiantil && !c.nivel && !grados && !salones;
+              !c.id_estudiantil && !c.nivel && !grados && !salones;
             if (!noHayFiltros) return false;
 
             const destLower = (c.destinatarios || "").trim().toLowerCase();
@@ -184,7 +184,7 @@ const DashboardPadre = () => {
           </p>
           <div className="space-y-0.5">
             {hijos.map(h => (
-              <p key={h.codigo} className="text-sm text-foreground">
+              <p key={h.id} className="text-sm text-foreground">
                 {h.nombre} {h.apellidos} <span className="text-muted-foreground">({h.grado} {h.salon})</span>
               </p>
             ))}

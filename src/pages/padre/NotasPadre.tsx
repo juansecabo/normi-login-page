@@ -15,7 +15,7 @@ const NotasPadre = () => {
 
   useEffect(() => {
     const session = getSession();
-    if (!session.codigo || !isPadreDeFamilia()) {
+    if (!session.id || !isPadreDeFamilia()) {
       navigate("/");
       return;
     }
@@ -30,21 +30,21 @@ const NotasPadre = () => {
       const fetchBadges = async () => {
         const results = await Promise.all(hijosData.map(async (h) => {
           const [lastSeen, { data }] = await Promise.all([
-            getAllLastSeen(h.codigo),
+            getAllLastSeen(h.id),
             supabase
               .from('Notas')
               .select('fecha_modificacion')
-              .eq('codigo_estudiantil', h.codigo)
+              .eq('id_estudiantil', h.id)
               .eq('grado', h.grado)
               .eq('salon', h.salon)
               .not('nombre_actividad', 'in', '("Definitiva Periodo","Definitiva Anual")'),
           ]);
-          if (!data) return [h.codigo, 0] as const;
+          if (!data) return [h.id, 0] as const;
           const epochs = data.map((n: any) => n.fecha_modificacion ? Math.floor(new Date(n.fecha_modificacion).getTime() / 1000) : 0).filter((e: number) => e > 0);
-          return [h.codigo, countNewItems(epochs, lastSeen['notas'])] as const;
+          return [h.id, countNewItems(epochs, lastSeen['notas'])] as const;
         }));
         const b: Record<string, number> = {};
-        results.forEach(([codigo, count]) => { b[codigo] = count; });
+        results.forEach(([id, count]) => { b[id] = count; });
         setBadgesPorHijo(b);
       };
       fetchBadges();
@@ -71,14 +71,14 @@ const NotasPadre = () => {
       const { data } = await supabase
         .from('Notas')
         .select('fecha_modificacion')
-        .eq('codigo_estudiantil', h.codigo)
+        .eq('id_estudiantil', h.id)
         .eq('grado', h.grado)
         .eq('salon', h.salon)
         .not('nombre_actividad', 'in', '("Definitiva Periodo","Definitiva Anual")');
       if (data) {
         const epochs = data.map((n: any) => n.fecha_modificacion ? Math.floor(new Date(n.fecha_modificacion).getTime() / 1000) : 0).filter((e: number) => e > 0);
         const maxEpoch = epochs.length > 0 ? Math.max(...epochs) : 0;
-        await markLastSeen('notas', h.codigo, maxEpoch);
+        await markLastSeen('notas', h.id, maxEpoch);
       }
     };
     marcarVisto();
@@ -117,13 +117,13 @@ const NotasPadre = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {hijos.map((h) => (
                 <button
-                  key={h.codigo}
+                  key={h.id}
                   onClick={() => seleccionar(h)}
                   className="relative flex items-center gap-3 p-4 rounded-lg border-2 border-border hover:border-primary/50 hover:bg-muted/50 transition-all duration-200 text-left"
                 >
-                  {(badgesPorHijo[h.codigo] || 0) > 0 && (
+                  {(badgesPorHijo[h.id] || 0) > 0 && (
                     <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 shadow-sm animate-badge-pop">
-                      {badgesPorHijo[h.codigo]}
+                      {badgesPorHijo[h.id]}
                     </span>
                   )}
                   <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-muted text-muted-foreground">
@@ -142,7 +142,7 @@ const NotasPadre = () => {
         {hijo && (
           <>
             <ConsolidadoNotas
-              codigoEstudiante={hijo.codigo}
+              idEstudiante={hijo.id}
               nombreEstudiante={hijo.nombre}
               apellidosEstudiante={hijo.apellidos}
               grado={hijo.grado}

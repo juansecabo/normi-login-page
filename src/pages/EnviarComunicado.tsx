@@ -51,7 +51,7 @@ interface ComunicadoEnviado {
   mensaje: string;
   archivo_url: string | null;
   fecha: string;
-  codigo_remitente: string | null;
+  id_remitente: string | null;
 }
 
 const getCleanFilename = (url: string) =>
@@ -95,7 +95,7 @@ const EnviarComunicado = () => {
   const { toast } = useToast();
 
   const [remitente, setRemitente] = useState("");
-  const [codigoRemitente, setCodigoRemitente] = useState("");
+  const [idRemitente, setIdRemitente] = useState("");
   const [cargo, setCargo] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -158,12 +158,12 @@ const EnviarComunicado = () => {
 
   useEffect(() => {
     const session = getSession();
-    if (!session.codigo) {
+    if (!session.id) {
       navigate("/");
       return;
     }
     setRemitente(`${session.cargo} ${session.nombres} ${session.apellidos}`);
-    setCodigoRemitente(session.codigo!);
+    setIdRemitente(session.id!);
     setCargo(session.cargo || "");
   }, [navigate]);
 
@@ -184,7 +184,7 @@ const EnviarComunicado = () => {
       setLoadingListaEstudiantes(true);
       let q = supabase
         .from("Estudiantes")
-        .select("codigo_estudiantil, apellidos_estudiante, nombre_estudiante, grado_estudiante, salon_estudiante")
+        .select("id_estudiantil, apellidos_estudiante, nombre_estudiante, grado_estudiante, salon_estudiante")
         .in("grado_estudiante", gradosSel);
       if (salonesSel.length > 0) q = q.in("salon_estudiante", salonesSel);
       const { data } = await q
@@ -194,13 +194,13 @@ const EnviarComunicado = () => {
         .order("nombre_estudiante", { ascending: true });
       setListaEstudiantesFiltrada(
         (data || []).map(e => ({
-          id: String(e.codigo_estudiantil),
+          id: String(e.id_estudiantil),
           nombre: `${e.apellidos_estudiante} ${e.nombre_estudiante}`,
           grado: e.grado_estudiante || "",
           salon: e.salon_estudiante || "",
         }))
       );
-      setEstudiantesSeleccionados(prev => prev.filter(id => (data || []).some(e => String(e.codigo_estudiantil) === id)));
+      setEstudiantesSeleccionados(prev => prev.filter(id => (data || []).some(e => String(e.id_estudiantil) === id)));
       setLoadingListaEstudiantes(false);
     };
     fetchLista();
@@ -223,7 +223,7 @@ const EnviarComunicado = () => {
       // PostgREST malinterpreta "Grado(s)" (con paréntesis) en .overlaps, filtramos en JS
       const { data } = await supabase
         .from("Asignación Profesores")
-        .select("codigo, nombres, apellidos, \"Grado(s)\", \"Salon(es)\"");
+        .select("id, nombres, apellidos, \"Grado(s)\", \"Salon(es)\"");
       const filtered = (data || []).filter(r => {
         const grados = (r["Grado(s)"] as string[]) || [];
         const salones = (r["Salon(es)"] as string[]) || [];
@@ -233,7 +233,7 @@ const EnviarComunicado = () => {
       });
       const byId = new Map<string, { id: string; nombre: string; grados: string[]; salones: string[] }>();
       for (const r of filtered) {
-        const rid = String(r.codigo);
+        const rid = String(r.id);
         if (!byId.has(rid)) {
           byId.set(rid, {
             id: rid,
@@ -266,14 +266,14 @@ const EnviarComunicado = () => {
       setLoadingInternos(true);
       const { data } = await supabase
         .from("Internos")
-        .select("codigo, nombres, apellidos, cargo")
+        .select("id, nombres, apellidos, cargo")
         .in("cargo", ["Coordinador(a)", "Administrativo(a)", "Secretaria General"])
         .order("apellidos", { ascending: true })
         .order("nombres", { ascending: true });
       const rows = data || [];
-      setListaCoordinadores(rows.filter(r => r.cargo === "Coordinador(a)").map(r => ({ id: String(r.codigo), nombre: `${r.apellidos} ${r.nombres}` })));
-      setListaAdministrativos(rows.filter(r => r.cargo === "Administrativo(a)").map(r => ({ id: String(r.codigo), nombre: `${r.apellidos} ${r.nombres}` })));
-      setListaSecretarias(rows.filter(r => r.cargo === "Secretaria General").map(r => ({ id: String(r.codigo), nombre: `${r.apellidos} ${r.nombres}` })));
+      setListaCoordinadores(rows.filter(r => r.cargo === "Coordinador(a)").map(r => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}` })));
+      setListaAdministrativos(rows.filter(r => r.cargo === "Administrativo(a)").map(r => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}` })));
+      setListaSecretarias(rows.filter(r => r.cargo === "Secretaria General").map(r => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}` })));
       setLoadingInternos(false);
     };
     fetchInternos();
@@ -287,7 +287,7 @@ const EnviarComunicado = () => {
       .select("*")
       .order("fecha", { ascending: false });
     if (cargo !== "Rector") {
-      query = query.eq("codigo_remitente", codigoRemitente);
+      query = query.eq("id_remitente", idRemitente);
     }
     const { data } = await query;
     setHistorial((data as ComunicadoEnviado[]) || []);
@@ -523,13 +523,13 @@ const EnviarComunicado = () => {
           remitente,
           destinatarios: destinatariosTexto,
           mensaje: mensaje.trim(),
-          codigo_remitente: codigoRemitente,
+          id_remitente: idRemitente,
           perfil: perfilArray.length > 0 ? perfilArray : null,
           id_destinatarios: idDestinatariosArray.length > 0 ? idDestinatariosArray : null,
           nivel: null,
           grado: null,
           salon: null,
-          codigo_estudiantil: null,
+          id_estudiantil: null,
           ...(archivoUrl ? { archivo_url: archivoUrl } : {}),
         }),
       });
@@ -602,7 +602,7 @@ const EnviarComunicado = () => {
       // Primera columna = código del estudiante
       const colCodigo = headersMasivo[0];
       const mensajes = filasParsed.map((fila) => ({
-        codigo: fila[colCodigo],
+        id: fila[colCodigo],
         mensaje: resolverPlantilla(plantillaMasivo, fila),
       }));
 
@@ -612,7 +612,7 @@ const EnviarComunicado = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           remitente,
-          codigo_remitente: codigoRemitente,
+          id_remitente: idRemitente,
           mensajes,
         }),
       });
@@ -624,7 +624,7 @@ const EnviarComunicado = () => {
       // Guardar resumen en Comunicados
       await supabase.from("Comunicados").insert({
         remitente,
-        codigo_remitente: codigoRemitente,
+        id_remitente: idRemitente,
         destinatarios: `Envío masivo personalizado a ${mensajes.length} estudiantes`,
         mensaje: plantillaMasivo.trim(),
       });
@@ -1212,7 +1212,7 @@ const EnviarComunicado = () => {
                         </div>
                         <div className="flex items-center gap-3">
                           <span className="text-xs font-semibold text-primary">#{numeroByIdHist.get(c.id)}</span>
-                          {String(c.codigo_remitente ?? "") === String(codigoRemitente) && (
+                          {String(c.id_remitente ?? "") === String(idRemitente) && (
                             <button
                               onClick={(e) => { e.stopPropagation(); setDeleteId(c.id); }}
                               className="text-muted-foreground hover:text-destructive transition-colors"

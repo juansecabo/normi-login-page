@@ -11,7 +11,7 @@ const NotasEstudiante = () => {
 
   useEffect(() => {
     const session = getSession();
-    if (!session.codigo || !isEstudiante()) {
+    if (!session.id || !isEstudiante()) {
       navigate("/");
       return;
     }
@@ -20,21 +20,21 @@ const NotasEstudiante = () => {
       const { data } = await supabase
         .from('Notas')
         .select('fecha_modificacion')
-        .eq('codigo_estudiantil', session.codigo)
+        .eq('id_estudiantil', session.id)
         .eq('grado', session.grado)
         .eq('salon', session.salon)
         .not('nombre_actividad', 'in', '("Definitiva Periodo","Definitiva Anual")');
       if (data) {
         const epochs = data.map((n: any) => n.fecha_modificacion ? Math.floor(new Date(n.fecha_modificacion).getTime() / 1000) : 0).filter((e: number) => e > 0);
         const maxEpoch = epochs.length > 0 ? Math.max(...epochs) : 0;
-        await markLastSeen('notas', session.codigo!, maxEpoch);
+        await markLastSeen('notas', session.id!, maxEpoch);
       }
     };
     marcarVisto();
   }, [navigate]);
 
   const session = getSession();
-  if (!session.codigo || !isEstudiante()) return null;
+  if (!session.id || !isEstudiante()) return null;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -52,7 +52,7 @@ const NotasEstudiante = () => {
         </div>
 
         <ConsolidadoNotas
-          codigoEstudiante={session.codigo}
+          idEstudiante={session.id}
           nombreEstudiante={session.nombres || ''}
           apellidosEstudiante={session.apellidos || ''}
           grado={session.grado || ''}
