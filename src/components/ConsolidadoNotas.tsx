@@ -225,7 +225,7 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
             {apellidosEstudiante} {nombreEstudiante}
           </h2>
           <p className="text-muted-foreground">
-            Código: {idEstudiante} | {grado} - {salon}
+            ID: {idEstudiante} | {grado} - {salon}
           </p>
         </div>
       </div>

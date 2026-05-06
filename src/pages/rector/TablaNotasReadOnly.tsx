@@ -377,7 +377,7 @@ const TablaNotasReadOnly = () => {
                 <thead>
                   <tr className="bg-primary text-primary-foreground">
                     <th className="md:sticky md:left-0 z-20 bg-primary border-r border-b border-border/30 w-[80px] md:w-[100px] min-w-[80px] md:min-w-[100px] p-2 md:p-3 text-left font-semibold text-xs md:text-sm">
-                      Código
+                      ID
                     </th>
                     <th className="md:sticky md:left-[100px] z-20 bg-primary border-r border-b border-border/30 w-[120px] md:w-[180px] min-w-[120px] md:min-w-[180px] p-2 md:p-3 text-left font-semibold text-xs md:text-sm">
                       Apellidos

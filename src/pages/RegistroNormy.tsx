@@ -315,7 +315,7 @@ const RegistroNormy = () => {
 
     if (activeTab === "estudiantes") {
       const cols: ColSpec[] = [
-        { header: "Código", key: "id", width: 14 },
+        { header: "ID", key: "id", width: 14 },
         { header: "Apellidos", key: "apellidos", width: 28 },
         { header: "Nombres", key: "nombres", width: 28 },
         { header: "Grado", key: "grado", width: 14 },
@@ -333,7 +333,7 @@ const RegistroNormy = () => {
       buildSheet("Estudiantes", "Registro en Normy — Estudiantes", cols, rows, "estado");
     } else {
       const cols: ColSpec[] = [
-        { header: "Código estudiante", key: "id", width: 14 },
+        { header: "ID estudiante", key: "id", width: 14 },
         { header: "Apellidos estudiante", key: "apellidos", width: 28 },
         { header: "Nombres estudiante", key: "nombres", width: 28 },
         { header: "Grado", key: "grado", width: 14 },
@@ -461,7 +461,7 @@ const RegistroNormy = () => {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por nombre o código..."
+              placeholder="Buscar por nombre o id..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"

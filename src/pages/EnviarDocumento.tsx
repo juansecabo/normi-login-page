@@ -199,11 +199,11 @@ const EnviarDocumento = () => {
 
     if (estudiante && estudiante !== "Todos") {
       if (perfil === "Estudiantes") {
-        return `Estudiante con código ${estudiante}`;
+        return `Estudiante con id ${estudiante}`;
       } else if (perfil === "Padres de familia") {
-        return `Padres de estudiante con código ${estudiante}`;
+        return `Padres de estudiante con id ${estudiante}`;
       } else {
-        return `Estudiante y padres de estudiante con código ${estudiante}`;
+        return `Estudiante y padres de estudiante con id ${estudiante}`;
       }
     }
 

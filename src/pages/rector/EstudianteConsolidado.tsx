@@ -316,7 +316,7 @@ const EstudianteConsolidado = () => {
               {estudiante?.apellidos_estudiante} {estudiante?.nombre_estudiante}
             </h2>
             <p className="text-muted-foreground">
-              Código: {estudiante?.id_estudiantil} | {gradoSeleccionado} - {salonSeleccionado}
+              ID: {estudiante?.id_estudiantil} | {gradoSeleccionado} - {salonSeleccionado}
             </p>
           </div>
         </div>

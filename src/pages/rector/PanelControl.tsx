@@ -373,7 +373,7 @@ const PanelControl = () => {
     setSavingEst(false);
     if (error) {
       if (error.code === "23505") {
-        toast({ title: "Error", description: `Ya existe un estudiante con el código ${estId}`, variant: "destructive" });
+        toast({ title: "Error", description: `Ya existe un estudiante con el id ${estId}`, variant: "destructive" });
       } else {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       }
@@ -426,7 +426,7 @@ const PanelControl = () => {
 
   const saveInterno = async () => {
     if (!intId || !intNombres || !intApellidos || !intCargo) {
-      toast({ title: "Campos requeridos", description: "Completa código, nombres, apellidos y cargo", variant: "destructive" });
+      toast({ title: "Campos requeridos", description: "Completa id, nombres, apellidos y cargo", variant: "destructive" });
       return;
     }
     if (!editingInt && !intContrasena) {
@@ -456,7 +456,7 @@ const PanelControl = () => {
     setSavingInt(false);
     if (error) {
       if (error.code === "23505") {
-        toast({ title: "Error", description: `Ya existe un funcionario con el código ${intId}`, variant: "destructive" });
+        toast({ title: "Error", description: `Ya existe un funcionario con el id ${intId}`, variant: "destructive" });
       } else {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       }
@@ -650,7 +650,7 @@ const PanelControl = () => {
 
     if (perfTipo === "Estudiante") {
       if (!perfEstId || !perfEstNombre || !perfEstApellidos) {
-        toast({ title: "Campos requeridos", description: "Completa código, nombres y apellidos del estudiante", variant: "destructive" });
+        toast({ title: "Campos requeridos", description: "Completa id, nombres y apellidos del estudiante", variant: "destructive" });
         setSavingPerf(false);
         return;
       }
@@ -836,8 +836,8 @@ const PanelControl = () => {
       <p className="text-sm font-medium">Hijo {num}</p>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
-          <Label className="text-xs">Código</Label>
-          <Input type="number" value={id} onChange={(e) => setId(e.target.value)} placeholder="Código" />
+          <Label className="text-xs">ID</Label>
+          <Input type="number" value={id} onChange={(e) => setId(e.target.value)} placeholder="ID" />
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Nombre</Label>
@@ -908,7 +908,7 @@ const PanelControl = () => {
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
-                    placeholder="Buscar por nombre, código, grado..."
+                    placeholder="Buscar por nombre, id, grado..."
                     value={searchEst}
                     onChange={(e) => setSearchEst(e.target.value)}
                     className="pl-9 pr-9"
@@ -938,7 +938,7 @@ const PanelControl = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Código</TableHead>
+                        <TableHead>ID</TableHead>
                         <TableHead>Apellidos</TableHead>
                         <TableHead>Nombres</TableHead>
                         <TableHead>Grado</TableHead>
@@ -984,7 +984,7 @@ const PanelControl = () => {
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
-                    placeholder="Buscar por nombre, código, cargo..."
+                    placeholder="Buscar por nombre, id, cargo..."
                     value={searchInt}
                     onChange={(e) => setSearchInt(e.target.value)}
                     className="pl-9 pr-9"
@@ -1014,7 +1014,7 @@ const PanelControl = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Código</TableHead>
+                        <TableHead>ID</TableHead>
                         <TableHead>Apellidos</TableHead>
                         <TableHead>Nombres</TableHead>
                         <TableHead>Cargo</TableHead>
@@ -1142,7 +1142,7 @@ const PanelControl = () => {
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
-                    placeholder="Buscar por nombre, código, tipo..."
+                    placeholder="Buscar por nombre, id, tipo..."
                     value={searchPerf}
                     onChange={(e) => setSearchPerf(e.target.value)}
                     className="pl-9 pr-9"
@@ -1175,7 +1175,7 @@ const PanelControl = () => {
                         <TableHead>Teléfono</TableHead>
                         <TableHead>Tipo</TableHead>
                         <TableHead>Nombre</TableHead>
-                        <TableHead>Código</TableHead>
+                        <TableHead>ID</TableHead>
                         <TableHead>Grado/Salón</TableHead>
                         <TableHead>Contraseña</TableHead>
                         <TableHead className="text-right">Acciones</TableHead>
@@ -1247,7 +1247,7 @@ const PanelControl = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Código estudiantil</Label>
+              <Label>ID estudiantil</Label>
               <Input
                 type="number"
                 value={estId}
@@ -1325,7 +1325,7 @@ const PanelControl = () => {
             <strong>
               {showDeleteEst?.apellidos_estudiante} {showDeleteEst?.nombre_estudiante}
             </strong>{" "}
-            (código {showDeleteEst?.id_estudiantil})?
+            (id {showDeleteEst?.id_estudiantil})?
           </p>
           <p className="text-sm text-destructive font-medium">
             Se eliminarán TODAS las notas de este estudiante.
@@ -1352,7 +1352,7 @@ const PanelControl = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Código</Label>
+              <Label>ID</Label>
               <Input
                 type="number"
                 value={intId}
@@ -1423,7 +1423,7 @@ const PanelControl = () => {
             <strong>
               {showDeleteInt?.apellidos} {showDeleteInt?.nombres}
             </strong>{" "}
-            (código {showDeleteInt?.id})?
+            (id {showDeleteInt?.id})?
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeleteInt(null)}>
@@ -1463,7 +1463,7 @@ const PanelControl = () => {
               </Select>
               {asigNombres && (
                 <p className="text-xs text-muted-foreground">
-                  {asigApellidos} {asigNombres} — Código: {asigProfesorId || "sin código"}
+                  {asigApellidos} {asigNombres} — ID: {asigProfesorId || "sin id"}
                 </p>
               )}
             </div>
@@ -1599,12 +1599,12 @@ const PanelControl = () => {
             {perfTipo === "Estudiante" ? (
               <>
                 <div className="space-y-2">
-                  <Label>Código estudiantil</Label>
+                  <Label>ID estudiantil</Label>
                   <Input
                     type="number"
                     value={perfEstId}
                     onChange={(e) => setPerfEstId(e.target.value)}
-                    placeholder="Código del estudiante"
+                    placeholder="ID del estudiante"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -1646,8 +1646,8 @@ const PanelControl = () => {
                     <Input value={perfPadreNombre} onChange={(e) => setPerfPadreNombre(e.target.value)} placeholder="Nombre del padre" />
                   </div>
                   <div className="space-y-2">
-                    <Label>Código padre</Label>
-                    <Input value={perfPadreId} onChange={(e) => setPerfPadreId(e.target.value)} placeholder="Código (opcional)" />
+                    <Label>ID padre</Label>
+                    <Input value={perfPadreId} onChange={(e) => setPerfPadreId(e.target.value)} placeholder="ID (opcional)" />
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -1713,7 +1713,7 @@ const PanelControl = () => {
           <p className="text-sm text-muted-foreground">
             ¿Estás seguro de eliminar el perfil de{" "}
             <strong>{showDeletePerf && getPerfilDisplayName(showDeletePerf)}</strong>
-            {" "}({showDeletePerf?.perfil}, código: {showDeletePerf && getPerfilDisplayCode(showDeletePerf)})?
+            {" "}({showDeletePerf?.perfil}, id: {showDeletePerf && getPerfilDisplayCode(showDeletePerf)})?
           </p>
           <p className="text-sm text-destructive font-medium">
             Este usuario ya no podrá iniciar sesión en la aplicación.

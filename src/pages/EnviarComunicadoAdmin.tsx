@@ -378,12 +378,12 @@ const EnviarComunicadoAdmin = () => {
       const uno = ids.length === 1;
       if (sel.Estudiantes && sel.Padres) {
         partes.push(uno
-          ? `Estudiante y padres del estudiante con código ${ids[0]}`
-          : `Estudiantes y padres de los estudiantes con código: ${ids.join(", ")}`);
+          ? `Estudiante y padres del estudiante con id ${ids[0]}`
+          : `Estudiantes y padres de los estudiantes con id: ${ids.join(", ")}`);
       } else if (sel.Estudiantes) {
-        partes.push(uno ? `Estudiante con código ${ids[0]}` : `Estudiantes con código: ${ids.join(", ")}`);
+        partes.push(uno ? `Estudiante con id ${ids[0]}` : `Estudiantes con id: ${ids.join(", ")}`);
       } else {
-        partes.push(uno ? `Padres del estudiante con código ${ids[0]}` : `Padres de los estudiantes con código: ${ids.join(", ")}`);
+        partes.push(uno ? `Padres del estudiante con id ${ids[0]}` : `Padres de los estudiantes con id: ${ids.join(", ")}`);
       }
     } else {
       if (sel.Estudiantes) {
@@ -1042,7 +1042,7 @@ const EnviarComunicadoAdmin = () => {
               <div className="space-y-2 mb-6">
                 <Label className="text-base font-semibold">1. Pegar datos de Excel</Label>
                 <p className="text-xs text-muted-foreground">
-                  Copia las columnas de Excel y pégalas aquí. La primera fila debe ser los encabezados y la primera columna debe ser el código del estudiante.
+                  Copia las columnas de Excel y pégalas aquí. La primera fila debe ser los encabezados y la primera columna debe ser el id del estudiante.
                 </p>
                 <Textarea
                   value={datosMasivos}

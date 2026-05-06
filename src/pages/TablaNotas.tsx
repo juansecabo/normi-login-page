@@ -1020,7 +1020,7 @@ const TablaNotas = () => {
       const wb = new ExcelJS.Workbook();
       const ws = wb.addWorksheet("Notas");
 
-      const headers: string[] = ["Código", "Apellidos", "Nombre"];
+      const headers: string[] = ["ID", "Apellidos", "Nombre"];
       const rows: (string | number | null)[][] = [];
 
       if (esFinalDefinitiva) {
@@ -2198,7 +2198,7 @@ const TablaNotas = () => {
     if (!session.id) {
       toast({
         title: "Error",
-        description: "Código del profesor no encontrado",
+        description: "ID del profesor no encontrado",
         variant: "destructive",
       });
       return;
@@ -2775,7 +2775,7 @@ const TablaNotas = () => {
                   <tr className="bg-primary text-primary-foreground">
                     {/* Columnas fijas en desktop, normales en móvil */}
                     <th className="md:sticky md:left-0 z-20 bg-primary border-r border-b border-border/30 w-[80px] md:w-[100px] min-w-[80px] md:min-w-[100px] p-2 md:p-3 text-left font-semibold text-xs md:text-sm">
-                      Código
+                      ID
                     </th>
                     <th className="md:sticky md:left-[100px] z-20 bg-primary border-r border-b border-border/30 w-[120px] md:w-[180px] min-w-[120px] md:min-w-[180px] p-2 md:p-3 text-left font-semibold text-xs md:text-sm">
                       Apellidos
