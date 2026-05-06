@@ -162,7 +162,7 @@ const Index = () => {
 
         // Construir lista de hijos
         const hijos: HijoData[] = [];
-        const numMap: Record<string, number> = { "1 (uno)": 1, "2 (dos)": 2, "3 (tres)": 3 };
+        const numMap: Record<string, number> = { "1 (uno)": 1, "2 (dos)": 2, "3 (tres)": 3, "4 (cuatro)": 4 };
         const numHijos = numMap[perfilPadre.padre_numero_de_estudiantes] || 0;
 
         for (let i = 1; i <= numHijos; i++) {

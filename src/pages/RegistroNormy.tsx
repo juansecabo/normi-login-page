@@ -43,6 +43,7 @@ interface Perfil {
   padre_estudiante1_id: number | null;
   padre_estudiante2_id: number | null;
   padre_estudiante3_id: number | null;
+  padre_estudiante4_id: number | null;
   padre_nombre: string | null;
   numero_de_telefono: string | null;
 }
@@ -114,7 +115,7 @@ const RegistroNormy = () => {
         fetchAllPages<Perfil>((from, to) =>
           supabase
             .from("Perfiles_Generales")
-            .select("perfil, estudiante_id, padre_estudiante1_id, padre_estudiante2_id, padre_estudiante3_id, padre_nombre, numero_de_telefono")
+            .select("perfil, estudiante_id, padre_estudiante1_id, padre_estudiante2_id, padre_estudiante3_id, padre_estudiante4_id, padre_nombre, numero_de_telefono")
             .range(from, to)
         ),
       ]);
@@ -144,7 +145,7 @@ const RegistroNormy = () => {
           padre_nombre: p.padre_nombre || "Sin nombre",
           telefono: p.numero_de_telefono || "Sin teléfono",
         };
-        for (const cod of [p.padre_estudiante1_id, p.padre_estudiante2_id, p.padre_estudiante3_id]) {
+        for (const cod of [p.padre_estudiante1_id, p.padre_estudiante2_id, p.padre_estudiante3_id, p.padre_estudiante4_id]) {
           if (cod) {
             const arr = map.get(cod) || [];
             arr.push(info);

@@ -53,7 +53,7 @@ const ASIGNATURAS = [
   "Uso pedagógico de tic",
 ];
 
-const NUM_ESTUDIANTES = ["1 (uno)", "2 (dos)", "3 (tres)"];
+const NUM_ESTUDIANTES = ["1 (uno)", "2 (dos)", "3 (tres)", "4 (cuatro)"];
 
 const NIVELES_GRADOS: Record<string, string[]> = {
   Preescolar: ["Prejardín", "Jardín", "Transición"],
@@ -130,6 +130,12 @@ interface Perfil {
   padre_estudiante3_nivel: string | null;
   padre_estudiante3_grado: string | null;
   padre_estudiante3_salon: string | null;
+  padre_estudiante4_id: number | null;
+  padre_estudiante4_nombre: string | null;
+  padre_estudiante4_apellidos: string | null;
+  padre_estudiante4_nivel: string | null;
+  padre_estudiante4_grado: string | null;
+  padre_estudiante4_salon: string | null;
   contrasena: string | null;
 }
 
@@ -263,6 +269,11 @@ const PanelControl = () => {
   const [perfHijo3Apellidos, setPerfHijo3Apellidos] = useState("");
   const [perfHijo3Grado, setPerfHijo3Grado] = useState("");
   const [perfHijo3Salon, setPerfHijo3Salon] = useState("");
+  const [perfHijo4Id, setPerfHijo4Id] = useState("");
+  const [perfHijo4Nombre, setPerfHijo4Nombre] = useState("");
+  const [perfHijo4Apellidos, setPerfHijo4Apellidos] = useState("");
+  const [perfHijo4Grado, setPerfHijo4Grado] = useState("");
+  const [perfHijo4Salon, setPerfHijo4Salon] = useState("");
   const [perfContrasena, setPerfContrasena] = useState("");
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -623,6 +634,11 @@ const PanelControl = () => {
       setPerfHijo3Apellidos(p.padre_estudiante3_apellidos || "");
       setPerfHijo3Grado(p.padre_estudiante3_grado || "");
       setPerfHijo3Salon(p.padre_estudiante3_salon || "");
+      setPerfHijo4Id(p.padre_estudiante4_id != null ? String(p.padre_estudiante4_id) : "");
+      setPerfHijo4Nombre(p.padre_estudiante4_nombre || "");
+      setPerfHijo4Apellidos(p.padre_estudiante4_apellidos || "");
+      setPerfHijo4Grado(p.padre_estudiante4_grado || "");
+      setPerfHijo4Salon(p.padre_estudiante4_salon || "");
       setPerfContrasena(p.contrasena || "");
     } else {
       setEditingPerf(null);
@@ -636,6 +652,8 @@ const PanelControl = () => {
       setPerfHijo2Grado(""); setPerfHijo2Salon("");
       setPerfHijo3Id(""); setPerfHijo3Nombre(""); setPerfHijo3Apellidos("");
       setPerfHijo3Grado(""); setPerfHijo3Salon("");
+      setPerfHijo4Id(""); setPerfHijo4Nombre(""); setPerfHijo4Apellidos("");
+      setPerfHijo4Grado(""); setPerfHijo4Salon("");
       setPerfContrasena("");
     }
     setShowPerfDialog(true);
@@ -741,6 +759,23 @@ const PanelControl = () => {
         payload.padre_estudiante3_nivel = null;
         payload.padre_estudiante3_grado = null;
         payload.padre_estudiante3_salon = null;
+      }
+      // Hijo 4
+      if (numEst >= 4) {
+        const n4 = getNivelFromGrado(perfHijo4Grado);
+        payload.padre_estudiante4_id = perfHijo4Id ? Number(perfHijo4Id) : null;
+        payload.padre_estudiante4_nombre = perfHijo4Nombre || null;
+        payload.padre_estudiante4_apellidos = perfHijo4Apellidos || null;
+        payload.padre_estudiante4_nivel = n4;
+        payload.padre_estudiante4_grado = perfHijo4Grado || null;
+        payload.padre_estudiante4_salon = perfHijo4Salon || null;
+      } else {
+        payload.padre_estudiante4_id = null;
+        payload.padre_estudiante4_nombre = null;
+        payload.padre_estudiante4_apellidos = null;
+        payload.padre_estudiante4_nivel = null;
+        payload.padre_estudiante4_grado = null;
+        payload.padre_estudiante4_salon = null;
       }
     }
 
@@ -1210,6 +1245,7 @@ const PanelControl = () => {
                                     p.padre_estudiante1_grado && `${p.padre_estudiante1_grado} ${p.padre_estudiante1_salon || ""}`.trim(),
                                     p.padre_estudiante2_grado && `${p.padre_estudiante2_grado} ${p.padre_estudiante2_salon || ""}`.trim(),
                                     p.padre_estudiante3_grado && `${p.padre_estudiante3_grado} ${p.padre_estudiante3_salon || ""}`.trim(),
+                                    p.padre_estudiante4_grado && `${p.padre_estudiante4_grado} ${p.padre_estudiante4_salon || ""}`.trim(),
                                   ].filter(Boolean).map((g, i) => <div key={i}>{g}</div>) || "—"}
                             </TableCell>
                             <TableCell className="text-muted-foreground">{p.contrasena || "—"}</TableCell>
@@ -1679,6 +1715,13 @@ const PanelControl = () => {
                   perfHijo3Apellidos, setPerfHijo3Apellidos,
                   perfHijo3Grado, setPerfHijo3Grado,
                   perfHijo3Salon, setPerfHijo3Salon,
+                )}
+                {parseInt(perfNumEst) >= 4 && renderHijoFields(4,
+                  perfHijo4Id, setPerfHijo4Id,
+                  perfHijo4Nombre, setPerfHijo4Nombre,
+                  perfHijo4Apellidos, setPerfHijo4Apellidos,
+                  perfHijo4Grado, setPerfHijo4Grado,
+                  perfHijo4Salon, setPerfHijo4Salon,
                 )}
               </>
             )}
