@@ -907,10 +907,11 @@ const PanelControl = () => {
         <div className="space-y-1">
           <Label className="text-xs">ID</Label>
           <Input
-            type="number"
+            type="text"
+            inputMode="numeric"
             value={id}
             onChange={(e) => {
-              const v = e.target.value;
+              const v = e.target.value.replace(/[^0-9]/g, "");
               setId(v);
               autofillEstudianteFields(v, setNombre, setApellidos, setGrado, setSalon);
             }}
@@ -1680,10 +1681,11 @@ const PanelControl = () => {
                 <div className="space-y-2">
                   <Label>ID estudiantil</Label>
                   <Input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     value={perfEstId}
                     onChange={(e) => {
-                      const v = e.target.value;
+                      const v = e.target.value.replace(/[^0-9]/g, "");
                       setPerfEstId(v);
                       autofillEstudianteFields(v, setPerfEstNombre, setPerfEstApellidos, setPerfEstGrado, setPerfEstSalon);
                     }}
