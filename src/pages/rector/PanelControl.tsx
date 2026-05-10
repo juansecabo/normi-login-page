@@ -275,6 +275,26 @@ const PanelControl = () => {
   const [perfHijo4Grado, setPerfHijo4Grado] = useState("");
   const [perfHijo4Salon, setPerfHijo4Salon] = useState("");
   const [perfContrasena, setPerfContrasena] = useState("");
+  const [perfTelefono, setPerfTelefono] = useState("");
+
+  // Autocompleta nombre/apellidos/grado/salon a partir del id estudiantil
+  const autofillEstudianteFields = (
+    idStr: string,
+    setNombre: (v: string) => void,
+    setApellidos: (v: string) => void,
+    setGrado: (v: string) => void,
+    setSalon: (v: string) => void,
+  ) => {
+    const num = parseInt(idStr);
+    if (!num || isNaN(num)) return;
+    const est = estudiantes.find((e) => e.id_estudiantil === num);
+    if (est) {
+      setNombre(est.nombre_estudiante || "");
+      setApellidos(est.apellidos_estudiante || "");
+      setGrado(est.grado_estudiante || "");
+      setSalon(est.salon_estudiante || "");
+    }
+  };
 
   // ═══════════════════════════════════════════════════════════════════════════
   // FETCH
@@ -640,6 +660,7 @@ const PanelControl = () => {
       setPerfHijo4Grado(p.padre_estudiante4_grado || "");
       setPerfHijo4Salon(p.padre_estudiante4_salon || "");
       setPerfContrasena(p.contrasena || "");
+      setPerfTelefono(p.numero_de_telefono || "");
     } else {
       setEditingPerf(null);
       setPerfTipo("Estudiante");
@@ -655,15 +676,23 @@ const PanelControl = () => {
       setPerfHijo4Id(""); setPerfHijo4Nombre(""); setPerfHijo4Apellidos("");
       setPerfHijo4Grado(""); setPerfHijo4Salon("");
       setPerfContrasena("");
+      setPerfTelefono("");
     }
     setShowPerfDialog(true);
   };
 
   const savePerfil = async () => {
     setSavingPerf(true);
+    const tel = perfTelefono.trim();
+    if (!tel) {
+      toast({ title: "Campos requeridos", description: "Escribe el número de celular", variant: "destructive" });
+      setSavingPerf(false);
+      return;
+    }
     const payload: Record<string, unknown> = {
       perfil: perfTipo,
       contrasena: perfContrasena || null,
+      numero_de_telefono: tel,
     };
 
     if (perfTipo === "Estudiante") {
@@ -872,7 +901,16 @@ const PanelControl = () => {
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label className="text-xs">ID</Label>
-          <Input type="number" value={id} onChange={(e) => setId(e.target.value)} placeholder="ID" />
+          <Input
+            type="number"
+            value={id}
+            onChange={(e) => {
+              const v = e.target.value;
+              setId(v);
+              autofillEstudianteFields(v, setNombre, setApellidos, setGrado, setSalon);
+            }}
+            placeholder="ID"
+          />
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Nombre</Label>
@@ -1639,7 +1677,11 @@ const PanelControl = () => {
                   <Input
                     type="number"
                     value={perfEstId}
-                    onChange={(e) => setPerfEstId(e.target.value)}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setPerfEstId(v);
+                      autofillEstudianteFields(v, setPerfEstNombre, setPerfEstApellidos, setPerfEstGrado, setPerfEstSalon);
+                    }}
                     placeholder="ID del estudiante"
                   />
                 </div>
@@ -1725,6 +1767,15 @@ const PanelControl = () => {
                 )}
               </>
             )}
+
+            <div className="space-y-2">
+              <Label>Celular</Label>
+              <Input
+                value={perfTelefono}
+                onChange={(e) => setPerfTelefono(e.target.value)}
+                placeholder="Número de celular"
+              />
+            </div>
 
             <div className="space-y-2">
               <Label>Contraseña</Label>
