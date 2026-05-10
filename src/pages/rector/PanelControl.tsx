@@ -277,7 +277,8 @@ const PanelControl = () => {
   const [perfContrasena, setPerfContrasena] = useState("");
   const [perfTelefono, setPerfTelefono] = useState("");
 
-  // Autocompleta nombre/apellidos/grado/salon a partir del id estudiantil
+  // Autocompleta nombre/apellidos/grado/salon a partir del id estudiantil.
+  // Si se borra el id (string vacío), también limpia los campos.
   const autofillEstudianteFields = (
     idStr: string,
     setNombre: (v: string) => void,
@@ -285,6 +286,10 @@ const PanelControl = () => {
     setGrado: (v: string) => void,
     setSalon: (v: string) => void,
   ) => {
+    if (!idStr.trim()) {
+      setNombre(""); setApellidos(""); setGrado(""); setSalon("");
+      return;
+    }
     const num = parseInt(idStr);
     if (!num || isNaN(num)) return;
     const est = estudiantes.find((e) => e.id_estudiantil === num);
