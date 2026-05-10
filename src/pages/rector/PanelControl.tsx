@@ -278,7 +278,7 @@ const PanelControl = () => {
   const [perfTelefono, setPerfTelefono] = useState("");
 
   // Autocompleta nombre/apellidos/grado/salon a partir del id estudiantil.
-  // Si se borra el id (string vacío), también limpia los campos.
+  // Si el id no matchea ningún estudiante (o se borra), limpia los campos.
   const autofillEstudianteFields = (
     idStr: string,
     setNombre: (v: string) => void,
@@ -286,18 +286,18 @@ const PanelControl = () => {
     setGrado: (v: string) => void,
     setSalon: (v: string) => void,
   ) => {
-    if (!idStr.trim()) {
-      setNombre(""); setApellidos(""); setGrado(""); setSalon("");
-      return;
-    }
+    const clear = () => { setNombre(""); setApellidos(""); setGrado(""); setSalon(""); };
+    if (!idStr.trim()) { clear(); return; }
     const num = parseInt(idStr);
-    if (!num || isNaN(num)) return;
+    if (!num || isNaN(num)) { clear(); return; }
     const est = estudiantes.find((e) => e.id_estudiantil === num);
     if (est) {
       setNombre(est.nombre_estudiante || "");
       setApellidos(est.apellidos_estudiante || "");
       setGrado(est.grado_estudiante || "");
       setSalon(est.salon_estudiante || "");
+    } else {
+      clear();
     }
   };
 
