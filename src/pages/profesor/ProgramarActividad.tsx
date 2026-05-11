@@ -4,6 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { subirArchivo } from "@/lib/storage";
 import { getSession, isProfesor } from "@/hooks/useSession";
 import HeaderNormy from "@/components/HeaderNormy";
+import CharCircle from "@/components/CharCircle";
+import {
+  buildActividadBodyPreview,
+  MAX_WA_TEMPLATE_BODY,
+  WA_TEMPLATE_OVERHEAD,
+} from "@/lib/wapBody";
 import { Button } from "@/components/ui/button";
 import ResponsiveSelect from "@/components/ResponsiveSelect";
 import { Textarea } from "@/components/ui/textarea";
@@ -547,6 +553,43 @@ const ProgramarActividad = () => {
     }
   };
 
+  // Contador de caracteres del body del WhatsApp (mismo que Enviar Comunicado).
+  // Calculado en tiempo real con la descripción + prefijo de tipo + fecha mostrada +
+  // archivos seleccionados, todo dentro de la plantilla REPORTE DE ACTIVIDAD.
+  const descripcionConTipo =
+    tipoSeleccionado && tipoSeleccionado !== "Otro"
+      ? `${tipoSeleccionado}: ${descripcion.trim()}`
+      : descripcion.trim();
+  const fechaTextoActual = fechaSeleccionada
+    ? mostrarFecha(formatearFecha(fechaSeleccionada))
+    : "";
+  const profesorNombre = `${profesorNombres} ${profesorApellidos}`.trim();
+  const templateBodyLength =
+    buildActividadBodyPreview({
+      profesorCargo,
+      profesorNombre,
+      grado: gradoSeleccionado,
+      salon: salonSeleccionado,
+      asignatura: asignaturaSeleccionada,
+      descripcion: descripcionConTipo,
+      fecha: fechaTextoActual,
+      archivos: archivosSeleccionados,
+    }).length + WA_TEMPLATE_OVERHEAD;
+  const baselineLength =
+    buildActividadBodyPreview({
+      profesorCargo,
+      profesorNombre,
+      grado: gradoSeleccionado,
+      salon: salonSeleccionado,
+      asignatura: asignaturaSeleccionada,
+      descripcion: "",
+      fecha: fechaTextoActual,
+      archivos: [],
+    }).length + WA_TEMPLATE_OVERHEAD;
+  const personalMax = Math.max(0, MAX_WA_TEMPLATE_BODY - baselineLength);
+  const usedChars = Math.max(0, templateBodyLength - baselineLength);
+  const bodyOverLimit = templateBodyLength > MAX_WA_TEMPLATE_BODY;
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <HeaderNormy backLink="/dashboard" />
@@ -630,7 +673,10 @@ const ProgramarActividad = () => {
 
                       {/* 5. Descripción */}
                       <div className="space-y-2">
-                        <Label htmlFor="descripcion">Descripción</Label>
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="descripcion">Descripción</Label>
+                          <CharCircle value={usedChars} max={personalMax} />
+                        </div>
                         <Textarea
                           id="descripcion"
                           placeholder="Ej: Resolver ejercicios de la página 45"
@@ -687,9 +733,19 @@ const ProgramarActividad = () => {
 
                       {/* 8. Botón Programar */}
                       <Button
-                        onClick={handleProgramar}
+                        onClick={() => {
+                          if (bodyOverLimit) {
+                            toast({
+                              title: "Reporte demasiado largo",
+                              description: `El contenido total (${templateBodyLength} caracteres) supera el límite de ${MAX_WA_TEMPLATE_BODY} caracteres de WhatsApp. Reduce la descripción.`,
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          handleProgramar();
+                        }}
                         disabled={guardando || !salonSeleccionado || !descripcion.trim() || !fechaSeleccionada}
-                        className="w-full mt-4"
+                        className={`w-full mt-4 ${bodyOverLimit ? "bg-red-500 hover:bg-red-600 text-white" : ""}`}
                         size="lg"
                       >
                         {guardando ? (
