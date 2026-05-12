@@ -11,6 +11,9 @@ import iconPanelControl from "@/assets/icons/panel-de-control.webp";
 import iconRegistroAgente from "@/assets/icons/registro-agente.webp";
 import iconUsoAgente from "@/assets/icons/uso-agente.webp";
 import iconConversaciones from "@/assets/icons/conversaciones.webp";
+import iconCasos from "@/assets/icons/casos.png";
+import iconCitas from "@/assets/icons/citas.png";
+import iconEntrevista from "@/assets/icons/entrevista.webp";
 import HeaderNormy from "@/components/HeaderNormy";
 import { getAllLastSeen } from "@/utils/notificaciones";
 
@@ -38,7 +41,7 @@ const DashboardRector = () => {
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [cargo, setCargo] = useState("");
-  const [badges, setBadges] = useState({ comunicados: 0, documentos: 0 });
+  const [badges, setBadges] = useState({ comunicados: 0, documentos: 0, remisiones: 0 });
   const esAdministrativo = isAdministrativo();
 
   useEffect(() => {
@@ -79,6 +82,11 @@ const DashboardRector = () => {
           .overlaps('perfil', perfiles)
           .gt('id', minComLastSeen);
 
+        const esOrientador = session.cargo === 'Orientador(a) Escolar';
+        const remisionesRes = esOrientador
+          ? await supabase.from('Remisiones_Orientacion').select('*', { count: 'exact', head: true }).gt('id', lastSeen['remisiones'] ?? 0)
+          : ({ count: 0 } as any);
+
         if (msgData) {
           const filtrados = msgData.filter((c: any) => {
             if (c.id_destinatarios && c.id_destinatarios.length > 0) {
@@ -89,6 +97,7 @@ const DashboardRector = () => {
           setBadges({
             comunicados: filtrados.filter((c: any) => c.id > (lastSeen['comunicados'] ?? 0)).length,
             documentos: filtrados.filter((c: any) => c.archivo_url && c.id > (lastSeen['documentos'] ?? 0)).length,
+            remisiones: (remisionesRes as any).count ?? 0,
           });
         }
       } catch (err) {
@@ -165,6 +174,43 @@ const DashboardRector = () => {
             >
               <img src={iconEstadisticas} alt="" className="w-16 h-16 object-contain" />
               <span className="font-semibold text-lg text-foreground">Estadísticas</span>
+            </button>
+
+            {cargo === 'Orientador(a) Escolar' && (
+              <>
+                <button
+                  onClick={() => navigate("/orientador/casos")}
+                  className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-amber-100 transition-all duration-200 hover:shadow-md hover:bg-amber-200"
+                >
+                  <img src={iconCasos} alt="" className="w-16 h-16 object-contain" />
+                  <span className="font-semibold text-lg text-foreground text-center">Casos de Seguimiento</span>
+                </button>
+
+                <button
+                  onClick={() => navigate("/orientador/citas")}
+                  className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-violet-100 transition-all duration-200 hover:shadow-md hover:bg-violet-200"
+                >
+                  <img src={iconCitas} alt="" className="w-16 h-16 object-contain" />
+                  <span className="font-semibold text-lg text-foreground text-center">Citas y Atención</span>
+                </button>
+
+                <button
+                  onClick={() => navigate("/orientador/remisiones")}
+                  className="relative flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-yellow-100 transition-all duration-200 hover:shadow-md hover:bg-yellow-200"
+                >
+                  <Badge count={badges.remisiones} />
+                  <img src={iconCasos} alt="" className="w-16 h-16 object-contain" />
+                  <span className="font-semibold text-lg text-foreground text-center">Remisiones Recibidas</span>
+                </button>
+              </>
+            )}
+
+            <button
+              onClick={() => navigate("/remitir-orientacion")}
+              className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-sky-100 transition-all duration-200 hover:shadow-md hover:bg-sky-200"
+            >
+              <img src={iconEntrevista} alt="" className="w-16 h-16 object-contain" />
+              <span className="font-semibold text-lg text-foreground text-center">Remitir a Orientación</span>
             </button>
 
             {cargo === 'Rector' && (

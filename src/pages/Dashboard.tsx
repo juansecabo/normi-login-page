@@ -7,6 +7,7 @@ import iconEnviarComunicado from "@/assets/icons/enviar-comunicado.webp";
 import iconComunicadosRecibidos from "@/assets/icons/comunicados-recibidos.webp";
 import iconEstadisticas from "@/assets/icons/estadisticas.webp";
 import iconRegistroAgente from "@/assets/icons/registro-agente.webp";
+import iconEntrevista from "@/assets/icons/entrevista.webp";
 import iconDocumentos from "@/assets/icons/documentos.webp";
 import { getSession, isProfesor, isAdmin, isRectorOrCoordinador, isEstudiante, isPadreDeFamilia } from "@/hooks/useSession";
 import HeaderNormy from "@/components/HeaderNormy";
@@ -274,6 +275,14 @@ const Dashboard = () => {
             >
               <img src={iconRegistroAgente} alt="" className="w-12 h-12 object-contain" />
               <span className="font-semibold text-foreground text-center">Registro en Normy</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/remitir-orientacion")}
+              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-sky-100 transition-all duration-200 hover:shadow-md hover:bg-sky-200"
+            >
+              <img src={iconEntrevista} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground text-center">Remitir a Orientación</span>
             </button>
           </div>
         </div>

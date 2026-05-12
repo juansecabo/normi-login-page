@@ -139,7 +139,12 @@ export const isAdmin = (): boolean => {
 
 export const isRectorOrCoordinador = (): boolean => {
   const { cargo } = getSession();
-  return cargo === 'Rector' || cargo === 'Coordinador(a)' || cargo === 'Administrador';
+  return cargo === 'Rector'
+    || cargo === 'Coordinador(a)'
+    || cargo === 'Administrador'
+    || cargo === 'Administrativo(a)'
+    || cargo === 'Secretaria General'
+    || cargo === 'Orientador(a) Escolar';
 };
 
 export const isAdministrativo = (): boolean => {
@@ -147,10 +152,21 @@ export const isAdministrativo = (): boolean => {
   return cargo === 'Administrativo(a)';
 };
 
-// Cualquier rol con acceso al dashboard de gestión (rector, coordinador, admin, administrativo)
+export const isOrientador = (): boolean => {
+  const { cargo } = getSession();
+  return cargo === 'Orientador(a) Escolar';
+};
+
+// Cualquier rol con acceso al dashboard de gestión
+// (rector, coordinador, admin, administrativo, secretaria general, orientador)
 export const puedeAccederDashboard = (): boolean => {
   const { cargo } = getSession();
-  return cargo === 'Rector' || cargo === 'Coordinador(a)' || cargo === 'Administrador' || cargo === 'Administrativo(a)';
+  return cargo === 'Rector'
+    || cargo === 'Coordinador(a)'
+    || cargo === 'Administrador'
+    || cargo === 'Administrativo(a)'
+    || cargo === 'Secretaria General'
+    || cargo === 'Orientador(a) Escolar';
 };
 
 export const isProfesor = (): boolean => {

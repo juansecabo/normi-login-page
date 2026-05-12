@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import UpdateBanner from "./components/UpdateBanner";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import DashboardRector from "./pages/DashboardRector";
@@ -57,6 +58,13 @@ import EstadisticasEstudiante from "./pages/estudiante/EstadisticasEstudiante";
 import ComunicadosEstudiante from "./pages/estudiante/ComunicadosEstudiante";
 import DocumentosEstudiante from "./pages/estudiante/DocumentosEstudiante";
 
+// Rutas para Orientador(a) Escolar
+import Casos from "./pages/orientador/Casos";
+import CasoDetalle from "./pages/orientador/CasoDetalle";
+import Citas from "./pages/orientador/Citas";
+import RemitirOrientacion from "./pages/orientador/RemitirOrientacion";
+import RemisionesOrientacion from "./pages/orientador/RemisionesOrientacion";
+
 // Rutas para Padre
 import NotasPadre from "./pages/padre/NotasPadre";
 import CalendarioPadre from "./pages/padre/CalendarioPadre";
@@ -77,6 +85,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <UpdateBanner />
       <BrowserRouter>
         <ScrollToTop />
         <Routes>
@@ -122,6 +131,13 @@ const App = () => (
           <Route path="/enviar-comunicado" element={<EnviarComunicado />} />
           <Route path="/enviar-comunicado-admin" element={<EnviarComunicadoAdmin />} />
 <Route path="/manual-convivencia" element={<ManualConvivencia />} />
+
+          {/* Rutas para Orientador(a) Escolar */}
+          <Route path="/orientador/casos" element={<Casos />} />
+          <Route path="/orientador/casos/:id" element={<CasoDetalle />} />
+          <Route path="/orientador/citas" element={<Citas />} />
+          <Route path="/remitir-orientacion" element={<RemitirOrientacion />} />
+          <Route path="/orientador/remisiones" element={<RemisionesOrientacion />} />
 
           {/* Rutas para Estudiante */}
           <Route path="/estudiante/notas" element={<NotasEstudiante />} />

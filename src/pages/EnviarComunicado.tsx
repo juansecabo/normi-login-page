@@ -20,7 +20,7 @@ const WEBHOOK_URL =
 const WEBHOOK_RECTOR_URL =
   "https://n8n.notasnormy.com/webhook/enviar-comunicado-rector-coordinadores";
 
-type PerfilKey = 'Estudiantes' | 'Padres' | 'Profesores' | 'Coordinadores' | 'Rector' | 'Administrativos' | 'Secretaria';
+type PerfilKey = 'Estudiantes' | 'Padres' | 'Profesores' | 'Coordinadores' | 'Rector' | 'Administrativos' | 'Secretaria' | 'Orientador';
 
 const PERFILES_UI: { key: PerfilKey; label: string }[] = [
   { key: 'Estudiantes', label: 'Estudiantes' },
@@ -30,6 +30,7 @@ const PERFILES_UI: { key: PerfilKey; label: string }[] = [
   { key: 'Rector', label: 'Rector' },
   { key: 'Administrativos', label: 'Administrativos' },
   { key: 'Secretaria', label: 'Secretaria General' },
+  { key: 'Orientador', label: 'Orientador(a) Escolar' },
 ];
 
 const WEBHOOK_MASIVO_URL =
@@ -104,7 +105,7 @@ const EnviarComunicado = () => {
   // Destinatarios state — perfiles (multi-select con checkboxes)
   const [perfilesMarcados, setPerfilesMarcados] = useState<Record<PerfilKey, boolean>>({
     Estudiantes: false, Padres: false, Profesores: false,
-    Coordinadores: false, Rector: false, Administrativos: false, Secretaria: false,
+    Coordinadores: false, Rector: false, Administrativos: false, Secretaria: false, Orientador: false,
   });
 
   // Filtros en cascada con checkboxes (Nivel → Grado → Salón)
@@ -120,9 +121,11 @@ const EnviarComunicado = () => {
   const [listaCoordinadores, setListaCoordinadores] = useState<{ id: string; nombre: string }[]>([]);
   const [listaAdministrativos, setListaAdministrativos] = useState<{ id: string; nombre: string }[]>([]);
   const [listaSecretarias, setListaSecretarias] = useState<{ id: string; nombre: string }[]>([]);
+  const [listaOrientadores, setListaOrientadores] = useState<{ id: string; nombre: string }[]>([]);
   const [coordinadoresSeleccionados, setCoordinadoresSeleccionados] = useState<string[]>([]);
   const [administrativosSeleccionados, setAdministrativosSeleccionados] = useState<string[]>([]);
   const [secretariasSeleccionadas, setSecretariasSeleccionadas] = useState<string[]>([]);
+  const [orientadoresSeleccionados, setOrientadoresSeleccionados] = useState<string[]>([]);
   const [loadingInternos, setLoadingInternos] = useState(false);
 
   // Estudiantes específicos (filtrados por grados/salones marcados)
@@ -255,29 +258,30 @@ const EnviarComunicado = () => {
     fetchProfes();
   }, [gradosMarcados, salonesMarcados, perfilesMarcados.Profesores]);
 
-  // Cargar las 3 listas de internos (Coordinadores, Administrativos, Secretaria General)
+  // Cargar las 4 listas de internos (Coordinadores, Administrativos, Secretaria General, Orientador(a) Escolar)
   useEffect(() => {
     const necesitaLista =
-      perfilesMarcados.Coordinadores || perfilesMarcados.Administrativos || perfilesMarcados.Secretaria;
+      perfilesMarcados.Coordinadores || perfilesMarcados.Administrativos || perfilesMarcados.Secretaria || perfilesMarcados.Orientador;
     if (!necesitaLista) return;
-    if (listaCoordinadores.length || listaAdministrativos.length || listaSecretarias.length) return;
+    if (listaCoordinadores.length || listaAdministrativos.length || listaSecretarias.length || listaOrientadores.length) return;
 
     const fetchInternos = async () => {
       setLoadingInternos(true);
       const { data } = await supabase
         .from("Internos")
         .select("id, nombres, apellidos, cargo")
-        .in("cargo", ["Coordinador(a)", "Administrativo(a)", "Secretaria General"])
+        .in("cargo", ["Coordinador(a)", "Administrativo(a)", "Secretaria General", "Orientador(a) Escolar"])
         .order("apellidos", { ascending: true })
         .order("nombres", { ascending: true });
       const rows = data || [];
       setListaCoordinadores(rows.filter(r => r.cargo === "Coordinador(a)").map(r => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}` })));
       setListaAdministrativos(rows.filter(r => r.cargo === "Administrativo(a)").map(r => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}` })));
       setListaSecretarias(rows.filter(r => r.cargo === "Secretaria General").map(r => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}` })));
+      setListaOrientadores(rows.filter(r => r.cargo === "Orientador(a) Escolar").map(r => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}` })));
       setLoadingInternos(false);
     };
     fetchInternos();
-  }, [perfilesMarcados, listaCoordinadores.length, listaAdministrativos.length, listaSecretarias.length]);
+  }, [perfilesMarcados, listaCoordinadores.length, listaAdministrativos.length, listaSecretarias.length, listaOrientadores.length]);
 
   const fetchHistorial = async () => {
     setLoadingHistorial(true);
@@ -308,6 +312,7 @@ const EnviarComunicado = () => {
         if (key === 'Coordinadores') setCoordinadoresSeleccionados([]);
         if (key === 'Administrativos') setAdministrativosSeleccionados([]);
         if (key === 'Secretaria') setSecretariasSeleccionadas([]);
+        if (key === 'Orientador') setOrientadoresSeleccionados([]);
         if (key === 'Profesores') { setProfesoresSeleccionados([]); setMostrarProfesores(false); }
         if (!nuevo.Estudiantes && !nuevo.Padres && !nuevo.Profesores) {
           setNivelesMarcados({});
@@ -434,6 +439,13 @@ const EnviarComunicado = () => {
         partes.push(nombres.length === 1 ? `Secretaria ${nombres[0]}` : `Secretarias ${nombres.join(", ")}`);
       }
     }
+    if (sel.Orientador) {
+      if (orientadoresSeleccionados.length === 0) partes.push("Orientador(a) Escolar");
+      else {
+        const nombres = listaANombres(orientadoresSeleccionados, listaOrientadores);
+        partes.push(nombres.length === 1 ? `Orientador(a) ${nombres[0]}` : `Orientadores ${nombres.join(", ")}`);
+      }
+    }
 
     return partes.length === 0 ? "" : partes.join(". ") + ".";
   };
@@ -505,6 +517,7 @@ const EnviarComunicado = () => {
       if (perfilesMarcados.Rector) perfilArray.push("Rector");
       if (perfilesMarcados.Administrativos) perfilArray.push("Administrativos");
       if (perfilesMarcados.Secretaria) perfilArray.push("Secretaria General");
+      if (perfilesMarcados.Orientador) perfilArray.push("Orientador(a) Escolar");
 
       const idDestinatariosArray: string[] = [
         ...estudiantesSeleccionados,
@@ -512,9 +525,10 @@ const EnviarComunicado = () => {
         ...coordinadoresSeleccionados,
         ...administrativosSeleccionados,
         ...secretariasSeleccionadas,
+        ...orientadoresSeleccionados,
       ];
 
-      const webhookUrl = ['Rector', 'Coordinador(a)'].includes(cargo) ? WEBHOOK_RECTOR_URL : WEBHOOK_URL;
+      const webhookUrl = ['Rector', 'Coordinador(a)', 'Administrativo(a)', 'Secretaria General', 'Orientador(a) Escolar'].includes(cargo) ? WEBHOOK_RECTOR_URL : WEBHOOK_URL;
       const response = await fetch(webhookUrl, {
         method: "POST",
         mode: "cors",
@@ -924,6 +938,7 @@ const EnviarComunicado = () => {
                   { on: perfilesMarcados.Coordinadores, label: "Coordinadores", lista: listaCoordinadores, sel: coordinadoresSeleccionados, setter: setCoordinadoresSeleccionados },
                   { on: perfilesMarcados.Administrativos, label: "Administrativos", lista: listaAdministrativos, sel: administrativosSeleccionados, setter: setAdministrativosSeleccionados },
                   { on: perfilesMarcados.Secretaria, label: "Secretaria General", lista: listaSecretarias, sel: secretariasSeleccionadas, setter: setSecretariasSeleccionadas },
+                  { on: perfilesMarcados.Orientador, label: "Orientador(a) Escolar", lista: listaOrientadores, sel: orientadoresSeleccionados, setter: setOrientadoresSeleccionados },
                 ].filter(x => x.on).map((grupo) => (
                   <div key={grupo.label} className="border-l-2 border-primary/30 pl-4 space-y-2">
                     <p className="text-xs text-muted-foreground">

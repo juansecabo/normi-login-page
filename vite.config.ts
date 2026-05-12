@@ -14,7 +14,9 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
-      registerType: "autoUpdate",
+      // 'prompt' = el SW descarga la nueva versión en background pero NO se activa
+      // automáticamente. La app muestra un banner y el usuario hace click para refrescar.
+      registerType: "prompt",
       includeAssets: ["favicon.png", "apple-touch-icon.png"],
       manifest: {
         name: "Notas Normy - Escuela Normal Superior de Corozal",
@@ -46,10 +48,11 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,woff2}"],
-        // Activa la nueva version del SW inmediatamente sin esperar a que el usuario
-        // cierre todas las pestañas / la PWA. Asi los cambios llegan a todos rapido.
-        skipWaiting: true,
-        clientsClaim: true,
+        // El usuario decide cuándo activar la nueva versión vía el banner amarillo
+        // de UpdateBanner. NO skipWaiting / clientsClaim — el SW espera.
+        skipWaiting: false,
+        clientsClaim: false,
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
     }),
   ].filter(Boolean),
