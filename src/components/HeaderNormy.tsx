@@ -46,45 +46,47 @@ const HeaderNormy = ({ backLink }: HeaderNormyProps) => {
 
   return (
     <>
-      <header className="bg-primary text-primary-foreground py-2 md:py-3 px-3 md:px-4 shadow-md">
-        <div className="container mx-auto flex items-center justify-between">
-          <Link to={finalBackLink} className="flex items-center gap-2 md:gap-3 hover:opacity-80 transition-opacity cursor-pointer">
-            <img
-              src={escudoImg}
-              alt="Escudo"
-              className="w-10 h-10 md:w-16 md:h-16 object-contain -my-1 md:-my-2"
-            />
-            <h1 className="text-base md:text-xl font-bold">Notas Normy</h1>
-          </Link>
-          <div className="flex items-center gap-1 sm:gap-2">
-            {canInstall && (
+      <header className="shadow-md">
+        <div className="bg-primary text-primary-foreground py-2 md:py-3 px-3 md:px-4">
+          <div className="container mx-auto flex items-center justify-between">
+            <Link to={finalBackLink} className="flex items-center gap-2 md:gap-3 hover:opacity-80 transition-opacity cursor-pointer">
+              <img
+                src={escudoImg}
+                alt="Escudo"
+                className="w-10 h-10 md:w-16 md:h-16 object-contain -my-1 md:-my-2"
+              />
+              <h1 className="text-base md:text-xl font-bold">Notas Normy</h1>
+            </Link>
+            <div className="flex items-center gap-1 sm:gap-2">
+              {canInstall && (
+                <button
+                  onClick={installApp}
+                  className="px-2 sm:px-3 py-1.5 sm:py-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground font-medium rounded-lg transition-all duration-200 text-[10px] sm:text-sm flex items-center gap-1"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Descargar App</span>
+                  <span className="sm:hidden">App</span>
+                </button>
+              )}
               <button
-                onClick={installApp}
-                className="px-2 sm:px-3 py-1.5 sm:py-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground font-medium rounded-lg transition-all duration-200 text-[10px] sm:text-sm flex items-center gap-1"
+                onClick={() => setShowCambiarContrasena(true)}
+                className="px-2 sm:px-3 py-1.5 sm:py-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground font-medium rounded-lg transition-all duration-200 text-[10px] sm:text-sm whitespace-nowrap"
               >
-                <Download className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Descargar App</span>
-                <span className="sm:hidden">App</span>
+                <span className="hidden sm:inline">Cambiar contraseña</span>
+                <span className="sm:hidden">Contraseña</span>
               </button>
-            )}
-            <button
-              onClick={() => setShowCambiarContrasena(true)}
-              className="px-2 sm:px-3 py-1.5 sm:py-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground font-medium rounded-lg transition-all duration-200 text-[10px] sm:text-sm whitespace-nowrap"
-            >
-              <span className="hidden sm:inline">Cambiar contraseña</span>
-              <span className="sm:hidden">Contraseña</span>
-            </button>
-            <Button
-              variant="secondary"
-              onClick={handleLogout}
-              className="font-medium text-[10px] sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
-            >
-              Cerrar sesión
-            </Button>
+              <Button
+                variant="secondary"
+                onClick={handleLogout}
+                className="font-medium text-[10px] sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+              >
+                Cerrar sesión
+              </Button>
+            </div>
           </div>
         </div>
+        <UpdateBanner />
       </header>
-      <UpdateBanner />
       <CambiarContrasenaModal
         open={showCambiarContrasena}
         onOpenChange={setShowCambiarContrasena}
