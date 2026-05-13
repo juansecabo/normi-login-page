@@ -4,7 +4,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { useEffect } from "react";
-import UpdateBanner from "./components/UpdateBanner";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import DashboardRector from "./pages/DashboardRector";
@@ -105,7 +104,6 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <UpdateBanner />
       <BrowserRouter>
         <ScrollToTop />
         <Routes>
