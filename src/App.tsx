@@ -65,6 +65,26 @@ import Citas from "./pages/orientador/Citas";
 import RemitirOrientacion from "./pages/orientador/RemitirOrientacion";
 import RemisionesOrientacion from "./pages/orientador/RemisionesOrientacion";
 
+// Permisos y Excusas + Consultas + Registros
+import PermisosExcusas from "./pages/PermisosExcusas";
+import RetiroEstudiantes from "./pages/permisos/RetiroEstudiantes";
+import RetiroEstudiantesStaff from "./pages/permisos/RetiroEstudiantesStaff";
+import JustificacionInasistencia from "./pages/permisos/JustificacionInasistencia";
+import JustificacionInasistenciaStaff from "./pages/permisos/JustificacionInasistenciaStaff";
+import JustificacionUniforme from "./pages/permisos/JustificacionUniforme";
+import JustificacionUniformeStaff from "./pages/permisos/JustificacionUniformeStaff";
+import SolicitudEntrevistaStaff from "./pages/permisos/SolicitudEntrevistaStaff";
+import SolicitudEntrevistaPadre from "./pages/permisos/SolicitudEntrevistaPadre";
+import Consultas from "./pages/Consultas";
+import ConsultaDetalle from "./pages/ConsultaDetalle";
+import ConsultaPublica from "./pages/ConsultaPublica";
+import MisConsultas from "./pages/padre/MisConsultas";
+import RegistrosComportamiento from "./pages/RegistrosComportamiento";
+import RestringirNormy from "./pages/rector/RestringirNormy";
+import TablaNotasRouter from "./pages/TablaNotasRouter";
+import TablaNotasPreescolar from "./pages/TablaNotasPreescolar";
+import TablaNotasPreescolarReadOnly from "./pages/rector/TablaNotasPreescolarReadOnly";
+
 // Rutas para Padre
 import NotasPadre from "./pages/padre/NotasPadre";
 import CalendarioPadre from "./pages/padre/CalendarioPadre";
@@ -138,6 +158,34 @@ const App = () => (
           <Route path="/orientador/citas" element={<Citas />} />
           <Route path="/remitir-orientacion" element={<RemitirOrientacion />} />
           <Route path="/orientador/remisiones" element={<RemisionesOrientacion />} />
+
+          {/* Permisos y Excusas */}
+          <Route path="/permisos-excusas" element={<PermisosExcusas />} />
+          <Route path="/permisos-excusas/retiro" element={<RetiroEstudiantes />} />
+          <Route path="/permisos-excusas/retiro-staff" element={<RetiroEstudiantesStaff />} />
+          <Route path="/permisos-excusas/inasistencia" element={<JustificacionInasistencia />} />
+          <Route path="/permisos-excusas/inasistencia-staff" element={<JustificacionInasistenciaStaff />} />
+          <Route path="/permisos-excusas/uniforme" element={<JustificacionUniforme />} />
+          <Route path="/permisos-excusas/uniforme-staff" element={<JustificacionUniformeStaff />} />
+          <Route path="/permisos-excusas/entrevista" element={<SolicitudEntrevistaPadre />} />
+          <Route path="/permisos-excusas/entrevista-staff" element={<SolicitudEntrevistaStaff />} />
+
+          {/* Consultas */}
+          <Route path="/consultas" element={<Consultas />} />
+          <Route path="/consultas/:id" element={<ConsultaDetalle />} />
+          <Route path="/consulta/:id" element={<ConsultaPublica />} />
+          <Route path="/padre/consultas" element={<MisConsultas />} />
+
+          {/* Registros de Comportamiento */}
+          <Route path="/registros-comportamiento" element={<RegistrosComportamiento />} />
+
+          {/* Tabla preescolar (router que decide entre tabla normal y preescolar) */}
+          <Route path="/tabla-notas-router" element={<TablaNotasRouter />} />
+          <Route path="/tabla-notas-preescolar" element={<TablaNotasPreescolar />} />
+          <Route path="/rector/tabla-notas-preescolar" element={<TablaNotasPreescolarReadOnly />} />
+
+          {/* Restringir Normy (panel admin) */}
+          <Route path="/rector/restringir-normy" element={<RestringirNormy />} />
 
           {/* Rutas para Estudiante */}
           <Route path="/estudiante/notas" element={<NotasEstudiante />} />

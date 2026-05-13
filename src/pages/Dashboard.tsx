@@ -9,6 +9,9 @@ import iconEstadisticas from "@/assets/icons/estadisticas.webp";
 import iconRegistroAgente from "@/assets/icons/registro-agente.webp";
 import iconEntrevista from "@/assets/icons/entrevista.webp";
 import iconDocumentos from "@/assets/icons/documentos.webp";
+import iconPermisos from "@/assets/icons/permisos-y-excusas.webp";
+import iconConsultas from "@/assets/icons/consultas.png";
+import iconRegistros from "@/assets/icons/registros-comportamiento.png";
 import { getSession, isProfesor, isAdmin, isRectorOrCoordinador, isEstudiante, isPadreDeFamilia } from "@/hooks/useSession";
 import HeaderNormy from "@/components/HeaderNormy";
 import BuzonSugerencias from "@/components/BuzonSugerencias";
@@ -283,6 +286,30 @@ const Dashboard = () => {
             >
               <img src={iconEntrevista} alt="" className="w-12 h-12 object-contain" />
               <span className="font-semibold text-foreground text-center">Remitir a Orientación</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/permisos-excusas")}
+              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-rose-100 transition-all duration-200 hover:shadow-md hover:bg-rose-200"
+            >
+              <img src={iconPermisos} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground text-center">Permisos y Excusas</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/consultas")}
+              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-pink-100 transition-all duration-200 hover:shadow-md hover:bg-pink-200"
+            >
+              <img src={iconConsultas} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground text-center">Consultas</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/registros-comportamiento")}
+              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-amber-100 transition-all duration-200 hover:shadow-md hover:bg-amber-200"
+            >
+              <img src={iconRegistros} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground text-center">Registros de Comportamiento</span>
             </button>
           </div>
         </div>

@@ -11,7 +11,12 @@ import { supabase } from "@/integrations/supabase/client";
 
 const WEBHOOK_URL = "https://n8n.notasnormy.com/webhook/enviar-comunicado-rector-coordinadores";
 
-type Origen = "remision" | undefined;
+interface Aula {
+  grado: string;
+  salon: string;
+}
+
+type Origen = "inasistencia" | "uniforme" | "retiro" | "remision" | undefined;
 
 // Lunes (1) a viernes (5), 06:00 a 19:00 inclusive, zona America/Bogota.
 // "Permitido hasta 7:00 PM" = 19:00 entra, 19:01 ya queda fuera.
@@ -60,6 +65,52 @@ async function fetchWebhook(
       id_destinatarios: null,
     }),
   });
+}
+
+// Notifica a Rector, Coordinadores y opcionalmente profesores del aula.
+export async function notifyRectorCoord(
+  mensaje: string,
+  remitente = "Sistema Normy",
+  aula?: Aula,
+  origen?: Origen
+) {
+  const destinatarios = aula
+    ? `Rector, Coordinadores y profesores de ${aula.grado} ${aula.salon}`
+    : "Rector y Coordinadores";
+  const perfil = aula
+    ? ["Rector", "Coordinadores", "Profesores"]
+    : ["Rector", "Coordinadores"];
+
+  if (isHorarioPermitido()) {
+    try {
+      await fetchWebhook(remitente, destinatarios, mensaje, perfil);
+    } catch (e) {
+      console.warn("notifyRectorCoord falló:", e);
+    }
+    return;
+  }
+
+  try {
+    const { error } = await supabase
+      .from("Notificaciones_Pendientes")
+      .insert({
+        remitente,
+        destinatarios,
+        mensaje,
+        perfil,
+        aula_grado: aula?.grado ?? null,
+        aula_salon: aula?.salon ?? null,
+        origen: origen ?? null,
+      } as any);
+    if (error) throw error;
+  } catch (e) {
+    console.warn("Encolado falló, intento envío directo:", e);
+    try {
+      await fetchWebhook(remitente, destinatarios, mensaje, perfil);
+    } catch (e2) {
+      console.warn("Envío directo también falló:", e2);
+    }
+  }
 }
 
 // Notifica a la(s) Orientadora(s) Escolar(es). Mismo gating de horario y cola

@@ -237,7 +237,7 @@ const RemitirOrientacion = () => {
         `Motivo: ${motivoCorto}\n` +
         `Remitido por: ${remitente}.\n\n` +
         `Pueden consultarla entrando a notasnormy.com → Remisiones a Orientación.`;
-      await notifyOrientadora(mensaje, remitente || "Sistema Pati");
+      await notifyOrientadora(mensaje, remitente || "Sistema Normy");
     } catch (e) {
       console.warn("notifyOrientadora:", e);
     }

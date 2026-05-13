@@ -14,6 +14,10 @@ import iconConversaciones from "@/assets/icons/conversaciones.webp";
 import iconCasos from "@/assets/icons/casos.png";
 import iconCitas from "@/assets/icons/citas.png";
 import iconEntrevista from "@/assets/icons/entrevista.webp";
+import iconPermisos from "@/assets/icons/permisos-y-excusas.webp";
+import iconConsultas from "@/assets/icons/consultas.png";
+import iconRegistros from "@/assets/icons/registros-comportamiento.png";
+import iconRestringir from "@/assets/icons/restringir-agente.webp";
 import HeaderNormy from "@/components/HeaderNormy";
 import { getAllLastSeen } from "@/utils/notificaciones";
 
@@ -41,7 +45,7 @@ const DashboardRector = () => {
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [cargo, setCargo] = useState("");
-  const [badges, setBadges] = useState({ comunicados: 0, documentos: 0, remisiones: 0 });
+  const [badges, setBadges] = useState({ comunicados: 0, documentos: 0, remisiones: 0, retiro: 0, inasistencia: 0, uniforme: 0 });
   const esAdministrativo = isAdministrativo();
 
   useEffect(() => {
@@ -83,9 +87,14 @@ const DashboardRector = () => {
           .gt('id', minComLastSeen);
 
         const esOrientador = session.cargo === 'Orientador(a) Escolar';
-        const remisionesRes = esOrientador
-          ? await supabase.from('Remisiones_Orientacion').select('*', { count: 'exact', head: true }).gt('id', lastSeen['remisiones'] ?? 0)
-          : ({ count: 0 } as any);
+        const [remisionesRes, retiroRes, inasistenciaRes, uniformeRes] = await Promise.all([
+          esOrientador
+            ? supabase.from('Remisiones_Orientacion').select('*', { count: 'exact', head: true }).gt('id', lastSeen['remisiones'] ?? 0)
+            : Promise.resolve({ count: 0 } as any),
+          supabase.from('Autorizaciones_Retiro').select('*', { count: 'exact', head: true }).gt('id', lastSeen['retiro'] ?? 0),
+          supabase.from('Justificaciones_Inasistencia').select('*', { count: 'exact', head: true }).gt('id', lastSeen['inasistencia'] ?? 0),
+          supabase.from('Justificaciones_Uniforme').select('*', { count: 'exact', head: true }).gt('id', lastSeen['uniforme'] ?? 0),
+        ]);
 
         if (msgData) {
           const filtrados = msgData.filter((c: any) => {
@@ -98,6 +107,9 @@ const DashboardRector = () => {
             comunicados: filtrados.filter((c: any) => c.id > (lastSeen['comunicados'] ?? 0)).length,
             documentos: filtrados.filter((c: any) => c.archivo_url && c.id > (lastSeen['documentos'] ?? 0)).length,
             remisiones: (remisionesRes as any).count ?? 0,
+            retiro: (retiroRes as any).count ?? 0,
+            inasistencia: (inasistenciaRes as any).count ?? 0,
+            uniforme: (uniformeRes as any).count ?? 0,
           });
         }
       } catch (err) {
@@ -212,6 +224,41 @@ const DashboardRector = () => {
               <img src={iconEntrevista} alt="" className="w-16 h-16 object-contain" />
               <span className="font-semibold text-lg text-foreground text-center">Remitir a Orientación</span>
             </button>
+
+            <button
+              onClick={() => navigate("/permisos-excusas")}
+              className="relative flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-rose-100 transition-all duration-200 hover:shadow-md hover:bg-rose-200"
+            >
+              <Badge count={badges.retiro + badges.inasistencia + badges.uniforme} />
+              <img src={iconPermisos} alt="" className="w-16 h-16 object-contain" />
+              <span className="font-semibold text-lg text-foreground text-center">Permisos y Excusas</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/consultas")}
+              className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-pink-100 transition-all duration-200 hover:shadow-md hover:bg-pink-200"
+            >
+              <img src={iconConsultas} alt="" className="w-16 h-16 object-contain" />
+              <span className="font-semibold text-lg text-foreground text-center">Consultas</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/registros-comportamiento")}
+              className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-amber-100 transition-all duration-200 hover:shadow-md hover:bg-amber-200"
+            >
+              <img src={iconRegistros} alt="" className="w-16 h-16 object-contain" />
+              <span className="font-semibold text-lg text-foreground text-center">Registros de Comportamiento</span>
+            </button>
+
+            {cargo === 'Rector' && (
+              <button
+                onClick={() => navigate("/rector/restringir-normy")}
+                className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-red-100 transition-all duration-200 hover:shadow-md hover:bg-red-200"
+              >
+                <img src={iconRestringir} alt="" className="w-16 h-16 object-contain" />
+                <span className="font-semibold text-lg text-foreground text-center">Restringir Normy</span>
+              </button>
+            )}
 
             {cargo === 'Rector' && (
               <button

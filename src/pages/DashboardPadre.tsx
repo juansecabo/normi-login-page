@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { getSession, isPadreDeFamilia, HijoData } from "@/hooks/useSession";
 import iconNotas from "@/assets/icons/notas.webp";
 import iconActividades from "@/assets/icons/actividades.webp";
+import iconPermisos from "@/assets/icons/permisos-y-excusas.webp";
+import iconConsultas from "@/assets/icons/consultas.png";
 import iconEstadisticas from "@/assets/icons/estadisticas.webp";
 import iconComunicados from "@/assets/icons/comunicados.webp";
 import iconDocumentos from "@/assets/icons/documentos.webp";
@@ -239,6 +241,22 @@ const DashboardPadre = () => {
             >
               <img src={iconEstadisticas} alt="" className="w-12 h-12 object-contain" />
               <span className="font-semibold text-foreground text-center">Estadísticas</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/permisos-excusas")}
+              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-rose-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-rose-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-rose-200"
+            >
+              <img src={iconPermisos} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground text-center">Permisos y Excusas</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/padre/consultas")}
+              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-pink-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-pink-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-pink-200"
+            >
+              <img src={iconConsultas} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground text-center">Consultas</span>
             </button>
           </div>
         </div>
