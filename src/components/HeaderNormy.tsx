@@ -46,7 +46,7 @@ const HeaderNormy = ({ backLink }: HeaderNormyProps) => {
 
   return (
     <>
-      <header className="bg-primary text-primary-foreground py-2 md:py-3 px-3 md:px-4 shadow-md sticky top-0 z-40">
+      <header className="bg-primary text-primary-foreground py-2 md:py-3 px-3 md:px-4 shadow-md">
         <div className="container mx-auto flex items-center justify-between">
           <Link to={finalBackLink} className="flex items-center gap-2 md:gap-3 hover:opacity-80 transition-opacity cursor-pointer">
             <img
@@ -84,9 +84,7 @@ const HeaderNormy = ({ backLink }: HeaderNormyProps) => {
           </div>
         </div>
       </header>
-      <div className="sticky top-[60px] md:top-[80px] z-30">
-        <UpdateBanner />
-      </div>
+      <UpdateBanner />
       <CambiarContrasenaModal
         open={showCambiarContrasena}
         onOpenChange={setShowCambiarContrasena}
