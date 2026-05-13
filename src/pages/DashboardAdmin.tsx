@@ -10,6 +10,9 @@ import iconUsoAgente from "@/assets/icons/uso-agente.webp";
 import iconSugerencias from "@/assets/icons/sugerencias.webp";
 import iconConversaciones from "@/assets/icons/conversaciones.webp";
 import iconActividades from "@/assets/icons/actividades.webp";
+import iconPermisos from "@/assets/icons/permisos-y-excusas.webp";
+import iconConsultas from "@/assets/icons/consultas.png";
+import iconRegistros from "@/assets/icons/registros-comportamiento.png";
 import HeaderNormy from "@/components/HeaderNormy";
 
 const DashboardAdmin = () => {
@@ -128,6 +131,30 @@ const DashboardAdmin = () => {
             >
               <img src={iconConversaciones} alt="" className="w-16 h-16 object-contain" />
               <span className="font-semibold text-lg text-foreground text-center">Conversaciones</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/permisos-excusas")}
+              className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-rose-100 transition-all duration-200 hover:shadow-md hover:bg-rose-200"
+            >
+              <img src={iconPermisos} alt="" className="w-16 h-16 object-contain" />
+              <span className="font-semibold text-lg text-foreground text-center">Permisos y Excusas</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/consultas")}
+              className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-pink-100 transition-all duration-200 hover:shadow-md hover:bg-pink-200"
+            >
+              <img src={iconConsultas} alt="" className="w-16 h-16 object-contain" />
+              <span className="font-semibold text-lg text-foreground text-center">Consultas</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/registros-comportamiento")}
+              className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-amber-100 transition-all duration-200 hover:shadow-md hover:bg-amber-200"
+            >
+              <img src={iconRegistros} alt="" className="w-16 h-16 object-contain" />
+              <span className="font-semibold text-lg text-foreground text-center">Registros de Comportamiento</span>
             </button>
           </div>
         </div>
