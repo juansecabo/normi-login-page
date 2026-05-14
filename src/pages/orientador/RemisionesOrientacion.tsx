@@ -142,7 +142,6 @@ const RemisionesOrientacion = () => {
   const [autorNombre, setAutorNombre] = useState("");
 
   // Filtros
-  const [filtroEstado, setFiltroEstado] = useState<"todas" | "pendientes" | "recibidas">("todas");
   const [filtroGrado, setFiltroGrado] = useState("");
   const [filtroSalon, setFiltroSalon] = useState("");
   const [busqueda, setBusqueda] = useState("");
@@ -198,8 +197,6 @@ const RemisionesOrientacion = () => {
     return remisiones.filter(r => {
       if (filtroGrado && r.estudiante_grado !== filtroGrado) return false;
       if (filtroSalon && r.estudiante_salon !== filtroSalon) return false;
-      if (filtroEstado === "pendientes" && r.recibido_por_id) return false;
-      if (filtroEstado === "recibidas" && !r.recibido_por_id) return false;
       if (q) {
         const full = norm(`${r.estudiante_nombre} ${r.estudiante_apellidos} ${r.docente_nombre}`);
         const tokens = q.split(/\s+/).filter(Boolean);
@@ -207,7 +204,7 @@ const RemisionesOrientacion = () => {
       }
       return true;
     });
-  }, [remisiones, busqueda, filtroGrado, filtroSalon, filtroEstado]);
+  }, [remisiones, busqueda, filtroGrado, filtroSalon]);
 
   const toggleExpanded = (id: number) => {
     setExpandedIds(prev => {
@@ -273,15 +270,6 @@ const RemisionesOrientacion = () => {
                 className="w-full border rounded pl-8 pr-3 py-2 text-sm bg-background"
               />
             </div>
-            <select
-              value={filtroEstado}
-              onChange={e => setFiltroEstado(e.target.value as any)}
-              className="text-sm border rounded px-2 py-2 bg-background"
-            >
-              <option value="todas">Todas</option>
-              <option value="pendientes">Pendientes</option>
-              <option value="recibidas">Recibidas</option>
-            </select>
             <select
               value={filtroGrado}
               onChange={e => { setFiltroGrado(e.target.value); setFiltroSalon(""); }}
