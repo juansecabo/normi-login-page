@@ -243,6 +243,16 @@ const DashboardRector = () => {
               <span className="font-semibold text-lg text-foreground text-center">Consultas</span>
             </button>
 
+            {cargo === 'Coordinador(a)' && (
+              <button
+                onClick={() => window.open("https://chat.notasnormy.com", "_blank")}
+                className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-blue-100 transition-all duration-200 hover:shadow-md hover:bg-blue-200"
+              >
+                <img src={iconConversaciones} alt="" className="w-16 h-16 object-contain" />
+                <span className="font-semibold text-lg text-foreground text-center">Conversaciones</span>
+              </button>
+            )}
+
             <button
               onClick={() => navigate("/registros-comportamiento")}
               className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-amber-100 transition-all duration-200 hover:shadow-md hover:bg-amber-200"
