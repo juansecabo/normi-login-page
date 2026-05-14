@@ -78,7 +78,6 @@ import Consultas from "./pages/Consultas";
 import ConsultaDetalle from "./pages/ConsultaDetalle";
 import ConsultaPublica from "./pages/ConsultaPublica";
 import MisConsultas from "./pages/padre/MisConsultas";
-import MisConsultasEstudiante from "./pages/estudiante/MisConsultasEstudiante";
 import RegistrosComportamiento from "./pages/RegistrosComportamiento";
 import RestringirNormy from "./pages/rector/RestringirNormy";
 import TablaNotasRouter from "./pages/TablaNotasRouter";
@@ -174,7 +173,6 @@ const App = () => (
           <Route path="/consultas/:id" element={<ConsultaDetalle />} />
           <Route path="/consulta/:id" element={<ConsultaPublica />} />
           <Route path="/padre/consultas" element={<MisConsultas />} />
-          <Route path="/estudiante/consultas" element={<MisConsultasEstudiante />} />
 
           {/* Registros de Comportamiento */}
           <Route path="/registros-comportamiento" element={<RegistrosComportamiento />} />

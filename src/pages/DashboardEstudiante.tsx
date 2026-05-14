@@ -6,7 +6,6 @@ import iconActividades from "@/assets/icons/actividades.webp";
 import iconEstadisticas from "@/assets/icons/estadisticas.webp";
 import iconComunicados from "@/assets/icons/comunicados.webp";
 import iconDocumentos from "@/assets/icons/documentos.webp";
-import iconConsultas from "@/assets/icons/consultas.png";
 import HeaderNormy from "@/components/HeaderNormy";
 import BuzonSugerencias from "@/components/BuzonSugerencias";
 import { supabase } from "@/integrations/supabase/client";
@@ -169,7 +168,7 @@ const DashboardEstudiante = () => {
             ¿Qué deseas consultar?
           </h3>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 max-w-5xl mx-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 max-w-4xl mx-auto">
             <button
               onClick={() => navigate("/estudiante/notas")}
               className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-emerald-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-emerald-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-emerald-200"
@@ -212,14 +211,6 @@ const DashboardEstudiante = () => {
             >
               <img src={iconEstadisticas} alt="" className="w-12 h-12 object-contain" />
               <span className="font-semibold text-foreground text-center">Estadísticas</span>
-            </button>
-
-            <button
-              onClick={() => navigate("/estudiante/consultas")}
-              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-pink-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-pink-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-pink-200"
-            >
-              <img src={iconConsultas} alt="" className="w-12 h-12 object-contain" />
-              <span className="font-semibold text-foreground text-center">Consultas</span>
             </button>
           </div>
         </div>
