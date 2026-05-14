@@ -1,15 +1,20 @@
-// Notificación automática a la Orientador(a) Escolar vía WhatsApp + plataforma.
-// Se usa para eventos del sistema (remisiones de estudiantes) que la orientadora
-// debe ver.
+// Notificación automática a Rector, Coordinadores, profesores u Orientador(a)
+// vía WhatsApp + plataforma. Se usa para eventos del sistema (excusas, retiros,
+// remisiones, etc.) que el staff debe ver.
 //
-// HORARIO SILENCIOSO: si la remisión se crea fuera de horario laboral
+// HORARIO SILENCIOSO: si el padre crea la solicitud fuera de horario laboral
 // (lunes-viernes 06:00-19:00 hora Bogotá), en vez de mandar el WhatsApp al
 // instante encolamos en Supabase. Un workflow CRON en n8n procesa la cola
 // cuando vuelve el horario y manda cada notificación una por una.
-
-import { supabase } from "@/integrations/supabase/client";
+//
+// IMPORTANTE: tanto la llamada al webhook como el INSERT a la cola usan
+// `keepalive: true`. Sin eso, si el padre cierra la app o navega justo
+// después de "Excusa registrada", la request en vuelo se aborta y la
+// notificación se pierde silenciosa.
 
 const WEBHOOK_URL = "https://n8n.notasnormy.com/webhook/enviar-comunicado-rector-coordinadores";
+const SUPABASE_URL = "https://npdtggwzodtssnicmkux.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wZHRnZ3d6b2R0c3NuaWNta3V4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2NzIzMjEsImV4cCI6MjA3MTI0ODMyMX0.fkXjbs2_injmieaipIVHSWmMFep0e0tXX2y8AFRGWnY";
 
 interface Aula {
   grado: string;
@@ -67,6 +72,35 @@ async function fetchWebhook(
   });
 }
 
+// INSERT directo a Notificaciones_Pendientes vía REST con keepalive=true.
+// Sin keepalive, si el padre cierra la página después de "Excusa registrada",
+// la request en vuelo se aborta y la fila nunca llega a la cola.
+async function insertPendiente(payload: {
+  remitente: string;
+  destinatarios: string;
+  mensaje: string;
+  perfil: string[];
+  aula_grado: string | null;
+  aula_salon: string | null;
+  origen: string | null;
+}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/Notificaciones_Pendientes`, {
+    method: "POST",
+    mode: "cors",
+    keepalive: true,
+    headers: {
+      "Content-Type": "application/json",
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw new Error(`Pendientes insert ${res.status}: ${await res.text().catch(() => "")}`);
+  }
+}
+
 // Notifica a Rector, Coordinadores y opcionalmente profesores del aula.
 export async function notifyRectorCoord(
   mensaje: string,
@@ -91,18 +125,15 @@ export async function notifyRectorCoord(
   }
 
   try {
-    const { error } = await supabase
-      .from("Notificaciones_Pendientes")
-      .insert({
-        remitente,
-        destinatarios,
-        mensaje,
-        perfil,
-        aula_grado: aula?.grado ?? null,
-        aula_salon: aula?.salon ?? null,
-        origen: origen ?? null,
-      } as any);
-    if (error) throw error;
+    await insertPendiente({
+      remitente,
+      destinatarios,
+      mensaje,
+      perfil,
+      aula_grado: aula?.grado ?? null,
+      aula_salon: aula?.salon ?? null,
+      origen: origen ?? null,
+    });
   } catch (e) {
     console.warn("Encolado falló, intento envío directo:", e);
     try {
@@ -113,9 +144,7 @@ export async function notifyRectorCoord(
   }
 }
 
-// Notifica a la(s) Orientadora(s) Escolar(es). Mismo gating de horario y cola
-// que en Pati: si la creación es fuera de horario laboral, se encola en
-// Notificaciones_Pendientes y el cron de n8n lo despacha cuando vuelva.
+// Notifica a la(s) Orientadora(s) Escolar(es). Mismo gating de horario y cola.
 export async function notifyOrientadora(
   mensaje: string,
   remitente = "Sistema Normy"
@@ -133,18 +162,15 @@ export async function notifyOrientadora(
   }
 
   try {
-    const { error } = await supabase
-      .from("Notificaciones_Pendientes")
-      .insert({
-        remitente,
-        destinatarios,
-        mensaje,
-        perfil,
-        aula_grado: null,
-        aula_salon: null,
-        origen: "remision" as Origen,
-      } as any);
-    if (error) throw error;
+    await insertPendiente({
+      remitente,
+      destinatarios,
+      mensaje,
+      perfil,
+      aula_grado: null,
+      aula_salon: null,
+      origen: "remision",
+    });
   } catch (e) {
     console.warn("Encolado de remisión falló, intento envío directo:", e);
     try {
