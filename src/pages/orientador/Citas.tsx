@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { getSession, isOrientador, isAdmin } from "@/hooks/useSession";
 import HeaderNormy from "@/components/HeaderNormy";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,6 +85,7 @@ const fmtHora = (h: string | null) => {
 
 const Citas = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [citas, setCitas] = useState<Cita[]>([]);
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
   const [loading, setLoading] = useState(true);
@@ -125,6 +126,19 @@ const Citas = () => {
       setLoading(false);
     });
   }, [navigate]);
+
+  // Si la URL trae ?estudianteId=X (ej: vienen de Remisiones a Orientación → Agendar cita),
+  // abre el modal con ese estudiante pre-seleccionado.
+  useEffect(() => {
+    const estId = searchParams.get("estudianteId");
+    if (!estId || estudiantes.length === 0) return;
+    const est = estudiantes.find(e => String(e.id_estudiantil) === estId);
+    if (est) {
+      setEstSeleccionado(est);
+      setShowNueva(true);
+    }
+    setSearchParams({}, { replace: true });
+  }, [estudiantes, searchParams, setSearchParams]);
 
   const recargarCitas = async () => {
     const { data } = await supabase.from("Citas_Orientacion").select("*").order("fecha", { ascending: false }).order("hora", { ascending: false });

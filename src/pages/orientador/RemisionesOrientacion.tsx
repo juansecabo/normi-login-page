@@ -4,7 +4,7 @@ import { getSession, isOrientador, isAdmin } from "@/hooks/useSession";
 import HeaderNormy from "@/components/HeaderNormy";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronDown, Download, Check, Search } from "lucide-react";
+import { ChevronDown, Download, Check, Search, CalendarPlus } from "lucide-react";
 import iconCasos from "@/assets/icons/casos.png";
 import { markLastSeen } from "@/utils/notificaciones";
 
@@ -363,6 +363,13 @@ const RemisionesOrientacion = () => {
                             className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md border border-input bg-background hover:bg-accent"
                           >
                             <Download className="w-3.5 h-3.5" /> Descargar Word
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/orientador/citas?estudianteId=${r.estudiante_id}`)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md border border-input bg-background hover:bg-accent"
+                          >
+                            <CalendarPlus className="w-3.5 h-3.5" /> Agendar cita
                           </button>
                           {!r.recibido_por_id && (
                             <button
