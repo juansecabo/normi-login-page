@@ -198,7 +198,7 @@ const DashboardPadre = () => {
             ¿Qué deseas consultar?
           </h3>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 max-w-5xl mx-auto">
             <button
               onClick={() => navigate("/padre/notas")}
               className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-emerald-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-emerald-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-emerald-200"
@@ -236,19 +236,19 @@ const DashboardPadre = () => {
             </button>
 
             <button
-              onClick={() => navigate("/padre/estadisticas")}
-              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-teal-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-teal-200"
-            >
-              <img src={iconEstadisticas} alt="" className="w-12 h-12 object-contain" />
-              <span className="font-semibold text-foreground text-center">Estadísticas</span>
-            </button>
-
-            <button
               onClick={() => navigate("/permisos-excusas")}
               className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-rose-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-rose-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-rose-200"
             >
               <img src={iconPermisos} alt="" className="w-12 h-12 object-contain" />
               <span className="font-semibold text-foreground text-center">Permisos y Excusas</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/padre/estadisticas")}
+              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-teal-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-teal-200"
+            >
+              <img src={iconEstadisticas} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground text-center">Estadísticas</span>
             </button>
 
             <button
