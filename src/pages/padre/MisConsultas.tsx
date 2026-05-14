@@ -21,6 +21,9 @@ interface ConsultaRow {
   grados_objetivo: string[] | null;
   salones_objetivo: string[] | null;
   estudiantes_objetivo: number[] | null;
+  cargos_objetivo: string[] | null;
+  internos_objetivo: string[] | null;
+  perfiles_objetivo: string[] | null;
 }
 
 interface ConsultaConHijos {
@@ -61,6 +64,19 @@ export default function MisConsultas() {
         // 2. Filtrar a las que aplican a algún hijo del padre
         const consultasAplicables: ConsultaConHijos[] = [];
         for (const c of (todasConsultas || []) as unknown as ConsultaRow[]) {
+          // 2a. Verificar que la consulta esté dirigida a padres.
+          // Esquema nuevo: perfiles_objetivo debe incluir "Padres de familia".
+          // Esquema legacy: si tiene cargos_objetivo o internos_objetivo (filtros de internos)
+          // y NO tiene perfiles_objetivo, la consulta es solo para staff — los padres no la ven.
+          const tienePerfiles = Array.isArray(c.perfiles_objetivo) && c.perfiles_objetivo.length > 0;
+          const tieneCargos = Array.isArray(c.cargos_objetivo) && c.cargos_objetivo.length > 0;
+          const tieneInternos = Array.isArray(c.internos_objetivo) && c.internos_objetivo.length > 0;
+          if (tienePerfiles) {
+            if (!c.perfiles_objetivo!.includes("Padres de familia")) continue;
+          } else if (tieneCargos || tieneInternos) {
+            continue;
+          }
+
           const hijosQueAplican = session.hijos!.filter((h) => {
             const hijoId = Number(h.id);
             if (c.estudiantes_objetivo && c.estudiantes_objetivo.length > 0) {
