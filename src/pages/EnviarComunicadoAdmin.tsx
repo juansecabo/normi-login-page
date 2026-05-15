@@ -477,7 +477,7 @@ const EnviarComunicadoAdmin = () => {
           const fileName = `${timestamp}_${nombreLimpio}`;
 
           const { error: uploadError } = await supabase.storage
-            .from("documentos")
+            .from("normy-archivos")
             .upload(fileName, archivo);
 
           if (uploadError) {
@@ -485,7 +485,7 @@ const EnviarComunicadoAdmin = () => {
           }
 
           const { data: urlData } = supabase.storage
-            .from("documentos")
+            .from("normy-archivos")
             .getPublicUrl(fileName);
 
           urls.push(urlData.publicUrl);

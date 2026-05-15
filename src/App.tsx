@@ -12,7 +12,6 @@ import DashboardPadre from "./pages/DashboardPadre";
 import DashboardAdmin from "./pages/DashboardAdmin";
 import SeleccionarGrado from "./pages/SeleccionarGrado";
 import SeleccionarSalon from "./pages/SeleccionarSalon";
-import TablaNotas from "./pages/TablaNotas";
 import ActividadesCalendario from "./pages/ActividadesCalendario";
 import NormyExaminadora from "./pages/NormyExaminadora";
 import NotFound from "./pages/NotFound";
@@ -80,10 +79,7 @@ import ConsultaPublica from "./pages/ConsultaPublica";
 import MisConsultas from "./pages/padre/MisConsultas";
 import MisConsultasEstudiante from "./pages/estudiante/MisConsultasEstudiante";
 import RegistrosComportamiento from "./pages/RegistrosComportamiento";
-import RestringirNormy from "./pages/rector/RestringirNormy";
 import TablaNotasRouter from "./pages/TablaNotasRouter";
-import TablaNotasPreescolar from "./pages/TablaNotasPreescolar";
-import TablaNotasPreescolarReadOnly from "./pages/rector/TablaNotasPreescolarReadOnly";
 
 // Rutas para Padre
 import NotasPadre from "./pages/padre/NotasPadre";
@@ -116,7 +112,7 @@ const App = () => (
           <Route path="/dashboard-admin" element={<DashboardAdmin />} />
           <Route path="/seleccionar-grado" element={<SeleccionarGrado />} />
           <Route path="/seleccionar-salon" element={<SeleccionarSalon />} />
-          <Route path="/tabla-notas" element={<TablaNotas />} />
+          <Route path="/tabla-notas" element={<TablaNotasRouter />} />
           <Route path="/actividades-calendario" element={<ActividadesCalendario />} />
           <Route path="/normy-examinadora" element={<NormyExaminadora />} />
 
@@ -179,13 +175,6 @@ const App = () => (
           {/* Registros de Comportamiento */}
           <Route path="/registros-comportamiento" element={<RegistrosComportamiento />} />
 
-          {/* Tabla preescolar (router que decide entre tabla normal y preescolar) */}
-          <Route path="/tabla-notas-router" element={<TablaNotasRouter />} />
-          <Route path="/tabla-notas-preescolar" element={<TablaNotasPreescolar />} />
-          <Route path="/rector/tabla-notas-preescolar" element={<TablaNotasPreescolarReadOnly />} />
-
-          {/* Restringir Normy (panel admin) */}
-          <Route path="/rector/restringir-normy" element={<RestringirNormy />} />
 
           {/* Rutas para Estudiante */}
           <Route path="/estudiante/notas" element={<NotasEstudiante />} />

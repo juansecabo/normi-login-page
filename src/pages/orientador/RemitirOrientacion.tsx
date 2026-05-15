@@ -79,13 +79,16 @@ const RemitirOrientacion = () => {
     });
 
     const cargar = async () => {
-      const [estsR, asigR] = await Promise.all([
+      const [estsR, asigR, internoR] = await Promise.all([
         supabase.from("Estudiantes")
           .select("id_estudiantil, nombre_estudiante, apellidos_estudiante, grado_estudiante, salon_estudiante")
           .order("apellidos_estudiante"),
         isProfesor()
           ? supabase.from("Asignación Profesores").select('"Grado(s)", "Salon(es)"').eq("id", parseInt(session.id!))
           : Promise.resolve({ data: [] as any[] }),
+        isProfesor()
+          ? supabase.from("Internos").select("direccion_de_grupo").eq("id", parseInt(session.id!)).maybeSingle()
+          : Promise.resolve({ data: null }),
       ]);
 
       const todos = (estsR.data || []) as Estudiante[];
@@ -97,8 +100,18 @@ const RemitirOrientacion = () => {
         }));
         const aulasExactas = new Set<string>();
         for (const r of rows) for (const g of r.grados) for (const s of r.salones) aulasExactas.add(`${g}|${s}`);
-        // Normy no tiene Internos.direccion_de_grupo. Filtramos solo por la carga académica del profesor.
+        const dg = (internoR.data as any)?.direccion_de_grupo as string | null | undefined;
         const gradosCompletos = new Set<string>();
+        if (dg && dg.trim()) {
+          const parts = dg.trim().split(/\s+/);
+          const ultimo = parts[parts.length - 1];
+          if (parts.length > 1 && /^\d+$/.test(ultimo)) {
+            const g = parts.slice(0, -1).join(" ");
+            aulasExactas.add(`${g}|${ultimo}`);
+          } else {
+            gradosCompletos.add(dg.trim());
+          }
+        }
         setEstudiantes(todos.filter(e =>
           aulasExactas.has(`${e.grado_estudiante}|${e.salon_estudiante || ""}`) ||
           gradosCompletos.has(e.grado_estudiante)

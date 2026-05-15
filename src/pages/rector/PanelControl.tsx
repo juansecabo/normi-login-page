@@ -78,6 +78,12 @@ interface Estudiante {
   nivel_estudiante: string;
   grado_estudiante: string;
   salon_estudiante: string;
+  nombre_acudiente: string | null;
+  telefono_acudiente: string[] | null;
+  nombre_acudiente2: string | null;
+  telefono_acudiente2: string[] | null;
+  nombre_acudiente3: string | null;
+  telefono_acudiente3: string[] | null;
 }
 
 interface Interno {
@@ -205,6 +211,12 @@ const PanelControl = () => {
   const [estApellidos, setEstApellidos] = useState("");
   const [estGrado, setEstGrado] = useState("");
   const [estSalon, setEstSalon] = useState("");
+  const [estAcu1Nombre, setEstAcu1Nombre] = useState("");
+  const [estAcu1Tel, setEstAcu1Tel] = useState("");
+  const [estAcu2Nombre, setEstAcu2Nombre] = useState("");
+  const [estAcu2Tel, setEstAcu2Tel] = useState("");
+  const [estAcu3Nombre, setEstAcu3Nombre] = useState("");
+  const [estAcu3Tel, setEstAcu3Tel] = useState("");
 
   // Internos
   const [internos, setInternos] = useState<Interno[]>([]);
@@ -310,7 +322,7 @@ const PanelControl = () => {
     const data = await fetchAllPages((from, to) =>
       supabase
         .from("Estudiantes")
-        .select("id_estudiantil, nombre_estudiante, apellidos_estudiante, nivel_estudiante, grado_estudiante, salon_estudiante")
+        .select("id_estudiantil, nombre_estudiante, apellidos_estudiante, nivel_estudiante, grado_estudiante, salon_estudiante, nombre_acudiente, telefono_acudiente, nombre_acudiente2, telefono_acudiente2, nombre_acudiente3, telefono_acudiente3")
         .order("apellidos_estudiante")
         .order("nombre_estudiante")
         .range(from, to)
@@ -365,6 +377,12 @@ const PanelControl = () => {
       setEstApellidos(est.apellidos_estudiante || "");
       setEstGrado(est.grado_estudiante || "");
       setEstSalon(est.salon_estudiante || "");
+      setEstAcu1Nombre(est.nombre_acudiente || "");
+      setEstAcu1Tel((est.telefono_acudiente || []).join(", "));
+      setEstAcu2Nombre(est.nombre_acudiente2 || "");
+      setEstAcu2Tel((est.telefono_acudiente2 || []).join(", "));
+      setEstAcu3Nombre(est.nombre_acudiente3 || "");
+      setEstAcu3Tel((est.telefono_acudiente3 || []).join(", "));
     } else {
       setEditingEst(null);
       setEstId("");
@@ -372,6 +390,12 @@ const PanelControl = () => {
       setEstApellidos("");
       setEstGrado("");
       setEstSalon("");
+      setEstAcu1Nombre("");
+      setEstAcu1Tel("");
+      setEstAcu2Nombre("");
+      setEstAcu2Tel("");
+      setEstAcu3Nombre("");
+      setEstAcu3Tel("");
     }
     setShowEstDialog(true);
   };
@@ -387,6 +411,11 @@ const PanelControl = () => {
       return;
     }
     setSavingEst(true);
+    const parseTelefonos = (s: string): string[] | null => {
+      const arr = s.split(",").map(t => t.trim()).filter(Boolean);
+      return arr.length > 0 ? arr : null;
+    };
+    const nullIfEmpty = (s: string) => (s.trim() ? s.trim() : null);
     const payload = {
       id_estudiantil: Number(estId),
       nombre_estudiante: estNombre.trim(),
@@ -394,6 +423,12 @@ const PanelControl = () => {
       nivel_estudiante: nivel,
       grado_estudiante: estGrado,
       salon_estudiante: estSalon,
+      nombre_acudiente: nullIfEmpty(estAcu1Nombre),
+      telefono_acudiente: parseTelefonos(estAcu1Tel),
+      nombre_acudiente2: nullIfEmpty(estAcu2Nombre),
+      telefono_acudiente2: parseTelefonos(estAcu2Tel),
+      nombre_acudiente3: nullIfEmpty(estAcu3Nombre),
+      telefono_acudiente3: parseTelefonos(estAcu3Tel),
     };
 
     let error;
@@ -1380,6 +1415,39 @@ const PanelControl = () => {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div className="pt-2 border-t">
+              <h3 className="text-sm font-semibold mb-2">Acudientes</h3>
+              <p className="text-xs text-muted-foreground mb-3">
+                Para varios teléfonos en un mismo acudiente, sepáralos con coma.
+                Deja los campos vacíos si no aplica.
+              </p>
+
+              {[
+                { label: "Acudiente 1", nombre: estAcu1Nombre, setNombre: setEstAcu1Nombre, tel: estAcu1Tel, setTel: setEstAcu1Tel },
+                { label: "Acudiente 2", nombre: estAcu2Nombre, setNombre: setEstAcu2Nombre, tel: estAcu2Tel, setTel: setEstAcu2Tel },
+                { label: "Acudiente 3", nombre: estAcu3Nombre, setNombre: setEstAcu3Nombre, tel: estAcu3Tel, setTel: setEstAcu3Tel },
+              ].map((a) => (
+                <div key={a.label} className="grid grid-cols-2 gap-3 mb-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">{a.label} · Nombre</Label>
+                    <Input
+                      value={a.nombre}
+                      onChange={(e) => a.setNombre(e.target.value)}
+                      placeholder="Nombre completo"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{a.label} · Teléfono(s)</Label>
+                    <Input
+                      value={a.tel}
+                      onChange={(e) => a.setTel(e.target.value)}
+                      placeholder="Ej: 3001234567, 3109876543"
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
           <DialogFooter>

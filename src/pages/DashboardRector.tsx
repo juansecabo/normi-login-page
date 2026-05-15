@@ -17,7 +17,6 @@ import iconEntrevista from "@/assets/icons/entrevista.webp";
 import iconPermisos from "@/assets/icons/permisos-y-excusas.webp";
 import iconConsultas from "@/assets/icons/consultas.png";
 import iconRegistros from "@/assets/icons/registros-comportamiento.png";
-import iconRestringir from "@/assets/icons/restringir-agente.webp";
 import HeaderNormy from "@/components/HeaderNormy";
 import { getAllLastSeen } from "@/utils/notificaciones";
 
@@ -294,16 +293,6 @@ const DashboardRector = () => {
               <img src={iconRegistroAgente} alt="" className="w-12 h-12 object-contain" />
               <span className="font-semibold text-foreground text-center">Registro en Normy</span>
             </button>
-
-            {cargo === 'Rector' && (
-              <button
-                onClick={() => navigate("/rector/restringir-normy")}
-                className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-red-100 transition-all duration-200 hover:shadow-md hover:bg-red-200"
-              >
-                <img src={iconRestringir} alt="" className="w-12 h-12 object-contain" />
-                <span className="font-semibold text-foreground text-center">Restringir Normy</span>
-              </button>
-            )}
           </div>
         </div>
       </main>

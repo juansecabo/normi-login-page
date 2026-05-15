@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { getSession, isAdmin } from "@/hooks/useSession";
 import iconNotas from "@/assets/icons/notas.webp";
 import iconEstadisticas from "@/assets/icons/estadisticas.webp";
@@ -14,11 +15,22 @@ import iconPermisos from "@/assets/icons/permisos-y-excusas.webp";
 import iconConsultas from "@/assets/icons/consultas.png";
 import iconRegistros from "@/assets/icons/registros-comportamiento.png";
 import HeaderNormy from "@/components/HeaderNormy";
+import { getAllLastSeen } from "@/utils/notificaciones";
+
+const Badge = ({ count }: { count: number }) => {
+  if (count <= 0) return null;
+  return (
+    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 shadow-sm z-10 animate-badge-pop">
+      {count > 99 ? '99+' : count}
+    </span>
+  );
+};
 
 const DashboardAdmin = () => {
   const navigate = useNavigate();
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
+  const [badges, setBadges] = useState({ retiro: 0, inasistencia: 0, uniforme: 0 });
 
   useEffect(() => {
     const session = getSession();
@@ -35,7 +47,28 @@ const DashboardAdmin = () => {
 
     setNombres(session.nombres || "");
     setApellidos(session.apellidos || "");
+
+    const fetchBadges = async () => {
+      try {
+        const lastSeen = await getAllLastSeen(session.id!);
+        const [retiroRes, inasistenciaRes, uniformeRes] = await Promise.all([
+          supabase.from('Autorizaciones_Retiro').select('*', { count: 'exact', head: true }).gt('id', lastSeen['retiro'] ?? 0),
+          supabase.from('Justificaciones_Inasistencia').select('*', { count: 'exact', head: true }).gt('id', lastSeen['inasistencia'] ?? 0),
+          supabase.from('Justificaciones_Uniforme').select('*', { count: 'exact', head: true }).gt('id', lastSeen['uniforme'] ?? 0),
+        ]);
+        setBadges({
+          retiro: retiroRes.count ?? 0,
+          inasistencia: inasistenciaRes.count ?? 0,
+          uniforme: uniformeRes.count ?? 0,
+        });
+      } catch (err) {
+        console.error('Error fetching badges:', err);
+      }
+    };
+    fetchBadges();
   }, [navigate]);
+
+  const permisosTotal = badges.retiro + badges.inasistencia + badges.uniforme;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -135,8 +168,9 @@ const DashboardAdmin = () => {
 
             <button
               onClick={() => navigate("/permisos-excusas")}
-              className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-rose-100 transition-all duration-200 hover:shadow-md hover:bg-rose-200"
+              className="relative flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-rose-100 transition-all duration-200 hover:shadow-md hover:bg-rose-200"
             >
+              <Badge count={permisosTotal} />
               <img src={iconPermisos} alt="" className="w-16 h-16 object-contain" />
               <span className="font-semibold text-lg text-foreground text-center">Permisos y Excusas</span>
             </button>

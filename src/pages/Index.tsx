@@ -11,6 +11,14 @@ import { useToast } from "@/hooks/use-toast";
 import { saveSession, getSession, HijoData } from "@/hooks/useSession";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 
+// Si viene con ?redirect=/alguna-ruta válida, usamos esa; si no, el default.
+const getPostLoginRoute = (defaultRoute: string): string => {
+  const params = new URLSearchParams(window.location.search);
+  const redirect = params.get("redirect");
+  if (redirect && redirect.startsWith("/")) return redirect;
+  return defaultRoute;
+};
+
 const Index = () => {
   const [identificacion, setIdentificacion] = useState("");
   const [contrasena, setContrasena] = useState("");
@@ -25,15 +33,21 @@ const Index = () => {
     const session = getSession();
     if (session.id) {
       if (session.cargo === 'Administrador') {
-        navigate("/dashboard-admin", { replace: true });
-      } else if (session.cargo === 'Rector' || session.cargo === 'Coordinador(a)' || session.cargo === 'Administrativo(a)') {
-        navigate("/dashboard-rector", { replace: true });
+        navigate(getPostLoginRoute("/dashboard-admin"), { replace: true });
+      } else if (
+        session.cargo === 'Rector' ||
+        session.cargo === 'Coordinador(a)' ||
+        session.cargo === 'Administrativo(a)' ||
+        session.cargo === 'Secretaria General' ||
+        session.cargo === 'Orientador(a) Escolar'
+      ) {
+        navigate(getPostLoginRoute("/dashboard-rector"), { replace: true });
       } else if (session.cargo === 'Estudiante') {
-        navigate("/dashboard-estudiante", { replace: true });
+        navigate(getPostLoginRoute("/dashboard-estudiante"), { replace: true });
       } else if (session.cargo === 'Padre de familia') {
-        navigate("/dashboard-padre", { replace: true });
+        navigate(getPostLoginRoute("/dashboard-padre"), { replace: true });
       } else {
-        navigate("/dashboard", { replace: true });
+        navigate(getPostLoginRoute("/dashboard"), { replace: true });
       }
     }
   }, [navigate]);
@@ -81,7 +95,7 @@ const Index = () => {
           : String(usuario.id) === passInput;
 
         if (contrasenaCorrecta) {
-          const cargosPermitidos = ['Profesor(a)', 'Rector', 'Coordinador(a)', 'Administrador', 'Administrativo(a)'];
+          const cargosPermitidos = ['Profesor(a)', 'Rector', 'Coordinador(a)', 'Administrador', 'Administrativo(a)', 'Secretaria General', 'Orientador(a) Escolar'];
           if (!cargosPermitidos.includes(usuario.cargo)) {
             toast({ title: "Acceso denegado", description: "No tienes permisos de acceso", variant: "destructive" });
             setLoading(false);
@@ -91,11 +105,17 @@ const Index = () => {
           saveSession(String(usuario.id), usuario.nombres || "", usuario.apellidos || "", usuario.cargo || "");
 
           if (usuario.cargo === 'Administrador') {
-            navigate("/dashboard-admin");
-          } else if (usuario.cargo === 'Rector' || usuario.cargo === 'Coordinador(a)' || usuario.cargo === 'Administrativo(a)') {
-            navigate("/dashboard-rector");
+            navigate(getPostLoginRoute("/dashboard-admin"));
+          } else if (
+            usuario.cargo === 'Rector' ||
+            usuario.cargo === 'Coordinador(a)' ||
+            usuario.cargo === 'Administrativo(a)' ||
+            usuario.cargo === 'Secretaria General' ||
+            usuario.cargo === 'Orientador(a) Escolar'
+          ) {
+            navigate(getPostLoginRoute("/dashboard-rector"));
           } else {
-            navigate("/dashboard");
+            navigate(getPostLoginRoute("/dashboard"));
           }
           return;
         }

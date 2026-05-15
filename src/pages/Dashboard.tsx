@@ -31,7 +31,7 @@ const Dashboard = () => {
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [asignaturas, setAsignaturas] = useState<string[]>([]);
-  const [badges, setBadges] = useState({ comunicados: 0, documentos: 0 });
+  const [badges, setBadges] = useState({ comunicados: 0, documentos: 0, retiro: 0, inasistencia: 0, uniforme: 0 });
   const [selectedAsignatura, setSelectedAsignatura] = useState<string | null>(null);
   const [loadingAsignaturas, setLoadingAsignaturas] = useState(true);
 
@@ -63,12 +63,15 @@ const Dashboard = () => {
       try {
         const lastSeen = await getAllLastSeen(session.id!);
         const minComLastSeen = Math.min(lastSeen['comunicados'] ?? 0, lastSeen['documentos'] ?? 0);
-        const [asignacionesRes, msgRes] = await Promise.all([
+        const [asignacionesRes, msgRes, retiroRes, inasistenciaRes, uniformeRes] = await Promise.all([
           supabase.from('Asignación Profesores').select('"Grado(s)", "Salon(es)"').eq('id', parseInt(session.id!)),
           supabase.from('Comunicados')
             .select('id, nivel, grado, salon, id_estudiantil, id_destinatarios, archivo_url')
             .overlaps('perfil', ['Profesores'])
             .gt('id', minComLastSeen),
+          supabase.from('Autorizaciones_Retiro').select('*', { count: 'exact', head: true }).gt('id', lastSeen['retiro'] ?? 0),
+          supabase.from('Justificaciones_Inasistencia').select('*', { count: 'exact', head: true }).gt('id', lastSeen['inasistencia'] ?? 0),
+          supabase.from('Justificaciones_Uniforme').select('*', { count: 'exact', head: true }).gt('id', lastSeen['uniforme'] ?? 0),
         ]);
 
         const NIVELES_GRADOS: Record<string, string[]> = {
@@ -82,6 +85,7 @@ const Dashboard = () => {
           salones: ((row["Salon(es)"] as string[] | null) || []),
         }));
 
+        const b = { comunicados: 0, documentos: 0, retiro: 0, inasistencia: 0, uniforme: 0 };
         if (msgRes.data) {
           const filtrados = msgRes.data.filter((c: any) => {
             if (c.id_destinatarios && c.id_destinatarios.length > 0) {
@@ -112,11 +116,14 @@ const Dashboard = () => {
             seen.add(key);
             return true;
           });
-          setBadges({
-            comunicados: dedup.filter((c: any) => c.id > (lastSeen['comunicados'] ?? 0)).length,
-            documentos: dedup.filter((c: any) => c.archivo_url && c.id > (lastSeen['documentos'] ?? 0)).length,
-          });
+          b.comunicados = dedup.filter((c: any) => c.id > (lastSeen['comunicados'] ?? 0)).length;
+          b.documentos = dedup.filter((c: any) => c.archivo_url && c.id > (lastSeen['documentos'] ?? 0)).length;
         }
+        b.retiro = retiroRes.count ?? 0;
+        b.inasistencia = inasistenciaRes.count ?? 0;
+        b.uniforme = uniformeRes.count ?? 0;
+
+        setBadges(b);
       } catch {}
     };
     fetchBadges();
@@ -290,8 +297,9 @@ const Dashboard = () => {
 
             <button
               onClick={() => navigate("/permisos-excusas")}
-              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-rose-100 transition-all duration-200 hover:shadow-md hover:bg-rose-200"
+              className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-rose-100 transition-all duration-200 hover:shadow-md hover:bg-rose-200"
             >
+              <Badge count={badges.retiro + badges.inasistencia + badges.uniforme} />
               <img src={iconPermisos} alt="" className="w-12 h-12 object-contain" />
               <span className="font-semibold text-foreground text-center">Permisos y Excusas</span>
             </button>
