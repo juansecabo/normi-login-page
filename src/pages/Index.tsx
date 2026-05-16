@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Download, Share } from "lucide-react";
 import escudoImg from "@/assets/escudo.webp";
-import normyImg from "@/assets/normy-placeholder.webp";
+import normiImg from "@/assets/normi-placeholder.webp";
 import cailicoLogo from "@/assets/cailico-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -245,12 +245,12 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-background">
-      {/* Columna Izquierda - Imagen de Normy */}
+      {/* Columna Izquierda - Imagen de Normi */}
       <div className="lg:w-1/2 flex items-center justify-center p-8 lg:p-12 bg-secondary/50">
         <div className="animate-scale-in">
           <img
-            src={normyImg}
-            alt="Normy - Mascota de Notas Normy"
+            src={normiImg}
+            alt="Normi - Mascota de Notas Normi"
             className="w-64 h-64 lg:w-80 lg:h-80 object-cover rounded-full shadow-soft border-4 border-primary/20"
           />
         </div>
@@ -271,7 +271,7 @@ const Index = () => {
           {/* Títulos */}
           <div className="text-center space-y-2">
             <h1 className="text-3xl lg:text-4xl font-bold text-foreground tracking-tight">
-              Notas Normy
+              Notas Normi
             </h1>
             <p className="text-muted-foreground text-sm lg:text-base">
               Escuela Normal Superior de Corozal

@@ -13,7 +13,7 @@ import DashboardAdmin from "./pages/DashboardAdmin";
 import SeleccionarGrado from "./pages/SeleccionarGrado";
 import SeleccionarSalon from "./pages/SeleccionarSalon";
 import ActividadesCalendario from "./pages/ActividadesCalendario";
-import NormyExaminadora from "./pages/NormyExaminadora";
+import NormiExaminadora from "./pages/NormiExaminadora";
 import NotFound from "./pages/NotFound";
 
 // Rutas para Rector/Coordinador
@@ -27,7 +27,7 @@ import EstudianteConsolidado from "./pages/rector/EstudianteConsolidado";
 import EstadisticasDashboard from "./pages/rector/EstadisticasDashboard";
 import EstudiantesEnRiesgo from "./pages/rector/EstudiantesEnRiesgo";
 import PanelControl from "./pages/rector/PanelControl";
-import UsoNormy from "./pages/rector/UsoNormy";
+import UsoNormi from "./pages/rector/UsoNormi";
 import ComunicadosRecibidos from "./pages/rector/ComunicadosRecibidos";
 import DocumentosRecibidos from "./pages/rector/DocumentosRecibidos";
 
@@ -42,7 +42,7 @@ import ComunicadosProfesor from "./pages/profesor/ComunicadosProfesor";
 import DocumentosProfesor from "./pages/profesor/DocumentosProfesor";
 
 // Rutas compartidas (Profesor + Rector)
-import RegistroNormy from "./pages/RegistroNormy";
+import RegistroNormi from "./pages/RegistroNormi";
 
 // Rutas compartidas
 import EnviarComunicado from "./pages/EnviarComunicado";
@@ -114,7 +114,7 @@ const App = () => (
           <Route path="/seleccionar-salon" element={<SeleccionarSalon />} />
           <Route path="/tabla-notas" element={<TablaNotasRouter />} />
           <Route path="/actividades-calendario" element={<ActividadesCalendario />} />
-          <Route path="/normy-examinadora" element={<NormyExaminadora />} />
+          <Route path="/normi-examinadora" element={<NormiExaminadora />} />
 
           {/* Rutas para Rector/Coordinador */}
           <Route path="/rector/seleccionar-grado" element={<SeleccionarGradoRector />} />
@@ -127,7 +127,7 @@ const App = () => (
           <Route path="/rector/estadisticas" element={<EstadisticasDashboard />} />
           <Route path="/rector/estudiantes-riesgo" element={<EstudiantesEnRiesgo />} />
           <Route path="/rector/panel-control" element={<PanelControl />} />
-          <Route path="/rector/uso-normy" element={<UsoNormy />} />
+          <Route path="/rector/uso-normi" element={<UsoNormi />} />
 
           {/* Rutas para Admin */}
           <Route path="/admin/sugerencias" element={<Sugerencias />} />
@@ -140,7 +140,7 @@ const App = () => (
           <Route path="/rector/comunicados-recibidos" element={<ComunicadosRecibidos />} />
           <Route path="/rector/documentos-recibidos" element={<DocumentosRecibidos />} />
           <Route path="/profesor/documentos" element={<DocumentosProfesor />} />
-          <Route path="/registro-normy" element={<RegistroNormy />} />
+          <Route path="/registro-normi" element={<RegistroNormi />} />
 
           {/* Rutas compartidas */}
           <Route path="/enviar-comunicado" element={<EnviarComunicado />} />

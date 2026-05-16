@@ -2,7 +2,7 @@ import { getPeriodoActual } from "@/utils/periodoActual";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getSession, isEstudiante } from "@/hooks/useSession";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import { useEstadisticas } from "@/hooks/useEstadisticas";
 import { AnalisisEstudiante } from "@/components/estadisticas/AnalisisEstudiante";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -31,7 +31,7 @@ const EstadisticasEstudiantePage = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormy backLink="/dashboard-estudiante" />
+      <HeaderNormi backLink="/dashboard-estudiante" />
 
       <main className="flex-1 container mx-auto p-4 md:p-8">
         {/* Breadcrumb */}

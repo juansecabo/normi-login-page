@@ -8,7 +8,7 @@ import CambiarContrasenaModal from "@/components/CambiarContrasenaModal";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import UpdateBanner from "@/components/UpdateBanner";
 
-interface HeaderNormyProps {
+interface HeaderNormiProps {
   /**
    * Destino del clic en el logo. Si se omite, se calcula automáticamente
    * según el cargo del usuario logueado (admin → /dashboard-admin,
@@ -32,7 +32,7 @@ const computeBackLinkFromSession = (): string => {
   return "/dashboard";
 };
 
-const HeaderNormy = ({ backLink }: HeaderNormyProps) => {
+const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
   const navigate = useNavigate();
   const [showCambiarContrasena, setShowCambiarContrasena] = useState(false);
   const { canInstall, installApp } = useInstallPrompt();
@@ -55,7 +55,7 @@ const HeaderNormy = ({ backLink }: HeaderNormyProps) => {
                 alt="Escudo"
                 className="w-10 h-10 md:w-16 md:h-16 object-contain -my-1 md:-my-2"
               />
-              <h1 className="text-base md:text-xl font-bold">Notas Normy</h1>
+              <h1 className="text-base md:text-xl font-bold">Notas Normi</h1>
             </Link>
             <div className="flex items-center gap-1 sm:gap-2">
               {canInstall && (
@@ -95,4 +95,4 @@ const HeaderNormy = ({ backLink }: HeaderNormyProps) => {
   );
 };
 
-export default HeaderNormy;
+export default HeaderNormi;

@@ -19,8 +19,8 @@ export default defineConfig(({ mode }) => ({
       registerType: "prompt",
       includeAssets: ["favicon.png", "apple-touch-icon.png"],
       manifest: {
-        name: "Notas Normy - Escuela Normal Superior de Corozal",
-        short_name: "Notas Normy",
+        name: "Notas Normi - Escuela Normal Superior de Corozal",
+        short_name: "Notas Normi",
         description: "Sistema de gestión de calificaciones de la Escuela Normal Superior de Corozal",
         theme_color: "#2D6A4F",
         background_color: "#ffffff",

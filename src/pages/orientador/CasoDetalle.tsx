@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getSession, isOrientador, isAdmin, puedeAccederDashboard } from "@/hooks/useSession";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ChevronDown, Plus, Search, Trash2, Pencil, FileDown } from "lucide-react";
@@ -539,9 +539,9 @@ const CasoDetalle = () => {
       const base64 = dataUrl.split(",")[1];
       const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
       const path = `firmas/${Date.now()}_caso${caso.id}_${who}.png`;
-      const { error: upErr } = await supabase.storage.from("normy-archivos").upload(path, bytes, { contentType: "image/png" });
+      const { error: upErr } = await supabase.storage.from("normi-archivos").upload(path, bytes, { contentType: "image/png" });
       if (upErr) throw upErr;
-      const { data: pub } = supabase.storage.from("normy-archivos").getPublicUrl(path);
+      const { data: pub } = supabase.storage.from("normi-archivos").getPublicUrl(path);
       const url = pub?.publicUrl;
       if (!url) throw new Error("No se pudo obtener la URL pública");
       const col = who === "orientadora" ? "firma_orientadora_url" : "firma_estudiante_url";
@@ -711,7 +711,7 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
   if (loading || !caso) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <HeaderNormy backLink={backLink} />
+        <HeaderNormi backLink={backLink} />
         <main className="flex-1 container mx-auto p-8">
           <div className="text-center py-8 text-muted-foreground">Cargando...</div>
         </main>
@@ -723,7 +723,7 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormy backLink="/orientador/casos" />
+      <HeaderNormi backLink="/orientador/casos" />
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <div className="flex items-center gap-2 text-sm flex-wrap">

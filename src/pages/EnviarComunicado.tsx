@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getSession, isAdmin, puedeAccederDashboard } from "@/hooks/useSession";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import { Loader2, Send, Clock, Trash2, Search, Users, Eye, Paperclip, X, FileText, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,10 +15,10 @@ import CharCircle from "@/components/CharCircle";
 import { buildTemplateBodyPreview, MAX_WA_TEMPLATE_BODY, WA_TEMPLATE_OVERHEAD } from "@/lib/wapBody";
 
 const WEBHOOK_URL =
-  "https://n8n.notasnormy.com/webhook/ae459f1c-7e94-45f4-9909-aaddc82a7552";
+  "https://n8n.notasnormi.com/webhook/ae459f1c-7e94-45f4-9909-aaddc82a7552";
 
 const WEBHOOK_RECTOR_URL =
-  "https://n8n.notasnormy.com/webhook/enviar-comunicado-rector-coordinadores";
+  "https://n8n.notasnormi.com/webhook/enviar-comunicado-rector-coordinadores";
 
 type PerfilKey = 'Estudiantes' | 'Padres' | 'Profesores' | 'Coordinadores' | 'Rector' | 'Administrativos' | 'Secretaria' | 'Orientador';
 
@@ -34,7 +34,7 @@ const PERFILES_UI: { key: PerfilKey; label: string }[] = [
 ];
 
 const WEBHOOK_MASIVO_URL =
-  "https://n8n.notasnormy.com/webhook/masivo-personalizado";
+  "https://n8n.notasnormi.com/webhook/masivo-personalizado";
 
 const NIVELES_GRADOS: Record<string, string[]> = {
   Preescolar: ["Prejardín", "Jardín", "Transición"],
@@ -493,7 +493,7 @@ const EnviarComunicado = () => {
           const fileName = `${timestamp}_${nombreLimpio}`;
 
           const { error: uploadError } = await supabase.storage
-            .from("normy-archivos")
+            .from("normi-archivos")
             .upload(fileName, archivo);
 
           if (uploadError) {
@@ -501,7 +501,7 @@ const EnviarComunicado = () => {
           }
 
           const { data: urlData } = supabase.storage
-            .from("normy-archivos")
+            .from("normi-archivos")
             .getPublicUrl(fileName);
 
           urls.push(urlData.publicUrl);
@@ -680,7 +680,7 @@ const EnviarComunicado = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormy backLink={backLink} />
+      <HeaderNormi backLink={backLink} />
 
       <main className="flex-1 container mx-auto p-4 md:p-8">
         {/* Breadcrumb */}

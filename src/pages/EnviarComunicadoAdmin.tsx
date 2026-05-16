@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getSession, isAdmin } from "@/hooks/useSession";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import { Loader2, Send, Clock, Trash2, Search, Users, Eye, Paperclip, X, FileText, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,10 +21,10 @@ import CharCircle from "@/components/CharCircle";
 import { MAX_WA_TEMPLATE_BODY, WA_TEMPLATE_OVERHEAD } from "@/lib/wapBody";
 
 const WEBHOOK_URL =
-  "https://n8n.notasnormy.com/webhook/9bd1a575-84f9-4b7f-989a-b2a3d1814721";
+  "https://n8n.notasnormi.com/webhook/9bd1a575-84f9-4b7f-989a-b2a3d1814721";
 
 const WEBHOOK_MASIVO_URL =
-  "https://n8n.notasnormy.com/webhook/masivo-personalizado";
+  "https://n8n.notasnormi.com/webhook/masivo-personalizado";
 
 const NIVELES_GRADOS: Record<string, string[]> = {
   Preescolar: ["Prejardín", "Jardín", "Transición"],
@@ -447,7 +447,7 @@ const EnviarComunicadoAdmin = () => {
   const destinatariosTexto = buildDestinatarios();
   const algunPerfilMarcado = Object.values(perfilesMarcados).some(Boolean);
 
-  // El comunicado del admin se envía como Normy sin los encabezados (*COMUNICADO*, *Remitente*, etc.),
+  // El comunicado del admin se envía como Normi sin los encabezados (*COMUNICADO*, *Remitente*, etc.),
   // pero la plantilla de WhatsApp aún suma su overhead fijo (*Notificación académica:*…Estoy a tu servicio.).
   const templateBodyLength = mensaje.length + WA_TEMPLATE_OVERHEAD;
   const bodyOverLimit = templateBodyLength > MAX_WA_TEMPLATE_BODY;
@@ -477,7 +477,7 @@ const EnviarComunicadoAdmin = () => {
           const fileName = `${timestamp}_${nombreLimpio}`;
 
           const { error: uploadError } = await supabase.storage
-            .from("normy-archivos")
+            .from("normi-archivos")
             .upload(fileName, archivo);
 
           if (uploadError) {
@@ -485,7 +485,7 @@ const EnviarComunicadoAdmin = () => {
           }
 
           const { data: urlData } = supabase.storage
-            .from("normy-archivos")
+            .from("normi-archivos")
             .getPublicUrl(fileName);
 
           urls.push(urlData.publicUrl);
@@ -517,7 +517,7 @@ const EnviarComunicadoAdmin = () => {
         mode: "cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          remitente: "Normy",
+          remitente: "Normi",
           destinatarios: destinatariosTexto,
           mensaje: mensaje.trim(),
           id_remitente: idRemitente,
@@ -537,7 +537,7 @@ const EnviarComunicadoAdmin = () => {
 
       toast({
         title: "Comunicado enviado",
-        description: "El comunicado se está enviando por WhatsApp como Normy.",
+        description: "El comunicado se está enviando por WhatsApp como Normi.",
       });
 
       setMensaje("");
@@ -604,7 +604,7 @@ const EnviarComunicadoAdmin = () => {
         mode: "cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          remitente: "Normy",
+          remitente: "Normi",
           id_remitente: idRemitente,
           mensajes,
         }),
@@ -615,7 +615,7 @@ const EnviarComunicadoAdmin = () => {
       }
 
       await supabase.from("Comunicados").insert({
-        remitente: "Normy",
+        remitente: "Normi",
         id_remitente: idRemitente,
         destinatarios: `Envío masivo personalizado a ${mensajes.length} estudiantes`,
         mensaje: plantillaMasivo.trim(),
@@ -623,7 +623,7 @@ const EnviarComunicadoAdmin = () => {
 
       toast({
         title: "Envío masivo iniciado",
-        description: `Se están enviando ${mensajes.length} mensajes personalizados por WhatsApp como Normy.`,
+        description: `Se están enviando ${mensajes.length} mensajes personalizados por WhatsApp como Normi.`,
       });
 
       setDatosMasivos("");
@@ -656,7 +656,7 @@ const EnviarComunicadoAdmin = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormy backLink="/dashboard-admin" />
+      <HeaderNormi backLink="/dashboard-admin" />
 
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6 max-w-2xl mx-auto">
@@ -668,7 +668,7 @@ const EnviarComunicadoAdmin = () => {
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-6 md:p-8 max-w-2xl mx-auto">
-          <p className="text-center text-sm text-muted-foreground mb-4">Los mensajes se envían como <span className="font-semibold text-foreground">Normy</span></p>
+          <p className="text-center text-sm text-muted-foreground mb-4">Los mensajes se envían como <span className="font-semibold text-foreground">Normi</span></p>
 
           <Tabs defaultValue="enviar" onValueChange={(v) => { if (v === "historial") fetchHistorial(); }}>
             <TabsList className="flex w-full">
@@ -1043,7 +1043,7 @@ const EnviarComunicadoAdmin = () => {
                 ) : (
                   <>
                     <Send className="w-5 h-5" />
-                    Enviar comunicado como Normy
+                    Enviar comunicado como Normi
                   </>
                 )}
               </button>
@@ -1146,7 +1146,7 @@ const EnviarComunicadoAdmin = () => {
                 ) : (
                   <>
                     <Users className="w-5 h-5" />
-                    Enviar {filasParsed.length} mensajes como Normy
+                    Enviar {filasParsed.length} mensajes como Normi
                   </>
                 )}
               </button>
@@ -1254,7 +1254,7 @@ const EnviarComunicadoAdmin = () => {
               <div className="space-y-3 text-sm text-muted-foreground">
                 <p>
                   <span className="font-medium text-foreground">Remitente:</span>{" "}
-                  Normy (mensaje anónimo)
+                  Normi (mensaje anónimo)
                 </p>
                 <p>
                   <span className="font-medium text-foreground">
@@ -1296,7 +1296,7 @@ const EnviarComunicadoAdmin = () => {
             <DialogDescription asChild>
               <div className="space-y-3 text-sm text-muted-foreground">
                 <p>
-                  Se enviarán <span className="font-bold text-foreground">{filasParsed.length} mensajes personalizados</span> por WhatsApp como Normy.
+                  Se enviarán <span className="font-bold text-foreground">{filasParsed.length} mensajes personalizados</span> por WhatsApp como Normi.
                 </p>
                 <p>
                   <span className="font-medium text-foreground">Ejemplo (primer estudiante):</span>

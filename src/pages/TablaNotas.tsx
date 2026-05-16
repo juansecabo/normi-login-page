@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, MoreVertical, Pencil, Trash2, Send, Calendar, Download, FileSpreadsheet, Loader2 } from "lucide-react";
 import { getSession } from "@/hooks/useSession";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import {
   Dialog,
   DialogContent,
@@ -41,7 +41,7 @@ import ComentarioModal from "@/components/notas/ComentarioModal";
 import NotificacionModal, { TipoNotificacion } from "@/components/notas/NotificacionModal";
 
 // Configuración del webhook de n8n
-const N8N_WEBHOOK_URL = 'https://n8n.notasnormy.com/webhook/notificar-notas';
+const N8N_WEBHOOK_URL = 'https://n8n.notasnormi.com/webhook/notificar-notas';
 
 interface Estudiante {
   id_estudiantil: string;
@@ -2626,7 +2626,7 @@ const TablaNotas = () => {
 
   return (
     <div className="min-h-screen md:h-screen bg-background flex flex-col">
-      <HeaderNormy backLink="/dashboard" />
+      <HeaderNormi backLink="/dashboard" />
 
       {/* Main Content */}
       <main className="flex-1 min-w-0 md:flex md:flex-col md:overflow-hidden container mx-auto p-4 md:p-8">

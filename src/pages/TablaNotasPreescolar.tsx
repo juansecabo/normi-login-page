@@ -8,7 +8,7 @@ import { toast as sonnerToast } from "sonner";
 import { getSession } from "@/hooks/useSession";
 import { getPeriodoActual } from "@/utils/periodoActual";
 import { ACTIVIDADES_PREESCOLAR, esGradoPreescolar } from "@/utils/preescolar";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import NotificacionModal from "@/components/notas/NotificacionModal";
 
-const N8N_WEBHOOK_URL = "https://n8n.notasnormy.com/webhook/notificar-preescolar";
+const N8N_WEBHOOK_URL = "https://n8n.notasnormi.com/webhook/notificar-preescolar";
 
 interface Estudiante {
   id_estudiantil: string;
@@ -455,7 +455,7 @@ const TablaNotasPreescolar = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormy backLink="/dashboard" />
+      <HeaderNormi backLink="/dashboard" />
 
       <main className="flex-1 container mx-auto p-4 md:p-8">
         {/* Breadcrumb */}

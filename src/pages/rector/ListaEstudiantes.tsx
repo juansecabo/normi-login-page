@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, isRectorOrCoordinador } from "@/hooks/useSession";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 
 interface Estudiante {
   id_estudiantil: string;
@@ -79,7 +79,7 @@ const ListaEstudiantes = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormy backLink="/dashboard-rector" />
+      <HeaderNormi backLink="/dashboard-rector" />
 
       {/* Main Content */}
       <main className="flex-1 container mx-auto p-8">

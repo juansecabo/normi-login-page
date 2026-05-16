@@ -1,5 +1,5 @@
 const SUPABASE_URL = "https://npdtggwzodtssnicmkux.supabase.co";
-const BUCKET = "normy-archivos";
+const BUCKET = "normi-archivos";
 
 export const MAX_WA_TEMPLATE_BODY = 1024;
 

@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getSession, isPadreDeFamilia, HijoData } from "@/hooks/useSession";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SignatureCanvas from "react-signature-canvas";
@@ -120,9 +120,9 @@ const JustificacionInasistencia = () => {
       const base64Data = firma.split(",")[1];
       const byteArray = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
       const fileName = `firmas/${Date.now()}_${idAcudiente}_inas.png`;
-      const { error: uploadErr } = await supabase.storage.from("normy-archivos").upload(fileName, byteArray, { contentType: "image/png" });
+      const { error: uploadErr } = await supabase.storage.from("normi-archivos").upload(fileName, byteArray, { contentType: "image/png" });
       if (uploadErr) throw uploadErr;
-      const { data: urlData } = supabase.storage.from("normy-archivos").getPublicUrl(fileName);
+      const { data: urlData } = supabase.storage.from("normi-archivos").getPublicUrl(fileName);
       firmaUrl = urlData?.publicUrl || null;
     } catch (err: any) {
       toast({ title: "Error", description: "No se pudo subir la firma: " + err.message, variant: "destructive" });
@@ -135,9 +135,9 @@ const JustificacionInasistencia = () => {
       try {
         const cleanName = f.name.replace(/[^a-zA-Z0-9._-]/g, "_");
         const path = `adjuntos_justificacion/${Date.now()}_${idAcudiente}_${cleanName}`;
-        const { error: upErr } = await supabase.storage.from("normy-archivos").upload(path, f, { contentType: f.type || "application/octet-stream" });
+        const { error: upErr } = await supabase.storage.from("normi-archivos").upload(path, f, { contentType: f.type || "application/octet-stream" });
         if (upErr) throw upErr;
-        const { data: urlData } = supabase.storage.from("normy-archivos").getPublicUrl(path);
+        const { data: urlData } = supabase.storage.from("normi-archivos").getPublicUrl(path);
         if (urlData?.publicUrl) archivosUrls.push(urlData.publicUrl);
       } catch (err: any) {
         toast({ title: "Error", description: `No se pudo subir ${f.name}: ${err.message}`, variant: "destructive" });
@@ -190,7 +190,7 @@ const JustificacionInasistencia = () => {
         `Descripción: ${motivoDescripcion}.\n` +
         `Acudiente: ${nombreAcudiente} (C.C. ${idAcudiente}${telefonoAcudiente ? `, tel. ${telefonoAcudiente}` : ""}).\n` +
         `Pueden revisarla en la plataforma en Permisos y Excusas.`;
-      notifyRectorCoord(mensaje, "Sistema Normy (Excusas)", {
+      notifyRectorCoord(mensaje, "Sistema Normi (Excusas)", {
         grado: hijoSeleccionado.grado,
         salon: hijoSeleccionado.salon,
       }, "inasistencia");
@@ -207,7 +207,7 @@ const JustificacionInasistencia = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormy />
+      <HeaderNormi />
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <div className="flex items-center gap-2 text-sm flex-wrap">

@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getSession, isOrientador, isAdmin } from "@/hooks/useSession";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronDown, Plus, Search, Calendar as CalendarIcon, Check, ClipboardList, Trash2 } from "lucide-react";
 import iconCitas from "@/assets/icons/citas.png";
@@ -35,7 +35,7 @@ const ASISTENTES_LABELS: Record<string, string> = {
   otro: "Otro acudiente",
 };
 
-const WEBHOOK_BASE = "https://n8n.notasnormy.com/webhook";
+const WEBHOOK_BASE = "https://n8n.notasnormi.com/webhook";
 
 interface Estudiante {
   id_estudiantil: number;
@@ -278,7 +278,7 @@ const Citas = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormy backLink={backLink} />
+      <HeaderNormi backLink={backLink} />
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <div className="flex items-center gap-2 text-sm flex-wrap">

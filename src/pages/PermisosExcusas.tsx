@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, isPadreDeFamilia, isProfesor, puedeAccederDashboard, isAdmin } from "@/hooks/useSession";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import iconRetiro from "@/assets/icons/retiro-estudiantes.webp";
 import iconInasistencia from "@/assets/icons/inasistencia.webp";
 import iconUniforme from "@/assets/icons/uniforme.webp";
@@ -67,7 +67,7 @@ const PermisosExcusas = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormy backLink={backLink} />
+      <HeaderNormi backLink={backLink} />
 
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">

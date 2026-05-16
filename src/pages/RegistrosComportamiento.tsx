@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getSession, isProfesor, isOrientador, isAdmin, isRectorOrCoordinador } from "@/hooks/useSession";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ChevronDown, Plus, Search, Calendar as CalendarIcon, Download, Trash2,
@@ -38,7 +38,7 @@ const GRADO_ORDEN: Record<string, number> = {
   "Décimo": 13, "Undécimo": 14,
 };
 
-const WEBHOOK_URL = "https://n8n.notasnormy.com/webhook/enviar-comunicado-admin";
+const WEBHOOK_URL = "https://n8n.notasnormi.com/webhook/enviar-comunicado-admin";
 
 interface Estudiante {
   id_estudiantil: number;
@@ -486,9 +486,9 @@ const RegistrosComportamiento = () => {
         const base64 = firmaData.split(",")[1];
         const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
         const fileName = `firmas-registros/${Date.now()}_${autor.id}.png`;
-        const { error: upErr } = await supabase.storage.from("normy-archivos").upload(fileName, bytes, { contentType: "image/png" });
+        const { error: upErr } = await supabase.storage.from("normi-archivos").upload(fileName, bytes, { contentType: "image/png" });
         if (!upErr) {
-          const { data: urlData } = supabase.storage.from("normy-archivos").getPublicUrl(fileName);
+          const { data: urlData } = supabase.storage.from("normi-archivos").getPublicUrl(fileName);
           firmaUrl = urlData?.publicUrl || null;
         }
       } catch (e) {
@@ -546,7 +546,7 @@ const RegistrosComportamiento = () => {
         const estLabel = `${estSeleccionado.nombre_estudiante} ${estSeleccionado.apellidos_estudiante} (${grupoEst})`;
         const tipoLabel = TIPO_LABEL[tipo];
         const asigLabel = asignaturasSel.length === 1 ? `asignatura ${asignaturaTexto}` : `asignaturas ${asignaturaTexto}`;
-        const mensaje = `${autor.nombreSimple} envió un Registro de Comportamiento (${tipoLabel}) sobre ${estLabel}, ${asigLabel}.\n\nPueden consultarlo y descargarlo entrando a notasnormy.com → Registros de Comportamiento.`;
+        const mensaje = `${autor.nombreSimple} envió un Registro de Comportamiento (${tipoLabel}) sobre ${estLabel}, ${asigLabel}.\n\nPueden consultarlo y descargarlo entrando a notasnormi.com → Registros de Comportamiento.`;
 
         const partes = ["Rector", "Coordinadores", "Orientador(a) Escolar"];
         if (director && director.cargo === "Profesor(a)" && String(director.id) !== autor.id) {
@@ -558,7 +558,7 @@ const RegistrosComportamiento = () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            remitente: "Normy",
+            remitente: "Normi",
             destinatarios,
             mensaje,
             id_remitente: autor.id,
@@ -596,7 +596,7 @@ const RegistrosComportamiento = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormy backLink={backLink} />
+      <HeaderNormi backLink={backLink} />
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <div className="flex items-center gap-2 text-sm flex-wrap">

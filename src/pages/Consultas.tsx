@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getSession, hasValidSession, isAdmin, puedeAccederDashboard } from "@/hooks/useSession";
 import { supabase } from "@/integrations/supabase/client";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -88,10 +88,10 @@ const PERFILES_UI: { key: PerfilKey; label: string; perfil: string }[] = [
   { key: "Orientador", label: "Orientador(a) Escolar", perfil: "Orientador(a) Escolar" },
 ];
 
-const WEBHOOK_URL = "https://n8n.notasnormy.com/webhook/enviar-comunicado";
-const WEBHOOK_RECTOR_URL = "https://n8n.notasnormy.com/webhook/enviar-comunicado-rector-coordinadores";
-const WEBHOOK_ADMIN_URL = "https://n8n.notasnormy.com/webhook/enviar-comunicado-admin";
-const CONSULTAS_BASE = "https://notasnormy.com/consulta";
+const WEBHOOK_URL = "https://n8n.notasnormi.com/webhook/enviar-comunicado";
+const WEBHOOK_RECTOR_URL = "https://n8n.notasnormi.com/webhook/enviar-comunicado-rector-coordinadores";
+const WEBHOOK_ADMIN_URL = "https://n8n.notasnormi.com/webhook/enviar-comunicado-admin";
+const CONSULTAS_BASE = "https://notasnormi.com/consulta";
 
 export default function Consultas() {
   const navigate = useNavigate();
@@ -679,7 +679,7 @@ export default function Consultas() {
 
   return (
     <div className="min-h-screen bg-background">
-      <HeaderNormy backLink={backLink} />
+      <HeaderNormi backLink={backLink} />
       <div className="max-w-5xl mx-auto p-4 sm:p-6">
         <div className="flex items-center gap-3 mb-4">
           <Button onClick={() => navigate(backLink)} variant="outline" size="sm">
@@ -744,7 +744,7 @@ export default function Consultas() {
                       <p className="text-sm text-muted-foreground mt-1">
                         Por{" "}
                         {c.creado_por_cargo === "Administrador"
-                          ? "Normy"
+                          ? "Normi"
                           : `${c.creado_por_nombre || `Interno ${c.creado_por}`}${c.creado_por_cargo ? ` (${c.creado_por_cargo})` : ""}`}
                         {" "}—{" "}
                         {new Date(c.fecha_creacion).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })}
@@ -817,7 +817,7 @@ export default function Consultas() {
                     rows={4}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    El sistema añade automáticamente el link (notasnormy.com/consulta/&lt;id&gt;) al final.
+                    El sistema añade automáticamente el link (notasnormi.com/consulta/&lt;id&gt;) al final.
                   </p>
                 </div>
               </CardContent>

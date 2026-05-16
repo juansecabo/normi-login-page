@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, isAdmin, puedeAccederDashboard } from "@/hooks/useSession";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 
@@ -32,7 +32,7 @@ const GRADE_ORDER = [
   "Décimo", "Undécimo",
 ];
 
-const UsoNormy = () => {
+const UsoNormi = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [profesores, setProfesores] = useState<ProfesorStats[]>([]);
@@ -207,20 +207,20 @@ const UsoNormy = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormy backLink={backLink} />
+      <HeaderNormi backLink={backLink} />
 
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6 max-w-3xl mx-auto">
           <div className="flex items-center gap-2 text-sm">
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">→</span>
-            <span className="text-foreground font-medium">Uso de Normy</span>
+            <span className="text-foreground font-medium">Uso de Normi</span>
           </div>
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-6 md:p-8 max-w-3xl mx-auto">
           <h2 className="text-2xl font-bold text-foreground mb-2 text-center">
-            Uso de Normy
+            Uso de Normi
           </h2>
           <p className="text-sm text-muted-foreground text-center mb-6">
             Interacciones de profesores con la plataforma
@@ -303,4 +303,4 @@ const UsoNormy = () => {
   );
 };
 
-export default UsoNormy;
+export default UsoNormi;

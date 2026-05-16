@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, isPadreDeFamilia } from "@/hooks/useSession";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import ListaComunicados from "@/components/ListaComunicados";
 import { markLastSeen } from "@/utils/notificaciones";
 
@@ -119,7 +119,7 @@ const ComunicadosPadre = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormy backLink="/dashboard-padre" />
+      <HeaderNormi backLink="/dashboard-padre" />
 
       <main className="flex-1 container mx-auto p-4 md:p-8">
         {/* Breadcrumb */}

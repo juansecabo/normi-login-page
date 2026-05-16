@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   getSession, isProfesor, isAdmin, puedeAccederDashboard,
 } from "@/hooks/useSession";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SignatureCanvas from "react-signature-canvas";
@@ -196,10 +196,10 @@ const RemitirOrientacion = () => {
       const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
       const fileName = `firmas-remisiones/${Date.now()}_${autor.id}_${estSeleccionado.id_estudiantil}.png`;
       const { error: upErr } = await supabase.storage
-        .from("normy-archivos")
+        .from("normi-archivos")
         .upload(fileName, bytes, { contentType: "image/png" });
       if (upErr) throw upErr;
-      const { data: urlData } = supabase.storage.from("normy-archivos").getPublicUrl(fileName);
+      const { data: urlData } = supabase.storage.from("normi-archivos").getPublicUrl(fileName);
       firmaUrl = urlData?.publicUrl || null;
     } catch (e: any) {
       console.error("Subir firma:", e);
@@ -249,8 +249,8 @@ const RemitirOrientacion = () => {
         `Estudiante: ${estLabel} (${grupo}).\n` +
         `Motivo: ${motivoCorto}\n` +
         `Remitido por: ${remitente}.\n\n` +
-        `Pueden consultarla entrando a notasnormy.com → Remisiones a Orientación.`;
-      await notifyOrientadora(mensaje, remitente || "Sistema Normy");
+        `Pueden consultarla entrando a notasnormi.com → Remisiones a Orientación.`;
+      await notifyOrientadora(mensaje, remitente || "Sistema Normi");
     } catch (e) {
       console.warn("notifyOrientadora:", e);
     }
@@ -262,7 +262,7 @@ const RemitirOrientacion = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormy backLink={backLink} />
+      <HeaderNormi backLink={backLink} />
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <div className="flex items-center gap-2 text-sm flex-wrap">

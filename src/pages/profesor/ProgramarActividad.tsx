@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { subirArchivo } from "@/lib/storage";
 import { getSession, isProfesor } from "@/hooks/useSession";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import CharCircle from "@/components/CharCircle";
 import {
   buildActividadBodyPreview,
@@ -432,7 +432,7 @@ const ProgramarActividad = () => {
 
       // Fire & forget webhook notification
       try {
-        await fetch('https://n8n.notasnormy.com/webhook/notificar-actividades', {
+        await fetch('https://n8n.notasnormi.com/webhook/notificar-actividades', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -592,7 +592,7 @@ const ProgramarActividad = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormy backLink="/dashboard" />
+      <HeaderNormi backLink="/dashboard" />
 
       <main className="flex-1 container mx-auto p-4 md:p-8">
         {/* Breadcrumb */}

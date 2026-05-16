@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ClipboardList, X, Paperclip, Eye, Download, Pencil, Trash2, Calendar as CalendarIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, isAdmin } from "@/hooks/useSession";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import { Calendar } from "@/components/ui/calendar";
 import { es } from "date-fns/locale";
 import { format } from "date-fns";
@@ -201,7 +201,7 @@ const TodasActividades = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormy backLink="/dashboard-admin" />
+      <HeaderNormi backLink="/dashboard-admin" />
 
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">

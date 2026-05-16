@@ -2,7 +2,7 @@ import { getPeriodoActual } from "@/utils/periodoActual";
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getSession, puedeAccederDashboard } from "@/hooks/useSession";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import { useEstadisticas } from "@/hooks/useEstadisticas";
 import { supabase } from "@/integrations/supabase/client";
 import { FiltrosEstadisticas } from "@/components/estadisticas/FiltrosEstadisticas";
@@ -145,7 +145,7 @@ const EstadisticasDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormy backLink="/dashboard-rector" />
+      <HeaderNormi backLink="/dashboard-rector" />
 
       <main className="flex-1 container mx-auto p-4 md:p-8">
         {/* Breadcrumb */}

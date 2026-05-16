@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, isProfesor } from "@/hooks/useSession";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import { useEstadisticas, ordenGrados } from "@/hooks/useEstadisticas";
 import { AnalisisAsignatura } from "@/components/estadisticas/AnalisisAsignatura";
 import { AnalisisEstudiante } from "@/components/estadisticas/AnalisisEstudiante";
@@ -160,7 +160,7 @@ const EstadisticasProfesor = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormy backLink="/dashboard" />
+      <HeaderNormi backLink="/dashboard" />
 
       <main className="flex-1 container mx-auto p-4 md:p-8">
         {/* Breadcrumb */}

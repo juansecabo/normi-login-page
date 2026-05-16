@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, isProfesor, puedeAccederDashboard, isAdmin } from "@/hooks/useSession";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -77,7 +77,7 @@ async function fetchAllPages<T>(
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-const RegistroNormy = () => {
+const RegistroNormi = () => {
   const navigate = useNavigate();
 
   // Auth
@@ -202,7 +202,7 @@ const RegistroNormy = () => {
   const handleExport = async () => {
     const { default: ExcelJS } = await import("exceljs");
     const workbook = new ExcelJS.Workbook();
-    workbook.creator = "Normy";
+    workbook.creator = "Normi";
     workbook.created = new Date();
 
     const filterParts: string[] = [];
@@ -331,7 +331,7 @@ const RegistroNormy = () => {
         salon: e.salon_estudiante,
         estado: estudianteIdsRegistrados.has(e.id_estudiantil) ? "Registrado" : "No registrado",
       }));
-      buildSheet("Estudiantes", "Registro en Normy — Estudiantes", cols, rows, "estado");
+      buildSheet("Estudiantes", "Registro en Normi — Estudiantes", cols, rows, "estado");
     } else {
       const cols: ColSpec[] = [
         { header: "ID estudiante", key: "id", width: 14 },
@@ -372,7 +372,7 @@ const RegistroNormy = () => {
           }
         }
       }
-      buildSheet("Padres", "Registro en Normy — Padres", cols, rows, "estado");
+      buildSheet("Padres", "Registro en Normi — Padres", cols, rows, "estado");
     }
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -382,7 +382,7 @@ const RegistroNormy = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `Registro-Normy-${activeTab === "estudiantes" ? "Estudiantes" : "Padres"}-${fileFilterSuffix}.xlsx`;
+    a.download = `Registro-Normi-${activeTab === "estudiantes" ? "Estudiantes" : "Padres"}-${fileFilterSuffix}.xlsx`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -396,7 +396,7 @@ const RegistroNormy = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <HeaderNormy backLink={backLink} />
+        <HeaderNormi backLink={backLink} />
         <main className="flex-1 flex items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </main>
@@ -406,20 +406,20 @@ const RegistroNormy = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormy backLink={backLink} />
+      <HeaderNormi backLink={backLink} />
 
       <main className="flex-1 container mx-auto p-4 lg:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6 max-w-4xl mx-auto">
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
-            <span className="text-foreground font-medium">Registro en Normy</span>
+            <span className="text-foreground font-medium">Registro en Normi</span>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground max-w-4xl mx-auto mb-6 text-center">Revisa qué estudiantes y padres están registrados o no con Normy.</p>
+        <p className="text-sm text-muted-foreground max-w-4xl mx-auto mb-6 text-center">Revisa qué estudiantes y padres están registrados o no con Normi.</p>
 
         <h2 className="text-2xl font-bold text-foreground text-center mb-6">
-          Registro en Normy
+          Registro en Normi
         </h2>
 
         {/* Filters */}
@@ -587,7 +587,7 @@ const RegistroNormy = () => {
                       <TableHead className="whitespace-nowrap">Nombre del estudiante</TableHead>
                       <TableHead className="whitespace-nowrap">Grado</TableHead>
                       <TableHead className="whitespace-nowrap">Salón</TableHead>
-                      <TableHead className="whitespace-nowrap">Padre en Normy</TableHead>
+                      <TableHead className="whitespace-nowrap">Padre en Normi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -670,4 +670,4 @@ const RegistroNormy = () => {
   );
 };
 
-export default RegistroNormy;
+export default RegistroNormi;

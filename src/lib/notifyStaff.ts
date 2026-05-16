@@ -12,7 +12,7 @@
 // después de "Excusa registrada", la request en vuelo se aborta y la
 // notificación se pierde silenciosa.
 
-const WEBHOOK_URL = "https://n8n.notasnormy.com/webhook/enviar-comunicado-rector-coordinadores";
+const WEBHOOK_URL = "https://n8n.notasnormi.com/webhook/enviar-comunicado-rector-coordinadores";
 const SUPABASE_URL = "https://npdtggwzodtssnicmkux.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wZHRnZ3d6b2R0c3NuaWNta3V4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2NzIzMjEsImV4cCI6MjA3MTI0ODMyMX0.fkXjbs2_injmieaipIVHSWmMFep0e0tXX2y8AFRGWnY";
 
@@ -104,7 +104,7 @@ async function insertPendiente(payload: {
 // Notifica a Rector, Coordinadores y opcionalmente profesores del aula.
 export async function notifyRectorCoord(
   mensaje: string,
-  remitente = "Sistema Normy",
+  remitente = "Sistema Normi",
   aula?: Aula,
   origen?: Origen
 ) {
@@ -147,7 +147,7 @@ export async function notifyRectorCoord(
 // Notifica a la(s) Orientadora(s) Escolar(es). Mismo gating de horario y cola.
 export async function notifyOrientadora(
   mensaje: string,
-  remitente = "Sistema Normy"
+  remitente = "Sistema Normi"
 ) {
   const destinatarios = "Orientador(a) Escolar";
   const perfil = ["Orientador(a) Escolar"];

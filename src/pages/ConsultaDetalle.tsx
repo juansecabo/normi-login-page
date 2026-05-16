@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, hasValidSession, isAdmin, puedeAccederDashboard } from "@/hooks/useSession";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -394,10 +394,10 @@ export default function ConsultaDetalle() {
           const blob = new Blob([bytes], { type: mime });
           const filename = `firmas-consultas/consulta-${consulta.id}-interno-${sId}-${Date.now()}.${ext}`;
           const { error: errUp } = await supabase.storage
-            .from("normy-archivos")
+            .from("normi-archivos")
             .upload(filename, blob, { contentType: mime, upsert: true });
           if (!errUp) {
-            const { data: pub } = supabase.storage.from("normy-archivos").getPublicUrl(filename);
+            const { data: pub } = supabase.storage.from("normi-archivos").getPublicUrl(filename);
             firmaUrl = pub?.publicUrl || firmaUrl;
           }
         }
@@ -614,7 +614,7 @@ export default function ConsultaDetalle() {
     if (!consulta) return;
     const { default: ExcelJS } = await import("exceljs");
     const workbook = new ExcelJS.Workbook();
-    workbook.creator = "Normy";
+    workbook.creator = "Normi";
     workbook.created = new Date();
 
     const sheet = workbook.addWorksheet(consulta.titulo.slice(0, 30).replace(/[:*?/\\[\]]/g, ""), {
@@ -635,7 +635,7 @@ export default function ConsultaDetalle() {
     const subtitleCell = sheet.getCell("A2");
     const remitenteExcel =
       consulta.creado_por_cargo === "Administrador"
-        ? "Normy"
+        ? "Normi"
         : `${consulta.creado_por_nombre || ""}${
             consulta.creado_por_cargo ? ` (${consulta.creado_por_cargo})` : ""
           }`;
@@ -773,7 +773,7 @@ export default function ConsultaDetalle() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <HeaderNormy backLink={backLink} />
+        <HeaderNormi backLink={backLink} />
         <div className="text-center py-12 text-muted-foreground">Cargando...</div>
       </div>
     );
@@ -781,7 +781,7 @@ export default function ConsultaDetalle() {
   if (!consulta) {
     return (
       <div className="min-h-screen bg-background">
-        <HeaderNormy backLink={backLink} />
+        <HeaderNormi backLink={backLink} />
         <div className="text-center py-12 text-muted-foreground">Consulta no encontrada.</div>
       </div>
     );
@@ -789,7 +789,7 @@ export default function ConsultaDetalle() {
 
   return (
     <div className="min-h-screen bg-background">
-      <HeaderNormy />
+      <HeaderNormi />
       <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <Button onClick={() => navigate("/consultas")} variant="outline" size="sm" className="bg-white">
@@ -833,7 +833,7 @@ export default function ConsultaDetalle() {
                 <h1 className="text-xl sm:text-2xl font-bold text-foreground">{consulta.titulo}</h1>
                 <p className="text-sm text-muted-foreground mt-1">
                   {consulta.creado_por_cargo === "Administrador"
-                    ? "Normy"
+                    ? "Normi"
                     : `${consulta.creado_por_nombre || ""}${consulta.creado_por_cargo ? ` (${consulta.creado_por_cargo})` : ""}`}
                   {" "}—{" "}
                   {new Date(consulta.fecha_creacion).toLocaleString("es-CO")}

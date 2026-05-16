@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Plus, Pencil, Trash2, ArrowLeft, Calendar, Paperclip, FileText, X, Eye, Download } from "lucide-react";
 import { subirArchivo } from "@/lib/storage";
 import { getSession } from "@/hooks/useSession";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import {
   Dialog,
   DialogContent,
@@ -371,7 +371,7 @@ const ActividadesCalendario = () => {
         const session = getSession();
         const cargo = session.cargo || 'Profesor(a)';
         try {
-          await fetch('https://n8n.notasnormy.com/webhook/notificar-actividades', {
+          await fetch('https://n8n.notasnormi.com/webhook/notificar-actividades', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -451,7 +451,7 @@ const ActividadesCalendario = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormy backLink="/dashboard" />
+      <HeaderNormi backLink="/dashboard" />
 
       {/* Main Content */}
       <main className="flex-1 container mx-auto p-4 md:p-8">

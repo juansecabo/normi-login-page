@@ -11,9 +11,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import normyImg from "@/assets/normy-examinadora.webp";
+import normiImg from "@/assets/normi-examinadora.webp";
 import { getSession } from "@/hooks/useSession";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import { Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -24,7 +24,7 @@ interface Asignacion {
   "Salon(es)": string[];
 }
 
-const NormyExaminadora = () => {
+const NormiExaminadora = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [nombres, setNombres] = useState("");
@@ -189,7 +189,7 @@ const NormyExaminadora = () => {
       payload.preguntasAbiertas = parseInt(preguntasAbiertas) || 0;
 
       const response = await fetch(
-        "https://n8n.notasnormy.com/webhook/41f121b5-276e-453a-98b2-f300227e2e99",
+        "https://n8n.notasnormi.com/webhook/41f121b5-276e-453a-98b2-f300227e2e99",
         {
           method: "POST",
           mode: "cors",
@@ -252,7 +252,7 @@ const NormyExaminadora = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormy backLink="/dashboard" />
+      <HeaderNormi backLink="/dashboard" />
 
       {/* Main Content */}
       <main className="flex-1 container mx-auto p-8">
@@ -266,17 +266,17 @@ const NormyExaminadora = () => {
           </Button>
         </div>
 
-        {/* Title Section with Normy */}
+        {/* Title Section with Normi */}
         <div className="bg-card rounded-lg shadow-soft p-6 md:p-8 max-w-3xl mx-auto text-center mb-8 relative overflow-hidden">
-          {/* Normy in background - hidden on mobile */}
+          {/* Normi in background - hidden on mobile */}
           <img
-            src={normyImg}
-            alt="Normy Examinadora"
+            src={normiImg}
+            alt="Normi Examinadora"
             className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 h-full w-auto object-contain pointer-events-none"
           />
           <div className="relative z-10">
             <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground">
-              Normy Examinadora
+              Normi Examinadora
             </h2>
             <p className="text-sm md:text-base text-muted-foreground">
               Crea tus actividades académicas
@@ -285,10 +285,10 @@ const NormyExaminadora = () => {
               {nombres} {apellidos}
             </p>
           </div>
-              {/* Normy image below text on mobile */}
+              {/* Normi image below text on mobile */}
               <img
-                src={normyImg}
-                alt="Normy Examinadora"
+                src={normiImg}
+                alt="Normi Examinadora"
                 className="md:hidden mx-auto mt-4 -mb-6 h-32 w-auto object-contain"
               />
             </div>
@@ -534,4 +534,4 @@ const NormyExaminadora = () => {
   );
 };
 
-export default NormyExaminadora;
+export default NormiExaminadora;

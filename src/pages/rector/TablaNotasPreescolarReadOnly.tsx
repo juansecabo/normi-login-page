@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { isRectorOrCoordinador } from "@/hooks/useSession";
 import { getPeriodoActual } from "@/utils/periodoActual";
 import { ACTIVIDADES_PREESCOLAR } from "@/utils/preescolar";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import { Loader2 } from "lucide-react";
 
 interface Estudiante {
@@ -127,7 +127,7 @@ const TablaNotasPreescolarReadOnly = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormy backLink="/dashboard-rector" />
+      <HeaderNormi backLink="/dashboard-rector" />
 
       <main className="flex-1 container mx-auto p-4 md:p-8">
         {/* Breadcrumb */}

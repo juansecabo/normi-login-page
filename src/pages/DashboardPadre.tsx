@@ -8,7 +8,7 @@ import iconConsultas from "@/assets/icons/consultas.png";
 import iconEstadisticas from "@/assets/icons/estadisticas.webp";
 import iconComunicados from "@/assets/icons/comunicados.webp";
 import iconDocumentos from "@/assets/icons/documentos.webp";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import BuzonSugerencias from "@/components/BuzonSugerencias";
 import { supabase } from "@/integrations/supabase/client";
 import { getAllLastSeen, countNewItems } from "@/utils/notificaciones";
@@ -171,7 +171,7 @@ const DashboardPadre = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormy backLink="/dashboard-padre" />
+      <HeaderNormi backLink="/dashboard-padre" />
 
       <main className="flex-1 container mx-auto p-8">
         <div className="bg-card rounded-lg shadow-soft p-5 max-w-2xl mx-auto text-center">

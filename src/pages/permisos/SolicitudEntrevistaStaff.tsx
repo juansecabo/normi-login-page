@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getSession, isProfesor, puedeAccederDashboard, isAdmin } from "@/hooks/useSession";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SignatureCanvas from "react-signature-canvas";
@@ -111,9 +111,9 @@ const SolicitudEntrevistaStaff = () => {
       const base64Data = firma.split(",")[1];
       const byteArray = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
       const fileName = `firmas/${Date.now()}_${session.id}_entrevista.png`;
-      const { error: uploadErr } = await supabase.storage.from("normy-archivos").upload(fileName, byteArray, { contentType: "image/png" });
+      const { error: uploadErr } = await supabase.storage.from("normi-archivos").upload(fileName, byteArray, { contentType: "image/png" });
       if (uploadErr) throw uploadErr;
-      const { data: urlData } = supabase.storage.from("normy-archivos").getPublicUrl(fileName);
+      const { data: urlData } = supabase.storage.from("normi-archivos").getPublicUrl(fileName);
       firmaUrl = urlData?.publicUrl || null;
     } catch (err: any) {
       toast({ title: "Error", description: "No se pudo subir la firma: " + err.message, variant: "destructive" });
@@ -145,12 +145,12 @@ const SolicitudEntrevistaStaff = () => {
       // Send notification to parent via n8n webhook
       const fechaEntrevistaTexto = fechaEntrevista.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
       const entrevistaConNombre = [internoEntrevista.cargo, internoEntrevista.nombres, internoEntrevista.apellidos].filter(Boolean).join(" ");
-      const mensaje = `Se le informa que se ha solicitado una entrevista para el acudiente del estudiante ${estudianteSeleccionado.nombre_estudiante} ${estudianteSeleccionado.apellidos_estudiante} de ${estudianteSeleccionado.grado_estudiante} ${estudianteSeleccionado.salon_estudiante}.\n\nFecha: ${fechaEntrevistaTexto}\nHora: ${horaEntrevista}\nCon: ${entrevistaConNombre}\n\nPor favor ingrese a notasnormy.com → Permisos y Excusas → Solicitud de Entrevista, busque el día indicado, haga click sobre la citación y confirme su asistencia.`;
+      const mensaje = `Se le informa que se ha solicitado una entrevista para el acudiente del estudiante ${estudianteSeleccionado.nombre_estudiante} ${estudianteSeleccionado.apellidos_estudiante} de ${estudianteSeleccionado.grado_estudiante} ${estudianteSeleccionado.salon_estudiante}.\n\nFecha: ${fechaEntrevistaTexto}\nHora: ${horaEntrevista}\nCon: ${entrevistaConNombre}\n\nPor favor ingrese a notasnormi.com → Permisos y Excusas → Solicitud de Entrevista, busque el día indicado, haga click sobre la citación y confirme su asistencia.`;
       const remitente = [session.cargo, session.nombres, session.apellidos].filter(Boolean).join(" ");
       const cargo = session.cargo || "";
       const webhookUrl = ["Rector", "Coordinador(a)"].includes(cargo)
-        ? "https://n8n.notasnormy.com/webhook/enviar-comunicado-rector-coordinadores"
-        : "https://n8n.notasnormy.com/webhook/enviar-comunicado";
+        ? "https://n8n.notasnormi.com/webhook/enviar-comunicado-rector-coordinadores"
+        : "https://n8n.notasnormi.com/webhook/enviar-comunicado";
       fetch(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -176,7 +176,7 @@ const SolicitudEntrevistaStaff = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormy backLink={backLink} />
+      <HeaderNormi backLink={backLink} />
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <div className="flex items-center gap-2 text-sm flex-wrap">

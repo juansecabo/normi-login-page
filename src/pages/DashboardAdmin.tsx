@@ -14,7 +14,7 @@ import iconActividades from "@/assets/icons/actividades.webp";
 import iconPermisos from "@/assets/icons/permisos-y-excusas.webp";
 import iconConsultas from "@/assets/icons/consultas.png";
 import iconRegistros from "@/assets/icons/registros-comportamiento.png";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import { getAllLastSeen } from "@/utils/notificaciones";
 
 const Badge = ({ count }: { count: number }) => {
@@ -72,7 +72,7 @@ const DashboardAdmin = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormy backLink="/dashboard-admin" />
+      <HeaderNormi backLink="/dashboard-admin" />
 
       <main className="flex-1 container mx-auto p-8">
         <div className="bg-card rounded-lg shadow-soft p-8 max-w-2xl mx-auto text-center">
@@ -143,23 +143,23 @@ const DashboardAdmin = () => {
             </button>
 
             <button
-              onClick={() => navigate("/rector/uso-normy")}
+              onClick={() => navigate("/rector/uso-normi")}
               className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-orange-100 transition-all duration-200 hover:shadow-md hover:bg-orange-200"
             >
               <img src={iconUsoAgente} alt="" className="w-16 h-16 object-contain" />
-              <span className="font-semibold text-lg text-foreground text-center">Uso de Normy</span>
+              <span className="font-semibold text-lg text-foreground text-center">Uso de Normi</span>
             </button>
 
             <button
-              onClick={() => navigate("/registro-normy")}
+              onClick={() => navigate("/registro-normi")}
               className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-cyan-100 transition-all duration-200 hover:shadow-md hover:bg-cyan-200"
             >
               <img src={iconRegistroAgente} alt="" className="w-16 h-16 object-contain" />
-              <span className="font-semibold text-lg text-foreground text-center">Registro en Normy</span>
+              <span className="font-semibold text-lg text-foreground text-center">Registro en Normi</span>
             </button>
 
             <button
-              onClick={() => window.open("https://chat.notasnormy.com", "_blank")}
+              onClick={() => window.open("https://chat.notasnormi.com", "_blank")}
               className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-blue-100 transition-all duration-200 hover:shadow-md hover:bg-blue-200"
             >
               <img src={iconConversaciones} alt="" className="w-16 h-16 object-contain" />

@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { getSession, isRectorOrCoordinador } from "@/hooks/useSession";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import { useEstadisticas } from "@/hooks/useEstadisticas";
 import { AlertTriangle, ArrowLeft, Loader2 } from "lucide-react";
 import {
@@ -76,7 +76,7 @@ const EstudiantesEnRiesgo = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormy backLink="/dashboard-rector" />
+      <HeaderNormi backLink="/dashboard-rector" />
 
       <main className="flex-1 container mx-auto p-4 md:p-8">
         {/* Breadcrumb */}

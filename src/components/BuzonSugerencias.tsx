@@ -113,7 +113,7 @@ const BuzonSugerencias = () => {
           ) : (
             <div className="space-y-4">
               <p className="text-muted-foreground text-sm">
-                ¿Se te ocurre algo para hacer de la plataforma y de Normy algo
+                ¿Se te ocurre algo para hacer de la plataforma y de Normi algo
                 mejor? Envíanos tus sugerencias.
               </p>
               <textarea

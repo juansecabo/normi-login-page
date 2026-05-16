@@ -39,7 +39,7 @@ export interface SessionData {
 }
 
 // Cookie de sesión (sin expires → muere cuando el navegador se cierra)
-const SESSION_COOKIE = 'normy_session_active';
+const SESSION_COOKIE = 'normi_session_active';
 
 export const saveSession = (
   id: string,

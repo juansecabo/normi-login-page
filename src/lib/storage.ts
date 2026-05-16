@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const BUCKET_NAME = "normy-archivos";
+const BUCKET_NAME = "normi-archivos";
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB (Supabase default limit)
 
 /**

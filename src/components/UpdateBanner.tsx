@@ -1,4 +1,4 @@
-// Banner "Nueva actualización disponible". Se monta DENTRO de HeaderNormy /
+// Banner "Nueva actualización disponible". Se monta DENTRO de HeaderNormi /
 // HeaderPati para que aparezca como una barra fija justo debajo del header
 // verde, sin parpadear, hasta que el usuario haga click.
 //

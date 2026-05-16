@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getSession, isPadreDeFamilia, HijoData } from "@/hooks/useSession";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import ConsolidadoNotas from "@/components/ConsolidadoNotas";
 import { supabase } from "@/integrations/supabase/client";
 import { markLastSeen, getAllLastSeen, countNewItems } from "@/utils/notificaciones";
@@ -86,7 +86,7 @@ const NotasPadre = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormy backLink="/dashboard-padre" />
+      <HeaderNormi backLink="/dashboard-padre" />
 
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">

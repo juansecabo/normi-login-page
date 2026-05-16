@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import SignatureCanvas from "react-signature-canvas";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, hasValidSession, isPadreDeFamilia, isEstudiante } from "@/hooks/useSession";
-import HeaderNormy from "@/components/HeaderNormy";
+import HeaderNormi from "@/components/HeaderNormi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -450,13 +450,13 @@ export default function ConsultaPublica() {
       const session = getSession();
       const filename = `firmas-consultas/consulta-${consulta?.id}-${esInterno ? "interno" : "padre"}-${session.id}-${Date.now()}.${ext}`;
       const { error: errUp } = await supabase.storage
-        .from("normy-archivos")
+        .from("normi-archivos")
         .upload(filename, blob, { contentType: mime, upsert: true });
       if (errUp) {
         console.error("Error subiendo firma:", errUp);
         return null;
       }
-      const { data: pub } = supabase.storage.from("normy-archivos").getPublicUrl(filename);
+      const { data: pub } = supabase.storage.from("normi-archivos").getPublicUrl(filename);
       return pub?.publicUrl || null;
     } catch (err) {
       console.error("Error procesando firma:", err);
@@ -593,7 +593,7 @@ export default function ConsultaPublica() {
   if (error || !consulta)
     return (
       <div className="min-h-screen bg-background">
-        <HeaderNormy backLink="/dashboard-padre" />
+        <HeaderNormi backLink="/dashboard-padre" />
         <div className="max-w-md mx-auto p-6 text-center">
           <Card>
             <CardContent className="p-6">
@@ -618,7 +618,7 @@ export default function ConsultaPublica() {
 
   return (
     <div className="min-h-screen bg-background">
-      <HeaderNormy backLink={backLink} />
+      <HeaderNormi backLink={backLink} />
       <div className="max-w-2xl mx-auto space-y-4 px-4 py-6">
         <div className="flex items-center gap-3">
           <Button onClick={() => navigate(esInterno ? backLink : "/padre/consultas")} variant="outline" size="sm">
