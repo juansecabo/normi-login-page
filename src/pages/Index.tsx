@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { saveSession, getSession, HijoData } from "@/hooks/useSession";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
-import { apiClient, ApiError } from "@/lib/apiClient";
+import { apiClient, ApiError, isMultiMembership, type AuthUser, type MembershipChoice } from "@/lib/apiClient";
 
 // Si viene con ?redirect=/alguna-ruta válida, usamos esa; si no, el default.
 const getPostLoginRoute = (defaultRoute: string): string => {
@@ -24,9 +24,61 @@ const Index = () => {
   const [contrasena, setContrasena] = useState("");
   const [showContrasena, setShowContrasena] = useState(false);
   const [loading, setLoading] = useState(false);
+  // Estado para el selector multi-membresía
+  const [memberships, setMemberships] = useState<MembershipChoice[] | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { canInstall, isIOS, installApp } = useInstallPrompt();
+
+  // Una vez tenemos el AuthUser final (con colegio), guarda sesión local y navega
+  const enterAsUser = (user: AuthUser) => {
+    if (user.rol === 'Estudiante') {
+      saveSession(
+        user.id, user.nombres, user.apellidos, 'Estudiante',
+        user.nivel || null, user.grado || null, user.salon || null,
+      );
+      navigate(getPostLoginRoute("/dashboard-estudiante"));
+      return;
+    }
+    if (user.rol === 'Padre de familia') {
+      saveSession(
+        user.id, user.nombres, user.apellidos, 'Padre de familia',
+        null, null, null,
+        (user.hijos || []) as HijoData[],
+      );
+      navigate(getPostLoginRoute("/dashboard-padre"));
+      return;
+    }
+    saveSession(user.id, user.nombres, user.apellidos, user.rol);
+    if (user.rol === 'Administrador') {
+      navigate(getPostLoginRoute("/dashboard-admin"));
+    } else if (
+      user.rol === 'Rector' || user.rol === 'Coordinador(a)' ||
+      user.rol === 'Administrativo(a)' || user.rol === 'Secretaria General' ||
+      user.rol === 'Orientador(a) Escolar'
+    ) {
+      navigate(getPostLoginRoute("/dashboard-rector"));
+    } else {
+      navigate(getPostLoginRoute("/dashboard"));
+    }
+  };
+
+  const handleSelectMembership = async (m: MembershipChoice) => {
+    setLoading(true);
+    try {
+      const { user } = await apiClient.auth.selectColegio(m.colegio_id, m.rol);
+      enterAsUser(user);
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "No se pudo completar la selección. Vuelve a iniciar sesión.",
+        variant: "destructive",
+      });
+      setMemberships(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Si ya hay sesión activa, redirigir sin pedir contraseña
   useEffect(() => {
@@ -70,47 +122,29 @@ const Index = () => {
     setLoading(true);
 
     try {
-      // Login server-side: el backend valida la contraseña (jamás se expone
-      // al frontend) y devuelve un JWT + la sesión completa.
-      const { user } = await apiClient.auth.login(idInput, passInput);
+      const res = await apiClient.auth.login(idInput, passInput);
 
-      // Persistir sesión local (compatibilidad con resto de la app que aún usa useSession).
-      if (user.rol === 'Estudiante') {
-        saveSession(
-          user.id, user.nombres, user.apellidos, 'Estudiante',
-          user.nivel || null, user.grado || null, user.salon || null,
-        );
-        navigate(getPostLoginRoute("/dashboard-estudiante"));
-        return;
-      }
-      if (user.rol === 'Padre de familia') {
-        saveSession(
-          user.id, user.nombres, user.apellidos, 'Padre de familia',
-          null, null, null,
-          (user.hijos || []) as HijoData[],
-        );
-        navigate(getPostLoginRoute("/dashboard-padre"));
+      // Si el server pidió que el usuario escoja entre varias membresías,
+      // mostramos el selector en lugar de entrar directo.
+      if (isMultiMembership(res)) {
+        setMemberships(res.memberships);
+        setLoading(false);
         return;
       }
 
-      // Internos (Profesor / Rector / etc.)
-      saveSession(user.id, user.nombres, user.apellidos, user.rol);
-      if (user.rol === 'Administrador') {
-        navigate(getPostLoginRoute("/dashboard-admin"));
-      } else if (
-        user.rol === 'Rector' || user.rol === 'Coordinador(a)' ||
-        user.rol === 'Administrativo(a)' || user.rol === 'Secretaria General' ||
-        user.rol === 'Orientador(a) Escolar'
-      ) {
-        navigate(getPostLoginRoute("/dashboard-rector"));
-      } else {
-        navigate(getPostLoginRoute("/dashboard"));
-      }
+      // 1 sola membresía → entrar directo.
+      enterAsUser(res.user);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         toast({
           title: "Error",
           description: "Identificación o contraseña incorrectas",
+          variant: "destructive",
+        });
+      } else if (err instanceof ApiError && err.status === 403) {
+        toast({
+          title: "Acceso denegado",
+          description: "Tu cédula no está registrada en ningún colegio activo.",
           variant: "destructive",
         });
       } else {
@@ -156,11 +190,46 @@ const Index = () => {
               Notas Normi
             </h1>
             <p className="text-muted-foreground text-sm lg:text-base">
-              Escuela Normal Superior de Corozal
+              {memberships
+                ? "¿En cuál perfil quieres entrar?"
+                : "Escuela Normal Superior de Corozal"}
             </p>
           </div>
 
-          {/* Formulario */}
+          {/* Selector de membresía cuando la cédula está en varios colegios/roles */}
+          {memberships && (
+            <div className="space-y-3">
+              {memberships.map((m) => (
+                <button
+                  key={`${m.colegio_id}-${m.rol}`}
+                  onClick={() => handleSelectMembership(m)}
+                  disabled={loading}
+                  className="w-full flex items-center gap-4 p-4 rounded-lg border-2 border-input bg-background hover:border-primary hover:bg-primary/5 transition-all text-left disabled:opacity-50"
+                >
+                  {m.colegio_logo_url ? (
+                    <img src={m.colegio_logo_url} alt="" className="w-14 h-14 object-contain flex-shrink-0" />
+                  ) : (
+                    <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl flex-shrink-0">
+                      {m.colegio_nombre.charAt(0)}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-muted-foreground">{m.rol} de</p>
+                    <p className="font-semibold text-foreground truncate">{m.colegio_nombre}</p>
+                  </div>
+                </button>
+              ))}
+              <button
+                onClick={() => { setMemberships(null); }}
+                className="w-full text-sm text-muted-foreground hover:text-foreground py-2"
+              >
+                ← Cambiar de cuenta
+              </button>
+            </div>
+          )}
+
+          {/* Formulario (solo cuando no estamos en el selector) */}
+          {!memberships && (
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <label
@@ -217,6 +286,7 @@ const Index = () => {
               {loading ? "Verificando..." : "Ingresar"}
             </Button>
           </form>
+          )}
 
           {/* Botón instalar app */}
           {canInstall && (

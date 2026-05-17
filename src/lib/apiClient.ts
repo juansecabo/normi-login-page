@@ -1,21 +1,18 @@
 /**
  * Cliente HTTP para el API de normi-server.
  *
- * - Maneja JWT auth: el token se guarda en localStorage["normi_jwt"]
- * - apiClient.auth.login() llama a POST /auth/login del backend
- * - Otras llamadas envían el JWT automáticamente como Bearer
- *
- * En adelante, queries que hoy hacen `supabase.from(...)` directo deben
- * pasar por endpoints REST que viven en normi-server para ocultar la DB.
+ * - JWT en localStorage["normi_jwt"]
+ * - apiClient.auth.login() → devuelve { token, user } o { tempToken, memberships }
+ *   (lo segundo si la cédula tiene varias membresías y hay que mostrar selector)
+ * - apiClient.auth.selectColegio(colegio_id, rol) → completa la selección
+ *   y devuelve { token, user } final.
  */
 
-// Same-origin: el API se sirve desde el mismo dominio que el frontend (Traefik
-// rutea /auth/* y /api/* al normi-server). Evita problemas de CORS y de cert
-// SSL del subdomain srv966880.hstgr.cloud (que tiene IPv6 con cert inválido).
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || '';
 
 const JWT_KEY = 'normi_jwt';
+const TEMP_JWT_KEY = 'normi_jwt_temp';
 
 export class ApiError extends Error {
   status: number;
@@ -30,24 +27,33 @@ export class ApiError extends Error {
 function getToken(): string | null {
   try { return localStorage.getItem(JWT_KEY); } catch { return null; }
 }
-
 function setToken(token: string | null) {
   try {
     if (token === null) localStorage.removeItem(JWT_KEY);
     else localStorage.setItem(JWT_KEY, token);
   } catch {}
 }
+function getTempToken(): string | null {
+  try { return sessionStorage.getItem(TEMP_JWT_KEY); } catch { return null; }
+}
+function setTempToken(token: string | null) {
+  try {
+    if (token === null) sessionStorage.removeItem(TEMP_JWT_KEY);
+    else sessionStorage.setItem(TEMP_JWT_KEY, token);
+  } catch {}
+}
 
 async function request<T = unknown>(
   path: string,
   init: RequestInit = {},
+  opts?: { useTempToken?: boolean },
 ): Promise<T> {
   const url = path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(init.headers as Record<string, string> | undefined),
   };
-  const token = getToken();
+  const token = opts?.useTempToken ? getTempToken() : getToken();
   if (token && !headers.Authorization) {
     headers.Authorization = `Bearer ${token}`;
   }
@@ -58,15 +64,14 @@ async function request<T = unknown>(
   try { body = text ? JSON.parse(text) : null; } catch {}
 
   if (!res.ok) {
-    // 401 → la sesión expiró; limpiar token y dejar que el caller redirija
-    if (res.status === 401) setToken(null);
+    if (res.status === 401 && !opts?.useTempToken) setToken(null);
     throw new ApiError(res.status, body);
   }
   return body as T;
 }
 
 // ───────────────────────────────────────────────────────────────────────────
-// Tipos compartidos con el server
+// Tipos
 // ───────────────────────────────────────────────────────────────────────────
 
 export type AuthRol =
@@ -83,6 +88,14 @@ export interface HijoData {
   salon: string;
 }
 
+export interface ColegioInfo {
+  id: string;
+  slug: string;
+  nombre: string;
+  logo_url: string | null;
+  color: string;
+}
+
 export interface AuthUser {
   id: string;
   rol: AuthRol;
@@ -92,15 +105,36 @@ export interface AuthUser {
   grado?: string;
   salon?: string;
   hijos?: HijoData[];
+  colegio: ColegioInfo;
 }
 
-export interface LoginResponse {
+export interface FinalLoginResponse {
   token: string;
   user: AuthUser;
 }
 
+export interface MembershipChoice {
+  colegio_id: string;
+  colegio_slug: string;
+  colegio_nombre: string;
+  colegio_logo_url: string | null;
+  colegio_color: string;
+  rol: AuthRol;
+}
+
+export interface MultiMembershipResponse {
+  tempToken: string;
+  memberships: MembershipChoice[];
+}
+
+export type LoginResponse = FinalLoginResponse | MultiMembershipResponse;
+
+export function isMultiMembership(r: LoginResponse): r is MultiMembershipResponse {
+  return (r as MultiMembershipResponse).tempToken !== undefined;
+}
+
 // ───────────────────────────────────────────────────────────────────────────
-// API surface
+// API
 // ───────────────────────────────────────────────────────────────────────────
 
 export const apiClient = {
@@ -110,15 +144,36 @@ export const apiClient = {
         method: 'POST',
         body: JSON.stringify({ cedula, contrasena }),
       });
-      setToken(res.token);
+      if (isMultiMembership(res)) {
+        setTempToken(res.tempToken);
+        setToken(null);
+      } else {
+        setToken(res.token);
+        setTempToken(null);
+      }
       return res;
     },
+
+    async selectColegio(colegio_id: string, rol?: string): Promise<FinalLoginResponse> {
+      const res = await request<FinalLoginResponse>(
+        '/auth/select-colegio',
+        { method: 'POST', body: JSON.stringify({ colegio_id, rol }) },
+        { useTempToken: true },
+      );
+      setToken(res.token);
+      setTempToken(null);
+      return res;
+    },
+
     async me(): Promise<{ user: AuthUser }> {
       return request('/auth/me');
     },
+
     logout() {
       setToken(null);
+      setTempToken(null);
     },
+
     getToken,
     isAuthenticated(): boolean {
       return getToken() !== null;
