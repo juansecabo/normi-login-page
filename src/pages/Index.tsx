@@ -6,10 +6,10 @@ import normiImg from "@/assets/normi-placeholder.webp";
 import cailicoLogo from "@/assets/cailico-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { saveSession, getSession, HijoData } from "@/hooks/useSession";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
+import { apiClient, ApiError } from "@/lib/apiClient";
 
 // Si viene con ?redirect=/alguna-ruta válida, usamos esa; si no, el default.
 const getPostLoginRoute = (defaultRoute: string): string => {
@@ -70,174 +70,56 @@ const Index = () => {
     setLoading(true);
 
     try {
-      // 1. Buscar en Internos por código de identidad
-      const { data: usuario, error } = await supabase
-        .from('Internos')
-        .select('*')
-        .eq('id', parseInt(idInput))
-        .maybeSingle();
+      // Login server-side: el backend valida la contraseña (jamás se expone
+      // al frontend) y devuelve un JWT + la sesión completa.
+      const { user } = await apiClient.auth.login(idInput, passInput);
 
-      if (error) {
-        toast({ title: "Error", description: "Error al verificar", variant: "destructive" });
-        setLoading(false);
+      // Persistir sesión local (compatibilidad con resto de la app que aún usa useSession).
+      if (user.rol === 'Estudiante') {
+        saveSession(
+          user.id, user.nombres, user.apellidos, 'Estudiante',
+          user.nivel || null, user.grado || null, user.salon || null,
+        );
+        navigate(getPostLoginRoute("/dashboard-estudiante"));
+        return;
+      }
+      if (user.rol === 'Padre de familia') {
+        saveSession(
+          user.id, user.nombres, user.apellidos, 'Padre de familia',
+          null, null, null,
+          (user.hijos || []) as HijoData[],
+        );
+        navigate(getPostLoginRoute("/dashboard-padre"));
         return;
       }
 
-      // Track si el id existe en alguna tabla, para distinguir "id inexistente"
-      // vs "id existente pero contraseña equivocada" al final.
-      let idExisteEnAlgunaTabla = false;
-
-      if (usuario) {
-        idExisteEnAlgunaTabla = true;
-        // Verificar contraseña de interno
-        const contrasenaCorrecta = usuario.contrasena
-          ? usuario.contrasena === passInput
-          : String(usuario.id) === passInput;
-
-        if (contrasenaCorrecta) {
-          const cargosPermitidos = ['Profesor(a)', 'Rector', 'Coordinador(a)', 'Administrador', 'Administrativo(a)', 'Secretaria General', 'Orientador(a) Escolar'];
-          if (!cargosPermitidos.includes(usuario.cargo)) {
-            toast({ title: "Acceso denegado", description: "No tienes permisos de acceso", variant: "destructive" });
-            setLoading(false);
-            return;
-          }
-
-          saveSession(String(usuario.id), usuario.nombres || "", usuario.apellidos || "", usuario.cargo || "");
-
-          if (usuario.cargo === 'Administrador') {
-            navigate(getPostLoginRoute("/dashboard-admin"));
-          } else if (
-            usuario.cargo === 'Rector' ||
-            usuario.cargo === 'Coordinador(a)' ||
-            usuario.cargo === 'Administrativo(a)' ||
-            usuario.cargo === 'Secretaria General' ||
-            usuario.cargo === 'Orientador(a) Escolar'
-          ) {
-            navigate(getPostLoginRoute("/dashboard-rector"));
-          } else {
-            navigate(getPostLoginRoute("/dashboard"));
-          }
-          return;
-        }
-        // Contraseña de interno NO coincide — no rechazamos aún; el mismo id
-        // podría estar también en Perfiles_Generales (profesor que es padre, etc.).
-      }
-
-      // 2. Buscar en Perfiles_Generales como Estudiante
-      const { data: perfilEstudiante, error: errEstudiante } = await supabase
-        .from('Perfiles_Generales')
-        .select('*')
-        .eq('estudiante_id', idInput)
-        .not('perfil', 'is', null)
-        .maybeSingle();
-
-      if (errEstudiante) {
-        toast({ title: "Error", description: "Error al verificar", variant: "destructive" });
-        setLoading(false);
-        return;
-      }
-
-      if (perfilEstudiante) {
-        idExisteEnAlgunaTabla = true;
-        if (perfilEstudiante.contrasena === passInput) {
-          // Buscar datos del estudiante en tabla Estudiantes
-          const { data: estData } = await supabase
-            .from('Estudiantes')
-            .select('*')
-            .eq('id_estudiantil', idInput)
-            .maybeSingle();
-
-          const nivel = estData?.nivel_estudiante || perfilEstudiante.estudiante_nivel || '';
-          const grado = estData?.grado_estudiante || perfilEstudiante.estudiante_grado || '';
-          const salon = estData?.salon_estudiante || perfilEstudiante.estudiante_salon || '';
-          const nombre = estData?.nombre_estudiante || perfilEstudiante.estudiante_nombre || '';
-          const apellidos = estData?.apellidos_estudiante || perfilEstudiante.estudiante_apellidos || '';
-
-          saveSession(idInput, nombre, apellidos, 'Estudiante', nivel, grado, salon);
-          navigate("/dashboard-estudiante");
-          return;
-        }
-        // Contraseña de estudiante no coincide — seguir a probar padre.
-      }
-
-      // 3. Buscar en Perfiles_Generales como Padre de familia
-      const { data: perfilPadre, error: errPadre } = await supabase
-        .from('Perfiles_Generales')
-        .select('*')
-        .eq('padre_id', idInput)
-        .not('perfil', 'is', null)
-        .maybeSingle();
-
-      if (errPadre) {
-        toast({ title: "Error", description: "Error al verificar", variant: "destructive" });
-        setLoading(false);
-        return;
-      }
-
-      if (perfilPadre) {
-        idExisteEnAlgunaTabla = true;
-        if (perfilPadre.contrasena !== passInput) {
-          // Contraseña de padre tampoco coincide — cae al mensaje final.
-        } else {
-
-        // Construir lista de hijos
-        const hijos: HijoData[] = [];
-        const numMap: Record<string, number> = { "1 (uno)": 1, "2 (dos)": 2, "3 (tres)": 3, "4 (cuatro)": 4 };
-        const numHijos = numMap[perfilPadre.padre_numero_de_estudiantes] || 0;
-
-        for (let i = 1; i <= numHijos; i++) {
-          const idHijo = perfilPadre[`padre_estudiante${i}_id` as keyof typeof perfilPadre];
-          if (!idHijo) continue;
-
-          // Buscar datos actualizados del hijo en Estudiantes
-          const { data: hijoData } = await supabase
-            .from('Estudiantes')
-            .select('*')
-            .eq('id_estudiantil', String(idHijo))
-            .maybeSingle();
-
-          if (hijoData) {
-            hijos.push({
-              id: String(hijoData.id_estudiantil),
-              nombre: hijoData.nombre_estudiante || '',
-              apellidos: hijoData.apellidos_estudiante || '',
-              nivel: hijoData.nivel_estudiante || '',
-              grado: hijoData.grado_estudiante || '',
-              salon: hijoData.salon_estudiante || '',
-            });
-          } else {
-            // Fallback: usar datos del perfil
-            hijos.push({
-              id: String(idHijo),
-              nombre: (perfilPadre as any)[`padre_estudiante${i}_nombre`] || '',
-              apellidos: (perfilPadre as any)[`padre_estudiante${i}_apellidos`] || '',
-              nivel: (perfilPadre as any)[`padre_estudiante${i}_nivel`] || '',
-              grado: (perfilPadre as any)[`padre_estudiante${i}_grado`] || '',
-              salon: (perfilPadre as any)[`padre_estudiante${i}_salon`] || '',
-            });
-          }
-        }
-
-        const nombrePadre = perfilPadre.padre_nombre || '';
-        saveSession(idInput, nombrePadre, '', 'Padre de familia', null, null, null, hijos);
-        navigate("/dashboard-padre");
-        return;
-        }
-      }
-
-      // 4. Mensaje final: si el id existe en alguna tabla pero ninguna contraseña
-      // coincidió, el problema es la contraseña. Si el id no existe, problema del id.
-      if (idExisteEnAlgunaTabla) {
-        toast({ title: "Error", description: "Contraseña incorrecta", variant: "destructive" });
+      // Internos (Profesor / Rector / etc.)
+      saveSession(user.id, user.nombres, user.apellidos, user.rol);
+      if (user.rol === 'Administrador') {
+        navigate(getPostLoginRoute("/dashboard-admin"));
+      } else if (
+        user.rol === 'Rector' || user.rol === 'Coordinador(a)' ||
+        user.rol === 'Administrativo(a)' || user.rol === 'Secretaria General' ||
+        user.rol === 'Orientador(a) Escolar'
+      ) {
+        navigate(getPostLoginRoute("/dashboard-rector"));
       } else {
-        toast({ title: "Error", description: "Identificación no encontrada", variant: "destructive" });
+        navigate(getPostLoginRoute("/dashboard"));
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Ocurrió un error inesperado",
-        variant: "destructive",
-      });
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        toast({
+          title: "Error",
+          description: "Identificación o contraseña incorrectas",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Ocurrió un error inesperado al iniciar sesión",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
