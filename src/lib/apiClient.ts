@@ -9,8 +9,11 @@
  * pasar por endpoints REST que viven en normi-server para ocultar la DB.
  */
 
+// Same-origin: el API se sirve desde el mismo dominio que el frontend (Traefik
+// rutea /auth/* y /api/* al normi-server). Evita problemas de CORS y de cert
+// SSL del subdomain srv966880.hstgr.cloud (que tiene IPv6 con cert inválido).
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'https://normi-api.srv966880.hstgr.cloud';
+  import.meta.env.VITE_API_BASE_URL || '';
 
 const JWT_KEY = 'normi_jwt';
 

@@ -16,9 +16,10 @@
 // del usuario logueado. El webhook a n8n es público y sigue igual.
 
 const WEBHOOK_URL = "https://n8n.notasnormi.com/webhook/enviar-comunicado-rector-coordinadores";
+// Same-origin con el frontend; ver nota en apiClient.ts.
 const API_BASE_URL =
   (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_BASE_URL)
-  || 'https://normi-api.srv966880.hstgr.cloud';
+  || '';
 
 function getJwt(): string | null {
   try { return localStorage.getItem('normi_jwt'); } catch { return null; }
