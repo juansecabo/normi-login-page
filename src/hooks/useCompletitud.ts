@@ -264,11 +264,12 @@ export const useCompletitud = () => {
         console.log("Actividades cargadas:", actividadesProcesadas.length);
         setActividades(actividadesProcesadas);
 
-        // 4) Notas
-        const { data: notasData, error: errorNotas } = await supabase
+        // 4) Notas — fetchAll para traer las ~50k sin paginación manual
+        const { data: notasData, error: errorNotas } = await (supabase as any)
           .from("Notas")
           .select("id_estudiantil, asignatura, grado, salon, periodo, nombre_actividad, nota")
-          .not("nombre_actividad", "in", '("Final Periodo","Final Definitiva")');
+          .not("nombre_actividad", "in", '("Final Periodo","Final Definitiva")')
+          .fetchAll();
 
         if (errorNotas) console.error("❌ Error obteniendo notas:", errorNotas);
 

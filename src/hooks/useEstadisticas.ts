@@ -135,9 +135,10 @@ export const useEstadisticas = () => {
         // fetchAll(): el server pagina internamente y devuelve todo en una sola
         // respuesta HTTP. Antes hacíamos N round-trips desde el browser; con
         // 50k Notas eso eran ~15-20s. Ahora ~1s.
+        // Solo columnas necesarias (no `*`) — reduce respuesta de ~12MB a ~3MB
         const { data: notasData, error: notasErr } = await (supabase as any)
           .from("Notas")
-          .select("*")
+          .select("id_estudiantil,asignatura,grado,salon,periodo,nombre_actividad,porcentaje,nota")
           .not("nombre_actividad", "in", '("Definitiva Periodo","Definitiva Anual")')
           .fetchAll();
         if (notasErr) throw notasErr;
@@ -145,7 +146,7 @@ export const useEstadisticas = () => {
 
         const { data: estudiantesData, error: estErr } = await (supabase as any)
           .from("Estudiantes")
-          .select("*")
+          .select("id_estudiantil,nombre_estudiante,apellidos_estudiante,grado_estudiante,salon_estudiante")
           .order("apellidos_estudiante", { ascending: true })
           .fetchAll();
         if (estErr) throw estErr;
