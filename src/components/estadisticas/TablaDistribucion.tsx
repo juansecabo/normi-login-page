@@ -1,12 +1,33 @@
 import { DistribucionDesempeno } from "@/hooks/useEstadisticas";
 
+interface DistItem {
+  rango: string;
+  cantidad: number;
+  porcentaje?: number;
+}
+
 interface TablaDistribucionProps {
   titulo: string;
-  distribucion: DistribucionDesempeno;
+  // Formato viejo (hook useEstadisticas) o nuevo (endpoint API)
+  distribucion: DistribucionDesempeno | DistItem[];
+}
+
+// Convierte el formato nuevo (array de 5 rangos del API) al viejo (4 buckets).
+function normalize(d: DistribucionDesempeno | DistItem[]): DistribucionDesempeno {
+  if (!Array.isArray(d)) return d;
+  const get = (label: string) => d.find((x) => x.rango.includes(label))?.cantidad || 0;
+  return {
+    superior: get("Excelente"),
+    alto: get("Sobresaliente"),
+    basico: get("Aceptable"),
+    // Bajo = Insuficiente + Deficiente
+    bajo: get("Insuficiente") + get("Deficiente"),
+  };
 }
 
 export const TablaDistribucion = ({ titulo, distribucion }: TablaDistribucionProps) => {
-  const total = distribucion.bajo + distribucion.basico + distribucion.alto + distribucion.superior;
+  const dist = normalize(distribucion);
+  const total = dist.bajo + dist.basico + dist.alto + dist.superior;
 
   const calcularPorcentaje = (valor: number) => {
     if (total === 0) return 0;
@@ -14,10 +35,10 @@ export const TablaDistribucion = ({ titulo, distribucion }: TablaDistribucionPro
   };
 
   const niveles = [
-    { nombre: "Superior (4.6 - 5.0)", valor: distribucion.superior, color: "bg-green-500", textColor: "text-green-700" },
-    { nombre: "Alto (4.0 - 4.5)", valor: distribucion.alto, color: "bg-blue-500", textColor: "text-blue-700" },
-    { nombre: "Básico (3.0 - 3.9)", valor: distribucion.basico, color: "bg-amber-500", textColor: "text-amber-700" },
-    { nombre: "Bajo (0 - 2.9)", valor: distribucion.bajo, color: "bg-red-500", textColor: "text-red-700" }
+    { nombre: "Superior (4.5 - 5.0)", valor: dist.superior, color: "bg-green-500", textColor: "text-green-700" },
+    { nombre: "Alto (4.0 - 4.4)", valor: dist.alto, color: "bg-blue-500", textColor: "text-blue-700" },
+    { nombre: "Básico (3.0 - 3.9)", valor: dist.basico, color: "bg-amber-500", textColor: "text-amber-700" },
+    { nombre: "Bajo (0 - 2.9)", valor: dist.bajo, color: "bg-red-500", textColor: "text-red-700" },
   ];
 
   if (total === 0) {
@@ -44,7 +65,7 @@ export const TablaDistribucion = ({ titulo, distribucion }: TablaDistribucionPro
               </span>
             </div>
             <div className="w-full bg-muted rounded-full h-2.5">
-              <div 
+              <div
                 className={`h-2.5 rounded-full ${nivel.color}`}
                 style={{ width: `${calcularPorcentaje(nivel.valor)}%` }}
               />

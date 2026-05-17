@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useEstadisticas } from "@/hooks/useEstadisticas";
+import { useEstadisticasGrado } from "@/hooks/useEstadisticasApi";
 import { useCompletitud } from "@/hooks/useCompletitud";
 import { TarjetaResumen } from "./TarjetaResumen";
 import { TablaRanking } from "./TablaRanking";
@@ -20,47 +20,37 @@ interface AnalisisGradoProps {
 export const AnalisisGrado = ({ grado, periodo, titulo }: AnalisisGradoProps) => {
   const contenidoRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const {
-    loading,
-    getPromediosEstudiantes, getPromediosSalones, getPromediosAsignaturas,
-    getDistribucionDesempeno, getTopEstudiantes, getEvolucionPeriodos,
-    getPromedioInstitucional, tieneDatosSuficientesParaRiesgo, getEstudiantesEnRiesgo
-  } = useEstadisticas();
-
+  const { data, loading, error } = useEstadisticasGrado(grado, periodo);
   const { verificarCompletitud } = useCompletitud();
 
   if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /><span className="ml-2 text-muted-foreground">Espere, por favor...</span></div>;
+  if (!grado) return <div className="bg-card rounded-lg shadow-soft p-8 text-center text-muted-foreground">Selecciona un grado para ver el análisis</div>;
+  if (error || !data) return <div className="bg-card rounded-lg shadow-soft p-8 text-center text-red-600">Error cargando estadísticas: {error || "sin datos"}</div>;
 
-  if (!grado) {
-    return <div className="bg-card rounded-lg shadow-soft p-8 text-center text-muted-foreground">Selecciona un grado para ver el análisis</div>;
-  }
+  const promedioGrado = data.promedio_grado;
+  const promedioInstitucional = data.promedio_institucional;
+  const topEstudiantes = data.top_estudiantes;
+  const peoresEstudiantes = data.bottom_estudiantes;
+  const salones = [...data.promedios_salones].sort((a, b) => b.promedio - a.promedio);
+  const asignaturas = data.promedios_asignaturas;
+  const distribucion = data.distribucion;
+  const estudiantesEnRiesgo = data.estudiantes_en_riesgo;
+  const mostrarRiesgo = data.tiene_datos_riesgo;
+  const diferenciaConInst = promedioGrado - promedioInstitucional;
 
-  const estudiantesGrado = getPromediosEstudiantes(periodo, grado);
-  const promedioGrado = estudiantesGrado.length > 0 ? Math.round((estudiantesGrado.reduce((a, e) => a + e.promedio, 0) / estudiantesGrado.length) * 100) / 100 : 0;
-  const promedioInstitucional = getPromedioInstitucional(periodo);
-  const distribucion = getDistribucionDesempeno(periodo, grado);
-  const topEstudiantes = getTopEstudiantes(10, periodo, grado);
-  const peoresEstudiantes = [...getPromediosEstudiantes(periodo, grado)].sort((a, b) => a.promedio - b.promedio || a.nombre_completo.localeCompare(b.nombre_completo)).slice(0, 10);
-  const salones = getPromediosSalones(periodo, grado).sort((a, b) => b.promedio - a.promedio);
-  const asignaturas = getPromediosAsignaturas(periodo, grado);
-
-  // Verificar completitud con el nuevo hook
+  // Verificar completitud (sigue como estaba)
   const { completo, detalles, resumen, resumenCompleto } = verificarCompletitud("grado", periodo, grado);
 
   // Filtrar evolución hasta el período seleccionado
   const periodoHasta = periodo === "anual" ? 4 : periodo;
-  const evolucionPeriodos = getEvolucionPeriodos("grado", grado).filter(e => {
-    const numPeriodo = parseInt(e.periodo.replace("Período ", ""));
-    return numPeriodo <= periodoHasta;
+  const evolucionPeriodos = data.evolucion.filter((e) => {
+    const n = parseInt(e.periodo.replace("Período ", ""));
+    return n <= periodoHasta;
   });
-  const mostrarRiesgo = tieneDatosSuficientesParaRiesgo(periodo, grado);
-  const estudiantesEnRiesgo = mostrarRiesgo ? getEstudiantesEnRiesgo(periodo, grado) : [];
-  const diferenciaConInst = promedioGrado - promedioInstitucional;
 
-  // Obtener total de salones únicos con datos
-  const salonesUnicos = [...new Set(estudiantesGrado.map(e => e.salon))];
+  // Cantidad de salones únicos con datos
+  const salonesUnicos = [...new Set(salones.map((s) => s.salon))];
 
-  // Formatear el período para mostrar
   const periodoTexto = periodo === "anual" ? "Acumulado Anual" : `Período ${periodo}`;
 
   const handleVerRiesgo = () => {
@@ -71,7 +61,7 @@ export const AnalisisGrado = ({ grado, periodo, titulo }: AnalisisGradoProps) =>
     navigate(`/rector/estudiantes-riesgo?${params.toString()}`);
   };
 
-  if (estudiantesGrado.length === 0) {
+  if (data.estudiantes_evaluados === 0) {
     return (
       <div className="bg-card rounded-lg shadow-soft p-8 text-center">
         <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
@@ -83,7 +73,6 @@ export const AnalisisGrado = ({ grado, periodo, titulo }: AnalisisGradoProps) =>
 
   return (
     <div className="space-y-6">
-      {/* Banner informativo con indicador de completitud */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-2 text-sm text-blue-700">
           <span className="font-medium">ℹ️</span>
@@ -103,73 +92,69 @@ export const AnalisisGrado = ({ grado, periodo, titulo }: AnalisisGradoProps) =>
       </div>
 
       <div ref={contenidoRef} className="space-y-6">
-        {/* Título dinámico */}
         {titulo && (
-          <h2 className="text-xl md:text-2xl font-bold text-foreground text-center">
-            {titulo}
-          </h2>
+          <h2 className="text-xl md:text-2xl font-bold text-foreground text-center">{titulo}</h2>
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <TarjetaResumen titulo={`Promedio ${grado}`} valor={promedioGrado.toFixed(2)} subtitulo={`${diferenciaConInst >= 0 ? "+" : ""}${diferenciaConInst.toFixed(2)} vs institución`} icono={GraduationCap} color={promedioGrado >= 4.5 ? "success" : promedioGrado >= 4 ? "blue" : promedioGrado >= 3 ? "warning" : "danger"} />
-        <TarjetaResumen titulo="Estudiantes con notas" valor={estudiantesGrado.length} subtitulo={`En ${salonesUnicos.length} salones`} icono={Users} color="primary" />
-        <TarjetaResumen titulo="Mejor Estudiante" valor={topEstudiantes[0]?.promedio.toFixed(2) || "—"} subtitulo={topEstudiantes[0]?.nombre_completo || ""} icono={Award} color={topEstudiantes[0]?.promedio >= 4.5 ? "success" : topEstudiantes[0]?.promedio >= 4 ? "blue" : topEstudiantes[0]?.promedio >= 3 ? "warning" : "danger"} />
-        {mostrarRiesgo ? (
-          <div
-            onClick={estudiantesEnRiesgo.length > 0 ? handleVerRiesgo : undefined}
-            className={estudiantesEnRiesgo.length > 0 ? "cursor-pointer hover:scale-[1.02] transition-transform" : ""}
-          >
-            <TarjetaResumen titulo="En Riesgo" valor={estudiantesEnRiesgo.length} subtitulo={estudiantesEnRiesgo.length > 0 ? "Click para ver detalles" : "Promedio menor a 3.0"} icono={AlertTriangle} color={estudiantesEnRiesgo.length > 0 ? "danger" : "success"} />
-          </div>
-        ) : (
-          <TarjetaResumen titulo="En Riesgo" valor="—" subtitulo="Se necesitan más datos" icono={AlertTriangle} color="primary" />
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TablaDistribucion titulo={`Distribución por Desempeño - ${grado}`} distribucion={distribucion} />
-        <TablaEvolucion titulo={`Evolución de ${grado} por Período`} datos={evolucionPeriodos} />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <ListaComparativa titulo={`Rendimiento por Salón - ${grado}`} items={salones.map(s => ({ nombre: `${grado} ${s.salon}`, valor: s.promedio, extra: `${s.cantidadEstudiantes} estudiantes` }))} mostrarPosicion />
-        <ListaComparativa titulo={`Rendimiento por Asignatura - ${grado}`} items={asignaturas.map(m => ({ nombre: m.asignatura, valor: m.promedio }))} mostrarPosicion />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <TablaRanking titulo={`Top 10 Mejores Estudiantes - ${grado}`} datos={topEstudiantes} tipo="estudiante" limite={10} />
-        <TablaRanking titulo={`Top 10 Estudiantes a Reforzar - ${grado}`} datos={peoresEstudiantes} tipo="estudiante" limite={10} ocultarIconosDespuesDe={0} />
-      </div>
-
-      {/* Comparativa con promedios de referencia */}
-      <div className="bg-card rounded-lg shadow-soft p-4 border border-border">
-        <h4 className="font-semibold text-foreground mb-4">Comparativa con Promedios de Referencia</h4>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left py-2 px-3 text-muted-foreground font-medium">Referencia</th>
-                <th className="text-center py-2 px-3 text-muted-foreground font-medium">Promedio</th>
-                <th className="text-center py-2 px-3 text-muted-foreground font-medium">Diferencia</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-b border-border/50">
-                <td className="py-2 px-3 font-medium text-foreground">{grado}</td>
-                <td className="py-2 px-3 text-center font-bold text-foreground">{promedioGrado.toFixed(2)}</td>
-                <td className="py-2 px-3 text-center text-muted-foreground">—</td>
-              </tr>
-              <tr>
-                <td className="py-2 px-3 text-foreground">Promedio Institucional</td>
-                <td className="py-2 px-3 text-center text-foreground">{promedioInstitucional.toFixed(2)}</td>
-                <td className={`py-2 px-3 text-center font-medium ${diferenciaConInst >= 0 ? "text-green-600" : "text-red-600"}`}>
-                  {diferenciaConInst >= 0 ? "+" : ""}{diferenciaConInst.toFixed(2)}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <TarjetaResumen titulo={`Promedio ${grado}`} valor={promedioGrado.toFixed(2)} subtitulo={`${diferenciaConInst >= 0 ? "+" : ""}${diferenciaConInst.toFixed(2)} vs institución`} icono={GraduationCap} color={promedioGrado >= 4.5 ? "success" : promedioGrado >= 4 ? "blue" : promedioGrado >= 3 ? "warning" : "danger"} />
+          <TarjetaResumen titulo="Estudiantes con notas" valor={data.estudiantes_evaluados} subtitulo={`En ${salonesUnicos.length} salones`} icono={Users} color="primary" />
+          <TarjetaResumen titulo="Mejor Estudiante" valor={topEstudiantes[0]?.promedio.toFixed(2) || "—"} subtitulo={topEstudiantes[0]?.nombre_completo || ""} icono={Award} color={topEstudiantes[0]?.promedio >= 4.5 ? "success" : topEstudiantes[0]?.promedio >= 4 ? "blue" : topEstudiantes[0]?.promedio >= 3 ? "warning" : "danger"} />
+          {mostrarRiesgo ? (
+            <div
+              onClick={estudiantesEnRiesgo.length > 0 ? handleVerRiesgo : undefined}
+              className={estudiantesEnRiesgo.length > 0 ? "cursor-pointer hover:scale-[1.02] transition-transform" : ""}
+            >
+              <TarjetaResumen titulo="En Riesgo" valor={estudiantesEnRiesgo.length} subtitulo={estudiantesEnRiesgo.length > 0 ? "Click para ver detalles" : "Promedio menor a 3.0"} icono={AlertTriangle} color={estudiantesEnRiesgo.length > 0 ? "danger" : "success"} />
+            </div>
+          ) : (
+            <TarjetaResumen titulo="En Riesgo" valor="—" subtitulo="Se necesitan más datos" icono={AlertTriangle} color="primary" />
+          )}
         </div>
-      </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TablaDistribucion titulo={`Distribución por Desempeño - ${grado}`} distribucion={distribucion} />
+          <TablaEvolucion titulo={`Evolución de ${grado} por Período`} datos={evolucionPeriodos} />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <ListaComparativa titulo={`Rendimiento por Salón - ${grado}`} items={salones.map((s) => ({ nombre: `${grado} ${s.salon}`, valor: s.promedio, extra: `${s.cantidadEstudiantes} estudiantes` }))} mostrarPosicion />
+          <ListaComparativa titulo={`Rendimiento por Asignatura - ${grado}`} items={asignaturas.map((m) => ({ nombre: m.asignatura, valor: m.promedio }))} mostrarPosicion />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <TablaRanking titulo={`Top 10 Mejores Estudiantes - ${grado}`} datos={topEstudiantes} tipo="estudiante" limite={10} />
+          <TablaRanking titulo={`Top 10 Estudiantes a Reforzar - ${grado}`} datos={peoresEstudiantes} tipo="estudiante" limite={10} ocultarIconosDespuesDe={0} />
+        </div>
+
+        <div className="bg-card rounded-lg shadow-soft p-4 border border-border">
+          <h4 className="font-semibold text-foreground mb-4">Comparativa con Promedios de Referencia</h4>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-2 px-3 text-muted-foreground font-medium">Referencia</th>
+                  <th className="text-center py-2 px-3 text-muted-foreground font-medium">Promedio</th>
+                  <th className="text-center py-2 px-3 text-muted-foreground font-medium">Diferencia</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-border/50">
+                  <td className="py-2 px-3 font-medium text-foreground">{grado}</td>
+                  <td className="py-2 px-3 text-center font-bold text-foreground">{promedioGrado.toFixed(2)}</td>
+                  <td className="py-2 px-3 text-center text-muted-foreground">—</td>
+                </tr>
+                <tr>
+                  <td className="py-2 px-3 text-foreground">Promedio Institucional</td>
+                  <td className="py-2 px-3 text-center text-foreground">{promedioInstitucional.toFixed(2)}</td>
+                  <td className={`py-2 px-3 text-center font-medium ${diferenciaConInst >= 0 ? "text-green-600" : "text-red-600"}`}>
+                    {diferenciaConInst >= 0 ? "+" : ""}{diferenciaConInst.toFixed(2)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   );

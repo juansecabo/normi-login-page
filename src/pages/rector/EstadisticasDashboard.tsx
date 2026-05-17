@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getSession, puedeAccederDashboard } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
-import { useEstadisticas } from "@/hooks/useEstadisticas";
+import { useEstadisticasMeta } from "@/hooks/useEstadisticasApi";
 import { supabase } from "@/integrations/supabase/client";
 import { FiltrosEstadisticas } from "@/components/estadisticas/FiltrosEstadisticas";
 import { AnalisisInstitucional } from "@/components/estadisticas/AnalisisInstitucional";
@@ -16,7 +16,24 @@ import { Loader2 } from "lucide-react";
 const EstadisticasDashboard = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { loading, grados, salones, asignaturas, getAsignaturasFiltradas, getPromediosEstudiantes } = useEstadisticas();
+  const { loading, grados, salones, asignaturas, asignaciones } = useEstadisticasMeta();
+
+  // Reemplazo local de getAsignaturasFiltradas — opera sobre el array de asignaciones del hook nuevo
+  const normalize = (str: string | null | undefined): string =>
+    String(str || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+  const getAsignaturasFiltradas = (grado?: string, salon?: string): string[] => {
+    let filtradas = asignaciones;
+    if (grado && grado !== "all") {
+      const g = normalize(grado);
+      filtradas = filtradas.filter((a) => normalize(a.grado) === g);
+    }
+    if (salon && salon !== "all") {
+      const s = normalize(salon);
+      filtradas = filtradas.filter((a) => normalize(a.salon) === s);
+    }
+    return [...new Set(filtradas.map((a) => a.asignatura))].sort();
+  };
   
   // Leer filtros desde URL params (para restaurar estado al volver)
   const [nivelAnalisis, setNivelAnalisis] = useState(() => searchParams.get("nivel") || "institucion");
@@ -50,7 +67,7 @@ const EstadisticasDashboard = () => {
     }
     // Si hay grado y salón, filtrar por ambos
     return getAsignaturasFiltradas(gradoSeleccionado, salonSeleccionado);
-  }, [gradoSeleccionado, salonSeleccionado, asignaturas, getAsignaturasFiltradas]);
+  }, [gradoSeleccionado, salonSeleccionado, asignaturas, asignaciones]);
 
   // Obtener lista de estudiantes del salón seleccionado (query directa a Supabase)
   const [estudiantesDelSalon, setEstudiantesDelSalon] = useState<{ id: string; nombre: string }[]>([]);

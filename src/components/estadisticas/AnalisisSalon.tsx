@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useEstadisticas } from "@/hooks/useEstadisticas";
+import { useEstadisticasSalon } from "@/hooks/useEstadisticasApi";
 import { useCompletitud } from "@/hooks/useCompletitud";
 import { TarjetaResumen } from "./TarjetaResumen";
 import { TablaRanking } from "./TablaRanking";
@@ -9,7 +9,7 @@ import { TablaEvolucion } from "./TablaEvolucion";
 import { ListaComparativa } from "./ListaComparativa";
 import { IndicadorCompletitud } from "./IndicadorCompletitud";
 import BotonDescarga from "./BotonDescarga";
-import { Home, Users, TrendingUp, AlertTriangle, Award, Loader2 } from "lucide-react";
+import { Home, Users, AlertTriangle, Award, Loader2 } from "lucide-react";
 
 interface AnalisisSalonProps {
   grado: string;
@@ -21,49 +21,35 @@ interface AnalisisSalonProps {
 export const AnalisisSalon = ({ grado, salon, periodo, titulo }: AnalisisSalonProps) => {
   const contenidoRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const {
-    loading,
-    getPromediosEstudiantes, getPromediosSalones, getPromediosAsignaturas,
-    getDistribucionDesempeno, getTopEstudiantes, getEvolucionPeriodos,
-    getPromedioInstitucional, tieneDatosSuficientesParaRiesgo, getEstudiantesEnRiesgo
-  } = useEstadisticas();
-
+  const { data, loading, error } = useEstadisticasSalon(grado, salon, periodo);
   const { verificarCompletitud } = useCompletitud();
 
   if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /><span className="ml-2 text-muted-foreground">Espere, por favor...</span></div>;
+  if (!grado || !salon) return <div className="bg-card rounded-lg shadow-soft p-8 text-center text-muted-foreground">Selecciona un grado y un salón para ver el análisis</div>;
+  if (error || !data) return <div className="bg-card rounded-lg shadow-soft p-8 text-center text-red-600">Error cargando estadísticas: {error || "sin datos"}</div>;
 
-  if (!grado || !salon) {
-    return <div className="bg-card rounded-lg shadow-soft p-8 text-center text-muted-foreground">Selecciona un grado y un salón para ver el análisis</div>;
-  }
-
-  const estudiantesSalon = getPromediosEstudiantes(periodo, grado, salon);
-  const promedioSalon = estudiantesSalon.length > 0 ? Math.round((estudiantesSalon.reduce((a, e) => a + e.promedio, 0) / estudiantesSalon.length) * 100) / 100 : 0;
-  const promedioInstitucional = getPromedioInstitucional(periodo);
-  const salonesGrado = getPromediosSalones(periodo, grado).sort((a, b) => b.promedio - a.promedio);
-  const posicionEnGrado = salonesGrado.findIndex(s => s.salon === salon) + 1;
-  const distribucion = getDistribucionDesempeno(periodo, grado, salon);
-  const topEstudiantes = getTopEstudiantes(5, periodo, grado, salon);
-  const asignaturas = getPromediosAsignaturas(periodo, grado, salon);
-
-  // Verificar completitud con el nuevo hook
-  const { completo, detalles, resumen, resumenCompleto } = verificarCompletitud("salon", periodo, grado, salon);
-
-  // Filtrar evolución hasta el período seleccionado
-  const periodoHasta = periodo === "anual" ? 4 : periodo;
-  const evolucionPeriodos = getEvolucionPeriodos("salon", grado, salon).filter(e => {
-    const numPeriodo = parseInt(e.periodo.replace("Período ", ""));
-    return numPeriodo <= periodoHasta;
-  });
-
-  const mostrarRiesgo = tieneDatosSuficientesParaRiesgo(periodo, grado, salon);
-  const estudiantesEnRiesgo = mostrarRiesgo ? getEstudiantesEnRiesgo(periodo, grado, salon) : [];
-  const estudiantesGrado = getPromediosEstudiantes(periodo, grado);
-  const promedioGrado = estudiantesGrado.length > 0 ? Math.round((estudiantesGrado.reduce((a, e) => a + e.promedio, 0) / estudiantesGrado.length) * 100) / 100 : 0;
+  const promedioSalon = data.promedio_salon;
+  const promedioGrado = data.promedio_grado;
+  const promedioInstitucional = data.promedio_institucional;
+  const estudiantesSalon = data.estudiantes;
+  const topEstudiantes = data.top_estudiantes;
+  const asignaturas = data.promedios_asignaturas;
+  const distribucion = data.distribucion;
+  const estudiantesEnRiesgo = data.estudiantes_en_riesgo;
+  const mostrarRiesgo = data.tiene_datos_riesgo;
+  const posicionEnGrado = data.posicion_grado;
+  const totalSalones = data.total_salones_grado;
   const diferenciaConGrado = promedioSalon - promedioGrado;
   const diferenciaConInst = promedioSalon - promedioInstitucional;
-  // Formatear el período para mostrar
 
-  // Formatear el período para mostrar
+  const { completo, detalles, resumen, resumenCompleto } = verificarCompletitud("salon", periodo, grado, salon);
+
+  const periodoHasta = periodo === "anual" ? 4 : periodo;
+  const evolucionPeriodos = data.evolucion.filter((e) => {
+    const n = parseInt(e.periodo.replace("Período ", ""));
+    return n <= periodoHasta;
+  });
+
   const periodoTexto = periodo === "anual" ? "Acumulado Anual" : `Período ${periodo}`;
 
   const handleVerRiesgo = () => {
@@ -75,7 +61,7 @@ export const AnalisisSalon = ({ grado, salon, periodo, titulo }: AnalisisSalonPr
     navigate(`/rector/estudiantes-riesgo?${params.toString()}`);
   };
 
-  if (estudiantesSalon.length === 0) {
+  if (data.estudiantes_evaluados === 0) {
     return (
       <div className="bg-card rounded-lg shadow-soft p-8 text-center">
         <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
@@ -87,7 +73,6 @@ export const AnalisisSalon = ({ grado, salon, periodo, titulo }: AnalisisSalonPr
 
   return (
     <div className="space-y-6">
-      {/* Banner informativo con indicador de completitud */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-2 text-sm text-blue-700">
           <span className="font-medium">ℹ️</span>
@@ -107,79 +92,75 @@ export const AnalisisSalon = ({ grado, salon, periodo, titulo }: AnalisisSalonPr
       </div>
 
       <div ref={contenidoRef} className="space-y-6">
-        {/* Título dinámico */}
         {titulo && (
-          <h2 className="text-xl md:text-2xl font-bold text-foreground text-center">
-            {titulo}
-          </h2>
+          <h2 className="text-xl md:text-2xl font-bold text-foreground text-center">{titulo}</h2>
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <TarjetaResumen titulo={`Promedio ${grado} ${salon}`} valor={promedioSalon.toFixed(2)} subtitulo={`#${posicionEnGrado} de ${salonesGrado.length} en ${grado}`} icono={Home} color={promedioSalon >= 4.5 ? "success" : promedioSalon >= 4 ? "blue" : promedioSalon >= 3 ? "warning" : "danger"} />
-          <TarjetaResumen titulo="Estudiantes con notas" valor={estudiantesSalon.length} subtitulo="En este salón" icono={Users} color="primary" />
+          <TarjetaResumen titulo={`Promedio ${grado} ${salon}`} valor={promedioSalon.toFixed(2)} subtitulo={`#${posicionEnGrado} de ${totalSalones} en ${grado}`} icono={Home} color={promedioSalon >= 4.5 ? "success" : promedioSalon >= 4 ? "blue" : promedioSalon >= 3 ? "warning" : "danger"} />
+          <TarjetaResumen titulo="Estudiantes con notas" valor={data.estudiantes_evaluados} subtitulo="En este salón" icono={Users} color="primary" />
           <TarjetaResumen titulo="Mejor Estudiante" valor={topEstudiantes[0]?.promedio.toFixed(2) || "—"} subtitulo={topEstudiantes[0]?.nombre_completo || ""} icono={Award} color={topEstudiantes[0]?.promedio >= 4.5 ? "success" : topEstudiantes[0]?.promedio >= 4 ? "blue" : topEstudiantes[0]?.promedio >= 3 ? "warning" : "danger"} />
-        <TarjetaResumen
-          titulo="En Riesgo Académico"
-          valor={mostrarRiesgo ? estudiantesEnRiesgo.length : "—"}
-          subtitulo={mostrarRiesgo ? (estudiantesEnRiesgo.length > 0 ? "Click para ver detalles" : "Promedio menor a 3.0") : "Se necesitan más datos"}
-          icono={AlertTriangle}
-          color={estudiantesEnRiesgo.length > 0 ? "danger" : "success"}
-          onClick={mostrarRiesgo && estudiantesEnRiesgo.length > 0 ? handleVerRiesgo : undefined}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TablaDistribucion titulo={`Distribución por Desempeño - ${grado} ${salon}`} distribucion={distribucion} />
-        <TablaEvolucion titulo={`Evolución de ${grado} ${salon} por Período`} datos={evolucionPeriodos} />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <TablaRanking
-          titulo={`Ranking de Estudiantes - ${grado} ${salon}`}
-          datos={estudiantesSalon.sort((a, b) => b.promedio - a.promedio || a.nombre_completo.localeCompare(b.nombre_completo))}
-          tipo="estudiante"
-          mostrarTodosSinLimite={true}
-          ocultarIconosDespuesDe={3}
-        />
-        <ListaComparativa titulo={`Rendimiento por Asignatura - ${grado} ${salon}`} items={asignaturas.map(m => ({ nombre: m.asignatura, valor: m.promedio }))} mostrarPosicion />
-      </div>
-
-      {/* Comparativa con promedios de referencia */}
-      <div className="bg-card rounded-lg shadow-soft p-4 border border-border">
-        <h4 className="font-semibold text-foreground mb-4">Comparativa con Promedios de Referencia</h4>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left py-2 px-3 text-muted-foreground font-medium">Referencia</th>
-                <th className="text-center py-2 px-3 text-muted-foreground font-medium">Promedio</th>
-                <th className="text-center py-2 px-3 text-muted-foreground font-medium">Diferencia</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-b border-border/50">
-                <td className="py-2 px-3 font-medium text-foreground">{grado} {salon}</td>
-                <td className="py-2 px-3 text-center font-bold text-foreground">{promedioSalon.toFixed(2)}</td>
-                <td className="py-2 px-3 text-center text-muted-foreground">—</td>
-              </tr>
-              <tr className="border-b border-border/50">
-                <td className="py-2 px-3 text-foreground">Promedio {grado}</td>
-                <td className="py-2 px-3 text-center text-foreground">{promedioGrado.toFixed(2)}</td>
-                <td className={`py-2 px-3 text-center font-medium ${diferenciaConGrado >= 0 ? "text-green-600" : "text-red-600"}`}>
-                  {diferenciaConGrado >= 0 ? "+" : ""}{diferenciaConGrado.toFixed(2)}
-                </td>
-              </tr>
-              <tr>
-                <td className="py-2 px-3 text-foreground">Promedio Institucional</td>
-                <td className="py-2 px-3 text-center text-foreground">{promedioInstitucional.toFixed(2)}</td>
-                <td className={`py-2 px-3 text-center font-medium ${diferenciaConInst >= 0 ? "text-green-600" : "text-red-600"}`}>
-                  {diferenciaConInst >= 0 ? "+" : ""}{diferenciaConInst.toFixed(2)}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <TarjetaResumen
+            titulo="En Riesgo Académico"
+            valor={mostrarRiesgo ? estudiantesEnRiesgo.length : "—"}
+            subtitulo={mostrarRiesgo ? (estudiantesEnRiesgo.length > 0 ? "Click para ver detalles" : "Promedio menor a 3.0") : "Se necesitan más datos"}
+            icono={AlertTriangle}
+            color={estudiantesEnRiesgo.length > 0 ? "danger" : "success"}
+            onClick={mostrarRiesgo && estudiantesEnRiesgo.length > 0 ? handleVerRiesgo : undefined}
+          />
         </div>
-      </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TablaDistribucion titulo={`Distribución por Desempeño - ${grado} ${salon}`} distribucion={distribucion} />
+          <TablaEvolucion titulo={`Evolución de ${grado} ${salon} por Período`} datos={evolucionPeriodos} />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <TablaRanking
+            titulo={`Ranking de Estudiantes - ${grado} ${salon}`}
+            datos={estudiantesSalon}
+            tipo="estudiante"
+            mostrarTodosSinLimite={true}
+            ocultarIconosDespuesDe={3}
+          />
+          <ListaComparativa titulo={`Rendimiento por Asignatura - ${grado} ${salon}`} items={asignaturas.map((m) => ({ nombre: m.asignatura, valor: m.promedio }))} mostrarPosicion />
+        </div>
+
+        <div className="bg-card rounded-lg shadow-soft p-4 border border-border">
+          <h4 className="font-semibold text-foreground mb-4">Comparativa con Promedios de Referencia</h4>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-2 px-3 text-muted-foreground font-medium">Referencia</th>
+                  <th className="text-center py-2 px-3 text-muted-foreground font-medium">Promedio</th>
+                  <th className="text-center py-2 px-3 text-muted-foreground font-medium">Diferencia</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-border/50">
+                  <td className="py-2 px-3 font-medium text-foreground">{grado} {salon}</td>
+                  <td className="py-2 px-3 text-center font-bold text-foreground">{promedioSalon.toFixed(2)}</td>
+                  <td className="py-2 px-3 text-center text-muted-foreground">—</td>
+                </tr>
+                <tr className="border-b border-border/50">
+                  <td className="py-2 px-3 text-foreground">Promedio {grado}</td>
+                  <td className="py-2 px-3 text-center text-foreground">{promedioGrado.toFixed(2)}</td>
+                  <td className={`py-2 px-3 text-center font-medium ${diferenciaConGrado >= 0 ? "text-green-600" : "text-red-600"}`}>
+                    {diferenciaConGrado >= 0 ? "+" : ""}{diferenciaConGrado.toFixed(2)}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-2 px-3 text-foreground">Promedio Institucional</td>
+                  <td className="py-2 px-3 text-center text-foreground">{promedioInstitucional.toFixed(2)}</td>
+                  <td className={`py-2 px-3 text-center font-medium ${diferenciaConInst >= 0 ? "text-green-600" : "text-red-600"}`}>
+                    {diferenciaConInst >= 0 ? "+" : ""}{diferenciaConInst.toFixed(2)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   );

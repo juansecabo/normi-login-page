@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { getSession, isRectorOrCoordinador } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
-import { useEstadisticas } from "@/hooks/useEstadisticas";
+import { useEstadisticasRiesgo } from "@/hooks/useEstadisticasApi";
 import { AlertTriangle, ArrowLeft, Loader2 } from "lucide-react";
 import {
   Table,
@@ -17,7 +17,6 @@ import {
 const EstudiantesEnRiesgo = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { loading, getEstudiantesEnRiesgo } = useEstadisticas();
 
   const periodoParam = searchParams.get("periodo");
   const gradoParam = searchParams.get("grado");
@@ -25,9 +24,16 @@ const EstudiantesEnRiesgo = () => {
   const nivelParam = searchParams.get("nivel");
   const asignaturaParam = searchParams.get("asignatura");
 
-  const periodo = periodoParam === "anual" ? "anual" : parseInt(periodoParam || "1");
+  const periodo: number | "anual" = periodoParam === "anual" ? "anual" : parseInt(periodoParam || "1");
 
-  // Construir URL para volver a estadísticas con los mismos filtros
+  const { data, loading, error } = useEstadisticasRiesgo(
+    periodo,
+    gradoParam || undefined,
+    salonParam || undefined,
+    asignaturaParam || undefined,
+  );
+
+  // URL para volver con los mismos filtros
   const buildVolverUrl = () => {
     const params = new URLSearchParams();
     if (nivelParam) params.set("nivel", nivelParam);
@@ -50,15 +56,8 @@ const EstudiantesEnRiesgo = () => {
     }
   }, [navigate]);
 
-  // Pasar asignatura al cálculo de riesgo si está presente
-  const estudiantesEnRiesgo = getEstudiantesEnRiesgo(
-    periodo,
-    gradoParam || undefined,
-    salonParam || undefined,
-    asignaturaParam || undefined
-  );
+  const estudiantesEnRiesgo = data?.estudiantes || [];
 
-  // Construir label del filtro
   let filtroLabel = "Todos los estudiantes";
   if (gradoParam && salonParam) {
     filtroLabel = `${gradoParam} - Salón ${salonParam}`;
@@ -79,7 +78,6 @@ const EstudiantesEnRiesgo = () => {
       <HeaderNormi backLink="/dashboard-rector" />
 
       <main className="flex-1 container mx-auto p-4 md:p-8">
-        {/* Breadcrumb */}
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <button onClick={() => navigate("/dashboard-rector")} className="text-primary hover:underline">Inicio</button>
@@ -90,7 +88,6 @@ const EstudiantesEnRiesgo = () => {
           </div>
         </div>
 
-        {/* Header de la página */}
         <div className="bg-card rounded-lg shadow-soft p-6 mb-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -102,11 +99,7 @@ const EstudiantesEnRiesgo = () => {
                 <p className="text-muted-foreground text-sm">Promedio menor a 3.0</p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => navigate(buildVolverUrl())}
-              className="gap-2"
-            >
+            <Button variant="outline" onClick={() => navigate(buildVolverUrl())} className="gap-2">
               <ArrowLeft className="w-4 h-4" />
               Volver a Estadísticas
             </Button>
@@ -125,6 +118,10 @@ const EstudiantesEnRiesgo = () => {
           <div className="flex items-center justify-center h-64">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
             <span className="ml-2 text-muted-foreground">Cargando datos...</span>
+          </div>
+        ) : error ? (
+          <div className="bg-card rounded-lg shadow-soft p-8 text-center text-red-600">
+            Error: {error}
           </div>
         ) : estudiantesEnRiesgo.length === 0 ? (
           <div className="bg-card rounded-lg shadow-soft p-8 text-center">

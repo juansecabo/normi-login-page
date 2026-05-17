@@ -137,6 +137,165 @@ export function isMultiMembership(r: LoginResponse): r is MultiMembershipRespons
 // API
 // ───────────────────────────────────────────────────────────────────────────
 
+// ───────────────────────────────────────────────────────────────────────────
+// Tipos de Estadísticas
+// ───────────────────────────────────────────────────────────────────────────
+
+export interface ApiPromedioEstudiante {
+  id_estudiantil: string;
+  nombre_completo: string;
+  grado: string;
+  salon: string;
+  promedio: number;
+  cantidadActividades: number;
+  sumaPorcentajes: number;
+  promediosPorPeriodo: Record<number, number>;
+  promediosPorAsignatura: Record<string, number>;
+}
+
+export interface ApiDistribucionItem {
+  rango: string;
+  cantidad: number;
+  porcentaje: number;
+}
+
+export interface ApiPromedioSalon {
+  grado: string;
+  salon: string;
+  promedio: number;
+  cantidadEstudiantes: number;
+}
+
+export interface ApiPromedioGrado {
+  grado: string;
+  promedio: number;
+  cantidadEstudiantes: number;
+}
+
+export interface ApiPromedioAsignatura {
+  asignatura: string;
+  promedio: number;
+  cantidadEstudiantes: number;
+}
+
+export interface ApiEvolucionItem {
+  periodo: string;
+  promedio: number;
+  cantidadEstudiantes?: number;
+}
+
+export interface ApiInstitucional {
+  periodo: number | 'anual';
+  promedio_institucional: number;
+  total_estudiantes: number;
+  estudiantes_evaluados: number;
+  distribucion: ApiDistribucionItem[];
+  top_estudiantes: ApiPromedioEstudiante[];
+  bottom_estudiantes: ApiPromedioEstudiante[];
+  promedios_salones: ApiPromedioSalon[];
+  promedios_grados: ApiPromedioGrado[];
+  estudiantes_en_riesgo: ApiPromedioEstudiante[];
+  tiene_datos_riesgo: boolean;
+  evolucion: ApiEvolucionItem[];
+}
+
+export interface ApiGrado {
+  grado: string;
+  periodo: number | 'anual';
+  promedio_grado: number;
+  promedio_institucional: number;
+  total_estudiantes: number;
+  estudiantes_evaluados: number;
+  distribucion: ApiDistribucionItem[];
+  promedios_salones: ApiPromedioSalon[];
+  promedios_asignaturas: ApiPromedioAsignatura[];
+  top_estudiantes: ApiPromedioEstudiante[];
+  bottom_estudiantes: ApiPromedioEstudiante[];
+  estudiantes_en_riesgo: ApiPromedioEstudiante[];
+  tiene_datos_riesgo: boolean;
+  evolucion: ApiEvolucionItem[];
+}
+
+export interface ApiSalon {
+  grado: string;
+  salon: string;
+  periodo: number | 'anual';
+  promedio_salon: number;
+  promedio_grado: number;
+  promedio_institucional: number;
+  total_estudiantes: number;
+  estudiantes_evaluados: number;
+  posicion_grado: number;
+  total_salones_grado: number;
+  distribucion: ApiDistribucionItem[];
+  estudiantes: ApiPromedioEstudiante[];
+  promedios_asignaturas: ApiPromedioAsignatura[];
+  salones_grado: ApiPromedioSalon[];
+  top_estudiantes: ApiPromedioEstudiante[];
+  estudiantes_en_riesgo: ApiPromedioEstudiante[];
+  tiene_datos_riesgo: boolean;
+  evolucion: ApiEvolucionItem[];
+}
+
+export interface ApiEstudianteStats extends ApiPromedioEstudiante {
+  periodo: number | 'anual';
+  promedio_institucional: number;
+  promedio_grado: number;
+  promedio_salon: number;
+  posicion_salon: number;
+  total_salon: number;
+  posicion_grado: number;
+  total_grado: number;
+  posicion_institucional: number;
+  total_institucional: number;
+}
+
+export interface ApiAsignatura {
+  asignatura: string;
+  periodo: number | 'anual';
+  grado?: string;
+  salon?: string;
+  promedio_asignatura: number;
+  estudiantes_evaluados: number;
+  estudiantes_aprobados: number;
+  tasa_aprobacion: number;
+  distribucion: ApiDistribucionItem[];
+  rendimiento_por_grado: { grado: string; promedio: number; cantidadEstudiantes: number }[];
+  rendimiento_por_salon: { grado: string; salon: string; promedio: number; cantidadEstudiantes: number }[];
+  top_estudiantes: ApiPromedioEstudiante[];
+  bottom_estudiantes: ApiPromedioEstudiante[];
+  estudiantes: ApiPromedioEstudiante[];
+  estudiantes_en_riesgo: ApiPromedioEstudiante[];
+  tiene_datos_riesgo: boolean;
+  evolucion: ApiEvolucionItem[];
+}
+
+export interface ApiRiesgo {
+  periodo: number | 'anual';
+  umbral: number;
+  grado?: string;
+  salon?: string;
+  asignatura?: string;
+  total: number;
+  estudiantes: ApiPromedioEstudiante[];
+}
+
+export interface ApiMeta {
+  grados: string[];
+  salones: { grado: string; salon: string }[];
+  asignaturas: string[];
+  asignaciones_expandidas: { asignatura: string; grado: string; salon: string }[];
+}
+
+function qs(params: Record<string, string | number | undefined>): string {
+  const u = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined && v !== null && v !== '') u.set(k, String(v));
+  }
+  const s = u.toString();
+  return s ? `?${s}` : '';
+}
+
 export const apiClient = {
   auth: {
     async login(cedula: string, contrasena: string): Promise<LoginResponse> {
@@ -177,6 +336,30 @@ export const apiClient = {
     getToken,
     isAuthenticated(): boolean {
       return getToken() !== null;
+    },
+  },
+
+  estadisticas: {
+    meta(): Promise<ApiMeta> {
+      return request<ApiMeta>('/api/estadisticas/meta');
+    },
+    institucional(periodo: number | 'anual'): Promise<ApiInstitucional> {
+      return request<ApiInstitucional>(`/api/estadisticas/institucional${qs({ periodo })}`);
+    },
+    grado(grado: string, periodo: number | 'anual'): Promise<ApiGrado> {
+      return request<ApiGrado>(`/api/estadisticas/grado${qs({ grado, periodo })}`);
+    },
+    salon(grado: string, salon: string, periodo: number | 'anual'): Promise<ApiSalon> {
+      return request<ApiSalon>(`/api/estadisticas/salon${qs({ grado, salon, periodo })}`);
+    },
+    estudiante(id_estudiantil: string, periodo: number | 'anual'): Promise<ApiEstudianteStats> {
+      return request<ApiEstudianteStats>(`/api/estadisticas/estudiante${qs({ id_estudiantil, periodo })}`);
+    },
+    asignatura(asignatura: string, periodo: number | 'anual', grado?: string, salon?: string): Promise<ApiAsignatura> {
+      return request<ApiAsignatura>(`/api/estadisticas/asignatura${qs({ asignatura, periodo, grado, salon })}`);
+    },
+    riesgo(periodo: number | 'anual', umbral?: number, grado?: string, salon?: string, asignatura?: string): Promise<ApiRiesgo> {
+      return request<ApiRiesgo>(`/api/estadisticas/riesgo${qs({ periodo, umbral, grado, salon, asignatura })}`);
     },
   },
 };

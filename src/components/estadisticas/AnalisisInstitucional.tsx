@@ -1,12 +1,11 @@
 import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useEstadisticas, ordenGrados } from "@/hooks/useEstadisticas";
+import { useEstadisticasInstitucional, ordenGrados } from "@/hooks/useEstadisticasApi";
 import { useCompletitud } from "@/hooks/useCompletitud";
 import { TarjetaResumen } from "./TarjetaResumen";
 import { TablaRanking } from "./TablaRanking";
 import { TablaDistribucion } from "./TablaDistribucion";
 import { TablaEvolucion } from "./TablaEvolucion";
-import { ListaComparativa } from "./ListaComparativa";
 import { IndicadorCompletitud } from "./IndicadorCompletitud";
 import BotonDescarga from "./BotonDescarga";
 import { School, Users, Award, AlertTriangle, Loader2 } from "lucide-react";
@@ -19,70 +18,35 @@ interface AnalisisInstitucionalProps {
 export const AnalisisInstitucional = ({ periodo, titulo }: AnalisisInstitucionalProps) => {
   const contenidoRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const {
-    loading,
-    getPromedioInstitucional,
-    getPromediosEstudiantes,
-    getPromediosGrados,
-    getPromediosSalones,
-    getDistribucionDesempeno,
-    getTopEstudiantes,
-    getEvolucionPeriodos,
-    tieneDatosSuficientesParaRiesgo,
-    getEstudiantesEnRiesgo
-  } = useEstadisticas();
-
+  const { data, loading, error } = useEstadisticasInstitucional(periodo);
   const { verificarCompletitud } = useCompletitud();
 
   if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /><span className="ml-2 text-muted-foreground">Espere, por favor...</span></div>;
+  if (error || !data) return <div className="bg-card rounded-lg shadow-soft p-8 text-center text-red-600">Error cargando estadísticas: {error || "sin datos"}</div>;
 
-  const promedioInstitucional = getPromedioInstitucional(periodo);
-  const estudiantesTotales = getPromediosEstudiantes(periodo);
-  const distribucion = getDistribucionDesempeno(periodo);
-  const topEstudiantes = getTopEstudiantes(10, periodo);
-  const peoresEstudiantes = [...getPromediosEstudiantes(periodo)].sort((a, b) => a.promedio - b.promedio || a.nombre_completo.localeCompare(b.nombre_completo)).slice(0, 10);
-  const topSalones = getPromediosSalones(periodo).sort((a, b) => b.promedio - a.promedio).slice(0, 10);
-  const todosGrados = getPromediosGrados(periodo).sort((a, b) => b.promedio - a.promedio);
-  
-  // Verificar completitud con el nuevo hook
+  const promedioInstitucional = data.promedio_institucional;
+  const topEstudiantes = data.top_estudiantes;
+  const peoresEstudiantes = data.bottom_estudiantes;
+  const topSalones = [...data.promedios_salones].sort((a, b) => b.promedio - a.promedio).slice(0, 10);
+  const todosGrados = [...data.promedios_grados].sort((a, b) => b.promedio - a.promedio);
+  const distribucion = data.distribucion;
+  const estudiantesEnRiesgo = data.estudiantes_en_riesgo;
+  const mostrarRiesgo = data.tiene_datos_riesgo;
+
+  // Verificar completitud (sigue como estaba — hook separado que aún usa supabase directo)
   const { completo, detalles, resumen, resumenCompleto } = verificarCompletitud("institucion", periodo);
-  
-  // Filtrar evolución hasta el período seleccionado
+
+  // Evolución hasta el periodo seleccionado
   const periodoHasta = periodo === "anual" ? 4 : periodo;
-  const evolucionPeriodos = getEvolucionPeriodos("institucion").filter(e => {
-    const numPeriodo = parseInt(e.periodo.replace("Período ", ""));
-    return numPeriodo <= periodoHasta;
+  const evolucionPeriodos = data.evolucion.filter((e) => {
+    const n = parseInt(e.periodo.replace("Período ", ""));
+    return n <= periodoHasta;
   });
 
-  const mostrarRiesgo = tieneDatosSuficientesParaRiesgo(periodo);
-  const estudiantesEnRiesgo = mostrarRiesgo ? getEstudiantesEnRiesgo(periodo) : [];
+  // Datos para la tabla por grado, ordenados por currículo
+  const todosGradosOrden = [...data.promedios_grados]
+    .sort((a, b) => ordenGrados.indexOf(a.grado) - ordenGrados.indexOf(b.grado));
 
-  // Calcular mejores y peores grados SIN superposición
-  const cantidadGrados = todosGrados.length;
-  let cantidadMejores = Math.min(3, Math.floor(cantidadGrados / 2));
-  let cantidadPeores = Math.min(3, cantidadGrados - cantidadMejores);
-  
-  // Si hay muy pocos grados, ajustar
-  if (cantidadGrados <= 1) {
-    cantidadMejores = cantidadGrados;
-    cantidadPeores = 0;
-  } else if (cantidadGrados <= 3) {
-    cantidadMejores = 1;
-    cantidadPeores = 1;
-  }
-
-  const mejoresGrados = todosGrados.slice(0, cantidadMejores);
-  const peoresGrados = todosGrados.slice(-cantidadPeores).reverse();
-
-  // Datos para listas
-  const datosGrados = getPromediosGrados(periodo)
-    .sort((a, b) => ordenGrados.indexOf(a.grado) - ordenGrados.indexOf(b.grado))
-    .map(g => ({ nombre: g.grado, valor: g.promedio, extra: `${g.cantidadEstudiantes} estudiantes con notas` }));
-
-  // Contar salones únicos con datos
-  const salonesConDatos = getPromediosSalones(periodo);
-
-  // Formatear el período para mostrar
   const periodoTexto = periodo === "anual" ? "Acumulado Anual" : `Período ${periodo}`;
 
   const handleVerRiesgo = () => {
@@ -92,7 +56,7 @@ export const AnalisisInstitucional = ({ periodo, titulo }: AnalisisInstitucional
     navigate(`/rector/estudiantes-riesgo?${params.toString()}`);
   };
 
-  if (estudiantesTotales.length === 0) {
+  if (data.estudiantes_evaluados === 0) {
     return (
       <div className="bg-card rounded-lg shadow-soft p-8 text-center">
         <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
@@ -104,19 +68,18 @@ export const AnalisisInstitucional = ({ periodo, titulo }: AnalisisInstitucional
 
   return (
     <div className="space-y-6">
-      {/* Banner informativo con indicador de completitud */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-2 text-sm text-blue-700">
           <span className="font-medium">ℹ️</span>
           <span>Estadísticas basadas únicamente en estudiantes con notas registradas.</span>
         </div>
         <div className="flex items-center gap-2">
-          <IndicadorCompletitud 
-            completo={completo} 
-            detalles={detalles} 
+          <IndicadorCompletitud
+            completo={completo}
+            detalles={detalles}
             resumen={resumen}
             resumenCompleto={resumenCompleto}
-            nivel="Institución" 
+            nivel="Institución"
             periodo={periodoTexto}
           />
           <BotonDescarga contenidoRef={contenidoRef} nombreArchivo={titulo || `Institución - ${periodoTexto}`} />
@@ -124,74 +87,64 @@ export const AnalisisInstitucional = ({ periodo, titulo }: AnalisisInstitucional
       </div>
 
       <div ref={contenidoRef} className="space-y-6">
-        {/* Título dinámico */}
         {titulo && (
-          <h2 className="text-xl md:text-2xl font-bold text-foreground text-center">
-            {titulo}
-          </h2>
+          <h2 className="text-xl md:text-2xl font-bold text-foreground text-center">{titulo}</h2>
         )}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <TarjetaResumen
-          titulo="Promedio Institucional"
-          valor={promedioInstitucional.toFixed(2)}
-          subtitulo={`Basado en ${estudiantesTotales.length} estudiantes con notas`}
-          icono={School}
-          color={promedioInstitucional >= 4.5 ? "success" : promedioInstitucional >= 4 ? "blue" : promedioInstitucional >= 3 ? "warning" : "danger"}
-        />
-        <TarjetaResumen
-          titulo="Estudiantes con notas"
-          valor={estudiantesTotales.length}
-          subtitulo={`En ${salonesConDatos.length} salones`}
-          icono={Users}
-          color="primary"
-        />
-        <TarjetaResumen
-          titulo="Mejor Promedio"
-          valor={topEstudiantes[0]?.promedio.toFixed(2) || "—"}
-          subtitulo={topEstudiantes[0]?.nombre_completo || ""}
-          icono={Award}
-          color={topEstudiantes[0]?.promedio >= 4.5 ? "success" : topEstudiantes[0]?.promedio >= 4 ? "blue" : topEstudiantes[0]?.promedio >= 3 ? "warning" : "danger"}
-        />
-        {mostrarRiesgo ? (
-          <div 
-            onClick={estudiantesEnRiesgo.length > 0 ? handleVerRiesgo : undefined}
-            className={estudiantesEnRiesgo.length > 0 ? "cursor-pointer hover:scale-[1.02] transition-transform" : ""}
-          >
-            <TarjetaResumen
-              titulo="En Riesgo Académico"
-              valor={estudiantesEnRiesgo.length}
-              subtitulo={estudiantesEnRiesgo.length > 0 ? "Click para ver detalles" : "Promedio menor a 3.0"}
-              icono={AlertTriangle}
-              color={estudiantesEnRiesgo.length > 0 ? "danger" : "success"}
-            />
-          </div>
-        ) : (
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <TarjetaResumen
-            titulo="En Riesgo Académico"
-            valor="—"
-            subtitulo="Se necesitan más datos"
-            icono={AlertTriangle}
+            titulo="Promedio Institucional"
+            valor={promedioInstitucional.toFixed(2)}
+            subtitulo={`Basado en ${data.estudiantes_evaluados} estudiantes con notas`}
+            icono={School}
+            color={promedioInstitucional >= 4.5 ? "success" : promedioInstitucional >= 4 ? "blue" : promedioInstitucional >= 3 ? "warning" : "danger"}
+          />
+          <TarjetaResumen
+            titulo="Estudiantes con notas"
+            valor={data.estudiantes_evaluados}
+            subtitulo={`En ${data.promedios_salones.length} salones`}
+            icono={Users}
             color="primary"
           />
-        )}
-      </div>
+          <TarjetaResumen
+            titulo="Mejor Promedio"
+            valor={topEstudiantes[0]?.promedio.toFixed(2) || "—"}
+            subtitulo={topEstudiantes[0]?.nombre_completo || ""}
+            icono={Award}
+            color={topEstudiantes[0]?.promedio >= 4.5 ? "success" : topEstudiantes[0]?.promedio >= 4 ? "blue" : topEstudiantes[0]?.promedio >= 3 ? "warning" : "danger"}
+          />
+          {mostrarRiesgo ? (
+            <div
+              onClick={estudiantesEnRiesgo.length > 0 ? handleVerRiesgo : undefined}
+              className={estudiantesEnRiesgo.length > 0 ? "cursor-pointer hover:scale-[1.02] transition-transform" : ""}
+            >
+              <TarjetaResumen
+                titulo="En Riesgo Académico"
+                valor={estudiantesEnRiesgo.length}
+                subtitulo={estudiantesEnRiesgo.length > 0 ? "Click para ver detalles" : "Promedio menor a 3.0"}
+                icono={AlertTriangle}
+                color={estudiantesEnRiesgo.length > 0 ? "danger" : "success"}
+              />
+            </div>
+          ) : (
+            <TarjetaResumen titulo="En Riesgo Académico" valor="—" subtitulo="Se necesitan más datos" icono={AlertTriangle} color="primary" />
+          )}
+        </div>
 
-      {/* Distribución y Evolución */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TablaDistribucion titulo="Distribución por Niveles de Desempeño" distribucion={distribucion} />
-        <TablaEvolucion titulo="Evolución del Rendimiento por Período" datos={evolucionPeriodos} />
-      </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TablaDistribucion titulo="Distribución por Niveles de Desempeño" distribucion={distribucion} />
+          <TablaEvolucion titulo="Evolución del Rendimiento por Período" datos={evolucionPeriodos} />
+        </div>
 
-      {/* Rankings - Grados y Salones primero, luego Estudiantes */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <TablaRanking titulo="Rendimiento por Grado" datos={todosGrados} tipo="grado" mostrarTodosSinLimite={true} />
-        <TablaRanking titulo="Top 10 Mejores Salones" datos={topSalones} tipo="salon" limite={10} />
-      </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <TablaRanking titulo="Rendimiento por Grado" datos={todosGrados} tipo="grado" mostrarTodosSinLimite={true} />
+          <TablaRanking titulo="Top 10 Mejores Salones" datos={topSalones} tipo="salon" limite={10} />
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <TablaRanking titulo="Top 10 Mejores Estudiantes" datos={topEstudiantes} tipo="estudiante" limite={10} />
-        <TablaRanking titulo="Top 10 Estudiantes a Reforzar" datos={peoresEstudiantes} tipo="estudiante" limite={10} ocultarIconosDespuesDe={0} />
-      </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <TablaRanking titulo="Top 10 Mejores Estudiantes" datos={topEstudiantes} tipo="estudiante" limite={10} />
+          <TablaRanking titulo="Top 10 Estudiantes a Reforzar" datos={peoresEstudiantes} tipo="estudiante" limite={10} ocultarIconosDespuesDe={0} />
+        </div>
       </div>
     </div>
   );
