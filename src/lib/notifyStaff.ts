@@ -4,17 +4,25 @@
 //
 // HORARIO SILENCIOSO: si el padre crea la solicitud fuera de horario laboral
 // (lunes-viernes 06:00-19:00 hora Bogotá), en vez de mandar el WhatsApp al
-// instante encolamos en Supabase. Un workflow CRON en n8n procesa la cola
-// cuando vuelve el horario y manda cada notificación una por una.
+// instante encolamos en Supabase (via normi-server). Un workflow CRON en n8n
+// procesa la cola cuando vuelve el horario.
 //
-// IMPORTANTE: tanto la llamada al webhook como el INSERT a la cola usan
-// `keepalive: true`. Sin eso, si el padre cierra la app o navega justo
-// después de "Excusa registrada", la request en vuelo se aborta y la
-// notificación se pierde silenciosa.
+// IMPORTANTE: ambas operaciones usan `keepalive: true`. Sin eso, si el padre
+// cierra la app o navega justo después de "Excusa registrada", la request en
+// vuelo se aborta y la notificación se pierde silenciosa.
+//
+// SEGURIDAD: las llamadas ya no usan la anon key de Supabase. El INSERT a
+// Notificaciones_Pendientes pasa por /api/db (proxy de normi-server) con JWT
+// del usuario logueado. El webhook a n8n es público y sigue igual.
 
 const WEBHOOK_URL = "https://n8n.notasnormi.com/webhook/enviar-comunicado-rector-coordinadores";
-const SUPABASE_URL = "https://npdtggwzodtssnicmkux.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wZHRnZ3d6b2R0c3NuaWNta3V4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2NzIzMjEsImV4cCI6MjA3MTI0ODMyMX0.fkXjbs2_injmieaipIVHSWmMFep0e0tXX2y8AFRGWnY";
+const API_BASE_URL =
+  (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_BASE_URL)
+  || 'https://normi-api.srv966880.hstgr.cloud';
+
+function getJwt(): string | null {
+  try { return localStorage.getItem('normi_jwt'); } catch { return null; }
+}
 
 interface Aula {
   grado: string;
@@ -72,7 +80,7 @@ async function fetchWebhook(
   });
 }
 
-// INSERT directo a Notificaciones_Pendientes vía REST con keepalive=true.
+// INSERT a Notificaciones_Pendientes vía /api/db con JWT y keepalive=true.
 // Sin keepalive, si el padre cierra la página después de "Excusa registrada",
 // la request en vuelo se aborta y la fila nunca llega a la cola.
 async function insertPendiente(payload: {
@@ -84,17 +92,22 @@ async function insertPendiente(payload: {
   aula_salon: string | null;
   origen: string | null;
 }) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/Notificaciones_Pendientes`, {
+  const jwt = getJwt();
+  if (!jwt) throw new Error('No hay sesión activa');
+  const body = {
+    table: 'Notificaciones_Pendientes',
+    op: 'insert',
+    data: payload,
+  };
+  const res = await fetch(`${API_BASE_URL}/api/db`, {
     method: "POST",
     mode: "cors",
     keepalive: true,
     headers: {
       "Content-Type": "application/json",
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-      Prefer: "return=minimal",
+      Authorization: `Bearer ${jwt}`,
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
     throw new Error(`Pendientes insert ${res.status}: ${await res.text().catch(() => "")}`);
