@@ -99,6 +99,10 @@ class QueryBuilder<T = any> implements PromiseLike<{ data: T | null; error: any;
   single() { this.state.single = 'single'; return this; }
   maybeSingle() { this.state.single = 'maybeSingle'; return this; }
 
+  /** Extensión NO-Supabase: trae todas las filas paginando dentro del server
+   *  (sin múltiples round-trips desde el browser). Solo para op=select. */
+  fetchAll() { (this.state as any).fetchAll = true; return this; }
+
   then<TResult1 = any, TResult2 = never>(
     onfulfilled?: ((value: { data: T | null; error: any; count?: number | null }) => TResult1 | PromiseLike<TResult1>) | null,
     onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null,
@@ -123,6 +127,7 @@ class QueryBuilder<T = any> implements PromiseLike<{ data: T | null; error: any;
       };
       if ((this.state as MutationState).data !== undefined) body.data = (this.state as MutationState).data;
       if ((this.state as MutationState).upsertOptions) body.upsertOptions = (this.state as MutationState).upsertOptions;
+      if ((this.state as any).fetchAll) body.fetchAll = true;
 
       const res = await apiRequest<{ data: T | null; count?: number | null }>('/api/db', {
         method: 'POST',

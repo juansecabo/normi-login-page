@@ -132,25 +132,24 @@ export const useEstadisticas = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Obtener todas las notas (excluyendo finales calculados) — paginado
-        const notasData = await fetchAllPages<NotaCompleta>((from, to) =>
-          supabase
-            .from("Notas")
-            .select("*")
-            .not("nombre_actividad", "in", '("Definitiva Periodo","Definitiva Anual")')
-            .range(from, to)
-        );
-        setNotas(notasData);
+        // fetchAll(): el server pagina internamente y devuelve todo en una sola
+        // respuesta HTTP. Antes hacíamos N round-trips desde el browser; con
+        // 50k Notas eso eran ~15-20s. Ahora ~1s.
+        const { data: notasData, error: notasErr } = await (supabase as any)
+          .from("Notas")
+          .select("*")
+          .not("nombre_actividad", "in", '("Definitiva Periodo","Definitiva Anual")')
+          .fetchAll();
+        if (notasErr) throw notasErr;
+        setNotas(notasData || []);
 
-        // Obtener todos los estudiantes — paginado
-        const estudiantesData = await fetchAllPages<EstudianteInfo>((from, to) =>
-          supabase
-            .from("Estudiantes")
-            .select("*")
-            .order("apellidos_estudiante", { ascending: true })
-            .range(from, to)
-        );
-        setEstudiantes(estudiantesData);
+        const { data: estudiantesData, error: estErr } = await (supabase as any)
+          .from("Estudiantes")
+          .select("*")
+          .order("apellidos_estudiante", { ascending: true })
+          .fetchAll();
+        if (estErr) throw estErr;
+        setEstudiantes(estudiantesData || []);
 
         // Obtener asignaciones de profesores para extraer asignaturas por grado/salón
         const { data: asignacionesData, error: asignacionesError } = await supabase
