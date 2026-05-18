@@ -39,8 +39,8 @@ const WEBHOOK_BASE = "https://n8n.notasnormi.com/webhook";
 
 interface Estudiante {
   id_estudiantil: number;
-  nombre_estudiante: string;
-  apellidos_estudiante: string;
+  nombres: string;
+  apellidos: string;
   grado_estudiante: string;
   salon_estudiante: string;
 }
@@ -119,7 +119,7 @@ const Citas = () => {
     setAutor({ id: session.id, nombre: `${session.nombres || ""} ${session.apellidos || ""}`.trim() });
     Promise.all([
       supabase.from("Citas_Orientacion").select("*").order("fecha", { ascending: false }).order("hora", { ascending: false }),
-      supabase.from("Estudiantes").select("id_estudiantil, nombre_estudiante, apellidos_estudiante, grado_estudiante, salon_estudiante").order("apellidos_estudiante"),
+      supabase.from("Estudiantes").select("id_estudiantil, nombres, apellidos, grado_estudiante, salon_estudiante").order("apellidos"),
     ]).then(([cR, eR]) => {
       setCitas(cR.data || []);
       setEstudiantes(eR.data || []);
@@ -166,7 +166,7 @@ const Citas = () => {
     if (!q || q.length < 2) return [] as Estudiante[];
     const tokens = q.split(/\s+/).filter(Boolean);
     return estudiantes.filter(e => {
-      const full = norm(`${e.nombre_estudiante} ${e.apellidos_estudiante}`);
+      const full = norm(`${e.nombres} ${e.apellidos}`);
       return tokens.every(t => full.includes(t));
     }).slice(0, 8);
   }, [estudiantes, estBusqueda]);
@@ -192,8 +192,8 @@ const Citas = () => {
     const horaSave = hora12to24(horaH, horaM, horaAP);
     const payload: any = {
       estudiante_id: estSeleccionado.id_estudiantil,
-      estudiante_nombre: estSeleccionado.nombre_estudiante,
-      estudiante_apellidos: estSeleccionado.apellidos_estudiante,
+      estudiante_nombre: estSeleccionado.nombres,
+      estudiante_apellidos: estSeleccionado.apellidos,
       estudiante_grado: estSeleccionado.grado_estudiante,
       estudiante_salon: estSeleccionado.salon_estudiante,
       fecha: fmtLocal(fecha),
@@ -218,7 +218,7 @@ const Citas = () => {
       const horaTexto = horaSave ? `${horaH}:${horaM} ${horaAP}` : "por definir";
       const incEst = asistentes.includes("estudiante");
       const incAcu = asistentes.includes("acudientes");
-      const estLabel = `${estSeleccionado.nombre_estudiante} ${estSeleccionado.apellidos_estudiante} (${estSeleccionado.grado_estudiante} ${estSeleccionado.salon_estudiante})`;
+      const estLabel = `${estSeleccionado.nombres} ${estSeleccionado.apellidos} (${estSeleccionado.grado_estudiante} ${estSeleccionado.salon_estudiante})`;
       let intro = "";
       let destinatarios = "";
       if (incEst && incAcu) {
@@ -417,7 +417,7 @@ const Citas = () => {
               {estSeleccionado ? (
                 <div className="flex items-center justify-between border border-border rounded-md p-2 bg-muted/20">
                   <div>
-                    <p className="text-sm font-semibold">{estSeleccionado.apellidos_estudiante} {estSeleccionado.nombre_estudiante}</p>
+                    <p className="text-sm font-semibold">{estSeleccionado.apellidos} {estSeleccionado.nombres}</p>
                     <p className="text-xs text-muted-foreground">{estSeleccionado.grado_estudiante} {estSeleccionado.salon_estudiante}</p>
                   </div>
                   <button onClick={() => { setEstSeleccionado(null); setEstBusqueda(""); }} className="text-xs text-primary hover:underline">Cambiar</button>
@@ -430,7 +430,7 @@ const Citas = () => {
                     <div className="absolute top-full left-0 right-0 mt-1 z-20 border border-border rounded-md max-h-48 overflow-y-auto bg-card shadow-md">
                       {estudiantesBusqueda.map(e => (
                         <button key={e.id_estudiantil} onClick={() => { setEstSeleccionado(e); setEstBusqueda(""); }} className="block w-full text-left px-3 py-2 text-sm hover:bg-muted/50">
-                          {e.apellidos_estudiante} {e.nombre_estudiante} <span className="text-xs text-muted-foreground">— {e.grado_estudiante} {e.salon_estudiante}</span>
+                          {e.apellidos} {e.nombres} <span className="text-xs text-muted-foreground">— {e.grado_estudiante} {e.salon_estudiante}</span>
                         </button>
                       ))}
                     </div>

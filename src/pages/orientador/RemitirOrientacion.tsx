@@ -13,8 +13,8 @@ import { notifyOrientadora } from "@/lib/notifyStaff";
 
 interface Estudiante {
   id_estudiantil: number;
-  nombre_estudiante: string;
-  apellidos_estudiante: string;
+  nombres: string;
+  apellidos: string;
   grado_estudiante: string;
   salon_estudiante: string;
 }
@@ -81,8 +81,8 @@ const RemitirOrientacion = () => {
     const cargar = async () => {
       const [estsR, asigR, internoR] = await Promise.all([
         supabase.from("Estudiantes")
-          .select("id_estudiantil, nombre_estudiante, apellidos_estudiante, grado_estudiante, salon_estudiante")
-          .order("apellidos_estudiante"),
+          .select("id_estudiantil, nombres, apellidos, grado_estudiante, salon_estudiante")
+          .order("apellidos"),
         isProfesor()
           ? supabase.from("Asignación Profesores").select('"Grado(s)", "Salon(es)"').eq("id", parseInt(session.id!))
           : Promise.resolve({ data: [] as any[] }),
@@ -129,8 +129,8 @@ const RemitirOrientacion = () => {
     if (filtroGrado) lista = lista.filter(e => e.grado_estudiante === filtroGrado);
     if (filtroSalon) lista = lista.filter(e => e.salon_estudiante === filtroSalon);
     return [...lista].sort((a, b) =>
-      a.apellidos_estudiante.localeCompare(b.apellidos_estudiante, "es") ||
-      a.nombre_estudiante.localeCompare(b.nombre_estudiante, "es")
+      a.apellidos.localeCompare(b.apellidos, "es") ||
+      a.nombres.localeCompare(b.nombres, "es")
     );
   }, [estudiantes, filtroGrado, filtroSalon]);
 
@@ -149,7 +149,7 @@ const RemitirOrientacion = () => {
     if (!q) return estudiantesBase;
     const tokens = q.split(/\s+/).filter(Boolean);
     return estudiantesBase.filter(e => {
-      const full = norm(`${e.nombre_estudiante} ${e.apellidos_estudiante}`);
+      const full = norm(`${e.nombres} ${e.apellidos}`);
       return tokens.every(t => full.includes(t));
     });
   }, [estudiantesBase, estBusqueda]);
@@ -212,8 +212,8 @@ const RemitirOrientacion = () => {
     const docenteNombre = [autor.nombres, autor.apellidos].filter(Boolean).join(" ");
     const payload = {
       estudiante_id: estSeleccionado.id_estudiantil,
-      estudiante_nombre: estSeleccionado.nombre_estudiante,
-      estudiante_apellidos: estSeleccionado.apellidos_estudiante,
+      estudiante_nombre: estSeleccionado.nombres,
+      estudiante_apellidos: estSeleccionado.apellidos,
       estudiante_grado: estSeleccionado.grado_estudiante,
       estudiante_salon: estSeleccionado.salon_estudiante,
       motivo: motivo.trim(),
@@ -239,7 +239,7 @@ const RemitirOrientacion = () => {
       const grupo = estSeleccionado.salon_estudiante
         ? `${estSeleccionado.grado_estudiante} ${estSeleccionado.salon_estudiante}`
         : estSeleccionado.grado_estudiante;
-      const estLabel = `${estSeleccionado.nombre_estudiante} ${estSeleccionado.apellidos_estudiante}`;
+      const estLabel = `${estSeleccionado.nombres} ${estSeleccionado.apellidos}`;
       const motivoCorto = motivo.trim().length > 200
         ? motivo.trim().slice(0, 200) + "..."
         : motivo.trim();
@@ -319,7 +319,7 @@ const RemitirOrientacion = () => {
                 {estSeleccionado ? (
                   <div className="flex items-center justify-between gap-2 border rounded px-3 py-2 bg-muted/30">
                     <span className="text-sm">
-                      <strong>{estSeleccionado.apellidos_estudiante} {estSeleccionado.nombre_estudiante}</strong>
+                      <strong>{estSeleccionado.apellidos} {estSeleccionado.nombres}</strong>
                       <span className="text-muted-foreground"> — {estSeleccionado.grado_estudiante}{estSeleccionado.salon_estudiante ? ` ${estSeleccionado.salon_estudiante}` : ""}</span>
                     </span>
                     <button
@@ -350,7 +350,7 @@ const RemitirOrientacion = () => {
                             onMouseDown={() => seleccionarEstudiante(e)}
                             className="px-3 py-2 text-sm hover:bg-accent cursor-pointer"
                           >
-                            <span className="font-medium">{e.apellidos_estudiante} {e.nombre_estudiante}</span>
+                            <span className="font-medium">{e.apellidos} {e.nombres}</span>
                             <span className="text-muted-foreground"> — {e.grado_estudiante}{e.salon_estudiante ? ` ${e.salon_estudiante}` : ""}</span>
                           </li>
                         ))}

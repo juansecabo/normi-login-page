@@ -74,8 +74,8 @@ interface NotaRegistrada {
 
 interface Estudiante {
   id_estudiantil: string;
-  nombre_estudiante: string;
-  apellidos_estudiante: string;
+  nombres: string;
+  apellidos: string;
   grado_estudiante: string;
   salon_estudiante: string;
 }
@@ -289,15 +289,15 @@ export const useCompletitud = () => {
         // 5) Estudiantes
         const { data: estudiantesData, error: errorEst } = await supabase
           .from("Estudiantes")
-          .select("id_estudiantil, nombre_estudiante, apellidos_estudiante, grado_estudiante, salon_estudiante")
-          .order("apellidos_estudiante");
+          .select("id_estudiantil, nombres, apellidos, grado_estudiante, salon_estudiante")
+          .order("apellidos");
 
         if (errorEst) console.error("❌ Error obteniendo estudiantes:", errorEst);
 
         const estudiantesProcesados: Estudiante[] = (estudiantesData || []).map((e: any) => ({
           id_estudiantil: String(e.id_estudiantil || "").trim(),
-          nombre_estudiante: String(e.nombre_estudiante || "").trim(),
-          apellidos_estudiante: String(e.apellidos_estudiante || "").trim(),
+          nombres: String(e.nombres || "").trim(),
+          apellidos: String(e.apellidos || "").trim(),
           grado_estudiante: String(e.grado_estudiante || "").trim(),
           salon_estudiante: String(e.salon_estudiante || "").trim(),
         }));
@@ -488,7 +488,7 @@ export const useCompletitud = () => {
                   profesor: combo.nombreCompleto,
                   grado: combo.grado,
                   salon: combo.salon,
-                  estudiante: `${est.apellidos_estudiante} ${est.nombre_estudiante}`,
+                  estudiante: `${est.apellidos} ${est.nombres}`,
                   periodo: per,
                   actividad: act.nombre_actividad,
                 });
