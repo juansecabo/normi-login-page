@@ -6,8 +6,8 @@ import HeaderNormi from "@/components/HeaderNormi";
 
 interface Estudiante {
   id_estudiantil: string;
-  apellidos_estudiante: string;
-  nombre_estudiante: string;
+  apellidos: string;
+  nombres: string;
 }
 
 const ListaEstudiantes = () => {
@@ -52,11 +52,11 @@ const ListaEstudiantes = () => {
     try {
       const { data, error } = await supabase
         .from('Estudiantes')
-        .select('id_estudiantil, apellidos_estudiante, nombre_estudiante')
+        .select('id_estudiantil, apellidos, nombres')
         .eq('grado_estudiante', grado)
         .eq('salon_estudiante', salon)
-        .order('apellidos_estudiante', { ascending: true })
-        .order('nombre_estudiante', { ascending: true });
+        .order('apellidos', { ascending: true })
+        .order('nombres', { ascending: true });
 
       if (error) {
         console.error('Error fetching estudiantes:', error);
@@ -142,7 +142,7 @@ const ListaEstudiantes = () => {
                 >
                   <div className="flex-1">
                     <span className="font-medium text-foreground">
-                      {estudiante.apellidos_estudiante} {estudiante.nombre_estudiante}
+                      {estudiante.apellidos} {estudiante.nombres}
                     </span>
                   </div>
                   <span className="text-sm text-muted-foreground">

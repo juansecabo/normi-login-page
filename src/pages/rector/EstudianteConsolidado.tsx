@@ -7,8 +7,8 @@ import HeaderNormi from "@/components/HeaderNormi";
 
 interface Estudiante {
   id_estudiantil: string;
-  apellidos_estudiante: string;
-  nombre_estudiante: string;
+  apellidos: string;
+  nombres: string;
 }
 
 interface Actividad {
@@ -304,7 +304,7 @@ const EstudianteConsolidado = () => {
             </button>
             <span className="text-muted-foreground">→</span>
             <span className="text-foreground font-medium">
-              {estudiante?.apellidos_estudiante} {estudiante?.nombre_estudiante}
+              {estudiante?.apellidos} {estudiante?.nombres}
             </span>
           </div>
         </div>
@@ -313,7 +313,7 @@ const EstudianteConsolidado = () => {
         <div className="bg-card rounded-lg shadow-soft p-6 mb-6">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-foreground">
-              {estudiante?.apellidos_estudiante} {estudiante?.nombre_estudiante}
+              {estudiante?.apellidos} {estudiante?.nombres}
             </h2>
             <p className="text-muted-foreground">
               ID: {estudiante?.id_estudiantil} | {gradoSeleccionado} - {salonSeleccionado}

@@ -14,8 +14,8 @@ export interface NotaCompleta {
 
 export interface EstudianteInfo {
   id_estudiantil: string;
-  nombre_estudiante: string;
-  apellidos_estudiante: string;
+  nombres: string;
+  apellidos: string;
   grado_estudiante: string;
   salon_estudiante: string;
 }
@@ -146,8 +146,8 @@ export const useEstadisticas = () => {
 
         const { data: estudiantesData, error: estErr } = await (supabase as any)
           .from("Estudiantes")
-          .select("id_estudiantil,nombre_estudiante,apellidos_estudiante,grado_estudiante,salon_estudiante")
-          .order("apellidos_estudiante", { ascending: true })
+          .select("id_estudiantil,nombres,apellidos,grado_estudiante,salon_estudiante")
+          .order("apellidos", { ascending: true })
           .fetchAll();
         if (estErr) throw estErr;
         setEstudiantes(estudiantesData || []);
@@ -387,7 +387,7 @@ export const useEstadisticas = () => {
 
       return {
         id_estudiantil: String(est.id_estudiantil),
-        nombre_completo: `${est.apellidos_estudiante} ${est.nombre_estudiante}`,
+        nombre_completo: `${est.apellidos} ${est.nombres}`,
         grado: est.grado_estudiante,
         salon: est.salon_estudiante,
         promedio: resultado.promedio || 0,
@@ -678,7 +678,7 @@ export const useEstadisticas = () => {
     const periodos = periodo === "anual" ? [1, 2, 3, 4] : [periodo];
 
     for (const est of estudiantesFiltrados) {
-      const nombreCompleto = `${est.apellidos_estudiante} ${est.nombre_estudiante}`;
+      const nombreCompleto = `${est.apellidos} ${est.nombres}`;
       
       // Obtener las asignaturas del estudiante
       const notasEstudiante = notas.filter(n => n.id_estudiantil === est.id_estudiantil);

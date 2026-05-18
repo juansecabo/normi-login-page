@@ -24,8 +24,8 @@ const ESTADOS = [
 
 interface Estudiante {
   id_estudiantil: number;
-  nombre_estudiante: string;
-  apellidos_estudiante: string;
+  nombres: string;
+  apellidos: string;
   grado_estudiante: string;
   salon_estudiante: string;
   fecha_de_nacimiento?: string | null;
@@ -207,7 +207,7 @@ const Casos = () => {
     setAutor({ id: session.id, nombre: `${session.nombres || ""} ${session.apellidos || ""}`.trim() });
     Promise.all([
       supabase.from("Casos_Orientacion").select("id, estudiante_id, estudiante_nombre, estudiante_apellidos, estudiante_grado, estudiante_salon, motivo_atencion, estado, fecha_apertura, created_at").order("created_at", { ascending: false }),
-      supabase.from("Estudiantes").select("id_estudiantil, nombre_estudiante, apellidos_estudiante, grado_estudiante, salon_estudiante").order("apellidos_estudiante"),
+      supabase.from("Estudiantes").select("id_estudiantil, nombres, apellidos, grado_estudiante, salon_estudiante").order("apellidos"),
     ]).then(([cR, eR]) => {
       setCasos((cR.data || []) as Caso[]);
       setEstudiantes(eR.data || []);
@@ -253,7 +253,7 @@ const Casos = () => {
     if (!q || q.length < 2) return [] as Estudiante[];
     const tokens = q.split(/\s+/).filter(Boolean);
     return estudiantes.filter(e => {
-      const full = norm(`${e.nombre_estudiante} ${e.apellidos_estudiante}`);
+      const full = norm(`${e.nombres} ${e.apellidos}`);
       return tokens.every(t => full.includes(t));
     }).slice(0, 8);
   }, [estudiantes, estBusqueda]);
@@ -329,8 +329,8 @@ const Casos = () => {
     setGuardando(true);
     const payload: any = {
       estudiante_id: estSeleccionado.id_estudiantil,
-      estudiante_nombre: estSeleccionado.nombre_estudiante,
-      estudiante_apellidos: estSeleccionado.apellidos_estudiante,
+      estudiante_nombre: estSeleccionado.nombres,
+      estudiante_apellidos: estSeleccionado.apellidos,
       estudiante_grado: estSeleccionado.grado_estudiante,
       estudiante_salon: estSeleccionado.salon_estudiante,
 
@@ -474,7 +474,7 @@ const Casos = () => {
                 {estSeleccionado ? (
                   <div className="flex items-center justify-between border border-border rounded-md p-2 bg-card">
                     <div>
-                      <p className="text-sm font-semibold">{estSeleccionado.apellidos_estudiante} {estSeleccionado.nombre_estudiante}</p>
+                      <p className="text-sm font-semibold">{estSeleccionado.apellidos} {estSeleccionado.nombres}</p>
                       <p className="text-xs text-muted-foreground">Identificación: {estSeleccionado.id_estudiantil} · {estSeleccionado.grado_estudiante} {estSeleccionado.salon_estudiante}</p>
                     </div>
                     <button onClick={() => { setEstSeleccionado(null); setEstBusqueda(""); }} className="text-xs text-primary hover:underline">Cambiar</button>
@@ -489,7 +489,7 @@ const Casos = () => {
                       <div className="border border-border rounded-md mt-1 max-h-48 overflow-y-auto bg-card">
                         {estudiantesBusqueda.map(e => (
                           <button key={e.id_estudiantil} onClick={() => seleccionarEstudiante(e)} className="block w-full text-left px-3 py-2 text-sm hover:bg-muted/50">
-                            {e.apellidos_estudiante} {e.nombre_estudiante}
+                            {e.apellidos} {e.nombres}
                             <span className="text-xs text-muted-foreground"> — {e.grado_estudiante} {e.salon_estudiante} · ID {e.id_estudiantil}</span>
                           </button>
                         ))}

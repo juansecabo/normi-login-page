@@ -21,8 +21,8 @@ const N8N_WEBHOOK_URL = "https://n8n.notasnormi.com/webhook/notificar-preescolar
 
 interface Estudiante {
   id_estudiantil: string;
-  apellidos_estudiante: string;
-  nombre_estudiante: string;
+  apellidos: string;
+  nombres: string;
 }
 
 // Estructura: { [id_estudiantil]: { [periodo]: { [nombre_actividad]: texto } } }
@@ -108,11 +108,11 @@ const TablaNotasPreescolar = () => {
         // 1) Cargar estudiantes
         const { data: estudiantesData, error: errEst } = await supabase
           .from("Estudiantes")
-          .select("id_estudiantil, apellidos_estudiante, nombre_estudiante")
+          .select("id_estudiantil, apellidos, nombres")
           .eq("grado_estudiante", storedGrado)
           .eq("salon_estudiante", storedSalon)
-          .order("apellidos_estudiante", { ascending: true })
-          .order("nombre_estudiante", { ascending: true });
+          .order("apellidos", { ascending: true })
+          .order("nombres", { ascending: true });
 
         if (errEst) {
           console.error("Error fetching estudiantes:", errEst);
@@ -345,7 +345,7 @@ const TablaNotasPreescolar = () => {
     }
 
     const nombrePeriodo = periodos.find((p) => p.numero === periodo)?.nombre;
-    const nombreCompleto = `${estudiante.nombre_estudiante} ${estudiante.apellidos_estudiante}`;
+    const nombreCompleto = `${estudiante.nombres} ${estudiante.apellidos}`;
 
     setNotificacionPendiente({
       tipo: "preescolar_individual",
@@ -542,7 +542,7 @@ const TablaNotasPreescolar = () => {
                       Estudiante #{idx + 1}
                     </div>
                     <h3 className="text-base md:text-lg font-semibold text-foreground">
-                      {est.apellidos_estudiante} {est.nombre_estudiante}
+                      {est.apellidos} {est.nombres}
                     </h3>
                   </div>
                   <DropdownMenu>

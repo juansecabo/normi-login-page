@@ -182,7 +182,7 @@ export default function ConsultaPublica() {
         const estIdNum = Number(session.id);
         const { data: estData } = await supabase
           .from("Estudiantes")
-          .select("id_estudiantil, nombre_estudiante, apellidos_estudiante, grado_estudiante, salon_estudiante")
+          .select("id_estudiantil, nombres, apellidos, grado_estudiante, salon_estudiante")
           .eq("id_estudiantil", estIdNum)
           .maybeSingle();
         if (!estData) {
@@ -203,15 +203,15 @@ export default function ConsultaPublica() {
         // Construir respondente estudiante
         const r: Respondent = {
           key: estIdNum,
-          nombre: (estData as any).nombre_estudiante || session.nombres || "",
-          apellidos: (estData as any).apellidos_estudiante || session.apellidos || "",
+          nombre: (estData as any).nombres || session.nombres || "",
+          apellidos: (estData as any).apellidos || session.apellidos || "",
           contexto: (estData as any).grado_estudiante
             ? `— ${(estData as any).grado_estudiante} ${(estData as any).salon_estudiante || ""}`.trim()
             : null,
           tipoRespondente: "estudiante",
           estudianteId: estIdNum,
-          estudianteNombre: (estData as any).nombre_estudiante || null,
-          estudianteApellidos: (estData as any).apellidos_estudiante || null,
+          estudianteNombre: (estData as any).nombres || null,
+          estudianteApellidos: (estData as any).apellidos || null,
           estudianteGrado: (estData as any).grado_estudiante || null,
           estudianteSalon: (estData as any).salon_estudiante || null,
           opcionPrevia: null,
@@ -304,7 +304,7 @@ export default function ConsultaPublica() {
         if (idsValidos.length > 0) {
           const { data } = await supabase
             .from("Estudiantes")
-            .select("id_estudiantil, nombres, nombre_estudiante, apellidos, apellidos_estudiante, grado_estudiante, salon_estudiante")
+            .select("id_estudiantil, nombres, nombres, apellidos, apellidos, grado_estudiante, salon_estudiante")
             .in("id_estudiantil", idsValidos);
           hijosData = data || [];
         }
@@ -318,8 +318,8 @@ export default function ConsultaPublica() {
           const hijoId = hijoIds[idx - 1];
           if (!hijoId) continue;
           const h = hijoMap.get(String(hijoId));
-          const nombre = h ? (h.nombres || h.nombre_estudiante || "") : "";
-          const apellidos = h ? (h.apellidos || h.apellidos_estudiante || "") : "";
+          const nombre = h ? (h.nombres || h.nombres || "") : "";
+          const apellidos = h ? (h.apellidos || h.apellidos || "") : "";
           const grado = h ? h.grado_estudiante : "";
           const salon = h ? h.salon_estudiante : "";
 
