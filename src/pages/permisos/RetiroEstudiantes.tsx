@@ -65,6 +65,8 @@ const RetiroEstudiantes = () => {
   // Session data
   const [hijos, setHijos] = useState<HijoData[]>([]);
   const [nombreAcudiente, setNombreAcudiente] = useState("");
+  const [nombresAcudiente, setNombresAcudiente] = useState("");
+  const [apellidosAcudiente, setApellidosAcudiente] = useState("");
   const [idAcudiente, setIdAcudiente] = useState("");
   const [telefonoAcudiente, setTelefonoAcudiente] = useState("");
 
@@ -84,6 +86,8 @@ const RetiroEstudiantes = () => {
       return;
     }
     setNombreAcudiente([session.nombres, session.apellidos].filter(Boolean).join(" "));
+    setNombresAcudiente(session.nombres || "");
+    setApellidosAcudiente(session.apellidos || "");
     setIdAcudiente(session.id);
     setTelefonoAcudiente(session.telefono || "");
     setHijos(session.hijos || []);
@@ -111,12 +115,12 @@ const RetiroEstudiantes = () => {
 
   const fetchHistorial = async () => {
     setLoadingHistorial(true);
-    // Search by acudiente_identificacion (C.C.) which is always available from session
+    // Search by acudiente_id (C.C.) which is always available from session
     const session = getSession();
     const { data } = await supabase
       .from("Autorizaciones_Retiro")
       .select("*")
-      .eq("acudiente_identificacion", session.id)
+      .eq("acudiente_id", session.id)
       .order("fecha_autorizacion", { ascending: false });
     setHistorial(data || []);
     setLoadingHistorial(false);
@@ -192,8 +196,9 @@ const RetiroEstudiantes = () => {
     const payload = {
       fecha_autorizacion: `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, "0")}-${String(fecha.getDate()).padStart(2, "0")}`,
       hora_retiro: horaPayload,
-      acudiente_nombre: nombreAcudiente,
-      acudiente_identificacion: idAcudiente,
+      acudiente_nombres: nombresAcudiente,
+      acudiente_apellidos: apellidosAcudiente,
+      acudiente_id: idAcudiente,
       acudiente_telefono: telefonoAcudiente,
       acudiente_correo: correo || null,
       estudiante_nombre: hijoSeleccionado.nombre,
@@ -205,7 +210,6 @@ const RetiroEstudiantes = () => {
       parentesco: tipoSalida === "familiar" ? parentesco : null,
       motivo,
       firma_url: firmaUrl,
-      numero_telefono_acudiente: telefonoAcudiente,
       archivos_url: archivosUrls.length > 0 ? archivosUrls : null,
     };
 
@@ -601,7 +605,7 @@ const RetiroEstudiantes = () => {
                             </p>
 
                             <p>
-                              Yo <span className="text-primary font-medium">{auth.acudiente_nombre}</span> identificado(a) con C.C. No. <span className="text-primary font-medium">{auth.acudiente_identificacion}</span> autorizo a mi hijo(a) <span className="text-primary font-medium">{auth.estudiante_nombre} {auth.estudiante_apellidos}</span> del grado: <span className="text-primary font-medium">{auth.estudiante_grado} {auth.estudiante_salon}</span>, para que salga de la institución:
+                              Yo <span className="text-primary font-medium">{[auth.acudiente_nombres, auth.acudiente_apellidos].filter(Boolean).join(" ")}</span> identificado(a) con C.C. No. <span className="text-primary font-medium">{auth.acudiente_id}</span> autorizo a mi hijo(a) <span className="text-primary font-medium">{auth.estudiante_nombre} {auth.estudiante_apellidos}</span> del grado: <span className="text-primary font-medium">{auth.estudiante_grado} {auth.estudiante_salon}</span>, para que salga de la institución:
                             </p>
 
                             <p>

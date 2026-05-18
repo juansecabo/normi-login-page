@@ -26,8 +26,9 @@ interface Justificacion {
   estudiante_grado: string;
   estudiante_salon: string;
   justificacion: string;
-  acudiente_nombre: string;
-  acudiente_documento: string;
+  acudiente_nombres: string;
+  acudiente_apellidos: string;
+  acudiente_id: string;
   acudiente_telefono: string | null;
   firma_url: string | null;
   created_at: string;
@@ -102,7 +103,7 @@ const JustificacionUniformeStaff = () => {
         const count = seleccion[j.id];
         if (!count) continue;
         const acudienteFila: { label: string; value: string }[] = [
-          { label: "Acudiente:", value: `${j.acudiente_nombre} — C.C. ${j.acudiente_documento}` },
+          { label: "Acudiente:", value: `${[j.acudiente_nombres, j.acudiente_apellidos].filter(Boolean).join(" ")} — C.C. ${j.acudiente_id}` },
         ];
         if (j.acudiente_telefono) acudienteFila.push({ label: "Teléfono:", value: j.acudiente_telefono });
         secciones.push({
@@ -207,7 +208,7 @@ const JustificacionUniformeStaff = () => {
                                   <p><span className="font-medium">Estudiante:</span> <span className="text-primary font-medium">{j.estudiante_nombre} {j.estudiante_apellidos}</span> — <span className="text-primary font-medium">{j.estudiante_grado} {j.estudiante_salon}</span></p>
                                   <p><span className="font-medium">Fecha:</span> <span className="text-primary font-medium">{fmtFecha(j.fecha)}</span></p>
                                   <p><span className="font-medium">Justificación:</span> <span className="text-primary font-medium">{j.justificacion}</span></p>
-                                  <p><span className="font-medium">Acudiente:</span> <span className="text-primary font-medium">{j.acudiente_nombre}</span> — C.C. <span className="text-primary font-medium">{j.acudiente_documento}</span></p>
+                                  <p><span className="font-medium">Acudiente:</span> <span className="text-primary font-medium">{[j.acudiente_nombres, j.acudiente_apellidos].filter(Boolean).join(" ")}</span> — C.C. <span className="text-primary font-medium">{j.acudiente_id}</span></p>
                                   {j.acudiente_telefono && <p>Teléfono: <span className="text-primary font-medium">{j.acudiente_telefono}</span></p>}
                                   {j.firma_url && <div><p className="font-medium mb-1">Firma:</p><FirmaImage url={j.firma_url} /></div>}
                                 </div>

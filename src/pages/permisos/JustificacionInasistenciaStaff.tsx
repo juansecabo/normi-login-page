@@ -27,7 +27,7 @@ interface Justificacion {
   id: number; fecha_inicio: string; fecha_fin: string; dias_ausente: number; ciudad_fecha: string;
   estudiante_nombre: string; estudiante_apellidos: string; estudiante_grado: string; estudiante_salon: string; estudiante_documento: string;
   motivo_tipo: string; motivo_otro: string | null; motivo_descripcion: string;
-  acudiente_nombre: string; acudiente_documento: string; acudiente_parentesco: string | null;
+  acudiente_nombres: string; acudiente_apellidos: string; acudiente_id: string; acudiente_parentesco: string | null;
   acudiente_telefono: string; firma_url: string | null; archivos_url: string[] | null; created_at: string;
 }
 
@@ -116,7 +116,7 @@ const JustificacionInasistenciaStaff = () => {
               { label: "Descripción:", value: j.motivo_descripcion },
             ],
             [
-              { label: "Acudiente:", value: `${j.acudiente_nombre} — C.C. ${j.acudiente_documento}${j.acudiente_parentesco ? ` — ${j.acudiente_parentesco}` : ""}` },
+              { label: "Acudiente:", value: `${[j.acudiente_nombres, j.acudiente_apellidos].filter(Boolean).join(" ")} — C.C. ${j.acudiente_id}${j.acudiente_parentesco ? ` — ${j.acudiente_parentesco}` : ""}` },
               { label: "Teléfono:", value: j.acudiente_telefono },
             ],
           ],
@@ -212,7 +212,7 @@ const JustificacionInasistenciaStaff = () => {
                             <p><span className="font-medium">Fecha(s):</span> <span className="text-primary font-medium">{j.dias_ausente === 1 ? fmtFecha(j.fecha_inicio) : `${fmtFecha(j.fecha_inicio)} — ${fmtFecha(j.fecha_fin)}`}</span> — <span className="text-primary font-medium">{j.dias_ausente} día(s)</span></p>
                             <p><span className="font-medium">Motivo:</span> <Check className="w-4 h-4 inline text-primary" /> {MOTIVOS[j.motivo_tipo] || j.motivo_tipo}{j.motivo_otro ? `: ${j.motivo_otro}` : ""}</p>
                             <p><span className="font-medium">Descripción:</span> <span className="text-primary font-medium">{j.motivo_descripcion}</span></p>
-                            <p><span className="font-medium">Acudiente:</span> <span className="text-primary font-medium">{j.acudiente_nombre}</span> — C.C. <span className="text-primary font-medium">{j.acudiente_documento}</span>{j.acudiente_parentesco ? ` — ${j.acudiente_parentesco}` : ""}</p>
+                            <p><span className="font-medium">Acudiente:</span> <span className="text-primary font-medium">{[j.acudiente_nombres, j.acudiente_apellidos].filter(Boolean).join(" ")}</span> — C.C. <span className="text-primary font-medium">{j.acudiente_id}</span>{j.acudiente_parentesco ? ` — ${j.acudiente_parentesco}` : ""}</p>
                             <p>Teléfono: <span className="text-primary font-medium">{j.acudiente_telefono}</span></p>
                             {j.firma_url && <div><p className="font-medium mb-1">Firma:</p><FirmaImage url={j.firma_url} /></div>}
                             {j.archivos_url && j.archivos_url.length > 0 && (

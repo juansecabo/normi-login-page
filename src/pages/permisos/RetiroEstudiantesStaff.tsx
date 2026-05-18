@@ -36,8 +36,9 @@ interface Autorizacion {
   id: number;
   fecha_autorizacion: string;
   hora_retiro: string | null;
-  acudiente_nombre: string;
-  acudiente_identificacion: string;
+  acudiente_nombres: string;
+  acudiente_apellidos: string;
+  acudiente_id: string;
   acudiente_telefono: string;
   acudiente_correo: string | null;
   estudiante_nombre: string;
@@ -145,7 +146,7 @@ const RetiroEstudiantesStaff = () => {
               { label: "Motivo:", value: auth.motivo },
             ],
             [
-              { label: "Acudiente:", value: `${auth.acudiente_nombre} — C.C. ${auth.acudiente_identificacion}` },
+              { label: "Acudiente:", value: `${[auth.acudiente_nombres, auth.acudiente_apellidos].filter(Boolean).join(" ")} — C.C. ${auth.acudiente_id}` },
               { label: "Teléfono:", value: auth.acudiente_telefono },
             ],
           ],
@@ -244,7 +245,7 @@ const RetiroEstudiantesStaff = () => {
                           <div className="border-t border-border p-4 bg-muted/10 text-sm text-foreground leading-relaxed space-y-3">
                             <p className="font-bold text-center">AUTORIZACIÓN PARA RETIRO DE ESTUDIANTES EN JORNADA ESCOLAR</p>
                             <p><span className="font-medium text-red-600">La autorización es para el día:</span> <span className="text-primary font-medium">{fechaAut}</span>{auth.hora_retiro && <> · <span className="font-medium text-red-600">Hora del retiro:</span> <span className="text-primary font-medium">{fmtHora(auth.hora_retiro.slice(0, 5))}</span></>}</p>
-                            <p>Yo <span className="text-primary font-medium">{auth.acudiente_nombre}</span> identificado(a) con C.C. No. <span className="text-primary font-medium">{auth.acudiente_identificacion}</span> autorizo a mi hijo(a) <span className="text-primary font-medium">{auth.estudiante_nombre} {auth.estudiante_apellidos}</span> del grado: <span className="text-primary font-medium">{auth.estudiante_grado} {auth.estudiante_salon}</span>, para que salga de la institución:</p>
+                            <p>Yo <span className="text-primary font-medium">{[auth.acudiente_nombres, auth.acudiente_apellidos].filter(Boolean).join(" ")}</span> identificado(a) con C.C. No. <span className="text-primary font-medium">{auth.acudiente_id}</span> autorizo a mi hijo(a) <span className="text-primary font-medium">{auth.estudiante_nombre} {auth.estudiante_apellidos}</span> del grado: <span className="text-primary font-medium">{auth.estudiante_grado} {auth.estudiante_salon}</span>, para que salga de la institución:</p>
                             <p><Check className="w-4 h-4 inline text-primary" /> {TIPOS_SALIDA[auth.tipo_salida] || auth.tipo_salida}{auth.nombre_persona_autorizada && <span>. Nombre: <span className="text-primary font-medium">{auth.nombre_persona_autorizada}</span></span>}{auth.parentesco && <><br/>Parentesco: <span className="text-primary font-medium">{auth.parentesco}</span></>}</p>
                             <p>Motivo: <span className="text-primary font-medium">{auth.motivo}</span></p>
                             {auth.firma_url && <div><p className="font-medium mb-1">Firma:</p><FirmaImage url={auth.firma_url} /></div>}

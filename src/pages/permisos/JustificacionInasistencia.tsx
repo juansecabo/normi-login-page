@@ -54,6 +54,8 @@ const JustificacionInasistencia = () => {
   // Session
   const [hijos, setHijos] = useState<HijoData[]>([]);
   const [nombreAcudiente, setNombreAcudiente] = useState("");
+  const [nombresAcudiente, setNombresAcudiente] = useState("");
+  const [apellidosAcudiente, setApellidosAcudiente] = useState("");
   const [idAcudiente, setIdAcudiente] = useState("");
   const [telefonoAcudiente, setTelefonoAcudiente] = useState("");
 
@@ -69,6 +71,8 @@ const JustificacionInasistencia = () => {
     const session = getSession();
     if (!session.id || !isPadreDeFamilia()) { navigate("/"); return; }
     setNombreAcudiente([session.nombres, session.apellidos].filter(Boolean).join(" "));
+    setNombresAcudiente(session.nombres || "");
+    setApellidosAcudiente(session.apellidos || "");
     setIdAcudiente(session.id);
     setTelefonoAcudiente(session.telefono || "");
     setHijos(session.hijos || []);
@@ -88,7 +92,7 @@ const JustificacionInasistencia = () => {
     setLoadingHistorial(true);
     const session = getSession();
     const { data } = await supabase.from("Justificaciones_Inasistencia").select("*")
-      .eq("acudiente_documento", session.id).order("fecha_inicio", { ascending: false });
+      .eq("acudiente_id", session.id).order("fecha_inicio", { ascending: false });
     setHistorial(data || []);
     setLoadingHistorial(false);
   };
@@ -160,12 +164,12 @@ const JustificacionInasistencia = () => {
       motivo_tipo: motivoTipo,
       motivo_otro: motivoTipo === "otro" ? motivoOtro : null,
       motivo_descripcion: motivoDescripcion,
-      acudiente_nombre: nombreAcudiente,
-      acudiente_documento: idAcudiente,
+      acudiente_nombres: nombresAcudiente,
+      acudiente_apellidos: apellidosAcudiente,
+      acudiente_id: idAcudiente,
       acudiente_parentesco: null,
       acudiente_telefono: telefonoAcudiente,
       firma_url: firmaUrl,
-      numero_telefono_acudiente: telefonoAcudiente,
       archivos_url: archivosUrls.length > 0 ? archivosUrls : null,
     };
 
@@ -472,7 +476,7 @@ const JustificacionInasistencia = () => {
                           <p><span className="font-medium">Motivo:</span> <Check className="w-4 h-4 inline text-primary" /> {motivoLabel(j.motivo_tipo)}{j.motivo_otro ? `: ${j.motivo_otro}` : ""}</p>
                           <p><span className="font-medium">Descripción:</span> <span className="text-primary font-medium">{j.motivo_descripcion}</span></p>
                           <p className="italic text-muted-foreground">El estudiante se compromete a ponerse al día con las actividades académicas.</p>
-                          <p><span className="font-medium">Acudiente:</span> <span className="text-primary font-medium">{j.acudiente_nombre}</span> — C.C. <span className="text-primary font-medium">{j.acudiente_documento}</span>{j.acudiente_parentesco ? ` — ${j.acudiente_parentesco}` : ""}</p>
+                          <p><span className="font-medium">Acudiente:</span> <span className="text-primary font-medium">{[j.acudiente_nombres, j.acudiente_apellidos].filter(Boolean).join(" ")}</span> — C.C. <span className="text-primary font-medium">{j.acudiente_id}</span>{j.acudiente_parentesco ? ` — ${j.acudiente_parentesco}` : ""}</p>
                           <p>Teléfono: <span className="text-primary font-medium">{j.acudiente_telefono}</span></p>
                           {j.firma_url && <div><p className="font-medium mb-1">Firma:</p><FirmaImage url={j.firma_url} /></div>}
                           {j.archivos_url && j.archivos_url.length > 0 && (

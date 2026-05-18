@@ -35,6 +35,8 @@ const JustificacionUniforme = () => {
   // Session
   const [hijos, setHijos] = useState<HijoData[]>([]);
   const [nombreAcudiente, setNombreAcudiente] = useState("");
+  const [nombresAcudiente, setNombresAcudiente] = useState("");
+  const [apellidosAcudiente, setApellidosAcudiente] = useState("");
   const [idAcudiente, setIdAcudiente] = useState("");
   const [telefonoAcudiente, setTelefonoAcudiente] = useState("");
 
@@ -50,6 +52,8 @@ const JustificacionUniforme = () => {
     const session = getSession();
     if (!session.id || !isPadreDeFamilia()) { navigate("/"); return; }
     setNombreAcudiente([session.nombres, session.apellidos].filter(Boolean).join(" "));
+    setNombresAcudiente(session.nombres || "");
+    setApellidosAcudiente(session.apellidos || "");
     setIdAcudiente(session.id);
     setHijos(session.hijos || []);
   }, [navigate]);
@@ -66,7 +70,7 @@ const JustificacionUniforme = () => {
     setLoadingHistorial(true);
     const session = getSession();
     const { data } = await supabase.from("Justificaciones_Uniforme").select("*")
-      .eq("acudiente_documento", session.id).order("fecha", { ascending: false });
+      .eq("acudiente_id", session.id).order("fecha", { ascending: false });
     setHistorial(data || []);
     setLoadingHistorial(false);
   };
@@ -108,8 +112,9 @@ const JustificacionUniforme = () => {
       estudiante_grado: hijoSeleccionado.grado,
       estudiante_salon: hijoSeleccionado.salon,
       justificacion: justificacion.trim(),
-      acudiente_nombre: nombreAcudiente,
-      acudiente_documento: idAcudiente,
+      acudiente_nombres: nombresAcudiente,
+      acudiente_apellidos: apellidosAcudiente,
+      acudiente_id: idAcudiente,
       acudiente_telefono: telefonoAcudiente,
       firma_url: firmaUrl,
     };
@@ -259,7 +264,7 @@ const JustificacionUniforme = () => {
                           <p><span className="font-medium">Estudiante:</span> <span className="text-primary font-medium">{j.estudiante_nombre} {j.estudiante_apellidos}</span> — <span className="text-primary font-medium">{j.estudiante_grado} {j.estudiante_salon}</span></p>
                           <p><span className="font-medium">Fecha:</span> <span className="text-primary font-medium">{fmtFecha(j.fecha)}</span></p>
                           <p><span className="font-medium">Justificación:</span> <span className="text-primary font-medium">{j.justificacion}</span></p>
-                          <p><span className="font-medium">Acudiente:</span> <span className="text-primary font-medium">{j.acudiente_nombre}</span> — C.C. <span className="text-primary font-medium">{j.acudiente_documento}</span></p>
+                          <p><span className="font-medium">Acudiente:</span> <span className="text-primary font-medium">{[j.acudiente_nombres, j.acudiente_apellidos].filter(Boolean).join(" ")}</span> — C.C. <span className="text-primary font-medium">{j.acudiente_id}</span></p>
                           {j.acudiente_telefono && <p>Teléfono: <span className="text-primary font-medium">{j.acudiente_telefono}</span></p>}
                           {j.firma_url && <div><p className="font-medium mb-1">Firma:</p><FirmaImage url={j.firma_url} /></div>}
                         </div>
