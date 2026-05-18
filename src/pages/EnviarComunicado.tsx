@@ -187,20 +187,20 @@ const EnviarComunicado = () => {
       setLoadingListaEstudiantes(true);
       let q = supabase
         .from("Estudiantes")
-        .select("id_estudiantil, apellidos, nombres, grado_estudiante, salon_estudiante")
-        .in("grado_estudiante", gradosSel);
-      if (salonesSel.length > 0) q = q.in("salon_estudiante", salonesSel);
+        .select("id_estudiantil, apellidos, nombres, grado, salon")
+        .in("grado", gradosSel);
+      if (salonesSel.length > 0) q = q.in("salon", salonesSel);
       const { data } = await q
-        .order("grado_estudiante", { ascending: true })
-        .order("salon_estudiante", { ascending: true })
+        .order("grado", { ascending: true })
+        .order("salon", { ascending: true })
         .order("apellidos", { ascending: true })
         .order("nombres", { ascending: true });
       setListaEstudiantesFiltrada(
         (data || []).map(e => ({
           id: String(e.id_estudiantil),
           nombre: `${e.apellidos} ${e.nombres}`,
-          grado: e.grado_estudiante || "",
-          salon: e.salon_estudiante || "",
+          grado: e.grado || "",
+          salon: e.salon || "",
         }))
       );
       setEstudiantesSeleccionados(prev => prev.filter(id => (data || []).some(e => String(e.id_estudiantil) === id)));

@@ -15,7 +15,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-interface Estudiante { id_estudiantil: string; nombres: string; apellidos: string; grado_estudiante: string; salon_estudiante: string; }
+interface Estudiante { id_estudiantil: string; nombres: string; apellidos: string; grado: string; salon: string; }
 interface Interno { id: number; nombres: string; apellidos: string; cargo: string; }
 
 const GRADOS = ["Párvulo","Prejardín","Jardín","Transición","Primero","Segundo","Tercero","Cuarto","Quinto","Sexto","Séptimo","Octavo","Noveno","Décimo","Undécimo"];
@@ -75,8 +75,8 @@ const SolicitudEntrevistaStaff = () => {
   // Fetch students when grado/salon changes
   useEffect(() => {
     if (!grado || !salon) { setEstudiantes([]); setEstudianteSeleccionado(null); return; }
-    supabase.from("Estudiantes").select("id_estudiantil, nombres, apellidos, grado_estudiante, salon_estudiante")
-      .eq("grado_estudiante", grado).eq("salon_estudiante", salon)
+    supabase.from("Estudiantes").select("id_estudiantil, nombres, apellidos, grado, salon")
+      .eq("grado", grado).eq("salon", salon)
       .order("apellidos").order("nombres")
       .then(({ data }) => { setEstudiantes(data || []); setEstudianteSeleccionado(null); });
   }, [grado, salon]);
@@ -129,8 +129,8 @@ const SolicitudEntrevistaStaff = () => {
       hora_entrevista: horaEntrevista,
       estudiante_nombre: estudianteSeleccionado.nombres,
       estudiante_apellidos: estudianteSeleccionado.apellidos,
-      estudiante_grado: estudianteSeleccionado.grado_estudiante,
-      estudiante_salon: estudianteSeleccionado.salon_estudiante,
+      estudiante_grado: estudianteSeleccionado.grado,
+      estudiante_salon: estudianteSeleccionado.salon,
       solicitante_nombre: [internoEntrevista.nombres, internoEntrevista.apellidos].filter(Boolean).join(" "),
       solicitante_cargo: internoEntrevista.cargo,
       solicitante_id: internoEntrevista.id,
@@ -145,7 +145,7 @@ const SolicitudEntrevistaStaff = () => {
       // Send notification to parent via n8n webhook
       const fechaEntrevistaTexto = fechaEntrevista.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
       const entrevistaConNombre = [internoEntrevista.cargo, internoEntrevista.nombres, internoEntrevista.apellidos].filter(Boolean).join(" ");
-      const mensaje = `Se le informa que se ha solicitado una entrevista para el acudiente del estudiante ${estudianteSeleccionado.nombres} ${estudianteSeleccionado.apellidos} de ${estudianteSeleccionado.grado_estudiante} ${estudianteSeleccionado.salon_estudiante}.\n\nFecha: ${fechaEntrevistaTexto}\nHora: ${horaEntrevista}\nCon: ${entrevistaConNombre}\n\nPor favor ingrese a notasnormi.com → Permisos y Excusas → Solicitud de Entrevista, busque el día indicado, haga click sobre la citación y confirme su asistencia.`;
+      const mensaje = `Se le informa que se ha solicitado una entrevista para el acudiente del estudiante ${estudianteSeleccionado.nombres} ${estudianteSeleccionado.apellidos} de ${estudianteSeleccionado.grado} ${estudianteSeleccionado.salon}.\n\nFecha: ${fechaEntrevistaTexto}\nHora: ${horaEntrevista}\nCon: ${entrevistaConNombre}\n\nPor favor ingrese a notasnormi.com → Permisos y Excusas → Solicitud de Entrevista, busque el día indicado, haga click sobre la citación y confirme su asistencia.`;
       const remitente = [session.cargo, session.nombres, session.apellidos].filter(Boolean).join(" ");
       const cargo = session.cargo || "";
       const webhookUrl = ["Rector", "Coordinador(a)"].includes(cargo)

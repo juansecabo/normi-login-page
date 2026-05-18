@@ -53,8 +53,8 @@ const ListaEstudiantes = () => {
       const { data, error } = await supabase
         .from('Estudiantes')
         .select('id_estudiantil, apellidos, nombres')
-        .eq('grado_estudiante', grado)
-        .eq('salon_estudiante', salon)
+        .eq('grado', grado)
+        .eq('salon', salon)
         .order('apellidos', { ascending: true })
         .order('nombres', { ascending: true });
 

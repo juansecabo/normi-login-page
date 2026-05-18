@@ -15,8 +15,8 @@ interface Estudiante {
   id_estudiantil: number;
   nombres: string;
   apellidos: string;
-  grado_estudiante: string;
-  salon_estudiante: string;
+  grado: string;
+  salon: string;
 }
 
 interface AsigRow {
@@ -81,7 +81,7 @@ const RemitirOrientacion = () => {
     const cargar = async () => {
       const [estsR, asigR, internoR] = await Promise.all([
         supabase.from("Estudiantes")
-          .select("id_estudiantil, nombres, apellidos, grado_estudiante, salon_estudiante")
+          .select("id_estudiantil, nombres, apellidos, grado, salon")
           .order("apellidos"),
         isProfesor()
           ? supabase.from("Asignación Profesores").select('"Grado(s)", "Salon(es)"').eq("id", parseInt(session.id!))
@@ -113,8 +113,8 @@ const RemitirOrientacion = () => {
           }
         }
         setEstudiantes(todos.filter(e =>
-          aulasExactas.has(`${e.grado_estudiante}|${e.salon_estudiante || ""}`) ||
-          gradosCompletos.has(e.grado_estudiante)
+          aulasExactas.has(`${e.grado}|${e.salon || ""}`) ||
+          gradosCompletos.has(e.grado)
         ));
       } else {
         setEstudiantes(todos);
@@ -126,8 +126,8 @@ const RemitirOrientacion = () => {
 
   const estudiantesBase = useMemo(() => {
     let lista = estudiantes;
-    if (filtroGrado) lista = lista.filter(e => e.grado_estudiante === filtroGrado);
-    if (filtroSalon) lista = lista.filter(e => e.salon_estudiante === filtroSalon);
+    if (filtroGrado) lista = lista.filter(e => e.grado === filtroGrado);
+    if (filtroSalon) lista = lista.filter(e => e.salon === filtroSalon);
     return [...lista].sort((a, b) =>
       a.apellidos.localeCompare(b.apellidos, "es") ||
       a.nombres.localeCompare(b.nombres, "es")
@@ -135,12 +135,12 @@ const RemitirOrientacion = () => {
   }, [estudiantes, filtroGrado, filtroSalon]);
 
   const gradosUnicos = useMemo(() => [...new Set(
-    estudiantes.map(e => e.grado_estudiante).filter(g => g && g.trim())
+    estudiantes.map(e => e.grado).filter(g => g && g.trim())
   )].sort((a, b) => (GRADO_ORDEN[a] ?? 99) - (GRADO_ORDEN[b] ?? 99) || a.localeCompare(b, "es")), [estudiantes]);
 
   const salonesUnicos = useMemo(() => [...new Set(
-    estudiantes.filter(e => !filtroGrado || e.grado_estudiante === filtroGrado)
-      .map(e => e.salon_estudiante).filter(s => s && s.trim())
+    estudiantes.filter(e => !filtroGrado || e.grado === filtroGrado)
+      .map(e => e.salon).filter(s => s && s.trim())
   )].sort(), [estudiantes, filtroGrado]);
 
   const estudiantesBusqueda = useMemo(() => {
@@ -214,8 +214,8 @@ const RemitirOrientacion = () => {
       estudiante_id: estSeleccionado.id_estudiantil,
       estudiante_nombre: estSeleccionado.nombres,
       estudiante_apellidos: estSeleccionado.apellidos,
-      estudiante_grado: estSeleccionado.grado_estudiante,
-      estudiante_salon: estSeleccionado.salon_estudiante,
+      estudiante_grado: estSeleccionado.grado,
+      estudiante_salon: estSeleccionado.salon,
       motivo: motivo.trim(),
       docente_id: autor.id,
       docente_nombre: docenteNombre,
@@ -236,9 +236,9 @@ const RemitirOrientacion = () => {
 
     // 3) Notificar orientadora (horario silencioso + cola)
     try {
-      const grupo = estSeleccionado.salon_estudiante
-        ? `${estSeleccionado.grado_estudiante} ${estSeleccionado.salon_estudiante}`
-        : estSeleccionado.grado_estudiante;
+      const grupo = estSeleccionado.salon
+        ? `${estSeleccionado.grado} ${estSeleccionado.salon}`
+        : estSeleccionado.grado;
       const estLabel = `${estSeleccionado.nombres} ${estSeleccionado.apellidos}`;
       const motivoCorto = motivo.trim().length > 200
         ? motivo.trim().slice(0, 200) + "..."
@@ -320,7 +320,7 @@ const RemitirOrientacion = () => {
                   <div className="flex items-center justify-between gap-2 border rounded px-3 py-2 bg-muted/30">
                     <span className="text-sm">
                       <strong>{estSeleccionado.apellidos} {estSeleccionado.nombres}</strong>
-                      <span className="text-muted-foreground"> — {estSeleccionado.grado_estudiante}{estSeleccionado.salon_estudiante ? ` ${estSeleccionado.salon_estudiante}` : ""}</span>
+                      <span className="text-muted-foreground"> — {estSeleccionado.grado}{estSeleccionado.salon ? ` ${estSeleccionado.salon}` : ""}</span>
                     </span>
                     <button
                       type="button"
@@ -351,7 +351,7 @@ const RemitirOrientacion = () => {
                             className="px-3 py-2 text-sm hover:bg-accent cursor-pointer"
                           >
                             <span className="font-medium">{e.apellidos} {e.nombres}</span>
-                            <span className="text-muted-foreground"> — {e.grado_estudiante}{e.salon_estudiante ? ` ${e.salon_estudiante}` : ""}</span>
+                            <span className="text-muted-foreground"> — {e.grado}{e.salon ? ` ${e.salon}` : ""}</span>
                           </li>
                         ))}
                       </ul>
@@ -371,13 +371,13 @@ const RemitirOrientacion = () => {
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1">Grado</label>
                     <div className="text-sm border rounded px-3 py-2 bg-muted/30">
-                      {estSeleccionado.grado_estudiante || "—"}
+                      {estSeleccionado.grado || "—"}
                     </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1">Salón</label>
                     <div className="text-sm border rounded px-3 py-2 bg-muted/30">
-                      {estSeleccionado.salon_estudiante || "—"}
+                      {estSeleccionado.salon || "—"}
                     </div>
                   </div>
                 </div>

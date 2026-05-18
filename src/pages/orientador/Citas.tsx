@@ -41,8 +41,8 @@ interface Estudiante {
   id_estudiantil: number;
   nombres: string;
   apellidos: string;
-  grado_estudiante: string;
-  salon_estudiante: string;
+  grado: string;
+  salon: string;
 }
 
 interface Cita {
@@ -119,7 +119,7 @@ const Citas = () => {
     setAutor({ id: session.id, nombre: `${session.nombres || ""} ${session.apellidos || ""}`.trim() });
     Promise.all([
       supabase.from("Citas_Orientacion").select("*").order("fecha", { ascending: false }).order("hora", { ascending: false }),
-      supabase.from("Estudiantes").select("id_estudiantil, nombres, apellidos, grado_estudiante, salon_estudiante").order("apellidos"),
+      supabase.from("Estudiantes").select("id_estudiantil, nombres, apellidos, grado, salon").order("apellidos"),
     ]).then(([cR, eR]) => {
       setCitas(cR.data || []);
       setEstudiantes(eR.data || []);
@@ -194,8 +194,8 @@ const Citas = () => {
       estudiante_id: estSeleccionado.id_estudiantil,
       estudiante_nombre: estSeleccionado.nombres,
       estudiante_apellidos: estSeleccionado.apellidos,
-      estudiante_grado: estSeleccionado.grado_estudiante,
-      estudiante_salon: estSeleccionado.salon_estudiante,
+      estudiante_grado: estSeleccionado.grado,
+      estudiante_salon: estSeleccionado.salon,
       fecha: fmtLocal(fecha),
       hora: horaSave,
       asistentes,
@@ -218,7 +218,7 @@ const Citas = () => {
       const horaTexto = horaSave ? `${horaH}:${horaM} ${horaAP}` : "por definir";
       const incEst = asistentes.includes("estudiante");
       const incAcu = asistentes.includes("acudientes");
-      const estLabel = `${estSeleccionado.nombres} ${estSeleccionado.apellidos} (${estSeleccionado.grado_estudiante} ${estSeleccionado.salon_estudiante})`;
+      const estLabel = `${estSeleccionado.nombres} ${estSeleccionado.apellidos} (${estSeleccionado.grado} ${estSeleccionado.salon})`;
       let intro = "";
       let destinatarios = "";
       if (incEst && incAcu) {
@@ -418,7 +418,7 @@ const Citas = () => {
                 <div className="flex items-center justify-between border border-border rounded-md p-2 bg-muted/20">
                   <div>
                     <p className="text-sm font-semibold">{estSeleccionado.apellidos} {estSeleccionado.nombres}</p>
-                    <p className="text-xs text-muted-foreground">{estSeleccionado.grado_estudiante} {estSeleccionado.salon_estudiante}</p>
+                    <p className="text-xs text-muted-foreground">{estSeleccionado.grado} {estSeleccionado.salon}</p>
                   </div>
                   <button onClick={() => { setEstSeleccionado(null); setEstBusqueda(""); }} className="text-xs text-primary hover:underline">Cambiar</button>
                 </div>
@@ -430,7 +430,7 @@ const Citas = () => {
                     <div className="absolute top-full left-0 right-0 mt-1 z-20 border border-border rounded-md max-h-48 overflow-y-auto bg-card shadow-md">
                       {estudiantesBusqueda.map(e => (
                         <button key={e.id_estudiantil} onClick={() => { setEstSeleccionado(e); setEstBusqueda(""); }} className="block w-full text-left px-3 py-2 text-sm hover:bg-muted/50">
-                          {e.apellidos} {e.nombres} <span className="text-xs text-muted-foreground">— {e.grado_estudiante} {e.salon_estudiante}</span>
+                          {e.apellidos} {e.nombres} <span className="text-xs text-muted-foreground">— {e.grado} {e.salon}</span>
                         </button>
                       ))}
                     </div>

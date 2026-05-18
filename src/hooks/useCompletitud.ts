@@ -76,8 +76,8 @@ interface Estudiante {
   id_estudiantil: string;
   nombres: string;
   apellidos: string;
-  grado_estudiante: string;
-  salon_estudiante: string;
+  grado: string;
+  salon: string;
 }
 
 // Normalización global
@@ -289,7 +289,7 @@ export const useCompletitud = () => {
         // 5) Estudiantes
         const { data: estudiantesData, error: errorEst } = await supabase
           .from("Estudiantes")
-          .select("id_estudiantil, nombres, apellidos, grado_estudiante, salon_estudiante")
+          .select("id_estudiantil, nombres, apellidos, grado, salon")
           .order("apellidos");
 
         if (errorEst) console.error("❌ Error obteniendo estudiantes:", errorEst);
@@ -298,8 +298,8 @@ export const useCompletitud = () => {
           id_estudiantil: String(e.id_estudiantil || "").trim(),
           nombres: String(e.nombres || "").trim(),
           apellidos: String(e.apellidos || "").trim(),
-          grado_estudiante: String(e.grado_estudiante || "").trim(),
-          salon_estudiante: String(e.salon_estudiante || "").trim(),
+          grado: String(e.grado || "").trim(),
+          salon: String(e.salon || "").trim(),
         }));
 
         console.log("Estudiantes cargados:", estudiantesProcesados.length);
@@ -381,7 +381,7 @@ export const useCompletitud = () => {
     // Índices para rendimiento + consistencia
     const estudiantesPorSalon = new Map<string, Estudiante[]>();
     for (const e of estudiantes) {
-      const key = `${normalize(e.grado_estudiante)}|${normalize(e.salon_estudiante)}`;
+      const key = `${normalize(e.grado)}|${normalize(e.salon)}`;
       if (!estudiantesPorSalon.has(key)) estudiantesPorSalon.set(key, []);
       estudiantesPorSalon.get(key)!.push(e);
     }
@@ -516,12 +516,12 @@ export const useCompletitud = () => {
       estudiantes
         .filter(
           (e) =>
-            normalize(e.grado_estudiante) === normalize(grado) && normalize(e.salon_estudiante) === normalize(salon),
+            normalize(e.grado) === normalize(grado) && normalize(e.salon) === normalize(salon),
         )
         .forEach((e) => estudiantesUnicos.add(e.id_estudiantil));
     } else if (grado) {
       estudiantes
-        .filter((e) => normalize(e.grado_estudiante) === normalize(grado))
+        .filter((e) => normalize(e.grado) === normalize(grado))
         .forEach((e) => estudiantesUnicos.add(e.id_estudiantil));
     } else if (idEstudiante) {
       estudiantesUnicos.add(idEstudiante);

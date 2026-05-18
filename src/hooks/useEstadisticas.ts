@@ -16,8 +16,8 @@ export interface EstudianteInfo {
   id_estudiantil: string;
   nombres: string;
   apellidos: string;
-  grado_estudiante: string;
-  salon_estudiante: string;
+  grado: string;
+  salon: string;
 }
 
 export interface PromedioEstudiante {
@@ -146,7 +146,7 @@ export const useEstadisticas = () => {
 
         const { data: estudiantesData, error: estErr } = await (supabase as any)
           .from("Estudiantes")
-          .select("id_estudiantil,nombres,apellidos,grado_estudiante,salon_estudiante")
+          .select("id_estudiantil,nombres,apellidos,grado,salon")
           .order("apellidos", { ascending: true })
           .fetchAll();
         if (estErr) throw estErr;
@@ -202,7 +202,7 @@ export const useEstadisticas = () => {
         setAsignaturas(asignaturasUnicas);
 
         // Extraer grados únicos y ordenarlos
-        const gradosUnicos = [...new Set((estudiantesData || []).map(e => e.grado_estudiante))];
+        const gradosUnicos = [...new Set((estudiantesData || []).map(e => e.grado))];
         const gradosOrdenados = gradosUnicos.sort((a, b) => 
           ordenGrados.indexOf(a) - ordenGrados.indexOf(b)
         );
@@ -211,8 +211,8 @@ export const useEstadisticas = () => {
         // Extraer combinaciones de grado-salón únicas
         const salonesUnicos: { grado: string; salon: string }[] = [];
         (estudiantesData || []).forEach(e => {
-          if (!salonesUnicos.find(s => s.grado === e.grado_estudiante && s.salon === e.salon_estudiante)) {
-            salonesUnicos.push({ grado: e.grado_estudiante, salon: e.salon_estudiante });
+          if (!salonesUnicos.find(s => s.grado === e.grado && s.salon === e.salon)) {
+            salonesUnicos.push({ grado: e.grado, salon: e.salon });
           }
         });
         setSalones(salonesUnicos);
@@ -351,8 +351,8 @@ export const useEstadisticas = () => {
     const salonFiltro = salon && salon !== "all" ? salon : undefined;
     
     let estudiantesFiltrados = estudiantes;
-    if (gradoFiltro) estudiantesFiltrados = estudiantesFiltrados.filter(e => e.grado_estudiante === gradoFiltro);
-    if (salonFiltro) estudiantesFiltrados = estudiantesFiltrados.filter(e => e.salon_estudiante === salonFiltro);
+    if (gradoFiltro) estudiantesFiltrados = estudiantesFiltrados.filter(e => e.grado === gradoFiltro);
+    if (salonFiltro) estudiantesFiltrados = estudiantesFiltrados.filter(e => e.salon === salonFiltro);
 
     return estudiantesFiltrados.map(est => {
       const promediosPorPeriodo: { [periodo: number]: number } = {};
@@ -388,8 +388,8 @@ export const useEstadisticas = () => {
       return {
         id_estudiantil: String(est.id_estudiantil),
         nombre_completo: `${est.apellidos} ${est.nombres}`,
-        grado: est.grado_estudiante,
-        salon: est.salon_estudiante,
+        grado: est.grado,
+        salon: est.salon,
         promedio: resultado.promedio || 0,
         sumaPorcentajes: resultado.sumaPorcentajes,
         cantidadActividades: resultado.cantidadActividades,
@@ -671,8 +671,8 @@ export const useEstadisticas = () => {
     
     // Para cada estudiante, verificar que tiene 100% de porcentajes en todas sus asignaturas
     let estudiantesFiltrados = estudiantes;
-    if (grado) estudiantesFiltrados = estudiantesFiltrados.filter(e => e.grado_estudiante === grado);
-    if (salon) estudiantesFiltrados = estudiantesFiltrados.filter(e => e.salon_estudiante === salon);
+    if (grado) estudiantesFiltrados = estudiantesFiltrados.filter(e => e.grado === grado);
+    if (salon) estudiantesFiltrados = estudiantesFiltrados.filter(e => e.salon === salon);
     if (idEstudiante) estudiantesFiltrados = estudiantesFiltrados.filter(e => e.id_estudiantil === idEstudiante);
 
     const periodos = periodo === "anual" ? [1, 2, 3, 4] : [periodo];

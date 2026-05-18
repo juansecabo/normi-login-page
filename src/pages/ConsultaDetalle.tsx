@@ -54,8 +54,8 @@ interface EstudianteRow {
   id_estudiantil: number;
   nombres: string | null;
   apellidos: string | null;
-  grado_estudiante: string | null;
-  salon_estudiante: string | null;
+  grado: string | null;
+  salon: string | null;
 }
 
 interface PadreRow {
@@ -207,16 +207,16 @@ export default function ConsultaDetalle() {
     if (tienePadresObjetivo) {
       let estQuery = supabase
         .from("Estudiantes")
-        .select("id_estudiantil, nombres, apellidos, grado_estudiante, salon_estudiante");
+        .select("id_estudiantil, nombres, apellidos, grado, salon");
 
       if (consultaRow.estudiantes_objetivo && consultaRow.estudiantes_objetivo.length > 0) {
         estQuery = estQuery.in("id_estudiantil", consultaRow.estudiantes_objetivo);
       } else {
         if (consultaRow.grados_objetivo && consultaRow.grados_objetivo.length > 0) {
-          estQuery = estQuery.in("grado_estudiante", consultaRow.grados_objetivo as any);
+          estQuery = estQuery.in("grado", consultaRow.grados_objetivo as any);
         }
         if (consultaRow.salones_objetivo && consultaRow.salones_objetivo.length > 0) {
-          estQuery = estQuery.in("salon_estudiante", consultaRow.salones_objetivo as any);
+          estQuery = estQuery.in("salon", consultaRow.salones_objetivo as any);
         }
       }
       const { data } = await estQuery;
@@ -297,7 +297,7 @@ export default function ConsultaDetalle() {
       if (allHijoIds.size > 0) {
         const { data } = await supabase
           .from("Estudiantes")
-          .select("id_estudiantil, nombres, nombres, apellidos, apellidos, grado_estudiante, salon_estudiante")
+          .select("id_estudiantil, nombres, nombres, apellidos, apellidos, grado, salon")
           .in("id_estudiantil", Array.from(allHijoIds));
         (data || []).forEach((e: any) => estsMap.set(String(e.id_estudiantil), e));
       }
@@ -318,8 +318,8 @@ export default function ConsultaDetalle() {
           row[`padre_estudiante${i}_id`] = hid;
           row[`padre_estudiante${i}_nombre`] = h ? (h.nombres || h.nombres || "") : (legacyP?.[`padre_estudiante${i}_nombre`] || "");
           row[`padre_estudiante${i}_apellidos`] = h ? (h.apellidos || h.apellidos || "") : (legacyP?.[`padre_estudiante${i}_apellidos`] || "");
-          row[`padre_estudiante${i}_grado`] = h ? h.grado_estudiante : (legacyP?.[`padre_estudiante${i}_grado`] || "");
-          row[`padre_estudiante${i}_salon`] = h ? h.salon_estudiante : (legacyP?.[`padre_estudiante${i}_salon`] || "");
+          row[`padre_estudiante${i}_grado`] = h ? h.grado : (legacyP?.[`padre_estudiante${i}_grado`] || "");
+          row[`padre_estudiante${i}_salon`] = h ? h.salon : (legacyP?.[`padre_estudiante${i}_salon`] || "");
         }
         padresRows.push(row as PadreRow);
       }
@@ -570,8 +570,8 @@ export default function ConsultaDetalle() {
       return {
         estudiante_id: est.id_estudiantil,
         nombre_completo: `${est.apellidos || ""} ${est.nombres || ""}`.trim(),
-        grado: est.grado_estudiante,
-        salon: est.salon_estudiante,
+        grado: est.grado,
+        salon: est.salon,
         acudientes,
       };
     });
@@ -592,13 +592,13 @@ export default function ConsultaDetalle() {
 
   const gradosPresentes = useMemo(() => {
     const s = new Set<string>();
-    estudiantes.forEach((e) => e.grado_estudiante && s.add(String(e.grado_estudiante)));
+    estudiantes.forEach((e) => e.grado && s.add(String(e.grado)));
     return Array.from(s).sort((a, b) => (GRADOS_ORDEN_MAP[a] ?? 99) - (GRADOS_ORDEN_MAP[b] ?? 99));
   }, [estudiantes]);
 
   const salonesPresentes = useMemo(() => {
     const s = new Set<string>();
-    estudiantes.forEach((e) => e.salon_estudiante && s.add(String(e.salon_estudiante)));
+    estudiantes.forEach((e) => e.salon && s.add(String(e.salon)));
     return Array.from(s).sort();
   }, [estudiantes]);
 

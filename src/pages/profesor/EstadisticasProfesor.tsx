@@ -117,8 +117,8 @@ const EstadisticasProfesor = () => {
       const { data } = await supabase
         .from('Estudiantes')
         .select('id_estudiantil, apellidos, nombres')
-        .eq('grado_estudiante', gradoSeleccionado)
-        .eq('salon_estudiante', salonSeleccionado)
+        .eq('grado', gradoSeleccionado)
+        .eq('salon', salonSeleccionado)
         .order('apellidos')
         .order('nombres');
       setEstudiantesDelSalon(

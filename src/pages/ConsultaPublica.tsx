@@ -182,7 +182,7 @@ export default function ConsultaPublica() {
         const estIdNum = Number(session.id);
         const { data: estData } = await supabase
           .from("Estudiantes")
-          .select("id_estudiantil, nombres, apellidos, grado_estudiante, salon_estudiante")
+          .select("id_estudiantil, nombres, apellidos, grado, salon")
           .eq("id_estudiantil", estIdNum)
           .maybeSingle();
         if (!estData) {
@@ -192,8 +192,8 @@ export default function ConsultaPublica() {
         }
         if (!estudianteEnAudiencia(
           (estData as any).id_estudiantil,
-          (estData as any).grado_estudiante,
-          (estData as any).salon_estudiante,
+          (estData as any).grado,
+          (estData as any).salon,
           consultaRow
         )) {
           setError("Esta consulta no aplica a tu grado/salón.");
@@ -205,15 +205,15 @@ export default function ConsultaPublica() {
           key: estIdNum,
           nombre: (estData as any).nombres || session.nombres || "",
           apellidos: (estData as any).apellidos || session.apellidos || "",
-          contexto: (estData as any).grado_estudiante
-            ? `— ${(estData as any).grado_estudiante} ${(estData as any).salon_estudiante || ""}`.trim()
+          contexto: (estData as any).grado
+            ? `— ${(estData as any).grado} ${(estData as any).salon || ""}`.trim()
             : null,
           tipoRespondente: "estudiante",
           estudianteId: estIdNum,
           estudianteNombre: (estData as any).nombres || null,
           estudianteApellidos: (estData as any).apellidos || null,
-          estudianteGrado: (estData as any).grado_estudiante || null,
-          estudianteSalon: (estData as any).salon_estudiante || null,
+          estudianteGrado: (estData as any).grado || null,
+          estudianteSalon: (estData as any).salon || null,
           opcionPrevia: null,
           firmaPreviaUrl: null,
           firmaPreviaNombre: null,
@@ -304,7 +304,7 @@ export default function ConsultaPublica() {
         if (idsValidos.length > 0) {
           const { data } = await supabase
             .from("Estudiantes")
-            .select("id_estudiantil, nombres, nombres, apellidos, apellidos, grado_estudiante, salon_estudiante")
+            .select("id_estudiantil, nombres, nombres, apellidos, apellidos, grado, salon")
             .in("id_estudiantil", idsValidos);
           hijosData = data || [];
         }
@@ -320,8 +320,8 @@ export default function ConsultaPublica() {
           const h = hijoMap.get(String(hijoId));
           const nombre = h ? (h.nombres || h.nombres || "") : "";
           const apellidos = h ? (h.apellidos || h.apellidos || "") : "";
-          const grado = h ? h.grado_estudiante : "";
-          const salon = h ? h.salon_estudiante : "";
+          const grado = h ? h.grado : "";
+          const salon = h ? h.salon : "";
 
           let aplica = true;
           if (consultaRow.estudiantes_objetivo && consultaRow.estudiantes_objetivo.length > 0) {

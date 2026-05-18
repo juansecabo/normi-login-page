@@ -26,8 +26,8 @@ interface Estudiante {
   id_estudiantil: number;
   nombres: string;
   apellidos: string;
-  grado_estudiante: string;
-  salon_estudiante: string;
+  grado: string;
+  salon: string;
   fecha_de_nacimiento?: string | null;
   acudiente1_nombres?: string | null;
   acudiente1_apellidos?: string | null;
@@ -207,7 +207,7 @@ const Casos = () => {
     setAutor({ id: session.id, nombre: `${session.nombres || ""} ${session.apellidos || ""}`.trim() });
     Promise.all([
       supabase.from("Casos_Orientacion").select("id, estudiante_id, estudiante_nombre, estudiante_apellidos, estudiante_grado, estudiante_salon, motivo_atencion, estado, fecha_apertura, created_at").order("created_at", { ascending: false }),
-      supabase.from("Estudiantes").select("id_estudiantil, nombres, apellidos, grado_estudiante, salon_estudiante").order("apellidos"),
+      supabase.from("Estudiantes").select("id_estudiantil, nombres, apellidos, grado, salon").order("apellidos"),
     ]).then(([cR, eR]) => {
       setCasos((cR.data || []) as Caso[]);
       setEstudiantes(eR.data || []);
@@ -331,8 +331,8 @@ const Casos = () => {
       estudiante_id: estSeleccionado.id_estudiantil,
       estudiante_nombre: estSeleccionado.nombres,
       estudiante_apellidos: estSeleccionado.apellidos,
-      estudiante_grado: estSeleccionado.grado_estudiante,
-      estudiante_salon: estSeleccionado.salon_estudiante,
+      estudiante_grado: estSeleccionado.grado,
+      estudiante_salon: estSeleccionado.salon,
 
       lugar_nacimiento: form.lugar_nacimiento.trim() || null,
       fecha_nacimiento: form.fecha_nacimiento ? fmtLocal(form.fecha_nacimiento) : null,
@@ -475,7 +475,7 @@ const Casos = () => {
                   <div className="flex items-center justify-between border border-border rounded-md p-2 bg-card">
                     <div>
                       <p className="text-sm font-semibold">{estSeleccionado.apellidos} {estSeleccionado.nombres}</p>
-                      <p className="text-xs text-muted-foreground">Identificación: {estSeleccionado.id_estudiantil} · {estSeleccionado.grado_estudiante} {estSeleccionado.salon_estudiante}</p>
+                      <p className="text-xs text-muted-foreground">Identificación: {estSeleccionado.id_estudiantil} · {estSeleccionado.grado} {estSeleccionado.salon}</p>
                     </div>
                     <button onClick={() => { setEstSeleccionado(null); setEstBusqueda(""); }} className="text-xs text-primary hover:underline">Cambiar</button>
                   </div>
@@ -490,7 +490,7 @@ const Casos = () => {
                         {estudiantesBusqueda.map(e => (
                           <button key={e.id_estudiantil} onClick={() => seleccionarEstudiante(e)} className="block w-full text-left px-3 py-2 text-sm hover:bg-muted/50">
                             {e.apellidos} {e.nombres}
-                            <span className="text-xs text-muted-foreground"> — {e.grado_estudiante} {e.salon_estudiante} · ID {e.id_estudiantil}</span>
+                            <span className="text-xs text-muted-foreground"> — {e.grado} {e.salon} · ID {e.id_estudiantil}</span>
                           </button>
                         ))}
                       </div>

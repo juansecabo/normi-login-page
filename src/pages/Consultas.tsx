@@ -35,9 +35,9 @@ interface EstudianteRow {
   id_estudiantil: number;
   nombres: string | null;
   apellidos: string | null;
-  grado_estudiante: string | null;
-  salon_estudiante: string | null;
-  nivel_estudiante: string | null;
+  grado: string | null;
+  salon: string | null;
+  nivel: string | null;
 }
 
 const GRADOS_ORDEN = [
@@ -241,8 +241,8 @@ export default function Consultas() {
     (async () => {
       const { data, error } = await supabase
         .from("Estudiantes")
-        .select("id_estudiantil, nombres, apellidos, grado_estudiante, salon_estudiante, nivel_estudiante")
-        .in("grado_estudiante", gradosSel as any);
+        .select("id_estudiantil, nombres, apellidos, grado, salon, nivel")
+        .in("grado", gradosSel as any);
       if (!error && data) {
         setEstudiantesDelGrado(data as EstudianteRow[]);
       }
@@ -325,7 +325,7 @@ export default function Consultas() {
     const salonesSel = Object.keys(salonesMarcados).filter((s) => salonesMarcados[s]);
     if (salonesSel.length === 0) return estudiantesDelGrado;
     return estudiantesDelGrado.filter((e) =>
-      e.salon_estudiante && salonesSel.includes(String(e.salon_estudiante))
+      e.salon && salonesSel.includes(String(e.salon))
     );
   }, [estudiantesDelGrado, salonesMarcados]);
 
@@ -670,7 +670,7 @@ export default function Consultas() {
   const salonesPorGrado = useMemo(() => {
     const s = new Set<string>();
     estudiantesDelGrado.forEach((e) => {
-      if (e.salon_estudiante) s.add(String(e.salon_estudiante));
+      if (e.salon) s.add(String(e.salon));
     });
     return Array.from(s).sort();
   }, [estudiantesDelGrado]);
@@ -989,7 +989,7 @@ export default function Consultas() {
                                   {e.apellidos} {e.nombres}
                                 </span>
                                 <span className="text-xs text-muted-foreground">
-                                  {e.grado_estudiante} {e.salon_estudiante}
+                                  {e.grado} {e.salon}
                                 </span>
                               </label>
                             ))

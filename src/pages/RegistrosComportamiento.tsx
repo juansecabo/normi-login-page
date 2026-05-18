@@ -44,8 +44,8 @@ interface Estudiante {
   id_estudiantil: number;
   nombres: string;
   apellidos: string;
-  grado_estudiante: string;
-  salon_estudiante: string;
+  grado: string;
+  salon: string;
   fecha_de_nacimiento?: string | null;
 }
 
@@ -273,7 +273,7 @@ const RegistrosComportamiento = () => {
     const cargar = async () => {
       const [regsR, estsR, asigR, internoR] = await Promise.all([
         supabase.from("Registros_Comportamiento").select("*").order("fecha", { ascending: false }).order("created_at", { ascending: false }),
-        supabase.from("Estudiantes").select("id_estudiantil, nombres, apellidos, grado_estudiante, salon_estudiante, fecha_de_nacimiento").order("apellidos"),
+        supabase.from("Estudiantes").select("id_estudiantil, nombres, apellidos, grado, salon, fecha_de_nacimiento").order("apellidos"),
         isProfesor()
           ? supabase.from("Asignación Profesores").select('"Asignatura(s)", "Grado(s)", "Salon(es)"').eq("id", parseInt(session.id!))
           : Promise.resolve({ data: [] as any[] }),
@@ -313,8 +313,8 @@ const RegistrosComportamiento = () => {
           }
         }
         const filtrados = todosEsts.filter(e =>
-          aulasExactas.has(`${e.grado_estudiante}|${e.salon_estudiante || ""}`) ||
-          gradosCompletos.has(e.grado_estudiante)
+          aulasExactas.has(`${e.grado}|${e.salon || ""}`) ||
+          gradosCompletos.has(e.grado)
         );
         setEstudiantes(filtrados);
       } else {
@@ -333,8 +333,8 @@ const RegistrosComportamiento = () => {
   // Lista base ordenada alfabéticamente y con filtros opcionales por grado/salón
   const estudiantesBase = useMemo(() => {
     let lista = estudiantes;
-    if (formFiltroGrado) lista = lista.filter(e => e.grado_estudiante === formFiltroGrado);
-    if (formFiltroSalon) lista = lista.filter(e => e.salon_estudiante === formFiltroSalon);
+    if (formFiltroGrado) lista = lista.filter(e => e.grado === formFiltroGrado);
+    if (formFiltroSalon) lista = lista.filter(e => e.salon === formFiltroSalon);
     return [...lista].sort((a, b) =>
       a.apellidos.localeCompare(b.apellidos, "es") ||
       a.nombres.localeCompare(b.nombres, "es")
@@ -342,11 +342,11 @@ const RegistrosComportamiento = () => {
   }, [estudiantes, formFiltroGrado, formFiltroSalon]);
 
   const gradosFormUnicos = useMemo(() => [...new Set(
-    estudiantes.map(e => e.grado_estudiante).filter(g => g && g.trim())
+    estudiantes.map(e => e.grado).filter(g => g && g.trim())
   )].sort((a, b) => (GRADO_ORDEN[a] ?? 99) - (GRADO_ORDEN[b] ?? 99) || a.localeCompare(b, "es")), [estudiantes]);
   const salonesFormUnicos = useMemo(() => [...new Set(
-    estudiantes.filter(e => !formFiltroGrado || e.grado_estudiante === formFiltroGrado)
-      .map(e => e.salon_estudiante).filter(s => s && s.trim())
+    estudiantes.filter(e => !formFiltroGrado || e.grado === formFiltroGrado)
+      .map(e => e.salon).filter(s => s && s.trim())
   )].sort(), [estudiantes, formFiltroGrado]);
 
   const estudiantesBusqueda = useMemo(() => {
@@ -390,8 +390,8 @@ const RegistrosComportamiento = () => {
     if (!estSeleccionado || asigRows.length === 0) return [] as string[];
     const set = new Set<string>();
     for (const row of asigRows) {
-      const matchGrado = row.grados.includes(estSeleccionado.grado_estudiante);
-      const matchSalon = !estSeleccionado.salon_estudiante || row.salones.includes(estSeleccionado.salon_estudiante);
+      const matchGrado = row.grados.includes(estSeleccionado.grado);
+      const matchSalon = !estSeleccionado.salon || row.salones.includes(estSeleccionado.salon);
       if (matchGrado && matchSalon) for (const a of row.asignaturas) set.add(a);
     }
     return [...set].sort((a, b) => a.localeCompare(b, "es"));
@@ -415,8 +415,8 @@ const RegistrosComportamiento = () => {
     // Asignaturas — pre-marca todas las válidas
     const validas: string[] = [];
     for (const row of asigRows) {
-      const matchGrado = row.grados.includes(e.grado_estudiante);
-      const matchSalon = !e.salon_estudiante || row.salones.includes(e.salon_estudiante);
+      const matchGrado = row.grados.includes(e.grado);
+      const matchSalon = !e.salon || row.salones.includes(e.salon);
       if (matchGrado && matchSalon) for (const a of row.asignaturas) if (!validas.includes(a)) validas.push(a);
     }
     validas.sort((a, b) => a.localeCompare(b, "es"));
@@ -455,8 +455,8 @@ const RegistrosComportamiento = () => {
       id_estudiantil: r.estudiante_id,
       nombres: r.estudiante_nombre,
       apellidos: r.estudiante_apellidos,
-      grado_estudiante: r.estudiante_grado,
-      salon_estudiante: r.estudiante_salon,
+      grado: r.estudiante_grado,
+      salon: r.estudiante_salon,
       fecha_de_nacimiento: null,
     });
     setEdad(r.estudiante_edad != null ? String(r.estudiante_edad) : "");
@@ -497,10 +497,10 @@ const RegistrosComportamiento = () => {
     }
 
     // Buscar director de grupo del estudiante
-    const grupoEst = estSeleccionado.salon_estudiante
-      ? `${estSeleccionado.grado_estudiante} ${estSeleccionado.salon_estudiante}`
-      : estSeleccionado.grado_estudiante;
-    const grupoEstSinSalon = estSeleccionado.grado_estudiante;
+    const grupoEst = estSeleccionado.salon
+      ? `${estSeleccionado.grado} ${estSeleccionado.salon}`
+      : estSeleccionado.grado;
+    const grupoEstSinSalon = estSeleccionado.grado;
     const { data: directores } = await supabase
       .from("Internos")
       .select("id, nombres, apellidos, cargo")
@@ -513,8 +513,8 @@ const RegistrosComportamiento = () => {
       estudiante_id: estSeleccionado.id_estudiantil,
       estudiante_nombre: estSeleccionado.nombres,
       estudiante_apellidos: estSeleccionado.apellidos,
-      estudiante_grado: estSeleccionado.grado_estudiante,
-      estudiante_salon: estSeleccionado.salon_estudiante,
+      estudiante_grado: estSeleccionado.grado,
+      estudiante_salon: estSeleccionado.salon,
       estudiante_edad: edad ? parseInt(edad) : null,
       asignatura: asignaturaTexto,
       fecha: fmtLocal(fecha),
@@ -647,7 +647,7 @@ const RegistrosComportamiento = () => {
                   <div className="flex items-center justify-between border border-border rounded-md p-2 bg-muted/20">
                     <div>
                       <p className="text-sm font-semibold">{estSeleccionado.apellidos} {estSeleccionado.nombres}</p>
-                      <p className="text-xs text-muted-foreground">{estSeleccionado.grado_estudiante} {estSeleccionado.salon_estudiante}</p>
+                      <p className="text-xs text-muted-foreground">{estSeleccionado.grado} {estSeleccionado.salon}</p>
                     </div>
                     <button onClick={() => { setEstSeleccionado(null); setEstBusqueda(""); setEdad(""); setAsignaturasSel([]); }} className="text-xs text-primary hover:underline">Cambiar</button>
                   </div>
@@ -677,7 +677,7 @@ const RegistrosComportamiento = () => {
                         <div className="absolute top-full left-0 right-0 mt-1 z-20 border border-border rounded-md max-h-64 overflow-y-auto bg-card shadow-md">
                           {estudiantesBusqueda.map(e => (
                             <button key={e.id_estudiantil} onMouseDown={(ev) => { ev.preventDefault(); seleccionarEstudiante(e); }} className="block w-full text-left px-3 py-2 text-sm hover:bg-muted/50">
-                              {e.apellidos} {e.nombres} <span className="text-xs text-muted-foreground">— {e.grado_estudiante} {e.salon_estudiante}</span>
+                              {e.apellidos} {e.nombres} <span className="text-xs text-muted-foreground">— {e.grado} {e.salon}</span>
                             </button>
                           ))}
                         </div>

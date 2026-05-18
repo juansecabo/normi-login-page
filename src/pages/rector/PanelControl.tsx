@@ -75,9 +75,9 @@ interface Estudiante {
   id_estudiantil: number;
   nombres: string;
   apellidos: string;
-  nivel_estudiante: string;
-  grado_estudiante: string;
-  salon_estudiante: string;
+  nivel: string;
+  grado: string;
+  salon: string;
   acudiente1_nombres: string | null;
   acudiente1_apellidos: string | null;
   acudiente1_telefono: string | null;
@@ -309,8 +309,8 @@ const PanelControl = () => {
     if (est) {
       setNombre(est.nombres || "");
       setApellidos(est.apellidos || "");
-      setGrado(est.grado_estudiante || "");
-      setSalon(est.salon_estudiante || "");
+      setGrado(est.grado || "");
+      setSalon(est.salon || "");
     } else {
       clear();
     }
@@ -325,7 +325,7 @@ const PanelControl = () => {
     const data = await fetchAllPages((from, to) =>
       supabase
         .from("Estudiantes")
-        .select("id_estudiantil, nombres, apellidos, nivel_estudiante, grado_estudiante, salon_estudiante, acudiente1_nombres, acudiente1_apellidos, acudiente1_telefono, acudiente2_nombres, acudiente2_apellidos, acudiente2_telefono, acudiente3_nombres, acudiente3_apellidos, acudiente3_telefono")
+        .select("id_estudiantil, nombres, apellidos, nivel, grado, salon, acudiente1_nombres, acudiente1_apellidos, acudiente1_telefono, acudiente2_nombres, acudiente2_apellidos, acudiente2_telefono, acudiente3_nombres, acudiente3_apellidos, acudiente3_telefono")
         .order("apellidos")
         .order("nombres")
         .range(from, to)
@@ -378,8 +378,8 @@ const PanelControl = () => {
       setEstId(String(est.id_estudiantil));
       setEstNombre(est.nombres || "");
       setEstApellidos(est.apellidos || "");
-      setEstGrado(est.grado_estudiante || "");
-      setEstSalon(est.salon_estudiante || "");
+      setEstGrado(est.grado || "");
+      setEstSalon(est.salon || "");
       const joinName = (n: string | null, a: string | null) =>
         [n, a].filter((x) => x && String(x).trim()).map((x) => String(x).trim()).join(" ");
       setEstAcu1Nombre(joinName(est.acudiente1_nombres, est.acudiente1_apellidos));
@@ -437,9 +437,9 @@ const PanelControl = () => {
       id_estudiantil: Number(estId),
       nombres: estNombre.trim(),
       apellidos: estApellidos.trim(),
-      nivel_estudiante: nivel,
-      grado_estudiante: estGrado,
-      salon_estudiante: estSalon,
+      nivel: nivel,
+      grado: estGrado,
+      salon: estSalon,
       acudiente1_nombres: a1.nombres,
       acudiente1_apellidos: a1.apellidos,
       acudiente1_telefono: cleanPhone(estAcu1Tel),
@@ -1002,7 +1002,7 @@ const PanelControl = () => {
 
   const filteredEst = estudiantes.filter((e) =>
     matchesSearch(
-      `${e.apellidos} ${e.nombres} ${e.id_estudiantil} ${e.grado_estudiante} ${e.salon_estudiante}`,
+      `${e.apellidos} ${e.nombres} ${e.id_estudiantil} ${e.grado} ${e.salon}`,
       searchEst
     )
   );
@@ -1171,8 +1171,8 @@ const PanelControl = () => {
                             <TableCell className="font-mono">{e.id_estudiantil}</TableCell>
                             <TableCell>{e.apellidos}</TableCell>
                             <TableCell>{e.nombres}</TableCell>
-                            <TableCell>{e.grado_estudiante}</TableCell>
-                            <TableCell>{e.salon_estudiante}</TableCell>
+                            <TableCell>{e.grado}</TableCell>
+                            <TableCell>{e.salon}</TableCell>
                             <TableCell className="text-right space-x-1">
                               <Button variant="ghost" size="sm" onClick={() => openEstDialog(e)}>
                                 <Pencil className="w-4 h-4" />

@@ -202,8 +202,8 @@ const TablaNotas = () => {
         const { data: estudiantesData, error: estudiantesError } = await supabase
           .from('Estudiantes')
           .select('id_estudiantil, apellidos, nombres')
-          .eq('grado_estudiante', storedGrado)
-          .eq('salon_estudiante', storedSalon)
+          .eq('grado', storedGrado)
+          .eq('salon', storedSalon)
           .order('apellidos', { ascending: true })
           .order('nombres', { ascending: true });
 

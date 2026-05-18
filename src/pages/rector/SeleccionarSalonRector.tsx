@@ -38,8 +38,8 @@ const SeleccionarSalonRector = () => {
       // Obtener salones únicos de la tabla Estudiantes para el grado seleccionado
       const { data, error } = await supabase
         .from('Estudiantes')
-        .select('salon_estudiante')
-        .eq('grado_estudiante', grado);
+        .select('salon')
+        .eq('grado', grado);
 
       if (error) {
         console.error('Error fetching salones:', error);
@@ -48,7 +48,7 @@ const SeleccionarSalonRector = () => {
       }
 
       // Obtener salones únicos
-      const salonesUnicos = [...new Set(data?.map(e => e.salon_estudiante) || [])].sort();
+      const salonesUnicos = [...new Set(data?.map(e => e.salon) || [])].sort();
       setSalones(salonesUnicos);
     } catch (error) {
       console.error('Error:', error);

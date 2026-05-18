@@ -21,8 +21,8 @@ interface Estudiante {
   id_estudiantil: number;
   nombres: string;
   apellidos: string;
-  grado_estudiante: string;
-  salon_estudiante: string;
+  grado: string;
+  salon: string;
   acudiente1_nombres?: string | null;
   acudiente1_apellidos?: string | null;
   acudiente1_telefono?: string | null;
@@ -360,7 +360,7 @@ const CasoDetalle = () => {
     setCaso(data as Caso);
     // Buscar el estudiante para tener acudientes al editar
     const { data: e } = await supabase.from("Estudiantes")
-      .select("id_estudiantil, nombres, apellidos, grado_estudiante, salon_estudiante, acudiente1_nombres, acudiente1_apellidos, acudiente1_telefono, acudiente2_nombres, acudiente2_apellidos, acudiente2_telefono, acudiente3_nombres, acudiente3_apellidos, acudiente3_telefono")
+      .select("id_estudiantil, nombres, apellidos, grado, salon, acudiente1_nombres, acudiente1_apellidos, acudiente1_telefono, acudiente2_nombres, acudiente2_apellidos, acudiente2_telefono, acudiente3_nombres, acudiente3_apellidos, acudiente3_telefono")
       .eq("id_estudiantil", data.estudiante_id).maybeSingle();
     setEstudiante((e as Estudiante) || null);
     setLoading(false);

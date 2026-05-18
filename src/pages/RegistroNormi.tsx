@@ -33,8 +33,8 @@ interface Estudiante {
   id_estudiantil: number;
   nombres: string;
   apellidos: string;
-  grado_estudiante: string;
-  salon_estudiante: string;
+  grado: string;
+  salon: string;
 }
 
 interface Perfil {
@@ -107,7 +107,7 @@ const RegistroNormi = () => {
         fetchAllPages<Estudiante>((from, to) =>
           supabase
             .from("Estudiantes")
-            .select("id_estudiantil, nombres, nombres, apellidos, apellidos, grado_estudiante, salon_estudiante")
+            .select("id_estudiantil, nombres, nombres, apellidos, apellidos, grado, salon")
             .order("apellidos")
             .order("nombres")
             .range(from, to)
@@ -216,8 +216,8 @@ const RegistroNormi = () => {
   // Filtered students
   const filtered = useMemo(() => {
     return estudiantes.filter((e) => {
-      if (gradoFilter !== "todos" && e.grado_estudiante !== gradoFilter) return false;
-      if (salonFilter !== "todos" && e.salon_estudiante !== salonFilter) return false;
+      if (gradoFilter !== "todos" && e.grado !== gradoFilter) return false;
+      if (salonFilter !== "todos" && e.salon !== salonFilter) return false;
       if (search) {
         const hay = normalize(`${e.apellidos} ${e.nombres} ${e.id_estudiantil}`);
         if (!hay.includes(normalize(search))) return false;
@@ -383,8 +383,8 @@ const RegistroNormi = () => {
         id: e.id_estudiantil,
         apellidos: e.apellidos,
         nombres: e.nombres,
-        grado: e.grado_estudiante,
-        salon: e.salon_estudiante,
+        grado: e.grado,
+        salon: e.salon,
         estado: estudianteIdsRegistrados.has(e.id_estudiantil) ? "Registrado" : "No registrado",
       }));
       buildSheet("Estudiantes", "Registro en Normi — Estudiantes", cols, rows, "estado");
@@ -407,8 +407,8 @@ const RegistroNormi = () => {
             id: e.id_estudiantil,
             apellidos: e.apellidos,
             nombres: e.nombres,
-            grado: e.grado_estudiante,
-            salon: e.salon_estudiante,
+            grado: e.grado,
+            salon: e.salon,
             estado: "No registrado",
             padre: "",
             telefono: "",
@@ -419,8 +419,8 @@ const RegistroNormi = () => {
               id: e.id_estudiantil,
               apellidos: e.apellidos,
               nombres: e.nombres,
-              grado: e.grado_estudiante,
-              salon: e.salon_estudiante,
+              grado: e.grado,
+              salon: e.salon,
               estado: "Registrado",
               padre: p.padre_nombre,
               telefono: p.telefono,
@@ -599,8 +599,8 @@ const RegistroNormi = () => {
                             <TableCell className="font-medium whitespace-nowrap">
                               {e.apellidos}, {e.nombres}
                             </TableCell>
-                            <TableCell className="whitespace-nowrap">{e.grado_estudiante}</TableCell>
-                            <TableCell>{e.salon_estudiante}</TableCell>
+                            <TableCell className="whitespace-nowrap">{e.grado}</TableCell>
+                            <TableCell>{e.salon}</TableCell>
                             <TableCell className="text-center">
                               <Badge className={`w-20 justify-center ${registrado
                                 ? "bg-green-500 hover:bg-green-600 text-white"
@@ -662,8 +662,8 @@ const RegistroNormi = () => {
                             <TableCell className="font-medium whitespace-nowrap">
                               {e.apellidos}, {e.nombres}
                             </TableCell>
-                            <TableCell className="whitespace-nowrap">{e.grado_estudiante}</TableCell>
-                            <TableCell>{e.salon_estudiante}</TableCell>
+                            <TableCell className="whitespace-nowrap">{e.grado}</TableCell>
+                            <TableCell>{e.salon}</TableCell>
                             <TableCell>
                               <Badge className={`w-20 justify-center text-center ${parentInfo
                                 ? "bg-green-500 hover:bg-green-600 text-white"
