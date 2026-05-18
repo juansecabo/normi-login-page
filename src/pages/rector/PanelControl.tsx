@@ -78,12 +78,15 @@ interface Estudiante {
   nivel_estudiante: string;
   grado_estudiante: string;
   salon_estudiante: string;
-  nombre_acudiente: string | null;
-  telefono_acudiente: string[] | null;
-  nombre_acudiente2: string | null;
-  telefono_acudiente2: string[] | null;
-  nombre_acudiente3: string | null;
-  telefono_acudiente3: string[] | null;
+  acudiente1_nombres: string | null;
+  acudiente1_apellidos: string | null;
+  acudiente1_telefono: string | null;
+  acudiente2_nombres: string | null;
+  acudiente2_apellidos: string | null;
+  acudiente2_telefono: string | null;
+  acudiente3_nombres: string | null;
+  acudiente3_apellidos: string | null;
+  acudiente3_telefono: string | null;
 }
 
 interface Interno {
@@ -322,7 +325,7 @@ const PanelControl = () => {
     const data = await fetchAllPages((from, to) =>
       supabase
         .from("Estudiantes")
-        .select("id_estudiantil, nombre_estudiante, apellidos_estudiante, nivel_estudiante, grado_estudiante, salon_estudiante, nombre_acudiente, telefono_acudiente, nombre_acudiente2, telefono_acudiente2, nombre_acudiente3, telefono_acudiente3")
+        .select("id_estudiantil, nombre_estudiante, apellidos_estudiante, nivel_estudiante, grado_estudiante, salon_estudiante, acudiente1_nombres, acudiente1_apellidos, acudiente1_telefono, acudiente2_nombres, acudiente2_apellidos, acudiente2_telefono, acudiente3_nombres, acudiente3_apellidos, acudiente3_telefono")
         .order("apellidos_estudiante")
         .order("nombre_estudiante")
         .range(from, to)
@@ -377,12 +380,14 @@ const PanelControl = () => {
       setEstApellidos(est.apellidos_estudiante || "");
       setEstGrado(est.grado_estudiante || "");
       setEstSalon(est.salon_estudiante || "");
-      setEstAcu1Nombre(est.nombre_acudiente || "");
-      setEstAcu1Tel((est.telefono_acudiente || []).join(", "));
-      setEstAcu2Nombre(est.nombre_acudiente2 || "");
-      setEstAcu2Tel((est.telefono_acudiente2 || []).join(", "));
-      setEstAcu3Nombre(est.nombre_acudiente3 || "");
-      setEstAcu3Tel((est.telefono_acudiente3 || []).join(", "));
+      const joinName = (n: string | null, a: string | null) =>
+        [n, a].filter((x) => x && String(x).trim()).map((x) => String(x).trim()).join(" ");
+      setEstAcu1Nombre(joinName(est.acudiente1_nombres, est.acudiente1_apellidos));
+      setEstAcu1Tel(est.acudiente1_telefono || "");
+      setEstAcu2Nombre(joinName(est.acudiente2_nombres, est.acudiente2_apellidos));
+      setEstAcu2Tel(est.acudiente2_telefono || "");
+      setEstAcu3Nombre(joinName(est.acudiente3_nombres, est.acudiente3_apellidos));
+      setEstAcu3Tel(est.acudiente3_telefono || "");
     } else {
       setEditingEst(null);
       setEstId("");
@@ -411,11 +416,23 @@ const PanelControl = () => {
       return;
     }
     setSavingEst(true);
-    const parseTelefonos = (s: string): string[] | null => {
-      const arr = s.split(",").map(t => t.trim()).filter(Boolean);
-      return arr.length > 0 ? arr : null;
-    };
     const nullIfEmpty = (s: string) => (s.trim() ? s.trim() : null);
+    const cleanPhone = (s: string) => {
+      const first = s.split(",")[0]?.trim() || "";
+      return first || null;
+    };
+    const splitName = (s: string): { nombres: string | null; apellidos: string | null } => {
+      const t = s.trim().replace(/\s+/g, " ");
+      if (!t) return { nombres: null, apellidos: null };
+      const parts = t.split(" ");
+      if (parts.length <= 2) return { nombres: parts.join(" "), apellidos: null };
+      const apellidos = parts.slice(-2).join(" ");
+      const nombres = parts.slice(0, -2).join(" ");
+      return { nombres, apellidos };
+    };
+    const a1 = splitName(estAcu1Nombre);
+    const a2 = splitName(estAcu2Nombre);
+    const a3 = splitName(estAcu3Nombre);
     const payload = {
       id_estudiantil: Number(estId),
       nombre_estudiante: estNombre.trim(),
@@ -423,12 +440,15 @@ const PanelControl = () => {
       nivel_estudiante: nivel,
       grado_estudiante: estGrado,
       salon_estudiante: estSalon,
-      nombre_acudiente: nullIfEmpty(estAcu1Nombre),
-      telefono_acudiente: parseTelefonos(estAcu1Tel),
-      nombre_acudiente2: nullIfEmpty(estAcu2Nombre),
-      telefono_acudiente2: parseTelefonos(estAcu2Tel),
-      nombre_acudiente3: nullIfEmpty(estAcu3Nombre),
-      telefono_acudiente3: parseTelefonos(estAcu3Tel),
+      acudiente1_nombres: a1.nombres,
+      acudiente1_apellidos: a1.apellidos,
+      acudiente1_telefono: cleanPhone(estAcu1Tel),
+      acudiente2_nombres: a2.nombres,
+      acudiente2_apellidos: a2.apellidos,
+      acudiente2_telefono: cleanPhone(estAcu2Tel),
+      acudiente3_nombres: a3.nombres,
+      acudiente3_apellidos: a3.apellidos,
+      acudiente3_telefono: cleanPhone(estAcu3Tel),
     };
 
     let error;
@@ -1498,8 +1518,7 @@ const PanelControl = () => {
             <div className="pt-2 border-t">
               <h3 className="text-sm font-semibold mb-2">Acudientes</h3>
               <p className="text-xs text-muted-foreground mb-3">
-                Para varios teléfonos en un mismo acudiente, sepáralos con coma.
-                Deja los campos vacíos si no aplica.
+                Un teléfono por acudiente. Deja los campos vacíos si no aplica.
               </p>
 
               {[
@@ -1517,11 +1536,11 @@ const PanelControl = () => {
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">{a.label} · Teléfono(s)</Label>
+                    <Label className="text-xs">{a.label} · Teléfono</Label>
                     <Input
                       value={a.tel}
                       onChange={(e) => a.setTel(e.target.value)}
-                      placeholder="Ej: 3001234567, 3109876543"
+                      placeholder="Ej: 3001234567"
                     />
                   </div>
                 </div>

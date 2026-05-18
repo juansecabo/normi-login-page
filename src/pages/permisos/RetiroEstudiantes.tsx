@@ -93,17 +93,17 @@ const RetiroEstudiantes = () => {
     if (tab === "historial") fetchHistorial();
   }, [tab]);
 
-  // Fetch telefono_acudiente when hijo is selected
+  // Fetch acudiente1_telefono when hijo is selected
   useEffect(() => {
     if (!hijoSeleccionado) return;
     const fetchTelefono = async () => {
       const { data } = await supabase
         .from("Estudiantes")
-        .select("telefono_acudiente")
+        .select("acudiente1_telefono")
         .eq("id_estudiantil", hijoSeleccionado.id)
         .maybeSingle();
-      if (data?.telefono_acudiente?.length > 0) {
-        setTelefonoAcudiente(data.telefono_acudiente[0]);
+      if (data?.acudiente1_telefono) {
+        setTelefonoAcudiente(data.acudiente1_telefono);
       }
     };
     fetchTelefono();

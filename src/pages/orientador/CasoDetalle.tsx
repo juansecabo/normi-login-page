@@ -23,12 +23,15 @@ interface Estudiante {
   apellidos_estudiante: string;
   grado_estudiante: string;
   salon_estudiante: string;
-  nombre_acudiente?: string | null;
-  telefono_acudiente?: string[] | null;
-  nombre_acudiente2?: string | null;
-  telefono_acudiente2?: string[] | null;
-  nombre_acudiente3?: string | null;
-  telefono_acudiente3?: string[] | null;
+  acudiente1_nombres?: string | null;
+  acudiente1_apellidos?: string | null;
+  acudiente1_telefono?: string | null;
+  acudiente2_nombres?: string | null;
+  acudiente2_apellidos?: string | null;
+  acudiente2_telefono?: string | null;
+  acudiente3_nombres?: string | null;
+  acudiente3_apellidos?: string | null;
+  acudiente3_telefono?: string | null;
 }
 
 interface Seguimiento {
@@ -357,7 +360,7 @@ const CasoDetalle = () => {
     setCaso(data as Caso);
     // Buscar el estudiante para tener acudientes al editar
     const { data: e } = await supabase.from("Estudiantes")
-      .select("id_estudiantil, nombre_estudiante, apellidos_estudiante, grado_estudiante, salon_estudiante, nombre_acudiente, telefono_acudiente, nombre_acudiente2, telefono_acudiente2, nombre_acudiente3, telefono_acudiente3")
+      .select("id_estudiantil, nombre_estudiante, apellidos_estudiante, grado_estudiante, salon_estudiante, acudiente1_nombres, acudiente1_apellidos, acudiente1_telefono, acudiente2_nombres, acudiente2_apellidos, acudiente2_telefono, acudiente3_nombres, acudiente3_apellidos, acudiente3_telefono")
       .eq("id_estudiantil", data.estudiante_id).maybeSingle();
     setEstudiante((e as Estudiante) || null);
     setLoading(false);
@@ -366,12 +369,13 @@ const CasoDetalle = () => {
   const acudientesEstudiante = useMemo(() => {
     if (!estudiante) return [] as { nombre: string; telefono: string }[];
     const list: { nombre: string; telefono: string }[] = [];
-    const push = (n?: string | null, t?: string[] | null) => {
-      if (n && n.trim()) list.push({ nombre: n.trim(), telefono: (t && t[0]) ? String(t[0]) : "" });
+    const push = (nom?: string | null, ape?: string | null, tel?: string | null) => {
+      const full = [nom, ape].filter((x) => x && String(x).trim()).map((x) => String(x).trim()).join(" ");
+      if (full) list.push({ nombre: full, telefono: tel ? String(tel) : "" });
     };
-    push(estudiante.nombre_acudiente, estudiante.telefono_acudiente);
-    push(estudiante.nombre_acudiente2, estudiante.telefono_acudiente2);
-    push(estudiante.nombre_acudiente3, estudiante.telefono_acudiente3);
+    push(estudiante.acudiente1_nombres, estudiante.acudiente1_apellidos, estudiante.acudiente1_telefono);
+    push(estudiante.acudiente2_nombres, estudiante.acudiente2_apellidos, estudiante.acudiente2_telefono);
+    push(estudiante.acudiente3_nombres, estudiante.acudiente3_apellidos, estudiante.acudiente3_telefono);
     return list;
   }, [estudiante]);
 

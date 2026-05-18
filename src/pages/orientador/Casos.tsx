@@ -29,12 +29,15 @@ interface Estudiante {
   grado_estudiante: string;
   salon_estudiante: string;
   fecha_de_nacimiento?: string | null;
-  nombre_acudiente?: string | null;
-  telefono_acudiente?: string[] | null;
-  nombre_acudiente2?: string | null;
-  telefono_acudiente2?: string[] | null;
-  nombre_acudiente3?: string | null;
-  telefono_acudiente3?: string[] | null;
+  acudiente1_nombres?: string | null;
+  acudiente1_apellidos?: string | null;
+  acudiente1_telefono?: string | null;
+  acudiente2_nombres?: string | null;
+  acudiente2_apellidos?: string | null;
+  acudiente2_telefono?: string | null;
+  acudiente3_nombres?: string | null;
+  acudiente3_apellidos?: string | null;
+  acudiente3_telefono?: string | null;
 }
 
 // Hoy en zona de Bogotá (independiente del navegador)
@@ -276,12 +279,13 @@ const Casos = () => {
   const acudientesEstudiante = useMemo(() => {
     if (!estSeleccionado) return [] as { nombre: string; telefono: string }[];
     const list: { nombre: string; telefono: string }[] = [];
-    const push = (n?: string | null, t?: string[] | null) => {
-      if (n && n.trim()) list.push({ nombre: n.trim(), telefono: (t && t[0]) ? String(t[0]) : "" });
+    const push = (nom?: string | null, ape?: string | null, tel?: string | null) => {
+      const full = [nom, ape].filter((x) => x && String(x).trim()).map((x) => String(x).trim()).join(" ");
+      if (full) list.push({ nombre: full, telefono: tel ? String(tel) : "" });
     };
-    push(estSeleccionado.nombre_acudiente, estSeleccionado.telefono_acudiente);
-    push(estSeleccionado.nombre_acudiente2, estSeleccionado.telefono_acudiente2);
-    push(estSeleccionado.nombre_acudiente3, estSeleccionado.telefono_acudiente3);
+    push(estSeleccionado.acudiente1_nombres, estSeleccionado.acudiente1_apellidos, estSeleccionado.acudiente1_telefono);
+    push(estSeleccionado.acudiente2_nombres, estSeleccionado.acudiente2_apellidos, estSeleccionado.acudiente2_telefono);
+    push(estSeleccionado.acudiente3_nombres, estSeleccionado.acudiente3_apellidos, estSeleccionado.acudiente3_telefono);
     return list;
   }, [estSeleccionado]);
 

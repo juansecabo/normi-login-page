@@ -58,8 +58,8 @@ const JustificacionUniforme = () => {
 
   useEffect(() => {
     if (!hijoSeleccionado) return;
-    supabase.from("Estudiantes").select("telefono_acudiente").eq("id_estudiantil", hijoSeleccionado.id).maybeSingle()
-      .then(({ data }) => { if (data?.telefono_acudiente?.length > 0) setTelefonoAcudiente(data.telefono_acudiente[0]); });
+    supabase.from("Estudiantes").select("acudiente1_telefono").eq("id_estudiantil", hijoSeleccionado.id).maybeSingle()
+      .then(({ data }) => { if (data?.acudiente1_telefono) setTelefonoAcudiente(data.acudiente1_telefono); });
   }, [hijoSeleccionado]);
 
   const fetchHistorial = async () => {
