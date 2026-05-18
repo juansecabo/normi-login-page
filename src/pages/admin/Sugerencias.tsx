@@ -142,7 +142,7 @@ const Sugerencias = () => {
                       onClick={async () => {
                         setSelected(s);
                         setSelectedTelefono(null);
-                        // Fase 10: el teléfono vive en Usuarios (global)
+                        // El teléfono vive en Usuarios (global). Fallback a Internos si no.
                         const { data: usuario } = await supabase
                           .from('Usuarios')
                           .select('numero_de_telefono')
@@ -152,22 +152,12 @@ const Sugerencias = () => {
                           setSelectedTelefono(usuario.numero_de_telefono);
                           return;
                         }
-                        // Fallback legacy: buscar en tablas operativas
-                        const { data: perfil } = await supabase
-                          .from('Perfiles_Generales')
+                        const { data: interno } = await supabase
+                          .from('Internos')
                           .select('numero_de_telefono')
-                          .or(`estudiante_id.eq.${s.id},padre_id.eq.${s.id}`)
+                          .eq('id', s.id)
                           .maybeSingle();
-                        if (perfil?.numero_de_telefono) {
-                          setSelectedTelefono(perfil.numero_de_telefono);
-                        } else {
-                          const { data: interno } = await supabase
-                            .from('Internos')
-                            .select('numero_de_telefono')
-                            .eq('id', s.id)
-                            .maybeSingle();
-                          if (interno?.numero_de_telefono) setSelectedTelefono(interno.numero_de_telefono);
-                        }
+                        if (interno?.numero_de_telefono) setSelectedTelefono(interno.numero_de_telefono);
                       }}
                     >
                       <TableCell className="text-xs whitespace-nowrap">

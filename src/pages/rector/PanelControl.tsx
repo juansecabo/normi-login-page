@@ -353,11 +353,10 @@ const PanelControl = () => {
   };
 
   const fetchPerfiles = async () => {
+    // Perfiles_Generales fue eliminada. La sección de Perfiles legacy queda vacía;
+    // los perfiles ahora se gestionan vía Estudiantes/Acudientes en este mismo panel.
     setLoadingPerf(true);
-    const data = await fetchAllPages((from, to) =>
-      supabase.from("Perfiles_Generales").select("*").order("numero_de_telefono").range(from, to)
-    );
-    setPerfiles(data);
+    setPerfiles([]);
     setLoadingPerf(false);
   };
 
@@ -868,19 +867,9 @@ const PanelControl = () => {
       }
     }
 
-    let error;
-    if (editingPerf) {
-      ({ error } = await supabase
-        .from("Perfiles_Generales")
-        .update(payload)
-        .eq("numero_de_telefono", editingPerf.numero_de_telefono));
-    } else {
-      ({ error } = await supabase.from("Perfiles_Generales").insert(payload));
-    }
+    let error: { message: string } | null = null;
 
-    // Fase 10: además del INSERT/UPDATE a PG (compat), escribir el modelo nuevo
-    // (Usuarios + Estudiantes/Acudientes). El trigger DB ya sincroniza pero hacemos
-    // explícito para asegurar consistencia desde el admin panel.
+    // Escribir directamente al modelo nuevo (Usuarios + Estudiantes/Acudientes).
     if (!error) {
       try {
         if (perfTipo === "Estudiante" && perfEstId) {
@@ -967,15 +956,12 @@ const PanelControl = () => {
         await supabase.from("Usuarios").delete().eq("id", showDeletePerf.padre_id);
       }
     } catch (e) {
-      console.error("[deletePerfil dual-delete] Error borrando modelo nuevo:", e);
+      console.error("[deletePerfil] Error borrando modelo nuevo:", e);
     }
-    const { error } = await supabase
-      .from("Perfiles_Generales")
-      .delete()
-      .eq("numero_de_telefono", showDeletePerf.numero_de_telefono);
     setSavingPerf(false);
+    const error = null;
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: (error as any).message, variant: "destructive" });
       return;
     }
     toast({ title: "Perfil eliminado" });

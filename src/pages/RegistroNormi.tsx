@@ -99,34 +99,26 @@ const RegistroNormi = () => {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("estudiantes");
 
-  // Fetch data — Fase 10: combina Perfiles_Generales (legacy) + Acudientes + Estudiantes con teléfono
+  // Fetch data — Acudientes + Estudiantes con teléfono
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const [est, perfLegacy, acuds, ests] = await Promise.all([
+      const [est, acuds, ests] = await Promise.all([
         fetchAllPages<Estudiante>((from, to) =>
           supabase
             .from("Estudiantes")
-            .select("id, nombres, nombres, apellidos, apellidos, grado, salon")
+            .select("id, nombres, apellidos, grado, salon")
             .order("apellidos")
             .order("nombres")
             .range(from, to)
         ),
-        // Legacy: padres todavía en PG
-        fetchAllPages<Perfil>((from, to) =>
-          supabase
-            .from("Perfiles_Generales")
-            .select("perfil, estudiante_id, padre_estudiante1_id, padre_estudiante2_id, padre_estudiante3_id, padre_estudiante4_id, padre_nombre, numero_de_telefono")
-            .range(from, to)
-        ),
-        // Nuevo: acudientes en Acudientes
         fetchAllPages<any>((from, to) =>
           supabase
             .from("Acudientes")
             .select("id, acudido1_id, acudido2_id, acudido3_id, acudido4_id")
             .range(from, to)
         ),
-        // Estudiantes con teléfono = registrados (modelo nuevo)
+        // Estudiantes con teléfono = registrados
         fetchAllPages<any>((from, to) =>
           supabase
             .from("Estudiantes")
@@ -172,8 +164,7 @@ const RegistroNormi = () => {
         numero_de_telefono: e.numero_de_telefono,
       } as Perfil));
 
-      // Combinar — legacy PG + nuevos Acudientes + Estudiantes (de-duplicar más adelante por estudiante_id/padre_estudianteN_id)
-      const combinados = [...(perfLegacy as Perfil[]), ...perfilesAcudientes, ...perfilesEstudiantes];
+      const combinados = [...perfilesAcudientes, ...perfilesEstudiantes];
 
       setEstudiantes(est);
       setPerfiles(combinados);

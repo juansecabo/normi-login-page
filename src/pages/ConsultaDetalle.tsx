@@ -120,7 +120,7 @@ interface AcudienteEnTabla {
   firma_url: string | null;
   firma_nombre: string | null;
   fecha_respuesta: string | null;
-  registrado: boolean; // si está registrado en Perfiles_Generales
+  registrado: boolean; // si tiene contraseña en Usuarios
 }
 
 interface EstudianteEnTabla {
@@ -227,15 +227,11 @@ export default function ConsultaDetalle() {
       setPadres([]);
     }
 
-    // 3. Cargar padres que tienen alguno de estos estudiantes como hijo.
-    //    Fase 10: buscar en Acudientes + JOIN con Usuarios + Estudiantes.
-    //    Fallback legacy a Perfiles_Generales para padres aún no migrados.
+    // 3. Cargar padres que tienen alguno de estos estudiantes como hijo (Acudientes).
     if (ests && ests.length > 0) {
       const idsEst = ests.map((e: any) => e.id);
-      // Mapa id → datos crudos del acudiente (acudidos)
       const acudientesMap = new Map<string, any>();
 
-      // Buscar en Acudientes (modelo nuevo)
       const cols = ["acudido1_id", "acudido2_id", "acudido3_id", "acudido4_id"] as const;
       await Promise.all(
         cols.map(async (col) => {
@@ -246,30 +242,6 @@ export default function ConsultaDetalle() {
           (data || []).forEach((a: any) => {
             if (a.id && !acudientesMap.has(a.id)) {
               acudientesMap.set(a.id, a);
-            }
-          });
-        })
-      );
-
-      // Fallback legacy: padres todavía solo en Perfiles_Generales
-      const legacyCols = ["padre_estudiante1_id", "padre_estudiante2_id", "padre_estudiante3_id", "padre_estudiante4_id"] as const;
-      await Promise.all(
-        legacyCols.map(async (col) => {
-          const { data } = await supabase
-            .from("Perfiles_Generales")
-            .select("padre_id, numero_de_telefono, padre_nombre, padre_estudiante1_id, padre_estudiante1_nombre, padre_estudiante1_apellidos, padre_estudiante1_grado, padre_estudiante1_salon, padre_estudiante2_id, padre_estudiante2_nombre, padre_estudiante2_apellidos, padre_estudiante2_grado, padre_estudiante2_salon, padre_estudiante3_id, padre_estudiante3_nombre, padre_estudiante3_apellidos, padre_estudiante3_grado, padre_estudiante3_salon, padre_estudiante4_id, padre_estudiante4_nombre, padre_estudiante4_apellidos, padre_estudiante4_grado, padre_estudiante4_salon")
-            .eq("perfil", "Padre de familia")
-            .in(col, idsEst);
-          (data || []).forEach((p: any) => {
-            if (p.padre_id && !acudientesMap.has(p.padre_id)) {
-              acudientesMap.set(p.padre_id, {
-                id: p.padre_id,
-                acudido1_id: p.padre_estudiante1_id,
-                acudido2_id: p.padre_estudiante2_id,
-                acudido3_id: p.padre_estudiante3_id,
-                acudido4_id: p.padre_estudiante4_id,
-                _legacy: p,
-              });
             }
           });
         })

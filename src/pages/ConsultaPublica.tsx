@@ -276,24 +276,12 @@ export default function ConsultaPublica() {
           .eq("id", session.id)
           .maybeSingle();
 
-        let hijoIds: (number | null)[] = [];
-        if (acudiente) {
-          hijoIds = [acudiente.acudido1_id, acudiente.acudido2_id, acudiente.acudido3_id, acudiente.acudido4_id];
-        } else {
-          // Fallback legacy (mientras dure la transición a Acudientes)
-          const { data: perfilPadre } = await supabase
-            .from("Perfiles_Generales")
-            .select("padre_id, padre_estudiante1_id, padre_estudiante2_id, padre_estudiante3_id, padre_estudiante4_id")
-            .eq("padre_id", session.id)
-            .eq("perfil", "Padre de familia")
-            .maybeSingle();
-          if (!perfilPadre) {
-            setError("No se pudo cargar su perfil de acudiente.");
-            setLoading(false);
-            return;
-          }
-          hijoIds = [(perfilPadre as any).padre_estudiante1_id, (perfilPadre as any).padre_estudiante2_id, (perfilPadre as any).padre_estudiante3_id, (perfilPadre as any).padre_estudiante4_id];
+        if (!acudiente) {
+          setError("No se pudo cargar su perfil de acudiente.");
+          setLoading(false);
+          return;
         }
+        const hijoIds: (number | null)[] = [acudiente.acudido1_id, acudiente.acudido2_id, acudiente.acudido3_id, acudiente.acudido4_id];
 
         const padreId = session.id;
         setRespondenteId(padreId);
@@ -304,7 +292,7 @@ export default function ConsultaPublica() {
         if (idsValidos.length > 0) {
           const { data } = await supabase
             .from("Estudiantes")
-            .select("id, nombres, nombres, apellidos, apellidos, grado, salon")
+            .select("id, nombres, apellidos, grado, salon")
             .in("id", idsValidos);
           hijosData = data || [];
         }

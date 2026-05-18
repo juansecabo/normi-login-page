@@ -97,14 +97,8 @@ const CambiarContrasenaModal = ({ open, onOpenChange }: CambiarContrasenaModalPr
         return;
       }
 
-      // 3. Compat: actualizar también en tablas operativas (mientras dure la transición)
-      // Estos updates son silenciosos — si la fila no existe, no pasa nada.
-      await Promise.allSettled([
-        supabase.from("Internos").update({ contrasena: nuevaContrasena }).eq("id", parseInt(session.id)),
-        supabase.from("Perfiles_Generales")
-          .update({ contrasena: nuevaContrasena })
-          .or(`estudiante_id.eq.${session.id},padre_id.eq.${session.id}`),
-      ]);
+      // Compat: actualizar también en Internos (si el usuario es interno, la fila existe).
+      await supabase.from("Internos").update({ contrasena: nuevaContrasena }).eq("id", parseInt(session.id));
 
       setSuccess("Contraseña actualizada correctamente");
       setContrasenaActual("");
