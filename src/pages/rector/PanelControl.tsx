@@ -72,7 +72,7 @@ function getNivelFromGrado(grado: string): string | null {
 // ─── Interfaces ──────────────────────────────────────────────────────────────
 
 interface Estudiante {
-  id_estudiantil: number;
+  id: number;
   nombres: string;
   apellidos: string;
   nivel: string;
@@ -305,7 +305,7 @@ const PanelControl = () => {
     if (!idStr.trim()) { clear(); return; }
     const num = parseInt(idStr);
     if (!num || isNaN(num)) { clear(); return; }
-    const est = estudiantes.find((e) => e.id_estudiantil === num);
+    const est = estudiantes.find((e) => e.id === num);
     if (est) {
       setNombre(est.nombres || "");
       setApellidos(est.apellidos || "");
@@ -325,7 +325,7 @@ const PanelControl = () => {
     const data = await fetchAllPages((from, to) =>
       supabase
         .from("Estudiantes")
-        .select("id_estudiantil, nombres, apellidos, nivel, grado, salon, acudiente1_nombres, acudiente1_apellidos, acudiente1_telefono, acudiente2_nombres, acudiente2_apellidos, acudiente2_telefono, acudiente3_nombres, acudiente3_apellidos, acudiente3_telefono")
+        .select("id, nombres, apellidos, nivel, grado, salon, acudiente1_nombres, acudiente1_apellidos, acudiente1_telefono, acudiente2_nombres, acudiente2_apellidos, acudiente2_telefono, acudiente3_nombres, acudiente3_apellidos, acudiente3_telefono")
         .order("apellidos")
         .order("nombres")
         .range(from, to)
@@ -375,7 +375,7 @@ const PanelControl = () => {
   const openEstDialog = (est?: Estudiante) => {
     if (est) {
       setEditingEst(est);
-      setEstId(String(est.id_estudiantil));
+      setEstId(String(est.id));
       setEstNombre(est.nombres || "");
       setEstApellidos(est.apellidos || "");
       setEstGrado(est.grado || "");
@@ -434,7 +434,7 @@ const PanelControl = () => {
     const a2 = splitName(estAcu2Nombre);
     const a3 = splitName(estAcu3Nombre);
     const payload = {
-      id_estudiantil: Number(estId),
+      id: Number(estId),
       nombres: estNombre.trim(),
       apellidos: estApellidos.trim(),
       nivel: nivel,
@@ -456,7 +456,7 @@ const PanelControl = () => {
       ({ error } = await supabase
         .from("Estudiantes")
         .update(payload)
-        .eq("id_estudiantil", editingEst.id_estudiantil));
+        .eq("id", editingEst.id));
     } else {
       ({ error } = await supabase.from("Estudiantes").insert(payload));
     }
@@ -481,7 +481,7 @@ const PanelControl = () => {
     const { error } = await supabase
       .from("Estudiantes")
       .delete()
-      .eq("id_estudiantil", showDeleteEst.id_estudiantil);
+      .eq("id", showDeleteEst.id);
     setSavingEst(false);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -896,7 +896,7 @@ const PanelControl = () => {
           // Update Estudiantes con el teléfono
           await supabase.from("Estudiantes")
             .update({ numero_de_telefono: tel })
-            .eq("id_estudiantil", Number(perfEstId));
+            .eq("id", Number(perfEstId));
         } else if (perfTipo === "Padre de familia" && perfPadreId) {
           // Separar nombres y apellidos heurísticamente (últimas 2 palabras = apellidos)
           const words = perfPadreNombre.trim().split(/\s+/);
@@ -915,7 +915,7 @@ const PanelControl = () => {
           if (refHijoId) {
             const { data: refEst } = await supabase.from("Estudiantes")
               .select("colegio_id")
-              .eq("id_estudiantil", refHijoId)
+              .eq("id", refHijoId)
               .single();
             const colegio_id_acud = refEst?.colegio_id;
             if (colegio_id_acud) {
@@ -958,7 +958,7 @@ const PanelControl = () => {
         // Para estudiantes: NULLear teléfono en Estudiantes y borrar Usuarios si existe
         await supabase.from("Estudiantes")
           .update({ numero_de_telefono: null })
-          .eq("id_estudiantil", showDeletePerf.estudiante_id);
+          .eq("id", showDeletePerf.estudiante_id);
         // Opcional: borrar la fila de Usuarios (la persona deja de poder loguearse)
         await supabase.from("Usuarios").delete().eq("id", String(showDeletePerf.estudiante_id));
       } else if (showDeletePerf.perfil === "Padre de familia" && showDeletePerf.padre_id) {
@@ -1002,7 +1002,7 @@ const PanelControl = () => {
 
   const filteredEst = estudiantes.filter((e) =>
     matchesSearch(
-      `${e.apellidos} ${e.nombres} ${e.id_estudiantil} ${e.grado} ${e.salon}`,
+      `${e.apellidos} ${e.nombres} ${e.id} ${e.grado} ${e.salon}`,
       searchEst
     )
   );
@@ -1167,8 +1167,8 @@ const PanelControl = () => {
                         </TableRow>
                       ) : (
                         filteredEst.map((e) => (
-                          <TableRow key={e.id_estudiantil}>
-                            <TableCell className="font-mono">{e.id_estudiantil}</TableCell>
+                          <TableRow key={e.id}>
+                            <TableCell className="font-mono">{e.id}</TableCell>
                             <TableCell>{e.apellidos}</TableCell>
                             <TableCell>{e.nombres}</TableCell>
                             <TableCell>{e.grado}</TableCell>
@@ -1570,7 +1570,7 @@ const PanelControl = () => {
             <strong>
               {showDeleteEst?.apellidos} {showDeleteEst?.nombres}
             </strong>{" "}
-            (id {showDeleteEst?.id_estudiantil})?
+            (id {showDeleteEst?.id})?
           </p>
           <p className="text-sm text-destructive font-medium">
             Se eliminarán TODAS las notas de este estudiante.

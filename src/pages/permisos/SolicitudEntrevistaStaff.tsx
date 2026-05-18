@@ -15,7 +15,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-interface Estudiante { id_estudiantil: string; nombres: string; apellidos: string; grado: string; salon: string; }
+interface Estudiante { id: string; nombres: string; apellidos: string; grado: string; salon: string; }
 interface Interno { id: number; nombres: string; apellidos: string; cargo: string; }
 
 const GRADOS = ["Párvulo","Prejardín","Jardín","Transición","Primero","Segundo","Tercero","Cuarto","Quinto","Sexto","Séptimo","Octavo","Noveno","Décimo","Undécimo"];
@@ -75,7 +75,7 @@ const SolicitudEntrevistaStaff = () => {
   // Fetch students when grado/salon changes
   useEffect(() => {
     if (!grado || !salon) { setEstudiantes([]); setEstudianteSeleccionado(null); return; }
-    supabase.from("Estudiantes").select("id_estudiantil, nombres, apellidos, grado, salon")
+    supabase.from("Estudiantes").select("id, nombres, apellidos, grado, salon")
       .eq("grado", grado).eq("salon", salon)
       .order("apellidos").order("nombres")
       .then(({ data }) => { setEstudiantes(data || []); setEstudianteSeleccionado(null); });
@@ -156,11 +156,11 @@ const SolicitudEntrevistaStaff = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           remitente,
-          destinatarios: `Padre del estudiante con id ${estudianteSeleccionado.id_estudiantil}`,
+          destinatarios: `Padre del estudiante con id ${estudianteSeleccionado.id}`,
           mensaje,
           id_remitente: session.id,
           perfil: "Padre de familia",
-          id_estudiantil: String(estudianteSeleccionado.id_estudiantil),
+          id: String(estudianteSeleccionado.id),
         }),
       }).then(r => console.log("Webhook sent:", r.status)).catch(e => console.error("Webhook error:", e));
 
@@ -219,10 +219,10 @@ const SolicitudEntrevistaStaff = () => {
               {/* Estudiante */}
               <p>
                 PADRE/MADRE O ACUDIENTE DEL ESTUDIANTE: {" "}
-                <select value={String(estudianteSeleccionado?.id_estudiantil || "")} onChange={(e) => setEstudianteSeleccionado(estudiantes.find(est => String(est.id_estudiantil) === e.target.value) || null)}
+                <select value={String(estudianteSeleccionado?.id || "")} onChange={(e) => setEstudianteSeleccionado(estudiantes.find(est => String(est.id) === e.target.value) || null)}
                   className="inline px-2 py-1 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm min-w-[200px] cursor-pointer outline-none">
                   <option value="">Seleccionar</option>
-                  {estudiantes.map(e => <option key={e.id_estudiantil} value={String(e.id_estudiantil)}>{e.apellidos} {e.nombres}</option>)}
+                  {estudiantes.map(e => <option key={e.id} value={String(e.id)}>{e.apellidos} {e.nombres}</option>)}
                 </select>
               </p>
 

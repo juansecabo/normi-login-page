@@ -32,7 +32,7 @@ interface ConsultaRow {
 }
 
 interface EstudianteRow {
-  id_estudiantil: number;
+  id: number;
   nombres: string | null;
   apellidos: string | null;
   grado: string | null;
@@ -241,7 +241,7 @@ export default function Consultas() {
     (async () => {
       const { data, error } = await supabase
         .from("Estudiantes")
-        .select("id_estudiantil, nombres, apellidos, grado, salon, nivel")
+        .select("id, nombres, apellidos, grado, salon, nivel")
         .in("grado", gradosSel as any);
       if (!error && data) {
         setEstudiantesDelGrado(data as EstudianteRow[]);
@@ -330,7 +330,7 @@ export default function Consultas() {
   }, [estudiantesDelGrado, salonesMarcados]);
 
   useEffect(() => {
-    const disponiblesIds = new Set(estudiantesDisponibles.map((e) => e.id_estudiantil));
+    const disponiblesIds = new Set(estudiantesDisponibles.map((e) => e.id));
     setEstudiantesMarcados((prev) => {
       const next: Record<number, boolean> = {};
       Object.keys(prev).forEach((k) => {
@@ -625,7 +625,7 @@ export default function Consultas() {
         nivel: null,
         grado: null,
         salon: null,
-        id_estudiantil: null,
+        id: null,
       };
 
       const res = await fetch(webhookUrl, {
@@ -974,14 +974,14 @@ export default function Consultas() {
                               )
                             )
                             .map((e) => (
-                              <label key={e.id_estudiantil} className="flex items-center gap-2 text-sm cursor-pointer py-0.5">
+                              <label key={e.id} className="flex items-center gap-2 text-sm cursor-pointer py-0.5">
                                 <input
                                   type="checkbox"
-                                  checked={!!estudiantesMarcados[e.id_estudiantil]}
+                                  checked={!!estudiantesMarcados[e.id]}
                                   onChange={(ev) =>
                                     setEstudiantesMarcados({
                                       ...estudiantesMarcados,
-                                      [e.id_estudiantil]: ev.target.checked,
+                                      [e.id]: ev.target.checked,
                                     })
                                   }
                                 />

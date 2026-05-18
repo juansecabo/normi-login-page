@@ -8,7 +8,7 @@ import ComentarioModalReadOnly from "@/components/notas/ComentarioModalReadOnly"
 import { MessageSquare } from "lucide-react";
 
 interface Estudiante {
-  id_estudiantil: string;
+  id: string;
   apellidos: string;
   nombres: string;
 }
@@ -119,7 +119,7 @@ const TablaNotasReadOnly = () => {
         // Fetch estudiantes
         const { data: estudiantesData, error: estudiantesError } = await supabase
           .from('Estudiantes')
-          .select('id_estudiantil, apellidos, nombres')
+          .select('id, apellidos, nombres')
           .eq('grado', storedGrado)
           .eq('salon', storedSalon)
           .order('apellidos', { ascending: true })
@@ -418,9 +418,9 @@ const TablaNotasReadOnly = () => {
                     const rowBg = studentIndex % 2 === 0 ? 'bg-background' : 'bg-muted/30';
 
                     return (
-                      <tr key={estudiante.id_estudiantil} className={rowBg}>
+                      <tr key={estudiante.id} className={rowBg}>
                         <td className={`md:sticky md:left-0 z-10 border-r border-b border-border p-2 md:p-3 text-xs md:text-sm ${studentIndex % 2 === 0 ? 'bg-background' : 'bg-muted'}`}>
-                          {estudiante.id_estudiantil}
+                          {estudiante.id}
                         </td>
                         <td className={`md:sticky md:left-[100px] z-10 border-r border-b border-border p-2 md:p-3 text-xs md:text-sm font-medium ${studentIndex % 2 === 0 ? 'bg-background' : 'bg-muted'}`}>
                           {estudiante.apellidos}
@@ -430,8 +430,8 @@ const TablaNotasReadOnly = () => {
                         </td>
 
                             {getActividadesPorPeriodo(periodoActivo).map((actividad) => {
-                              const nota = notas[estudiante.id_estudiantil]?.[periodoActivo]?.[actividad.id];
-                              const comentario = comentarios[estudiante.id_estudiantil]?.[periodoActivo]?.[actividad.id];
+                              const nota = notas[estudiante.id]?.[periodoActivo]?.[actividad.id];
+                              const comentario = comentarios[estudiante.id]?.[periodoActivo]?.[actividad.id];
                               const tieneComentario = !!comentario;
 
                               return (
@@ -463,7 +463,7 @@ const TablaNotasReadOnly = () => {
                               );
                             })}
                             <td className="border-r border-b border-border p-2 text-center text-sm font-semibold bg-primary/5">
-                              {calcularFinalPeriodo(estudiante.id_estudiantil, periodoActivo)?.toFixed(1) || '—'}
+                              {calcularFinalPeriodo(estudiante.id, periodoActivo)?.toFixed(1) || '—'}
                             </td>
                       </tr>
                     );

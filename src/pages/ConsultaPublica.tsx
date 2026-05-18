@@ -178,12 +178,12 @@ export default function ConsultaPublica() {
           setLoading(false);
           return;
         }
-        // Cargar datos del estudiante desde Estudiantes (su id_estudiantil = session.id como number)
+        // Cargar datos del estudiante desde Estudiantes (su id = session.id como number)
         const estIdNum = Number(session.id);
         const { data: estData } = await supabase
           .from("Estudiantes")
-          .select("id_estudiantil, nombres, apellidos, grado, salon")
-          .eq("id_estudiantil", estIdNum)
+          .select("id, nombres, apellidos, grado, salon")
+          .eq("id", estIdNum)
           .maybeSingle();
         if (!estData) {
           setError("No se pudo cargar tu perfil de estudiante.");
@@ -191,7 +191,7 @@ export default function ConsultaPublica() {
           return;
         }
         if (!estudianteEnAudiencia(
-          (estData as any).id_estudiantil,
+          (estData as any).id,
           (estData as any).grado,
           (estData as any).salon,
           consultaRow
@@ -304,13 +304,13 @@ export default function ConsultaPublica() {
         if (idsValidos.length > 0) {
           const { data } = await supabase
             .from("Estudiantes")
-            .select("id_estudiantil, nombres, nombres, apellidos, apellidos, grado, salon")
-            .in("id_estudiantil", idsValidos);
+            .select("id, nombres, nombres, apellidos, apellidos, grado, salon")
+            .in("id", idsValidos);
           hijosData = data || [];
         }
 
         const hijoMap = new Map<string, any>();
-        for (const h of hijosData) hijoMap.set(String(h.id_estudiantil), h);
+        for (const h of hijosData) hijoMap.set(String(h.id), h);
 
         // Filtrar hijos que coinciden con la consulta
         const todosHijos: Respondent[] = [];

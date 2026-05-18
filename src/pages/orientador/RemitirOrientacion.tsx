@@ -12,7 +12,7 @@ import iconEntrevista from "@/assets/icons/entrevista.webp";
 import { notifyOrientadora } from "@/lib/notifyStaff";
 
 interface Estudiante {
-  id_estudiantil: number;
+  id: number;
   nombres: string;
   apellidos: string;
   grado: string;
@@ -81,7 +81,7 @@ const RemitirOrientacion = () => {
     const cargar = async () => {
       const [estsR, asigR, internoR] = await Promise.all([
         supabase.from("Estudiantes")
-          .select("id_estudiantil, nombres, apellidos, grado, salon")
+          .select("id, nombres, apellidos, grado, salon")
           .order("apellidos"),
         isProfesor()
           ? supabase.from("Asignación Profesores").select('"Grado(s)", "Salon(es)"').eq("id", parseInt(session.id!))
@@ -194,7 +194,7 @@ const RemitirOrientacion = () => {
     try {
       const base64 = firmaData.split(",")[1];
       const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
-      const fileName = `firmas-remisiones/${Date.now()}_${autor.id}_${estSeleccionado.id_estudiantil}.png`;
+      const fileName = `firmas-remisiones/${Date.now()}_${autor.id}_${estSeleccionado.id}.png`;
       const { error: upErr } = await supabase.storage
         .from("normi-archivos")
         .upload(fileName, bytes, { contentType: "image/png" });
@@ -211,7 +211,7 @@ const RemitirOrientacion = () => {
     // 2) Insert
     const docenteNombre = [autor.nombres, autor.apellidos].filter(Boolean).join(" ");
     const payload = {
-      estudiante_id: estSeleccionado.id_estudiantil,
+      estudiante_id: estSeleccionado.id,
       estudiante_nombre: estSeleccionado.nombres,
       estudiante_apellidos: estSeleccionado.apellidos,
       estudiante_grado: estSeleccionado.grado,
@@ -346,7 +346,7 @@ const RemitirOrientacion = () => {
                       <ul className="absolute left-0 right-0 top-full mt-1 max-h-60 overflow-auto bg-popover border rounded shadow-lg z-20">
                         {estudiantesBusqueda.map(e => (
                           <li
-                            key={e.id_estudiantil}
+                            key={e.id}
                             onMouseDown={() => seleccionarEstudiante(e)}
                             className="px-3 py-2 text-sm hover:bg-accent cursor-pointer"
                           >

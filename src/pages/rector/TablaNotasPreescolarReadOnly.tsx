@@ -8,7 +8,7 @@ import HeaderNormi from "@/components/HeaderNormi";
 import { Loader2 } from "lucide-react";
 
 interface Estudiante {
-  id_estudiantil: string;
+  id: string;
   apellidos: string;
   nombres: string;
 }
@@ -67,7 +67,7 @@ const TablaNotasPreescolarReadOnly = () => {
       try {
         const { data: estudiantesData, error: errEst } = await supabase
           .from("Estudiantes")
-          .select("id_estudiantil, apellidos, nombres")
+          .select("id, apellidos, nombres")
           .eq("grado", storedGrado)
           .eq("salon", storedSalon)
           .order("apellidos", { ascending: true })
@@ -191,12 +191,12 @@ const TablaNotasPreescolarReadOnly = () => {
         ) : (
           <div className="space-y-6">
             {estudiantes.map((est, idx) => {
-              const hayTextos = tieneTextos(est.id_estudiantil, periodoActivo);
-              const textosPeriodo = textos[est.id_estudiantil]?.[periodoActivo] || {};
+              const hayTextos = tieneTextos(est.id, periodoActivo);
+              const textosPeriodo = textos[est.id]?.[periodoActivo] || {};
 
               return (
                 <div
-                  key={est.id_estudiantil}
+                  key={est.id}
                   className="bg-card rounded-lg shadow-soft overflow-hidden"
                 >
                   <div className="p-4 bg-primary/5 border-b border-border">

@@ -23,7 +23,7 @@ const ESTADOS = [
 ];
 
 interface Estudiante {
-  id_estudiantil: number;
+  id: number;
   nombres: string;
   apellidos: string;
   grado: string;
@@ -207,7 +207,7 @@ const Casos = () => {
     setAutor({ id: session.id, nombre: `${session.nombres || ""} ${session.apellidos || ""}`.trim() });
     Promise.all([
       supabase.from("Casos_Orientacion").select("id, estudiante_id, estudiante_nombre, estudiante_apellidos, estudiante_grado, estudiante_salon, motivo_atencion, estado, fecha_apertura, created_at").order("created_at", { ascending: false }),
-      supabase.from("Estudiantes").select("id_estudiantil, nombres, apellidos, grado, salon").order("apellidos"),
+      supabase.from("Estudiantes").select("id, nombres, apellidos, grado, salon").order("apellidos"),
     ]).then(([cR, eR]) => {
       setCasos((cR.data || []) as Caso[]);
       setEstudiantes(eR.data || []);
@@ -292,7 +292,7 @@ const Casos = () => {
   // Snapshot para detectar cambios reales al cerrar el modal nuevo
   const initialSnapshotRef = useRef<string>("");
   const snapshotKey = () => JSON.stringify({
-    estId: estSeleccionado?.id_estudiantil ?? null,
+    estId: estSeleccionado?.id ?? null,
     fa: fechaApertura ? fmtLocal(fechaApertura) : null,
     f: { ...form, fecha_nacimiento: form.fecha_nacimiento ? fmtLocal(form.fecha_nacimiento) : null },
   });
@@ -328,7 +328,7 @@ const Casos = () => {
     }
     setGuardando(true);
     const payload: any = {
-      estudiante_id: estSeleccionado.id_estudiantil,
+      estudiante_id: estSeleccionado.id,
       estudiante_nombre: estSeleccionado.nombres,
       estudiante_apellidos: estSeleccionado.apellidos,
       estudiante_grado: estSeleccionado.grado,
@@ -475,7 +475,7 @@ const Casos = () => {
                   <div className="flex items-center justify-between border border-border rounded-md p-2 bg-card">
                     <div>
                       <p className="text-sm font-semibold">{estSeleccionado.apellidos} {estSeleccionado.nombres}</p>
-                      <p className="text-xs text-muted-foreground">Identificación: {estSeleccionado.id_estudiantil} · {estSeleccionado.grado} {estSeleccionado.salon}</p>
+                      <p className="text-xs text-muted-foreground">Identificación: {estSeleccionado.id} · {estSeleccionado.grado} {estSeleccionado.salon}</p>
                     </div>
                     <button onClick={() => { setEstSeleccionado(null); setEstBusqueda(""); }} className="text-xs text-primary hover:underline">Cambiar</button>
                   </div>
@@ -488,9 +488,9 @@ const Casos = () => {
                     {estudiantesBusqueda.length > 0 && (
                       <div className="border border-border rounded-md mt-1 max-h-48 overflow-y-auto bg-card">
                         {estudiantesBusqueda.map(e => (
-                          <button key={e.id_estudiantil} onClick={() => seleccionarEstudiante(e)} className="block w-full text-left px-3 py-2 text-sm hover:bg-muted/50">
+                          <button key={e.id} onClick={() => seleccionarEstudiante(e)} className="block w-full text-left px-3 py-2 text-sm hover:bg-muted/50">
                             {e.apellidos} {e.nombres}
-                            <span className="text-xs text-muted-foreground"> — {e.grado} {e.salon} · ID {e.id_estudiantil}</span>
+                            <span className="text-xs text-muted-foreground"> — {e.grado} {e.salon} · ID {e.id}</span>
                           </button>
                         ))}
                       </div>

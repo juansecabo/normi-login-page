@@ -20,7 +20,7 @@ import NotificacionModal from "@/components/notas/NotificacionModal";
 const N8N_WEBHOOK_URL = "https://n8n.notasnormi.com/webhook/notificar-preescolar";
 
 interface Estudiante {
-  id_estudiantil: string;
+  id: string;
   apellidos: string;
   nombres: string;
 }
@@ -108,7 +108,7 @@ const TablaNotasPreescolar = () => {
         // 1) Cargar estudiantes
         const { data: estudiantesData, error: errEst } = await supabase
           .from("Estudiantes")
-          .select("id_estudiantil, apellidos, nombres")
+          .select("id, apellidos, nombres")
           .eq("grado", storedGrado)
           .eq("salon", storedSalon)
           .order("apellidos", { ascending: true })
@@ -335,7 +335,7 @@ const TablaNotasPreescolar = () => {
 
   // Handler: notificar individual
   const handleNotificarIndividual = (estudiante: Estudiante, periodo: number) => {
-    if (!estudianteTieneAlgunTexto(estudiante.id_estudiantil, periodo)) {
+    if (!estudianteTieneAlgunTexto(estudiante.id, periodo)) {
       toast({
         title: "Sin textos",
         description: "Este estudiante no tiene textos en este periodo.",
@@ -351,7 +351,7 @@ const TablaNotasPreescolar = () => {
       tipo: "preescolar_individual",
       descripcion: `Se enviará el informe descriptivo del ${nombrePeriodo} al/los padre(s) de ${nombreCompleto}.`,
       nombreEstudiante: nombreCompleto,
-      estudiantesIds: [estudiante.id_estudiantil],
+      estudiantesIds: [estudiante.id],
       periodo,
     });
     setNotificacionOpen(true);
@@ -532,7 +532,7 @@ const TablaNotasPreescolar = () => {
           <div className="space-y-6">
             {estudiantes.map((est, idx) => (
               <div
-                key={est.id_estudiantil}
+                key={est.id}
                 className="bg-card rounded-lg shadow-soft overflow-hidden"
               >
                 {/* Header del estudiante */}
@@ -566,8 +566,8 @@ const TablaNotasPreescolar = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
                   {ACTIVIDADES_PREESCOLAR.map((act) => {
                     const valor =
-                      textos[est.id_estudiantil]?.[periodoActivo]?.[act.nombre] || "";
-                    const key = `${est.id_estudiantil}-${periodoActivo}-${act.nombre}`;
+                      textos[est.id]?.[periodoActivo]?.[act.nombre] || "";
+                    const key = `${est.id}-${periodoActivo}-${act.nombre}`;
                     const guardando = !!guardandoMap[key];
 
                     return (
@@ -590,7 +590,7 @@ const TablaNotasPreescolar = () => {
                             const nuevoValor = e.target.value;
                             if (nuevoValor.trim() === valor.trim()) return;
                             guardarTexto(
-                              est.id_estudiantil,
+                              est.id,
                               periodoActivo,
                               act.nombre,
                               nuevoValor

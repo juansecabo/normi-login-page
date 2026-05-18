@@ -104,7 +104,7 @@ const RetiroEstudiantes = () => {
       const { data } = await supabase
         .from("Estudiantes")
         .select("acudiente1_telefono")
-        .eq("id_estudiantil", hijoSeleccionado.id)
+        .eq("id", hijoSeleccionado.id)
         .maybeSingle();
       if (data?.acudiente1_telefono) {
         setTelefonoAcudiente(data.acudiente1_telefono);

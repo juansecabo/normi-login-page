@@ -18,7 +18,7 @@ const ESTADOS = [
 ];
 
 interface Estudiante {
-  id_estudiantil: number;
+  id: number;
   nombres: string;
   apellidos: string;
   grado: string;
@@ -360,8 +360,8 @@ const CasoDetalle = () => {
     setCaso(data as Caso);
     // Buscar el estudiante para tener acudientes al editar
     const { data: e } = await supabase.from("Estudiantes")
-      .select("id_estudiantil, nombres, apellidos, grado, salon, acudiente1_nombres, acudiente1_apellidos, acudiente1_telefono, acudiente2_nombres, acudiente2_apellidos, acudiente2_telefono, acudiente3_nombres, acudiente3_apellidos, acudiente3_telefono")
-      .eq("id_estudiantil", data.estudiante_id).maybeSingle();
+      .select("id, nombres, apellidos, grado, salon, acudiente1_nombres, acudiente1_apellidos, acudiente1_telefono, acudiente2_nombres, acudiente2_apellidos, acudiente2_telefono, acudiente3_nombres, acudiente3_apellidos, acudiente3_telefono")
+      .eq("id", data.estudiante_id).maybeSingle();
     setEstudiante((e as Estudiante) || null);
     setLoading(false);
   };

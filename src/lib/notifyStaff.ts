@@ -75,7 +75,7 @@ async function fetchWebhook(
       nivel: null,
       grado: null,
       salon: null,
-      id_estudiantil: null,
+      id: null,
       id_destinatarios: null,
     }),
   });

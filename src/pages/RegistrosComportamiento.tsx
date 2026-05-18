@@ -41,7 +41,7 @@ const GRADO_ORDEN: Record<string, number> = {
 const WEBHOOK_URL = "https://n8n.notasnormi.com/webhook/enviar-comunicado-admin";
 
 interface Estudiante {
-  id_estudiantil: number;
+  id: number;
   nombres: string;
   apellidos: string;
   grado: string;
@@ -273,7 +273,7 @@ const RegistrosComportamiento = () => {
     const cargar = async () => {
       const [regsR, estsR, asigR, internoR] = await Promise.all([
         supabase.from("Registros_Comportamiento").select("*").order("fecha", { ascending: false }).order("created_at", { ascending: false }),
-        supabase.from("Estudiantes").select("id_estudiantil, nombres, apellidos, grado, salon, fecha_de_nacimiento").order("apellidos"),
+        supabase.from("Estudiantes").select("id, nombres, apellidos, grado, salon, fecha_de_nacimiento").order("apellidos"),
         isProfesor()
           ? supabase.from("Asignación Profesores").select('"Asignatura(s)", "Grado(s)", "Salon(es)"').eq("id", parseInt(session.id!))
           : Promise.resolve({ data: [] as any[] }),
@@ -452,7 +452,7 @@ const RegistrosComportamiento = () => {
     setTipo(r.tipo);
     // Construir un Estudiante a partir de los datos del registro (snapshot)
     setEstSeleccionado({
-      id_estudiantil: r.estudiante_id,
+      id: r.estudiante_id,
       nombres: r.estudiante_nombre,
       apellidos: r.estudiante_apellidos,
       grado: r.estudiante_grado,
@@ -510,7 +510,7 @@ const RegistrosComportamiento = () => {
 
     const payload: any = {
       tipo,
-      estudiante_id: estSeleccionado.id_estudiantil,
+      estudiante_id: estSeleccionado.id,
       estudiante_nombre: estSeleccionado.nombres,
       estudiante_apellidos: estSeleccionado.apellidos,
       estudiante_grado: estSeleccionado.grado,
@@ -676,7 +676,7 @@ const RegistrosComportamiento = () => {
                       {estFocused && estudiantesBusqueda.length > 0 && (
                         <div className="absolute top-full left-0 right-0 mt-1 z-20 border border-border rounded-md max-h-64 overflow-y-auto bg-card shadow-md">
                           {estudiantesBusqueda.map(e => (
-                            <button key={e.id_estudiantil} onMouseDown={(ev) => { ev.preventDefault(); seleccionarEstudiante(e); }} className="block w-full text-left px-3 py-2 text-sm hover:bg-muted/50">
+                            <button key={e.id} onMouseDown={(ev) => { ev.preventDefault(); seleccionarEstudiante(e); }} className="block w-full text-left px-3 py-2 text-sm hover:bg-muted/50">
                               {e.apellidos} {e.nombres} <span className="text-xs text-muted-foreground">— {e.grado} {e.salon}</span>
                             </button>
                           ))}

@@ -142,7 +142,7 @@ export function isMultiMembership(r: LoginResponse): r is MultiMembershipRespons
 // ───────────────────────────────────────────────────────────────────────────
 
 export interface ApiPromedioEstudiante {
-  id_estudiantil: string;
+  id: string;
   nombre_completo: string;
   grado: string;
   salon: string;
@@ -352,8 +352,8 @@ export const apiClient = {
     salon(grado: string, salon: string, periodo: number | 'anual'): Promise<ApiSalon> {
       return request<ApiSalon>(`/api/estadisticas/salon${qs({ grado, salon, periodo })}`);
     },
-    estudiante(id_estudiantil: string, periodo: number | 'anual'): Promise<ApiEstudianteStats> {
-      return request<ApiEstudianteStats>(`/api/estadisticas/estudiante${qs({ id_estudiantil, periodo })}`);
+    estudiante(id: string, periodo: number | 'anual'): Promise<ApiEstudianteStats> {
+      return request<ApiEstudianteStats>(`/api/estadisticas/estudiante${qs({ id, periodo })}`);
     },
     asignatura(asignatura: string, periodo: number | 'anual', grado?: string, salon?: string): Promise<ApiAsignatura> {
       return request<ApiAsignatura>(`/api/estadisticas/asignatura${qs({ asignatura, periodo, grado, salon })}`);

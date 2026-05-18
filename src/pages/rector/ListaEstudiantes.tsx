@@ -5,7 +5,7 @@ import { getSession, isRectorOrCoordinador } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 
 interface Estudiante {
-  id_estudiantil: string;
+  id: string;
   apellidos: string;
   nombres: string;
 }
@@ -52,7 +52,7 @@ const ListaEstudiantes = () => {
     try {
       const { data, error } = await supabase
         .from('Estudiantes')
-        .select('id_estudiantil, apellidos, nombres')
+        .select('id, apellidos, nombres')
         .eq('grado', grado)
         .eq('salon', salon)
         .order('apellidos', { ascending: true })
@@ -136,7 +136,7 @@ const ListaEstudiantes = () => {
             <div className="space-y-2">
               {estudiantes.map((estudiante) => (
                 <button
-                  key={estudiante.id_estudiantil}
+                  key={estudiante.id}
                   onClick={() => handleSelectEstudiante(estudiante)}
                   className="w-full p-4 rounded-lg border-2 text-left transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/10 border-border bg-background flex items-center justify-between"
                 >
@@ -146,7 +146,7 @@ const ListaEstudiantes = () => {
                     </span>
                   </div>
                   <span className="text-sm text-muted-foreground">
-                    {estudiante.id_estudiantil}
+                    {estudiante.id}
                   </span>
                 </button>
               ))}

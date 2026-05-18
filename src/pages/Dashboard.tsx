@@ -66,7 +66,7 @@ const Dashboard = () => {
         const [asignacionesRes, msgRes, retiroRes, inasistenciaRes, uniformeRes] = await Promise.all([
           supabase.from('Asignación Profesores').select('"Grado(s)", "Salon(es)"').eq('id', parseInt(session.id!)),
           supabase.from('Comunicados')
-            .select('id, nivel, grado, salon, id_estudiantil, id_destinatarios, archivo_url')
+            .select('id, nivel, grado, salon, id, id_destinatarios, archivo_url')
             .overlaps('perfil', ['Profesores'])
             .gt('id', minComLastSeen),
           supabase.from('Autorizaciones_Retiro').select('*', { count: 'exact', head: true }).gt('id', lastSeen['retiro'] ?? 0),
@@ -91,7 +91,7 @@ const Dashboard = () => {
             if (c.id_destinatarios && c.id_destinatarios.length > 0) {
               return c.id_destinatarios.includes(String(session.id));
             }
-            if (c.id_estudiantil && c.id_estudiantil !== session.id) return false;
+            if (c.id && c.id !== session.id) return false;
             const grados = c.grados ?? (c.grado ? [c.grado] : null);
             const salones = c.salones ?? (c.salon ? [c.salon] : null);
             if (grados || salones || c.nivel) {

@@ -19,7 +19,7 @@ interface Comunicado {
   salon: string | null;
   grados: string[] | null;
   salones: string[] | null;
-  id_estudiantil: string | null;
+  id: string | null;
   id_destinatarios: string[] | null;
   grupo_comunicado_id: number | null;
 }
@@ -57,7 +57,7 @@ const DocumentosPadre = () => {
             const matchIds =
               (c.id_destinatarios && c.id_destinatarios.length > 0 &&
                 hijos.some(h => c.id_destinatarios!.includes(String(h.id)))) ||
-              (c.id_estudiantil && hijos.some(h => h.id === c.id_estudiantil)) ||
+              (c.id && hijos.some(h => h.id === c.id)) ||
               hijos.some(h => {
                 if (!h.id) return false;
                 const cod = String(h.id);
@@ -80,7 +80,7 @@ const DocumentosPadre = () => {
 
             const noHayFiltros =
               (!c.id_destinatarios || c.id_destinatarios.length === 0) &&
-              !c.id_estudiantil && !c.nivel && !grados && !salones;
+              !c.id && !c.nivel && !grados && !salones;
             if (!noHayFiltros) return false;
 
             const destLower = (c.destinatarios || "").trim().toLowerCase();

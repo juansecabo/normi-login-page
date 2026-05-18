@@ -73,7 +73,7 @@ interface NotaRegistrada {
 }
 
 interface Estudiante {
-  id_estudiantil: string;
+  id: string;
   nombres: string;
   apellidos: string;
   grado: string;
@@ -289,13 +289,13 @@ export const useCompletitud = () => {
         // 5) Estudiantes
         const { data: estudiantesData, error: errorEst } = await supabase
           .from("Estudiantes")
-          .select("id_estudiantil, nombres, apellidos, grado, salon")
+          .select("id, nombres, apellidos, grado, salon")
           .order("apellidos");
 
         if (errorEst) console.error("❌ Error obteniendo estudiantes:", errorEst);
 
         const estudiantesProcesados: Estudiante[] = (estudiantesData || []).map((e: any) => ({
-          id_estudiantil: String(e.id_estudiantil || "").trim(),
+          id: String(e.id || "").trim(),
           nombres: String(e.nombres || "").trim(),
           apellidos: String(e.apellidos || "").trim(),
           grado: String(e.grado || "").trim(),
@@ -411,7 +411,7 @@ export const useCompletitud = () => {
       let estudiantesDelSalon = estudiantesPorSalon.get(salonKey) || [];
 
       if (idEstudiante) {
-        estudiantesDelSalon = estudiantesDelSalon.filter((e) => e.id_estudiantil === idEstudiante);
+        estudiantesDelSalon = estudiantesDelSalon.filter((e) => e.id === idEstudiante);
       }
 
       if (estudiantesDelSalon.length === 0) continue;
@@ -475,7 +475,7 @@ export const useCompletitud = () => {
         // 3) Notas: debe existir y no ser null
         for (const est of estudiantesDelSalon) {
           for (const act of actividadesConPeso) {
-            const nKey = `${est.id_estudiantil}|${normalize(combo.asignatura)}|${normalize(combo.grado)}|${normalize(combo.salon)}|${per}|${normalize(act.nombre_actividad)}`;
+            const nKey = `${est.id}|${normalize(combo.asignatura)}|${normalize(combo.grado)}|${normalize(combo.salon)}|${per}|${normalize(act.nombre_actividad)}`;
             const n = notasIndex.get(nKey);
 
             if (!n || n.nota == null) {
@@ -518,15 +518,15 @@ export const useCompletitud = () => {
           (e) =>
             normalize(e.grado) === normalize(grado) && normalize(e.salon) === normalize(salon),
         )
-        .forEach((e) => estudiantesUnicos.add(e.id_estudiantil));
+        .forEach((e) => estudiantesUnicos.add(e.id));
     } else if (grado) {
       estudiantes
         .filter((e) => normalize(e.grado) === normalize(grado))
-        .forEach((e) => estudiantesUnicos.add(e.id_estudiantil));
+        .forEach((e) => estudiantesUnicos.add(e.id));
     } else if (idEstudiante) {
       estudiantesUnicos.add(idEstudiante);
     } else {
-      estudiantes.forEach((e) => estudiantesUnicos.add(e.id_estudiantil));
+      estudiantes.forEach((e) => estudiantesUnicos.add(e.id));
     }
 
     const resumenCompleto: ResumenCompleto = {

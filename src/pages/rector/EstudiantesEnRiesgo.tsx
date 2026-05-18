@@ -152,7 +152,7 @@ const EstudiantesEnRiesgo = () => {
                 {estudiantesEnRiesgo
                   .sort((a, b) => a.promedio - b.promedio)
                   .map((est, idx) => (
-                    <TableRow key={est.id_estudiantil}>
+                    <TableRow key={est.id}>
                       <TableCell className="font-medium text-muted-foreground">{idx + 1}</TableCell>
                       <TableCell className="font-medium">{est.nombre_completo}</TableCell>
                       <TableCell>{est.grado}</TableCell>

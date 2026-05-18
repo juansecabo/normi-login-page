@@ -51,7 +51,7 @@ interface ConsultaRow {
 }
 
 interface EstudianteRow {
-  id_estudiantil: number;
+  id: number;
   nombres: string | null;
   apellidos: string | null;
   grado: string | null;
@@ -207,10 +207,10 @@ export default function ConsultaDetalle() {
     if (tienePadresObjetivo) {
       let estQuery = supabase
         .from("Estudiantes")
-        .select("id_estudiantil, nombres, apellidos, grado, salon");
+        .select("id, nombres, apellidos, grado, salon");
 
       if (consultaRow.estudiantes_objetivo && consultaRow.estudiantes_objetivo.length > 0) {
-        estQuery = estQuery.in("id_estudiantil", consultaRow.estudiantes_objetivo);
+        estQuery = estQuery.in("id", consultaRow.estudiantes_objetivo);
       } else {
         if (consultaRow.grados_objetivo && consultaRow.grados_objetivo.length > 0) {
           estQuery = estQuery.in("grado", consultaRow.grados_objetivo as any);
@@ -231,7 +231,7 @@ export default function ConsultaDetalle() {
     //    Fase 10: buscar en Acudientes + JOIN con Usuarios + Estudiantes.
     //    Fallback legacy a Perfiles_Generales para padres aún no migrados.
     if (ests && ests.length > 0) {
-      const idsEst = ests.map((e: any) => e.id_estudiantil);
+      const idsEst = ests.map((e: any) => e.id);
       // Mapa id → datos crudos del acudiente (acudidos)
       const acudientesMap = new Map<string, any>();
 
@@ -297,9 +297,9 @@ export default function ConsultaDetalle() {
       if (allHijoIds.size > 0) {
         const { data } = await supabase
           .from("Estudiantes")
-          .select("id_estudiantil, nombres, nombres, apellidos, apellidos, grado, salon")
-          .in("id_estudiantil", Array.from(allHijoIds));
-        (data || []).forEach((e: any) => estsMap.set(String(e.id_estudiantil), e));
+          .select("id, nombres, nombres, apellidos, apellidos, grado, salon")
+          .in("id", Array.from(allHijoIds));
+        (data || []).forEach((e: any) => estsMap.set(String(e.id), e));
       }
 
       // Construir array PadreRow compatible con el resto del componente
@@ -543,17 +543,17 @@ export default function ConsultaDetalle() {
       // Encontrar padres registrados de este estudiante (hasta 3)
       const padresDelEst = padres.filter((p) => {
         return (
-          p.padre_estudiante1_id === est.id_estudiantil ||
-          p.padre_estudiante2_id === est.id_estudiantil ||
-          p.padre_estudiante3_id === est.id_estudiantil ||
-          p.padre_estudiante4_id === est.id_estudiantil
+          p.padre_estudiante1_id === est.id ||
+          p.padre_estudiante2_id === est.id ||
+          p.padre_estudiante3_id === est.id ||
+          p.padre_estudiante4_id === est.id
         );
       });
 
       // Construir hasta 3 slots de acudientes
       const acudientes: AcudienteEnTabla[] = padresDelEst.slice(0, 3).map((p) => {
         const resp = respuestas.find(
-          (r) => String(r.padre_id) === String(p.padre_id) && Number(r.estudiante_id) === Number(est.id_estudiantil)
+          (r) => String(r.padre_id) === String(p.padre_id) && Number(r.estudiante_id) === Number(est.id)
         );
         return {
           padre_id: p.padre_id,
@@ -568,7 +568,7 @@ export default function ConsultaDetalle() {
       });
 
       return {
-        estudiante_id: est.id_estudiantil,
+        estudiante_id: est.id,
         nombre_completo: `${est.apellidos || ""} ${est.nombres || ""}`.trim(),
         grado: est.grado,
         salon: est.salon,

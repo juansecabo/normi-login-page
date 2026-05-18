@@ -30,7 +30,7 @@ const SALONES = ["1", "2", "3", "4", "5", "6"];
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Estudiante {
-  id_estudiantil: number;
+  id: number;
   nombres: string;
   apellidos: string;
   grado: string;
@@ -107,7 +107,7 @@ const RegistroNormi = () => {
         fetchAllPages<Estudiante>((from, to) =>
           supabase
             .from("Estudiantes")
-            .select("id_estudiantil, nombres, nombres, apellidos, apellidos, grado, salon")
+            .select("id, nombres, nombres, apellidos, apellidos, grado, salon")
             .order("apellidos")
             .order("nombres")
             .range(from, to)
@@ -130,7 +130,7 @@ const RegistroNormi = () => {
         fetchAllPages<any>((from, to) =>
           supabase
             .from("Estudiantes")
-            .select("id_estudiantil, numero_de_telefono")
+            .select("id, numero_de_telefono")
             .not("numero_de_telefono", "is", null)
             .range(from, to)
         ),
@@ -168,7 +168,7 @@ const RegistroNormi = () => {
       // Perfiles de estudiantes registrados (Estudiantes con teléfono)
       const perfilesEstudiantes: Perfil[] = (ests as any[]).map((e) => ({
         perfil: "Estudiante",
-        estudiante_id: e.id_estudiantil,
+        estudiante_id: e.id,
         numero_de_telefono: e.numero_de_telefono,
       } as Perfil));
 
@@ -219,7 +219,7 @@ const RegistroNormi = () => {
       if (gradoFilter !== "todos" && e.grado !== gradoFilter) return false;
       if (salonFilter !== "todos" && e.salon !== salonFilter) return false;
       if (search) {
-        const hay = normalize(`${e.apellidos} ${e.nombres} ${e.id_estudiantil}`);
+        const hay = normalize(`${e.apellidos} ${e.nombres} ${e.id}`);
         if (!hay.includes(normalize(search))) return false;
       }
       return true;
@@ -228,11 +228,11 @@ const RegistroNormi = () => {
 
   // Stats (based on filtered before estado filter, so the summary stays meaningful)
   const estRegistrados = useMemo(
-    () => filtered.filter((e) => estudianteIdsRegistrados.has(e.id_estudiantil)).length,
+    () => filtered.filter((e) => estudianteIdsRegistrados.has(e.id)).length,
     [filtered, estudianteIdsRegistrados]
   );
   const padRegistrados = useMemo(
-    () => filtered.filter((e) => padreInfoPorId.has(e.id_estudiantil)).length,
+    () => filtered.filter((e) => padreInfoPorId.has(e.id)).length,
     [filtered, padreInfoPorId]
   );
 
@@ -240,7 +240,7 @@ const RegistroNormi = () => {
   const displayedEstudiantes = useMemo(() => {
     if (estadoFilter === "todos") return filtered;
     return filtered.filter((e) => {
-      const reg = estudianteIdsRegistrados.has(e.id_estudiantil);
+      const reg = estudianteIdsRegistrados.has(e.id);
       return estadoFilter === "registrados" ? reg : !reg;
     });
   }, [filtered, estadoFilter, estudianteIdsRegistrados]);
@@ -248,7 +248,7 @@ const RegistroNormi = () => {
   const displayedPadres = useMemo(() => {
     if (estadoFilter === "todos") return filtered;
     return filtered.filter((e) => {
-      const reg = padreInfoPorId.has(e.id_estudiantil);
+      const reg = padreInfoPorId.has(e.id);
       return estadoFilter === "registrados" ? reg : !reg;
     });
   }, [filtered, estadoFilter, padreInfoPorId]);
@@ -380,12 +380,12 @@ const RegistroNormi = () => {
         { header: "Estado", key: "estado", width: 18 },
       ];
       const rows: RowData[] = displayedEstudiantes.map((e) => ({
-        id: e.id_estudiantil,
+        id: e.id,
         apellidos: e.apellidos,
         nombres: e.nombres,
         grado: e.grado,
         salon: e.salon,
-        estado: estudianteIdsRegistrados.has(e.id_estudiantil) ? "Registrado" : "No registrado",
+        estado: estudianteIdsRegistrados.has(e.id) ? "Registrado" : "No registrado",
       }));
       buildSheet("Estudiantes", "Registro en Normi — Estudiantes", cols, rows, "estado");
     } else {
@@ -401,10 +401,10 @@ const RegistroNormi = () => {
       ];
       const rows: RowData[] = [];
       for (const e of displayedPadres) {
-        const padres = padreInfoPorId.get(e.id_estudiantil);
+        const padres = padreInfoPorId.get(e.id);
         if (!padres || padres.length === 0) {
           rows.push({
-            id: e.id_estudiantil,
+            id: e.id,
             apellidos: e.apellidos,
             nombres: e.nombres,
             grado: e.grado,
@@ -416,7 +416,7 @@ const RegistroNormi = () => {
         } else {
           for (const p of padres) {
             rows.push({
-              id: e.id_estudiantil,
+              id: e.id,
               apellidos: e.apellidos,
               nombres: e.nombres,
               grado: e.grado,
@@ -592,9 +592,9 @@ const RegistroNormi = () => {
                       </TableRow>
                     ) : (
                       displayedEstudiantes.map((e, i) => {
-                        const registrado = estudianteIdsRegistrados.has(e.id_estudiantil);
+                        const registrado = estudianteIdsRegistrados.has(e.id);
                         return (
-                          <TableRow key={e.id_estudiantil}>
+                          <TableRow key={e.id}>
                             <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                             <TableCell className="font-medium whitespace-nowrap">
                               {e.apellidos}, {e.nombres}
@@ -655,9 +655,9 @@ const RegistroNormi = () => {
                       </TableRow>
                     ) : (
                       displayedPadres.map((e, i) => {
-                        const parentInfo = padreInfoPorId.get(e.id_estudiantil);
+                        const parentInfo = padreInfoPorId.get(e.id);
                         return (
-                          <TableRow key={e.id_estudiantil}>
+                          <TableRow key={e.id}>
                             <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                             <TableCell className="font-medium whitespace-nowrap">
                               {e.apellidos}, {e.nombres}

@@ -84,7 +84,7 @@ const JustificacionInasistencia = () => {
 
   useEffect(() => {
     if (!hijoSeleccionado) return;
-    supabase.from("Estudiantes").select("acudiente1_telefono").eq("id_estudiantil", hijoSeleccionado.id).maybeSingle()
+    supabase.from("Estudiantes").select("acudiente1_telefono").eq("id", hijoSeleccionado.id).maybeSingle()
       .then(({ data }) => { if (data?.acudiente1_telefono) setTelefonoAcudiente(data.acudiente1_telefono); });
   }, [hijoSeleccionado]);
 

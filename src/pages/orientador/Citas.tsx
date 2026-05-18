@@ -38,7 +38,7 @@ const ASISTENTES_LABELS: Record<string, string> = {
 const WEBHOOK_BASE = "https://n8n.notasnormi.com/webhook";
 
 interface Estudiante {
-  id_estudiantil: number;
+  id: number;
   nombres: string;
   apellidos: string;
   grado: string;
@@ -119,7 +119,7 @@ const Citas = () => {
     setAutor({ id: session.id, nombre: `${session.nombres || ""} ${session.apellidos || ""}`.trim() });
     Promise.all([
       supabase.from("Citas_Orientacion").select("*").order("fecha", { ascending: false }).order("hora", { ascending: false }),
-      supabase.from("Estudiantes").select("id_estudiantil, nombres, apellidos, grado, salon").order("apellidos"),
+      supabase.from("Estudiantes").select("id, nombres, apellidos, grado, salon").order("apellidos"),
     ]).then(([cR, eR]) => {
       setCitas(cR.data || []);
       setEstudiantes(eR.data || []);
@@ -132,7 +132,7 @@ const Citas = () => {
   useEffect(() => {
     const estId = searchParams.get("estudianteId");
     if (!estId || estudiantes.length === 0) return;
-    const est = estudiantes.find(e => String(e.id_estudiantil) === estId);
+    const est = estudiantes.find(e => String(e.id) === estId);
     if (est) {
       setEstSeleccionado(est);
       setShowNueva(true);
@@ -191,7 +191,7 @@ const Citas = () => {
     setGuardando(true);
     const horaSave = hora12to24(horaH, horaM, horaAP);
     const payload: any = {
-      estudiante_id: estSeleccionado.id_estudiantil,
+      estudiante_id: estSeleccionado.id,
       estudiante_nombre: estSeleccionado.nombres,
       estudiante_apellidos: estSeleccionado.apellidos,
       estudiante_grado: estSeleccionado.grado,
@@ -223,13 +223,13 @@ const Citas = () => {
       let destinatarios = "";
       if (incEst && incAcu) {
         intro = `Se ha agendado una cita de orientación escolar con ${estLabel} y sus acudientes.`;
-        destinatarios = `Estudiante y padres del estudiante con id ${estSeleccionado.id_estudiantil}`;
+        destinatarios = `Estudiante y padres del estudiante con id ${estSeleccionado.id}`;
       } else if (incEst) {
         intro = `Se ha agendado una cita de orientación escolar contigo.`;
-        destinatarios = `Estudiante con id ${estSeleccionado.id_estudiantil}`;
+        destinatarios = `Estudiante con id ${estSeleccionado.id}`;
       } else if (incAcu) {
         intro = `Se ha agendado una cita de orientación escolar con usted, acudiente de ${estLabel}.`;
-        destinatarios = `Padres del estudiante con id ${estSeleccionado.id_estudiantil}`;
+        destinatarios = `Padres del estudiante con id ${estSeleccionado.id}`;
       }
       const motivoTrim = motivo.trim();
       const motivoConPunto = /[.!?]$/.test(motivoTrim) ? motivoTrim : `${motivoTrim}.`;
@@ -429,7 +429,7 @@ const Citas = () => {
                   {estudiantesBusqueda.length > 0 && (
                     <div className="absolute top-full left-0 right-0 mt-1 z-20 border border-border rounded-md max-h-48 overflow-y-auto bg-card shadow-md">
                       {estudiantesBusqueda.map(e => (
-                        <button key={e.id_estudiantil} onClick={() => { setEstSeleccionado(e); setEstBusqueda(""); }} className="block w-full text-left px-3 py-2 text-sm hover:bg-muted/50">
+                        <button key={e.id} onClick={() => { setEstSeleccionado(e); setEstBusqueda(""); }} className="block w-full text-left px-3 py-2 text-sm hover:bg-muted/50">
                           {e.apellidos} {e.nombres} <span className="text-xs text-muted-foreground">— {e.grado} {e.salon}</span>
                         </button>
                       ))}
