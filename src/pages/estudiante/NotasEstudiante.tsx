@@ -5,6 +5,7 @@ import HeaderNormi from "@/components/HeaderNormi";
 import ConsolidadoNotas from "@/components/ConsolidadoNotas";
 import { supabase } from "@/integrations/supabase/client";
 import { markLastSeen } from "@/utils/notificaciones";
+import { anoEscolarActual } from "@/utils/anoEscolar";
 
 const NotasEstudiante = () => {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ const NotasEstudiante = () => {
       const { data } = await supabase
         .from('Notas')
         .select('fecha_modificacion')
+        .eq('ano_escolar', anoEscolarActual())
         .eq('id_estudiantil', session.id)
         .eq('grado', session.grado)
         .eq('salon', session.salon)

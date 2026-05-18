@@ -1,4 +1,5 @@
 import { getPeriodoActual } from "@/utils/periodoActual";
+import { anoEscolarActual } from "@/utils/anoEscolar";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -222,6 +223,7 @@ const TablaNotas = () => {
         const { data: actividadesData, error: actividadesError } = await supabase
           .from('Nombre de Actividades')
           .select('*')
+          .eq('ano_escolar', anoEscolarActual())
           .eq('id_profesor', idProfesor)
           .eq('asignatura', storedAsignatura)
           .eq('grado', storedGrado)
@@ -247,6 +249,7 @@ const TablaNotas = () => {
         const { data: notasData, error: notasError } = await supabase
           .from('Notas')
           .select('*')
+          .eq('ano_escolar', anoEscolarActual())
           .eq('asignatura', storedAsignatura)
           .eq('grado', storedGrado)
           .eq('salon', storedSalon);
@@ -430,6 +433,7 @@ const TablaNotas = () => {
     const { data } = await supabase
       .from('Nombre de Actividades')
       .select('salon')
+      .eq('ano_escolar', anoEscolarActual())
       .eq('id_profesor', session.id)
       .eq('asignatura', asignaturaSeleccionada)
       .eq('grado', gradoSeleccionado)
@@ -509,6 +513,7 @@ const TablaNotas = () => {
         const { data: freshData } = await supabase
           .from('Nombre de Actividades')
           .select('salon')
+          .eq('ano_escolar', anoEscolarActual())
           .eq('id_profesor', session.id)
           .eq('asignatura', asignaturaSeleccionada)
           .eq('grado', gradoSeleccionado)
@@ -528,6 +533,7 @@ const TablaNotas = () => {
             nombre_actividad: nombreNuevo,
             porcentaje: porcentaje
           })
+          .eq('ano_escolar', anoEscolarActual())
           .eq('id_profesor', session.id)
           .eq('asignatura', asignaturaSeleccionada)
           .eq('grado', gradoSeleccionado)
@@ -561,6 +567,7 @@ const TablaNotas = () => {
           const { error } = await supabase
             .from('Notas')
             .update({ porcentaje: porcentaje })
+            .eq('ano_escolar', anoEscolarActual())
             .eq('nombre_actividad', nombreNuevo)
             .eq('asignatura', asignaturaSeleccionada)
             .eq('grado', gradoSeleccionado)
@@ -626,6 +633,7 @@ const TablaNotas = () => {
           const { data: actividadesOtros, error: errorOtros } = await supabase
             .from('Nombre de Actividades')
             .select('salon, porcentaje')
+            .eq('ano_escolar', anoEscolarActual())
             .eq('id_profesor', session.id)
             .eq('asignatura', asignaturaSeleccionada)
             .eq('grado', gradoSeleccionado)
@@ -671,6 +679,7 @@ const TablaNotas = () => {
       // Construir filas para insertar
       const filasParaInsertar = salonesParaCrear.map(salon => ({
         id_profesor: session.id,
+        ano_escolar: anoEscolarActual(),
         asignatura: asignaturaSeleccionada,
         grado: gradoSeleccionado,
         salon: salon,
@@ -764,6 +773,7 @@ const TablaNotas = () => {
       const { data: deletedRows, error: errorActividad } = await supabase
         .from('Nombre de Actividades')
         .delete()
+        .eq('ano_escolar', anoEscolarActual())
         .eq('id_profesor', session.id)
         .eq('asignatura', asignaturaSeleccionada)
         .eq('grado', gradoSeleccionado)
@@ -798,6 +808,7 @@ const TablaNotas = () => {
       const { error } = await supabase
         .from('Notas')
         .delete()
+        .eq('ano_escolar', anoEscolarActual())
         .eq('nombre_actividad', actividadAEliminar.nombre)
         .eq('asignatura', asignaturaSeleccionada)
         .eq('grado', gradoSeleccionado)
@@ -1340,6 +1351,7 @@ const TablaNotas = () => {
     const { data: notasExistentes } = await supabase
       .from('Notas')
       .select('id')
+      .eq('ano_escolar', anoEscolarActual())
       .eq('id_estudiantil', idEstudiantil)
       .eq('asignatura', asignaturaSeleccionada)
       .eq('grado', gradoSeleccionado)
@@ -1355,6 +1367,7 @@ const TablaNotas = () => {
       const { error } = await supabase
         .from('Notas')
         .delete()
+        .eq('ano_escolar', anoEscolarActual())
         .eq('id_estudiantil', idEstudiantil)
         .eq('asignatura', asignaturaSeleccionada)
         .eq('grado', gradoSeleccionado)
@@ -1368,6 +1381,7 @@ const TablaNotas = () => {
       const { data: existente } = await supabase
         .from('Notas')
         .select('comentario')
+        .eq('ano_escolar', anoEscolarActual())
         .eq('id_estudiantil', idEstudiantil)
         .eq('asignatura', asignaturaSeleccionada)
         .eq('grado', gradoSeleccionado)
@@ -1382,6 +1396,7 @@ const TablaNotas = () => {
         .from('Notas')
         .upsert({
           id_estudiantil: idEstudiantil,
+          ano_escolar: anoEscolarActual(),
           asignatura: asignaturaSeleccionada,
           grado: gradoSeleccionado,
           salon: salonSeleccionado,
@@ -1392,7 +1407,7 @@ const TablaNotas = () => {
           comentario: comentarioExistente,
           notificado: false,
         }, {
-          onConflict: 'id_estudiantil,asignatura,grado,salon,periodo,nombre_actividad'
+          onConflict: 'id_estudiantil,ano_escolar,asignatura,grado,salon,periodo,nombre_actividad'
         })
         .select();
       
@@ -1413,6 +1428,7 @@ const TablaNotas = () => {
     const { data: finalesPeriodo } = await supabase
       .from('Notas')
       .select('id')
+      .eq('ano_escolar', anoEscolarActual())
       .eq('id_estudiantil', idEstudiantil)
       .eq('asignatura', asignaturaSeleccionada)
       .eq('grado', gradoSeleccionado)
@@ -1427,6 +1443,7 @@ const TablaNotas = () => {
       const { error } = await supabase
         .from('Notas')
         .delete()
+        .eq('ano_escolar', anoEscolarActual())
         .eq('id_estudiantil', idEstudiantil)
         .eq('asignatura', asignaturaSeleccionada)
         .eq('grado', gradoSeleccionado)
@@ -1439,6 +1456,7 @@ const TablaNotas = () => {
       const { data: existente, error: errorConsulta } = await supabase
         .from('Notas')
         .select('comentario')
+        .eq('ano_escolar', anoEscolarActual())
         .eq('id_estudiantil', idEstudiantil)
         .eq('asignatura', asignaturaSeleccionada)
         .eq('grado', gradoSeleccionado)
@@ -1453,6 +1471,7 @@ const TablaNotas = () => {
       
       const datosUpsert = {
         id_estudiantil: idEstudiantil,
+        ano_escolar: anoEscolarActual(),
         asignatura: asignaturaSeleccionada,
         grado: gradoSeleccionado,
         salon: salonSeleccionado,
@@ -1463,13 +1482,13 @@ const TablaNotas = () => {
         comentario: comentarioExistente,
         notificado: false,
       };
-      
+
       console.log('Datos para UPSERT:', datosUpsert);
-      
+
       const { data, error } = await supabase
         .from('Notas')
         .upsert(datosUpsert, {
-          onConflict: 'id_estudiantil,asignatura,grado,salon,periodo,nombre_actividad'
+          onConflict: 'id_estudiantil,ano_escolar,asignatura,grado,salon,periodo,nombre_actividad'
         })
         .select();
       
@@ -1518,6 +1537,7 @@ const TablaNotas = () => {
         const { data: existe } = await supabase
           .from('Notas')
           .select('id, nota')
+          .eq('ano_escolar', anoEscolarActual())
           .eq('id_estudiantil', idEstudiantil)
           .eq('asignatura', asignaturaSeleccionada)
           .eq('grado', gradoSeleccionado)
@@ -1537,6 +1557,7 @@ const TablaNotas = () => {
             .from('Notas')
             .insert({
               id_estudiantil: idEstudiantil,
+              ano_escolar: anoEscolarActual(),
               asignatura: asignaturaSeleccionada,
               grado: gradoSeleccionado,
               salon: salonSeleccionado,
@@ -1565,6 +1586,7 @@ const TablaNotas = () => {
           const { data, error } = await supabase
             .from('Notas')
             .update({ comentario: nuevoComentario })
+            .eq('ano_escolar', anoEscolarActual())
             .eq('id_estudiantil', idEstudiantil)
             .eq('asignatura', asignaturaSeleccionada)
             .eq('grado', gradoSeleccionado)
@@ -1590,6 +1612,7 @@ const TablaNotas = () => {
         const { error } = await supabase
           .from('Notas')
           .update({ comentario: nuevoComentario })
+          .eq('ano_escolar', anoEscolarActual())
           .eq('id_estudiantil', idEstudiantil)
           .eq('asignatura', asignaturaSeleccionada)
           .eq('grado', gradoSeleccionado)
@@ -1645,6 +1668,7 @@ const TablaNotas = () => {
       const { error } = await supabase
         .from('Notas')
         .update({ comentario: null })
+        .eq('ano_escolar', anoEscolarActual())
         .eq('id_estudiantil', idEstudiantil)
         .eq('asignatura', asignaturaSeleccionada)
         .eq('grado', gradoSeleccionado)
@@ -2291,12 +2315,13 @@ const TablaNotas = () => {
           await supabase
             .from('Notas')
             .update({ notificado: true })
+            .eq('ano_escolar', anoEscolarActual())
             .eq('id_estudiantil', dato.estudiante.id)
             .eq('asignatura', asignaturaSeleccionada)
             .eq('grado', gradoSeleccionado)
             .eq('salon', salonSeleccionado)
             .eq('periodo', periodoReal)
-            .eq('nombre_actividad', actividadNombre === "Definitiva Anual" ? "Definitiva Anual" : 
+            .eq('nombre_actividad', actividadNombre === "Definitiva Anual" ? "Definitiva Anual" :
               actividadNombre?.includes("Final") ? "Definitiva Periodo" : actividadNombre);
         }
       } catch (error) {
@@ -2389,6 +2414,7 @@ const TablaNotas = () => {
         const { error } = await supabase
           .from('Notas')
           .delete()
+          .eq('ano_escolar', anoEscolarActual())
           .eq('id_estudiantil', idEstudiantil)
           .eq('asignatura', asignaturaSeleccionada)
           .eq('grado', gradoSeleccionado)
@@ -2510,6 +2536,7 @@ const TablaNotas = () => {
           .from('Notas')
           .upsert({
             id_estudiantil: idEstudiantil,
+            ano_escolar: anoEscolarActual(),
             asignatura: asignaturaSeleccionada,
             grado: gradoSeleccionado,
             salon: salonSeleccionado,
@@ -2520,7 +2547,7 @@ const TablaNotas = () => {
             comentario: comentarios[idEstudiantil]?.[periodo]?.[actividadId] || null,
             notificado: false,
           }, {
-            onConflict: 'id_estudiantil,asignatura,grado,salon,periodo,nombre_actividad'
+            onConflict: 'id_estudiantil,ano_escolar,asignatura,grado,salon,periodo,nombre_actividad'
           });
 
         if (error) {

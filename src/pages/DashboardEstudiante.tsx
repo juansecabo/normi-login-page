@@ -11,6 +11,7 @@ import HeaderNormi from "@/components/HeaderNormi";
 import BuzonSugerencias from "@/components/BuzonSugerencias";
 import { supabase } from "@/integrations/supabase/client";
 import { getAllLastSeen, countNewItems } from "@/utils/notificaciones";
+import { anoEscolarActual } from "@/utils/anoEscolar";
 
 const Badge = ({ count }: { count: number }) => {
   if (count <= 0) return null;
@@ -74,6 +75,7 @@ const DashboardEstudiante = () => {
           supabase
             .from('Notas')
             .select('fecha_modificacion')
+            .eq('ano_escolar', anoEscolarActual())
             .eq('id_estudiantil', id)
             .eq('grado', session.grado)
             .eq('salon', session.salon)

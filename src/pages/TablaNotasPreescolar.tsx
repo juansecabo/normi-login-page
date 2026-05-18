@@ -7,6 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { toast as sonnerToast } from "sonner";
 import { getSession } from "@/hooks/useSession";
 import { getPeriodoActual } from "@/utils/periodoActual";
+import { anoEscolarActual } from "@/utils/anoEscolar";
 import { ACTIVIDADES_PREESCOLAR, esGradoPreescolar } from "@/utils/preescolar";
 import HeaderNormi from "@/components/HeaderNormi";
 import {
@@ -128,6 +129,7 @@ const TablaNotasPreescolar = () => {
           for (const act of ACTIVIDADES_PREESCOLAR) {
             actividadesSeed.push({
               id_profesor: session.id,
+              ano_escolar: anoEscolarActual(),
               asignatura: storedAsignatura,
               grado: storedGrado,
               salon: storedSalon,
@@ -143,6 +145,7 @@ const TablaNotasPreescolar = () => {
         const { data: existentes } = await supabase
           .from("Nombre de Actividades")
           .select("periodo, nombre_actividad")
+          .eq("ano_escolar", anoEscolarActual())
           .eq("id_profesor", session.id)
           .eq("asignatura", storedAsignatura)
           .eq("grado", storedGrado)
@@ -170,6 +173,7 @@ const TablaNotasPreescolar = () => {
         const { data: notasData, error: errNotas } = await supabase
           .from("Notas")
           .select("id_estudiantil, periodo, nombre_actividad, comentario")
+          .eq("ano_escolar", anoEscolarActual())
           .eq("asignatura", storedAsignatura)
           .eq("grado", storedGrado)
           .eq("salon", storedSalon)
@@ -219,6 +223,7 @@ const TablaNotasPreescolar = () => {
         const { error } = await supabase
           .from("Notas")
           .delete()
+          .eq("ano_escolar", anoEscolarActual())
           .eq("id_estudiantil", idEstudiantil)
           .eq("asignatura", asignaturaSeleccionada)
           .eq("grado", gradoSeleccionado)
@@ -247,6 +252,7 @@ const TablaNotasPreescolar = () => {
         const { error } = await supabase.from("Notas").upsert(
           {
             id_estudiantil: idEstudiantil,
+            ano_escolar: anoEscolarActual(),
             asignatura: asignaturaSeleccionada,
             grado: gradoSeleccionado,
             salon: salonSeleccionado,
@@ -260,7 +266,7 @@ const TablaNotasPreescolar = () => {
           },
           {
             onConflict:
-              "id_estudiantil,asignatura,grado,salon,periodo,nombre_actividad",
+              "id_estudiantil,ano_escolar,asignatura,grado,salon,periodo,nombre_actividad",
           }
         );
 
@@ -423,6 +429,7 @@ const TablaNotasPreescolar = () => {
             await supabase
               .from("Notas")
               .update({ notificado: true })
+              .eq("ano_escolar", anoEscolarActual())
               .eq("id_estudiantil", idEst)
               .eq("asignatura", asignaturaSeleccionada)
               .eq("grado", gradoSeleccionado)

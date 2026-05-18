@@ -1,4 +1,5 @@
 import { getPeriodoActual } from "@/utils/periodoActual";
+import { anoEscolarActual } from "@/utils/anoEscolar";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -137,6 +138,7 @@ const TablaNotasReadOnly = () => {
         const { data: actividadesData, error: actividadesError } = await supabase
           .from('Nombre de Actividades')
           .select('*')
+          .eq('ano_escolar', anoEscolarActual())
           .eq('asignatura', storedAsignatura)
           .eq('grado', storedGrado)
           .eq('salon', storedSalon)
@@ -156,6 +158,7 @@ const TablaNotasReadOnly = () => {
         const { data: notasData, error: notasError } = await supabase
           .from('Notas')
           .select('*')
+          .eq('ano_escolar', anoEscolarActual())
           .eq('asignatura', storedAsignatura)
           .eq('grado', storedGrado)
           .eq('salon', storedSalon);

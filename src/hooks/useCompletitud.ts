@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { anoEscolarActual } from "@/utils/anoEscolar";
 
 export interface DetalleIncompleto {
   tipo: "nota_faltante" | "porcentaje_incompleto" | "sin_actividades";
@@ -247,7 +248,8 @@ export const useCompletitud = () => {
         // 3) Actividades (nombre_actividad real)
         const { data: actividadesData, error: errorAct } = await supabase
           .from("Nombre de Actividades")
-          .select("asignatura, grado, salon, periodo, nombre_actividad, porcentaje, id_profesor");
+          .select("asignatura, grado, salon, periodo, nombre_actividad, porcentaje, id_profesor")
+          .eq("ano_escolar", anoEscolarActual());
 
         if (errorAct) console.error("❌ Error obteniendo actividades:", errorAct);
 
@@ -268,6 +270,7 @@ export const useCompletitud = () => {
         const { data: notasData, error: errorNotas } = await (supabase as any)
           .from("Notas")
           .select("id_estudiantil, asignatura, grado, salon, periodo, nombre_actividad, nota")
+          .eq("ano_escolar", anoEscolarActual())
           .not("nombre_actividad", "in", '("Final Periodo","Final Definitiva")')
           .fetchAll();
 

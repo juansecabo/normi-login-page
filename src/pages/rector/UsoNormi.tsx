@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, isAdmin, puedeAccederDashboard } from "@/hooks/useSession";
+import { anoEscolarActual } from "@/utils/anoEscolar";
 import HeaderNormi from "@/components/HeaderNormi";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
@@ -60,7 +61,8 @@ const UsoNormi = () => {
       // 2. Notas → count from "Nombre de Actividades" by id_profesor
       const { data: notasData } = await supabase
         .from("Nombre de Actividades")
-        .select("id_profesor, grado, salon");
+        .select("id_profesor, grado, salon")
+        .eq("ano_escolar", anoEscolarActual());
 
       // 3. Actividades → persistent counter from Uso_Profesores
       const { data: usoData } = await supabase

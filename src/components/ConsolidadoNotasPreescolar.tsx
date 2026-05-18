@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ACTIVIDADES_PREESCOLAR } from "@/utils/preescolar";
+import { anoEscolarActual } from "@/utils/anoEscolar";
 
 interface ConsolidadoNotasPreescolarProps {
   idEstudiante: string;
@@ -49,6 +50,7 @@ const ConsolidadoNotasPreescolar = ({
         const { data, error } = await supabase
           .from("Notas")
           .select("periodo, nombre_actividad, comentario")
+          .eq("ano_escolar", anoEscolarActual())
           .eq("id_estudiantil", idEstudiante)
           .eq("grado", grado)
           .eq("salon", salon)

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, isRectorOrCoordinador } from "@/hooks/useSession";
 import { getPeriodoActual } from "@/utils/periodoActual";
+import { anoEscolarActual } from "@/utils/anoEscolar";
 import HeaderNormi from "@/components/HeaderNormi";
 
 interface Estudiante {
@@ -129,6 +130,7 @@ const EstudianteConsolidado = () => {
         const { data: actividadesData, error: actividadesError } = await supabase
           .from('Nombre de Actividades')
           .select('*')
+          .eq('ano_escolar', anoEscolarActual())
           .eq('grado', storedGrado)
           .eq('salon', storedSalon)
           .in('asignatura', asignaturasDelGrado)
@@ -157,6 +159,7 @@ const EstudianteConsolidado = () => {
         const { data: notasData, error: notasError } = await supabase
           .from('Notas')
           .select('*')
+          .eq('ano_escolar', anoEscolarActual())
           .eq('id_estudiantil', estudianteData.id)
           .eq('grado', storedGrado)
           .eq('salon', storedSalon)

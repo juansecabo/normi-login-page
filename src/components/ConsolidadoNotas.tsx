@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getPeriodoActual } from "@/utils/periodoActual";
+import { anoEscolarActual } from "@/utils/anoEscolar";
 
 interface ConsolidadoNotasProps {
   idEstudiante: string;
@@ -101,6 +102,7 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
         const { data: actividadesData, error: actividadesError } = await supabase
           .from('Nombre de Actividades')
           .select('*')
+          .eq('ano_escolar', anoEscolarActual())
           .eq('grado', grado)
           .eq('salon', salon)
           .in('asignatura', asignaturasDelGrado)
@@ -127,6 +129,7 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
         const { data: notasData, error: notasError } = await supabase
           .from('Notas')
           .select('*')
+          .eq('ano_escolar', anoEscolarActual())
           .eq('id_estudiantil', idEstudiante)
           .eq('grado', grado)
           .eq('salon', salon)

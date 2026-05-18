@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { isRectorOrCoordinador } from "@/hooks/useSession";
 import { getPeriodoActual } from "@/utils/periodoActual";
+import { anoEscolarActual } from "@/utils/anoEscolar";
 import { ACTIVIDADES_PREESCOLAR } from "@/utils/preescolar";
 import HeaderNormi from "@/components/HeaderNormi";
 import { Loader2 } from "lucide-react";
@@ -83,6 +84,7 @@ const TablaNotasPreescolarReadOnly = () => {
         const notasQuery = supabase
           .from("Notas")
           .select("id_estudiantil, periodo, nombre_actividad, comentario")
+          .eq("ano_escolar", anoEscolarActual())
           .eq("grado", storedGrado)
           .eq("salon", storedSalon)
           .in("nombre_actividad", ACTIVIDADES_PREESCOLAR.map((a) => a.nombre));

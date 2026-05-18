@@ -5,6 +5,7 @@ import HeaderNormi from "@/components/HeaderNormi";
 import ConsolidadoNotas from "@/components/ConsolidadoNotas";
 import { supabase } from "@/integrations/supabase/client";
 import { markLastSeen, getAllLastSeen, countNewItems } from "@/utils/notificaciones";
+import { anoEscolarActual } from "@/utils/anoEscolar";
 import { User } from "lucide-react";
 
 const NotasPadre = () => {
@@ -34,6 +35,7 @@ const NotasPadre = () => {
             supabase
               .from('Notas')
               .select('fecha_modificacion')
+              .eq('ano_escolar', anoEscolarActual())
               .eq('id_estudiantil', h.id)
               .eq('grado', h.grado)
               .eq('salon', h.salon)
@@ -71,6 +73,7 @@ const NotasPadre = () => {
       const { data } = await supabase
         .from('Notas')
         .select('fecha_modificacion')
+        .eq('ano_escolar', anoEscolarActual())
         .eq('id_estudiantil', h.id)
         .eq('grado', h.grado)
         .eq('salon', h.salon)

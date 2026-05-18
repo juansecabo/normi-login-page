@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { anoEscolarActual } from "@/utils/anoEscolar";
 
 export interface NotaCompleta {
   id_estudiantil: string;
@@ -139,6 +140,7 @@ export const useEstadisticas = () => {
         const { data: notasData, error: notasErr } = await (supabase as any)
           .from("Notas")
           .select("id_estudiantil,asignatura,grado,salon,periodo,nombre_actividad,porcentaje,nota")
+          .eq("ano_escolar", anoEscolarActual())
           .not("nombre_actividad", "in", '("Definitiva Periodo","Definitiva Anual")')
           .fetchAll();
         if (notasErr) throw notasErr;
