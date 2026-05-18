@@ -123,7 +123,7 @@ const RegistroNormi = () => {
         fetchAllPages<any>((from, to) =>
           supabase
             .from("Acudientes")
-            .select("acudiente_id, acudido1_id, acudido2_id, acudido3_id, acudido4_id")
+            .select("id, acudido1_id, acudido2_id, acudido3_id, acudido4_id")
             .range(from, to)
         ),
         // Estudiantes con teléfono = registrados (modelo nuevo)
@@ -137,7 +137,7 @@ const RegistroNormi = () => {
       ]);
 
       // Construir lista combinada de perfiles
-      const acudienteIds = (acuds as any[]).map((a) => a.acudiente_id);
+      const acudienteIds = (acuds as any[]).map((a) => a.id);
       // Traer nombres y teléfonos desde Usuarios para los acudientes
       const usuariosMap = new Map<string, any>();
       if (acudienteIds.length > 0) {
@@ -153,7 +153,7 @@ const RegistroNormi = () => {
 
       // Perfiles del modelo nuevo (Acudientes + Usuarios)
       const perfilesAcudientes: Perfil[] = (acuds as any[]).map((a) => {
-        const u = usuariosMap.get(String(a.acudiente_id));
+        const u = usuariosMap.get(String(a.id));
         return {
           perfil: "Padre de familia",
           padre_nombre: u ? `${u.nombres || ""} ${u.apellidos || ""}`.trim() : "",

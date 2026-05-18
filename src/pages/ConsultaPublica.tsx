@@ -272,8 +272,8 @@ export default function ConsultaPublica() {
         // ------ Flujo padre (Fase 10: Acudientes + JOIN con Estudiantes) ------
         const { data: acudiente, error: errA } = await supabase
           .from("Acudientes")
-          .select("acudiente_id, acudido1_id, acudido2_id, acudido3_id, acudido4_id")
-          .eq("acudiente_id", session.id)
+          .select("id, acudido1_id, acudido2_id, acudido3_id, acudido4_id")
+          .eq("id", session.id)
           .maybeSingle();
 
         let hijoIds: (number | null)[] = [];

@@ -232,7 +232,7 @@ export default function ConsultaDetalle() {
     //    Fallback legacy a Perfiles_Generales para padres aún no migrados.
     if (ests && ests.length > 0) {
       const idsEst = ests.map((e: any) => e.id_estudiantil);
-      // Mapa acudiente_id → datos crudos del acudiente (acudidos)
+      // Mapa id → datos crudos del acudiente (acudidos)
       const acudientesMap = new Map<string, any>();
 
       // Buscar en Acudientes (modelo nuevo)
@@ -241,11 +241,11 @@ export default function ConsultaDetalle() {
         cols.map(async (col) => {
           const { data } = await supabase
             .from("Acudientes")
-            .select("acudiente_id, acudido1_id, acudido2_id, acudido3_id, acudido4_id")
+            .select("id, acudido1_id, acudido2_id, acudido3_id, acudido4_id")
             .in(col, idsEst);
           (data || []).forEach((a: any) => {
-            if (a.acudiente_id && !acudientesMap.has(a.acudiente_id)) {
-              acudientesMap.set(a.acudiente_id, a);
+            if (a.id && !acudientesMap.has(a.id)) {
+              acudientesMap.set(a.id, a);
             }
           });
         })
@@ -263,7 +263,7 @@ export default function ConsultaDetalle() {
           (data || []).forEach((p: any) => {
             if (p.padre_id && !acudientesMap.has(p.padre_id)) {
               acudientesMap.set(p.padre_id, {
-                acudiente_id: p.padre_id,
+                id: p.padre_id,
                 acudido1_id: p.padre_estudiante1_id,
                 acudido2_id: p.padre_estudiante2_id,
                 acudido3_id: p.padre_estudiante3_id,

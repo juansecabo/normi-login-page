@@ -921,7 +921,7 @@ const PanelControl = () => {
             if (colegio_id_acud) {
               const numH = parseInt(perfNumEst);
               const acudPayload: any = {
-                acudiente_id: perfPadreId,
+                id: perfPadreId,
                 colegio_id: colegio_id_acud,
                 numero_de_acudidos: perfNumEst,
                 acudido1_id: perfHijo1Id ? Number(perfHijo1Id) : null,
@@ -929,7 +929,7 @@ const PanelControl = () => {
                 acudido3_id: numH >= 3 && perfHijo3Id ? Number(perfHijo3Id) : null,
                 acudido4_id: numH >= 4 && perfHijo4Id ? Number(perfHijo4Id) : null,
               };
-              await supabase.from("Acudientes").upsert(acudPayload, { onConflict: "acudiente_id,colegio_id" });
+              await supabase.from("Acudientes").upsert(acudPayload, { onConflict: "id,colegio_id" });
             }
           }
         }
@@ -963,7 +963,7 @@ const PanelControl = () => {
         await supabase.from("Usuarios").delete().eq("id", String(showDeletePerf.estudiante_id));
       } else if (showDeletePerf.perfil === "Padre de familia" && showDeletePerf.padre_id) {
         // Para acudientes: borrar la fila en Acudientes y de Usuarios
-        await supabase.from("Acudientes").delete().eq("acudiente_id", showDeletePerf.padre_id);
+        await supabase.from("Acudientes").delete().eq("id", showDeletePerf.padre_id);
         await supabase.from("Usuarios").delete().eq("id", showDeletePerf.padre_id);
       }
     } catch (e) {
