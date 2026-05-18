@@ -228,38 +228,102 @@ export default function ConsultaDetalle() {
     }
 
     // 3. Cargar padres que tienen alguno de estos estudiantes como hijo.
-    //    Un .or() con 400+ estudiantes * 4 columnas rompe la URL de PostgREST,
-    //    así que hacemos 4 queries .in() (una por columna) y deduplicamos.
+    //    Fase 10: buscar en Acudientes + JOIN con Usuarios + Estudiantes.
+    //    Fallback legacy a Perfiles_Generales para padres aún no migrados.
     if (ests && ests.length > 0) {
       const idsEst = ests.map((e: any) => e.id_estudiantil);
-      const cols = [
-        "padre_estudiante1_id",
-        "padre_estudiante2_id",
-        "padre_estudiante3_id",
-        "padre_estudiante4_id",
-      ] as const;
-      const padresMap = new Map<string, PadreRow>();
+      // Mapa acudiente_id → datos crudos del acudiente (acudidos)
+      const acudientesMap = new Map<string, any>();
+
+      // Buscar en Acudientes (modelo nuevo)
+      const cols = ["acudido1_id", "acudido2_id", "acudido3_id", "acudido4_id"] as const;
       await Promise.all(
         cols.map(async (col) => {
           const { data } = await supabase
-            .from("Perfiles_Generales")
-            .select(
-              "padre_id, padre_nombre, numero_de_telefono, " +
-              "padre_estudiante1_id, padre_estudiante1_nombre, padre_estudiante1_apellidos, padre_estudiante1_grado, padre_estudiante1_salon, " +
-              "padre_estudiante2_id, padre_estudiante2_nombre, padre_estudiante2_apellidos, padre_estudiante2_grado, padre_estudiante2_salon, " +
-              "padre_estudiante3_id, padre_estudiante3_nombre, padre_estudiante3_apellidos, padre_estudiante3_grado, padre_estudiante3_salon, " +
-              "padre_estudiante4_id, padre_estudiante4_nombre, padre_estudiante4_apellidos, padre_estudiante4_grado, padre_estudiante4_salon"
-            )
-            .eq("perfil", "Padre de familia")
+            .from("Acudientes")
+            .select("acudiente_id, acudido1_id, acudido2_id, acudido3_id, acudido4_id")
             .in(col, idsEst);
-          (data || []).forEach((p: any) => {
-            if (p.padre_id && !padresMap.has(p.padre_id)) {
-              padresMap.set(p.padre_id, p as PadreRow);
+          (data || []).forEach((a: any) => {
+            if (a.acudiente_id && !acudientesMap.has(a.acudiente_id)) {
+              acudientesMap.set(a.acudiente_id, a);
             }
           });
         })
       );
-      setPadres(Array.from(padresMap.values()));
+
+      // Fallback legacy: padres todavía solo en Perfiles_Generales
+      const legacyCols = ["padre_estudiante1_id", "padre_estudiante2_id", "padre_estudiante3_id", "padre_estudiante4_id"] as const;
+      await Promise.all(
+        legacyCols.map(async (col) => {
+          const { data } = await supabase
+            .from("Perfiles_Generales")
+            .select("padre_id, numero_de_telefono, padre_nombre, padre_estudiante1_id, padre_estudiante1_nombre, padre_estudiante1_apellidos, padre_estudiante1_grado, padre_estudiante1_salon, padre_estudiante2_id, padre_estudiante2_nombre, padre_estudiante2_apellidos, padre_estudiante2_grado, padre_estudiante2_salon, padre_estudiante3_id, padre_estudiante3_nombre, padre_estudiante3_apellidos, padre_estudiante3_grado, padre_estudiante3_salon, padre_estudiante4_id, padre_estudiante4_nombre, padre_estudiante4_apellidos, padre_estudiante4_grado, padre_estudiante4_salon")
+            .eq("perfil", "Padre de familia")
+            .in(col, idsEst);
+          (data || []).forEach((p: any) => {
+            if (p.padre_id && !acudientesMap.has(p.padre_id)) {
+              acudientesMap.set(p.padre_id, {
+                acudiente_id: p.padre_id,
+                acudido1_id: p.padre_estudiante1_id,
+                acudido2_id: p.padre_estudiante2_id,
+                acudido3_id: p.padre_estudiante3_id,
+                acudido4_id: p.padre_estudiante4_id,
+                _legacy: p,
+              });
+            }
+          });
+        })
+      );
+
+      // Resolver datos de Usuarios para los acudientes encontrados
+      const acudienteIds = Array.from(acudientesMap.keys());
+      const usuariosMap = new Map<string, any>();
+      if (acudienteIds.length > 0) {
+        const { data } = await supabase
+          .from("Usuarios")
+          .select("id, nombres, apellidos, numero_de_telefono")
+          .in("id", acudienteIds);
+        (data || []).forEach((u: any) => usuariosMap.set(String(u.id), u));
+      }
+
+      // Resolver datos de Estudiantes para los hijos
+      const allHijoIds = new Set<number>();
+      for (const a of acudientesMap.values()) {
+        for (const hid of [a.acudido1_id, a.acudido2_id, a.acudido3_id, a.acudido4_id]) {
+          if (hid != null) allHijoIds.add(hid);
+        }
+      }
+      const estsMap = new Map<string, any>();
+      if (allHijoIds.size > 0) {
+        const { data } = await supabase
+          .from("Estudiantes")
+          .select("id_estudiantil, nombres, nombre_estudiante, apellidos, apellidos_estudiante, grado_estudiante, salon_estudiante")
+          .in("id_estudiantil", Array.from(allHijoIds));
+        (data || []).forEach((e: any) => estsMap.set(String(e.id_estudiantil), e));
+      }
+
+      // Construir array PadreRow compatible con el resto del componente
+      const padresRows: PadreRow[] = [];
+      for (const [aid, a] of acudientesMap.entries()) {
+        const u = usuariosMap.get(aid);
+        const legacyP = a._legacy;
+        const row: any = {
+          padre_id: aid,
+          padre_nombre: u ? `${u.nombres || ""} ${u.apellidos || ""}`.trim() : (legacyP?.padre_nombre || ""),
+          numero_de_telefono: u?.numero_de_telefono || legacyP?.numero_de_telefono || "",
+        };
+        for (const i of [1, 2, 3, 4]) {
+          const hid = a[`acudido${i}_id`];
+          const h = hid ? estsMap.get(String(hid)) : null;
+          row[`padre_estudiante${i}_id`] = hid;
+          row[`padre_estudiante${i}_nombre`] = h ? (h.nombres || h.nombre_estudiante || "") : (legacyP?.[`padre_estudiante${i}_nombre`] || "");
+          row[`padre_estudiante${i}_apellidos`] = h ? (h.apellidos || h.apellidos_estudiante || "") : (legacyP?.[`padre_estudiante${i}_apellidos`] || "");
+          row[`padre_estudiante${i}_grado`] = h ? h.grado_estudiante : (legacyP?.[`padre_estudiante${i}_grado`] || "");
+          row[`padre_estudiante${i}_salon`] = h ? h.salon_estudiante : (legacyP?.[`padre_estudiante${i}_salon`] || "");
+        }
+        padresRows.push(row as PadreRow);
+      }
+      setPadres(padresRows);
     }
 
     // 4. Cargar respuestas

@@ -142,6 +142,17 @@ const Sugerencias = () => {
                       onClick={async () => {
                         setSelected(s);
                         setSelectedTelefono(null);
+                        // Fase 10: el teléfono vive en Usuarios (global)
+                        const { data: usuario } = await supabase
+                          .from('Usuarios')
+                          .select('numero_de_telefono')
+                          .eq('id', s.id)
+                          .maybeSingle();
+                        if (usuario?.numero_de_telefono) {
+                          setSelectedTelefono(usuario.numero_de_telefono);
+                          return;
+                        }
+                        // Fallback legacy: buscar en tablas operativas
                         const { data: perfil } = await supabase
                           .from('Perfiles_Generales')
                           .select('numero_de_telefono')

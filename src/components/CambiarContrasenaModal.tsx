@@ -9,6 +9,14 @@ interface CambiarContrasenaModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+/**
+ * Cambia la contraseña del usuario.
+ *
+ * Fase 10: la contraseña vive en Usuarios.contrasena (global, una por persona).
+ * Ya no se actualiza por tabla operativa (Internos.contrasena, PG.contrasena).
+ * Por compatibilidad mientras dura la transición, también actualizamos las
+ * tablas operativas si el usuario tiene fila ahí.
+ */
 const CambiarContrasenaModal = ({ open, onOpenChange }: CambiarContrasenaModalProps) => {
   const [contrasenaActual, setContrasenaActual] = useState("");
   const [nuevaContrasena, setNuevaContrasena] = useState("");
@@ -56,76 +64,47 @@ const CambiarContrasenaModal = ({ open, onOpenChange }: CambiarContrasenaModalPr
 
     setLoading(true);
     try {
-      const cargo = session.cargo;
-      const isExterno = cargo === 'Estudiante' || cargo === 'Padre de familia';
+      // 1. Validar contraseña actual contra Usuarios (fuente de verdad)
+      const { data: usuario, error: fetchError } = await supabase
+        .from("Usuarios")
+        .select("id, contrasena")
+        .eq("id", session.id)
+        .maybeSingle();
 
-      if (isExterno) {
-        // Estudiante o Padre: consultar/actualizar Perfiles_Generales
-        const column = cargo === 'Estudiante' ? 'estudiante_id' : 'padre_id';
-
-        const { data: perfil, error: fetchError } = await supabase
-          .from("Perfiles_Generales")
-          .select("numero_de_telefono, contrasena")
-          .eq(column, session.id)
-          .not('perfil', 'is', null)
-          .maybeSingle();
-
-        if (fetchError || !perfil) {
-          setError("No se pudo verificar el usuario");
-          setLoading(false);
-          return;
-        }
-
-        if (contrasenaActual !== perfil.contrasena) {
-          setError("La contraseña actual es incorrecta");
-          setLoading(false);
-          return;
-        }
-
-        const { data: updated, error: updateError } = await supabase
-          .from("Perfiles_Generales")
-          .update({ contrasena: nuevaContrasena })
-          .eq("numero_de_telefono", perfil.numero_de_telefono)
-          .select();
-
-        if (updateError || !updated || updated.length === 0) {
-          setError("No se pudo guardar la contraseña. Contacta al administrador.");
-          setLoading(false);
-          return;
-        }
-      } else {
-        // Interno: consultar/actualizar Internos (flujo original)
-        const { data: usuario, error: fetchError } = await supabase
-          .from("Internos")
-          .select("id, contrasena")
-          .eq("id", parseInt(session.id))
-          .maybeSingle();
-
-        if (fetchError || !usuario) {
-          setError("No se pudo verificar el usuario");
-          setLoading(false);
-          return;
-        }
-
-        const contrasenaEsperada = usuario.contrasena ?? String(usuario.id);
-        if (contrasenaActual !== contrasenaEsperada) {
-          setError("La contraseña actual es incorrecta");
-          setLoading(false);
-          return;
-        }
-
-        const { data: updated, error: updateError } = await supabase
-          .from("Internos")
-          .update({ contrasena: nuevaContrasena })
-          .eq("id", parseInt(session.id))
-          .select();
-
-        if (updateError || !updated || updated.length === 0) {
-          setError("No se pudo guardar la contraseña. Contacta al administrador.");
-          setLoading(false);
-          return;
-        }
+      if (fetchError || !usuario) {
+        setError("No se pudo verificar el usuario");
+        setLoading(false);
+        return;
       }
+
+      // Permite "contraseña = id" como primera vez si la contrasena está en NULL
+      const contrasenaEsperada = usuario.contrasena ?? String(usuario.id);
+      if (contrasenaActual !== contrasenaEsperada) {
+        setError("La contraseña actual es incorrecta");
+        setLoading(false);
+        return;
+      }
+
+      // 2. Actualizar en Usuarios (fuente de verdad)
+      const { error: updateError } = await supabase
+        .from("Usuarios")
+        .update({ contrasena: nuevaContrasena })
+        .eq("id", session.id);
+
+      if (updateError) {
+        setError("No se pudo guardar la contraseña. Contacta al administrador.");
+        setLoading(false);
+        return;
+      }
+
+      // 3. Compat: actualizar también en tablas operativas (mientras dure la transición)
+      // Estos updates son silenciosos — si la fila no existe, no pasa nada.
+      await Promise.allSettled([
+        supabase.from("Internos").update({ contrasena: nuevaContrasena }).eq("id", parseInt(session.id)),
+        supabase.from("Perfiles_Generales")
+          .update({ contrasena: nuevaContrasena })
+          .or(`estudiante_id.eq.${session.id},padre_id.eq.${session.id}`),
+      ]);
 
       setSuccess("Contraseña actualizada correctamente");
       setContrasenaActual("");
@@ -146,10 +125,8 @@ const CambiarContrasenaModal = ({ open, onOpenChange }: CambiarContrasenaModalPr
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Overlay */}
       <div className="absolute inset-0 bg-black/50" onClick={closeModal} />
 
-      {/* Modal */}
       <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6">
         <h2 className="text-xl font-bold text-gray-900 mb-4">Cambiar contraseña</h2>
 
@@ -166,7 +143,6 @@ const CambiarContrasenaModal = ({ open, onOpenChange }: CambiarContrasenaModalPr
             </div>
           )}
 
-          {/* Contraseña actual */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Contraseña actual
@@ -189,7 +165,6 @@ const CambiarContrasenaModal = ({ open, onOpenChange }: CambiarContrasenaModalPr
             </div>
           </div>
 
-          {/* Nueva contraseña */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Nueva contraseña
@@ -212,7 +187,6 @@ const CambiarContrasenaModal = ({ open, onOpenChange }: CambiarContrasenaModalPr
             </div>
           </div>
 
-          {/* Confirmar nueva contraseña */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Confirmar nueva contraseña

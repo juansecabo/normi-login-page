@@ -99,28 +99,84 @@ const RegistroNormi = () => {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("estudiantes");
 
-  // Fetch data
+  // Fetch data — Fase 10: combina Perfiles_Generales (legacy) + Acudientes + Estudiantes con teléfono
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const [est, perf] = await Promise.all([
+      const [est, perfLegacy, acuds, ests] = await Promise.all([
         fetchAllPages<Estudiante>((from, to) =>
           supabase
             .from("Estudiantes")
-            .select("id_estudiantil, nombre_estudiante, apellidos_estudiante, grado_estudiante, salon_estudiante")
+            .select("id_estudiantil, nombres, nombre_estudiante, apellidos, apellidos_estudiante, grado_estudiante, salon_estudiante")
             .order("apellidos_estudiante")
             .order("nombre_estudiante")
             .range(from, to)
         ),
+        // Legacy: padres todavía en PG
         fetchAllPages<Perfil>((from, to) =>
           supabase
             .from("Perfiles_Generales")
             .select("perfil, estudiante_id, padre_estudiante1_id, padre_estudiante2_id, padre_estudiante3_id, padre_estudiante4_id, padre_nombre, numero_de_telefono")
             .range(from, to)
         ),
+        // Nuevo: acudientes en Acudientes
+        fetchAllPages<any>((from, to) =>
+          supabase
+            .from("Acudientes")
+            .select("acudiente_id, acudido1_id, acudido2_id, acudido3_id, acudido4_id")
+            .range(from, to)
+        ),
+        // Estudiantes con teléfono = registrados (modelo nuevo)
+        fetchAllPages<any>((from, to) =>
+          supabase
+            .from("Estudiantes")
+            .select("id_estudiantil, numero_de_telefono")
+            .not("numero_de_telefono", "is", null)
+            .range(from, to)
+        ),
       ]);
+
+      // Construir lista combinada de perfiles
+      const acudienteIds = (acuds as any[]).map((a) => a.acudiente_id);
+      // Traer nombres y teléfonos desde Usuarios para los acudientes
+      const usuariosMap = new Map<string, any>();
+      if (acudienteIds.length > 0) {
+        const usuarios = await fetchAllPages<any>((from, to) =>
+          supabase
+            .from("Usuarios")
+            .select("id, nombres, apellidos, numero_de_telefono")
+            .in("id", acudienteIds)
+            .range(from, to)
+        );
+        for (const u of usuarios as any[]) usuariosMap.set(String(u.id), u);
+      }
+
+      // Perfiles del modelo nuevo (Acudientes + Usuarios)
+      const perfilesAcudientes: Perfil[] = (acuds as any[]).map((a) => {
+        const u = usuariosMap.get(String(a.acudiente_id));
+        return {
+          perfil: "Padre de familia",
+          padre_nombre: u ? `${u.nombres || ""} ${u.apellidos || ""}`.trim() : "",
+          numero_de_telefono: u?.numero_de_telefono || "",
+          padre_estudiante1_id: a.acudido1_id,
+          padre_estudiante2_id: a.acudido2_id,
+          padre_estudiante3_id: a.acudido3_id,
+          padre_estudiante4_id: a.acudido4_id,
+        } as Perfil;
+      });
+
+      // Perfiles de estudiantes registrados (Estudiantes con teléfono)
+      const perfilesEstudiantes: Perfil[] = (ests as any[]).map((e) => ({
+        perfil: "Estudiante",
+        estudiante_id: e.id_estudiantil,
+        numero_de_telefono: e.numero_de_telefono,
+      } as Perfil));
+
+      // Combinar — legacy PG + nuevos Acudientes + Estudiantes (de-duplicar más adelante por estudiante_id/padre_estudianteN_id)
+      const combinados = [...(perfLegacy as Perfil[]), ...perfilesAcudientes, ...perfilesEstudiantes];
+
       setEstudiantes(est);
-      setPerfiles(perf);
+      setPerfiles(combinados);
       setLoading(false);
     };
     fetchData();

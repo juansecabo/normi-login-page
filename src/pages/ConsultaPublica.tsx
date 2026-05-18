@@ -269,34 +269,59 @@ export default function ConsultaPublica() {
       }
 
       if (esPadre) {
-        // ------ Flujo padre ------
-        const { data: perfilPadre, error: errP } = await supabase
-          .from("Perfiles_Generales")
-          .select(
-            "padre_id, padre_estudiante1_id, padre_estudiante1_nombre, padre_estudiante1_apellidos, padre_estudiante1_grado, padre_estudiante1_salon, padre_estudiante2_id, padre_estudiante2_nombre, padre_estudiante2_apellidos, padre_estudiante2_grado, padre_estudiante2_salon, padre_estudiante3_id, padre_estudiante3_nombre, padre_estudiante3_apellidos, padre_estudiante3_grado, padre_estudiante3_salon, padre_estudiante4_id, padre_estudiante4_nombre, padre_estudiante4_apellidos, padre_estudiante4_grado, padre_estudiante4_salon"
-          )
-          .eq("padre_id", session.id)
-          .eq("perfil", "Padre de familia")
+        // ------ Flujo padre (Fase 10: Acudientes + JOIN con Estudiantes) ------
+        const { data: acudiente, error: errA } = await supabase
+          .from("Acudientes")
+          .select("acudiente_id, acudido1_id, acudido2_id, acudido3_id, acudido4_id")
+          .eq("acudiente_id", session.id)
           .maybeSingle();
 
-        if (errP || !perfilPadre) {
-          setError("No se pudo cargar su perfil de padre.");
-          setLoading(false);
-          return;
+        let hijoIds: (number | null)[] = [];
+        if (acudiente) {
+          hijoIds = [acudiente.acudido1_id, acudiente.acudido2_id, acudiente.acudido3_id, acudiente.acudido4_id];
+        } else {
+          // Fallback legacy (mientras dure la transición a Acudientes)
+          const { data: perfilPadre } = await supabase
+            .from("Perfiles_Generales")
+            .select("padre_id, padre_estudiante1_id, padre_estudiante2_id, padre_estudiante3_id, padre_estudiante4_id")
+            .eq("padre_id", session.id)
+            .eq("perfil", "Padre de familia")
+            .maybeSingle();
+          if (!perfilPadre) {
+            setError("No se pudo cargar su perfil de acudiente.");
+            setLoading(false);
+            return;
+          }
+          hijoIds = [(perfilPadre as any).padre_estudiante1_id, (perfilPadre as any).padre_estudiante2_id, (perfilPadre as any).padre_estudiante3_id, (perfilPadre as any).padre_estudiante4_id];
         }
 
-        const padreId = String((perfilPadre as any).padre_id || session.id);
+        const padreId = session.id;
         setRespondenteId(padreId);
+
+        // Resolver datos de cada hijo desde Estudiantes
+        const idsValidos = hijoIds.filter((h): h is number => h != null);
+        let hijosData: any[] = [];
+        if (idsValidos.length > 0) {
+          const { data } = await supabase
+            .from("Estudiantes")
+            .select("id_estudiantil, nombres, nombre_estudiante, apellidos, apellidos_estudiante, grado_estudiante, salon_estudiante")
+            .in("id_estudiantil", idsValidos);
+          hijosData = data || [];
+        }
+
+        const hijoMap = new Map<string, any>();
+        for (const h of hijosData) hijoMap.set(String(h.id_estudiantil), h);
 
         // Filtrar hijos que coinciden con la consulta
         const todosHijos: Respondent[] = [];
         for (const idx of [1, 2, 3, 4]) {
-          const hijoId = (perfilPadre as any)[`padre_estudiante${idx}_id`];
-          const nombre = (perfilPadre as any)[`padre_estudiante${idx}_nombre`];
-          const apellidos = (perfilPadre as any)[`padre_estudiante${idx}_apellidos`];
-          const grado = (perfilPadre as any)[`padre_estudiante${idx}_grado`];
-          const salon = (perfilPadre as any)[`padre_estudiante${idx}_salon`];
+          const hijoId = hijoIds[idx - 1];
           if (!hijoId) continue;
+          const h = hijoMap.get(String(hijoId));
+          const nombre = h ? (h.nombres || h.nombre_estudiante || "") : "";
+          const apellidos = h ? (h.apellidos || h.apellidos_estudiante || "") : "";
+          const grado = h ? h.grado_estudiante : "";
+          const salon = h ? h.salon_estudiante : "";
 
           let aplica = true;
           if (consultaRow.estudiantes_objetivo && consultaRow.estudiantes_objetivo.length > 0) {
