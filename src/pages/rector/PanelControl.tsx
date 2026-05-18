@@ -19,6 +19,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Plus, Pencil, Trash2, Search, X } from "lucide-react";
+import { useAsignaturas } from "@/hooks/useAsignaturas";
+import CatalogoAsignaturas from "@/components/CatalogoAsignaturas";
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
@@ -36,22 +38,9 @@ const CARGOS = [
   "Secretaria General", "Portero", "Servicios Generales", "Administrador",
 ];
 
-const ASIGNATURAS = [
-  "Artística", "Ayudas Educativas", "Castellano", "Cátedra de Paz",
-  "Ciencia Política", "Ciencias Naturales",
-  "Ciencias Naturales y Educación Ambiental", "Ciencias Políticas",
-  "Ciencias Sociales", "Didáctica Educación Artistica",
-  "Didáctica Matemáticas", "Dimensión Cognitiva",
-  "Dimensión Comunicativa", "Dimensión Corporal",
-  "Dimensión de Ética y Valores", "Dimensión Estética",
-  "Dimensión General", "Educación Artística", "Educación Física",
-  "Estadística", "Ética", "Filosofía", "Física", "Geometría",
-  "Informática", "Inglés", "Investigación Formativa",
-  "Lectura Crítica", "Matemáticas", "MEF", "Pedagogía",
-  "Práctica Pedagógica", "Psicología General", "Química",
-  "Religión", "Tecnología", "Técnicas de PTE-TIC",
-  "Uso pedagógico de tic",
-];
+// El catálogo de asignaturas vive en la tabla "Asignaturas" (por colegio).
+// Se obtiene en runtime con useAsignaturas() — el rector puede crearlas y
+// desactivarlas desde la pestaña "Asignaturas" de este mismo panel.
 
 const NUM_ESTUDIANTES = ["1 (uno)", "2 (dos)", "3 (tres)", "4 (cuatro)"];
 
@@ -189,6 +178,14 @@ async function fetchAllPages<T>(
 const PanelControl = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Catálogo de asignaturas del colegio (vive en tabla Asignaturas).
+  const {
+    todas: asignaturasTodas,
+    activas: asignaturasActivas,
+    refrescar: refrescarAsignaturas,
+  } = useAsignaturas();
+  const ASIGNATURAS_NOMBRES = asignaturasActivas.map((a) => a.nombre);
 
   // Auth
   useEffect(() => {
@@ -1098,6 +1095,7 @@ const PanelControl = () => {
               <TabsTrigger value="perfiles" className="flex-1">Perfiles registrados</TabsTrigger>
               <TabsTrigger value="internos" className="flex-1">Internos</TabsTrigger>
               <TabsTrigger value="asignaciones" className="flex-1">Asignaciones</TabsTrigger>
+              <TabsTrigger value="catalogo-asignaturas" className="flex-1">Asignaturas</TabsTrigger>
             </TabsList>
 
             {/* ════════════════ TAB: ESTUDIANTES ════════════════ */}
@@ -1428,6 +1426,14 @@ const PanelControl = () => {
                 </div>
               )}
             </TabsContent>
+
+            {/* ════════════════ TAB: CATÁLOGO DE ASIGNATURAS ════════════════ */}
+            <TabsContent value="catalogo-asignaturas">
+              <CatalogoAsignaturas
+                asignaturas={asignaturasTodas}
+                onChange={refrescarAsignaturas}
+              />
+            </TabsContent>
           </Tabs>
         </div>
       </main>
@@ -1708,17 +1714,23 @@ const PanelControl = () => {
                 </span>
               </Label>
               <div className="border rounded-md p-3 max-h-48 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {ASIGNATURAS.map((a) => (
-                  <label key={a} className="flex items-center gap-2 text-sm cursor-pointer">
-                    <Checkbox
-                      checked={asigAsignaturas.includes(a)}
-                      onCheckedChange={() =>
-                        setAsigAsignaturas(toggleItem(asigAsignaturas, a))
-                      }
-                    />
-                    {a}
-                  </label>
-                ))}
+                {ASIGNATURAS_NOMBRES.length === 0 ? (
+                  <p className="text-sm text-muted-foreground col-span-full">
+                    No hay asignaturas activas. Agrégalas en la pestaña "Asignaturas".
+                  </p>
+                ) : (
+                  ASIGNATURAS_NOMBRES.map((a) => (
+                    <label key={a} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox
+                        checked={asigAsignaturas.includes(a)}
+                        onCheckedChange={() =>
+                          setAsigAsignaturas(toggleItem(asigAsignaturas, a))
+                        }
+                      />
+                      {a}
+                    </label>
+                  ))
+                )}
               </div>
             </div>
 
