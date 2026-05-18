@@ -73,8 +73,8 @@ function getNivelFromGrado(grado: string): string | null {
 
 interface Estudiante {
   id_estudiantil: number;
-  nombres: string;
-  apellidos: string;
+  nombre_estudiante: string;
+  apellidos_estudiante: string;
   nivel_estudiante: string;
   grado_estudiante: string;
   salon_estudiante: string;
@@ -307,8 +307,8 @@ const PanelControl = () => {
     if (!num || isNaN(num)) { clear(); return; }
     const est = estudiantes.find((e) => e.id_estudiantil === num);
     if (est) {
-      setNombre(est.nombres || "");
-      setApellidos(est.apellidos || "");
+      setNombre(est.nombre_estudiante || "");
+      setApellidos(est.apellidos_estudiante || "");
       setGrado(est.grado_estudiante || "");
       setSalon(est.salon_estudiante || "");
     } else {
@@ -325,9 +325,9 @@ const PanelControl = () => {
     const data = await fetchAllPages((from, to) =>
       supabase
         .from("Estudiantes")
-        .select("id_estudiantil, nombres, apellidos, nivel_estudiante, grado_estudiante, salon_estudiante, acudiente1_nombres, acudiente1_apellidos, acudiente1_telefono, acudiente2_nombres, acudiente2_apellidos, acudiente2_telefono, acudiente3_nombres, acudiente3_apellidos, acudiente3_telefono")
-        .order("apellidos")
-        .order("nombres")
+        .select("id_estudiantil, nombre_estudiante, apellidos_estudiante, nivel_estudiante, grado_estudiante, salon_estudiante, acudiente1_nombres, acudiente1_apellidos, acudiente1_telefono, acudiente2_nombres, acudiente2_apellidos, acudiente2_telefono, acudiente3_nombres, acudiente3_apellidos, acudiente3_telefono")
+        .order("apellidos_estudiante")
+        .order("nombre_estudiante")
         .range(from, to)
     );
     setEstudiantes(data);
@@ -376,8 +376,8 @@ const PanelControl = () => {
     if (est) {
       setEditingEst(est);
       setEstId(String(est.id_estudiantil));
-      setEstNombre(est.nombres || "");
-      setEstApellidos(est.apellidos || "");
+      setEstNombre(est.nombre_estudiante || "");
+      setEstApellidos(est.apellidos_estudiante || "");
       setEstGrado(est.grado_estudiante || "");
       setEstSalon(est.salon_estudiante || "");
       const joinName = (n: string | null, a: string | null) =>
@@ -435,8 +435,8 @@ const PanelControl = () => {
     const a3 = splitName(estAcu3Nombre);
     const payload = {
       id_estudiantil: Number(estId),
-      nombres: estNombre.trim(),
-      apellidos: estApellidos.trim(),
+      nombre_estudiante: estNombre.trim(),
+      apellidos_estudiante: estApellidos.trim(),
       nivel_estudiante: nivel,
       grado_estudiante: estGrado,
       salon_estudiante: estSalon,
@@ -1002,7 +1002,7 @@ const PanelControl = () => {
 
   const filteredEst = estudiantes.filter((e) =>
     matchesSearch(
-      `${e.apellidos} ${e.nombres} ${e.id_estudiantil} ${e.grado_estudiante} ${e.salon_estudiante}`,
+      `${e.apellidos_estudiante} ${e.nombre_estudiante} ${e.id_estudiantil} ${e.grado_estudiante} ${e.salon_estudiante}`,
       searchEst
     )
   );
@@ -1169,8 +1169,8 @@ const PanelControl = () => {
                         filteredEst.map((e) => (
                           <TableRow key={e.id_estudiantil}>
                             <TableCell className="font-mono">{e.id_estudiantil}</TableCell>
-                            <TableCell>{e.apellidos}</TableCell>
-                            <TableCell>{e.nombres}</TableCell>
+                            <TableCell>{e.apellidos_estudiante}</TableCell>
+                            <TableCell>{e.nombre_estudiante}</TableCell>
                             <TableCell>{e.grado_estudiante}</TableCell>
                             <TableCell>{e.salon_estudiante}</TableCell>
                             <TableCell className="text-right space-x-1">
@@ -1568,7 +1568,7 @@ const PanelControl = () => {
           <p className="text-sm text-muted-foreground">
             ¿Estás seguro de eliminar a{" "}
             <strong>
-              {showDeleteEst?.apellidos} {showDeleteEst?.nombres}
+              {showDeleteEst?.apellidos_estudiante} {showDeleteEst?.nombre_estudiante}
             </strong>{" "}
             (id {showDeleteEst?.id_estudiantil})?
           </p>

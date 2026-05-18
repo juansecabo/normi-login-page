@@ -42,8 +42,8 @@ const WEBHOOK_URL = "https://n8n.notasnormi.com/webhook/enviar-comunicado-admin"
 
 interface Estudiante {
   id_estudiantil: number;
-  nombres: string;
-  apellidos: string;
+  nombre_estudiante: string;
+  apellidos_estudiante: string;
   grado_estudiante: string;
   salon_estudiante: string;
   fecha_de_nacimiento?: string | null;
@@ -273,7 +273,7 @@ const RegistrosComportamiento = () => {
     const cargar = async () => {
       const [regsR, estsR, asigR, internoR] = await Promise.all([
         supabase.from("Registros_Comportamiento").select("*").order("fecha", { ascending: false }).order("created_at", { ascending: false }),
-        supabase.from("Estudiantes").select("id_estudiantil, nombres, apellidos, grado_estudiante, salon_estudiante, fecha_de_nacimiento").order("apellidos"),
+        supabase.from("Estudiantes").select("id_estudiantil, nombre_estudiante, apellidos_estudiante, grado_estudiante, salon_estudiante, fecha_de_nacimiento").order("apellidos_estudiante"),
         isProfesor()
           ? supabase.from("Asignación Profesores").select('"Asignatura(s)", "Grado(s)", "Salon(es)"').eq("id", parseInt(session.id!))
           : Promise.resolve({ data: [] as any[] }),
@@ -336,8 +336,8 @@ const RegistrosComportamiento = () => {
     if (formFiltroGrado) lista = lista.filter(e => e.grado_estudiante === formFiltroGrado);
     if (formFiltroSalon) lista = lista.filter(e => e.salon_estudiante === formFiltroSalon);
     return [...lista].sort((a, b) =>
-      a.apellidos.localeCompare(b.apellidos, "es") ||
-      a.nombres.localeCompare(b.nombres, "es")
+      a.apellidos_estudiante.localeCompare(b.apellidos_estudiante, "es") ||
+      a.nombre_estudiante.localeCompare(b.nombre_estudiante, "es")
     );
   }, [estudiantes, formFiltroGrado, formFiltroSalon]);
 
@@ -355,7 +355,7 @@ const RegistrosComportamiento = () => {
     if (!q) return estudiantesBase;
     const tokens = q.split(/\s+/).filter(Boolean);
     return estudiantesBase.filter(e => {
-      const full = norm(`${e.nombres} ${e.apellidos}`);
+      const full = norm(`${e.nombre_estudiante} ${e.apellidos_estudiante}`);
       return tokens.every(t => full.includes(t));
     });
   }, [estudiantesBase, estBusqueda]);
@@ -453,8 +453,8 @@ const RegistrosComportamiento = () => {
     // Construir un Estudiante a partir de los datos del registro (snapshot)
     setEstSeleccionado({
       id_estudiantil: r.estudiante_id,
-      nombres: r.estudiante_nombre,
-      apellidos: r.estudiante_apellidos,
+      nombre_estudiante: r.estudiante_nombre,
+      apellidos_estudiante: r.estudiante_apellidos,
       grado_estudiante: r.estudiante_grado,
       salon_estudiante: r.estudiante_salon,
       fecha_de_nacimiento: null,
@@ -511,8 +511,8 @@ const RegistrosComportamiento = () => {
     const payload: any = {
       tipo,
       estudiante_id: estSeleccionado.id_estudiantil,
-      estudiante_nombre: estSeleccionado.nombres,
-      estudiante_apellidos: estSeleccionado.apellidos,
+      estudiante_nombre: estSeleccionado.nombre_estudiante,
+      estudiante_apellidos: estSeleccionado.apellidos_estudiante,
       estudiante_grado: estSeleccionado.grado_estudiante,
       estudiante_salon: estSeleccionado.salon_estudiante,
       estudiante_edad: edad ? parseInt(edad) : null,
@@ -543,7 +543,7 @@ const RegistrosComportamiento = () => {
       }
 
       try {
-        const estLabel = `${estSeleccionado.nombres} ${estSeleccionado.apellidos} (${grupoEst})`;
+        const estLabel = `${estSeleccionado.nombre_estudiante} ${estSeleccionado.apellidos_estudiante} (${grupoEst})`;
         const tipoLabel = TIPO_LABEL[tipo];
         const asigLabel = asignaturasSel.length === 1 ? `asignatura ${asignaturaTexto}` : `asignaturas ${asignaturaTexto}`;
         const mensaje = `${autor.nombreSimple} envió un Registro de Comportamiento (${tipoLabel}) sobre ${estLabel}, ${asigLabel}.\n\nPueden consultarlo y descargarlo entrando a notasnormi.com → Registros de Comportamiento.`;
@@ -646,7 +646,7 @@ const RegistrosComportamiento = () => {
                 {estSeleccionado ? (
                   <div className="flex items-center justify-between border border-border rounded-md p-2 bg-muted/20">
                     <div>
-                      <p className="text-sm font-semibold">{estSeleccionado.apellidos} {estSeleccionado.nombres}</p>
+                      <p className="text-sm font-semibold">{estSeleccionado.apellidos_estudiante} {estSeleccionado.nombre_estudiante}</p>
                       <p className="text-xs text-muted-foreground">{estSeleccionado.grado_estudiante} {estSeleccionado.salon_estudiante}</p>
                     </div>
                     <button onClick={() => { setEstSeleccionado(null); setEstBusqueda(""); setEdad(""); setAsignaturasSel([]); }} className="text-xs text-primary hover:underline">Cambiar</button>
@@ -677,7 +677,7 @@ const RegistrosComportamiento = () => {
                         <div className="absolute top-full left-0 right-0 mt-1 z-20 border border-border rounded-md max-h-64 overflow-y-auto bg-card shadow-md">
                           {estudiantesBusqueda.map(e => (
                             <button key={e.id_estudiantil} onMouseDown={(ev) => { ev.preventDefault(); seleccionarEstudiante(e); }} className="block w-full text-left px-3 py-2 text-sm hover:bg-muted/50">
-                              {e.apellidos} {e.nombres} <span className="text-xs text-muted-foreground">— {e.grado_estudiante} {e.salon_estudiante}</span>
+                              {e.apellidos_estudiante} {e.nombre_estudiante} <span className="text-xs text-muted-foreground">— {e.grado_estudiante} {e.salon_estudiante}</span>
                             </button>
                           ))}
                         </div>

@@ -116,15 +116,15 @@ const EstadisticasProfesor = () => {
     const fetchEstudiantes = async () => {
       const { data } = await supabase
         .from('Estudiantes')
-        .select('id_estudiantil, apellidos, nombres')
+        .select('id_estudiantil, apellidos_estudiante, nombre_estudiante')
         .eq('grado_estudiante', gradoSeleccionado)
         .eq('salon_estudiante', salonSeleccionado)
-        .order('apellidos')
-        .order('nombres');
+        .order('apellidos_estudiante')
+        .order('nombre_estudiante');
       setEstudiantesDelSalon(
         (data || []).map(e => ({
           id: String(e.id_estudiantil),
-          nombre: `${e.apellidos} ${e.nombres}`
+          nombre: `${e.apellidos_estudiante} ${e.nombre_estudiante}`
         }))
       );
     };

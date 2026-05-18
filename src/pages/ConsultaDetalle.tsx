@@ -52,8 +52,8 @@ interface ConsultaRow {
 
 interface EstudianteRow {
   id_estudiantil: number;
-  nombres: string | null;
-  apellidos: string | null;
+  nombre_estudiante: string | null;
+  apellidos_estudiante: string | null;
   grado_estudiante: string | null;
   salon_estudiante: string | null;
 }
@@ -207,7 +207,7 @@ export default function ConsultaDetalle() {
     if (tienePadresObjetivo) {
       let estQuery = supabase
         .from("Estudiantes")
-        .select("id_estudiantil, nombres, apellidos, grado_estudiante, salon_estudiante");
+        .select("id_estudiantil, nombre_estudiante, apellidos_estudiante, grado_estudiante, salon_estudiante");
 
       if (consultaRow.estudiantes_objetivo && consultaRow.estudiantes_objetivo.length > 0) {
         estQuery = estQuery.in("id_estudiantil", consultaRow.estudiantes_objetivo);
@@ -297,7 +297,7 @@ export default function ConsultaDetalle() {
       if (allHijoIds.size > 0) {
         const { data } = await supabase
           .from("Estudiantes")
-          .select("id_estudiantil, nombres, nombres, apellidos, apellidos, grado_estudiante, salon_estudiante")
+          .select("id_estudiantil, nombres, nombre_estudiante, apellidos, apellidos_estudiante, grado_estudiante, salon_estudiante")
           .in("id_estudiantil", Array.from(allHijoIds));
         (data || []).forEach((e: any) => estsMap.set(String(e.id_estudiantil), e));
       }
@@ -316,8 +316,8 @@ export default function ConsultaDetalle() {
           const hid = a[`acudido${i}_id`];
           const h = hid ? estsMap.get(String(hid)) : null;
           row[`padre_estudiante${i}_id`] = hid;
-          row[`padre_estudiante${i}_nombre`] = h ? (h.nombres || h.nombres || "") : (legacyP?.[`padre_estudiante${i}_nombre`] || "");
-          row[`padre_estudiante${i}_apellidos`] = h ? (h.apellidos || h.apellidos || "") : (legacyP?.[`padre_estudiante${i}_apellidos`] || "");
+          row[`padre_estudiante${i}_nombre`] = h ? (h.nombres || h.nombre_estudiante || "") : (legacyP?.[`padre_estudiante${i}_nombre`] || "");
+          row[`padre_estudiante${i}_apellidos`] = h ? (h.apellidos || h.apellidos_estudiante || "") : (legacyP?.[`padre_estudiante${i}_apellidos`] || "");
           row[`padre_estudiante${i}_grado`] = h ? h.grado_estudiante : (legacyP?.[`padre_estudiante${i}_grado`] || "");
           row[`padre_estudiante${i}_salon`] = h ? h.salon_estudiante : (legacyP?.[`padre_estudiante${i}_salon`] || "");
         }
@@ -569,7 +569,7 @@ export default function ConsultaDetalle() {
 
       return {
         estudiante_id: est.id_estudiantil,
-        nombre_completo: `${est.apellidos || ""} ${est.nombres || ""}`.trim(),
+        nombre_completo: `${est.apellidos_estudiante || ""} ${est.nombre_estudiante || ""}`.trim(),
         grado: est.grado_estudiante,
         salon: est.salon_estudiante,
         acudientes,

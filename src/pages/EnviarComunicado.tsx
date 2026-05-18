@@ -187,18 +187,18 @@ const EnviarComunicado = () => {
       setLoadingListaEstudiantes(true);
       let q = supabase
         .from("Estudiantes")
-        .select("id_estudiantil, apellidos, nombres, grado_estudiante, salon_estudiante")
+        .select("id_estudiantil, apellidos_estudiante, nombre_estudiante, grado_estudiante, salon_estudiante")
         .in("grado_estudiante", gradosSel);
       if (salonesSel.length > 0) q = q.in("salon_estudiante", salonesSel);
       const { data } = await q
         .order("grado_estudiante", { ascending: true })
         .order("salon_estudiante", { ascending: true })
-        .order("apellidos", { ascending: true })
-        .order("nombres", { ascending: true });
+        .order("apellidos_estudiante", { ascending: true })
+        .order("nombre_estudiante", { ascending: true });
       setListaEstudiantesFiltrada(
         (data || []).map(e => ({
           id: String(e.id_estudiantil),
-          nombre: `${e.apellidos} ${e.nombres}`,
+          nombre: `${e.apellidos_estudiante} ${e.nombre_estudiante}`,
           grado: e.grado_estudiante || "",
           salon: e.salon_estudiante || "",
         }))

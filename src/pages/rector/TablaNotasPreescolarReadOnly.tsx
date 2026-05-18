@@ -9,8 +9,8 @@ import { Loader2 } from "lucide-react";
 
 interface Estudiante {
   id_estudiantil: string;
-  apellidos: string;
-  nombres: string;
+  apellidos_estudiante: string;
+  nombre_estudiante: string;
 }
 
 // { [id_estudiantil]: { [periodo]: { [nombre_actividad]: texto } } }
@@ -67,11 +67,11 @@ const TablaNotasPreescolarReadOnly = () => {
       try {
         const { data: estudiantesData, error: errEst } = await supabase
           .from("Estudiantes")
-          .select("id_estudiantil, apellidos, nombres")
+          .select("id_estudiantil, apellidos_estudiante, nombre_estudiante")
           .eq("grado_estudiante", storedGrado)
           .eq("salon_estudiante", storedSalon)
-          .order("apellidos", { ascending: true })
-          .order("nombres", { ascending: true });
+          .order("apellidos_estudiante", { ascending: true })
+          .order("nombre_estudiante", { ascending: true });
 
         if (errEst) {
           console.error("Error fetching estudiantes:", errEst);
@@ -204,7 +204,7 @@ const TablaNotasPreescolarReadOnly = () => {
                       Estudiante #{idx + 1}
                     </div>
                     <h3 className="text-base md:text-lg font-semibold text-foreground">
-                      {est.apellidos} {est.nombres}
+                      {est.apellidos_estudiante} {est.nombre_estudiante}
                     </h3>
                   </div>
 

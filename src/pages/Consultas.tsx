@@ -33,8 +33,8 @@ interface ConsultaRow {
 
 interface EstudianteRow {
   id_estudiantil: number;
-  nombres: string | null;
-  apellidos: string | null;
+  nombre_estudiante: string | null;
+  apellidos_estudiante: string | null;
   grado_estudiante: string | null;
   salon_estudiante: string | null;
   nivel_estudiante: string | null;
@@ -241,7 +241,7 @@ export default function Consultas() {
     (async () => {
       const { data, error } = await supabase
         .from("Estudiantes")
-        .select("id_estudiantil, nombres, apellidos, grado_estudiante, salon_estudiante, nivel_estudiante")
+        .select("id_estudiantil, nombre_estudiante, apellidos_estudiante, grado_estudiante, salon_estudiante, nivel_estudiante")
         .in("grado_estudiante", gradosSel as any);
       if (!error && data) {
         setEstudiantesDelGrado(data as EstudianteRow[]);
@@ -969,8 +969,8 @@ export default function Consultas() {
                         ) : (
                           estudiantesDisponibles
                             .sort((a, b) =>
-                              `${a.apellidos || ""} ${a.nombres || ""}`.localeCompare(
-                                `${b.apellidos || ""} ${b.nombres || ""}`
+                              `${a.apellidos_estudiante || ""} ${a.nombre_estudiante || ""}`.localeCompare(
+                                `${b.apellidos_estudiante || ""} ${b.nombre_estudiante || ""}`
                               )
                             )
                             .map((e) => (
@@ -986,7 +986,7 @@ export default function Consultas() {
                                   }
                                 />
                                 <span className="flex-1">
-                                  {e.apellidos} {e.nombres}
+                                  {e.apellidos_estudiante} {e.nombre_estudiante}
                                 </span>
                                 <span className="text-xs text-muted-foreground">
                                   {e.grado_estudiante} {e.salon_estudiante}

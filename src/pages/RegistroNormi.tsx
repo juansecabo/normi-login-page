@@ -31,8 +31,8 @@ const SALONES = ["1", "2", "3", "4", "5", "6"];
 
 interface Estudiante {
   id_estudiantil: number;
-  nombres: string;
-  apellidos: string;
+  nombre_estudiante: string;
+  apellidos_estudiante: string;
   grado_estudiante: string;
   salon_estudiante: string;
 }
@@ -107,9 +107,9 @@ const RegistroNormi = () => {
         fetchAllPages<Estudiante>((from, to) =>
           supabase
             .from("Estudiantes")
-            .select("id_estudiantil, nombres, nombres, apellidos, apellidos, grado_estudiante, salon_estudiante")
-            .order("apellidos")
-            .order("nombres")
+            .select("id_estudiantil, nombres, nombre_estudiante, apellidos, apellidos_estudiante, grado_estudiante, salon_estudiante")
+            .order("apellidos_estudiante")
+            .order("nombre_estudiante")
             .range(from, to)
         ),
         // Legacy: padres todavía en PG
@@ -219,7 +219,7 @@ const RegistroNormi = () => {
       if (gradoFilter !== "todos" && e.grado_estudiante !== gradoFilter) return false;
       if (salonFilter !== "todos" && e.salon_estudiante !== salonFilter) return false;
       if (search) {
-        const hay = normalize(`${e.apellidos} ${e.nombres} ${e.id_estudiantil}`);
+        const hay = normalize(`${e.apellidos_estudiante} ${e.nombre_estudiante} ${e.id_estudiantil}`);
         if (!hay.includes(normalize(search))) return false;
       }
       return true;
@@ -381,8 +381,8 @@ const RegistroNormi = () => {
       ];
       const rows: RowData[] = displayedEstudiantes.map((e) => ({
         id: e.id_estudiantil,
-        apellidos: e.apellidos,
-        nombres: e.nombres,
+        apellidos: e.apellidos_estudiante,
+        nombres: e.nombre_estudiante,
         grado: e.grado_estudiante,
         salon: e.salon_estudiante,
         estado: estudianteIdsRegistrados.has(e.id_estudiantil) ? "Registrado" : "No registrado",
@@ -405,8 +405,8 @@ const RegistroNormi = () => {
         if (!padres || padres.length === 0) {
           rows.push({
             id: e.id_estudiantil,
-            apellidos: e.apellidos,
-            nombres: e.nombres,
+            apellidos: e.apellidos_estudiante,
+            nombres: e.nombre_estudiante,
             grado: e.grado_estudiante,
             salon: e.salon_estudiante,
             estado: "No registrado",
@@ -417,8 +417,8 @@ const RegistroNormi = () => {
           for (const p of padres) {
             rows.push({
               id: e.id_estudiantil,
-              apellidos: e.apellidos,
-              nombres: e.nombres,
+              apellidos: e.apellidos_estudiante,
+              nombres: e.nombre_estudiante,
               grado: e.grado_estudiante,
               salon: e.salon_estudiante,
               estado: "Registrado",
@@ -597,7 +597,7 @@ const RegistroNormi = () => {
                           <TableRow key={e.id_estudiantil}>
                             <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                             <TableCell className="font-medium whitespace-nowrap">
-                              {e.apellidos}, {e.nombres}
+                              {e.apellidos_estudiante}, {e.nombre_estudiante}
                             </TableCell>
                             <TableCell className="whitespace-nowrap">{e.grado_estudiante}</TableCell>
                             <TableCell>{e.salon_estudiante}</TableCell>
@@ -660,7 +660,7 @@ const RegistroNormi = () => {
                           <TableRow key={e.id_estudiantil}>
                             <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                             <TableCell className="font-medium whitespace-nowrap">
-                              {e.apellidos}, {e.nombres}
+                              {e.apellidos_estudiante}, {e.nombre_estudiante}
                             </TableCell>
                             <TableCell className="whitespace-nowrap">{e.grado_estudiante}</TableCell>
                             <TableCell>{e.salon_estudiante}</TableCell>
@@ -675,7 +675,7 @@ const RegistroNormi = () => {
                                 <button
                                   onClick={() => setSelectedParents({
                                     padres: parentInfo,
-                                    estudiante: `${e.apellidos}, ${e.nombres}`,
+                                    estudiante: `${e.apellidos_estudiante}, ${e.nombre_estudiante}`,
                                   })}
                                   className="ml-2 text-xs text-primary hover:underline font-medium"
                                 >

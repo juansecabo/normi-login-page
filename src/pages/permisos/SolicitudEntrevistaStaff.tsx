@@ -15,7 +15,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-interface Estudiante { id_estudiantil: string; nombres: string; apellidos: string; grado_estudiante: string; salon_estudiante: string; }
+interface Estudiante { id_estudiantil: string; nombre_estudiante: string; apellidos_estudiante: string; grado_estudiante: string; salon_estudiante: string; }
 interface Interno { id: number; nombres: string; apellidos: string; cargo: string; }
 
 const GRADOS = ["Párvulo","Prejardín","Jardín","Transición","Primero","Segundo","Tercero","Cuarto","Quinto","Sexto","Séptimo","Octavo","Noveno","Décimo","Undécimo"];
@@ -75,9 +75,9 @@ const SolicitudEntrevistaStaff = () => {
   // Fetch students when grado/salon changes
   useEffect(() => {
     if (!grado || !salon) { setEstudiantes([]); setEstudianteSeleccionado(null); return; }
-    supabase.from("Estudiantes").select("id_estudiantil, nombres, apellidos, grado_estudiante, salon_estudiante")
+    supabase.from("Estudiantes").select("id_estudiantil, nombre_estudiante, apellidos_estudiante, grado_estudiante, salon_estudiante")
       .eq("grado_estudiante", grado).eq("salon_estudiante", salon)
-      .order("apellidos").order("nombres")
+      .order("apellidos_estudiante").order("nombre_estudiante")
       .then(({ data }) => { setEstudiantes(data || []); setEstudianteSeleccionado(null); });
   }, [grado, salon]);
 
@@ -127,8 +127,8 @@ const SolicitudEntrevistaStaff = () => {
       fecha_solicitud: fmtLocal(hoy),
       fecha_entrevista: fmtLocal(fechaEntrevista),
       hora_entrevista: horaEntrevista,
-      estudiante_nombre: estudianteSeleccionado.nombres,
-      estudiante_apellidos: estudianteSeleccionado.apellidos,
+      estudiante_nombre: estudianteSeleccionado.nombre_estudiante,
+      estudiante_apellidos: estudianteSeleccionado.apellidos_estudiante,
       estudiante_grado: estudianteSeleccionado.grado_estudiante,
       estudiante_salon: estudianteSeleccionado.salon_estudiante,
       solicitante_nombre: [internoEntrevista.nombres, internoEntrevista.apellidos].filter(Boolean).join(" "),
@@ -145,7 +145,7 @@ const SolicitudEntrevistaStaff = () => {
       // Send notification to parent via n8n webhook
       const fechaEntrevistaTexto = fechaEntrevista.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
       const entrevistaConNombre = [internoEntrevista.cargo, internoEntrevista.nombres, internoEntrevista.apellidos].filter(Boolean).join(" ");
-      const mensaje = `Se le informa que se ha solicitado una entrevista para el acudiente del estudiante ${estudianteSeleccionado.nombres} ${estudianteSeleccionado.apellidos} de ${estudianteSeleccionado.grado_estudiante} ${estudianteSeleccionado.salon_estudiante}.\n\nFecha: ${fechaEntrevistaTexto}\nHora: ${horaEntrevista}\nCon: ${entrevistaConNombre}\n\nPor favor ingrese a notasnormi.com → Permisos y Excusas → Solicitud de Entrevista, busque el día indicado, haga click sobre la citación y confirme su asistencia.`;
+      const mensaje = `Se le informa que se ha solicitado una entrevista para el acudiente del estudiante ${estudianteSeleccionado.nombre_estudiante} ${estudianteSeleccionado.apellidos_estudiante} de ${estudianteSeleccionado.grado_estudiante} ${estudianteSeleccionado.salon_estudiante}.\n\nFecha: ${fechaEntrevistaTexto}\nHora: ${horaEntrevista}\nCon: ${entrevistaConNombre}\n\nPor favor ingrese a notasnormi.com → Permisos y Excusas → Solicitud de Entrevista, busque el día indicado, haga click sobre la citación y confirme su asistencia.`;
       const remitente = [session.cargo, session.nombres, session.apellidos].filter(Boolean).join(" ");
       const cargo = session.cargo || "";
       const webhookUrl = ["Rector", "Coordinador(a)"].includes(cargo)
@@ -222,7 +222,7 @@ const SolicitudEntrevistaStaff = () => {
                 <select value={String(estudianteSeleccionado?.id_estudiantil || "")} onChange={(e) => setEstudianteSeleccionado(estudiantes.find(est => String(est.id_estudiantil) === e.target.value) || null)}
                   className="inline px-2 py-1 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm min-w-[200px] cursor-pointer outline-none">
                   <option value="">Seleccionar</option>
-                  {estudiantes.map(e => <option key={e.id_estudiantil} value={String(e.id_estudiantil)}>{e.apellidos} {e.nombres}</option>)}
+                  {estudiantes.map(e => <option key={e.id_estudiantil} value={String(e.id_estudiantil)}>{e.apellidos_estudiante} {e.nombre_estudiante}</option>)}
                 </select>
               </p>
 

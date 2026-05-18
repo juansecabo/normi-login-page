@@ -45,8 +45,8 @@ const N8N_WEBHOOK_URL = 'https://n8n.notasnormi.com/webhook/notificar-notas';
 
 interface Estudiante {
   id_estudiantil: string;
-  apellidos: string;
-  nombres: string;
+  apellidos_estudiante: string;
+  nombre_estudiante: string;
 }
 
 interface Actividad {
@@ -201,11 +201,11 @@ const TablaNotas = () => {
         // Fetch estudiantes
         const { data: estudiantesData, error: estudiantesError } = await supabase
           .from('Estudiantes')
-          .select('id_estudiantil, apellidos, nombres')
+          .select('id_estudiantil, apellidos_estudiante, nombre_estudiante')
           .eq('grado_estudiante', storedGrado)
           .eq('salon_estudiante', storedSalon)
-          .order('apellidos', { ascending: true })
-          .order('nombres', { ascending: true });
+          .order('apellidos_estudiante', { ascending: true })
+          .order('nombre_estudiante', { ascending: true });
 
         console.log("Estudiantes encontrados:", estudiantesData?.length || 0);
 
@@ -1030,8 +1030,8 @@ const TablaNotas = () => {
         estudiantes.forEach(est => {
           const fila: (string | number | null)[] = [
             est.id_estudiantil,
-            est.apellidos,
-            est.nombres,
+            est.apellidos_estudiante,
+            est.nombre_estudiante,
           ];
           periodos.forEach(p => {
             const fp = calcularFinalPeriodo(est.id_estudiantil, p.numero);
@@ -1051,8 +1051,8 @@ const TablaNotas = () => {
         estudiantes.forEach(est => {
           const fila: (string | number | null)[] = [
             est.id_estudiantil,
-            est.apellidos,
-            est.nombres,
+            est.apellidos_estudiante,
+            est.nombre_estudiante,
           ];
           actividadesPeriodo.forEach(a => {
             const nota = notas[est.id_estudiantil]?.[periodoActivo]?.[a.id];
@@ -1131,8 +1131,8 @@ const TablaNotas = () => {
 
         estudiantes.forEach(est => {
           const fila: string[] = [
-            est.apellidos,
-            est.nombres,
+            est.apellidos_estudiante,
+            est.nombre_estudiante,
           ];
           periodos.forEach(p => {
             const fp = calcularFinalPeriodo(est.id_estudiantil, p.numero);
@@ -1151,8 +1151,8 @@ const TablaNotas = () => {
 
         estudiantes.forEach(est => {
           const fila: string[] = [
-            est.apellidos,
-            est.nombres,
+            est.apellidos_estudiante,
+            est.nombre_estudiante,
           ];
           actividadesPeriodo.forEach(a => {
             const nota = notas[est.id_estudiantil]?.[periodoActivo]?.[a.id];
@@ -1701,8 +1701,8 @@ const TablaNotas = () => {
     const datos = [{
       estudiante: {
         id: estudiante.id_estudiantil,
-        nombres: estudiante.nombres,
-        apellidos: estudiante.apellidos,
+        nombres: estudiante.nombre_estudiante,
+        apellidos: estudiante.apellidos_estudiante,
       },
       actividad: actividad.nombre,
       nota,
@@ -1714,7 +1714,7 @@ const TablaNotas = () => {
     setNotificacionPendiente({
       tipo: "nota_individual",
       descripcion: actividad.nombre,
-      nombreEstudiante: `${estudiante.nombres} ${estudiante.apellidos}`,
+      nombreEstudiante: `${estudiante.nombre_estudiante} ${estudiante.apellidos_estudiante}`,
       datos,
     });
     setNotificacionModalOpen(true);
@@ -1737,7 +1737,7 @@ const TablaNotas = () => {
     );
     
     const nombrePeriodo = periodos.find(p => p.numero === periodo)?.nombre;
-    const nombreCompleto = `${estudiante.nombres} ${estudiante.apellidos}`;
+    const nombreCompleto = `${estudiante.nombre_estudiante} ${estudiante.apellidos_estudiante}`;
     
     // Determinar tipo de reporte y mensaje
     let tipoReporte: "completo" | "parcial";
@@ -1769,8 +1769,8 @@ const TablaNotas = () => {
     const datos = [{
       estudiante: {
         id: estudiante.id_estudiantil,
-        nombres: estudiante.nombres,
-        apellidos: estudiante.apellidos,
+        nombres: estudiante.nombre_estudiante,
+        apellidos: estudiante.apellidos_estudiante,
       },
       actividad: `Final ${nombrePeriodo}`,
       nota: notaFinal,
@@ -1809,7 +1809,7 @@ const TablaNotas = () => {
       calcularFinalPeriodo(estudiante.id_estudiantil, p.numero) !== null
     );
     
-    const nombreCompleto = `${estudiante.nombres} ${estudiante.apellidos}`;
+    const nombreCompleto = `${estudiante.nombre_estudiante} ${estudiante.apellidos_estudiante}`;
     
     // Determinar tipo de reporte y mensaje
     let tipoReporte: "completo" | "parcial";
@@ -1838,8 +1838,8 @@ const TablaNotas = () => {
     const datos = [{
       estudiante: {
         id: estudiante.id_estudiantil,
-        nombres: estudiante.nombres,
-        apellidos: estudiante.apellidos,
+        nombres: estudiante.nombre_estudiante,
+        apellidos: estudiante.apellidos_estudiante,
       },
       actividad: "Definitiva Anual",
       nota: notaFinal,
@@ -1871,8 +1871,8 @@ const TablaNotas = () => {
     const datos = estudiantesConNota.map(est => ({
       estudiante: {
         id: est.id_estudiantil,
-        nombres: est.nombres,
-        apellidos: est.apellidos,
+        nombres: est.nombre_estudiante,
+        apellidos: est.apellidos_estudiante,
       },
       actividad: actividad.nombre,
       nota: notas[est.id_estudiantil][actividad.periodo][actividad.id],
@@ -1950,8 +1950,8 @@ const TablaNotas = () => {
       return {
         estudiante: {
           id: est.id_estudiantil,
-          nombres: est.nombres,
-          apellidos: est.apellidos,
+          nombres: est.nombre_estudiante,
+          apellidos: est.apellidos_estudiante,
         },
         actividad: `Final ${periodos.find(p => p.numero === periodo)?.nombre}`,
         nota: calcularFinalPeriodo(est.id_estudiantil, periodo),
@@ -2102,8 +2102,8 @@ const TablaNotas = () => {
       return {
         estudiante: {
           id: est.id_estudiantil,
-          nombres: est.nombres,
-          apellidos: est.apellidos,
+          nombres: est.nombre_estudiante,
+          apellidos: est.apellidos_estudiante,
         },
         actividad: "Definitiva Anual",
         nota: calcularFinalDefinitiva(est.id_estudiantil),
@@ -2887,10 +2887,10 @@ const TablaNotas = () => {
                           {estudiante.id_estudiantil}
                         </td>
                         <td className={`md:sticky md:left-[100px] z-10 border-r border-b border-border p-2 md:p-3 text-xs md:text-sm font-medium ${studentIndex % 2 === 0 ? 'bg-background' : 'bg-muted'}`}>
-                          {estudiante.apellidos}
+                          {estudiante.apellidos_estudiante}
                         </td>
                         <td className={`md:sticky md:left-[280px] z-10 border-r border-b border-border p-2 md:p-3 text-xs md:text-sm ${studentIndex % 2 === 0 ? 'bg-background' : 'bg-muted'}`}>
-                          {estudiante.nombres}
+                          {estudiante.nombre_estudiante}
                         </td>
                         
                         {/* Vista Definitiva Anual*/}
@@ -2908,7 +2908,7 @@ const TablaNotas = () => {
                                   tieneAlgunaNota={tieneNotas}
                                   onAbrirComentario={() => handleAbrirComentario(
                                     estudiante.id_estudiantil,
-                                    `${estudiante.nombres} ${estudiante.apellidos}`,
+                                    `${estudiante.nombre_estudiante} ${estudiante.apellidos_estudiante}`,
                                     `${periodo.numero}-Definitiva Periodo`,
                                     `Final ${periodo.nombre}`,
                                     periodo.numero
@@ -2949,7 +2949,7 @@ const TablaNotas = () => {
                                           <DropdownMenuContent align="end" className="bg-background z-50">
                                             <DropdownMenuItem onClick={() => handleAbrirComentario(
                                               estudiante.id_estudiantil,
-                                              `${estudiante.nombres} ${estudiante.apellidos}`,
+                                              `${estudiante.nombre_estudiante} ${estudiante.apellidos_estudiante}`,
                                               '0-Definitiva Anual',
                                               'Definitiva Anual',
                                               0
@@ -3011,7 +3011,7 @@ const TablaNotas = () => {
                                   onClick={() => handleClickCelda(estudiante.id_estudiantil, actividad.id, periodoActivo, nota)}
                                   onAbrirComentario={() => handleAbrirComentario(
                                     estudiante.id_estudiantil,
-                                    `${estudiante.nombres} ${estudiante.apellidos}`,
+                                    `${estudiante.nombre_estudiante} ${estudiante.apellidos_estudiante}`,
                                     actividad.id,
                                     actividad.nombre,
                                     periodoActivo
@@ -3041,7 +3041,7 @@ const TablaNotas = () => {
                                   tieneAlgunaNota={tieneNotas}
                                   onAbrirComentario={() => handleAbrirComentario(
                                     estudiante.id_estudiantil,
-                                    `${estudiante.nombres} ${estudiante.apellidos}`,
+                                    `${estudiante.nombre_estudiante} ${estudiante.apellidos_estudiante}`,
                                     `${periodoActivo}-Definitiva Periodo`,
                                     'Definitiva Periodo',
                                     periodoActivo

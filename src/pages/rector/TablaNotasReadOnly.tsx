@@ -9,8 +9,8 @@ import { MessageSquare } from "lucide-react";
 
 interface Estudiante {
   id_estudiantil: string;
-  apellidos: string;
-  nombres: string;
+  apellidos_estudiante: string;
+  nombre_estudiante: string;
 }
 
 interface Actividad {
@@ -119,11 +119,11 @@ const TablaNotasReadOnly = () => {
         // Fetch estudiantes
         const { data: estudiantesData, error: estudiantesError } = await supabase
           .from('Estudiantes')
-          .select('id_estudiantil, apellidos, nombres')
+          .select('id_estudiantil, apellidos_estudiante, nombre_estudiante')
           .eq('grado_estudiante', storedGrado)
           .eq('salon_estudiante', storedSalon)
-          .order('apellidos', { ascending: true })
-          .order('nombres', { ascending: true });
+          .order('apellidos_estudiante', { ascending: true })
+          .order('nombre_estudiante', { ascending: true });
 
         if (estudiantesError) {
           console.error('Error fetching estudiantes:', estudiantesError);
@@ -423,10 +423,10 @@ const TablaNotasReadOnly = () => {
                           {estudiante.id_estudiantil}
                         </td>
                         <td className={`md:sticky md:left-[100px] z-10 border-r border-b border-border p-2 md:p-3 text-xs md:text-sm font-medium ${studentIndex % 2 === 0 ? 'bg-background' : 'bg-muted'}`}>
-                          {estudiante.apellidos}
+                          {estudiante.apellidos_estudiante}
                         </td>
                         <td className={`md:sticky md:left-[280px] z-10 border-r border-b border-border p-2 md:p-3 text-xs md:text-sm ${studentIndex % 2 === 0 ? 'bg-background' : 'bg-muted'}`}>
-                          {estudiante.nombres}
+                          {estudiante.nombre_estudiante}
                         </td>
 
                             {getActividadesPorPeriodo(periodoActivo).map((actividad) => {
@@ -445,7 +445,7 @@ const TablaNotasReadOnly = () => {
                                       <button
                                         onClick={() => {
                                           setComentarioModalData({
-                                            nombreEstudiante: `${estudiante.apellidos} ${estudiante.nombres}`,
+                                            nombreEstudiante: `${estudiante.apellidos_estudiante} ${estudiante.nombre_estudiante}`,
                                             nombreActividad: actividad.nombre,
                                             comentario: comentario,
                                             nombreProfesor: nombreProfesor,
