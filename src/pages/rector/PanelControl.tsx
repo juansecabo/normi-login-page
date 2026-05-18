@@ -858,6 +858,67 @@ const PanelControl = () => {
       ({ error } = await supabase.from("Perfiles_Generales").insert(payload));
     }
 
+    // Fase 10: además del INSERT/UPDATE a PG (compat), escribir el modelo nuevo
+    // (Usuarios + Estudiantes/Acudientes). El trigger DB ya sincroniza pero hacemos
+    // explícito para asegurar consistencia desde el admin panel.
+    if (!error) {
+      try {
+        if (perfTipo === "Estudiante" && perfEstId) {
+          // Helper: separar nombres y apellidos para Usuarios global
+          const usuariosPayload: any = {
+            id: String(perfEstId),
+            nombres: perfEstNombre.trim(),
+            apellidos: perfEstApellidos.trim(),
+            numero_de_telefono: tel,
+          };
+          if (perfContrasena) usuariosPayload.contrasena = perfContrasena;
+          await supabase.from("Usuarios").upsert(usuariosPayload, { onConflict: "id" });
+          // Update Estudiantes con el teléfono
+          await supabase.from("Estudiantes")
+            .update({ numero_de_telefono: tel })
+            .eq("id_estudiantil", Number(perfEstId));
+        } else if (perfTipo === "Padre de familia" && perfPadreId) {
+          // Separar nombres y apellidos heurísticamente (últimas 2 palabras = apellidos)
+          const words = perfPadreNombre.trim().split(/\s+/);
+          const nombres = words.length <= 2 ? words[0] : words.slice(0, -2).join(" ");
+          const apellidos = words.length <= 1 ? "" : words.length === 2 ? words[1] : words.slice(-2).join(" ");
+          const usuariosPayload: any = {
+            id: perfPadreId,
+            nombres,
+            apellidos,
+            numero_de_telefono: tel,
+          };
+          if (perfContrasena) usuariosPayload.contrasena = perfContrasena;
+          await supabase.from("Usuarios").upsert(usuariosPayload, { onConflict: "id" });
+          // Determinar colegio_id desde el primer hijo
+          const refHijoId = perfHijo1Id ? Number(perfHijo1Id) : null;
+          if (refHijoId) {
+            const { data: refEst } = await supabase.from("Estudiantes")
+              .select("colegio_id")
+              .eq("id_estudiantil", refHijoId)
+              .single();
+            const colegio_id_acud = refEst?.colegio_id;
+            if (colegio_id_acud) {
+              const numH = parseInt(perfNumEst);
+              const acudPayload: any = {
+                acudiente_id: perfPadreId,
+                colegio_id: colegio_id_acud,
+                numero_de_acudidos: perfNumEst,
+                acudido1_id: perfHijo1Id ? Number(perfHijo1Id) : null,
+                acudido2_id: numH >= 2 && perfHijo2Id ? Number(perfHijo2Id) : null,
+                acudido3_id: numH >= 3 && perfHijo3Id ? Number(perfHijo3Id) : null,
+                acudido4_id: numH >= 4 && perfHijo4Id ? Number(perfHijo4Id) : null,
+              };
+              await supabase.from("Acudientes").upsert(acudPayload, { onConflict: "acudiente_id,colegio_id" });
+            }
+          }
+        }
+      } catch (e) {
+        console.error("[savePerfil dual-write] Error escribiendo modelo nuevo:", e);
+        // No bloqueamos: el trigger DB también lo sincroniza
+      }
+    }
+
     setSavingPerf(false);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -871,6 +932,23 @@ const PanelControl = () => {
   const deletePerfil = async () => {
     if (!showDeletePerf) return;
     setSavingPerf(true);
+    // Fase 10: eliminar también del modelo nuevo
+    try {
+      if (showDeletePerf.perfil === "Estudiante" && showDeletePerf.estudiante_id) {
+        // Para estudiantes: NULLear teléfono en Estudiantes y borrar Usuarios si existe
+        await supabase.from("Estudiantes")
+          .update({ numero_de_telefono: null })
+          .eq("id_estudiantil", showDeletePerf.estudiante_id);
+        // Opcional: borrar la fila de Usuarios (la persona deja de poder loguearse)
+        await supabase.from("Usuarios").delete().eq("id", String(showDeletePerf.estudiante_id));
+      } else if (showDeletePerf.perfil === "Padre de familia" && showDeletePerf.padre_id) {
+        // Para acudientes: borrar la fila en Acudientes y de Usuarios
+        await supabase.from("Acudientes").delete().eq("acudiente_id", showDeletePerf.padre_id);
+        await supabase.from("Usuarios").delete().eq("id", showDeletePerf.padre_id);
+      }
+    } catch (e) {
+      console.error("[deletePerfil dual-delete] Error borrando modelo nuevo:", e);
+    }
     const { error } = await supabase
       .from("Perfiles_Generales")
       .delete()
