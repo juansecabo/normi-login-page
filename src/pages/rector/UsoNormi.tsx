@@ -48,15 +48,24 @@ const UsoNormi = () => {
 
   const cargarDatos = async () => {
     try {
-      // 1. All professors
+      // 1. All professors. Teléfono ahora vive en Usuarios (Fase 10.E.15) — join manual por id.
       const { data: internos } = await supabase
         .from("Internos")
-        .select("numero_de_telefono, id, nombres, apellidos")
+        .select("id, nombres, apellidos")
         .eq("cargo", "Profesor(a)");
 
       if (!internos) { setLoading(false); return; }
 
       const profCodigos = new Set(internos.map(p => String(p.id)));
+      const profIds = internos.map(p => String(p.id));
+      const telByCodigo = new Map<string, string>();
+      if (profIds.length > 0) {
+        const { data: usuarios } = await supabase
+          .from("Usuarios")
+          .select("id, numero_de_telefono")
+          .in("id", profIds);
+        for (const u of usuarios || []) telByCodigo.set(String(u.id), String(u.numero_de_telefono || ""));
+      }
 
       // 2. Notas → count from "Nombre de Actividades" by id_profesor
       const { data: notasData } = await supabase
@@ -125,7 +134,7 @@ const UsoNormi = () => {
       // --- Build professor stats ---
       const profStats: ProfesorStats[] = internos.map(p => {
         const cod = String(p.id);
-        const tel = String(p.numero_de_telefono);
+        const tel = telByCodigo.get(cod) || "";
         const notas = notasByProf[cod] || 0;
         const actividades = actByProf[tel] || 0;
         const comunicados = comByProf[cod] || 0;

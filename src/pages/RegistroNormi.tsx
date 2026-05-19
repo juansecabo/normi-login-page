@@ -103,7 +103,7 @@ const RegistroNormi = () => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const [est, acuds, ests] = await Promise.all([
+      const [est, acuds] = await Promise.all([
         fetchAllPages<Estudiante>((from, to) =>
           supabase
             .from("Estudiantes")
@@ -118,15 +118,23 @@ const RegistroNormi = () => {
             .select("id, acudido1_id, acudido2_id, acudido3_id, acudido4_id")
             .range(from, to)
         ),
-        // Estudiantes con teléfono = registrados
-        fetchAllPages<any>((from, to) =>
+      ]);
+
+      // Estudiantes registrados: Usuarios con id = Estudiantes.id y teléfono no nulo
+      // (Fase 10.E.15 — el teléfono solo vive en Usuarios)
+      const estudianteIdsStr = est.map((e) => String(e.id));
+      const usuariosEstMap = new Map<string, any>();
+      if (estudianteIdsStr.length > 0) {
+        const usuariosEst = await fetchAllPages<any>((from, to) =>
           supabase
-            .from("Estudiantes")
+            .from("Usuarios")
             .select("id, numero_de_telefono")
+            .in("id", estudianteIdsStr)
             .not("numero_de_telefono", "is", null)
             .range(from, to)
-        ),
-      ]);
+        );
+        for (const u of usuariosEst as any[]) usuariosEstMap.set(String(u.id), u);
+      }
 
       // Construir lista combinada de perfiles
       const acudienteIds = (acuds as any[]).map((a) => a.id);
@@ -157,12 +165,17 @@ const RegistroNormi = () => {
         } as Perfil;
       });
 
-      // Perfiles de estudiantes registrados (Estudiantes con teléfono)
-      const perfilesEstudiantes: Perfil[] = (ests as any[]).map((e) => ({
-        perfil: "Estudiante",
-        estudiante_id: e.id,
-        numero_de_telefono: e.numero_de_telefono,
-      } as Perfil));
+      // Perfiles de estudiantes registrados (Usuarios con teléfono cuyo id está en Estudiantes)
+      const perfilesEstudiantes: Perfil[] = [];
+      for (const [idStr, u] of usuariosEstMap.entries()) {
+        const idNum = Number(idStr);
+        if (!Number.isFinite(idNum)) continue;
+        perfilesEstudiantes.push({
+          perfil: "Estudiante",
+          estudiante_id: idNum,
+          numero_de_telefono: u.numero_de_telefono,
+        } as Perfil);
+      }
 
       const combinados = [...perfilesAcudientes, ...perfilesEstudiantes];
 

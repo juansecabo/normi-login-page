@@ -191,11 +191,11 @@ const ProgramarActividad = () => {
       setProfesorCargo(session.cargo || "Profesor(a)");
 
       try {
-        // Get numero_de_telefono for Calendario Actividades (id_profesor)
+        // Get numero_de_telefono for Calendario Actividades (id_profesor) (Fase 10.E.15: vive en Usuarios)
         const { data: profesor, error: profesorError } = await supabase
-          .from('Internos')
+          .from('Usuarios')
           .select('numero_de_telefono')
-          .eq('id', parseInt(session.id!))
+          .eq('id', String(session.id))
           .single();
 
         if (profesorError || !profesor) {

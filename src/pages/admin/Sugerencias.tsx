@@ -142,22 +142,13 @@ const Sugerencias = () => {
                       onClick={async () => {
                         setSelected(s);
                         setSelectedTelefono(null);
-                        // El teléfono vive en Usuarios (global). Fallback a Internos si no.
+                        // El teléfono vive solo en Usuarios (Fase 10.E.15).
                         const { data: usuario } = await supabase
                           .from('Usuarios')
                           .select('numero_de_telefono')
                           .eq('id', s.id)
                           .maybeSingle();
-                        if (usuario?.numero_de_telefono) {
-                          setSelectedTelefono(usuario.numero_de_telefono);
-                          return;
-                        }
-                        const { data: interno } = await supabase
-                          .from('Internos')
-                          .select('numero_de_telefono')
-                          .eq('id', s.id)
-                          .maybeSingle();
-                        if (interno?.numero_de_telefono) setSelectedTelefono(interno.numero_de_telefono);
+                        if (usuario?.numero_de_telefono) setSelectedTelefono(usuario.numero_de_telefono);
                       }}
                     >
                       <TableCell className="text-xs whitespace-nowrap">

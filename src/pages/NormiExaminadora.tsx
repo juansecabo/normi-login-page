@@ -62,11 +62,11 @@ const NormiExaminadora = () => {
 
     const fetchAsignaciones = async () => {
       try {
-        // Get numero_de_telefono for webhook payload
+        // Get numero_de_telefono for webhook payload (Fase 10.E.15: vive en Usuarios)
         const { data: profesor, error: profesorError } = await supabase
-          .from('Internos')
+          .from('Usuarios')
           .select('numero_de_telefono')
-          .eq('id', parseInt(session.id!))
+          .eq('id', String(session.id))
           .single();
 
         if (profesorError || !profesor) {

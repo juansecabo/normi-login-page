@@ -84,7 +84,8 @@ interface Interno {
   apellidos: string;
   cargo: string;
   contrasena: string;
-  numero_de_telefono: string;
+  // numero_de_telefono ahora vive en Usuarios (Fase 10.E.15)
+  numero_de_telefono?: string | null;
 }
 
 interface Asignacion {
@@ -333,9 +334,22 @@ const PanelControl = () => {
 
   const fetchInternos = async () => {
     setLoadingInt(true);
-    const data = await fetchAllPages((from, to) =>
-      supabase.from("Internos").select("id, nombres, apellidos, cargo, contrasena, numero_de_telefono").range(from, to)
+    const internosData = await fetchAllPages<any>((from, to) =>
+      supabase.from("Internos").select("id, nombres, apellidos, cargo, contrasena").range(from, to)
     );
+    // El teléfono ahora vive en Usuarios (Fase 10.E.15) — join manual por id.
+    const ids = internosData.map((i: any) => String(i.id));
+    const telMap = new Map<string, string | null>();
+    if (ids.length > 0) {
+      const usuarios = await fetchAllPages<any>((from, to) =>
+        supabase.from("Usuarios").select("id, numero_de_telefono").in("id", ids).range(from, to)
+      );
+      for (const u of usuarios as any[]) telMap.set(String(u.id), u.numero_de_telefono ?? null);
+    }
+    const data: Interno[] = internosData.map((i: any) => ({
+      ...i,
+      numero_de_telefono: telMap.get(String(i.id)) ?? null,
+    }));
     setInternos(data.sort((a, b) => (a.apellidos || "").localeCompare(b.apellidos || "", "es")));
     setLoadingInt(false);
   };
@@ -879,10 +893,7 @@ const PanelControl = () => {
           };
           if (perfContrasena) usuariosPayload.contrasena = perfContrasena;
           await supabase.from("Usuarios").upsert(usuariosPayload, { onConflict: "id" });
-          // Update Estudiantes con el teléfono
-          await supabase.from("Estudiantes")
-            .update({ numero_de_telefono: tel })
-            .eq("id", Number(perfEstId));
+          // El teléfono ya quedó en Usuarios (Fase 10.E.15). Estudiantes ya no tiene esa columna.
         } else if (perfTipo === "Padre de familia" && perfPadreId) {
           // Separar nombres y apellidos heurísticamente (últimas 2 palabras = apellidos)
           const words = perfPadreNombre.trim().split(/\s+/);
@@ -941,11 +952,8 @@ const PanelControl = () => {
     // Fase 10: eliminar también del modelo nuevo
     try {
       if (showDeletePerf.perfil === "Estudiante" && showDeletePerf.estudiante_id) {
-        // Para estudiantes: NULLear teléfono en Estudiantes y borrar Usuarios si existe
-        await supabase.from("Estudiantes")
-          .update({ numero_de_telefono: null })
-          .eq("id", showDeletePerf.estudiante_id);
-        // Opcional: borrar la fila de Usuarios (la persona deja de poder loguearse)
+        // Borrar la fila de Usuarios (la persona deja de poder loguearse) — el teléfono
+        // vive en Usuarios desde la Fase 10.E.15.
         await supabase.from("Usuarios").delete().eq("id", String(showDeletePerf.estudiante_id));
       } else if (showDeletePerf.perfil === "Padre de familia" && showDeletePerf.padre_id) {
         // Para acudientes: borrar la fila en Acudientes y de Usuarios

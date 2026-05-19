@@ -326,18 +326,29 @@ export default function ConsultaDetalle() {
       setMiFechaRespuesta(miFila.fecha_respuesta || null);
     }
 
-    // Enriquecer internos con cargo desde la tabla Internos
+    // Enriquecer internos con cargo desde la tabla Internos.
+    // El teléfono ahora vive solo en Usuarios (Fase 10.E.15) — query aparte.
     if (filasInternos.length > 0) {
       const idsInternos = Array.from(new Set(filasInternos.map((r) => r.padre_id)));
       const idsNumericos = idsInternos.map((i) => Number(i)).filter((n) => Number.isFinite(n));
-      const { data: internos } = idsNumericos.length > 0
-        ? await supabase
-            .from("Internos" as any)
-            .select("id, nombres, apellidos, cargo, numero_de_telefono")
-            .in("id" as any, idsNumericos)
-        : { data: [] as any[] };
+      const [internosRes, usuariosRes] = await Promise.all([
+        idsNumericos.length > 0
+          ? supabase
+              .from("Internos" as any)
+              .select("id, nombres, apellidos, cargo")
+              .in("id" as any, idsNumericos)
+          : Promise.resolve({ data: [] as any[] }),
+        idsInternos.length > 0
+          ? supabase
+              .from("Usuarios" as any)
+              .select("id, numero_de_telefono")
+              .in("id" as any, idsInternos)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
       const internoMap = new Map<string, any>();
-      (internos || []).forEach((i: any) => internoMap.set(String(i.id), i));
+      (internosRes.data || []).forEach((i: any) => internoMap.set(String(i.id), i));
+      const telMap = new Map<string, string | null>();
+      (usuariosRes.data || []).forEach((u: any) => telMap.set(String(u.id), u.numero_de_telefono ?? null));
       const filasEnriquecidas: RespuestaInternoTabla[] = filasInternos.map((r) => {
         const info = internoMap.get(String(r.padre_id));
         const nombre = r.padre_nombre
@@ -346,7 +357,7 @@ export default function ConsultaDetalle() {
           padre_id: r.padre_id,
           nombre,
           cargo: info?.cargo || null,
-          telefono: info?.numero_de_telefono || null,
+          telefono: telMap.get(String(r.padre_id)) || null,
           opcion: r.opcion_seleccionada,
           firma_url: r.firma_url,
           firma_nombre: r.firma_nombre,

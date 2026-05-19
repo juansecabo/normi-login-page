@@ -155,11 +155,11 @@ const ActividadesCalendario = () => {
       setProfesorNombres(session.nombres);
       setProfesorApellidos(session.apellidos);
 
-      // Buscar el numero_de_telefono del profesor desde la tabla Internos
+      // Buscar el numero_de_telefono del profesor desde Usuarios (Fase 10.E.15).
       const { data: profesorData, error: profesorError } = await supabase
-        .from('Internos')
+        .from('Usuarios')
         .select('numero_de_telefono')
-        .eq('id', session.id)
+        .eq('id', String(session.id))
         .single();
 
       if (profesorError || !profesorData) {
