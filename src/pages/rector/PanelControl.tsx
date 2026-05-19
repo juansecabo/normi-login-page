@@ -67,15 +67,6 @@ interface Estudiante {
   nivel: string;
   grado: string;
   salon: string;
-  acudiente1_nombres: string | null;
-  acudiente1_apellidos: string | null;
-  acudiente1_telefono: string | null;
-  acudiente2_nombres: string | null;
-  acudiente2_apellidos: string | null;
-  acudiente2_telefono: string | null;
-  acudiente3_nombres: string | null;
-  acudiente3_apellidos: string | null;
-  acudiente3_telefono: string | null;
 }
 
 interface Interno {
@@ -212,10 +203,15 @@ const PanelControl = () => {
   const [estApellidos, setEstApellidos] = useState("");
   const [estGrado, setEstGrado] = useState("");
   const [estSalon, setEstSalon] = useState("");
+  // Fase 10.E.17: el acudiente vive en Usuarios + Acudientes. El form pide
+  // cédula para poder linkear/crear correctamente en el modelo vivo.
+  const [estAcu1Cedula, setEstAcu1Cedula] = useState("");
   const [estAcu1Nombre, setEstAcu1Nombre] = useState("");
   const [estAcu1Tel, setEstAcu1Tel] = useState("");
+  const [estAcu2Cedula, setEstAcu2Cedula] = useState("");
   const [estAcu2Nombre, setEstAcu2Nombre] = useState("");
   const [estAcu2Tel, setEstAcu2Tel] = useState("");
+  const [estAcu3Cedula, setEstAcu3Cedula] = useState("");
   const [estAcu3Nombre, setEstAcu3Nombre] = useState("");
   const [estAcu3Tel, setEstAcu3Tel] = useState("");
 
@@ -321,9 +317,11 @@ const PanelControl = () => {
   const fetchEstudiantes = async () => {
     setLoadingEst(true);
     const data = await fetchAllPages((from, to) =>
+      // Fase 10.E.17: las cols acudienteN_* fueron eliminadas. Los acudientes
+      // viven en Acudientes (JOIN Usuarios) y se cargan bajo demanda.
       supabase
         .from("Estudiantes")
-        .select("id, nombres, apellidos, nivel, grado, salon, acudiente1_nombres, acudiente1_apellidos, acudiente1_telefono, acudiente2_nombres, acudiente2_apellidos, acudiente2_telefono, acudiente3_nombres, acudiente3_apellidos, acudiente3_telefono")
+        .select("id, nombres, apellidos, nivel, grado, salon")
         .order("apellidos")
         .order("nombres")
         .range(from, to)
@@ -382,7 +380,11 @@ const PanelControl = () => {
   // ESTUDIANTES CRUD
   // ═══════════════════════════════════════════════════════════════════════════
 
-  const openEstDialog = (est?: Estudiante) => {
+  const openEstDialog = async (est?: Estudiante) => {
+    // Reset siempre antes de cargar (evita ver datos del estudiante anterior).
+    setEstAcu1Cedula(""); setEstAcu1Nombre(""); setEstAcu1Tel("");
+    setEstAcu2Cedula(""); setEstAcu2Nombre(""); setEstAcu2Tel("");
+    setEstAcu3Cedula(""); setEstAcu3Nombre(""); setEstAcu3Tel("");
     if (est) {
       setEditingEst(est);
       setEstId(String(est.id));
@@ -390,14 +392,37 @@ const PanelControl = () => {
       setEstApellidos(est.apellidos || "");
       setEstGrado(est.grado || "");
       setEstSalon(est.salon || "");
-      const joinName = (n: string | null, a: string | null) =>
-        [n, a].filter((x) => x && String(x).trim()).map((x) => String(x).trim()).join(" ");
-      setEstAcu1Nombre(joinName(est.acudiente1_nombres, est.acudiente1_apellidos));
-      setEstAcu1Tel(est.acudiente1_telefono || "");
-      setEstAcu2Nombre(joinName(est.acudiente2_nombres, est.acudiente2_apellidos));
-      setEstAcu2Tel(est.acudiente2_telefono || "");
-      setEstAcu3Nombre(joinName(est.acudiente3_nombres, est.acudiente3_apellidos));
-      setEstAcu3Tel(est.acudiente3_telefono || "");
+      setShowEstDialog(true);
+
+      // Fase 10.E.17: cargar acudientes desde el modelo vivo
+      // (Acudientes cuyo acudidoN_id apunta a este estudiante) + Usuarios.
+      try {
+        const { data: acus } = await supabase
+          .from("Acudientes")
+          .select("id, acudido1_id, acudido2_id, acudido3_id, acudido4_id")
+          .or(`acudido1_id.eq.${est.id},acudido2_id.eq.${est.id},acudido3_id.eq.${est.id},acudido4_id.eq.${est.id}`);
+        const ids = (acus || []).map((a: any) => String(a.id));
+        if (ids.length > 0) {
+          const { data: usuarios } = await supabase
+            .from("Usuarios")
+            .select("id, nombres, apellidos, numero_de_telefono")
+            .in("id", ids);
+          const slots: Array<{ ced: string; nom: string; tel: string }> = [];
+          for (const u of usuarios || []) {
+            slots.push({
+              ced: String(u.id),
+              nom: `${u.nombres || ""} ${u.apellidos || ""}`.trim(),
+              tel: String(u.numero_de_telefono || ""),
+            });
+            if (slots.length >= 3) break;
+          }
+          if (slots[0]) { setEstAcu1Cedula(slots[0].ced); setEstAcu1Nombre(slots[0].nom); setEstAcu1Tel(slots[0].tel); }
+          if (slots[1]) { setEstAcu2Cedula(slots[1].ced); setEstAcu2Nombre(slots[1].nom); setEstAcu2Tel(slots[1].tel); }
+          if (slots[2]) { setEstAcu3Cedula(slots[2].ced); setEstAcu3Nombre(slots[2].nom); setEstAcu3Tel(slots[2].tel); }
+        }
+      } catch (e) {
+        console.error("[openEstDialog] No se pudieron cargar acudientes:", e);
+      }
     } else {
       setEditingEst(null);
       setEstId("");
@@ -405,14 +430,8 @@ const PanelControl = () => {
       setEstApellidos("");
       setEstGrado("");
       setEstSalon("");
-      setEstAcu1Nombre("");
-      setEstAcu1Tel("");
-      setEstAcu2Nombre("");
-      setEstAcu2Tel("");
-      setEstAcu3Nombre("");
-      setEstAcu3Tel("");
+      setShowEstDialog(true);
     }
-    setShowEstDialog(true);
   };
 
   const saveEstudiante = async () => {
@@ -425,24 +444,41 @@ const PanelControl = () => {
       toast({ title: "Error", description: "Grado inválido", variant: "destructive" });
       return;
     }
+
+    // Fase 10.E.17: validar que cada acudiente con datos tenga cédula.
+    // Sin cédula no se puede linkear correctamente en Usuarios + Acudientes.
+    const acuInputs = [
+      { ced: estAcu1Cedula, nom: estAcu1Nombre, tel: estAcu1Tel, label: "Acudiente 1" },
+      { ced: estAcu2Cedula, nom: estAcu2Nombre, tel: estAcu2Tel, label: "Acudiente 2" },
+      { ced: estAcu3Cedula, nom: estAcu3Nombre, tel: estAcu3Tel, label: "Acudiente 3" },
+    ];
+    for (const a of acuInputs) {
+      const tieneAlgunDato = a.nom.trim() || a.tel.trim();
+      if (tieneAlgunDato && !a.ced.trim()) {
+        toast({
+          title: "Falta la cédula del acudiente",
+          description: `Para registrar a ${a.label} necesitas su cédula.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setSavingEst(true);
-    const nullIfEmpty = (s: string) => (s.trim() ? s.trim() : null);
     const cleanPhone = (s: string) => {
       const first = s.split(",")[0]?.trim() || "";
       return first || null;
     };
-    const splitName = (s: string): { nombres: string | null; apellidos: string | null } => {
+    const splitName = (s: string): { nombres: string; apellidos: string } => {
       const t = s.trim().replace(/\s+/g, " ");
-      if (!t) return { nombres: null, apellidos: null };
+      if (!t) return { nombres: "", apellidos: "" };
       const parts = t.split(" ");
-      if (parts.length <= 2) return { nombres: parts.join(" "), apellidos: null };
+      if (parts.length <= 2) return { nombres: parts.join(" "), apellidos: "" };
       const apellidos = parts.slice(-2).join(" ");
       const nombres = parts.slice(0, -2).join(" ");
       return { nombres, apellidos };
     };
-    const a1 = splitName(estAcu1Nombre);
-    const a2 = splitName(estAcu2Nombre);
-    const a3 = splitName(estAcu3Nombre);
+
     const payload = {
       id: Number(estId),
       nombres: estNombre.trim(),
@@ -450,18 +486,9 @@ const PanelControl = () => {
       nivel: nivel,
       grado: estGrado,
       salon: estSalon,
-      acudiente1_nombres: a1.nombres,
-      acudiente1_apellidos: a1.apellidos,
-      acudiente1_telefono: cleanPhone(estAcu1Tel),
-      acudiente2_nombres: a2.nombres,
-      acudiente2_apellidos: a2.apellidos,
-      acudiente2_telefono: cleanPhone(estAcu2Tel),
-      acudiente3_nombres: a3.nombres,
-      acudiente3_apellidos: a3.apellidos,
-      acudiente3_telefono: cleanPhone(estAcu3Tel),
     };
 
-    let error;
+    let error: { message: string; code?: string } | null = null;
     if (editingEst) {
       ({ error } = await supabase
         .from("Estudiantes")
@@ -471,8 +498,8 @@ const PanelControl = () => {
       ({ error } = await supabase.from("Estudiantes").insert(payload));
     }
 
-    setSavingEst(false);
     if (error) {
+      setSavingEst(false);
       if (error.code === "23505") {
         toast({ title: "Error", description: `Ya existe un estudiante con el id ${estId}`, variant: "destructive" });
       } else {
@@ -480,6 +507,75 @@ const PanelControl = () => {
       }
       return;
     }
+
+    // Fase 10.E.17: persistir acudientes en el modelo vivo (Usuarios + Acudientes).
+    try {
+      // Obtener colegio_id del estudiante para crear/actualizar filas de Acudientes.
+      const { data: estRow } = await supabase
+        .from("Estudiantes")
+        .select("colegio_id")
+        .eq("id", Number(estId))
+        .single();
+      const colegioId = (estRow as any)?.colegio_id;
+
+      for (const a of acuInputs) {
+        const ced = a.ced.trim();
+        if (!ced) continue;
+        const { nombres, apellidos } = splitName(a.nom);
+        const tel = cleanPhone(a.tel);
+        // UPSERT en Usuarios. Default contrasena = cedula si la fila no existe.
+        const { data: existingUser } = await supabase
+          .from("Usuarios")
+          .select("id, contrasena")
+          .eq("id", ced)
+          .maybeSingle();
+        const usuariosPayload: any = {
+          id: ced,
+          nombres,
+          apellidos,
+          numero_de_telefono: tel,
+        };
+        if (!existingUser?.contrasena) usuariosPayload.contrasena = ced;
+        await supabase.from("Usuarios").upsert(usuariosPayload, { onConflict: "id" });
+
+        if (!colegioId) continue;
+        // UPSERT en Acudientes: linkear el estudiante actual a algún slot.
+        const { data: existingAcud } = await supabase
+          .from("Acudientes")
+          .select("id, acudido1_id, acudido2_id, acudido3_id, acudido4_id")
+          .eq("id", ced)
+          .maybeSingle();
+        const estNum = Number(estId);
+        if (existingAcud) {
+          const slots = [existingAcud.acudido1_id, existingAcud.acudido2_id, existingAcud.acudido3_id, existingAcud.acudido4_id];
+          const yaTiene = slots.some((s: any) => s === estNum);
+          if (!yaTiene) {
+            const idxLibre = slots.findIndex((s: any) => s == null);
+            if (idxLibre >= 0) {
+              const col = `acudido${idxLibre + 1}_id`;
+              await supabase.from("Acudientes").update({ [col]: estNum }).eq("id", ced);
+            } else {
+              console.warn(`[saveEstudiante] El acudiente ${ced} ya tiene 4 acudidos, no se puede agregar a ${estNum}.`);
+            }
+          }
+        } else {
+          const acudPayload: any = {
+            id: ced,
+            colegio_id: colegioId,
+            acudido1_id: estNum,
+            acudido2_id: null,
+            acudido3_id: null,
+            acudido4_id: null,
+          };
+          await supabase.from("Acudientes").upsert(acudPayload, { onConflict: "id,colegio_id" });
+        }
+      }
+    } catch (e) {
+      console.error("[saveEstudiante] Error escribiendo acudientes en modelo vivo:", e);
+      // No bloqueamos el flujo: el estudiante ya quedó guardado.
+    }
+
+    setSavingEst(false);
     toast({ title: editingEst ? "Estudiante actualizado" : "Estudiante agregado" });
     setShowEstDialog(false);
     fetchEstudiantes();
@@ -1517,15 +1613,24 @@ const PanelControl = () => {
             <div className="pt-2 border-t">
               <h3 className="text-sm font-semibold mb-2">Acudientes</h3>
               <p className="text-xs text-muted-foreground mb-3">
-                Un teléfono por acudiente. Deja los campos vacíos si no aplica.
+                Cédula, nombre y teléfono por acudiente. La cédula es obligatoria
+                para registrarlo en el sistema. Deja los campos vacíos si no aplica.
               </p>
 
               {[
-                { label: "Acudiente 1", nombre: estAcu1Nombre, setNombre: setEstAcu1Nombre, tel: estAcu1Tel, setTel: setEstAcu1Tel },
-                { label: "Acudiente 2", nombre: estAcu2Nombre, setNombre: setEstAcu2Nombre, tel: estAcu2Tel, setTel: setEstAcu2Tel },
-                { label: "Acudiente 3", nombre: estAcu3Nombre, setNombre: setEstAcu3Nombre, tel: estAcu3Tel, setTel: setEstAcu3Tel },
+                { label: "Acudiente 1", cedula: estAcu1Cedula, setCedula: setEstAcu1Cedula, nombre: estAcu1Nombre, setNombre: setEstAcu1Nombre, tel: estAcu1Tel, setTel: setEstAcu1Tel },
+                { label: "Acudiente 2", cedula: estAcu2Cedula, setCedula: setEstAcu2Cedula, nombre: estAcu2Nombre, setNombre: setEstAcu2Nombre, tel: estAcu2Tel, setTel: setEstAcu2Tel },
+                { label: "Acudiente 3", cedula: estAcu3Cedula, setCedula: setEstAcu3Cedula, nombre: estAcu3Nombre, setNombre: setEstAcu3Nombre, tel: estAcu3Tel, setTel: setEstAcu3Tel },
               ].map((a) => (
-                <div key={a.label} className="grid grid-cols-2 gap-3 mb-3">
+                <div key={a.label} className="grid grid-cols-3 gap-3 mb-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">{a.label} · Cédula</Label>
+                    <Input
+                      value={a.cedula}
+                      onChange={(e) => a.setCedula(e.target.value)}
+                      placeholder="Cédula"
+                    />
+                  </div>
                   <div className="space-y-1">
                     <Label className="text-xs">{a.label} · Nombre</Label>
                     <Input

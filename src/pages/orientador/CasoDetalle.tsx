@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getSession, isOrientador, isAdmin, puedeAccederDashboard } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
@@ -23,15 +23,6 @@ interface Estudiante {
   apellidos: string;
   grado: string;
   salon: string;
-  acudiente1_nombres?: string | null;
-  acudiente1_apellidos?: string | null;
-  acudiente1_telefono?: string | null;
-  acudiente2_nombres?: string | null;
-  acudiente2_apellidos?: string | null;
-  acudiente2_telefono?: string | null;
-  acudiente3_nombres?: string | null;
-  acudiente3_apellidos?: string | null;
-  acudiente3_telefono?: string | null;
 }
 
 interface Seguimiento {
@@ -358,25 +349,40 @@ const CasoDetalle = () => {
       return;
     }
     setCaso(data as Caso);
-    // Buscar el estudiante para tener acudientes al editar
+    // Buscar el estudiante (Fase 10.E.17: acudientes ya no viven aquí, se leen aparte de Acudientes JOIN Usuarios).
     const { data: e } = await supabase.from("Estudiantes")
-      .select("id, nombres, apellidos, grado, salon, acudiente1_nombres, acudiente1_apellidos, acudiente1_telefono, acudiente2_nombres, acudiente2_apellidos, acudiente2_telefono, acudiente3_nombres, acudiente3_apellidos, acudiente3_telefono")
+      .select("id, nombres, apellidos, grado, salon")
       .eq("id", data.estudiante_id).maybeSingle();
     setEstudiante((e as Estudiante) || null);
     setLoading(false);
   };
 
-  const acudientesEstudiante = useMemo(() => {
-    if (!estudiante) return [] as { nombre: string; telefono: string }[];
-    const list: { nombre: string; telefono: string }[] = [];
-    const push = (nom?: string | null, ape?: string | null, tel?: string | null) => {
-      const full = [nom, ape].filter((x) => x && String(x).trim()).map((x) => String(x).trim()).join(" ");
-      if (full) list.push({ nombre: full, telefono: tel ? String(tel) : "" });
+  // Fase 10.E.17: los acudientes ya no se cachean en Estudiantes.*
+  // Se leen de Acudientes JOIN Usuarios por slot.
+  const [acudientesEstudiante, setAcudientesEstudiante] = useState<{ nombre: string; telefono: string }[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      if (!estudiante) { setAcudientesEstudiante([]); return; }
+      const est = estudiante;
+      const { data: acus } = await supabase
+        .from("Acudientes")
+        .select("id, acudido1_id, acudido2_id, acudido3_id, acudido4_id")
+        .or(`acudido1_id.eq.${est.id},acudido2_id.eq.${est.id},acudido3_id.eq.${est.id},acudido4_id.eq.${est.id}`);
+      const ids = (acus || []).map((a: any) => a.id);
+      if (ids.length === 0) { if (!cancelled) setAcudientesEstudiante([]); return; }
+      const { data: usuarios } = await supabase
+        .from("Usuarios")
+        .select("id, nombres, apellidos, numero_de_telefono")
+        .in("id", ids);
+      const list = (usuarios || []).map((u: any) => ({
+        nombre: `${u.nombres || ""} ${u.apellidos || ""}`.trim(),
+        telefono: String(u.numero_de_telefono || ""),
+      })).filter((x) => x.nombre);
+      if (!cancelled) setAcudientesEstudiante(list);
     };
-    push(estudiante.acudiente1_nombres, estudiante.acudiente1_apellidos, estudiante.acudiente1_telefono);
-    push(estudiante.acudiente2_nombres, estudiante.acudiente2_apellidos, estudiante.acudiente2_telefono);
-    push(estudiante.acudiente3_nombres, estudiante.acudiente3_apellidos, estudiante.acudiente3_telefono);
-    return list;
+    run();
+    return () => { cancelled = true; };
   }, [estudiante]);
 
   // Snapshot para detectar cambios reales al cerrar
