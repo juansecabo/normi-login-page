@@ -22,12 +22,21 @@ import { apiRequest } from '@/lib/apiClient';
 
 type Filter = [string, string, unknown];
 
+interface OrderClause {
+  column: string;
+  ascending?: boolean;
+  nullsFirst?: boolean;
+}
+
 interface QueryState {
   table: string;
   select?: string;
   filters: Filter[];
   or?: string;
-  orderBy?: { column: string; ascending?: boolean; nullsFirst?: boolean };
+  // Lista de orderBy en orden de llamada — el primer .order() es la key primaria,
+  // los siguientes son secundarios. Antes era un solo objeto y el último .order
+  // sobrescribía al primero (bug raíz que rompía .order('apellidos').order('nombres')).
+  orderBy?: OrderClause[];
   limit?: number;
   range?: [number, number];
   single?: 'single' | 'maybeSingle';
@@ -91,7 +100,9 @@ class QueryBuilder<T = any> implements PromiseLike<{ data: T | null; error: any;
   or(expression: string) { this.state.or = expression; return this; }
 
   order(column: string, options?: { ascending?: boolean; nullsFirst?: boolean }) {
-    this.state.orderBy = { column, ...options };
+    // Acumulamos en array — múltiples .order() son válidos (primario, secundario, ...).
+    if (!this.state.orderBy) this.state.orderBy = [];
+    this.state.orderBy.push({ column, ...options });
     return this;
   }
   limit(n: number) { this.state.limit = n; return this; }
