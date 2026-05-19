@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { useEstadisticasEstudiante } from "@/hooks/useEstadisticasApi";
+import { useColegioConfig, colorBucket3 } from "@/hooks/useColegioConfig";
 import { TarjetaResumen } from "./TarjetaResumen";
 import { TablaEvolucion } from "./TablaEvolucion";
 import { ListaComparativa } from "./ListaComparativa";
@@ -15,6 +16,7 @@ const UMBRAL_PORCENTAJE_ANUAL = 160;
 export const AnalisisEstudiante = ({ idEstudiante, periodo, titulo }: AnalisisEstudianteProps) => {
   const contenidoRef = useRef<HTMLDivElement>(null);
   const { data, loading, error } = useEstadisticasEstudiante(idEstudiante, periodo);
+  const { config } = useColegioConfig();
 
   if (!idEstudiante) return <div className="bg-card rounded-lg shadow-soft p-8 text-center text-muted-foreground">Selecciona un estudiante para ver su análisis</div>;
   if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /><span className="ml-2 text-muted-foreground">Espere, por favor...</span></div>;
@@ -31,12 +33,17 @@ export const AnalisisEstudiante = ({ idEstudiante, periodo, titulo }: AnalisisEs
   const mejorAsignatura = tieneSuficientesAsignaturas ? asignaturasEstudiante[0] : null;
   const peorAsignatura = tieneSuficientesAsignaturas ? asignaturasEstudiante[asignaturasEstudiante.length - 1] : null;
 
-  const fortalezas = asignaturasEstudiante.filter((m) => m.promedio >= 4.0).slice(0, 3);
-  const debilidades = asignaturasEstudiante.filter((m) => m.promedio < 3.5).sort((a, b) => a.promedio - b.promedio).slice(0, 3);
+  // Fortalezas: notas en banda alta o superior (segunda y primera del config).
+  // Debilidades: notas por debajo de la segunda banda (i.e., aceptable o peor).
+  const fortalezasMin = config.rangos_desempeno[1]?.min ?? config.nota_aprobatoria;
+  const debilidadesMax = config.rangos_desempeno[1]?.min ?? config.nota_aprobatoria;
+  const fortalezas = asignaturasEstudiante.filter((m) => m.promedio >= fortalezasMin).slice(0, 3);
+  const debilidades = asignaturasEstudiante.filter((m) => m.promedio < debilidadesMax).sort((a, b) => a.promedio - b.promedio).slice(0, 3);
 
   const umbral = periodo === "anual" ? UMBRAL_PORCENTAJE_ANUAL : UMBRAL_PORCENTAJE_MINIMO;
   const tieneDatosSuficientes = estudiante.sumaPorcentajes >= umbral;
-  const estaEnRiesgo = tieneDatosSuficientes && estudiante.promedio < 3.0;
+  const estaEnRiesgo = tieneDatosSuficientes && estudiante.promedio < config.nota_aprobatoria;
+  const aprobLabel = config.nota_aprobatoria.toFixed(config.decimales);
 
   const periodoHasta = periodo === "anual" ? 4 : periodo;
   const evolucionEstudiante = Object.entries(estudiante.promediosPorPeriodo || {})
@@ -76,20 +83,20 @@ export const AnalisisEstudiante = ({ idEstudiante, periodo, titulo }: AnalisisEs
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <TarjetaResumen titulo="Promedio General" valor={estudiante.promedio.toFixed(2)} subtitulo={periodo === "anual" ? "Acumulado anual" : `Período ${periodo}`} icono={Award} color={estudiante.promedio >= 4 ? "success" : estudiante.promedio >= 3 ? "warning" : "danger"} />
-          <TarjetaResumen titulo="vs Salón" valor={`${(estudiante.promedio - estudiante.promedio_salon) >= 0 ? "+" : ""}${(estudiante.promedio - estudiante.promedio_salon).toFixed(2)}`} subtitulo={`Prom. salón: ${estudiante.promedio_salon.toFixed(2)}`} icono={TrendingUp} color={(estudiante.promedio - estudiante.promedio_salon) >= 0 ? "success" : "danger"} />
+          <TarjetaResumen titulo="Promedio General" valor={estudiante.promedio.toFixed(config.decimales)} subtitulo={periodo === "anual" ? "Acumulado anual" : `Período ${periodo}`} icono={Award} color={colorBucket3(estudiante.promedio, config)} />
+          <TarjetaResumen titulo="vs Salón" valor={`${(estudiante.promedio - estudiante.promedio_salon) >= 0 ? "+" : ""}${(estudiante.promedio - estudiante.promedio_salon).toFixed(config.decimales)}`} subtitulo={`Prom. salón: ${estudiante.promedio_salon.toFixed(config.decimales)}`} icono={TrendingUp} color={(estudiante.promedio - estudiante.promedio_salon) >= 0 ? "success" : "danger"} />
           {tieneSuficientesAsignaturas ? (
             <>
-              <TarjetaResumen titulo="Mejor Asignatura" valor={mejorAsignatura?.promedio.toFixed(2) || "—"} subtitulo={mejorAsignatura?.asignatura || ""} icono={Star} color={mejorAsignatura && mejorAsignatura.promedio >= 4 ? "success" : mejorAsignatura && mejorAsignatura.promedio >= 3 ? "warning" : "danger"} />
-              <TarjetaResumen titulo="Asignatura a Mejorar" valor={peorAsignatura?.promedio.toFixed(2) || "—"} subtitulo={peorAsignatura?.asignatura || ""} icono={AlertTriangle} color={peorAsignatura && peorAsignatura.promedio >= 4 ? "success" : peorAsignatura && peorAsignatura.promedio >= 3 ? "warning" : "danger"} />
+              <TarjetaResumen titulo="Mejor Asignatura" valor={mejorAsignatura?.promedio.toFixed(config.decimales) || "—"} subtitulo={mejorAsignatura?.asignatura || ""} icono={Star} color={mejorAsignatura ? colorBucket3(mejorAsignatura.promedio, config) : "danger"} />
+              <TarjetaResumen titulo="Asignatura a Mejorar" valor={peorAsignatura?.promedio.toFixed(config.decimales) || "—"} subtitulo={peorAsignatura?.asignatura || ""} icono={AlertTriangle} color={peorAsignatura ? colorBucket3(peorAsignatura.promedio, config) : "danger"} />
             </>
           ) : (
-            <TarjetaResumen titulo="Asignatura" valor={asignaturasEstudiante[0]?.promedio.toFixed(2) || "—"} subtitulo={asignaturasEstudiante[0]?.asignatura || "Sin asignaturas"} icono={Star} color={asignaturasEstudiante[0]?.promedio >= 3 ? "success" : "danger"} />
+            <TarjetaResumen titulo="Asignatura" valor={asignaturasEstudiante[0]?.promedio.toFixed(config.decimales) || "—"} subtitulo={asignaturasEstudiante[0]?.asignatura || "Sin asignaturas"} icono={Star} color={asignaturasEstudiante[0] && asignaturasEstudiante[0].promedio >= config.nota_aprobatoria ? "success" : "danger"} />
           )}
           <TarjetaResumen
             titulo="Estado Académico"
             valor={!tieneDatosSuficientes ? "—" : estaEnRiesgo ? "En Riesgo" : "Sin Riesgo"}
-            subtitulo={!tieneDatosSuficientes ? "Se necesitan más datos" : estaEnRiesgo ? "Promedio < 3.0" : "Promedio ≥ 3.0"}
+            subtitulo={!tieneDatosSuficientes ? "Se necesitan más datos" : estaEnRiesgo ? `Promedio < ${aprobLabel}` : `Promedio ≥ ${aprobLabel}`}
             icono={estaEnRiesgo ? ShieldAlert : ShieldCheck}
             color={!tieneDatosSuficientes ? "primary" : estaEnRiesgo ? "danger" : "success"}
           />
@@ -111,10 +118,10 @@ export const AnalisisEstudiante = ({ idEstudiante, periodo, titulo }: AnalisisEs
             <table className="w-full text-sm">
               <thead><tr className="border-b"><th className="text-left p-2 font-medium text-muted-foreground">Referencia</th><th className="text-center p-2 font-medium text-muted-foreground">Promedio</th><th className="text-center p-2 font-medium text-muted-foreground">Diferencia</th></tr></thead>
               <tbody>
-                <tr className="border-b hover:bg-muted/50"><td className="p-2 font-medium">{estudiante.nombre_completo}</td><td className="text-center p-2 font-bold text-primary">{estudiante.promedio.toFixed(2)}</td><td className="text-center p-2">—</td></tr>
-                <tr className="border-b hover:bg-muted/50"><td className="p-2">Promedio Salón ({estudiante.salon})</td><td className="text-center p-2">{estudiante.promedio_salon.toFixed(2)}</td><td className={`text-center p-2 font-medium ${(estudiante.promedio - estudiante.promedio_salon) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{(estudiante.promedio - estudiante.promedio_salon) >= 0 ? "+" : ""}{(estudiante.promedio - estudiante.promedio_salon).toFixed(2)}</td></tr>
-                <tr className="border-b hover:bg-muted/50"><td className="p-2">Promedio Grado ({estudiante.grado})</td><td className="text-center p-2">{estudiante.promedio_grado.toFixed(2)}</td><td className={`text-center p-2 font-medium ${(estudiante.promedio - estudiante.promedio_grado) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{(estudiante.promedio - estudiante.promedio_grado) >= 0 ? "+" : ""}{(estudiante.promedio - estudiante.promedio_grado).toFixed(2)}</td></tr>
-                <tr className="hover:bg-muted/50"><td className="p-2">Promedio Institucional</td><td className="text-center p-2">{estudiante.promedio_institucional.toFixed(2)}</td><td className={`text-center p-2 font-medium ${(estudiante.promedio - estudiante.promedio_institucional) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{(estudiante.promedio - estudiante.promedio_institucional) >= 0 ? "+" : ""}{(estudiante.promedio - estudiante.promedio_institucional).toFixed(2)}</td></tr>
+                <tr className="border-b hover:bg-muted/50"><td className="p-2 font-medium">{estudiante.nombre_completo}</td><td className="text-center p-2 font-bold text-primary">{estudiante.promedio.toFixed(config.decimales)}</td><td className="text-center p-2">—</td></tr>
+                <tr className="border-b hover:bg-muted/50"><td className="p-2">Promedio Salón ({estudiante.salon})</td><td className="text-center p-2">{estudiante.promedio_salon.toFixed(config.decimales)}</td><td className={`text-center p-2 font-medium ${(estudiante.promedio - estudiante.promedio_salon) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{(estudiante.promedio - estudiante.promedio_salon) >= 0 ? "+" : ""}{(estudiante.promedio - estudiante.promedio_salon).toFixed(config.decimales)}</td></tr>
+                <tr className="border-b hover:bg-muted/50"><td className="p-2">Promedio Grado ({estudiante.grado})</td><td className="text-center p-2">{estudiante.promedio_grado.toFixed(config.decimales)}</td><td className={`text-center p-2 font-medium ${(estudiante.promedio - estudiante.promedio_grado) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{(estudiante.promedio - estudiante.promedio_grado) >= 0 ? "+" : ""}{(estudiante.promedio - estudiante.promedio_grado).toFixed(config.decimales)}</td></tr>
+                <tr className="hover:bg-muted/50"><td className="p-2">Promedio Institucional</td><td className="text-center p-2">{estudiante.promedio_institucional.toFixed(config.decimales)}</td><td className={`text-center p-2 font-medium ${(estudiante.promedio - estudiante.promedio_institucional) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{(estudiante.promedio - estudiante.promedio_institucional) >= 0 ? "+" : ""}{(estudiante.promedio - estudiante.promedio_institucional).toFixed(config.decimales)}</td></tr>
               </tbody>
             </table>
           </div>

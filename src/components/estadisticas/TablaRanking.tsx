@@ -1,4 +1,5 @@
 import { PromedioEstudiante, PromedioSalon, PromedioGrado, PromedioAsignatura } from "@/hooks/useEstadisticas";
+import { useColegioConfig, badgeClassPorNota } from "@/hooks/useColegioConfig";
 import { Trophy, Medal, Award } from "lucide-react";
 
 type RankingItem = PromedioEstudiante | PromedioSalon | PromedioGrado | PromedioAsignatura;
@@ -11,13 +12,6 @@ interface TablaRankingProps {
   mostrarTodosSinLimite?: boolean;
   ocultarIconosDespuesDe?: number;
 }
-
-const getColorPorRendimiento = (valor: number): string => {
-  if (valor < 3.0) return "text-red-600 bg-red-50";
-  if (valor < 4.0) return "text-amber-600 bg-amber-50";
-  if (valor <= 4.5) return "text-blue-600 bg-blue-50";
-  return "text-green-600 bg-green-50";
-};
 
 const getPosicionIcono = (posicion: number, ocultarIconosDespuesDe: number = 3) => {
   if (posicion === 1 && ocultarIconosDespuesDe >= 1) return <Trophy className="w-5 h-5 text-yellow-500" />;
@@ -34,6 +28,7 @@ export const TablaRanking = ({
   mostrarTodosSinLimite = false,
   ocultarIconosDespuesDe = 3
 }: TablaRankingProps) => {
+  const { config } = useColegioConfig();
   const datosLimitados = mostrarTodosSinLimite ? datos : datos.slice(0, limite);
 
   if (datosLimitados.length === 0) {
@@ -90,8 +85,8 @@ export const TablaRanking = ({
                 </p>
               )}
             </div>
-            <div className={`px-2 py-1 rounded-md text-sm font-semibold ${getColorPorRendimiento(item.promedio)}`}>
-              {item.promedio.toFixed(2)}
+            <div className={`px-2 py-1 rounded-md text-sm font-semibold ${badgeClassPorNota(item.promedio, config)}`}>
+              {item.promedio.toFixed(config.decimales)}
             </div>
           </div>
         ))}

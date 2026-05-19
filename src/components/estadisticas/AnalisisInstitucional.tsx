@@ -2,6 +2,7 @@ import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useEstadisticasInstitucional, ordenGrados } from "@/hooks/useEstadisticasApi";
 import { useCompletitud } from "@/hooks/useCompletitud";
+import { useColegioConfig, colorBucket4 } from "@/hooks/useColegioConfig";
 import { TarjetaResumen } from "./TarjetaResumen";
 import { TablaRanking } from "./TablaRanking";
 import { TablaDistribucion } from "./TablaDistribucion";
@@ -20,6 +21,8 @@ export const AnalisisInstitucional = ({ periodo, titulo }: AnalisisInstitucional
   const navigate = useNavigate();
   const { data, loading, error } = useEstadisticasInstitucional(periodo);
   const { verificarCompletitud } = useCompletitud();
+  const { config } = useColegioConfig();
+  const aprobLabel = config.nota_aprobatoria.toFixed(config.decimales);
 
   if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /><span className="ml-2 text-muted-foreground">Espere, por favor...</span></div>;
   if (error || !data) return <div className="bg-card rounded-lg shadow-soft p-8 text-center text-red-600">Error cargando estadísticas: {error || "sin datos"}</div>;
@@ -94,10 +97,10 @@ export const AnalisisInstitucional = ({ periodo, titulo }: AnalisisInstitucional
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <TarjetaResumen
             titulo="Promedio Institucional"
-            valor={promedioInstitucional.toFixed(2)}
+            valor={promedioInstitucional.toFixed(config.decimales)}
             subtitulo={`Basado en ${data.estudiantes_evaluados} estudiantes con notas`}
             icono={School}
-            color={promedioInstitucional >= 4.5 ? "success" : promedioInstitucional >= 4 ? "blue" : promedioInstitucional >= 3 ? "warning" : "danger"}
+            color={colorBucket4(promedioInstitucional, config)}
           />
           <TarjetaResumen
             titulo="Estudiantes con notas"
@@ -108,10 +111,10 @@ export const AnalisisInstitucional = ({ periodo, titulo }: AnalisisInstitucional
           />
           <TarjetaResumen
             titulo="Mejor Promedio"
-            valor={topEstudiantes[0]?.promedio.toFixed(2) || "—"}
+            valor={topEstudiantes[0]?.promedio.toFixed(config.decimales) || "—"}
             subtitulo={topEstudiantes[0]?.nombre_completo || ""}
             icono={Award}
-            color={topEstudiantes[0]?.promedio >= 4.5 ? "success" : topEstudiantes[0]?.promedio >= 4 ? "blue" : topEstudiantes[0]?.promedio >= 3 ? "warning" : "danger"}
+            color={topEstudiantes[0] ? colorBucket4(topEstudiantes[0].promedio, config) : "danger"}
           />
           {mostrarRiesgo ? (
             <div
@@ -121,7 +124,7 @@ export const AnalisisInstitucional = ({ periodo, titulo }: AnalisisInstitucional
               <TarjetaResumen
                 titulo="En Riesgo Académico"
                 valor={estudiantesEnRiesgo.length}
-                subtitulo={estudiantesEnRiesgo.length > 0 ? "Click para ver detalles" : "Promedio menor a 3.0"}
+                subtitulo={estudiantesEnRiesgo.length > 0 ? "Click para ver detalles" : `Promedio menor a ${aprobLabel}`}
                 icono={AlertTriangle}
                 color={estudiantesEnRiesgo.length > 0 ? "danger" : "success"}
               />

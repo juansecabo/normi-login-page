@@ -2,6 +2,7 @@ import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useEstadisticasGrado } from "@/hooks/useEstadisticasApi";
 import { useCompletitud } from "@/hooks/useCompletitud";
+import { useColegioConfig, colorBucket4 } from "@/hooks/useColegioConfig";
 import { TarjetaResumen } from "./TarjetaResumen";
 import { TablaRanking } from "./TablaRanking";
 import { TablaDistribucion } from "./TablaDistribucion";
@@ -22,6 +23,8 @@ export const AnalisisGrado = ({ grado, periodo, titulo }: AnalisisGradoProps) =>
   const navigate = useNavigate();
   const { data, loading, error } = useEstadisticasGrado(grado, periodo);
   const { verificarCompletitud } = useCompletitud();
+  const { config } = useColegioConfig();
+  const aprobLabel = config.nota_aprobatoria.toFixed(config.decimales);
 
   if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /><span className="ml-2 text-muted-foreground">Espere, por favor...</span></div>;
   if (!grado) return <div className="bg-card rounded-lg shadow-soft p-8 text-center text-muted-foreground">Selecciona un grado para ver el análisis</div>;
@@ -97,15 +100,15 @@ export const AnalisisGrado = ({ grado, periodo, titulo }: AnalisisGradoProps) =>
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <TarjetaResumen titulo={`Promedio ${grado}`} valor={promedioGrado.toFixed(2)} subtitulo={`${diferenciaConInst >= 0 ? "+" : ""}${diferenciaConInst.toFixed(2)} vs institución`} icono={GraduationCap} color={promedioGrado >= 4.5 ? "success" : promedioGrado >= 4 ? "blue" : promedioGrado >= 3 ? "warning" : "danger"} />
+          <TarjetaResumen titulo={`Promedio ${grado}`} valor={promedioGrado.toFixed(config.decimales)} subtitulo={`${diferenciaConInst >= 0 ? "+" : ""}${diferenciaConInst.toFixed(config.decimales)} vs institución`} icono={GraduationCap} color={colorBucket4(promedioGrado, config)} />
           <TarjetaResumen titulo="Estudiantes con notas" valor={data.estudiantes_evaluados} subtitulo={`En ${salonesUnicos.length} salones`} icono={Users} color="primary" />
-          <TarjetaResumen titulo="Mejor Estudiante" valor={topEstudiantes[0]?.promedio.toFixed(2) || "—"} subtitulo={topEstudiantes[0]?.nombre_completo || ""} icono={Award} color={topEstudiantes[0]?.promedio >= 4.5 ? "success" : topEstudiantes[0]?.promedio >= 4 ? "blue" : topEstudiantes[0]?.promedio >= 3 ? "warning" : "danger"} />
+          <TarjetaResumen titulo="Mejor Estudiante" valor={topEstudiantes[0]?.promedio.toFixed(config.decimales) || "—"} subtitulo={topEstudiantes[0]?.nombre_completo || ""} icono={Award} color={topEstudiantes[0] ? colorBucket4(topEstudiantes[0].promedio, config) : "danger"} />
           {mostrarRiesgo ? (
             <div
               onClick={estudiantesEnRiesgo.length > 0 ? handleVerRiesgo : undefined}
               className={estudiantesEnRiesgo.length > 0 ? "cursor-pointer hover:scale-[1.02] transition-transform" : ""}
             >
-              <TarjetaResumen titulo="En Riesgo" valor={estudiantesEnRiesgo.length} subtitulo={estudiantesEnRiesgo.length > 0 ? "Click para ver detalles" : "Promedio menor a 3.0"} icono={AlertTriangle} color={estudiantesEnRiesgo.length > 0 ? "danger" : "success"} />
+              <TarjetaResumen titulo="En Riesgo" valor={estudiantesEnRiesgo.length} subtitulo={estudiantesEnRiesgo.length > 0 ? "Click para ver detalles" : `Promedio menor a ${aprobLabel}`} icono={AlertTriangle} color={estudiantesEnRiesgo.length > 0 ? "danger" : "success"} />
             </div>
           ) : (
             <TarjetaResumen titulo="En Riesgo" valor="—" subtitulo="Se necesitan más datos" icono={AlertTriangle} color="primary" />
@@ -141,14 +144,14 @@ export const AnalisisGrado = ({ grado, periodo, titulo }: AnalisisGradoProps) =>
               <tbody>
                 <tr className="border-b border-border/50">
                   <td className="py-2 px-3 font-medium text-foreground">{grado}</td>
-                  <td className="py-2 px-3 text-center font-bold text-foreground">{promedioGrado.toFixed(2)}</td>
+                  <td className="py-2 px-3 text-center font-bold text-foreground">{promedioGrado.toFixed(config.decimales)}</td>
                   <td className="py-2 px-3 text-center text-muted-foreground">—</td>
                 </tr>
                 <tr>
                   <td className="py-2 px-3 text-foreground">Promedio Institucional</td>
-                  <td className="py-2 px-3 text-center text-foreground">{promedioInstitucional.toFixed(2)}</td>
+                  <td className="py-2 px-3 text-center text-foreground">{promedioInstitucional.toFixed(config.decimales)}</td>
                   <td className={`py-2 px-3 text-center font-medium ${diferenciaConInst >= 0 ? "text-green-600" : "text-red-600"}`}>
-                    {diferenciaConInst >= 0 ? "+" : ""}{diferenciaConInst.toFixed(2)}
+                    {diferenciaConInst >= 0 ? "+" : ""}{diferenciaConInst.toFixed(config.decimales)}
                   </td>
                 </tr>
               </tbody>

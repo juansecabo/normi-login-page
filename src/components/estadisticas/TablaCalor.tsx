@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useColegioConfig, colorBucket4, ColegioConfig } from "@/hooks/useColegioConfig";
 
 interface DatoCalor {
   estudiante: string;
@@ -12,12 +13,13 @@ interface TablaCalorProps {
   altura?: number;
 }
 
-const getColorPorNota = (nota: number): string => {
+const getColorPorNota = (nota: number, cfg: ColegioConfig): string => {
   if (nota === 0) return "bg-gray-100 text-gray-400";
-  if (nota < 3.0) return "bg-red-100 text-red-700";
-  if (nota < 4.0) return "bg-amber-100 text-amber-700";
-  if (nota <= 4.5) return "bg-blue-100 text-blue-700";
-  return "bg-green-100 text-green-700";
+  const b = colorBucket4(nota, cfg);
+  if (b === "success") return "bg-green-100 text-green-700";
+  if (b === "blue") return "bg-blue-100 text-blue-700";
+  if (b === "warning") return "bg-amber-100 text-amber-700";
+  return "bg-red-100 text-red-700";
 };
 
 export const TablaCalor = ({
@@ -26,6 +28,7 @@ export const TablaCalor = ({
   asignaturas,
   altura = 400
 }: TablaCalorProps) => {
+  const { config } = useColegioConfig();
   const asignaturasCortas = useMemo(() => {
     return asignaturas.map(m => {
       if (m.length > 12) {
@@ -50,24 +53,21 @@ export const TablaCalor = ({
     <div className="bg-card rounded-lg shadow-soft p-4 border border-border">
       <h4 className="font-semibold text-foreground mb-4">{titulo}</h4>
 
-      {/* Leyenda */}
+      {/* Leyenda — bandas del config del colegio */}
       <div className="flex flex-wrap gap-2 mb-4 text-xs">
-        <span className="flex items-center gap-1">
-          <span className="w-4 h-4 bg-red-100 rounded"></span>
-          <span className="text-muted-foreground">Bajo (&lt;3.0)</span>
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-4 h-4 bg-amber-100 rounded"></span>
-          <span className="text-muted-foreground">Básico (3.0-3.9)</span>
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-4 h-4 bg-blue-100 rounded"></span>
-          <span className="text-muted-foreground">Alto (4.0-4.5)</span>
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-4 h-4 bg-green-100 rounded"></span>
-          <span className="text-muted-foreground">Superior (&gt;4.5)</span>
-        </span>
+        {config.rangos_desempeno.map((r) => {
+          const bg = colorBucket4((r.min + r.max) / 2, config);
+          const bgClass = bg === "success" ? "bg-green-100"
+            : bg === "blue" ? "bg-blue-100"
+            : bg === "warning" ? "bg-amber-100"
+            : "bg-red-100";
+          return (
+            <span key={r.label} className="flex items-center gap-1">
+              <span className={`w-4 h-4 ${bgClass} rounded`}></span>
+              <span className="text-muted-foreground">{r.label} ({r.min.toFixed(config.decimales)}-{r.max.toFixed(config.decimales)})</span>
+            </span>
+          );
+        })}
       </div>
 
       <div className="overflow-auto" style={{ maxHeight: altura }}>
@@ -99,9 +99,9 @@ export const TablaCalor = ({
                   return (
                     <td
                       key={matIdx}
-                      className={`text-center p-1 border-b font-medium ${getColorPorNota(nota)}`}
+                      className={`text-center p-1 border-b font-medium ${getColorPorNota(nota, config)}`}
                     >
-                      {nota > 0 ? nota.toFixed(1) : "—"}
+                      {nota > 0 ? nota.toFixed(config.decimales) : "—"}
                     </td>
                   );
                 })}

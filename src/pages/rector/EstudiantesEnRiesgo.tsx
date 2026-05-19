@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { getSession, isRectorOrCoordinador } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { useEstadisticasRiesgo } from "@/hooks/useEstadisticasApi";
+import { useColegioConfig } from "@/hooks/useColegioConfig";
 import { AlertTriangle, ArrowLeft, Loader2 } from "lucide-react";
 import {
   Table,
@@ -32,6 +33,7 @@ const EstudiantesEnRiesgo = () => {
     salonParam || undefined,
     asignaturaParam || undefined,
   );
+  const { config } = useColegioConfig();
 
   // URL para volver con los mismos filtros
   const buildVolverUrl = () => {
@@ -68,10 +70,15 @@ const EstudiantesEnRiesgo = () => {
   const periodoLabel = periodo === "anual" ? "Acumulado Anual" : `Período ${periodo}`;
 
   const getColorPorPromedio = (promedio: number) => {
-    if (promedio < 2.0) return "text-red-600 font-bold";
-    if (promedio < 2.5) return "text-red-500 font-semibold";
+    const aprob = config.nota_aprobatoria;
+    // Dividir el rango reprobado en 3 tramos relativos al umbral del colegio.
+    const tramo = aprob / 3;
+    if (promedio < tramo) return "text-red-600 font-bold";
+    if (promedio < tramo * 2) return "text-red-500 font-semibold";
     return "text-amber-600";
   };
+
+  const aprobLabel = config.nota_aprobatoria.toFixed(config.decimales);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -96,7 +103,7 @@ const EstudiantesEnRiesgo = () => {
               </div>
               <div>
                 <h1 className="text-xl md:text-2xl font-bold text-foreground">Estudiantes en Riesgo Académico</h1>
-                <p className="text-muted-foreground text-sm">Promedio menor a 3.0</p>
+                <p className="text-muted-foreground text-sm">Promedio menor a {aprobLabel}</p>
               </div>
             </div>
             <Button variant="outline" onClick={() => navigate(buildVolverUrl())} className="gap-2">
@@ -135,7 +142,7 @@ const EstudiantesEnRiesgo = () => {
           <div className="bg-card rounded-lg shadow-soft overflow-hidden">
             <div className="p-4 border-b border-border">
               <p className="text-sm text-muted-foreground">
-                Se encontraron <span className="font-bold text-red-600">{estudiantesEnRiesgo.length}</span> estudiante(s) con promedio menor a 3.0
+                Se encontraron <span className="font-bold text-red-600">{estudiantesEnRiesgo.length}</span> estudiante(s) con promedio menor a {aprobLabel}
               </p>
             </div>
             <Table>
@@ -158,7 +165,7 @@ const EstudiantesEnRiesgo = () => {
                       <TableCell>{est.grado}</TableCell>
                       <TableCell>{est.salon}</TableCell>
                       <TableCell className={`text-right ${getColorPorPromedio(est.promedio)}`}>
-                        {est.promedio.toFixed(2)}
+                        {est.promedio.toFixed(config.decimales)}
                       </TableCell>
                     </TableRow>
                   ))}

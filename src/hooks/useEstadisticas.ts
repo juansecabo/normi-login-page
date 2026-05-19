@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { anoEscolarActual } from "@/utils/anoEscolar";
+import { useColegioConfig, bandaDesempeno } from "@/hooks/useColegioConfig";
 
 export interface NotaCompleta {
   id_estudiantil: string;
@@ -81,6 +82,7 @@ interface AsignacionExpandida {
 }
 
 export const useEstadisticas = () => {
+  const { config } = useColegioConfig();
   const [loading, setLoading] = useState(true);
   const [notas, setNotas] = useState<NotaCompleta[]>([]);
   const [estudiantes, setEstudiantes] = useState<EstudianteInfo[]>([]);
@@ -491,30 +493,39 @@ export const useEstadisticas = () => {
     salon?: string,
     asignatura?: string
   ): DistribucionDesempeno => {
+    const aprob = config.nota_aprobatoria;
+    const rangos = config.rangos_desempeno;
+    // Banda de "superior" = el rango más alto (primer elemento por convención del config).
+    // Banda de "alto" = el siguiente. El resto aprobado va a "basico". Lo reprobado a "bajo".
+    const bandaSuperior = rangos[0];
+    const bandaAlta = rangos[1];
+
+    const clasificar = (nota: number): "bajo" | "basico" | "alto" | "superior" => {
+      if (nota < aprob) return "bajo";
+      const b = bandaDesempeno(nota, rangos);
+      if (b && bandaSuperior && b.label === bandaSuperior.label) return "superior";
+      if (b && bandaAlta && b.label === bandaAlta.label) return "alto";
+      return "basico";
+    };
+
+    const contar = (notas: number[]): DistribucionDesempeno => {
+      const acc: DistribucionDesempeno = { bajo: 0, basico: 0, alto: 0, superior: 0 };
+      notas.forEach(n => { acc[clasificar(n)]++; });
+      return acc;
+    };
+
     // Si hay asignatura específica, calcular distribución basada en promedios de esa asignatura
     if (asignatura) {
       const estudiantes = getPromediosEstudiantes(periodo, grado, salon);
-      const estudiantesConAsignatura = estudiantes
-        .map(e => ({ ...e, promedioAsignatura: e.promediosPorAsignatura?.[asignatura] || 0 }))
-        .filter(e => e.promedioAsignatura > 0);
-
-      return {
-        bajo: estudiantesConAsignatura.filter(e => e.promedioAsignatura < 3.0).length,
-        basico: estudiantesConAsignatura.filter(e => e.promedioAsignatura >= 3.0 && e.promedioAsignatura < 4.0).length,
-        alto: estudiantesConAsignatura.filter(e => e.promedioAsignatura >= 4.0 && e.promedioAsignatura <= 4.5).length,
-        superior: estudiantesConAsignatura.filter(e => e.promedioAsignatura > 4.5).length
-      };
+      const notas = estudiantes
+        .map(e => e.promediosPorAsignatura?.[asignatura] || 0)
+        .filter(n => n > 0);
+      return contar(notas);
     }
-    
+
     // Distribución general basada en promedios globales
     const promedios = getPromediosEstudiantes(periodo, grado, salon);
-    
-    return {
-      bajo: promedios.filter(e => e.promedio < 3.0).length,
-      basico: promedios.filter(e => e.promedio >= 3.0 && e.promedio < 4.0).length,
-      alto: promedios.filter(e => e.promedio >= 4.0 && e.promedio <= 4.5).length,
-      superior: promedios.filter(e => e.promedio > 4.5).length
-    };
+    return contar(promedios.map(e => e.promedio));
   };
 
   // Promedio institucional
@@ -585,19 +596,19 @@ export const useEstadisticas = () => {
           );
           const sumaPorcentajesAsignatura = notasAsignatura.reduce((sum, n) => sum + (n.porcentaje || 0), 0);
 
-          return promedioAsignatura < 3.0 && sumaPorcentajesAsignatura >= umbralAsignatura;
+          return promedioAsignatura < config.nota_aprobatoria && sumaPorcentajesAsignatura >= umbralAsignatura;
         })
         .map(e => ({
           ...e,
           promedio: e.promediosPorAsignatura?.[asignatura] || 0
         }));
     }
-    
+
     // Para análisis general (institucional, grado, salón): umbral dinámico por estudiante
     return getPromediosEstudiantes(periodo, grado, salon)
       .filter(e => {
         const umbralEstudiante = calcularUmbralRiesgoEstudiante(e.grado, e.salon, periodo);
-        return e.promedio < 3.0 && e.sumaPorcentajes >= umbralEstudiante;
+        return e.promedio < config.nota_aprobatoria && e.sumaPorcentajes >= umbralEstudiante;
       });
   };
 

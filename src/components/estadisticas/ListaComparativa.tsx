@@ -1,4 +1,5 @@
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { useColegioConfig, textClassPorNota, bgClassPorNota } from "@/hooks/useColegioConfig";
 
 interface ItemLista {
   nombre: string;
@@ -14,27 +15,14 @@ interface ListaComparativaProps {
   icono?: React.ReactNode;
 }
 
-const getColorPorRendimiento = (valor: number): string => {
-  if (valor < 3.0) return "text-red-600";
-  if (valor < 4.0) return "text-amber-600";
-  if (valor <= 4.5) return "text-blue-600";
-  return "text-green-600";
-};
-
-const getBgPorRendimiento = (valor: number): string => {
-  if (valor < 3.0) return "bg-red-50";
-  if (valor < 4.0) return "bg-amber-50";
-  if (valor <= 4.5) return "bg-blue-50";
-  return "bg-green-50";
-};
-
-export const ListaComparativa = ({ 
-  titulo, 
-  items, 
+export const ListaComparativa = ({
+  titulo,
+  items,
   tipo = "neutral",
   mostrarPosicion = false,
   icono
 }: ListaComparativaProps) => {
+  const { config } = useColegioConfig();
   if (items.length === 0) {
     return (
       <div className="bg-card rounded-lg shadow-soft p-4 border border-border">
@@ -63,9 +51,9 @@ export const ListaComparativa = ({
       </h4>
       <div className="space-y-2">
         {items.map((item, idx) => (
-          <div 
-            key={idx} 
-            className={`flex justify-between items-center p-2.5 rounded-lg ${getBgPorRendimiento(item.valor)}`}
+          <div
+            key={idx}
+            className={`flex justify-between items-center p-2.5 rounded-lg ${bgClassPorNota(item.valor, config)}`}
           >
             <div className="flex items-center gap-2">
               {mostrarPosicion && (
@@ -80,8 +68,8 @@ export const ListaComparativa = ({
                 )}
               </div>
             </div>
-            <span className={`text-sm font-bold ${getColorPorRendimiento(item.valor)}`}>
-              {item.valor.toFixed(2)}
+            <span className={`text-sm font-bold ${textClassPorNota(item.valor, config)}`}>
+              {item.valor.toFixed(config.decimales)}
             </span>
           </div>
         ))}

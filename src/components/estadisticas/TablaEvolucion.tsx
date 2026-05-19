@@ -1,4 +1,5 @@
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { useColegioConfig, textClassPorNota } from "@/hooks/useColegioConfig";
 
 interface DatoPeriodo {
   periodo: string;
@@ -12,6 +13,7 @@ interface TablaEvolucionProps {
 }
 
 export const TablaEvolucion = ({ titulo, datos, nombreEntidad }: TablaEvolucionProps) => {
+  const { config } = useColegioConfig();
   const datosConCambio = datos.map((d, idx) => {
     const anterior = idx > 0 ? datos[idx - 1].promedio : null;
     const cambio = anterior !== null && anterior > 0 ? d.promedio - anterior : null;
@@ -20,10 +22,7 @@ export const TablaEvolucion = ({ titulo, datos, nombreEntidad }: TablaEvolucionP
 
   const getColorPorRendimiento = (valor: number): string => {
     if (valor === 0) return "text-muted-foreground";
-    if (valor < 3.0) return "text-red-600";
-    if (valor < 4.0) return "text-amber-600";
-    if (valor <= 4.5) return "text-blue-600";
-    return "text-green-600";
+    return textClassPorNota(valor, config);
   };
 
   const datosConValor = datos.filter(d => d.promedio > 0);
@@ -56,7 +55,7 @@ export const TablaEvolucion = ({ titulo, datos, nombreEntidad }: TablaEvolucionP
               <tr key={idx} className="border-b hover:bg-muted/50">
                 <td className="p-2 font-medium">{d.periodo}</td>
                 <td className={`text-center p-2 font-bold ${getColorPorRendimiento(d.promedio)}`}>
-                  {d.promedio > 0 ? d.promedio.toFixed(2) : "—"}
+                  {d.promedio > 0 ? d.promedio.toFixed(config.decimales) : "—"}
                 </td>
                 <td className="text-center p-2">
                   {d.cambio !== null && d.promedio > 0 ? (
@@ -68,7 +67,7 @@ export const TablaEvolucion = ({ titulo, datos, nombreEntidad }: TablaEvolucionP
                        <Minus className="w-4 h-4" />}
                       {d.cambio !== 0 && (
                         <span className="font-medium">
-                          {d.cambio > 0 ? "+" : ""}{d.cambio.toFixed(2)}
+                          {d.cambio > 0 ? "+" : ""}{d.cambio.toFixed(config.decimales)}
                         </span>
                       )}
                     </span>

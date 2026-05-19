@@ -2,6 +2,7 @@ import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useEstadisticasAsignatura } from "@/hooks/useEstadisticasApi";
 import { useCompletitud } from "@/hooks/useCompletitud";
+import { useColegioConfig, colorBucket3 } from "@/hooks/useColegioConfig";
 import { TarjetaResumen } from "./TarjetaResumen";
 import { TablaRanking } from "./TablaRanking";
 import { TablaEvolucion } from "./TablaEvolucion";
@@ -24,6 +25,7 @@ export const AnalisisAsignatura = ({ asignatura, periodo, grado, salon, titulo }
   const navigate = useNavigate();
   const { data, loading, error } = useEstadisticasAsignatura(asignatura, periodo, grado, salon);
   const { verificarCompletitud } = useCompletitud();
+  const { config } = useColegioConfig();
 
   if (!asignatura) return <div className="bg-card rounded-lg shadow-soft p-8 text-center text-muted-foreground">Selecciona una asignatura para ver su análisis</div>;
   if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /><span className="ml-2 text-muted-foreground">Espere, por favor...</span></div>;
@@ -143,13 +145,13 @@ export const AnalisisAsignatura = ({ asignatura, periodo, grado, salon, titulo }
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <TarjetaResumen titulo="Promedio de la Asignatura" valor={data.promedio_asignatura.toFixed(2)} subtitulo={periodo === "anual" ? "Acumulado anual" : `Período ${periodo}`} icono={BookOpen} color={data.promedio_asignatura >= 4 ? "success" : data.promedio_asignatura >= 3 ? "warning" : "danger"} />
+          <TarjetaResumen titulo="Promedio de la Asignatura" valor={data.promedio_asignatura.toFixed(config.decimales)} subtitulo={periodo === "anual" ? "Acumulado anual" : `Período ${periodo}`} icono={BookOpen} color={colorBucket3(data.promedio_asignatura, config)} />
           <TarjetaResumen titulo="Estudiantes con notas" valor={cantidadEstudiantes} subtitulo="Con calificaciones" icono={Users} color="primary" />
           <TarjetaResumen titulo="Tasa de Aprobación" valor={`${tasaAprobacion}%`} subtitulo={`${estudiantesAprobados} aprobados`} icono={Award} color={tasaAprobacion >= 80 ? "success" : tasaAprobacion >= 60 ? "warning" : "danger"} />
           <TarjetaResumen
             titulo="En Riesgo"
             valor={estudiantesReprobados}
-            subtitulo="Promedio < 3.0"
+            subtitulo={`Promedio < ${config.nota_aprobatoria.toFixed(config.decimales)}`}
             icono={AlertTriangle}
             color={estudiantesReprobados > 0 ? "danger" : "success"}
             onClick={estudiantesReprobados > 0 ? handleRiesgoClick : undefined}
