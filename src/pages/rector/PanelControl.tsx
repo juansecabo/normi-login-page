@@ -920,7 +920,6 @@ const PanelControl = () => {
               const acudPayload: any = {
                 id: perfPadreId,
                 colegio_id: colegio_id_acud,
-                numero_de_acudidos: perfNumEst,
                 acudido1_id: perfHijo1Id ? Number(perfHijo1Id) : null,
                 acudido2_id: numH >= 2 && perfHijo2Id ? Number(perfHijo2Id) : null,
                 acudido3_id: numH >= 3 && perfHijo3Id ? Number(perfHijo3Id) : null,
