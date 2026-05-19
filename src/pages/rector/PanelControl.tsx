@@ -333,9 +333,9 @@ const PanelControl = () => {
   const fetchInternos = async () => {
     setLoadingInt(true);
     const internosData = await fetchAllPages<any>((from, to) =>
-      supabase.from("Internos").select("id, nombres, apellidos, cargo, contrasena").range(from, to)
+      supabase.from("Internos").select("id, nombres, apellidos, cargo").range(from, to)
     );
-    // El teléfono ahora vive en Usuarios (Fase 10.E.15) — join manual por id.
+    // El teléfono Y la contraseña viven en Usuarios — join manual por id.
     const ids = internosData.map((i: any) => String(i.id));
     const telMap = new Map<string, string | null>();
     if (ids.length > 0) {
@@ -638,7 +638,6 @@ const PanelControl = () => {
       apellidos: intApellidos.trim(),
       cargo: intCargo,
     };
-    if (intContrasena) payload.contrasena = intContrasena;
 
     let error;
     if (editingInt) {
@@ -648,6 +647,17 @@ const PanelControl = () => {
         .eq("id", editingInt.id));
     } else {
       ({ error } = await supabase.from("Internos").insert(payload));
+    }
+
+    // La contraseña vive en Usuarios (no en Internos).
+    if (!error && intContrasena) {
+      const { error: errUsr } = await supabase.from("Usuarios").upsert({
+        id: intId,
+        nombres: intNombres.trim(),
+        apellidos: intApellidos.trim(),
+        contrasena: intContrasena,
+      }, { onConflict: "id" });
+      if (errUsr) error = errUsr;
     }
 
     setSavingInt(false);

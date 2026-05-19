@@ -97,8 +97,7 @@ const CambiarContrasenaModal = ({ open, onOpenChange }: CambiarContrasenaModalPr
         return;
       }
 
-      // Compat: actualizar también en Internos (si el usuario es interno, la fila existe).
-      await supabase.from("Internos").update({ contrasena: nuevaContrasena }).eq("id", parseInt(session.id));
+      // Contraseña vive en Usuarios — ya quedó actualizada arriba.
 
       setSuccess("Contraseña actualizada correctamente");
       setContrasenaActual("");
