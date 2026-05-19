@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getSession, isAdmin, puedeAccederDashboard } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
-import { Loader2, Send, Clock, Trash2, Search, Users, Eye, Paperclip, X, FileText, Download } from "lucide-react";
+import { Loader2, Send, Clock, Trash2, Search, Users, Eye, Paperclip, X, FileText, Download, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import CharCircle from "@/components/CharCircle";
@@ -169,6 +169,33 @@ const EnviarComunicado = () => {
     setIdRemitente(session.id!);
     setCargo(session.cargo || "");
   }, [navigate]);
+
+  // Resetea TODO el formulario de envío individual (destinatarios + mensaje + archivos).
+  // No toca remitente/cargo (vienen de la sesión) ni el tab masivo/historial.
+  const limpiarFormulario = () => {
+    setPerfilesMarcados({
+      Estudiantes: false, Padres: false, Profesores: false,
+      Coordinadores: false, Rector: false, Administrativos: false, Secretaria: false, Orientador: false,
+    });
+    setNivelesMarcados({});
+    setGradosMarcados({});
+    setSalonesMarcados({});
+    setCoordinadoresSeleccionados([]);
+    setAdministrativosSeleccionados([]);
+    setSecretariasSeleccionadas([]);
+    setOrientadoresSeleccionados([]);
+    setEstudiantesSeleccionados([]);
+    setProfesoresSeleccionados([]);
+    setMostrarEstudiantes(false);
+    setMostrarProfesores(false);
+    setMensaje("");
+    setArchivosSeleccionados([]);
+    setOpenPerfiles(false);
+    setOpenNivel(false);
+    setOpenGrado(false);
+    setOpenSalon(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   // Cargar estudiantes según grados/salones marcados (solo si Est o Padres está marcado)
   useEffect(() => {
@@ -702,9 +729,20 @@ const EnviarComunicado = () => {
             </TabsList>
 
             <TabsContent value="enviar">
-              <h2 className="text-2xl font-bold text-foreground mb-6 text-center mt-4">
-                Enviar Comunicado
-              </h2>
+              <div className="relative mt-4 mb-6">
+                <h2 className="text-2xl font-bold text-foreground text-center">
+                  Enviar Comunicado
+                </h2>
+                <button
+                  type="button"
+                  onClick={limpiarFormulario}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-3 py-1.5 text-sm border border-input bg-background rounded-md hover:bg-muted transition-colors"
+                  title="Limpiar todos los destinatarios y el mensaje"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Limpiar
+                </button>
+              </div>
 
               {/* Destinatarios */}
               <div className="space-y-4 mb-6">
