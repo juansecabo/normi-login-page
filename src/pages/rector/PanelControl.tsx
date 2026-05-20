@@ -333,24 +333,27 @@ const PanelControl = () => {
   // FETCH
   // ═══════════════════════════════════════════════════════════════════════════
 
-  // Helper: batch fetch nombres + teléfono desde Usuarios en chunks.
+  // Helper: batch fetch nombres + teléfono + contraseña desde Usuarios en chunks.
   // El proxy puede truncar .in() cuando la lista de ids es grande y se combina
   // con .range — chunks manuales son más confiables.
-  const fetchUsuariosBatch = async (ids: string[]): Promise<Map<string, { nombres: string; apellidos: string; tel: string }>> => {
-    const map = new Map<string, { nombres: string; apellidos: string; tel: string }>();
+  // La columna `contrasena` está en denyColumns, pero el proxy hace bypass
+  // para Rector/Coordinador/Administrador (los únicos que entran al PanelControl).
+  const fetchUsuariosBatch = async (ids: string[]): Promise<Map<string, { nombres: string; apellidos: string; tel: string; contrasena: string }>> => {
+    const map = new Map<string, { nombres: string; apellidos: string; tel: string; contrasena: string }>();
     const CHUNK = 500;
     const unique = [...new Set(ids)];
     for (let i = 0; i < unique.length; i += CHUNK) {
       const slice = unique.slice(i, i + CHUNK);
       const { data } = await supabase
         .from("Usuarios")
-        .select("id, nombres, apellidos, numero_de_telefono")
+        .select("id, nombres, apellidos, numero_de_telefono, contrasena")
         .in("id", slice);
       for (const u of (data || []) as any[]) {
         map.set(String(u.id), {
           nombres: (u.nombres as string) || "",
           apellidos: (u.apellidos as string) || "",
           tel: (u.numero_de_telefono as string) || "",
+          contrasena: (u.contrasena as string) || "",
         });
       }
     }
@@ -374,6 +377,7 @@ const PanelControl = () => {
         nombres: u?.nombres || "",
         apellidos: u?.apellidos || "",
         numero_de_telefono: u?.tel || "",
+        contrasena: u?.contrasena || "",
       };
     });
     data.sort((a, b) => {
@@ -399,6 +403,7 @@ const PanelControl = () => {
         nombres: u?.nombres || "",
         apellidos: u?.apellidos || "",
         numero_de_telefono: u?.tel || null,
+        contrasena: u?.contrasena || null,
       };
     });
     setInternos(data.sort((a, b) => (a.apellidos || "").localeCompare(b.apellidos || "", "es")));
@@ -466,19 +471,22 @@ const PanelControl = () => {
       // Batch a Usuarios en chunks (evita .in() gigantes que el proxy puede
       // truncar). Sin paginar dentro de cada chunk — supabase devuelve hasta
       // 1000 rows por request y los chunks son de 500, así que cabe.
+      // Incluye contrasena (el proxy hace bypass del denyColumns para roles
+      // privilegiados, que son los únicos con acceso a PanelControl).
       const CHUNK = 500;
-      const usrMap = new Map<string, { nombres: string; apellidos: string; tel: string }>();
+      const usrMap = new Map<string, { nombres: string; apellidos: string; tel: string; contrasena: string }>();
       for (let i = 0; i < allUserIds.length; i += CHUNK) {
         const slice = allUserIds.slice(i, i + CHUNK);
         const { data } = await supabase
           .from("Usuarios")
-          .select("id, nombres, apellidos, numero_de_telefono")
+          .select("id, nombres, apellidos, numero_de_telefono, contrasena")
           .in("id", slice);
         for (const u of (data || []) as any[]) {
           usrMap.set(String(u.id), {
             nombres: (u.nombres as string) || "",
             apellidos: (u.apellidos as string) || "",
             tel: (u.numero_de_telefono as string) || "",
+            contrasena: (u.contrasena as string) || "",
           });
         }
       }
@@ -518,7 +526,7 @@ const PanelControl = () => {
           padre_apellidos_only: acuUser?.apellidos || "",
           padre_id: String(a.id),
           padre_numero_de_estudiantes: null,
-          contrasena: null,
+          contrasena: acuUser?.contrasena || null,
         };
         // Mapear los 4 slots de hijos con sufijo secuencial 1..N.
         let pos = 1;
@@ -1545,13 +1553,14 @@ const PanelControl = () => {
                         <TableHead>Grado</TableHead>
                         <TableHead>Salón</TableHead>
                         <TableHead>Teléfono</TableHead>
+                        <TableHead>Contraseña</TableHead>
                         <TableHead className="text-right">Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredEst.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center text-muted-foreground">
+                          <TableCell colSpan={8} className="text-center text-muted-foreground">
                             No se encontraron estudiantes
                           </TableCell>
                         </TableRow>
@@ -1564,6 +1573,7 @@ const PanelControl = () => {
                             <TableCell>{e.grado}</TableCell>
                             <TableCell>{e.salon}</TableCell>
                             <TableCell className="font-mono text-xs">{e.numero_de_telefono || "—"}</TableCell>
+                            <TableCell className="text-muted-foreground">{e.contrasena || "—"}</TableCell>
                             <TableCell className="text-right space-x-1">
                               <Button variant="ghost" size="sm" onClick={() => openEstDialog(e)}>
                                 <Pencil className="w-4 h-4" />
@@ -1621,6 +1631,7 @@ const PanelControl = () => {
                         <TableHead>Apellidos</TableHead>
                         <TableHead>Nombres</TableHead>
                         <TableHead>Cargo</TableHead>
+                        <TableHead>Teléfono</TableHead>
                         <TableHead>Contraseña</TableHead>
                         <TableHead className="text-right">Acciones</TableHead>
                       </TableRow>
@@ -1628,18 +1639,19 @@ const PanelControl = () => {
                     <TableBody>
                       {filteredInt.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center text-muted-foreground">
+                          <TableCell colSpan={7} className="text-center text-muted-foreground">
                             No se encontraron funcionarios
                           </TableCell>
                         </TableRow>
                       ) : (
-                        filteredInt.map((i) => (
+                        filteredInt.map((i: any) => (
                           <TableRow key={i.id}>
                             <TableCell className="font-mono">{i.id}</TableCell>
                             <TableCell>{i.apellidos}</TableCell>
                             <TableCell>{i.nombres}</TableCell>
                             <TableCell>{i.cargo}</TableCell>
-                            <TableCell className="text-muted-foreground">{i.contrasena}</TableCell>
+                            <TableCell className="font-mono text-xs">{i.numero_de_telefono || "—"}</TableCell>
+                            <TableCell className="text-muted-foreground">{i.contrasena || "—"}</TableCell>
                             <TableCell className="text-right space-x-1">
                               <Button variant="ghost" size="sm" onClick={() => openIntDialog(i)}>
                                 <Pencil className="w-4 h-4" />
