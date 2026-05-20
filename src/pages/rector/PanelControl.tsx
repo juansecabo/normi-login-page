@@ -1311,13 +1311,19 @@ const PanelControl = () => {
           </h2>
 
           <Tabs defaultValue="estudiantes">
-            <TabsList className="flex w-full mb-6">
-              <TabsTrigger value="estudiantes" className="flex-1">Estudiantes</TabsTrigger>
-              <TabsTrigger value="perfiles" className="flex-1">Perfiles registrados</TabsTrigger>
-              <TabsTrigger value="internos" className="flex-1">Internos</TabsTrigger>
-              <TabsTrigger value="asignaciones" className="flex-1">Asignaciones</TabsTrigger>
-              <TabsTrigger value="catalogo-asignaturas" className="flex-1">Asignaturas</TabsTrigger>
-            </TabsList>
+            {/* Wrapper con scroll horizontal en móvil: los 5 tabs no caben en
+                pantallas chicas y se cortaban los de los extremos. En sm+ los
+                tabs vuelven a distribuirse parejo (flex-1) y el scroll se
+                desactiva porque caben todos. */}
+            <div className="overflow-x-auto -mx-6 px-6 md:-mx-8 md:px-8 sm:mx-0 sm:px-0 mb-6">
+              <TabsList className="inline-flex sm:flex sm:w-full">
+                <TabsTrigger value="estudiantes" className="sm:flex-1">Estudiantes</TabsTrigger>
+                <TabsTrigger value="perfiles" className="sm:flex-1">Perfiles registrados</TabsTrigger>
+                <TabsTrigger value="internos" className="sm:flex-1">Internos</TabsTrigger>
+                <TabsTrigger value="asignaciones" className="sm:flex-1">Asignaciones</TabsTrigger>
+                <TabsTrigger value="catalogo-asignaturas" className="sm:flex-1">Asignaturas</TabsTrigger>
+              </TabsList>
+            </div>
 
             {/* ════════════════ TAB: ESTUDIANTES ════════════════ */}
             <TabsContent value="estudiantes">
