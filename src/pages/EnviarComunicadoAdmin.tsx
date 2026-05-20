@@ -571,43 +571,40 @@ const EnviarComunicadoAdmin = () => {
         }
       }
 
-      if (perfilesMarcados.Profesores) {
-        if (profesoresSeleccionados.length > 0) {
-          segmentos.push({ perfil: ["Profesores"], id_destinatarios: profesoresSeleccionados });
-        } else {
-          segmentos.push({ perfil: ["Profesores"], nivel: nivelUnico, grados: gradosFinal, salones: salonesFinal });
-        }
+      // Agrupar internos al máximo. Profesores en segmento propio solo si
+      // tiene filtros de aula sin ids; el resto se combinan.
+      const profesoresConFiltroAula =
+        perfilesMarcados.Profesores &&
+        profesoresSeleccionados.length === 0 &&
+        (nivelUnico || gradosFinal || salonesFinal);
+
+      if (profesoresConFiltroAula) {
+        segmentos.push({ perfil: ["Profesores"], nivel: nivelUnico, grados: gradosFinal, salones: salonesFinal });
       }
 
+      const internosConIds: { perfiles: string[]; ids: string[] } = { perfiles: [], ids: [] };
       const internosTodos: string[] = [];
+      const addInterno = (perfilName: string, marcado: boolean, idsSeleccionados: string[]) => {
+        if (!marcado) return;
+        if (idsSeleccionados.length > 0) {
+          if (!internosConIds.perfiles.includes(perfilName)) internosConIds.perfiles.push(perfilName);
+          for (const id of idsSeleccionados) if (!internosConIds.ids.includes(id)) internosConIds.ids.push(id);
+        } else {
+          internosTodos.push(perfilName);
+        }
+      };
+
+      if (!profesoresConFiltroAula) {
+        addInterno("Profesores", perfilesMarcados.Profesores, profesoresSeleccionados);
+      }
+      addInterno("Coordinadores", perfilesMarcados.Coordinadores, coordinadoresSeleccionados);
+      addInterno("Administrativos", perfilesMarcados.Administrativos, administrativosSeleccionados);
+      addInterno("Secretaria General", perfilesMarcados.Secretaria, secretariasSeleccionadas);
+      addInterno("Orientadores", perfilesMarcados.Orientador, orientadoresSeleccionados);
       if (perfilesMarcados.Rector) internosTodos.push("Rector");
-      if (perfilesMarcados.Coordinadores) {
-        if (coordinadoresSeleccionados.length > 0) {
-          segmentos.push({ perfil: ["Coordinadores"], id_destinatarios: coordinadoresSeleccionados });
-        } else {
-          internosTodos.push("Coordinadores");
-        }
-      }
-      if (perfilesMarcados.Administrativos) {
-        if (administrativosSeleccionados.length > 0) {
-          segmentos.push({ perfil: ["Administrativos"], id_destinatarios: administrativosSeleccionados });
-        } else {
-          internosTodos.push("Administrativos");
-        }
-      }
-      if (perfilesMarcados.Secretaria) {
-        if (secretariasSeleccionadas.length > 0) {
-          segmentos.push({ perfil: ["Secretaria General"], id_destinatarios: secretariasSeleccionadas });
-        } else {
-          internosTodos.push("Secretaria General");
-        }
-      }
-      if (perfilesMarcados.Orientador) {
-        if (orientadoresSeleccionados.length > 0) {
-          segmentos.push({ perfil: ["Orientadores"], id_destinatarios: orientadoresSeleccionados });
-        } else {
-          internosTodos.push("Orientadores");
-        }
+
+      if (internosConIds.perfiles.length > 0) {
+        segmentos.push({ perfil: internosConIds.perfiles, id_destinatarios: internosConIds.ids });
       }
       if (internosTodos.length > 0) {
         segmentos.push({ perfil: internosTodos });
