@@ -17,11 +17,12 @@ import HeaderNormi from "@/components/HeaderNormi";
 import { Loader2, Send, Clock, Trash2, Search, Users, Eye, Paperclip, X, FileText, Download, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { apiRequest } from "@/lib/apiClient";
 import CharCircle from "@/components/CharCircle";
 import { MAX_WA_TEMPLATE_BODY, WA_TEMPLATE_OVERHEAD } from "@/lib/wapBody";
 
-const WEBHOOK_URL =
-  "https://n8n.notasnormi.com/webhook/9bd1a575-84f9-4b7f-989a-b2a3d1814721";
+// Migrado de n8n → normi-server. Endpoint /api/comunicados/enviar con
+// como_normi=true para que el remitente quede anónimo.
 
 const WEBHOOK_MASIVO_URL =
   "https://n8n.notasnormi.com/webhook/masivo-personalizado";
@@ -543,32 +544,31 @@ const EnviarComunicadoAdmin = () => {
         ...orientadoresSeleccionados,
       ];
 
-      const response = await fetch(WEBHOOK_URL, {
-        method: "POST",
-        mode: "cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          remitente: "Normi",
-          destinatarios: destinatariosTexto,
-          mensaje: mensaje.trim(),
-          id_remitente: idRemitente,
-          perfil: perfilArray.length > 0 ? perfilArray : null,
-          id_destinatarios: idDestinatariosArray.length > 0 ? idDestinatariosArray : null,
-          nivel: null,
-          grado: null,
-          salon: null,
-          id: null,
-          ...(archivoUrl ? { archivo_url: archivoUrl } : {}),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error del servidor: ${response.status}`);
-      }
+      const response = await apiRequest<{ ok: true; enviados: number; fallos: number; total: number }>(
+        '/api/comunicados/enviar',
+        {
+          method: "POST",
+          body: JSON.stringify({
+            como_normi: true, // admin envía anónimo (remitente = "Normi")
+            destinatarios_label: destinatariosTexto,
+            mensaje: mensaje.trim(),
+            archivo_url: archivoUrl || null,
+            segmentos: [
+              {
+                perfil: perfilArray,
+                nivel: null,
+                grados: null,
+                salones: null,
+                id_destinatarios: idDestinatariosArray.length > 0 ? idDestinatariosArray : null,
+              },
+            ],
+          }),
+        },
+      );
 
       toast({
         title: "Comunicado enviado",
-        description: "El comunicado se está enviando por WhatsApp como Normi.",
+        description: `Se enviaron ${response.enviados} mensajes como Normi${response.fallos > 0 ? ` (${response.fallos} fallaron)` : ''}.`,
       });
 
       setMensaje("");

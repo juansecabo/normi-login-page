@@ -11,14 +11,14 @@ import HeaderNormi from "@/components/HeaderNormi";
 import { Loader2, Send, Clock, Trash2, Search, Users, Eye, Paperclip, X, FileText, Download, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { apiRequest } from "@/lib/apiClient";
 import CharCircle from "@/components/CharCircle";
 import { buildTemplateBodyPreview, MAX_WA_TEMPLATE_BODY, WA_TEMPLATE_OVERHEAD } from "@/lib/wapBody";
 
-const WEBHOOK_URL =
-  "https://n8n.notasnormi.com/webhook/ae459f1c-7e94-45f4-9909-aaddc82a7552";
-
-const WEBHOOK_RECTOR_URL =
-  "https://n8n.notasnormi.com/webhook/enviar-comunicado-rector-coordinadores";
+// Migrado de n8n → normi-server: ya no llamamos a webhook externo. El endpoint
+// /api/comunicados/enviar del server hace toda la lógica (resolver
+// destinatarios + WhatsApp + guardar) en proceso, con multi-tenant filtrado
+// por el JWT del usuario.
 
 type PerfilKey = 'Estudiantes' | 'Padres' | 'Profesores' | 'Coordinadores' | 'Rector' | 'Administrativos' | 'Secretaria' | 'Orientador';
 
@@ -559,33 +559,32 @@ const EnviarComunicado = () => {
         ...orientadoresSeleccionados,
       ];
 
-      const webhookUrl = ['Rector', 'Coordinador(a)', 'Administrativo(a)', 'Secretaria General', 'Orientador(a) Escolar'].includes(cargo) ? WEBHOOK_RECTOR_URL : WEBHOOK_URL;
-      const response = await fetch(webhookUrl, {
-        method: "POST",
-        mode: "cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          remitente,
-          destinatarios: destinatariosTexto,
-          mensaje: mensaje.trim(),
-          id_remitente: idRemitente,
-          perfil: perfilArray.length > 0 ? perfilArray : null,
-          id_destinatarios: idDestinatariosArray.length > 0 ? idDestinatariosArray : null,
-          nivel: null,
-          grado: null,
-          salon: null,
-          id: null,
-          ...(archivoUrl ? { archivo_url: archivoUrl } : {}),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error del servidor: ${response.status}`);
-      }
+      // Llamada al endpoint server (multi-tenant via JWT) — reemplaza los 2
+      // webhooks n8n (WEBHOOK_URL y WEBHOOK_RECTOR_URL).
+      const response = await apiRequest<{ ok: true; enviados: number; fallos: number; total: number }>(
+        '/api/comunicados/enviar',
+        {
+          method: "POST",
+          body: JSON.stringify({
+            destinatarios_label: destinatariosTexto,
+            mensaje: mensaje.trim(),
+            archivo_url: archivoUrl || null,
+            segmentos: [
+              {
+                perfil: perfilArray,
+                nivel: null,
+                grados: null,
+                salones: null,
+                id_destinatarios: idDestinatariosArray.length > 0 ? idDestinatariosArray : null,
+              },
+            ],
+          }),
+        },
+      );
 
       toast({
         title: "Comunicado enviado",
-        description: "El comunicado se está enviando por WhatsApp.",
+        description: `Se enviaron ${response.enviados} mensajes${response.fallos > 0 ? ` (${response.fallos} fallaron)` : ''}.`,
       });
 
       // Limpiar mensaje y archivos, mantener destinatarios
