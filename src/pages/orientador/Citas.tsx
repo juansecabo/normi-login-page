@@ -117,14 +117,16 @@ const Citas = () => {
     const session = getSession();
     if (!session.id || (!isOrientador() && !isAdmin())) { navigate("/"); return; }
     setAutor({ id: session.id, nombre: `${session.nombres || ""} ${session.apellidos || ""}`.trim() });
-    Promise.all([
-      supabase.from("Citas_Orientacion").select("*").order("fecha", { ascending: false }).order("hora", { ascending: false }),
-      supabase.from("Estudiantes").select("id, nombres, apellidos, grado, salon").order("apellidos"),
-    ]).then(([cR, eR]) => {
+    (async () => {
+      const [cR, eR] = await Promise.all([
+        supabase.from("Citas_Orientacion").select("*").order("fecha", { ascending: false }).order("hora", { ascending: false }),
+        supabase.from("Estudiantes").select("id, grado, salon"),
+      ]);
       setCitas(cR.data || []);
-      setEstudiantes(eR.data || []);
+      const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
+      setEstudiantes(sortByApellidosNombres(await enrichWithNombres((eR.data || []) as any)));
       setLoading(false);
-    });
+    })();
   }, [navigate]);
 
   // Si la URL trae ?estudianteId=X (ej: vienen de Remisiones a Orientación → Agendar cita),

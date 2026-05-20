@@ -50,13 +50,12 @@ const ListaEstudiantes = () => {
 
   const fetchEstudiantes = async (grado: string, salon: string) => {
     try {
-      const { data, error } = await supabase
+      // Fase 10.E.19: nombres/apellidos viven en Usuarios.
+      const { data: raw, error } = await supabase
         .from('Estudiantes')
-        .select('id, apellidos, nombres')
+        .select('id')
         .eq('grado', grado)
-        .eq('salon', salon)
-        .order('apellidos', { ascending: true })
-        .order('nombres', { ascending: true });
+        .eq('salon', salon);
 
       if (error) {
         console.error('Error fetching estudiantes:', error);
@@ -64,7 +63,8 @@ const ListaEstudiantes = () => {
         return;
       }
 
-      setEstudiantes(data || []);
+      const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
+      setEstudiantes(sortByApellidosNombres(await enrichWithNombres((raw || []) as any)) as any);
     } catch (error) {
       console.error('Error:', error);
     } finally {

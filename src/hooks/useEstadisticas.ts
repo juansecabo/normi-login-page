@@ -148,13 +148,15 @@ export const useEstadisticas = () => {
         if (notasErr) throw notasErr;
         setNotas(notasData || []);
 
-        const { data: estudiantesData, error: estErr } = await (supabase as any)
+        const { data: estudiantesRaw, error: estErr } = await (supabase as any)
           .from("Estudiantes")
-          .select("id,nombres,apellidos,grado,salon")
-          .order("apellidos", { ascending: true })
+          .select("id,grado,salon")
           .fetchAll();
         if (estErr) throw estErr;
-        setEstudiantes(estudiantesData || []);
+        // Fase 10.E.19: nombres/apellidos viven en Usuarios.
+        const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
+        const estudiantesData = sortByApellidosNombres(await enrichWithNombres(estudiantesRaw || []));
+        setEstudiantes(estudiantesData);
 
         // Obtener asignaciones de profesores para extraer asignaturas por grado/salón
         const { data: asignacionesData, error: asignacionesError } = await supabase

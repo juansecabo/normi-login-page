@@ -66,13 +66,14 @@ const TablaNotasPreescolarReadOnly = () => {
       setSalonSeleccionado(storedSalon);
 
       try {
-        const { data: estudiantesData, error: errEst } = await supabase
+        // Fase 10.E.19: nombres/apellidos viven en Usuarios.
+        const { data: estudiantesRaw, error: errEst } = await supabase
           .from("Estudiantes")
-          .select("id, apellidos, nombres")
+          .select("id")
           .eq("grado", storedGrado)
-          .eq("salon", storedSalon)
-          .order("apellidos", { ascending: true })
-          .order("nombres", { ascending: true });
+          .eq("salon", storedSalon);
+        const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
+        const estudiantesData = errEst ? estudiantesRaw : sortByApellidosNombres(await enrichWithNombres((estudiantesRaw || []) as any));
 
         if (errEst) {
           console.error("Error fetching estudiantes:", errEst);

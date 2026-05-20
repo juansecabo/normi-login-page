@@ -205,9 +205,10 @@ export default function ConsultaDetalle() {
 
     let ests: EstudianteRow[] | null = null;
     if (tienePadresObjetivo) {
+      // Fase 10.E.19: nombres/apellidos viven en Usuarios.
       let estQuery = supabase
         .from("Estudiantes")
-        .select("id, nombres, apellidos, grado, salon");
+        .select("id, grado, salon");
 
       if (consultaRow.estudiantes_objetivo && consultaRow.estudiantes_objetivo.length > 0) {
         estQuery = estQuery.in("id", consultaRow.estudiantes_objetivo);
@@ -220,7 +221,8 @@ export default function ConsultaDetalle() {
         }
       }
       const { data } = await estQuery;
-      ests = (data || []) as EstudianteRow[];
+      const { enrichWithNombres } = await import("@/lib/nombresUsuarios");
+      ests = (await enrichWithNombres((data || []) as any)) as EstudianteRow[];
       setEstudiantes(ests);
     } else {
       setEstudiantes([]);
@@ -267,11 +269,14 @@ export default function ConsultaDetalle() {
       }
       const estsMap = new Map<string, any>();
       if (allHijoIds.size > 0) {
+        // Fase 10.E.19: nombres/apellidos viven en Usuarios.
         const { data } = await supabase
           .from("Estudiantes")
-          .select("id, nombres, nombres, apellidos, apellidos, grado, salon")
+          .select("id, grado, salon")
           .in("id", Array.from(allHijoIds));
-        (data || []).forEach((e: any) => estsMap.set(String(e.id), e));
+        const { enrichWithNombres } = await import("@/lib/nombresUsuarios");
+        const enriched = await enrichWithNombres((data || []) as any);
+        enriched.forEach((e: any) => estsMap.set(String(e.id), e));
       }
 
       // Construir array PadreRow compatible con el resto del componente

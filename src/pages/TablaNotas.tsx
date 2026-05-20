@@ -200,13 +200,14 @@ const TablaNotas = () => {
         console.log("Salón desde localStorage:", storedSalon);
 
         // Fetch estudiantes
-        const { data: estudiantesData, error: estudiantesError } = await supabase
+        // Fase 10.E.19: nombres/apellidos viven en Usuarios.
+        const { data: estudiantesRaw, error: estudiantesError } = await supabase
           .from('Estudiantes')
-          .select('id, apellidos, nombres')
+          .select('id')
           .eq('grado', storedGrado)
-          .eq('salon', storedSalon)
-          .order('apellidos', { ascending: true })
-          .order('nombres', { ascending: true });
+          .eq('salon', storedSalon);
+        const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
+        const estudiantesData = estudiantesError ? estudiantesRaw : sortByApellidosNombres(await enrichWithNombres((estudiantesRaw || []) as any));
 
         console.log("Estudiantes encontrados:", estudiantesData?.length || 0);
 

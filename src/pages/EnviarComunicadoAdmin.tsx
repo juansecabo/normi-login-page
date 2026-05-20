@@ -211,25 +211,26 @@ const EnviarComunicadoAdmin = () => {
 
     const fetchLista = async () => {
       setLoadingListaEstudiantes(true);
+      // Fase 10.E.19: nombres/apellidos viven en Usuarios.
       let q = supabase
         .from("Estudiantes")
-        .select("id, apellidos, nombres, grado, salon")
+        .select("id, grado, salon")
         .in("grado", gradosSel);
       if (salonesSel.length > 0) q = q.in("salon", salonesSel);
-      const { data } = await q
+      const { data: rawData } = await q
         .order("grado", { ascending: true })
-        .order("salon", { ascending: true })
-        .order("apellidos", { ascending: true })
-        .order("nombres", { ascending: true });
+        .order("salon", { ascending: true });
+      const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
+      const data = sortByApellidosNombres(await enrichWithNombres((rawData || []) as any));
       setListaEstudiantesFiltrada(
-        (data || []).map(e => ({
+        data.map((e: any) => ({
           id: String(e.id),
           nombre: `${e.apellidos} ${e.nombres}`,
           grado: e.grado || "",
           salon: e.salon || "",
         }))
       );
-      setEstudiantesSeleccionados(prev => prev.filter(id => (data || []).some(e => String(e.id) === id)));
+      setEstudiantesSeleccionados(prev => prev.filter(id => data.some((e: any) => String(e.id) === id)));
       setLoadingListaEstudiantes(false);
     };
     fetchLista();
@@ -250,10 +251,13 @@ const EnviarComunicadoAdmin = () => {
     const fetchProfes = async () => {
       setLoadingListaProfesores(true);
       // PostgREST malinterpreta "Grado(s)" (con paréntesis) en .overlaps, filtramos en JS
-      const { data } = await supabase
+      // Fase 10.E.19: nombres/apellidos viven en Usuarios.
+      const { data: rawData } = await supabase
         .from("Asignación Profesores")
-        .select("id, nombres, apellidos, \"Grado(s)\", \"Salon(es)\"");
-      const filtered = (data || []).filter(r => {
+        .select("id, \"Grado(s)\", \"Salon(es)\"");
+      const { enrichWithNombres } = await import("@/lib/nombresUsuarios");
+      const data = await enrichWithNombres((rawData || []) as any);
+      const filtered = (data || []).filter((r: any) => {
         const grados = (r["Grado(s)"] as string[]) || [];
         const salones = (r["Salon(es)"] as string[]) || [];
         if (gradosSel.length > 0 && !gradosSel.some(g => grados.includes(g))) return false;
@@ -293,13 +297,13 @@ const EnviarComunicadoAdmin = () => {
 
     const fetchInternos = async () => {
       setLoadingInternos(true);
-      const { data } = await supabase
+      // Fase 10.E.19: nombres/apellidos viven en Usuarios.
+      const { data: rawInt } = await supabase
         .from("Internos")
-        .select("id, nombres, apellidos, cargo")
-        .in("cargo", ["Coordinador(a)", "Administrativo(a)", "Secretaria General", "Orientador(a) Escolar"])
-        .order("apellidos", { ascending: true })
-        .order("nombres", { ascending: true });
-      const rows = data || [];
+        .select("id, cargo")
+        .in("cargo", ["Coordinador(a)", "Administrativo(a)", "Secretaria General", "Orientador(a) Escolar"]);
+      const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
+      const rows = sortByApellidosNombres(await enrichWithNombres((rawInt || []) as any));
       setListaCoordinadores(rows.filter(r => r.cargo === "Coordinador(a)").map(r => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}` })));
       setListaAdministrativos(rows.filter(r => r.cargo === "Administrativo(a)").map(r => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}` })));
       setListaSecretarias(rows.filter(r => r.cargo === "Secretaria General").map(r => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}` })));

@@ -180,11 +180,12 @@ export default function ConsultaPublica() {
         }
         // Cargar datos del estudiante desde Estudiantes (su id = session.id como number)
         const estIdNum = Number(session.id);
-        const { data: estData } = await supabase
-          .from("Estudiantes")
-          .select("id, nombres, apellidos, grado, salon")
-          .eq("id", estIdNum)
-          .maybeSingle();
+        // Fase 10.E.19: nombres/apellidos viven en Usuarios.
+        const [{ data: estRaw }, { data: usrRow }] = await Promise.all([
+          supabase.from("Estudiantes").select("id, grado, salon").eq("id", estIdNum).maybeSingle(),
+          supabase.from("Usuarios").select("nombres, apellidos").eq("id", String(estIdNum)).maybeSingle(),
+        ]);
+        const estData = estRaw ? { ...estRaw, nombres: (usrRow?.nombres as string) || "", apellidos: (usrRow?.apellidos as string) || "" } : null;
         if (!estData) {
           setError("No se pudo cargar tu perfil de estudiante.");
           setLoading(false);
@@ -290,11 +291,13 @@ export default function ConsultaPublica() {
         const idsValidos = hijoIds.filter((h): h is number => h != null);
         let hijosData: any[] = [];
         if (idsValidos.length > 0) {
+          // Fase 10.E.19: nombres/apellidos viven en Usuarios.
           const { data } = await supabase
             .from("Estudiantes")
-            .select("id, nombres, apellidos, grado, salon")
+            .select("id, grado, salon")
             .in("id", idsValidos);
-          hijosData = data || [];
+          const { enrichWithNombres } = await import("@/lib/nombresUsuarios");
+          hijosData = await enrichWithNombres((data || []) as any);
         }
 
         const hijoMap = new Map<string, any>();

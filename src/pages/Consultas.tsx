@@ -239,12 +239,14 @@ export default function Consultas() {
     }
     setLoadingEst(true);
     (async () => {
+      // Fase 10.E.19: nombres/apellidos viven en Usuarios.
       const { data, error } = await supabase
         .from("Estudiantes")
-        .select("id, nombres, apellidos, grado, salon, nivel")
+        .select("id, grado, salon, nivel")
         .in("grado", gradosSel as any);
       if (!error && data) {
-        setEstudiantesDelGrado(data as EstudianteRow[]);
+        const { enrichWithNombres } = await import("@/lib/nombresUsuarios");
+        setEstudiantesDelGrado(await enrichWithNombres(data as any) as EstudianteRow[]);
       }
       setLoadingEst(false);
     })();
@@ -262,9 +264,12 @@ export default function Consultas() {
     const salonesSel = Object.keys(salonesMarcados).filter((s) => salonesMarcados[s]);
     const fetchProfes = async () => {
       setLoadingListaProfesores(true);
-      const { data } = await supabase
+      // Fase 10.E.19: nombres/apellidos viven en Usuarios.
+      const { data: rawData } = await supabase
         .from("Asignación Profesores")
-        .select('id, nombres, apellidos, "Grado(s)", "Salon(es)"');
+        .select('id, "Grado(s)", "Salon(es)"');
+      const { enrichWithNombres } = await import("@/lib/nombresUsuarios");
+      const data = await enrichWithNombres((rawData || []) as any);
       const filtered = (data || []).filter((r: any) => {
         const grados = (r["Grado(s)"] as string[]) || [];
         const salones = (r["Salon(es)"] as string[]) || [];
@@ -304,13 +309,13 @@ export default function Consultas() {
     if (listaCoordinadores.length || listaAdministrativos.length || listaSecretarias.length || listaOrientadores.length) return;
     const fetchInternos = async () => {
       setLoadingInternos(true);
-      const { data } = await supabase
+      // Fase 10.E.19: nombres/apellidos viven en Usuarios.
+      const { data: rawInt } = await supabase
         .from("Internos")
-        .select("id, nombres, apellidos, cargo")
-        .in("cargo", ["Coordinador(a)", "Administrativo(a)", "Secretaria General", "Orientador(a) Escolar"])
-        .order("apellidos", { ascending: true })
-        .order("nombres", { ascending: true });
-      const rows = data || [];
+        .select("id, cargo")
+        .in("cargo", ["Coordinador(a)", "Administrativo(a)", "Secretaria General", "Orientador(a) Escolar"]);
+      const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
+      const rows = sortByApellidosNombres(await enrichWithNombres((rawInt || []) as any));
       setListaCoordinadores(rows.filter((r: any) => r.cargo === "Coordinador(a)").map((r: any) => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}` })));
       setListaAdministrativos(rows.filter((r: any) => r.cargo === "Administrativo(a)").map((r: any) => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}` })));
       setListaSecretarias(rows.filter((r: any) => r.cargo === "Secretaria General").map((r: any) => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}` })));

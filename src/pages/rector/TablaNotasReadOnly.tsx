@@ -104,11 +104,11 @@ const TablaNotasReadOnly = () => {
           });
 
           if (asignacionCorrecta && asignacionCorrecta.id) {
-            // Buscar el nombre del profesor en la tabla Internos usando id
+            // Fase 10.E.19: nombres viven en Usuarios.
             const { data: profesorData } = await supabase
-              .from('Internos')
+              .from('Usuarios')
               .select('nombres, apellidos')
-              .eq('id', asignacionCorrecta.id)
+              .eq('id', String(asignacionCorrecta.id))
               .maybeSingle();
 
             if (profesorData) {
@@ -117,14 +117,14 @@ const TablaNotasReadOnly = () => {
           }
         }
 
-        // Fetch estudiantes
-        const { data: estudiantesData, error: estudiantesError } = await supabase
+        // Fetch estudiantes — Fase 10.E.19: nombres/apellidos viven en Usuarios.
+        const { data: estudiantesRaw, error: estudiantesError } = await supabase
           .from('Estudiantes')
-          .select('id, apellidos, nombres')
+          .select('id')
           .eq('grado', storedGrado)
-          .eq('salon', storedSalon)
-          .order('apellidos', { ascending: true })
-          .order('nombres', { ascending: true });
+          .eq('salon', storedSalon);
+        const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
+        const estudiantesData = estudiantesError ? estudiantesRaw : sortByApellidosNombres(await enrichWithNombres((estudiantesRaw || []) as any));
 
         if (estudiantesError) {
           console.error('Error fetching estudiantes:', estudiantesError);

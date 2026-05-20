@@ -103,13 +103,15 @@ export const useCompletitud = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // 1) Internos
-        const { data: internos, error: errorInternos } = await supabase
+        // 1) Internos — Fase 10.E.19: nombres/apellidos viven en Usuarios.
+        const { data: internosRaw, error: errorInternos } = await supabase
           .from("Internos")
-          .select("id, nombres, apellidos, cargo");
+          .select("id, cargo");
 
         if (errorInternos) console.error("❌ Error obteniendo Internos:", errorInternos);
 
+        const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
+        const internos = await enrichWithNombres((internosRaw || []) as any);
         const soloProfesores: InternoProfesor[] = (internos || [])
           .filter((p: any) => p.cargo === "Profesor(a)")
           .map((p: any) => ({
@@ -283,14 +285,14 @@ export const useCompletitud = () => {
         console.log("Notas cargadas:", notasProcesadas.length);
         setNotas(notasProcesadas);
 
-        // 5) Estudiantes
-        const { data: estudiantesData, error: errorEst } = await supabase
+        // 5) Estudiantes — Fase 10.E.19: nombres/apellidos viven en Usuarios.
+        const { data: estudiantesRaw, error: errorEst } = await supabase
           .from("Estudiantes")
-          .select("id, nombres, apellidos, grado, salon")
-          .order("apellidos");
+          .select("id, grado, salon");
 
         if (errorEst) console.error("❌ Error obteniendo estudiantes:", errorEst);
 
+        const estudiantesData = sortByApellidosNombres(await enrichWithNombres((estudiantesRaw || []) as any));
         const estudiantesProcesados: Estudiante[] = (estudiantesData || []).map((e: any) => ({
           id: String(e.id || "").trim(),
           nombres: String(e.nombres || "").trim(),

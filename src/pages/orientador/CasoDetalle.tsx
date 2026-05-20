@@ -350,9 +350,12 @@ const CasoDetalle = () => {
     }
     setCaso(data as Caso);
     // Buscar el estudiante (Fase 10.E.17: acudientes ya no viven aquí, se leen aparte de Acudientes JOIN Usuarios).
-    const { data: e } = await supabase.from("Estudiantes")
-      .select("id, nombres, apellidos, grado, salon")
-      .eq("id", data.estudiante_id).maybeSingle();
+    // Fase 10.E.19: nombres/apellidos viven en Usuarios.
+    const [{ data: eRaw }, { data: u }] = await Promise.all([
+      supabase.from("Estudiantes").select("id, grado, salon").eq("id", data.estudiante_id).maybeSingle(),
+      supabase.from("Usuarios").select("nombres, apellidos").eq("id", String(data.estudiante_id)).maybeSingle(),
+    ]);
+    const e = eRaw ? { ...eRaw, nombres: (u?.nombres as string) || "", apellidos: (u?.apellidos as string) || "" } : null;
     setEstudiante((e as Estudiante) || null);
     setLoading(false);
   };

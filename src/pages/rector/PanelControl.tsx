@@ -332,25 +332,27 @@ const PanelControl = () => {
 
   const fetchEstudiantes = async () => {
     setLoadingEst(true);
-    const data = await fetchAllPages((from, to) =>
-      // Fase 10.E.17: las cols acudienteN_* fueron eliminadas. Los acudientes
-      // viven en Acudientes (JOIN Usuarios) y se cargan bajo demanda.
+    const raw = await fetchAllPages((from, to) =>
+      // Fase 10.E.19: nombres/apellidos viven en Usuarios.
       supabase
         .from("Estudiantes")
-        .select("id, nombres, apellidos, nivel, grado, salon")
-        .order("apellidos")
-        .order("nombres")
+        .select("id, nivel, grado, salon")
         .range(from, to)
     );
-    setEstudiantes(data);
+    const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
+    const data = sortByApellidosNombres(await enrichWithNombres(raw as any));
+    setEstudiantes(data as any);
     setLoadingEst(false);
   };
 
   const fetchInternos = async () => {
     setLoadingInt(true);
-    const internosData = await fetchAllPages<any>((from, to) =>
-      supabase.from("Internos").select("id, nombres, apellidos, cargo").range(from, to)
+    // Fase 10.E.19: nombres/apellidos viven en Usuarios.
+    const internosRaw = await fetchAllPages<any>((from, to) =>
+      supabase.from("Internos").select("id, cargo").range(from, to)
     );
+    const { enrichWithNombres } = await import("@/lib/nombresUsuarios");
+    const internosData = await enrichWithNombres(internosRaw as any);
     // El teléfono Y la contraseña viven en Usuarios — join manual por id.
     const ids = internosData.map((i: any) => String(i.id));
     const telMap = new Map<string, string | null>();
@@ -370,9 +372,33 @@ const PanelControl = () => {
 
   const fetchAsignaciones = async () => {
     setLoadingAsig(true);
-    const data = await fetchAllPages<Asignacion>((from, to) =>
-      supabase.from("Asignación Profesores").select('row_id, nombres, apellidos, numero_de_telefono, id, "Asignatura(s)", "Grado(s)", "Salon(es)"').range(from, to)
+    // Fase 10.E.19: nombres/apellidos/teléfono viven en Usuarios — join por id.
+    const raw = await fetchAllPages<any>((from, to) =>
+      supabase.from("Asignación Profesores").select('row_id, id, "Asignatura(s)", "Grado(s)", "Salon(es)"').range(from, to)
     );
+    const ids = [...new Set(raw.map((r: any) => r.id).filter((v: any) => v != null))].map(String);
+    const usrMap = new Map<string, { nombres: string; apellidos: string; tel: string }>();
+    if (ids.length > 0) {
+      const usuarios = await fetchAllPages<any>((from, to) =>
+        supabase.from("Usuarios").select("id, nombres, apellidos, numero_de_telefono").in("id", ids).range(from, to)
+      );
+      for (const u of usuarios) {
+        usrMap.set(String(u.id), {
+          nombres: (u.nombres as string) || "",
+          apellidos: (u.apellidos as string) || "",
+          tel: (u.numero_de_telefono as string) || "",
+        });
+      }
+    }
+    const data: Asignacion[] = raw.map((r: any) => {
+      const u = usrMap.get(String(r.id));
+      return {
+        ...r,
+        nombres: u?.nombres || "",
+        apellidos: u?.apellidos || "",
+        numero_de_telefono: u?.tel || "",
+      } as Asignacion;
+    });
     setAsignaciones(data.sort((a, b) => (a.apellidos || "").localeCompare(b.apellidos || "", "es")));
     setLoadingAsig(false);
   };

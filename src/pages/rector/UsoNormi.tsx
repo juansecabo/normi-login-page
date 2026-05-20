@@ -48,13 +48,16 @@ const UsoNormi = () => {
 
   const cargarDatos = async () => {
     try {
-      // 1. All professors. Teléfono ahora vive en Usuarios (Fase 10.E.15) — join manual por id.
-      const { data: internos } = await supabase
+      // 1. All professors. Fase 10.E.19: nombres/apellidos viven en Usuarios.
+      const { data: internosRaw } = await supabase
         .from("Internos")
-        .select("id, nombres, apellidos")
+        .select("id")
         .eq("cargo", "Profesor(a)");
 
-      if (!internos) { setLoading(false); return; }
+      if (!internosRaw) { setLoading(false); return; }
+
+      const { enrichWithNombres } = await import("@/lib/nombresUsuarios");
+      const internos = await enrichWithNombres((internosRaw || []) as any);
 
       const profCodigos = new Set(internos.map(p => String(p.id)));
       const profIds = internos.map(p => String(p.id));

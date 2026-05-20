@@ -196,14 +196,16 @@ const Casos = () => {
     const session = getSession();
     if (!session.id || (!isOrientador() && !isAdmin() && !puedeAccederDashboard())) { navigate("/"); return; }
     setAutor({ id: session.id, nombre: `${session.nombres || ""} ${session.apellidos || ""}`.trim() });
-    Promise.all([
-      supabase.from("Casos_Orientacion").select("id, estudiante_id, estudiante_nombre, estudiante_apellidos, estudiante_grado, estudiante_salon, motivo_atencion, estado, fecha_apertura, created_at").order("created_at", { ascending: false }),
-      supabase.from("Estudiantes").select("id, nombres, apellidos, grado, salon").order("apellidos"),
-    ]).then(([cR, eR]) => {
+    (async () => {
+      const [cR, eR] = await Promise.all([
+        supabase.from("Casos_Orientacion").select("id, estudiante_id, estudiante_nombre, estudiante_apellidos, estudiante_grado, estudiante_salon, motivo_atencion, estado, fecha_apertura, created_at").order("created_at", { ascending: false }),
+        supabase.from("Estudiantes").select("id, grado, salon"),
+      ]);
       setCasos((cR.data || []) as Caso[]);
-      setEstudiantes(eR.data || []);
+      const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
+      setEstudiantes(sortByApellidosNombres(await enrichWithNombres((eR.data || []) as any)));
       setLoading(false);
-    });
+    })();
   }, [navigate]);
 
   const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");

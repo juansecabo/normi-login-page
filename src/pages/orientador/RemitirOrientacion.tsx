@@ -81,8 +81,7 @@ const RemitirOrientacion = () => {
     const cargar = async () => {
       const [estsR, asigR, internoR] = await Promise.all([
         supabase.from("Estudiantes")
-          .select("id, nombres, apellidos, grado, salon")
-          .order("apellidos"),
+          .select("id, grado, salon"),
         isProfesor()
           ? supabase.from("Asignación Profesores").select('"Grado(s)", "Salon(es)"').eq("id", parseInt(session.id!))
           : Promise.resolve({ data: [] as any[] }),
@@ -91,7 +90,9 @@ const RemitirOrientacion = () => {
           : Promise.resolve({ data: null }),
       ]);
 
-      const todos = (estsR.data || []) as Estudiante[];
+      // Fase 10.E.19: nombres/apellidos viven en Usuarios.
+      const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
+      const todos = sortByApellidosNombres(await enrichWithNombres((estsR.data || []) as any)) as Estudiante[];
 
       if (isProfesor() && !isAdmin()) {
         const rows: AsigRow[] = (asigR.data || []).map((a: any) => ({

@@ -273,7 +273,7 @@ const RegistrosComportamiento = () => {
     const cargar = async () => {
       const [regsR, estsR, asigR, internoR] = await Promise.all([
         supabase.from("Registros_Comportamiento").select("*").order("fecha", { ascending: false }).order("created_at", { ascending: false }),
-        supabase.from("Estudiantes").select("id, nombres, apellidos, grado, salon, fecha_de_nacimiento").order("apellidos"),
+        supabase.from("Estudiantes").select("id, grado, salon, fecha_de_nacimiento"),
         isProfesor()
           ? supabase.from("Asignación Profesores").select('"Asignatura(s)", "Grado(s)", "Salon(es)"').eq("id", parseInt(session.id!))
           : Promise.resolve({ data: [] as any[] }),
@@ -293,7 +293,9 @@ const RegistrosComportamiento = () => {
 
       // Filtrar estudiantes a SOLO los que el profesor enseña o donde es director de grupo.
       // Admin/rector/coord/orientador ven a todos.
-      const todosEsts = estsR.data || [];
+      // Fase 10.E.19: nombres/apellidos viven en Usuarios.
+      const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
+      const todosEsts = sortByApellidosNombres(await enrichWithNombres((estsR.data || []) as any));
       const debeFiltrar = isProfesor() && !isAdmin();
       if (debeFiltrar) {
         // Aulas exactas (grado+salón) por cada fila de Asignación
@@ -501,12 +503,15 @@ const RegistrosComportamiento = () => {
       ? `${estSeleccionado.grado} ${estSeleccionado.salon}`
       : estSeleccionado.grado;
     const grupoEstSinSalon = estSeleccionado.grado;
-    const { data: directores } = await supabase
+    const { data: directoresRaw } = await supabase
       .from("Internos")
-      .select("id, nombres, apellidos, cargo")
+      .select("id, cargo")
       .or(`direccion_de_grupo.eq.${grupoEst},direccion_de_grupo.eq.${grupoEstSinSalon}`)
       .limit(1);
-    const director = (directores || [])[0] || null;
+    // Fase 10.E.19: nombres/apellidos viven en Usuarios.
+    const { enrichWithNombres } = await import("@/lib/nombresUsuarios");
+    const directores = await enrichWithNombres((directoresRaw || []) as any);
+    const director = directores[0] || null;
 
     const payload: any = {
       tipo,

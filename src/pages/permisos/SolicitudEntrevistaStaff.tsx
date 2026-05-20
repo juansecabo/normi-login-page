@@ -68,17 +68,24 @@ const SolicitudEntrevistaStaff = () => {
   useEffect(() => {
     if (!session.id || (!isProfesor() && !puedeAccederDashboard() && !isAdmin())) { navigate("/"); return; }
     // Fetch internos for the "entrevista con" dropdown
-    supabase.from("Internos").select("id, nombres, apellidos, cargo")
-      .then(({ data }) => setInternos((data || []).sort((a: Interno, b: Interno) => a.apellidos.localeCompare(b.apellidos, "es"))));
+    (async () => {
+      // Fase 10.E.19: nombres/apellidos viven en Usuarios.
+      const { data } = await supabase.from("Internos").select("id, cargo");
+      const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
+      setInternos(sortByApellidosNombres(await enrichWithNombres((data || []) as any)) as any);
+    })();
   }, [navigate]);
 
   // Fetch students when grado/salon changes
   useEffect(() => {
     if (!grado || !salon) { setEstudiantes([]); setEstudianteSeleccionado(null); return; }
-    supabase.from("Estudiantes").select("id, nombres, apellidos, grado, salon")
-      .eq("grado", grado).eq("salon", salon)
-      .order("apellidos").order("nombres")
-      .then(({ data }) => { setEstudiantes(data || []); setEstudianteSeleccionado(null); });
+    (async () => {
+      const { data } = await supabase.from("Estudiantes").select("id, grado, salon")
+        .eq("grado", grado).eq("salon", salon);
+      const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
+      setEstudiantes(sortByApellidosNombres(await enrichWithNombres((data || []) as any)) as any);
+      setEstudianteSeleccionado(null);
+    })();
   }, [grado, salon]);
 
   useEffect(() => { if (tab === "historial") fetchHistorial(); }, [tab]);

@@ -114,15 +114,16 @@ const EstadisticasProfesor = () => {
       return;
     }
     const fetchEstudiantes = async () => {
-      const { data } = await supabase
+      // Fase 10.E.19: nombres/apellidos viven en Usuarios.
+      const { data: raw } = await supabase
         .from('Estudiantes')
-        .select('id, apellidos, nombres')
+        .select('id')
         .eq('grado', gradoSeleccionado)
-        .eq('salon', salonSeleccionado)
-        .order('apellidos')
-        .order('nombres');
+        .eq('salon', salonSeleccionado);
+      const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
+      const data = sortByApellidosNombres(await enrichWithNombres((raw || []) as any));
       setEstudiantesDelSalon(
-        (data || []).map(e => ({
+        data.map((e: any) => ({
           id: String(e.id),
           nombre: `${e.apellidos} ${e.nombres}`
         }))

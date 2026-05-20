@@ -107,11 +107,12 @@ const RegistroNormi = () => {
         fetchAllPages<Estudiante>((from, to) =>
           supabase
             .from("Estudiantes")
-            .select("id, nombres, apellidos, grado, salon")
-            .order("apellidos")
-            .order("nombres")
+            .select("id, grado, salon")
             .range(from, to)
-        ),
+        ).then(async (rows) => {
+          const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
+          return sortByApellidosNombres(await enrichWithNombres(rows as any)) as Estudiante[];
+        }),
         fetchAllPages<any>((from, to) =>
           supabase
             .from("Acudientes")
