@@ -141,6 +141,7 @@ const EnviarComunicadoAdmin = () => {
   // Mensaje y archivos
   const [mensaje, setMensaje] = useState("");
   const [archivosSeleccionados, setArchivosSeleccionados] = useState<File[]>([]);
+  const [archivosRechazados, setArchivosRechazados] = useState<Array<{ nombre: string; mb: string }>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Masivo personalizado
@@ -1051,9 +1052,24 @@ const EnviarComunicadoAdmin = () => {
                   multiple
                   onChange={(e) => {
                     const files = e.target.files;
-                    if (files && files.length > 0) {
-                      setArchivosSeleccionados(prev => [...prev, ...Array.from(files)]);
+                    if (!files || files.length === 0) return;
+                    const MAX_BYTES = 20 * 1024 * 1024;
+                    const aceptados: File[] = [];
+                    const rechazados: Array<{ nombre: string; mb: string }> = [];
+                    for (const f of Array.from(files)) {
+                      if (f.size > MAX_BYTES) {
+                        rechazados.push({ nombre: f.name, mb: (f.size / 1024 / 1024).toFixed(1) });
+                      } else {
+                        aceptados.push(f);
+                      }
                     }
+                    if (aceptados.length > 0) {
+                      setArchivosSeleccionados(prev => [...prev, ...aceptados]);
+                    }
+                    if (rechazados.length > 0) {
+                      setArchivosRechazados(rechazados);
+                    }
+                    e.target.value = "";
                   }}
                 />
               </div>
@@ -1425,6 +1441,38 @@ const EnviarComunicadoAdmin = () => {
               ))}
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: archivo(s) demasiado grandes — reemplaza el toast rojo
+          "Payload Too Large" que era críptico para el usuario final. */}
+      <Dialog open={archivosRechazados.length > 0} onOpenChange={(open) => { if (!open) setArchivosRechazados([]); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>El archivo es muy grande</DialogTitle>
+            <DialogDescription>
+              {archivosRechazados.length === 1
+                ? "No se pudo adjuntar el siguiente archivo porque supera el tamaño máximo permitido (20 MB):"
+                : `No se pudieron adjuntar ${archivosRechazados.length} archivos porque superan el tamaño máximo permitido (20 MB):`}
+            </DialogDescription>
+          </DialogHeader>
+          <ul className="space-y-2 text-sm">
+            {archivosRechazados.map((a, i) => (
+              <li key={i} className="flex items-center justify-between gap-2 px-3 py-2 bg-muted rounded-md">
+                <span className="truncate flex-1" title={a.nombre}>{a.nombre}</span>
+                <span className="text-destructive font-medium whitespace-nowrap">{a.mb} MB</span>
+              </li>
+            ))}
+          </ul>
+          <DialogFooter>
+            <button
+              type="button"
+              onClick={() => setArchivosRechazados([])}
+              className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 font-medium"
+            >
+              Entendido
+            </button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
