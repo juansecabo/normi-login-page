@@ -32,7 +32,11 @@ interface QueryState {
   table: string;
   select?: string;
   filters: Filter[];
-  or?: string;
+  // Lista de expresiones .or() acumuladas. Cada string es una expresión OR
+  // independiente; en el server se aplican como AND de los ORs. Antes era un
+  // solo string y el último .or() sobrescribía al primero — mismo patrón del
+  // bug original de .order().
+  or?: string[];
   // Lista de orderBy en orden de llamada — el primer .order() es la key primaria,
   // los siguientes son secundarios. Antes era un solo objeto y el último .order
   // sobrescribía al primero (bug raíz que rompía .order('apellidos').order('nombres')).
@@ -41,6 +45,9 @@ interface QueryState {
   range?: [number, number];
   single?: 'single' | 'maybeSingle';
   count?: 'exact' | 'planned' | 'estimated';
+  // head: true → solo cuenta filas, no descarga el contenido. Útil para badges.
+  // Antes el shim lo ignoraba y descargaba todo el dataset; ahora se respeta.
+  head?: boolean;
 }
 
 interface MutationState extends QueryState {
@@ -59,6 +66,7 @@ class QueryBuilder<T = any> implements PromiseLike<{ data: T | null; error: any;
   select(columns: string = '*', options?: { count?: 'exact' | 'planned' | 'estimated'; head?: boolean }) {
     this.state.select = columns;
     if (options?.count) this.state.count = options.count;
+    if (options?.head) this.state.head = options.head;
     return this;
   }
 
@@ -97,7 +105,12 @@ class QueryBuilder<T = any> implements PromiseLike<{ data: T | null; error: any;
   overlaps(c: string, v: unknown) { this.state.filters.push(['overlaps', c, v]); return this; }
   not(c: string, op: string, v: unknown) { this.state.filters.push(['not', c, [op, v]]); return this; }
   match(criteria: Record<string, unknown>) { this.state.filters.push(['match', '', criteria]); return this; }
-  or(expression: string) { this.state.or = expression; return this; }
+  or(expression: string) {
+    // Acumulamos en array — múltiples .or() son válidos (AND de ORs).
+    if (!this.state.or) this.state.or = [];
+    this.state.or.push(expression);
+    return this;
+  }
 
   order(column: string, options?: { ascending?: boolean; nullsFirst?: boolean }) {
     // Acumulamos en array — múltiples .order() son válidos (primario, secundario, ...).
@@ -135,6 +148,7 @@ class QueryBuilder<T = any> implements PromiseLike<{ data: T | null; error: any;
         range: this.state.range,
         single: this.state.single,
         count: this.state.count,
+        head: this.state.head,
       };
       if ((this.state as MutationState).data !== undefined) body.data = (this.state as MutationState).data;
       if ((this.state as MutationState).upsertOptions) body.upsertOptions = (this.state as MutationState).upsertOptions;
@@ -171,7 +185,7 @@ class StorageBucket {
       const contentType = options?.contentType || (file as File).type || 'application/octet-stream';
       const res = await apiRequest<{ publicUrl: string }>('/api/storage/upload', {
         method: 'POST',
-        body: JSON.stringify({ bucket: this.bucket, path, contentBase64, contentType }),
+        body: JSON.stringify({ bucket: this.bucket, path, contentBase64, contentType, upsert: options?.upsert === true }),
       });
       return { data: { path, publicUrl: res.publicUrl }, error: null };
     } catch (err: any) {
