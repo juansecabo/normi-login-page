@@ -551,23 +551,41 @@ const EnviarComunicado = () => {
       const gradosSel = Object.keys(gradosMarcados).filter(g => gradosMarcados[g]);
       const salonesSel = Object.keys(salonesMarcados).filter(s => salonesMarcados[s]);
       const nivelesSel = Object.keys(nivelesMarcados).filter(n => nivelesMarcados[n]);
-      // El server acepta UN nivel por segmento. Si el usuario marcó varios
-      // niveles los expandimos a grados (NIVELES_GRADOS local) y los mergeamos
-      // con los grados explícitamente marcados.
-      let nivelUnico: string | null = null;
-      let gradosExpandidos: string[] = [...gradosSel];
-      if (nivelesSel.length === 1 && gradosSel.length === 0) {
-        nivelUnico = nivelesSel[0];
-      } else if (nivelesSel.length > 0) {
+      // Pasamos nivel/grados/salones tal cual los marcó el usuario. NO
+      // expandimos niveles a grados — si dice "Primaria", el segmento debe
+      // tener nivel="Primaria" y grados=null (queda más prolijo en la tabla
+      // Comunicados y el resolver del server sabe filtrar por nivel).
+      const nivelUnico = nivelesSel.length === 1 ? nivelesSel[0] : null;
+      // Si el usuario marcó varios niveles, los pasamos como array (vía
+      // múltiples segmentos abajo). Pero hoy lo simplificamos a UN nivel
+      // por segmento — si hay varios, expandimos a grados.
+      let gradosFinal: string[] | null = gradosSel.length > 0 ? gradosSel : null;
+      if (nivelesSel.length > 1) {
+        const gradosDeNiveles: string[] = [];
         for (const niv of nivelesSel) {
           for (const g of (NIVELES_GRADOS[niv] || [])) {
-            if (!gradosExpandidos.includes(g)) gradosExpandidos.push(g);
+            if (!gradosDeNiveles.includes(g)) gradosDeNiveles.push(g);
           }
         }
+        if (gradosFinal) {
+          for (const g of gradosDeNiveles) if (!gradosFinal.includes(g)) gradosFinal.push(g);
+        } else {
+          gradosFinal = gradosDeNiveles;
+        }
       }
-      const gradosFinal = gradosExpandidos.length > 0 ? gradosExpandidos : null;
       const salonesFinal = salonesSel.length > 0 ? salonesSel : null;
 
+      // Estrategia: agrupar perfiles que comparten filtros en UN solo segmento.
+      // Solo separar en segmentos distintos cuando un perfil tiene ids
+      // específicos seleccionados o requiere filtros diferentes.
+      //
+      // Casos típicos:
+      //  - "Estudiantes y padres de Séptimo 3" → 1 fila con
+      //    perfil=["Estudiantes","Padres de familia"], grado="Séptimo", salon="3"
+      //  - "Padres de Primaria" → 1 fila con perfil=["Padres de familia"],
+      //    nivel="Primaria"
+      //  - "Todos los profesores + un coordinador" → 2 filas: una para
+      //    profesores (sin ids) y otra para el coordinador con su id.
       const segmentos: Array<{
         perfil: string[];
         nivel?: string | null;
@@ -576,61 +594,65 @@ const EnviarComunicado = () => {
         id_destinatarios?: string[] | null;
       }> = [];
 
-      // Estudiantes: si hay ids específicos, usarlos. Si no, filtrar por aula.
-      if (perfilesMarcados.Estudiantes) {
+      // === Estudiantes y Padres (comparten filtros de aula) ===
+      const perfilesEstPadres: string[] = [];
+      if (perfilesMarcados.Estudiantes) perfilesEstPadres.push("Estudiantes");
+      if (perfilesMarcados.Padres) perfilesEstPadres.push("Padres de familia");
+      if (perfilesEstPadres.length > 0) {
         if (estudiantesSeleccionados.length > 0) {
-          segmentos.push({ perfil: ["Estudiantes"], id_destinatarios: estudiantesSeleccionados });
+          // Ids específicos: un solo segmento con esos ids para ambos perfiles.
+          segmentos.push({ perfil: perfilesEstPadres, id_destinatarios: estudiantesSeleccionados });
         } else {
-          segmentos.push({ perfil: ["Estudiantes"], nivel: nivelUnico, grados: gradosFinal, salones: salonesFinal });
+          segmentos.push({ perfil: perfilesEstPadres, nivel: nivelUnico, grados: gradosFinal, salones: salonesFinal });
         }
       }
-      // Padres de familia: mismo patrón. id_destinatarios = ids de los hijos
-      // (estudiantesSeleccionados es la lista de estudiantes elegidos).
-      if (perfilesMarcados.Padres) {
-        if (estudiantesSeleccionados.length > 0) {
-          segmentos.push({ perfil: ["Padres de familia"], id_destinatarios: estudiantesSeleccionados });
-        } else {
-          segmentos.push({ perfil: ["Padres de familia"], nivel: nivelUnico, grados: gradosFinal, salones: salonesFinal });
-        }
-      }
-      // Profesores
+
+      // === Internos: profesores tiene filtros de aula; los demás solo ids o todos. ===
+      // Profesores SIEMPRE en su segmento porque puede tener filtros de aula
+      // (que no coinciden con los de estudiantes/padres).
       if (perfilesMarcados.Profesores) {
         if (profesoresSeleccionados.length > 0) {
           segmentos.push({ perfil: ["Profesores"], id_destinatarios: profesoresSeleccionados });
         } else {
-          // Sin ids específicos: usar filtros de aula si el usuario marcó alguno.
           segmentos.push({ perfil: ["Profesores"], nivel: nivelUnico, grados: gradosFinal, salones: salonesFinal });
         }
       }
-      // Coordinadores
+
+      // === Resto de internos sin filtros de aula ===
+      // Si un perfil tiene ids específicos → su propio segmento.
+      // Si no → se agrupan en UN segmento con todos los perfiles "todos".
+      const internosTodos: string[] = [];
+      if (perfilesMarcados.Rector) internosTodos.push("Rector");
       if (perfilesMarcados.Coordinadores) {
-        segmentos.push(
-          coordinadoresSeleccionados.length > 0
-            ? { perfil: ["Coordinadores"], id_destinatarios: coordinadoresSeleccionados }
-            : { perfil: ["Coordinadores"] }
-        );
+        if (coordinadoresSeleccionados.length > 0) {
+          segmentos.push({ perfil: ["Coordinadores"], id_destinatarios: coordinadoresSeleccionados });
+        } else {
+          internosTodos.push("Coordinadores");
+        }
       }
-      if (perfilesMarcados.Rector) segmentos.push({ perfil: ["Rector"] });
       if (perfilesMarcados.Administrativos) {
-        segmentos.push(
-          administrativosSeleccionados.length > 0
-            ? { perfil: ["Administrativos"], id_destinatarios: administrativosSeleccionados }
-            : { perfil: ["Administrativos"] }
-        );
+        if (administrativosSeleccionados.length > 0) {
+          segmentos.push({ perfil: ["Administrativos"], id_destinatarios: administrativosSeleccionados });
+        } else {
+          internosTodos.push("Administrativos");
+        }
       }
       if (perfilesMarcados.Secretaria) {
-        segmentos.push(
-          secretariasSeleccionadas.length > 0
-            ? { perfil: ["Secretaria General"], id_destinatarios: secretariasSeleccionadas }
-            : { perfil: ["Secretaria General"] }
-        );
+        if (secretariasSeleccionadas.length > 0) {
+          segmentos.push({ perfil: ["Secretaria General"], id_destinatarios: secretariasSeleccionadas });
+        } else {
+          internosTodos.push("Secretaria General");
+        }
       }
       if (perfilesMarcados.Orientador) {
-        segmentos.push(
-          orientadoresSeleccionados.length > 0
-            ? { perfil: ["Orientadores"], id_destinatarios: orientadoresSeleccionados }
-            : { perfil: ["Orientadores"] }
-        );
+        if (orientadoresSeleccionados.length > 0) {
+          segmentos.push({ perfil: ["Orientadores"], id_destinatarios: orientadoresSeleccionados });
+        } else {
+          internosTodos.push("Orientadores");
+        }
+      }
+      if (internosTodos.length > 0) {
+        segmentos.push({ perfil: internosTodos });
       }
 
       // Llamada al endpoint server (multi-tenant via JWT) — reemplaza los 2

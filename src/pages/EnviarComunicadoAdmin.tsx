@@ -533,20 +533,25 @@ const EnviarComunicadoAdmin = () => {
       const gradosSel = Object.keys(gradosMarcados).filter(g => gradosMarcados[g]);
       const salonesSel = Object.keys(salonesMarcados).filter(s => salonesMarcados[s]);
       const nivelesSel = Object.keys(nivelesMarcados).filter(n => nivelesMarcados[n]);
-      let nivelUnico: string | null = null;
-      let gradosExpandidos: string[] = [...gradosSel];
-      if (nivelesSel.length === 1 && gradosSel.length === 0) {
-        nivelUnico = nivelesSel[0];
-      } else if (nivelesSel.length > 0) {
+      const nivelUnico = nivelesSel.length === 1 ? nivelesSel[0] : null;
+      let gradosFinal: string[] | null = gradosSel.length > 0 ? gradosSel : null;
+      if (nivelesSel.length > 1) {
+        const gradosDeNiveles: string[] = [];
         for (const niv of nivelesSel) {
           for (const g of (NIVELES_GRADOS[niv] || [])) {
-            if (!gradosExpandidos.includes(g)) gradosExpandidos.push(g);
+            if (!gradosDeNiveles.includes(g)) gradosDeNiveles.push(g);
           }
         }
+        if (gradosFinal) {
+          for (const g of gradosDeNiveles) if (!gradosFinal.includes(g)) gradosFinal.push(g);
+        } else {
+          gradosFinal = gradosDeNiveles;
+        }
       }
-      const gradosFinal = gradosExpandidos.length > 0 ? gradosExpandidos : null;
       const salonesFinal = salonesSel.length > 0 ? salonesSel : null;
 
+      // Agrupar perfiles que comparten filtros en UN segmento. Separar solo
+      // cuando hay ids específicos. Mismo patrón que EnviarComunicado.tsx.
       const segmentos: Array<{
         perfil: string[];
         nivel?: string | null;
@@ -555,41 +560,57 @@ const EnviarComunicadoAdmin = () => {
         id_destinatarios?: string[] | null;
       }> = [];
 
-      if (perfilesMarcados.Estudiantes) {
-        segmentos.push(estudiantesSeleccionados.length > 0
-          ? { perfil: ["Estudiantes"], id_destinatarios: estudiantesSeleccionados }
-          : { perfil: ["Estudiantes"], nivel: nivelUnico, grados: gradosFinal, salones: salonesFinal });
+      const perfilesEstPadres: string[] = [];
+      if (perfilesMarcados.Estudiantes) perfilesEstPadres.push("Estudiantes");
+      if (perfilesMarcados.Padres) perfilesEstPadres.push("Padres de familia");
+      if (perfilesEstPadres.length > 0) {
+        if (estudiantesSeleccionados.length > 0) {
+          segmentos.push({ perfil: perfilesEstPadres, id_destinatarios: estudiantesSeleccionados });
+        } else {
+          segmentos.push({ perfil: perfilesEstPadres, nivel: nivelUnico, grados: gradosFinal, salones: salonesFinal });
+        }
       }
-      if (perfilesMarcados.Padres) {
-        segmentos.push(estudiantesSeleccionados.length > 0
-          ? { perfil: ["Padres de familia"], id_destinatarios: estudiantesSeleccionados }
-          : { perfil: ["Padres de familia"], nivel: nivelUnico, grados: gradosFinal, salones: salonesFinal });
-      }
+
       if (perfilesMarcados.Profesores) {
-        segmentos.push(profesoresSeleccionados.length > 0
-          ? { perfil: ["Profesores"], id_destinatarios: profesoresSeleccionados }
-          : { perfil: ["Profesores"], nivel: nivelUnico, grados: gradosFinal, salones: salonesFinal });
+        if (profesoresSeleccionados.length > 0) {
+          segmentos.push({ perfil: ["Profesores"], id_destinatarios: profesoresSeleccionados });
+        } else {
+          segmentos.push({ perfil: ["Profesores"], nivel: nivelUnico, grados: gradosFinal, salones: salonesFinal });
+        }
       }
+
+      const internosTodos: string[] = [];
+      if (perfilesMarcados.Rector) internosTodos.push("Rector");
       if (perfilesMarcados.Coordinadores) {
-        segmentos.push(coordinadoresSeleccionados.length > 0
-          ? { perfil: ["Coordinadores"], id_destinatarios: coordinadoresSeleccionados }
-          : { perfil: ["Coordinadores"] });
+        if (coordinadoresSeleccionados.length > 0) {
+          segmentos.push({ perfil: ["Coordinadores"], id_destinatarios: coordinadoresSeleccionados });
+        } else {
+          internosTodos.push("Coordinadores");
+        }
       }
-      if (perfilesMarcados.Rector) segmentos.push({ perfil: ["Rector"] });
       if (perfilesMarcados.Administrativos) {
-        segmentos.push(administrativosSeleccionados.length > 0
-          ? { perfil: ["Administrativos"], id_destinatarios: administrativosSeleccionados }
-          : { perfil: ["Administrativos"] });
+        if (administrativosSeleccionados.length > 0) {
+          segmentos.push({ perfil: ["Administrativos"], id_destinatarios: administrativosSeleccionados });
+        } else {
+          internosTodos.push("Administrativos");
+        }
       }
       if (perfilesMarcados.Secretaria) {
-        segmentos.push(secretariasSeleccionadas.length > 0
-          ? { perfil: ["Secretaria General"], id_destinatarios: secretariasSeleccionadas }
-          : { perfil: ["Secretaria General"] });
+        if (secretariasSeleccionadas.length > 0) {
+          segmentos.push({ perfil: ["Secretaria General"], id_destinatarios: secretariasSeleccionadas });
+        } else {
+          internosTodos.push("Secretaria General");
+        }
       }
       if (perfilesMarcados.Orientador) {
-        segmentos.push(orientadoresSeleccionados.length > 0
-          ? { perfil: ["Orientadores"], id_destinatarios: orientadoresSeleccionados }
-          : { perfil: ["Orientadores"] });
+        if (orientadoresSeleccionados.length > 0) {
+          segmentos.push({ perfil: ["Orientadores"], id_destinatarios: orientadoresSeleccionados });
+        } else {
+          internosTodos.push("Orientadores");
+        }
+      }
+      if (internosTodos.length > 0) {
+        segmentos.push({ perfil: internosTodos });
       }
 
       const response = await apiRequest<{ ok: true; enviados: number; fallos: number; total: number }>(
