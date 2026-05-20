@@ -404,11 +404,126 @@ const PanelControl = () => {
   };
 
   const fetchPerfiles = async () => {
-    // Perfiles_Generales fue eliminada. La sección de Perfiles legacy queda vacía;
-    // los perfiles ahora se gestionan vía Estudiantes/Acudientes en este mismo panel.
+    // Fase 10.E.19+: la pestaña "Acudientes" muestra los acudientes (padres
+    // de familia) reales que viven en la tabla Acudientes, enriquecidos con
+    // nombre/teléfono desde Usuarios y con datos de cada hijo vinculado desde
+    // Estudiantes + Usuarios. Reemplaza el listado legacy de Perfiles_Generales.
     setLoadingPerf(true);
-    setPerfiles([]);
-    setLoadingPerf(false);
+    try {
+      const acudientesRaw = await fetchAllPages<any>((from, to) =>
+        supabase
+          .from("Acudientes")
+          .select("id, acudido1_id, acudido2_id, acudido3_id, acudido4_id")
+          .range(from, to)
+      );
+
+      // IDs únicos para batch: acudientes + sus hijos.
+      const acuIds = acudientesRaw.map((a) => String(a.id));
+      const hijoIds = new Set<string>();
+      for (const a of acudientesRaw) {
+        for (let i = 1; i <= 4; i++) {
+          const v = a[`acudido${i}_id`];
+          if (v) hijoIds.add(String(v));
+        }
+      }
+      const allUserIds = [...new Set([...acuIds, ...hijoIds])];
+
+      // Batch a Usuarios para nombres y teléfono.
+      const usrMap = new Map<string, { nombres: string; apellidos: string; tel: string }>();
+      if (allUserIds.length > 0) {
+        const usrs = await fetchAllPages<any>((from, to) =>
+          supabase
+            .from("Usuarios")
+            .select("id, nombres, apellidos, numero_de_telefono")
+            .in("id", allUserIds)
+            .range(from, to)
+        );
+        for (const u of usrs) {
+          usrMap.set(String(u.id), {
+            nombres: (u.nombres as string) || "",
+            apellidos: (u.apellidos as string) || "",
+            tel: (u.numero_de_telefono as string) || "",
+          });
+        }
+      }
+
+      // Batch a Estudiantes para grado/salón/nivel de cada hijo.
+      const estMap = new Map<string, { nivel: string; grado: string; salon: string }>();
+      if (hijoIds.size > 0) {
+        const ests = await fetchAllPages<any>((from, to) =>
+          supabase
+            .from("Estudiantes")
+            .select("id, nivel, grado, salon")
+            .in("id", [...hijoIds])
+            .range(from, to)
+        );
+        for (const e of ests) {
+          estMap.set(String(e.id), {
+            nivel: (e.nivel as string) || "",
+            grado: (e.grado as string) || "",
+            salon: (e.salon as string) || "",
+          });
+        }
+      }
+
+      // Construir Perfil[] usando la forma legacy del UI.
+      const perfilesConstruidos: Perfil[] = acudientesRaw.map((a) => {
+        const acuUser = usrMap.get(String(a.id));
+        const perfil: any = {
+          numero_de_telefono: acuUser?.tel || "",
+          perfil: "Padre de familia",
+          estudiante_id: null,
+          estudiante_nombre: null,
+          estudiante_apellidos: null,
+          estudiante_nivel: null,
+          estudiante_grado: null,
+          estudiante_salon: null,
+          padre_nombre: `${acuUser?.nombres || ""} ${acuUser?.apellidos || ""}`.trim(),
+          padre_id: String(a.id),
+          padre_numero_de_estudiantes: null,
+          contrasena: null,
+        };
+        // Mapear los 4 slots de hijos con sufijo secuencial 1..N.
+        let pos = 1;
+        for (let i = 1; i <= 4; i++) {
+          const hijoId = a[`acudido${i}_id`];
+          if (!hijoId) continue;
+          const hijoUser = usrMap.get(String(hijoId));
+          const hijoEst = estMap.get(String(hijoId));
+          perfil[`padre_estudiante${pos}_id`] = Number(hijoId);
+          perfil[`padre_estudiante${pos}_nombre`] = hijoUser?.nombres || null;
+          perfil[`padre_estudiante${pos}_apellidos`] = hijoUser?.apellidos || null;
+          perfil[`padre_estudiante${pos}_nivel`] = hijoEst?.nivel || null;
+          perfil[`padre_estudiante${pos}_grado`] = hijoEst?.grado || null;
+          perfil[`padre_estudiante${pos}_salon`] = hijoEst?.salon || null;
+          pos++;
+        }
+        // Llenar slots restantes con nulls.
+        for (let i = pos; i <= 4; i++) {
+          perfil[`padre_estudiante${i}_id`] = null;
+          perfil[`padre_estudiante${i}_nombre`] = null;
+          perfil[`padre_estudiante${i}_apellidos`] = null;
+          perfil[`padre_estudiante${i}_nivel`] = null;
+          perfil[`padre_estudiante${i}_grado`] = null;
+          perfil[`padre_estudiante${i}_salon`] = null;
+        }
+        return perfil as Perfil;
+      });
+
+      // Sort por apellidos+nombres del acudiente (locale español).
+      perfilesConstruidos.sort((a, b) => {
+        const sa = `${a.padre_nombre || ""}`.toLowerCase();
+        const sb = `${b.padre_nombre || ""}`.toLowerCase();
+        return sa.localeCompare(sb, "es");
+      });
+
+      setPerfiles(perfilesConstruidos);
+    } catch (e) {
+      console.error("[fetchPerfiles] Error cargando acudientes:", e);
+      setPerfiles([]);
+    } finally {
+      setLoadingPerf(false);
+    }
   };
 
   useEffect(() => {
