@@ -100,6 +100,9 @@ interface Perfil {
   estudiante_grado: string | null;
   estudiante_salon: string | null;
   padre_nombre: string | null;
+  /** Nombres y apellidos por separado para la tabla. */
+  padre_nombres_only?: string;
+  padre_apellidos_only?: string;
   padre_id: string | null;
   padre_numero_de_estudiantes: string | null;
   padre_estudiante1_id: number | null;
@@ -330,42 +333,74 @@ const PanelControl = () => {
   // FETCH
   // ═══════════════════════════════════════════════════════════════════════════
 
+  // Helper: batch fetch nombres + teléfono desde Usuarios en chunks.
+  // El proxy puede truncar .in() cuando la lista de ids es grande y se combina
+  // con .range — chunks manuales son más confiables.
+  const fetchUsuariosBatch = async (ids: string[]): Promise<Map<string, { nombres: string; apellidos: string; tel: string }>> => {
+    const map = new Map<string, { nombres: string; apellidos: string; tel: string }>();
+    const CHUNK = 500;
+    const unique = [...new Set(ids)];
+    for (let i = 0; i < unique.length; i += CHUNK) {
+      const slice = unique.slice(i, i + CHUNK);
+      const { data } = await supabase
+        .from("Usuarios")
+        .select("id, nombres, apellidos, numero_de_telefono")
+        .in("id", slice);
+      for (const u of (data || []) as any[]) {
+        map.set(String(u.id), {
+          nombres: (u.nombres as string) || "",
+          apellidos: (u.apellidos as string) || "",
+          tel: (u.numero_de_telefono as string) || "",
+        });
+      }
+    }
+    return map;
+  };
+
   const fetchEstudiantes = async () => {
     setLoadingEst(true);
     const raw = await fetchAllPages((from, to) =>
-      // Fase 10.E.19: nombres/apellidos viven en Usuarios.
+      // Fase 10.E.19: nombres/apellidos/teléfono viven en Usuarios.
       supabase
         .from("Estudiantes")
         .select("id, nivel, grado, salon")
         .range(from, to)
     );
-    const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
-    const data = sortByApellidosNombres(await enrichWithNombres(raw as any));
+    const usrMap = await fetchUsuariosBatch(raw.map((e: any) => String(e.id)));
+    const data: any[] = raw.map((e: any) => {
+      const u = usrMap.get(String(e.id));
+      return {
+        ...e,
+        nombres: u?.nombres || "",
+        apellidos: u?.apellidos || "",
+        numero_de_telefono: u?.tel || "",
+      };
+    });
+    data.sort((a, b) => {
+      const sa = `${a.apellidos || ""} ${a.nombres || ""}`.toLowerCase();
+      const sb = `${b.apellidos || ""} ${b.nombres || ""}`.toLowerCase();
+      return sa.localeCompare(sb, "es");
+    });
     setEstudiantes(data as any);
     setLoadingEst(false);
   };
 
   const fetchInternos = async () => {
     setLoadingInt(true);
-    // Fase 10.E.19: nombres/apellidos viven en Usuarios.
+    // Fase 10.E.19: nombres/apellidos/teléfono viven en Usuarios — chunks manuales.
     const internosRaw = await fetchAllPages<any>((from, to) =>
       supabase.from("Internos").select("id, cargo").range(from, to)
     );
-    const { enrichWithNombres } = await import("@/lib/nombresUsuarios");
-    const internosData = await enrichWithNombres(internosRaw as any);
-    // El teléfono Y la contraseña viven en Usuarios — join manual por id.
-    const ids = internosData.map((i: any) => String(i.id));
-    const telMap = new Map<string, string | null>();
-    if (ids.length > 0) {
-      const usuarios = await fetchAllPages<any>((from, to) =>
-        supabase.from("Usuarios").select("id, numero_de_telefono").in("id", ids).range(from, to)
-      );
-      for (const u of usuarios as any[]) telMap.set(String(u.id), u.numero_de_telefono ?? null);
-    }
-    const data: Interno[] = internosData.map((i: any) => ({
-      ...i,
-      numero_de_telefono: telMap.get(String(i.id)) ?? null,
-    }));
+    const usrMap = await fetchUsuariosBatch(internosRaw.map((i: any) => String(i.id)));
+    const data: Interno[] = internosRaw.map((i: any) => {
+      const u = usrMap.get(String(i.id));
+      return {
+        ...i,
+        nombres: u?.nombres || "",
+        apellidos: u?.apellidos || "",
+        numero_de_telefono: u?.tel || null,
+      };
+    });
     setInternos(data.sort((a, b) => (a.apellidos || "").localeCompare(b.apellidos || "", "es")));
     setLoadingInt(false);
   };
@@ -428,17 +463,18 @@ const PanelControl = () => {
       }
       const allUserIds = [...new Set([...acuIds, ...hijoIds])];
 
-      // Batch a Usuarios para nombres y teléfono.
+      // Batch a Usuarios en chunks (evita .in() gigantes que el proxy puede
+      // truncar). Sin paginar dentro de cada chunk — supabase devuelve hasta
+      // 1000 rows por request y los chunks son de 500, así que cabe.
+      const CHUNK = 500;
       const usrMap = new Map<string, { nombres: string; apellidos: string; tel: string }>();
-      if (allUserIds.length > 0) {
-        const usrs = await fetchAllPages<any>((from, to) =>
-          supabase
-            .from("Usuarios")
-            .select("id, nombres, apellidos, numero_de_telefono")
-            .in("id", allUserIds)
-            .range(from, to)
-        );
-        for (const u of usrs) {
+      for (let i = 0; i < allUserIds.length; i += CHUNK) {
+        const slice = allUserIds.slice(i, i + CHUNK);
+        const { data } = await supabase
+          .from("Usuarios")
+          .select("id, nombres, apellidos, numero_de_telefono")
+          .in("id", slice);
+        for (const u of (data || []) as any[]) {
           usrMap.set(String(u.id), {
             nombres: (u.nombres as string) || "",
             apellidos: (u.apellidos as string) || "",
@@ -449,15 +485,14 @@ const PanelControl = () => {
 
       // Batch a Estudiantes para grado/salón/nivel de cada hijo.
       const estMap = new Map<string, { nivel: string; grado: string; salon: string }>();
-      if (hijoIds.size > 0) {
-        const ests = await fetchAllPages<any>((from, to) =>
-          supabase
-            .from("Estudiantes")
-            .select("id, nivel, grado, salon")
-            .in("id", [...hijoIds])
-            .range(from, to)
-        );
-        for (const e of ests) {
+      const hijoIdsArr = [...hijoIds];
+      for (let i = 0; i < hijoIdsArr.length; i += CHUNK) {
+        const slice = hijoIdsArr.slice(i, i + CHUNK);
+        const { data } = await supabase
+          .from("Estudiantes")
+          .select("id, nivel, grado, salon")
+          .in("id", slice);
+        for (const e of (data || []) as any[]) {
           estMap.set(String(e.id), {
             nivel: (e.nivel as string) || "",
             grado: (e.grado as string) || "",
@@ -479,6 +514,8 @@ const PanelControl = () => {
           estudiante_grado: null,
           estudiante_salon: null,
           padre_nombre: `${acuUser?.nombres || ""} ${acuUser?.apellidos || ""}`.trim(),
+          padre_nombres_only: acuUser?.nombres || "",
+          padre_apellidos_only: acuUser?.apellidos || "",
           padre_id: String(a.id),
           padre_numero_de_estudiantes: null,
           contrasena: null,
@@ -511,9 +548,9 @@ const PanelControl = () => {
       });
 
       // Sort por apellidos+nombres del acudiente (locale español).
-      perfilesConstruidos.sort((a, b) => {
-        const sa = `${a.padre_nombre || ""}`.toLowerCase();
-        const sb = `${b.padre_nombre || ""}`.toLowerCase();
+      perfilesConstruidos.sort((a: any, b: any) => {
+        const sa = `${a.padre_apellidos_only || ""} ${a.padre_nombres_only || ""}`.toLowerCase();
+        const sb = `${b.padre_apellidos_only || ""} ${b.padre_nombres_only || ""}`.toLowerCase();
         return sa.localeCompare(sb, "es");
       });
 
@@ -1507,24 +1544,26 @@ const PanelControl = () => {
                         <TableHead>Nombres</TableHead>
                         <TableHead>Grado</TableHead>
                         <TableHead>Salón</TableHead>
+                        <TableHead>Teléfono</TableHead>
                         <TableHead className="text-right">Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredEst.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center text-muted-foreground">
+                          <TableCell colSpan={7} className="text-center text-muted-foreground">
                             No se encontraron estudiantes
                           </TableCell>
                         </TableRow>
                       ) : (
-                        filteredEst.map((e) => (
+                        filteredEst.map((e: any) => (
                           <TableRow key={e.id}>
                             <TableCell className="font-mono">{e.id}</TableCell>
                             <TableCell>{e.apellidos}</TableCell>
                             <TableCell>{e.nombres}</TableCell>
                             <TableCell>{e.grado}</TableCell>
                             <TableCell>{e.salon}</TableCell>
+                            <TableCell className="font-mono text-xs">{e.numero_de_telefono || "—"}</TableCell>
                             <TableCell className="text-right space-x-1">
                               <Button variant="ghost" size="sm" onClick={() => openEstDialog(e)}>
                                 <Pencil className="w-4 h-4" />
@@ -1736,11 +1775,11 @@ const PanelControl = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Teléfono</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Nombre</TableHead>
                         <TableHead>ID</TableHead>
+                        <TableHead>Apellidos</TableHead>
+                        <TableHead>Nombres</TableHead>
                         <TableHead>Grado/Salón</TableHead>
+                        <TableHead>Teléfono</TableHead>
                         <TableHead>Contraseña</TableHead>
                         <TableHead className="text-right">Acciones</TableHead>
                       </TableRow>
@@ -1749,34 +1788,24 @@ const PanelControl = () => {
                       {filteredPerf.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={7} className="text-center text-muted-foreground">
-                            No se encontraron perfiles
+                            No se encontraron acudientes
                           </TableCell>
                         </TableRow>
                       ) : (
-                        filteredPerf.map((p) => (
-                          <TableRow key={p.numero_de_telefono}>
-                            <TableCell className="font-mono text-xs">{p.numero_de_telefono}</TableCell>
-                            <TableCell>
-                              <span className={`text-xs px-2 py-1 rounded-full ${
-                                p.perfil === "Estudiante"
-                                  ? "bg-blue-100 text-blue-700"
-                                  : "bg-amber-100 text-amber-700"
-                              }`}>
-                                {p.perfil}
-                              </span>
-                            </TableCell>
-                            <TableCell>{getPerfilDisplayName(p)}</TableCell>
-                            <TableCell className="font-mono">{getPerfilDisplayCode(p)}</TableCell>
+                        filteredPerf.map((p: any) => (
+                          <TableRow key={p.padre_id || p.numero_de_telefono}>
+                            <TableCell className="font-mono">{p.padre_id || "—"}</TableCell>
+                            <TableCell>{p.padre_apellidos_only || "—"}</TableCell>
+                            <TableCell>{p.padre_nombres_only || "—"}</TableCell>
                             <TableCell className="text-sm text-muted-foreground">
-                              {p.perfil === "Estudiante"
-                                ? `${p.estudiante_grado || ""} ${p.estudiante_salon || ""}`.trim() || "—"
-                                : [
-                                    p.padre_estudiante1_grado && `${p.padre_estudiante1_grado} ${p.padre_estudiante1_salon || ""}`.trim(),
-                                    p.padre_estudiante2_grado && `${p.padre_estudiante2_grado} ${p.padre_estudiante2_salon || ""}`.trim(),
-                                    p.padre_estudiante3_grado && `${p.padre_estudiante3_grado} ${p.padre_estudiante3_salon || ""}`.trim(),
-                                    p.padre_estudiante4_grado && `${p.padre_estudiante4_grado} ${p.padre_estudiante4_salon || ""}`.trim(),
-                                  ].filter(Boolean).map((g, i) => <div key={i}>{g}</div>) || "—"}
+                              {[
+                                p.padre_estudiante1_grado && `${p.padre_estudiante1_grado} ${p.padre_estudiante1_salon || ""}`.trim(),
+                                p.padre_estudiante2_grado && `${p.padre_estudiante2_grado} ${p.padre_estudiante2_salon || ""}`.trim(),
+                                p.padre_estudiante3_grado && `${p.padre_estudiante3_grado} ${p.padre_estudiante3_salon || ""}`.trim(),
+                                p.padre_estudiante4_grado && `${p.padre_estudiante4_grado} ${p.padre_estudiante4_salon || ""}`.trim(),
+                              ].filter(Boolean).map((g, i) => <div key={i}>{g}</div>) || <span>—</span>}
                             </TableCell>
+                            <TableCell className="font-mono text-xs">{p.numero_de_telefono || "—"}</TableCell>
                             <TableCell className="text-muted-foreground">{p.contrasena || "—"}</TableCell>
                             <TableCell className="text-right space-x-1">
                               <Button variant="ghost" size="sm" onClick={() => openPerfDialog(p)}>
@@ -1812,7 +1841,7 @@ const PanelControl = () => {
 
       {/* ──── Dialog: Agregar/Editar Estudiante ──── */}
       <Dialog open={showEstDialog} onOpenChange={setShowEstDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingEst ? "Editar Estudiante" : "Agregar Estudiante"}
@@ -1958,7 +1987,7 @@ const PanelControl = () => {
 
       {/* ──── Dialog: Agregar/Editar Interno ──── */}
       <Dialog open={showIntDialog} onOpenChange={setShowIntDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingInt ? "Editar Funcionario" : "Agregar Funcionario"}
