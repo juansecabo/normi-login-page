@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient, ApiError } from "@/lib/apiClient";
 import { useToast } from "@/hooks/use-toast";
 import { getSession } from "@/hooks/useSession";
 
@@ -12,10 +12,10 @@ interface CambiarContrasenaModalProps {
 /**
  * Cambia la contraseña del usuario.
  *
- * Fase 10: la contraseña vive en Usuarios.contrasena (global, una por persona).
- * Ya no se actualiza por tabla operativa (Internos.contrasena, PG.contrasena).
- * Por compatibilidad mientras dura la transición, también actualizamos las
- * tablas operativas si el usuario tiene fila ahí.
+ * Llama al endpoint dedicado /auth/change-password del server, que valida la
+ * contraseña actual server-side con service_role (el flujo viejo leía
+ * Usuarios.contrasena por el dbProxy y siempre venía undefined porque está en
+ * denyColumns, lo cual permitía cambiar la contraseña ingresando solo la cédula).
  */
 const CambiarContrasenaModal = ({ open, onOpenChange }: CambiarContrasenaModalProps) => {
   const [contrasenaActual, setContrasenaActual] = useState("");
@@ -64,51 +64,27 @@ const CambiarContrasenaModal = ({ open, onOpenChange }: CambiarContrasenaModalPr
 
     setLoading(true);
     try {
-      // 1. Validar contraseña actual contra Usuarios (fuente de verdad)
-      const { data: usuario, error: fetchError } = await supabase
-        .from("Usuarios")
-        .select("id, contrasena")
-        .eq("id", session.id)
-        .maybeSingle();
-
-      if (fetchError || !usuario) {
-        setError("No se pudo verificar el usuario");
-        setLoading(false);
-        return;
-      }
-
-      // Permite "contraseña = id" como primera vez si la contrasena está en NULL
-      const contrasenaEsperada = usuario.contrasena ?? String(usuario.id);
-      if (contrasenaActual !== contrasenaEsperada) {
-        setError("La contraseña actual es incorrecta");
-        setLoading(false);
-        return;
-      }
-
-      // 2. Actualizar en Usuarios (fuente de verdad)
-      const { error: updateError } = await supabase
-        .from("Usuarios")
-        .update({ contrasena: nuevaContrasena })
-        .eq("id", session.id);
-
-      if (updateError) {
-        setError("No se pudo guardar la contraseña. Contacta al administrador.");
-        setLoading(false);
-        return;
-      }
-
-      // Contraseña vive en Usuarios — ya quedó actualizada arriba.
-
+      await apiClient.auth.changePassword(contrasenaActual, nuevaContrasena);
       setSuccess("Contraseña actualizada correctamente");
       setContrasenaActual("");
       setNuevaContrasena("");
       setConfirmarContrasena("");
-
-      setTimeout(() => {
-        closeModal();
-      }, 2000);
-    } catch {
-      toast({ title: "Error", description: "Ocurrió un error inesperado", variant: "destructive" });
+      setTimeout(() => closeModal(), 2000);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        const body = err.body as { error?: string } | null;
+        if (body?.error === 'invalid_current_password') {
+          setError("La contraseña actual es incorrecta");
+        } else if (body?.error === 'user_not_found') {
+          setError("No se pudo verificar el usuario");
+        } else if (body?.error === 'password_too_short') {
+          setError("La nueva contraseña debe tener mínimo 6 caracteres");
+        } else {
+          setError("No se pudo guardar la contraseña. Contacta al administrador.");
+        }
+      } else {
+        toast({ title: "Error", description: "Ocurrió un error inesperado", variant: "destructive" });
+      }
     } finally {
       setLoading(false);
     }

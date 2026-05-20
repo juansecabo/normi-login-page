@@ -523,10 +523,13 @@ const PanelControl = () => {
         if (!ced) continue;
         const { nombres, apellidos } = splitName(a.nom);
         const tel = cleanPhone(a.tel);
-        // UPSERT en Usuarios. Default contrasena = cedula si la fila no existe.
+        // Decidimos si setear contrasena por presencia/ausencia de la fila,
+        // NO por el valor de contrasena (esa columna está en denyColumns y
+        // viene undefined desde el proxy — usarla resetearía la contraseña
+        // a la cédula en cada edición).
         const { data: existingUser } = await supabase
           .from("Usuarios")
-          .select("id, contrasena")
+          .select("id")
           .eq("id", ced)
           .maybeSingle();
         const usuariosPayload: any = {
@@ -535,7 +538,7 @@ const PanelControl = () => {
           apellidos,
           numero_de_telefono: tel,
         };
-        if (!existingUser?.contrasena) usuariosPayload.contrasena = ced;
+        if (!existingUser) usuariosPayload.contrasena = ced;
         await supabase.from("Usuarios").upsert(usuariosPayload, { onConflict: "id" });
 
         if (!colegioId) continue;

@@ -328,6 +328,13 @@ export const apiClient = {
       return request('/auth/me');
     },
 
+    async changePassword(contrasena_actual: string, contrasena_nueva: string): Promise<{ ok: true }> {
+      return request<{ ok: true }>('/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify({ contrasena_actual, contrasena_nueva }),
+      });
+    },
+
     logout() {
       setToken(null);
       setTempToken(null);
