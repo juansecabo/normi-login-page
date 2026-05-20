@@ -526,24 +526,71 @@ const EnviarComunicadoAdmin = () => {
         archivoUrl = urls.join("\n");
       }
 
-      const perfilArray: string[] = [];
-      if (perfilesMarcados.Estudiantes) perfilArray.push("Estudiantes");
-      if (perfilesMarcados.Padres) perfilArray.push("Padres de familia");
-      if (perfilesMarcados.Profesores) perfilArray.push("Profesores");
-      if (perfilesMarcados.Coordinadores) perfilArray.push("Coordinadores");
-      if (perfilesMarcados.Rector) perfilArray.push("Rector");
-      if (perfilesMarcados.Administrativos) perfilArray.push("Administrativos");
-      if (perfilesMarcados.Secretaria) perfilArray.push("Secretaria General");
-      if (perfilesMarcados.Orientador) perfilArray.push("Orientador(a) Escolar");
+      // Construir UN segmento POR cada perfil marcado con sus criterios
+      // específicos. Necesario para enviar correctamente con destinatarios
+      // mixtos (ej. estudiantes de Séptimo 3 + padres de Primaria + un
+      // coordinador en particular + todos los profesores).
+      const gradosSel = Object.keys(gradosMarcados).filter(g => gradosMarcados[g]);
+      const salonesSel = Object.keys(salonesMarcados).filter(s => salonesMarcados[s]);
+      const nivelesSel = Object.keys(nivelesMarcados).filter(n => nivelesMarcados[n]);
+      let nivelUnico: string | null = null;
+      let gradosExpandidos: string[] = [...gradosSel];
+      if (nivelesSel.length === 1 && gradosSel.length === 0) {
+        nivelUnico = nivelesSel[0];
+      } else if (nivelesSel.length > 0) {
+        for (const niv of nivelesSel) {
+          for (const g of (NIVELES_GRADOS[niv] || [])) {
+            if (!gradosExpandidos.includes(g)) gradosExpandidos.push(g);
+          }
+        }
+      }
+      const gradosFinal = gradosExpandidos.length > 0 ? gradosExpandidos : null;
+      const salonesFinal = salonesSel.length > 0 ? salonesSel : null;
 
-      const idDestinatariosArray: string[] = [
-        ...estudiantesSeleccionados,
-        ...profesoresSeleccionados,
-        ...coordinadoresSeleccionados,
-        ...administrativosSeleccionados,
-        ...secretariasSeleccionadas,
-        ...orientadoresSeleccionados,
-      ];
+      const segmentos: Array<{
+        perfil: string[];
+        nivel?: string | null;
+        grados?: string[] | null;
+        salones?: string[] | null;
+        id_destinatarios?: string[] | null;
+      }> = [];
+
+      if (perfilesMarcados.Estudiantes) {
+        segmentos.push(estudiantesSeleccionados.length > 0
+          ? { perfil: ["Estudiantes"], id_destinatarios: estudiantesSeleccionados }
+          : { perfil: ["Estudiantes"], nivel: nivelUnico, grados: gradosFinal, salones: salonesFinal });
+      }
+      if (perfilesMarcados.Padres) {
+        segmentos.push(estudiantesSeleccionados.length > 0
+          ? { perfil: ["Padres de familia"], id_destinatarios: estudiantesSeleccionados }
+          : { perfil: ["Padres de familia"], nivel: nivelUnico, grados: gradosFinal, salones: salonesFinal });
+      }
+      if (perfilesMarcados.Profesores) {
+        segmentos.push(profesoresSeleccionados.length > 0
+          ? { perfil: ["Profesores"], id_destinatarios: profesoresSeleccionados }
+          : { perfil: ["Profesores"], nivel: nivelUnico, grados: gradosFinal, salones: salonesFinal });
+      }
+      if (perfilesMarcados.Coordinadores) {
+        segmentos.push(coordinadoresSeleccionados.length > 0
+          ? { perfil: ["Coordinadores"], id_destinatarios: coordinadoresSeleccionados }
+          : { perfil: ["Coordinadores"] });
+      }
+      if (perfilesMarcados.Rector) segmentos.push({ perfil: ["Rector"] });
+      if (perfilesMarcados.Administrativos) {
+        segmentos.push(administrativosSeleccionados.length > 0
+          ? { perfil: ["Administrativos"], id_destinatarios: administrativosSeleccionados }
+          : { perfil: ["Administrativos"] });
+      }
+      if (perfilesMarcados.Secretaria) {
+        segmentos.push(secretariasSeleccionadas.length > 0
+          ? { perfil: ["Secretaria General"], id_destinatarios: secretariasSeleccionadas }
+          : { perfil: ["Secretaria General"] });
+      }
+      if (perfilesMarcados.Orientador) {
+        segmentos.push(orientadoresSeleccionados.length > 0
+          ? { perfil: ["Orientadores"], id_destinatarios: orientadoresSeleccionados }
+          : { perfil: ["Orientadores"] });
+      }
 
       const response = await apiRequest<{ ok: true; enviados: number; fallos: number; total: number }>(
         '/api/comunicados/enviar',
@@ -554,15 +601,7 @@ const EnviarComunicadoAdmin = () => {
             destinatarios_label: destinatariosTexto,
             mensaje: mensaje.trim(),
             archivo_url: archivoUrl || null,
-            segmentos: [
-              {
-                perfil: perfilArray,
-                nivel: null,
-                grados: null,
-                salones: null,
-                id_destinatarios: idDestinatariosArray.length > 0 ? idDestinatariosArray : null,
-              },
-            ],
+            segmentos,
           }),
         },
       );
