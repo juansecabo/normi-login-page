@@ -215,6 +215,22 @@ const PanelControl = () => {
   const [estAcu3Nombre, setEstAcu3Nombre] = useState("");
   const [estAcu3Tel, setEstAcu3Tel] = useState("");
 
+  // Snapshot del estado inicial al abrir el modal. Se usa al guardar para
+  // hacer dirty tracking: solo escribir a Estudiantes/Usuarios/Acudientes
+  // si los campos correspondientes realmente cambiaron. Sin esto, abrir
+  // y guardar el modal sin tocar nada igual reescribía toda la información
+  // de los acudientes en cada edición.
+  type AcuSnap = { ced: string; nom: string; tel: string };
+  interface EstSnap {
+    id: string;
+    nombres: string;
+    apellidos: string;
+    grado: string;
+    salon: string;
+    acudientes: [AcuSnap, AcuSnap, AcuSnap];
+  }
+  const [estSnapshot, setEstSnapshot] = useState<EstSnap | null>(null);
+
   // Internos
   const [internos, setInternos] = useState<Interno[]>([]);
   const [loadingInt, setLoadingInt] = useState(true);
@@ -385,6 +401,7 @@ const PanelControl = () => {
     setEstAcu1Cedula(""); setEstAcu1Nombre(""); setEstAcu1Tel("");
     setEstAcu2Cedula(""); setEstAcu2Nombre(""); setEstAcu2Tel("");
     setEstAcu3Cedula(""); setEstAcu3Nombre(""); setEstAcu3Tel("");
+    const emptyAcu: AcuSnap = { ced: "", nom: "", tel: "" };
     if (est) {
       setEditingEst(est);
       setEstId(String(est.id));
@@ -396,6 +413,7 @@ const PanelControl = () => {
 
       // Fase 10.E.17: cargar acudientes desde el modelo vivo
       // (Acudientes cuyo acudidoN_id apunta a este estudiante) + Usuarios.
+      const acuSlots: [AcuSnap, AcuSnap, AcuSnap] = [emptyAcu, emptyAcu, emptyAcu];
       try {
         const { data: acus } = await supabase
           .from("Acudientes")
@@ -416,13 +434,24 @@ const PanelControl = () => {
             });
             if (slots.length >= 3) break;
           }
-          if (slots[0]) { setEstAcu1Cedula(slots[0].ced); setEstAcu1Nombre(slots[0].nom); setEstAcu1Tel(slots[0].tel); }
-          if (slots[1]) { setEstAcu2Cedula(slots[1].ced); setEstAcu2Nombre(slots[1].nom); setEstAcu2Tel(slots[1].tel); }
-          if (slots[2]) { setEstAcu3Cedula(slots[2].ced); setEstAcu3Nombre(slots[2].nom); setEstAcu3Tel(slots[2].tel); }
+          if (slots[0]) { setEstAcu1Cedula(slots[0].ced); setEstAcu1Nombre(slots[0].nom); setEstAcu1Tel(slots[0].tel); acuSlots[0] = slots[0]; }
+          if (slots[1]) { setEstAcu2Cedula(slots[1].ced); setEstAcu2Nombre(slots[1].nom); setEstAcu2Tel(slots[1].tel); acuSlots[1] = slots[1]; }
+          if (slots[2]) { setEstAcu3Cedula(slots[2].ced); setEstAcu3Nombre(slots[2].nom); setEstAcu3Tel(slots[2].tel); acuSlots[2] = slots[2]; }
         }
       } catch (e) {
         console.error("[openEstDialog] No se pudieron cargar acudientes:", e);
       }
+      // Snapshot del estado tras la carga: estudiante + acudientes tal como
+      // están en DB. Se compara contra esto al guardar para decidir qué tablas
+      // tocar.
+      setEstSnapshot({
+        id: String(est.id),
+        nombres: est.nombres || "",
+        apellidos: est.apellidos || "",
+        grado: est.grado || "",
+        salon: est.salon || "",
+        acudientes: acuSlots,
+      });
     } else {
       setEditingEst(null);
       setEstId("");
@@ -431,6 +460,16 @@ const PanelControl = () => {
       setEstGrado("");
       setEstSalon("");
       setShowEstDialog(true);
+      // Estudiante nuevo → snapshot vacío; cualquier dato del form se trata
+      // como "agregar".
+      setEstSnapshot({
+        id: "",
+        nombres: "",
+        apellidos: "",
+        grado: "",
+        salon: "",
+        acudientes: [emptyAcu, emptyAcu, emptyAcu],
+      });
     }
   };
 
@@ -479,103 +518,169 @@ const PanelControl = () => {
       return { nombres, apellidos };
     };
 
-    const payload = {
-      id: Number(estId),
+    // Dirty tracking: comparamos contra el snapshot tomado al abrir el modal
+    // para decidir qué tablas tocar. Sin esto, cambiar grado/salón del
+    // estudiante también reescribía Usuarios y Acudientes con los datos del
+    // form (que aunque normalmente coinciden con DB, podían pisar cambios
+    // hechos por el acudiente desde su sesión entre la apertura del modal y
+    // el guardado).
+    const snap = estSnapshot;
+    const curEst = {
+      id: estId,
       nombres: estNombre.trim(),
       apellidos: estApellidos.trim(),
-      nivel: nivel,
       grado: estGrado,
       salon: estSalon,
     };
+    const curAcus: [{ ced: string; nom: string; tel: string }, { ced: string; nom: string; tel: string }, { ced: string; nom: string; tel: string }] = [
+      { ced: estAcu1Cedula.trim(), nom: estAcu1Nombre.trim(), tel: estAcu1Tel.trim() },
+      { ced: estAcu2Cedula.trim(), nom: estAcu2Nombre.trim(), tel: estAcu2Tel.trim() },
+      { ced: estAcu3Cedula.trim(), nom: estAcu3Nombre.trim(), tel: estAcu3Tel.trim() },
+    ];
+    const acuEmpty = (a: { ced: string; nom: string; tel: string }) => !a.ced && !a.nom && !a.tel;
+    const acuEq = (a: { ced: string; nom: string; tel: string }, b: { ced: string; nom: string; tel: string }) =>
+      a.ced === b.ced && a.nom === b.nom && a.tel === b.tel;
+    const estCambio = !editingEst || !snap
+      || snap.id !== curEst.id
+      || snap.nombres !== curEst.nombres
+      || snap.apellidos !== curEst.apellidos
+      || snap.grado !== curEst.grado
+      || snap.salon !== curEst.salon;
 
-    let error: { message: string; code?: string } | null = null;
-    if (editingEst) {
-      ({ error } = await supabase
-        .from("Estudiantes")
-        .update(payload)
-        .eq("id", editingEst.id));
-    } else {
-      ({ error } = await supabase.from("Estudiantes").insert(payload));
-    }
-
-    if (error) {
-      setSavingEst(false);
-      if (error.code === "23505") {
-        toast({ title: "Error", description: `Ya existe un estudiante con el id ${estId}`, variant: "destructive" });
+    // ── 1) Escribir Estudiantes solo si cambió algo (o si es INSERT)
+    if (estCambio) {
+      const payload = {
+        id: Number(estId),
+        nombres: curEst.nombres,
+        apellidos: curEst.apellidos,
+        nivel: nivel,
+        grado: estGrado,
+        salon: estSalon,
+      };
+      let error: { message: string; code?: string } | null = null;
+      if (editingEst) {
+        ({ error } = await supabase.from("Estudiantes").update(payload).eq("id", editingEst.id));
       } else {
-        toast({ title: "Error", description: error.message, variant: "destructive" });
+        ({ error } = await supabase.from("Estudiantes").insert(payload));
       }
-      return;
+      if (error) {
+        setSavingEst(false);
+        if (error.code === "23505") {
+          toast({ title: "Error", description: `Ya existe un estudiante con el id ${estId}`, variant: "destructive" });
+        } else {
+          toast({ title: "Error", description: error.message, variant: "destructive" });
+        }
+        return;
+      }
     }
 
-    // Fase 10.E.17: persistir acudientes en el modelo vivo (Usuarios + Acudientes).
-    try {
-      // Obtener colegio_id del estudiante para crear/actualizar filas de Acudientes.
-      const { data: estRow } = await supabase
-        .from("Estudiantes")
-        .select("colegio_id")
-        .eq("id", Number(estId))
-        .single();
-      const colegioId = (estRow as any)?.colegio_id;
+    // ── 2) Para cada acudiente: decidir qué hacer según el diff vs snapshot
+    //       (no escribir nada a Usuarios/Acudientes si no cambió ese slot)
+    const snapAcus: [{ ced: string; nom: string; tel: string }, { ced: string; nom: string; tel: string }, { ced: string; nom: string; tel: string }] =
+      snap?.acudientes ?? [
+        { ced: "", nom: "", tel: "" },
+        { ced: "", nom: "", tel: "" },
+        { ced: "", nom: "", tel: "" },
+      ];
+    const algunAcuCambio = curAcus.some((c, i) => !acuEq(c, snapAcus[i]));
 
-      for (const a of acuInputs) {
-        const ced = a.ced.trim();
-        if (!ced) continue;
-        const { nombres, apellidos } = splitName(a.nom);
-        const tel = cleanPhone(a.tel);
-        // Decidimos si setear contrasena por presencia/ausencia de la fila,
-        // NO por el valor de contrasena (esa columna está en denyColumns y
-        // viene undefined desde el proxy — usarla resetearía la contraseña
-        // a la cédula en cada edición).
-        const { data: existingUser } = await supabase
-          .from("Usuarios")
-          .select("id")
-          .eq("id", ced)
-          .maybeSingle();
-        const usuariosPayload: any = {
-          id: ced,
-          nombres,
-          apellidos,
-          numero_de_telefono: tel,
-        };
-        if (!existingUser) usuariosPayload.contrasena = ced;
-        await supabase.from("Usuarios").upsert(usuariosPayload, { onConflict: "id" });
-
-        if (!colegioId) continue;
-        // UPSERT en Acudientes: linkear el estudiante actual a algún slot.
-        const { data: existingAcud } = await supabase
-          .from("Acudientes")
-          .select("id, acudido1_id, acudido2_id, acudido3_id, acudido4_id")
-          .eq("id", ced)
-          .maybeSingle();
+    if (algunAcuCambio) {
+      try {
+        // Fetch colegio_id una sola vez (solo si hay cambios reales en acudientes).
+        const { data: estRow } = await supabase
+          .from("Estudiantes")
+          .select("colegio_id")
+          .eq("id", Number(estId))
+          .single();
+        const colegioId = (estRow as any)?.colegio_id;
         const estNum = Number(estId);
-        if (existingAcud) {
-          const slots = [existingAcud.acudido1_id, existingAcud.acudido2_id, existingAcud.acudido3_id, existingAcud.acudido4_id];
-          const yaTiene = slots.some((s: any) => s === estNum);
-          if (!yaTiene) {
-            const idxLibre = slots.findIndex((s: any) => s == null);
-            if (idxLibre >= 0) {
-              const col = `acudido${idxLibre + 1}_id`;
-              await supabase.from("Acudientes").update({ [col]: estNum }).eq("id", ced);
-            } else {
-              console.warn(`[saveEstudiante] El acudiente ${ced} ya tiene 4 acudidos, no se puede agregar a ${estNum}.`);
+
+        const desvincular = async (cedAcu: string) => {
+          const { data: row } = await supabase
+            .from("Acudientes")
+            .select("id, acudido1_id, acudido2_id, acudido3_id, acudido4_id")
+            .eq("id", cedAcu)
+            .maybeSingle();
+          if (!row) return;
+          for (let i = 1; i <= 4; i++) {
+            if ((row as any)[`acudido${i}_id`] === estNum) {
+              await supabase.from("Acudientes").update({ [`acudido${i}_id`]: null }).eq("id", cedAcu);
+              break;
             }
           }
-        } else {
-          const acudPayload: any = {
-            id: ced,
-            colegio_id: colegioId,
-            acudido1_id: estNum,
-            acudido2_id: null,
-            acudido3_id: null,
-            acudido4_id: null,
-          };
-          await supabase.from("Acudientes").upsert(acudPayload, { onConflict: "id,colegio_id" });
+        };
+
+        const vincularYUpsert = async (a: { ced: string; nom: string; tel: string }) => {
+          const { nombres, apellidos } = splitName(a.nom);
+          const tel = cleanPhone(a.tel);
+          const { data: existingUser } = await supabase
+            .from("Usuarios").select("id").eq("id", a.ced).maybeSingle();
+          const usuariosPayload: any = { id: a.ced, nombres, apellidos, numero_de_telefono: tel };
+          if (!existingUser) usuariosPayload.contrasena = a.ced;
+          await supabase.from("Usuarios").upsert(usuariosPayload, { onConflict: "id" });
+
+          if (!colegioId) return;
+          const { data: existingAcud } = await supabase
+            .from("Acudientes")
+            .select("id, acudido1_id, acudido2_id, acudido3_id, acudido4_id")
+            .eq("id", a.ced)
+            .maybeSingle();
+          if (existingAcud) {
+            const slots = [existingAcud.acudido1_id, existingAcud.acudido2_id, existingAcud.acudido3_id, existingAcud.acudido4_id];
+            const yaTiene = slots.some((s: any) => s === estNum);
+            if (!yaTiene) {
+              const idxLibre = slots.findIndex((s: any) => s == null);
+              if (idxLibre >= 0) {
+                await supabase.from("Acudientes").update({ [`acudido${idxLibre + 1}_id`]: estNum }).eq("id", a.ced);
+              } else {
+                console.warn(`[saveEstudiante] El acudiente ${a.ced} ya tiene 4 acudidos, no se puede agregar a ${estNum}.`);
+              }
+            }
+          } else {
+            await supabase.from("Acudientes").upsert({
+              id: a.ced, colegio_id: colegioId,
+              acudido1_id: estNum, acudido2_id: null, acudido3_id: null, acudido4_id: null,
+            }, { onConflict: "id,colegio_id" });
+          }
+        };
+
+        const actualizarUsuario = async (a: { ced: string; nom: string; tel: string }) => {
+          const { nombres, apellidos } = splitName(a.nom);
+          const tel = cleanPhone(a.tel);
+          await supabase.from("Usuarios").update({
+            nombres, apellidos, numero_de_telefono: tel,
+          }).eq("id", a.ced);
+        };
+
+        for (let i = 0; i < 3; i++) {
+          const before = snapAcus[i];
+          const after = curAcus[i];
+          if (acuEq(before, after)) continue;  // nada cambió en este slot
+
+          const beforeVacio = acuEmpty(before);
+          const afterVacio = acuEmpty(after);
+
+          if (beforeVacio && afterVacio) continue;
+
+          if (beforeVacio && !afterVacio) {
+            // Slot nuevo → crear/linkear el acudiente
+            await vincularYUpsert(after);
+          } else if (!beforeVacio && afterVacio) {
+            // Slot quedó vacío → desvincular (no se borra el Usuarios)
+            await desvincular(before.ced);
+          } else if (before.ced === after.ced) {
+            // Misma cédula, cambió nombre o teléfono → solo Usuarios
+            await actualizarUsuario(after);
+          } else {
+            // Cédula cambió → desvincular el viejo y vincular el nuevo
+            await desvincular(before.ced);
+            await vincularYUpsert(after);
+          }
         }
+      } catch (e) {
+        console.error("[saveEstudiante] Error escribiendo acudientes en modelo vivo:", e);
+        // No bloqueamos el flujo: el estudiante ya quedó guardado.
       }
-    } catch (e) {
-      console.error("[saveEstudiante] Error escribiendo acudientes en modelo vivo:", e);
-      // No bloqueamos el flujo: el estudiante ya quedó guardado.
     }
 
     setSavingEst(false);
