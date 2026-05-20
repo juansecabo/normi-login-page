@@ -1311,19 +1311,32 @@ const PanelControl = () => {
           </h2>
 
           <Tabs defaultValue="estudiantes">
-            {/* Wrapper con scroll horizontal en móvil: los 5 tabs no caben en
-                pantallas chicas y se cortaban los de los extremos. En sm+ los
-                tabs vuelven a distribuirse parejo (flex-1) y el scroll se
-                desactiva porque caben todos. */}
-            <div className="overflow-x-auto -mx-6 px-6 md:-mx-8 md:px-8 sm:mx-0 sm:px-0 mb-6">
-              <TabsList className="inline-flex sm:flex sm:w-full">
-                <TabsTrigger value="estudiantes" className="sm:flex-1">Estudiantes</TabsTrigger>
-                <TabsTrigger value="perfiles" className="sm:flex-1">Perfiles registrados</TabsTrigger>
-                <TabsTrigger value="internos" className="sm:flex-1">Internos</TabsTrigger>
-                <TabsTrigger value="asignaciones" className="sm:flex-1">Asignaciones</TabsTrigger>
-                <TabsTrigger value="catalogo-asignaturas" className="sm:flex-1">Asignaturas</TabsTrigger>
-              </TabsList>
-            </div>
+            {/* En móvil grid de 3 columnas (5 tabs → 3+2). En sm+ flex con
+                ancho parejo. Cada tab usa un tono de color propio para
+                distinguirse visualmente; el estado activo intensifica el
+                color y vuelve el texto blanco. */}
+            <TabsList className="grid grid-cols-3 sm:flex sm:w-full h-auto sm:h-auto gap-1 sm:gap-1 mb-6 bg-transparent p-0">
+              <TabsTrigger
+                value="estudiantes"
+                className="sm:flex-1 whitespace-normal sm:whitespace-nowrap h-auto py-2 text-xs sm:text-sm leading-tight bg-emerald-100 text-emerald-900 hover:bg-emerald-200 data-[state=active]:bg-emerald-600 data-[state=active]:text-white"
+              >Estudiantes</TabsTrigger>
+              <TabsTrigger
+                value="perfiles"
+                className="sm:flex-1 whitespace-normal sm:whitespace-nowrap h-auto py-2 text-xs sm:text-sm leading-tight bg-sky-100 text-sky-900 hover:bg-sky-200 data-[state=active]:bg-sky-600 data-[state=active]:text-white"
+              >Perfiles registrados</TabsTrigger>
+              <TabsTrigger
+                value="internos"
+                className="sm:flex-1 whitespace-normal sm:whitespace-nowrap h-auto py-2 text-xs sm:text-sm leading-tight bg-amber-100 text-amber-900 hover:bg-amber-200 data-[state=active]:bg-amber-600 data-[state=active]:text-white"
+              >Internos</TabsTrigger>
+              <TabsTrigger
+                value="asignaciones"
+                className="sm:flex-1 whitespace-normal sm:whitespace-nowrap h-auto py-2 text-xs sm:text-sm leading-tight bg-violet-100 text-violet-900 hover:bg-violet-200 data-[state=active]:bg-violet-600 data-[state=active]:text-white"
+              >Asignaciones</TabsTrigger>
+              <TabsTrigger
+                value="catalogo-asignaturas"
+                className="sm:flex-1 whitespace-normal sm:whitespace-nowrap h-auto py-2 text-xs sm:text-sm leading-tight bg-rose-100 text-rose-900 hover:bg-rose-200 data-[state=active]:bg-rose-600 data-[state=active]:text-white"
+              >Asignaturas</TabsTrigger>
+            </TabsList>
 
             {/* ════════════════ TAB: ESTUDIANTES ════════════════ */}
             <TabsContent value="estudiantes">
