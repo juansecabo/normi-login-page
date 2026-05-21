@@ -162,7 +162,7 @@ const DashboardEstudiante = () => {
             {nombres} {apellidos}
           </p>
           <p className="text-muted-foreground mt-2">
-            {grado} - {salon}
+            {grado} {salon}
           </p>
         </div>
 
