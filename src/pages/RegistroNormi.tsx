@@ -156,7 +156,7 @@ const RegistroNormi = () => {
       const perfilesAcudientes: Perfil[] = (acuds as any[]).map((a) => {
         const u = usuariosMap.get(String(a.id));
         return {
-          perfil: "Padre de familia",
+          perfil: "Acudiente",
           padre_nombre: u ? `${u.nombres || ""} ${u.apellidos || ""}`.trim() : "",
           numero_de_telefono: u?.numero_de_telefono || "",
           padre_estudiante1_id: a.acudido1_id,
@@ -201,7 +201,7 @@ const RegistroNormi = () => {
   const padreInfoPorId = useMemo(() => {
     const map = new Map<number, ParentInfo[]>();
     for (const p of perfiles) {
-      if (p.perfil === "Padre de familia") {
+      if (p.perfil === "Acudiente" || p.perfil === "Padre de familia") {
         const info: ParentInfo = {
           padre_nombre: p.padre_nombre || "Sin nombre",
           telefono: p.numero_de_telefono || "Sin teléfono",

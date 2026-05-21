@@ -43,7 +43,7 @@ const ComunicadosPadre = () => {
         const { data, error } = await supabase
           .from('Comunicados')
           .select('*')
-          .overlaps('perfil', ['Padres de familia'])
+          .overlaps('perfil', ['Acudientes', 'Padres de familia'])
           .order('fecha', { ascending: false });
 
         if (!error && data) {

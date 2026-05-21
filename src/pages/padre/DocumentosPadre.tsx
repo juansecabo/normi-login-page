@@ -44,7 +44,7 @@ const DocumentosPadre = () => {
           .from('Comunicados')
           .select('*')
           .not('archivo_url', 'is', null)
-          .overlaps('perfil', ['Padres de familia'])
+          .overlaps('perfil', ['Acudientes', 'Padres de familia'])
           .order('fecha', { ascending: false });
 
         if (!error && data) {

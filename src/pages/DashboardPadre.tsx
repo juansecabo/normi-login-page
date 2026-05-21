@@ -68,7 +68,7 @@ const DashboardPadre = () => {
           supabase
             .from('Comunicados')
             .select('id, nivel, grado, salon, id_estudiantil, archivo_url, destinatarios, id_destinatarios')
-            .overlaps('perfil', ['Padres de familia'])
+            .overlaps('perfil', ['Acudientes', 'Padres de familia'])
             .gt('id', minComLastSeen),
           ...hijosData.flatMap((hijo, i) => [
             supabase

@@ -79,7 +79,7 @@ type PerfilKey =
 
 const PERFILES_UI: { key: PerfilKey; label: string; perfil: string }[] = [
   { key: "Estudiantes", label: "Estudiantes", perfil: "Estudiantes" },
-  { key: "Padres", label: "Padres de familia", perfil: "Padres de familia" },
+  { key: "Padres", label: "Acudientes", perfil: "Acudientes" },
   { key: "Profesores", label: "Profesores", perfil: "Profesores" },
   { key: "Coordinadores", label: "Coordinadores", perfil: "Coordinadores" },
   { key: "Rector", label: "Rector", perfil: "Rector" },
@@ -148,7 +148,7 @@ export default function Consultas() {
       return;
     }
     const session = getSession();
-    if (!session.cargo || session.cargo === "Padre de familia" || session.cargo === "Estudiante") {
+    if (!session.cargo || session.cargo === "Acudiente" || session.cargo === "Padre de familia" || session.cargo === "Estudiante") {
       navigate("/");
       return;
     }
@@ -468,7 +468,7 @@ export default function Consultas() {
             : `Padres de los estudiantes con id: ${estudiantesSeleccionados.join(", ")}`
         );
       } else {
-        partes.push(aulaFrase("Padres de familia"));
+        partes.push(aulaFrase("Acudientes"));
       }
     }
 
@@ -538,7 +538,7 @@ export default function Consultas() {
       return toast({ title: "Selecciona al menos un perfil de destinatario", variant: "destructive" });
     }
 
-    // perfiles_objetivo = lista de valores tipo Comunicados ("Padres de familia", "Estudiantes", "Profesores", "Rector", "Coordinadores", "Administrativos", "Secretaria General", "Orientador(a) Escolar")
+    // perfiles_objetivo = lista de valores tipo Comunicados ("Acudientes", "Estudiantes", "Profesores", "Rector", "Coordinadores", "Administrativos", "Secretaria General", "Orientador(a) Escolar")
     const perfilesObjetivo: string[] = [];
     for (const def of PERFILES_UI) {
       if (perfilesMarcados[def.key]) perfilesObjetivo.push(def.perfil);

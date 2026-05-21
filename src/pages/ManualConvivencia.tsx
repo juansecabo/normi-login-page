@@ -24,7 +24,7 @@ const ManualConvivencia = () => {
   const session = getSession();
   const backLink = session.cargo === "Estudiante"
     ? "/dashboard-estudiante"
-    : session.cargo === "Padre de familia"
+    : (session.cargo === "Acudiente" || session.cargo === "Padre de familia")
     ? "/dashboard-padre"
     : session.cargo === "Profesor(a)"
     ? "/dashboard"

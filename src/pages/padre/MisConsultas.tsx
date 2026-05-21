@@ -65,14 +65,14 @@ export default function MisConsultas() {
         const consultasAplicables: ConsultaConHijos[] = [];
         for (const c of (todasConsultas || []) as unknown as ConsultaRow[]) {
           // 2a. Verificar que la consulta esté dirigida a padres.
-          // Esquema nuevo: perfiles_objetivo debe incluir "Padres de familia".
+          // Esquema nuevo: perfiles_objetivo debe incluir "Acudientes" (alias legacy: "Padres de familia").
           // Esquema legacy: si tiene cargos_objetivo o internos_objetivo (filtros de internos)
-          // y NO tiene perfiles_objetivo, la consulta es solo para staff — los padres no la ven.
+          // y NO tiene perfiles_objetivo, la consulta es solo para staff — los acudientes no la ven.
           const tienePerfiles = Array.isArray(c.perfiles_objetivo) && c.perfiles_objetivo.length > 0;
           const tieneCargos = Array.isArray(c.cargos_objetivo) && c.cargos_objetivo.length > 0;
           const tieneInternos = Array.isArray(c.internos_objetivo) && c.internos_objetivo.length > 0;
           if (tienePerfiles) {
-            if (!c.perfiles_objetivo!.includes("Padres de familia")) continue;
+            if (!c.perfiles_objetivo!.some((p) => p === "Acudientes" || p === "Padres de familia")) continue;
           } else if (tieneCargos || tieneInternos) {
             continue;
           }

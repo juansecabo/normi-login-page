@@ -24,7 +24,7 @@ type PerfilKey = 'Estudiantes' | 'Padres' | 'Profesores' | 'Coordinadores' | 'Re
 
 const PERFILES_UI: { key: PerfilKey; label: string }[] = [
   { key: 'Estudiantes', label: 'Estudiantes' },
-  { key: 'Padres', label: 'Padres de familia' },
+  { key: 'Padres', label: 'Acudientes' },
   { key: 'Profesores', label: 'Profesores' },
   { key: 'Coordinadores', label: 'Coordinadores' },
   { key: 'Rector', label: 'Rector' },
@@ -436,8 +436,8 @@ const EnviarComunicado = () => {
         partes.push(frase || "Estudiantes");
       }
       if (sel.Padres) {
-        const frase = aulaFrase("Padres de familia");
-        partes.push(frase || "Padres de familia");
+        const frase = aulaFrase("Acudientes");
+        partes.push(frase || "Acudientes");
       }
     }
 
@@ -581,8 +581,8 @@ const EnviarComunicado = () => {
       //
       // Casos típicos:
       //  - "Estudiantes y padres de Séptimo 3" → 1 fila con
-      //    perfil=["Estudiantes","Padres de familia"], grado="Séptimo", salon="3"
-      //  - "Padres de Primaria" → 1 fila con perfil=["Padres de familia"],
+      //    perfil=["Estudiantes","Acudientes"], grado="Séptimo", salon="3"
+      //  - "Acudientes de Primaria" → 1 fila con perfil=["Acudientes"],
       //    nivel="Primaria"
       //  - "Todos los profesores + un coordinador" → 2 filas: una para
       //    profesores (sin ids) y otra para el coordinador con su id.
@@ -597,7 +597,7 @@ const EnviarComunicado = () => {
       // === Estudiantes y Padres (comparten filtros de aula) ===
       const perfilesEstPadres: string[] = [];
       if (perfilesMarcados.Estudiantes) perfilesEstPadres.push("Estudiantes");
-      if (perfilesMarcados.Padres) perfilesEstPadres.push("Padres de familia");
+      if (perfilesMarcados.Padres) perfilesEstPadres.push("Acudientes");
       if (perfilesEstPadres.length > 0) {
         if (estudiantesSeleccionados.length > 0) {
           // Ids específicos: un solo segmento con esos ids para ambos perfiles.

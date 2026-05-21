@@ -249,7 +249,7 @@ export default function ConsultaPublica() {
       // -------- Bloqueo por perfil (esquema nuevo) --------
       // Si la consulta usa perfiles_objetivo, verificar que el rol del usuario esté incluido.
       if (usaPerfilesObjetivo) {
-        if (esPadre && !consultaRow.perfiles_objetivo!.includes("Padres de familia")) {
+        if (esPadre && !consultaRow.perfiles_objetivo!.some((p) => p === "Acudientes" || p === "Padres de familia")) {
           setError("Esta consulta no aplica a su perfil.");
           setLoading(false);
           return;

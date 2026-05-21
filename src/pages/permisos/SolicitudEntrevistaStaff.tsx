@@ -166,7 +166,7 @@ const SolicitudEntrevistaStaff = () => {
           destinatarios: `Padre del estudiante con id ${estudianteSeleccionado.id}`,
           mensaje,
           id_remitente: session.id,
-          perfil: "Padre de familia",
+          perfil: "Acudiente",
           id: String(estudianteSeleccionado.id),
         }),
       }).then(r => console.log("Webhook sent:", r.status)).catch(e => console.error("Webhook error:", e));

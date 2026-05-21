@@ -181,5 +181,5 @@ export const isEstudiante = (): boolean => {
 
 export const isPadreDeFamilia = (): boolean => {
   const { cargo } = getSession();
-  return cargo === 'Padre de familia';
+  return cargo === 'Acudiente' || cargo === 'Padre de familia';
 };

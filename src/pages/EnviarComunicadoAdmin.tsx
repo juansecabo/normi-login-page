@@ -40,7 +40,7 @@ type PerfilKey = 'Estudiantes' | 'Padres' | 'Profesores' | 'Coordinadores' | 'Re
 
 const PERFILES_UI: { key: PerfilKey; label: string }[] = [
   { key: 'Estudiantes', label: 'Estudiantes' },
-  { key: 'Padres', label: 'Padres de familia' },
+  { key: 'Padres', label: 'Acudientes' },
   { key: 'Profesores', label: 'Profesores' },
   { key: 'Coordinadores', label: 'Coordinadores' },
   { key: 'Rector', label: 'Rector' },
@@ -429,8 +429,8 @@ const EnviarComunicadoAdmin = () => {
         partes.push(frase || "Estudiantes");
       }
       if (sel.Padres) {
-        const frase = aulaFrase("Padres de familia");
-        partes.push(frase || "Padres de familia");
+        const frase = aulaFrase("Acudientes");
+        partes.push(frase || "Acudientes");
       }
     }
 
@@ -562,7 +562,7 @@ const EnviarComunicadoAdmin = () => {
 
       const perfilesEstPadres: string[] = [];
       if (perfilesMarcados.Estudiantes) perfilesEstPadres.push("Estudiantes");
-      if (perfilesMarcados.Padres) perfilesEstPadres.push("Padres de familia");
+      if (perfilesMarcados.Padres) perfilesEstPadres.push("Acudientes");
       if (perfilesEstPadres.length > 0) {
         if (estudiantesSeleccionados.length > 0) {
           segmentos.push({ perfil: perfilesEstPadres, id_destinatarios: estudiantesSeleccionados });

@@ -30,8 +30,9 @@ const BuzonSugerencias = () => {
         rol = "Estudiante";
         contacto = `${session.grado || ""}-${session.salon || ""}`;
         break;
+      case "Acudiente":
       case "Padre de familia":
-        rol = "Padre de familia";
+        rol = "Acudiente";
         if (session.hijos && session.hijos.length > 0) {
           contacto = session.hijos
             .map((h) => `${h.nombre} ${h.apellidos} (${h.grado} ${h.salon})`)
