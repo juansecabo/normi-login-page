@@ -225,13 +225,13 @@ const Citas = () => {
       let destinatarios = "";
       if (incEst && incAcu) {
         intro = `Se ha agendado una cita de orientación escolar con ${estLabel} y sus acudientes.`;
-        destinatarios = `Estudiante y padres del estudiante con id ${estSeleccionado.id}`;
+        destinatarios = `Estudiante y acudientes del estudiante con id ${estSeleccionado.id}`;
       } else if (incEst) {
         intro = `Se ha agendado una cita de orientación escolar contigo.`;
         destinatarios = `Estudiante con id ${estSeleccionado.id}`;
       } else if (incAcu) {
         intro = `Se ha agendado una cita de orientación escolar con usted, acudiente de ${estLabel}.`;
-        destinatarios = `Padres del estudiante con id ${estSeleccionado.id}`;
+        destinatarios = `Acudientes del estudiante con id ${estSeleccionado.id}`;
       }
       const motivoTrim = motivo.trim();
       const motivoConPunto = /[.!?]$/.test(motivoTrim) ? motivoTrim : `${motivoTrim}.`;

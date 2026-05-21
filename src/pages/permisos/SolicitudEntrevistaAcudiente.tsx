@@ -116,7 +116,7 @@ const SolicitudEntrevistaAcudiente = () => {
                             </button>
                             {isExp && (
                               <div className="border-t border-border p-4 bg-muted/10 text-sm text-foreground leading-relaxed space-y-3">
-                                <p className="font-bold text-center">SOLICITUD DE ENTREVISTA CON PADRES DE FAMILIA</p>
+                                <p className="font-bold text-center">SOLICITUD DE ENTREVISTA CON ACUDIENTES</p>
 
                                 <div className="bg-muted/50 rounded-lg p-3 border border-border">
                                   <p className="text-xs text-muted-foreground leading-relaxed text-justify">
@@ -126,7 +126,7 @@ const SolicitudEntrevistaAcudiente = () => {
 
                                 <p>FECHA: <span className="text-primary font-medium">{fmtFecha(s.fecha_solicitud)}</span> &nbsp;&nbsp; JORNADA MATINAL</p>
                                 <p>Grado: <span className="text-primary font-medium">{s.estudiante_grado} {s.estudiante_salon}</span></p>
-                                <p>PADRE/MADRE O ACUDIENTE DEL ESTUDIANTE: <span className="text-primary font-medium">{s.estudiante_nombre} {s.estudiante_apellidos}</span></p>
+                                <p>ACUDIENTE DEL ESTUDIANTE: <span className="text-primary font-medium">{s.estudiante_nombre} {s.estudiante_apellidos}</span></p>
                                 <p>Cordial Saludo,</p>
                                 <p>Por este medio nos permitimos solicitar su presencia en el colegio el día <span className="text-primary font-medium">{fmtFecha(s.fecha_entrevista)}</span> Hora: <span className="text-primary font-medium">{s.hora_entrevista}</span> para una entrevista con el/la <span className="text-primary font-medium">{s.solicitante_cargo} {s.solicitante_nombre}</span></p>
                                 <p>Agradecemos su atención y cumplimiento.</p>

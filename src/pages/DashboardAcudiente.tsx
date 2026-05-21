@@ -186,7 +186,7 @@ const DashboardAcudiente = () => {
             {`${nombres} ${apellidos}`.trim()}
           </p>
           <p className="text-sm text-muted-foreground mt-1 mb-1">
-            Padre de familia de
+            Acudiente de
           </p>
           <div className="space-y-0.5">
             {acudidos.map(h => (

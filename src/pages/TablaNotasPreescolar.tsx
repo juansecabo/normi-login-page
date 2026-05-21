@@ -328,7 +328,7 @@ const TablaNotasPreescolar = () => {
 
     const nombrePeriodo = periodos.find((p) => p.numero === periodo)?.nombre;
     const sinTextos = estudiantes.length - elegibles.length;
-    let descripcion = `Se enviará el informe descriptivo del ${nombrePeriodo} a los padres de ${elegibles.length} estudiante(s).`;
+    let descripcion = `Se enviará el informe descriptivo del ${nombrePeriodo} a los acudientes de ${elegibles.length} estudiante(s).`;
     if (sinTextos > 0) {
       descripcion += `\n\n⚠️ Hay ${sinTextos} estudiante(s) sin texto registrado; a ellos no se les notificará.`;
     }
@@ -401,7 +401,7 @@ const TablaNotasPreescolar = () => {
     setNotificacionOpen(false);
 
     const toastId = sonnerToast.loading(
-      `Enviando informes a padres de ${payload.estudiantes_ids.length} estudiante(s)...`
+      `Enviando informes a acudientes de ${payload.estudiantes_ids.length} estudiante(s)...`
     );
 
     try {
@@ -413,7 +413,7 @@ const TablaNotasPreescolar = () => {
       sonnerToast.dismiss(toastId);
 
       sonnerToast.success(
-        `✅ Informes enviados a padres de ${payload.estudiantes_ids.length} estudiante(s)`,
+        `✅ Informes enviados a acudientes de ${payload.estudiantes_ids.length} estudiante(s)`,
         { duration: 5000 }
       );
 

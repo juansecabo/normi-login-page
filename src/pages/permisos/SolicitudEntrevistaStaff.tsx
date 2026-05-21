@@ -218,7 +218,7 @@ const SolicitudEntrevistaStaff = () => {
 
               {/* Estudiante */}
               <p>
-                PADRE/MADRE O ACUDIENTE DEL ESTUDIANTE: {" "}
+                ACUDIENTE DEL ESTUDIANTE: {" "}
                 <select value={String(estudianteSeleccionado?.id || "")} onChange={(e) => setEstudianteSeleccionado(estudiantes.find(est => String(est.id) === e.target.value) || null)}
                   className="inline px-2 py-1 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm min-w-[200px] cursor-pointer outline-none">
                   <option value="">Seleccionar</option>
@@ -321,14 +321,14 @@ const SolicitudEntrevistaStaff = () => {
                       </button>
                       {isExp && (
                         <div className="border-t border-border p-4 bg-muted/10 text-sm text-foreground leading-relaxed space-y-2">
-                          <p className="font-bold text-center">SOLICITUD DE ENTREVISTA CON PADRES DE FAMILIA</p>
+                          <p className="font-bold text-center">SOLICITUD DE ENTREVISTA CON ACUDIENTES</p>
                           <p>Fecha de solicitud: <span className="text-primary font-medium">{fmtFecha(s.fecha_solicitud)}</span></p>
                           <p>Estudiante: <span className="text-primary font-medium">{s.estudiante_nombre} {s.estudiante_apellidos}</span> — {s.estudiante_grado} {s.estudiante_salon}</p>
                           <p>Entrevista el día: <span className="text-primary font-medium">{fmtFecha(s.fecha_entrevista)}</span> a las <span className="text-primary font-medium">{s.hora_entrevista}</span></p>
                           <p>Entrevista con: <span className="text-primary font-medium">{s.solicitante_cargo} {s.solicitante_nombre}</span></p>
                           {s.creado_por_nombre && <p>Creado por: <span className="text-primary font-medium">{s.creado_por_nombre}</span></p>}
                           {s.firma_url && <div><p className="font-medium mb-1">Firma:</p><FirmaImage url={s.firma_url} /></div>}
-                          {s.observaciones_padre && <p>Observaciones del padre: <span className="text-primary font-medium">{s.observaciones_padre}</span></p>}
+                          {s.observaciones_padre && <p>Observaciones del acudiente: <span className="text-primary font-medium">{s.observaciones_padre}</span></p>}
                         </div>
                       )}
                     </div>

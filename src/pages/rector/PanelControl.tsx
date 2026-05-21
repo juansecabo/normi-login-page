@@ -1202,7 +1202,7 @@ const PanelControl = () => {
       payload.acudido3_salon = null;
     } else {
       if (!perfPadreNombre) {
-        toast({ title: "Campos requeridos", description: "Completa el nombre del padre", variant: "destructive" });
+        toast({ title: "Campos requeridos", description: "Completa el nombre del acudiente", variant: "destructive" });
         setSavingPerf(false);
         return;
       }
@@ -2308,8 +2308,8 @@ const PanelControl = () => {
               <>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <Label>Nombre del padre</Label>
-                    <Input value={perfPadreNombre} onChange={(e) => setPerfPadreNombre(e.target.value)} placeholder="Nombre del padre" />
+                    <Label>Nombre del acudiente</Label>
+                    <Input value={perfPadreNombre} onChange={(e) => setPerfPadreNombre(e.target.value)} placeholder="Nombre del acudiente" />
                   </div>
                   <div className="space-y-2">
                     <Label>ID padre</Label>

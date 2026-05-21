@@ -1921,9 +1921,9 @@ const TablaNotas = () => {
     // Construir mensaje según completitud
     let descripcion = "";
     if (estudiantesSinNota === 0) {
-      descripcion = `Se enviará notificación a todos los padres de familia sobre:\n${actividad.nombre}`;
+      descripcion = `Se enviará notificación a todos los acudientes sobre:\n${actividad.nombre}`;
     } else {
-      descripcion = `Hay ${estudiantesSinNota} estudiante(s) sin nota registrada en esta actividad. Solo se enviará notificación a los padres de los ${estudiantesConNota.length} estudiantes que SÍ tienen nota sobre:\n${actividad.nombre}`;
+      descripcion = `Hay ${estudiantesSinNota} estudiante(s) sin nota registrada en esta actividad. Solo se enviará notificación a los acudientes de los ${estudiantesConNota.length} estudiantes que SÍ tienen nota sobre:\n${actividad.nombre}`;
     }
 
     setNotificacionPendiente({
@@ -2270,7 +2270,7 @@ const TablaNotas = () => {
 
     // Mostrar loading
     const toastId = sonnerToast.loading(
-      `Enviando notificaciones a padres de ${payload.estudiantes_ids.length} estudiante(s)...`
+      `Enviando notificaciones a acudientes de ${payload.estudiantes_ids.length} estudiante(s)...`
     );
 
     // Enviar a n8n
@@ -2282,7 +2282,7 @@ const TablaNotas = () => {
     // Mostrar resultado
     if (resultado.success) {
       sonnerToast.success(
-        `✅ Notificaciones enviadas a padres de ${payload.estudiantes_ids.length} estudiante(s)`,
+        `✅ Notificaciones enviadas a acudientes de ${payload.estudiantes_ids.length} estudiante(s)`,
         { duration: 5000 }
       );
       

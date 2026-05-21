@@ -401,7 +401,7 @@ const RegistroNormi = () => {
         { header: "Grado", key: "grado", width: 14 },
         { header: "Salón", key: "salon", width: 10 },
         { header: "Estado padre", key: "estado", width: 18 },
-        { header: "Nombre del padre", key: "padre", width: 30 },
+        { header: "Nombre del acudiente", key: "padre", width: 30 },
         { header: "Teléfono", key: "telefono", width: 18 },
       ];
       const rows: RowData[] = [];
@@ -648,7 +648,7 @@ const RegistroNormi = () => {
                       <TableHead className="whitespace-nowrap">Nombre del estudiante</TableHead>
                       <TableHead className="whitespace-nowrap">Grado</TableHead>
                       <TableHead className="whitespace-nowrap">Salón</TableHead>
-                      <TableHead className="whitespace-nowrap">Padre en Normi</TableHead>
+                      <TableHead className="whitespace-nowrap">Acudiente en Normi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -704,13 +704,13 @@ const RegistroNormi = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="absolute inset-0 bg-black/50" onClick={() => setSelectedParents(null)} />
             <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-1">Info del padre</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-1">Info del acudiente</h3>
               <p className="text-sm text-gray-500 mb-4">{selectedParents.estudiante}</p>
               <div className="space-y-4">
                 {selectedParents.padres.map((p, i) => (
                   <div key={i} className="space-y-1 text-sm text-gray-700">
                     {selectedParents.padres.length > 1 && (
-                      <p className="font-semibold text-gray-900">Padre {i + 1}</p>
+                      <p className="font-semibold text-gray-900">Acudiente {i + 1}</p>
                     )}
                     <p><span className="font-medium">Nombre:</span> {p.acudiente_nombre}</p>
                     <p><span className="font-medium">Teléfono:</span> {p.telefono}</p>

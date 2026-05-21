@@ -470,14 +470,14 @@ export default function Consultas() {
       if (estudiantesSeleccionados.length > 0 && !perfilesMarcados.Estudiantes) {
         partes.push(
           estudiantesSeleccionados.length === 1
-            ? `Padres del estudiante con id ${estudiantesSeleccionados[0]}`
-            : `Padres de los estudiantes con id: ${estudiantesSeleccionados.join(", ")}`
+            ? `Acudientes del estudiante con id ${estudiantesSeleccionados[0]}`
+            : `Acudientes de los estudiantes con id: ${estudiantesSeleccionados.join(", ")}`
         );
       } else if (estudiantesSeleccionados.length > 0 && perfilesMarcados.Estudiantes) {
         partes.push(
           estudiantesSeleccionados.length === 1
-            ? `Padres del estudiante con id ${estudiantesSeleccionados[0]}`
-            : `Padres de los estudiantes con id: ${estudiantesSeleccionados.join(", ")}`
+            ? `Acudientes del estudiante con id ${estudiantesSeleccionados[0]}`
+            : `Acudientes de los estudiantes con id: ${estudiantesSeleccionados.join(", ")}`
         );
       } else {
         partes.push(aulaFrase("Acudientes"));
