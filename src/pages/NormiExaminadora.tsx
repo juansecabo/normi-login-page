@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/apiClient";
 import normiImg from "@/assets/normi-examinadora.webp";
 import { getSession } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
@@ -188,49 +189,49 @@ const NormiExaminadora = () => {
       payload.preguntasMultiple = parseInt(preguntasMultiple) || 0;
       payload.preguntasAbiertas = parseInt(preguntasAbiertas) || 0;
 
-      const response = await fetch(
-        "https://n8n.notasnormi.com/webhook/41f121b5-276e-453a-98b2-f300227e2e99",
-        {
-          method: "POST",
-          mode: "cors",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      // POST /api/examinadora/generar (server, JWT). El server:
+      //   1) llama OpenAI con el system prompt de Normi Examinadora
+      //   2) parsea las preguntas en estructura JSON
+      //   3) llama al word-service Flask que devuelve el DOCX
+      //   4) lo retorna como binary directo aquí
+      const jwt = apiClient.auth.getToken();
+      if (!jwt) {
+        throw new Error("Sesión expirada, vuelve a iniciar sesión.");
+      }
+      const response = await fetch("/api/examinadora/generar", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${jwt}`,
+        },
+        body: JSON.stringify(payload),
+      });
 
       if (!response.ok) {
-        throw new Error(`Error del servidor: ${response.status}`);
+        const errBody = await response.text().catch(() => "");
+        throw new Error(`Error del servidor (${response.status}): ${errBody.slice(0, 200)}`);
       }
 
-      // Check if response is a binary file (docx)
-      const contentType = response.headers.get("Content-Type") || "";
-      
-      if (contentType.includes("application/vnd.openxmlformats") || 
-          contentType.includes("application/octet-stream") ||
-          contentType.includes("application/msword")) {
-        // It's a file - download it
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        
-        // Build filename: TipoActividad_Asignatura_Grado_Salon.docx
-        const tipoLabel = getTipoActividadLabel(tipoActividad).toUpperCase();
-        const asignaturaLabel = asignaturaSeleccionada.toUpperCase().replace(/ /g, "_");
-        const gradoLabel = gradoSeleccionado;
-        const salonLabel = salonSeleccionado || "";
-        const fileName = salonLabel 
-          ? `${tipoLabel}_${asignaturaLabel}_${gradoLabel}_${salonLabel}.docx`
-          : `${tipoLabel}_${asignaturaLabel}_${gradoLabel}.docx`;
-        
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      }
+      // El server SIEMPRE devuelve DOCX binary cuando responde 200.
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+
+      // Filename: TipoActividad_Asignatura_Grado_Salon.docx
+      const tipoLabel = getTipoActividadLabel(tipoActividad).toUpperCase();
+      const asignaturaLabel = asignaturaSeleccionada.toUpperCase().replace(/ /g, "_");
+      const gradoLabel = gradoSeleccionado;
+      const salonLabel = salonSeleccionado || "";
+      const fileName = salonLabel
+        ? `${tipoLabel}_${asignaturaLabel}_${gradoLabel}_${salonLabel}.docx`
+        : `${tipoLabel}_${asignaturaLabel}_${gradoLabel}.docx`;
+
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
 
       // Use correct grammatical gender: Evaluación (f) vs Taller/Quiz (m)
       const esFemenino = tipoActividad === 'evaluacion';
