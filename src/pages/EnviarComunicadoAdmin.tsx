@@ -24,8 +24,8 @@ import { MAX_WA_TEMPLATE_BODY, WA_TEMPLATE_OVERHEAD } from "@/lib/wapBody";
 // Migrado de n8n → normi-server. Endpoint /api/comunicados/enviar con
 // como_normi=true para que el remitente quede anónimo.
 
-const WEBHOOK_MASIVO_URL =
-  "https://n8n.notasnormi.com/webhook/masivo-personalizado";
+// El envío masivo personalizado ahora vive en el server:
+// POST /api/comunicados/enviar-masivo con como_normi=true (anonimato admin).
 
 const NIVELES_GRADOS: Record<string, string[]> = {
   Preescolar: ["Prejardín", "Jardín", "Transición"],
@@ -682,37 +682,34 @@ const EnviarComunicadoAdmin = () => {
         throw new Error("Escribe una plantilla de mensaje");
       }
 
-      const colCodigo = headersMasivo[0];
-      const mensajes = filasParsed.map((fila) => ({
-        id: fila[colCodigo],
+      // Primera columna = id del estudiante
+      const colId = headersMasivo[0];
+      const destinatarios_personalizados = filasParsed.map((fila) => ({
+        estudiante_id: fila[colId],
         mensaje: resolverPlantilla(plantillaMasivo, fila),
       }));
 
-      const response = await fetch(WEBHOOK_MASIVO_URL, {
+      // POST /api/comunicados/enviar-masivo con como_normi=true (anonimato).
+      const resp = await apiRequest<{
+        enviados: number;
+        fallos: number;
+        total: number;
+        no_encontrados: string[];
+      }>("/api/comunicados/enviar-masivo", {
         method: "POST",
-        mode: "cors",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          remitente: "Normi",
-          id_remitente: idRemitente,
-          mensajes,
+          plantilla_resumen: plantillaMasivo.trim(),
+          destinatarios_personalizados,
+          como_normi: true,
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(`Error del servidor: ${response.status}`);
-      }
-
-      await supabase.from("Comunicados").insert({
-        remitente: "Normi",
-        id_remitente: idRemitente,
-        destinatarios: `Envío masivo personalizado a ${mensajes.length} estudiantes`,
-        mensaje: plantillaMasivo.trim(),
-      });
-
+      const noEncontrados = resp.no_encontrados?.length ?? 0;
       toast({
-        title: "Envío masivo iniciado",
-        description: `Se están enviando ${mensajes.length} mensajes personalizados por WhatsApp como Normi.`,
+        title: "Envío masivo completado",
+        description: noEncontrados > 0
+          ? `${resp.enviados} enviados, ${resp.fallos} fallos. ${noEncontrados} estudiante(s) sin teléfono.`
+          : `${resp.enviados} mensajes enviados por WhatsApp como Normi.`,
       });
 
       setDatosMasivos("");

@@ -33,8 +33,9 @@ const PERFILES_UI: { key: PerfilKey; label: string }[] = [
   { key: 'Orientador', label: 'Orientador(a) Escolar' },
 ];
 
-const WEBHOOK_MASIVO_URL =
-  "https://n8n.notasnormi.com/webhook/masivo-personalizado";
+// El envío masivo personalizado ahora vive en el server:
+// POST /api/comunicados/enviar-masivo (apiRequest, JWT obligatorio).
+// El workflow n8n "Masivo Personalizado" queda apagado.
 
 const NIVELES_GRADOS: Record<string, string[]> = {
   Preescolar: ["Prejardín", "Jardín", "Transición"],
@@ -729,39 +730,37 @@ const EnviarComunicado = () => {
         throw new Error("Escribe una plantilla de mensaje");
       }
 
-      // Primera columna = código del estudiante
-      const colCodigo = headersMasivo[0];
-      const mensajes = filasParsed.map((fila) => ({
-        id: fila[colCodigo],
+      // Primera columna = id del estudiante (cédula)
+      const colId = headersMasivo[0];
+      const destinatarios_personalizados = filasParsed.map((fila) => ({
+        estudiante_id: fila[colId],
         mensaje: resolverPlantilla(plantillaMasivo, fila),
       }));
 
-      const response = await fetch(WEBHOOK_MASIVO_URL, {
+      // POST /api/comunicados/enviar-masivo (server, JWT). El server:
+      //  - cruza Estudiantes ↔ Usuarios para obtener teléfonos
+      //  - envía WhatsApp uno por uno con su mensaje personalizado
+      //  - guarda UNA fila resumen en Comunicados con la plantilla original
+      //  - registra cada mensaje en n8n_chat_histories (contexto del agente)
+      const resp = await apiRequest<{
+        enviados: number;
+        fallos: number;
+        total: number;
+        no_encontrados: string[];
+      }>("/api/comunicados/enviar-masivo", {
         method: "POST",
-        mode: "cors",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          remitente,
-          id_remitente: idRemitente,
-          mensajes,
+          plantilla_resumen: plantillaMasivo.trim(),
+          destinatarios_personalizados,
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(`Error del servidor: ${response.status}`);
-      }
-
-      // Guardar resumen en Comunicados
-      await supabase.from("Comunicados").insert({
-        remitente,
-        id_remitente: idRemitente,
-        destinatarios: `Envío masivo personalizado a ${mensajes.length} estudiantes`,
-        mensaje: plantillaMasivo.trim(),
-      });
-
+      const noEncontrados = resp.no_encontrados?.length ?? 0;
       toast({
-        title: "Envío masivo iniciado",
-        description: `Se están enviando ${mensajes.length} mensajes personalizados por WhatsApp.`,
+        title: "Envío masivo completado",
+        description: noEncontrados > 0
+          ? `${resp.enviados} enviados, ${resp.fallos} fallos. ${noEncontrados} estudiante(s) sin teléfono.`
+          : `${resp.enviados} mensajes enviados por WhatsApp.`,
       });
 
       setDatosMasivos("");
