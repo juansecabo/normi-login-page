@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Pencil, Trash2, ArrowLeft, Calendar, Paperclip, FileText, X, Eye, Download } from "lucide-react";
 import { subirArchivo } from "@/lib/storage";
+import { apiRequest } from "@/lib/apiClient";
 import { getSession } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import {
@@ -371,9 +372,8 @@ const ActividadesCalendario = () => {
         const session = getSession();
         const cargo = session.cargo || 'Profesor(a)';
         try {
-          await fetch('https://n8n.notasnormi.com/webhook/notificar-actividades', {
+          await apiRequest('/api/notificaciones/actividad-programada', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               profesor_nombre: `${profesorNombres} ${profesorApellidos}`.trim(),
               profesor_cargo: cargo,

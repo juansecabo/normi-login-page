@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { subirArchivo } from "@/lib/storage";
+import { apiRequest } from "@/lib/apiClient";
 import { getSession, isProfesor } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import CharCircle from "@/components/CharCircle";
@@ -430,11 +431,11 @@ const ProgramarActividad = () => {
         console.error('Error incrementando contador:', e);
       }
 
-      // Fire & forget webhook notification
+      // Notificación al server (multi-tenant via JWT). Reemplaza el webhook
+      // viejo n8n /webhook/notificar-actividades.
       try {
-        await fetch('https://n8n.notasnormi.com/webhook/notificar-actividades', {
+        await apiRequest('/api/notificaciones/actividad-programada', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             profesor_nombre: `${profesorNombres} ${profesorApellidos}`.trim(),
             profesor_cargo: profesorCargo,
