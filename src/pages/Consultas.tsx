@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { ChevronDown, Plus, Trash2, Users, Send, FileBarChart2, X } from "lucide-react";
+import { apiRequest } from "@/lib/apiClient";
 
 interface ConsultaRow {
   id: number;
@@ -88,9 +89,20 @@ const PERFILES_UI: { key: PerfilKey; label: string; perfil: string }[] = [
   { key: "Orientador", label: "Orientador(a) Escolar", perfil: "Orientador(a) Escolar" },
 ];
 
-const WEBHOOK_URL = "https://n8n.notasnormi.com/webhook/enviar-comunicado";
-const WEBHOOK_RECTOR_URL = "https://n8n.notasnormi.com/webhook/enviar-comunicado-rector-coordinadores";
-const WEBHOOK_ADMIN_URL = "https://n8n.notasnormi.com/webhook/enviar-comunicado-admin";
+// Mapea perfil canónico (el que viaja al server) → PerfilKey del UI.
+function perfilToKey(perfil: string): PerfilKey {
+  switch (perfil) {
+    case "Profesores": return "Profesores";
+    case "Coordinadores": return "Coordinadores";
+    case "Rector": return "Rector";
+    case "Administrativos": return "Administrativos";
+    case "Secretaria General": return "Secretaria";
+    case "Orientadores": return "Orientador";
+    default: return "Estudiantes";
+  }
+}
+
+// Webhooks viejos de n8n eliminados — todos los envíos van vía /api/comunicados/enviar.
 const CONSULTAS_BASE = "https://notasnormi.com/consulta";
 
 export default function Consultas() {
@@ -518,14 +530,6 @@ export default function Consultas() {
     return partes.join(". ") + ".";
   };
 
-  const pickWebhookUrl = (cargo: string | null): string => {
-    if (cargo === "Administrador") return WEBHOOK_ADMIN_URL;
-    if (["Rector", "Coordinador(a)", "Administrativo(a)", "Secretaria General"].includes(cargo || "")) {
-      return WEBHOOK_RECTOR_URL;
-    }
-    return WEBHOOK_URL;
-  };
-
   const handleEnviar = async () => {
     if (!titulo.trim()) return toast({ title: "Falta el título", variant: "destructive" });
     if (!mensajeConsulta.trim()) return toast({ title: "Falta el mensaje de la consulta", variant: "destructive" });
@@ -600,57 +604,62 @@ export default function Consultas() {
       // 2. Construir el mensaje de WhatsApp con el link
       const link = `${CONSULTAS_BASE}/${consultaCreada.id}`;
       const mensajeFinal = `${mensajeWhatsapp.trim()}\n\n👉 ${link}`;
-
-      // 3. Elegir el webhook según el cargo
-      const webhookUrl = pickWebhookUrl(session.cargo);
-      const remitenteTexto = session.cargo
-        ? `${session.cargo} — ${session.nombres || ""} ${session.apellidos || ""}`.trim()
-        : `${session.nombres || ""} ${session.apellidos || ""}`.trim();
       const destinatariosTexto = buildDestinatariosTexto();
 
-      // id_destinatarios = mezcla de estudiantes específicos + internos específicos.
-      // El AI de n8n distingue por el perfil al que pertenece cada id.
-      const idDestinatariosArray: string[] = [
-        ...(perfilesMarcados.Estudiantes || perfilesMarcados.Padres ? estudiantesSeleccionados.map(String) : []),
-        ...internosObjetivo,
-      ];
-      const idDestinatariosFinal = idDestinatariosArray.length > 0 ? idDestinatariosArray : null;
+      // 3. Armar segmentos para el endpoint server. Estudiantes/Padres con
+      //    filtros aula van en un segmento; internos con ids en otro. El
+      //    normalizador del server unifica/agrupa si corresponde.
+      const segmentos: any[] = [];
 
-      // perfil = exactamente lo que ya armamos arriba
-      const perfilArray = perfilesObjetivo;
-
-      // 4. Llamar al webhook de comunicados (un solo envío)
-      const webhookPayload = {
-        remitente: remitenteTexto,
-        destinatarios: destinatariosTexto,
-        mensaje: mensajeFinal,
-        id_remitente: String(session.id),
-        perfil: perfilArray,
-        id_destinatarios: idDestinatariosFinal,
-        nivel: null,
-        grado: null,
-        salon: null,
-        id: null,
-      };
-
-      const res = await fetch(webhookUrl, {
-        method: "POST",
-        mode: "cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(webhookPayload),
-      });
-
-      if (!res.ok) {
-        throw new Error(`El comunicado no pudo enviarse (${res.status}). La consulta quedó creada.`);
+      const perfilesEstPadres: string[] = [];
+      if (perfilesMarcados.Estudiantes) perfilesEstPadres.push("Estudiantes");
+      if (perfilesMarcados.Padres) perfilesEstPadres.push("Acudientes");
+      if (perfilesEstPadres.length > 0) {
+        const segEstPadres: any = { perfil: perfilesEstPadres };
+        if (estudiantesSeleccionados.length > 0) {
+          segEstPadres.id_destinatarios = estudiantesSeleccionados.map(String);
+        } else {
+          if (nivelesSeleccionados.length === 1) segEstPadres.nivel = nivelesSeleccionados[0];
+          if (gradosSeleccionados.length > 0) segEstPadres.grados = gradosSeleccionados;
+          if (salonesSeleccionados.length > 0) segEstPadres.salones = salonesSeleccionados;
+        }
+        segmentos.push(segEstPadres);
       }
 
-      // 5. Guardar en tabla Comunicados
-      await supabase.from("Comunicados").insert({
-        remitente: remitenteTexto,
-        id_remitente: String(session.id),
-        destinatarios: destinatariosTexto,
-        mensaje: mensajeFinal,
-      } as any);
+      const internoIdsPorPerfil: { perfil: string; ids: string[] }[] = [
+        { perfil: "Profesores", ids: profesoresSeleccionados.map(String) },
+        { perfil: "Coordinadores", ids: coordinadoresSeleccionados.map(String) },
+        { perfil: "Administrativos", ids: administrativosSeleccionados.map(String) },
+        { perfil: "Secretaria General", ids: secretariasSeleccionadas.map(String) },
+        { perfil: "Orientadores", ids: orientadoresSeleccionados.map(String) },
+      ];
+      const perfilesInternosTodos: string[] = [];
+      for (const { perfil, ids } of internoIdsPorPerfil) {
+        if (!perfilesMarcados[perfilToKey(perfil)]) continue;
+        if (ids.length > 0) {
+          segmentos.push({ perfil: [perfil], id_destinatarios: ids });
+        } else {
+          perfilesInternosTodos.push(perfil);
+        }
+      }
+      if (perfilesMarcados.Rector) perfilesInternosTodos.push("Rector");
+      if (perfilesInternosTodos.length > 0) {
+        segmentos.push({ perfil: perfilesInternosTodos });
+      }
+
+      // 4. POST al endpoint server (multi-tenant via JWT). El server decide
+      //    si va como admin anónimo (como_normi) o como envío normal del
+      //    usuario logueado según el rol del JWT.
+      await apiRequest('/api/comunicados/enviar', {
+        method: 'POST',
+        body: JSON.stringify({
+          como_normi: session.cargo === 'Administrador',
+          destinatarios_label: destinatariosTexto,
+          mensaje: mensajeFinal,
+          segmentos,
+        }),
+      });
+      // El server guarda automáticamente en Comunicados con grupo_comunicado_id.
 
       toast({
         title: "Consulta creada y enviada",

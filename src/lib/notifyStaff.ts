@@ -2,21 +2,22 @@
 // vía WhatsApp + plataforma. Se usa para eventos del sistema (excusas, retiros,
 // remisiones, etc.) que el staff debe ver.
 //
-// HORARIO SILENCIOSO: si el padre crea la solicitud fuera de horario laboral
-// (lunes-viernes 06:00-19:00 hora Bogotá), en vez de mandar el WhatsApp al
-// instante encolamos en Supabase (via normi-server). Un workflow CRON en n8n
-// procesa la cola cuando vuelve el horario.
+// MIGRADO: ya no llama al webhook viejo n8n "enviar-comunicado-rector-
+// coordinadores". Ahora llama directamente a /api/comunicados/enviar del
+// normi-server con `as_system: true`. El server decide internamente:
+//   - dentro de horario laboral (L-V 06:00-19:00 Bogotá) → despacha al instante.
+//   - fuera de horario → encola en Notificaciones_Pendientes. Un processor
+//     interno del server lo despacha cuando vuelve el horario.
 //
-// IMPORTANTE: ambas operaciones usan `keepalive: true`. Sin eso, si el padre
-// cierra la app o navega justo después de "Excusa registrada", la request en
-// vuelo se aborta y la notificación se pierde silenciosa.
+// SEGURIDAD: el endpoint exige JWT del usuario logueado. En modo as_system el
+// server fuerza el remitente a "Sistema Normi (tag)" y restringe destinatarios
+// a perfiles staff (un padre no puede usar este flag para mandar mensajes a
+// otros padres).
 //
-// SEGURIDAD: las llamadas ya no usan la anon key de Supabase. El INSERT a
-// Notificaciones_Pendientes pasa por /api/db (proxy de normi-server) con JWT
-// del usuario logueado. El webhook a n8n es público y sigue igual.
+// IMPORTANTE: keepalive: true en la request. Sin eso, si el padre cierra la
+// app justo después de "Excusa registrada", la request en vuelo se aborta y
+// la notificación se pierde silenciosa.
 
-const WEBHOOK_URL = "https://n8n.notasnormi.com/webhook/enviar-comunicado-rector-coordinadores";
-// Same-origin con el frontend; ver nota en apiClient.ts.
 const API_BASE_URL =
   (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_BASE_URL)
   || '';
@@ -30,10 +31,11 @@ interface Aula {
   salon: string;
 }
 
-type Origen = "inasistencia" | "uniforme" | "retiro" | "remision" | undefined;
+type Origen = "inasistencia" | "uniforme" | "retiro" | "remision" | "entrevista" | "consulta" | undefined;
 
-// Lunes (1) a viernes (5), 06:00 a 19:00 inclusive, zona America/Bogota.
-// "Permitido hasta 7:00 PM" = 19:00 entra, 19:01 ya queda fuera.
+// La función isHorarioPermitido se mantiene exportada para componentes que la
+// usan en lógica de UI (mostrar/ocultar avisos). El server ya hace su propio
+// chequeo de horario para decidir despachar vs encolar.
 export function isHorarioPermitido(now: Date = new Date()): boolean {
   const fmt = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/Bogota",
@@ -55,63 +57,48 @@ export function isHorarioPermitido(now: Date = new Date()): boolean {
   return totalMin >= 6 * 60 && totalMin <= 19 * 60;
 }
 
-async function fetchWebhook(
-  remitente: string,
-  destinatarios: string,
-  mensaje: string,
-  perfil: string[]
-) {
-  return fetch(WEBHOOK_URL, {
-    method: "POST",
-    mode: "cors",
-    keepalive: true,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      remitente,
-      destinatarios,
-      mensaje,
-      id_remitente: "sistema",
-      perfil,
-      nivel: null,
-      grado: null,
-      salon: null,
-      id: null,
-      id_destinatarios: null,
-    }),
-  });
+interface NotifyOptions {
+  mensaje: string;
+  remitenteTag: string;           // ej "Excusas", "Retiro", "Uniforme" — va en "Sistema Normi (X)"
+  perfiles: string[];             // ej ["Rector","Coordinadores"]
+  aula?: Aula;
+  destinatariosLabel: string;     // ej "Rector y Coordinadores" o "Rector, Coordinadores y profesores de 7 2"
 }
 
-// INSERT a Notificaciones_Pendientes vía /api/db con JWT y keepalive=true.
-// Sin keepalive, si el padre cierra la página después de "Excusa registrada",
-// la request en vuelo se aborta y la fila nunca llega a la cola.
-async function insertPendiente(payload: {
-  remitente: string;
-  destinatarios: string;
-  mensaje: string;
-  perfil: string[];
-  aula_grado: string | null;
-  aula_salon: string | null;
-  origen: string | null;
-}) {
+async function postComunicadoSistema(opts: NotifyOptions): Promise<void> {
   const jwt = getJwt();
-  if (!jwt) throw new Error('No hay sesión activa');
+  if (!jwt) {
+    console.warn('notifyStaff: sin JWT, no se puede enviar');
+    return;
+  }
+
+  const segmento: any = { perfil: opts.perfiles };
+  if (opts.aula) {
+    segmento.grados = [opts.aula.grado];
+    segmento.salones = [opts.aula.salon];
+  }
+
   const body = {
-    table: 'Notificaciones_Pendientes',
-    op: 'insert',
-    data: payload,
+    as_system: true,
+    sistema_tag: opts.remitenteTag,
+    destinatarios_label: opts.destinatariosLabel,
+    mensaje: opts.mensaje,
+    segmentos: [segmento],
   };
-  const res = await fetch(`${API_BASE_URL}/api/db`, {
-    method: "POST",
-    mode: "cors",
+
+  const res = await fetch(`${API_BASE_URL}/api/comunicados/enviar`, {
+    method: 'POST',
+    mode: 'cors',
     keepalive: true,
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${jwt}`,
     },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    throw new Error(`Pendientes insert ${res.status}: ${await res.text().catch(() => "")}`);
+    const text = await res.text().catch(() => '');
+    throw new Error(`comunicados/enviar ${res.status}: ${text}`);
   }
 }
 
@@ -121,76 +108,53 @@ export async function notifyRectorCoord(
   remitente = "Sistema Normi",
   aula?: Aula,
   origen?: Origen
-) {
-  const destinatarios = aula
+): Promise<void> {
+  const destinatariosLabel = aula
     ? `Rector, Coordinadores y profesores de ${aula.grado} ${aula.salon}`
     : "Rector y Coordinadores";
-  const perfil = aula
+  const perfiles = aula
     ? ["Rector", "Coordinadores", "Profesores"]
     : ["Rector", "Coordinadores"];
 
-  if (isHorarioPermitido()) {
-    try {
-      await fetchWebhook(remitente, destinatarios, mensaje, perfil);
-    } catch (e) {
-      console.warn("notifyRectorCoord falló:", e);
-    }
-    return;
-  }
+  // Derivar el "tag" para "Sistema Normi (X)" a partir del remitente legacy o
+  // del origen explícito. Mantiene retrocompatibilidad con las llamadas viejas
+  // que pasaban "Sistema Normi (Excusas)" en el parámetro remitente.
+  const remitenteTag = origen
+    ? origen.charAt(0).toUpperCase() + origen.slice(1)
+    : extraerTagDeRemitente(remitente);
 
   try {
-    await insertPendiente({
-      remitente,
-      destinatarios,
+    await postComunicadoSistema({
       mensaje,
-      perfil,
-      aula_grado: aula?.grado ?? null,
-      aula_salon: aula?.salon ?? null,
-      origen: origen ?? null,
+      remitenteTag,
+      perfiles,
+      aula,
+      destinatariosLabel,
     });
   } catch (e) {
-    console.warn("Encolado falló, intento envío directo:", e);
-    try {
-      await fetchWebhook(remitente, destinatarios, mensaje, perfil);
-    } catch (e2) {
-      console.warn("Envío directo también falló:", e2);
-    }
+    console.warn('notifyRectorCoord falló:', e);
   }
 }
 
-// Notifica a la(s) Orientadora(s) Escolar(es). Mismo gating de horario y cola.
+// Notifica a la(s) Orientadora(s) Escolar(es).
 export async function notifyOrientadora(
   mensaje: string,
   remitente = "Sistema Normi"
-) {
-  const destinatarios = "Orientador(a) Escolar";
-  const perfil = ["Orientador(a) Escolar"];
-
-  if (isHorarioPermitido()) {
-    try {
-      await fetchWebhook(remitente, destinatarios, mensaje, perfil);
-    } catch (e) {
-      console.warn("notifyOrientadora falló:", e);
-    }
-    return;
-  }
-
+): Promise<void> {
   try {
-    await insertPendiente({
-      remitente,
-      destinatarios,
+    await postComunicadoSistema({
       mensaje,
-      perfil,
-      aula_grado: null,
-      aula_salon: null,
-      origen: "remision",
+      remitenteTag: extraerTagDeRemitente(remitente) || 'Remisión',
+      perfiles: ['Orientadores'],
+      destinatariosLabel: 'Orientador(a) Escolar',
     });
   } catch (e) {
-    console.warn("Encolado de remisión falló, intento envío directo:", e);
-    try {
-      await fetchWebhook(remitente, destinatarios, mensaje, perfil);
-    } catch (e2) {
-      console.warn("Envío directo también falló:", e2);
-    }
+    console.warn('notifyOrientadora falló:', e);
   }
+}
+
+function extraerTagDeRemitente(remitente: string): string {
+  // "Sistema Normi (Excusas)" → "Excusas". "Sistema Normi" → "".
+  const m = remitente.match(/\(([^)]+)\)/);
+  return m ? m[1] : '';
 }

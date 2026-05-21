@@ -9,6 +9,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Check, ChevronDown, UserRound } from "lucide-react";
 import FirmaImage from "@/components/FirmaImage";
+import { apiRequest } from "@/lib/apiClient";
 import { es } from "date-fns/locale";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -149,27 +150,19 @@ const SolicitudEntrevistaStaff = () => {
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      // Send notification to parent via n8n webhook
+      // Notificar al acudiente del estudiante vía server (multi-tenant via JWT).
+      // El remitente lo arma el server según el rol del usuario logueado.
       const fechaEntrevistaTexto = fechaEntrevista.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
       const entrevistaConNombre = [internoEntrevista.cargo, internoEntrevista.nombres, internoEntrevista.apellidos].filter(Boolean).join(" ");
       const mensaje = `Se le informa que se ha solicitado una entrevista para el acudiente del estudiante ${estudianteSeleccionado.nombres} ${estudianteSeleccionado.apellidos} de ${estudianteSeleccionado.grado} ${estudianteSeleccionado.salon}.\n\nFecha: ${fechaEntrevistaTexto}\nHora: ${horaEntrevista}\nCon: ${entrevistaConNombre}\n\nPor favor ingrese a notasnormi.com → Permisos y Excusas → Solicitud de Entrevista, busque el día indicado, haga click sobre la citación y confirme su asistencia.`;
-      const remitente = [session.cargo, session.nombres, session.apellidos].filter(Boolean).join(" ");
-      const cargo = session.cargo || "";
-      const webhookUrl = ["Rector", "Coordinador(a)"].includes(cargo)
-        ? "https://n8n.notasnormi.com/webhook/enviar-comunicado-rector-coordinadores"
-        : "https://n8n.notasnormi.com/webhook/enviar-comunicado";
-      fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      apiRequest('/api/comunicados/enviar', {
+        method: 'POST',
         body: JSON.stringify({
-          remitente,
-          destinatarios: `Padre del estudiante con id ${estudianteSeleccionado.id}`,
+          destinatarios_label: `Acudiente del estudiante con id ${estudianteSeleccionado.id}`,
           mensaje,
-          id_remitente: session.id,
-          perfil: "Acudiente",
-          id: String(estudianteSeleccionado.id),
+          segmentos: [{ perfil: ["Acudientes"], id_destinatarios: [String(estudianteSeleccionado.id)] }],
         }),
-      }).then(r => console.log("Webhook sent:", r.status)).catch(e => console.error("Webhook error:", e));
+      }).catch(e => console.error("Notificación entrevista error:", e));
 
       toast({ title: "Solicitud creada", description: "La solicitud de entrevista fue registrada y se notificó al acudiente." });
       setGrado(""); setSalon(""); setEstudianteSeleccionado(null); setFechaEntrevista(undefined);

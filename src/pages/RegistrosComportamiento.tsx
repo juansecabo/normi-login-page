@@ -11,6 +11,7 @@ import iconRegistros from "@/assets/icons/registros-comportamiento.png";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { es } from "date-fns/locale";
+import { apiRequest } from "@/lib/apiClient";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -38,7 +39,8 @@ const GRADO_ORDEN: Record<string, number> = {
   "Décimo": 13, "Undécimo": 14,
 };
 
-const WEBHOOK_URL = "https://n8n.notasnormi.com/webhook/enviar-comunicado-admin";
+// Webhook viejo n8n eliminado — notificación va vía /api/comunicados/enviar
+// con as_system, despachado o encolado según horario laboral.
 
 interface Estudiante {
   id: number;
@@ -554,21 +556,23 @@ const RegistrosComportamiento = () => {
         const mensaje = `${autor.nombreSimple} envió un Registro de Comportamiento (${tipoLabel}) sobre ${estLabel}, ${asigLabel}.\n\nPueden consultarlo y descargarlo entrando a notasnormi.com → Registros de Comportamiento.`;
 
         const partes = ["Rector", "Coordinadores", "Orientador(a) Escolar"];
+        const segmentos: any[] = [{ perfil: ["Rector", "Coordinadores", "Orientadores"] }];
         if (director && director.cargo === "Profesor(a)" && String(director.id) !== autor.id) {
           partes.push(`Profesor(a) con id ${director.id}`);
+          segmentos.push({ perfil: ["Profesores"], id_destinatarios: [String(director.id)] });
         }
         const destinatarios = partes.join(", ");
 
-        fetch(WEBHOOK_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+        apiRequest('/api/comunicados/enviar', {
+          method: 'POST',
           body: JSON.stringify({
-            remitente: "Normi",
-            destinatarios,
+            as_system: true,
+            sistema_tag: 'Registro',
+            destinatarios_label: destinatarios,
             mensaje,
-            id_remitente: autor.id,
+            segmentos,
           }),
-        }).catch(e => console.error("Webhook registro:", e));
+        }).catch(e => console.error("Notificación registro comportamiento:", e));
       } catch (e) {
         console.error("Notificación registro:", e);
       }
