@@ -75,7 +75,7 @@ const handleDescargarArchivo = async (url: string) => {
   }
 };
 
-const CalendarioPadre = () => {
+const CalendarioAcudiente = () => {
   const navigate = useNavigate();
   const [hijos, setHijos] = useState<HijoData[]>([]);
   const [actividades, setActividades] = useState<ActividadConHijo[]>([]);
@@ -168,12 +168,12 @@ const CalendarioPadre = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormi backLink="/dashboard-padre" />
+      <HeaderNormi backLink="/dashboard-acudiente" />
 
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <div className="flex items-center gap-2 text-sm">
-            <button onClick={() => navigate("/dashboard-padre")} className="text-primary hover:underline">
+            <button onClick={() => navigate("/dashboard-acudiente")} className="text-primary hover:underline">
               Inicio
             </button>
             <span className="text-muted-foreground">&rarr;</span>
@@ -325,4 +325,4 @@ const CalendarioPadre = () => {
   );
 };
 
-export default CalendarioPadre;
+export default CalendarioAcudiente;

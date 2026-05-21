@@ -62,7 +62,7 @@ const PermisosExcusas = () => {
     : puedeAccederDashboard()
     ? "/dashboard-rector"
     : isPadreDeFamilia()
-    ? "/dashboard-padre"
+    ? "/dashboard-acudiente"
     : "/dashboard";
 
   return (

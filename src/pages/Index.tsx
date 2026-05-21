@@ -46,7 +46,7 @@ const Index = () => {
         null, null, null,
         (user.hijos || []) as HijoData[],
       );
-      navigate(getPostLoginRoute("/dashboard-padre"));
+      navigate(getPostLoginRoute("/dashboard-acudiente"));
       return;
     }
     saveSession(user.id, user.nombres, user.apellidos, user.rol);
@@ -97,7 +97,7 @@ const Index = () => {
       } else if (session.cargo === 'Estudiante') {
         navigate(getPostLoginRoute("/dashboard-estudiante"), { replace: true });
       } else if (session.cargo === 'Acudiente' || session.cargo === 'Padre de familia') {
-        navigate(getPostLoginRoute("/dashboard-padre"), { replace: true });
+        navigate(getPostLoginRoute("/dashboard-acudiente"), { replace: true });
       } else {
         navigate(getPostLoginRoute("/dashboard"), { replace: true });
       }

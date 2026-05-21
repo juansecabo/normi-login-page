@@ -525,7 +525,7 @@ export default function ConsultaPublica() {
         const update: any = {
           consulta_id: consulta.id,
           padre_id: respondenteId,
-          padre_nombre: `${session.nombres || ""} ${session.apellidos || ""}`.trim(),
+          acudiente_nombre: `${session.nombres || ""} ${session.apellidos || ""}`.trim(),
           padre_telefono: null,
           tipo_respondente: r.tipoRespondente,
           estudiante_id: r.estudianteId,
@@ -609,7 +609,7 @@ export default function ConsultaPublica() {
   if (error || !consulta)
     return (
       <div className="min-h-screen bg-background">
-        <HeaderNormi backLink="/dashboard-padre" />
+        <HeaderNormi backLink="/dashboard-acudiente" />
         <div className="max-w-md mx-auto p-6 text-center">
           <Card>
             <CardContent className="p-6">
@@ -630,14 +630,14 @@ export default function ConsultaPublica() {
     ? sesion.cargo === "Administrador"
       ? "/dashboard-admin"
       : "/dashboard-rector"
-    : "/dashboard-padre";
+    : "/dashboard-acudiente";
 
   return (
     <div className="min-h-screen bg-background">
       <HeaderNormi backLink={backLink} />
       <div className="max-w-2xl mx-auto space-y-4 px-4 py-6">
         <div className="flex items-center gap-3">
-          <Button onClick={() => navigate(esInterno ? backLink : "/padre/consultas")} variant="outline" size="sm">
+          <Button onClick={() => navigate(esInterno ? backLink : "/acudiente/consultas")} variant="outline" size="sm">
             ← Volver
           </Button>
         </div>

@@ -24,7 +24,7 @@ interface Comunicado {
   grupo_comunicado_id: number | null;
 }
 
-const ComunicadosPadre = () => {
+const ComunicadosAcudiente = () => {
   const navigate = useNavigate();
   const [comunicados, setComunicados] = useState<Comunicado[]>([]);
   const [loading, setLoading] = useState(true);
@@ -119,13 +119,13 @@ const ComunicadosPadre = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormi backLink="/dashboard-padre" />
+      <HeaderNormi backLink="/dashboard-acudiente" />
 
       <main className="flex-1 container mx-auto p-4 md:p-8">
         {/* Breadcrumb */}
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <div className="flex items-center gap-2 text-sm">
-            <button onClick={() => navigate("/dashboard-padre")} className="text-primary hover:underline">
+            <button onClick={() => navigate("/dashboard-acudiente")} className="text-primary hover:underline">
               Inicio
             </button>
             <span className="text-muted-foreground">→</span>
@@ -144,4 +144,4 @@ const ComunicadosPadre = () => {
   );
 };
 
-export default ComunicadosPadre;
+export default ComunicadosAcudiente;

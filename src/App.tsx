@@ -2,13 +2,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import DashboardRector from "./pages/DashboardRector";
 import DashboardEstudiante from "./pages/DashboardEstudiante";
-import DashboardPadre from "./pages/DashboardPadre";
+import DashboardAcudiente from "./pages/DashboardAcudiente";
 import DashboardAdmin from "./pages/DashboardAdmin";
 import SeleccionarGrado from "./pages/SeleccionarGrado";
 import SeleccionarSalon from "./pages/SeleccionarSalon";
@@ -72,21 +72,21 @@ import JustificacionInasistenciaStaff from "./pages/permisos/JustificacionInasis
 import JustificacionUniforme from "./pages/permisos/JustificacionUniforme";
 import JustificacionUniformeStaff from "./pages/permisos/JustificacionUniformeStaff";
 import SolicitudEntrevistaStaff from "./pages/permisos/SolicitudEntrevistaStaff";
-import SolicitudEntrevistaPadre from "./pages/permisos/SolicitudEntrevistaPadre";
+import SolicitudEntrevistaAcudiente from "./pages/permisos/SolicitudEntrevistaAcudiente";
 import Consultas from "./pages/Consultas";
 import ConsultaDetalle from "./pages/ConsultaDetalle";
 import ConsultaPublica from "./pages/ConsultaPublica";
-import MisConsultas from "./pages/padre/MisConsultas";
+import MisConsultas from "./pages/acudiente/MisConsultas";
 import MisConsultasEstudiante from "./pages/estudiante/MisConsultasEstudiante";
 import RegistrosComportamiento from "./pages/RegistrosComportamiento";
 import TablaNotasRouter from "./pages/TablaNotasRouter";
 
 // Rutas para Padre
-import NotasPadre from "./pages/padre/NotasPadre";
-import CalendarioPadre from "./pages/padre/CalendarioPadre";
-import EstadisticasPadre from "./pages/padre/EstadisticasPadre";
-import ComunicadosPadre from "./pages/padre/ComunicadosPadre";
-import DocumentosPadre from "./pages/padre/DocumentosPadre";
+import NotasAcudiente from "./pages/acudiente/NotasAcudiente";
+import CalendarioAcudiente from "./pages/acudiente/CalendarioAcudiente";
+import EstadisticasAcudiente from "./pages/acudiente/EstadisticasAcudiente";
+import ComunicadosAcudiente from "./pages/acudiente/ComunicadosAcudiente";
+import DocumentosAcudiente from "./pages/acudiente/DocumentosAcudiente";
 
 const queryClient = new QueryClient();
 
@@ -108,7 +108,9 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard-rector" element={<DashboardRector />} />
           <Route path="/dashboard-estudiante" element={<DashboardEstudiante />} />
-          <Route path="/dashboard-padre" element={<DashboardPadre />} />
+          <Route path="/dashboard-acudiente" element={<DashboardAcudiente />} />
+          {/* Redirect compat para bookmarks/links viejos. */}
+          <Route path="/dashboard-padre" element={<Navigate to="/dashboard-acudiente" replace />} />
           <Route path="/dashboard-admin" element={<DashboardAdmin />} />
           <Route path="/seleccionar-grado" element={<SeleccionarGrado />} />
           <Route path="/seleccionar-salon" element={<SeleccionarSalon />} />
@@ -162,14 +164,15 @@ const App = () => (
           <Route path="/permisos-excusas/inasistencia-staff" element={<JustificacionInasistenciaStaff />} />
           <Route path="/permisos-excusas/uniforme" element={<JustificacionUniforme />} />
           <Route path="/permisos-excusas/uniforme-staff" element={<JustificacionUniformeStaff />} />
-          <Route path="/permisos-excusas/entrevista" element={<SolicitudEntrevistaPadre />} />
+          <Route path="/permisos-excusas/entrevista" element={<SolicitudEntrevistaAcudiente />} />
           <Route path="/permisos-excusas/entrevista-staff" element={<SolicitudEntrevistaStaff />} />
 
           {/* Consultas */}
           <Route path="/consultas" element={<Consultas />} />
           <Route path="/consultas/:id" element={<ConsultaDetalle />} />
           <Route path="/consulta/:id" element={<ConsultaPublica />} />
-          <Route path="/padre/consultas" element={<MisConsultas />} />
+          <Route path="/acudiente/consultas" element={<MisConsultas />} />
+          <Route path="/padre/consultas" element={<Navigate to="/acudiente/consultas" replace />} />
           <Route path="/estudiante/consultas" element={<MisConsultasEstudiante />} />
 
           {/* Registros de Comportamiento */}
@@ -183,12 +186,18 @@ const App = () => (
           <Route path="/estudiante/comunicados" element={<ComunicadosEstudiante />} />
           <Route path="/estudiante/documentos" element={<DocumentosEstudiante />} />
 
-          {/* Rutas para Padre */}
-          <Route path="/padre/notas" element={<NotasPadre />} />
-          <Route path="/padre/actividades" element={<CalendarioPadre />} />
-          <Route path="/padre/estadisticas" element={<EstadisticasPadre />} />
-          <Route path="/padre/comunicados" element={<ComunicadosPadre />} />
-          <Route path="/padre/documentos" element={<DocumentosPadre />} />
+          {/* Rutas para Acudiente */}
+          <Route path="/acudiente/notas" element={<NotasAcudiente />} />
+          <Route path="/acudiente/actividades" element={<CalendarioAcudiente />} />
+          <Route path="/acudiente/estadisticas" element={<EstadisticasAcudiente />} />
+          <Route path="/acudiente/comunicados" element={<ComunicadosAcudiente />} />
+          <Route path="/acudiente/documentos" element={<DocumentosAcudiente />} />
+          {/* Redirects compat para bookmarks/links viejos. */}
+          <Route path="/padre/notas" element={<Navigate to="/acudiente/notas" replace />} />
+          <Route path="/padre/actividades" element={<Navigate to="/acudiente/actividades" replace />} />
+          <Route path="/padre/estadisticas" element={<Navigate to="/acudiente/estadisticas" replace />} />
+          <Route path="/padre/comunicados" element={<Navigate to="/acudiente/comunicados" replace />} />
+          <Route path="/padre/documentos" element={<Navigate to="/acudiente/documentos" replace />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

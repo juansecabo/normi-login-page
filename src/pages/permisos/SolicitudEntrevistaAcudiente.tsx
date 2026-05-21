@@ -16,7 +16,7 @@ const GRADO_ORDEN: Record<string, number> = {
 const fechaKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const fmtFecha = (s: string) => new Date(s + "T12:00:00").toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" });
 
-const SolicitudEntrevistaPadre = () => {
+const SolicitudEntrevistaAcudiente = () => {
   const navigate = useNavigate();
   const [solicitudes, setSolicitudes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,7 +71,7 @@ const SolicitudEntrevistaPadre = () => {
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <div className="flex items-center gap-2 text-sm flex-wrap">
-            <button onClick={() => navigate("/dashboard-padre")} className="text-primary hover:underline">Inicio</button>
+            <button onClick={() => navigate("/dashboard-acudiente")} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             <button onClick={() => navigate("/permisos-excusas")} className="text-primary hover:underline">Permisos y Excusas</button>
             <span className="text-muted-foreground">&rarr;</span>
@@ -181,4 +181,4 @@ const SolicitudEntrevistaPadre = () => {
   );
 };
 
-export default SolicitudEntrevistaPadre;
+export default SolicitudEntrevistaAcudiente;

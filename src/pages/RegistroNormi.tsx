@@ -40,16 +40,16 @@ interface Estudiante {
 interface Perfil {
   perfil: string;
   estudiante_id: number | null;
-  padre_estudiante1_id: number | null;
-  padre_estudiante2_id: number | null;
-  padre_estudiante3_id: number | null;
-  padre_estudiante4_id: number | null;
-  padre_nombre: string | null;
+  acudido1_id: number | null;
+  acudido2_id: number | null;
+  acudido3_id: number | null;
+  acudido4_id: number | null;
+  acudiente_nombre: string | null;
   numero_de_telefono: string | null;
 }
 
 interface ParentInfo {
-  padre_nombre: string;
+  acudiente_nombre: string;
   telefono: string;
 }
 
@@ -157,12 +157,12 @@ const RegistroNormi = () => {
         const u = usuariosMap.get(String(a.id));
         return {
           perfil: "Acudiente",
-          padre_nombre: u ? `${u.nombres || ""} ${u.apellidos || ""}`.trim() : "",
+          acudiente_nombre: u ? `${u.nombres || ""} ${u.apellidos || ""}`.trim() : "",
           numero_de_telefono: u?.numero_de_telefono || "",
-          padre_estudiante1_id: a.acudido1_id,
-          padre_estudiante2_id: a.acudido2_id,
-          padre_estudiante3_id: a.acudido3_id,
-          padre_estudiante4_id: a.acudido4_id,
+          acudido1_id: a.acudido1_id,
+          acudido2_id: a.acudido2_id,
+          acudido3_id: a.acudido3_id,
+          acudido4_id: a.acudido4_id,
         } as Perfil;
       });
 
@@ -203,10 +203,10 @@ const RegistroNormi = () => {
     for (const p of perfiles) {
       if (p.perfil === "Acudiente" || p.perfil === "Padre de familia") {
         const info: ParentInfo = {
-          padre_nombre: p.padre_nombre || "Sin nombre",
+          acudiente_nombre: p.acudiente_nombre || "Sin nombre",
           telefono: p.numero_de_telefono || "Sin teléfono",
         };
-        for (const cod of [p.padre_estudiante1_id, p.padre_estudiante2_id, p.padre_estudiante3_id, p.padre_estudiante4_id]) {
+        for (const cod of [p.acudido1_id, p.acudido2_id, p.acudido3_id, p.acudido4_id]) {
           if (cod) {
             const arr = map.get(cod) || [];
             arr.push(info);
@@ -427,7 +427,7 @@ const RegistroNormi = () => {
               grado: e.grado,
               salon: e.salon,
               estado: "Registrado",
-              padre: p.padre_nombre,
+              padre: p.acudiente_nombre,
               telefono: p.telefono,
             });
           }
@@ -712,7 +712,7 @@ const RegistroNormi = () => {
                     {selectedParents.padres.length > 1 && (
                       <p className="font-semibold text-gray-900">Padre {i + 1}</p>
                     )}
-                    <p><span className="font-medium">Nombre:</span> {p.padre_nombre}</p>
+                    <p><span className="font-medium">Nombre:</span> {p.acudiente_nombre}</p>
                     <p><span className="font-medium">Teléfono:</span> {p.telefono}</p>
                   </div>
                 ))}

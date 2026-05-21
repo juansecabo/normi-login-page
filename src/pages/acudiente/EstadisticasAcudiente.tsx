@@ -8,7 +8,7 @@ import { AnalisisEstudiante } from "@/components/estadisticas/AnalisisEstudiante
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, User } from "lucide-react";
 
-const EstadisticasPadre = () => {
+const EstadisticasAcudiente = () => {
   const navigate = useNavigate();
   const { loading } = useEstadisticas();
   const [hijos, setHijos] = useState<HijoData[]>([]);
@@ -56,12 +56,12 @@ const EstadisticasPadre = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormi backLink="/dashboard-padre" />
+      <HeaderNormi backLink="/dashboard-acudiente" />
 
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <div className="flex items-center gap-2 text-sm flex-wrap">
-            <button onClick={() => navigate("/dashboard-padre")} className="text-primary hover:underline">
+            <button onClick={() => navigate("/dashboard-acudiente")} className="text-primary hover:underline">
               Inicio
             </button>
             <span className="text-muted-foreground">&rarr;</span>
@@ -145,4 +145,4 @@ const EstadisticasPadre = () => {
   );
 };
 
-export default EstadisticasPadre;
+export default EstadisticasAcudiente;

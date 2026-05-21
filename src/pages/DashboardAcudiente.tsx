@@ -23,7 +23,7 @@ const Badge = ({ count }: { count: number }) => {
   );
 };
 
-const DashboardPadre = () => {
+const DashboardAcudiente = () => {
   const navigate = useNavigate();
   const [nombres, setNombres] = useState("");
   const [hijos, setHijos] = useState<HijoData[]>([]);
@@ -173,7 +173,7 @@ const DashboardPadre = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormi backLink="/dashboard-padre" />
+      <HeaderNormi backLink="/dashboard-acudiente" />
 
       <main className="flex-1 container mx-auto p-8">
         <div className="bg-card rounded-lg shadow-soft p-5 max-w-2xl mx-auto text-center">
@@ -202,7 +202,7 @@ const DashboardPadre = () => {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 max-w-5xl mx-auto">
             <button
-              onClick={() => navigate("/padre/notas")}
+              onClick={() => navigate("/acudiente/notas")}
               className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-emerald-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-emerald-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-emerald-200"
             >
               <Badge count={badges.notas} />
@@ -211,7 +211,7 @@ const DashboardPadre = () => {
             </button>
 
             <button
-              onClick={() => navigate("/padre/actividades")}
+              onClick={() => navigate("/acudiente/actividades")}
               className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-green-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-green-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-green-200"
             >
               <Badge count={badges.actividades} />
@@ -220,7 +220,7 @@ const DashboardPadre = () => {
             </button>
 
             <button
-              onClick={() => navigate("/padre/comunicados")}
+              onClick={() => navigate("/acudiente/comunicados")}
               className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-lime-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-lime-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-lime-200"
             >
               <Badge count={badges.comunicados} />
@@ -229,7 +229,7 @@ const DashboardPadre = () => {
             </button>
 
             <button
-              onClick={() => navigate("/padre/documentos")}
+              onClick={() => navigate("/acudiente/documentos")}
               className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-cyan-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-cyan-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-cyan-200"
             >
               <Badge count={badges.documentos} />
@@ -246,7 +246,7 @@ const DashboardPadre = () => {
             </button>
 
             <button
-              onClick={() => navigate("/padre/estadisticas")}
+              onClick={() => navigate("/acudiente/estadisticas")}
               className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-teal-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-teal-200"
             >
               <img src={iconEstadisticas} alt="" className="w-12 h-12 object-contain" />
@@ -254,7 +254,7 @@ const DashboardPadre = () => {
             </button>
 
             <button
-              onClick={() => navigate("/padre/consultas")}
+              onClick={() => navigate("/acudiente/consultas")}
               className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-pink-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-pink-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-pink-200"
             >
               <img src={iconConsultas} alt="" className="w-12 h-12 object-contain" />
@@ -284,4 +284,4 @@ const DashboardPadre = () => {
   );
 };
 
-export default DashboardPadre;
+export default DashboardAcudiente;

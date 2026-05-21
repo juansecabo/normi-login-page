@@ -60,35 +60,35 @@ interface EstudianteRow {
 
 interface PadreRow {
   padre_id: string;
-  padre_nombre: string | null;
+  acudiente_nombre: string | null;
   numero_de_telefono: string | null;
-  padre_estudiante1_id: number | null;
-  padre_estudiante2_id: number | null;
-  padre_estudiante3_id: number | null;
-  padre_estudiante4_id: number | null;
-  padre_estudiante1_nombre: string | null;
-  padre_estudiante1_apellidos: string | null;
-  padre_estudiante1_grado: string | null;
-  padre_estudiante1_salon: string | null;
-  padre_estudiante2_nombre: string | null;
-  padre_estudiante2_apellidos: string | null;
-  padre_estudiante2_grado: string | null;
-  padre_estudiante2_salon: string | null;
-  padre_estudiante3_nombre: string | null;
-  padre_estudiante3_apellidos: string | null;
-  padre_estudiante3_grado: string | null;
-  padre_estudiante3_salon: string | null;
-  padre_estudiante4_nombre: string | null;
-  padre_estudiante4_apellidos: string | null;
-  padre_estudiante4_grado: string | null;
-  padre_estudiante4_salon: string | null;
+  acudido1_id: number | null;
+  acudido2_id: number | null;
+  acudido3_id: number | null;
+  acudido4_id: number | null;
+  acudido1_nombre: string | null;
+  acudido1_apellidos: string | null;
+  acudido1_grado: string | null;
+  acudido1_salon: string | null;
+  acudido2_nombre: string | null;
+  acudido2_apellidos: string | null;
+  acudido2_grado: string | null;
+  acudido2_salon: string | null;
+  acudido3_nombre: string | null;
+  acudido3_apellidos: string | null;
+  acudido3_grado: string | null;
+  acudido3_salon: string | null;
+  acudido4_nombre: string | null;
+  acudido4_apellidos: string | null;
+  acudido4_grado: string | null;
+  acudido4_salon: string | null;
 }
 
 interface RespuestaRow {
   id: number;
   consulta_id: number;
   padre_id: string;
-  padre_nombre: string | null;
+  acudiente_nombre: string | null;
   estudiante_id: number | null;
   tipo_respondente: "padre" | "interno" | "estudiante" | null;
   estudiante_nombre: string | null;
@@ -114,7 +114,7 @@ interface RespuestaInternoTabla {
 
 interface AcudienteEnTabla {
   padre_id: string | null;
-  padre_nombre: string;
+  acudiente_nombre: string;
   padre_telefono: string | null;
   opcion: string | null;
   firma_url: string | null;
@@ -286,17 +286,17 @@ export default function ConsultaDetalle() {
         const legacyP = a._legacy;
         const row: any = {
           padre_id: aid,
-          padre_nombre: u ? `${u.nombres || ""} ${u.apellidos || ""}`.trim() : (legacyP?.padre_nombre || ""),
+          acudiente_nombre: u ? `${u.nombres || ""} ${u.apellidos || ""}`.trim() : (legacyP?.acudiente_nombre || ""),
           numero_de_telefono: u?.numero_de_telefono || legacyP?.numero_de_telefono || "",
         };
         for (const i of [1, 2, 3, 4]) {
           const hid = a[`acudido${i}_id`];
           const h = hid ? estsMap.get(String(hid)) : null;
-          row[`padre_estudiante${i}_id`] = hid;
-          row[`padre_estudiante${i}_nombre`] = h ? (h.nombres || h.nombres || "") : (legacyP?.[`padre_estudiante${i}_nombre`] || "");
-          row[`padre_estudiante${i}_apellidos`] = h ? (h.apellidos || h.apellidos || "") : (legacyP?.[`padre_estudiante${i}_apellidos`] || "");
-          row[`padre_estudiante${i}_grado`] = h ? h.grado : (legacyP?.[`padre_estudiante${i}_grado`] || "");
-          row[`padre_estudiante${i}_salon`] = h ? h.salon : (legacyP?.[`padre_estudiante${i}_salon`] || "");
+          row[`acudido${i}_id`] = hid;
+          row[`acudido${i}_nombre`] = h ? (h.nombres || h.nombres || "") : (legacyP?.[`acudido${i}_nombre`] || "");
+          row[`acudido${i}_apellidos`] = h ? (h.apellidos || h.apellidos || "") : (legacyP?.[`acudido${i}_apellidos`] || "");
+          row[`acudido${i}_grado`] = h ? h.grado : (legacyP?.[`acudido${i}_grado`] || "");
+          row[`acudido${i}_salon`] = h ? h.salon : (legacyP?.[`acudido${i}_salon`] || "");
         }
         padresRows.push(row as PadreRow);
       }
@@ -356,7 +356,7 @@ export default function ConsultaDetalle() {
       (usuariosRes.data || []).forEach((u: any) => telMap.set(String(u.id), u.numero_de_telefono ?? null));
       const filasEnriquecidas: RespuestaInternoTabla[] = filasInternos.map((r) => {
         const info = internoMap.get(String(r.padre_id));
-        const nombre = r.padre_nombre
+        const nombre = r.acudiente_nombre
           || (info ? `${info.apellidos || ""} ${info.nombres || ""}`.trim() : `Interno ${r.padre_id}`);
         return {
           padre_id: r.padre_id,
@@ -462,7 +462,7 @@ export default function ConsultaDetalle() {
     const update: any = {
       consulta_id: consulta.id,
       padre_id: sId,
-      padre_nombre: `${session.nombres || ""} ${session.apellidos || ""}`.trim(),
+      acudiente_nombre: `${session.nombres || ""} ${session.apellidos || ""}`.trim(),
       tipo_respondente: "interno",
       estudiante_id: null,
       opcion_seleccionada: miOpcion,
@@ -506,11 +506,11 @@ export default function ConsultaDetalle() {
     const slots = [1, 2, 3, 4] as const;
     const out: string[] = [];
     for (const idx of slots) {
-      const nombre = (p as any)[`padre_estudiante${idx}_nombre`];
-      const apellidos = (p as any)[`padre_estudiante${idx}_apellidos`];
-      const grado = (p as any)[`padre_estudiante${idx}_grado`];
-      const salon = (p as any)[`padre_estudiante${idx}_salon`];
-      const id = (p as any)[`padre_estudiante${idx}_id`];
+      const nombre = (p as any)[`acudido${idx}_nombre`];
+      const apellidos = (p as any)[`acudido${idx}_apellidos`];
+      const grado = (p as any)[`acudido${idx}_grado`];
+      const salon = (p as any)[`acudido${idx}_salon`];
+      const id = (p as any)[`acudido${idx}_id`];
       if (!id) continue;
       const nombreCompleto = `${nombre || ""} ${apellidos || ""}`.trim();
       const grupo = grado ? ` (${grado}${salon ? ` ${salon}` : ""})` : "";
@@ -531,10 +531,10 @@ export default function ConsultaDetalle() {
       // Encontrar padres registrados de este estudiante (hasta 3)
       const padresDelEst = padres.filter((p) => {
         return (
-          p.padre_estudiante1_id === est.id ||
-          p.padre_estudiante2_id === est.id ||
-          p.padre_estudiante3_id === est.id ||
-          p.padre_estudiante4_id === est.id
+          p.acudido1_id === est.id ||
+          p.acudido2_id === est.id ||
+          p.acudido3_id === est.id ||
+          p.acudido4_id === est.id
         );
       });
 
@@ -545,7 +545,7 @@ export default function ConsultaDetalle() {
         );
         return {
           padre_id: p.padre_id,
-          padre_nombre: p.padre_nombre || `Acudiente ${p.padre_id}`,
+          acudiente_nombre: p.acudiente_nombre || `Acudiente ${p.padre_id}`,
           padre_telefono: p.numero_de_telefono,
           opcion: resp?.opcion_seleccionada || null,
           firma_url: resp?.firma_url || null,
@@ -727,7 +727,7 @@ export default function ConsultaDetalle() {
         est.salon || "",
       ];
       for (let i = 0; i < maxAcudientes; i++) {
-        rowData.push(ac[i]?.padre_nombre || "");
+        rowData.push(ac[i]?.acudiente_nombre || "");
         rowData.push(ac[i]?.opcion || (ac[i] ? "Sin respuesta" : ""));
       }
       const row = sheet.addRow(rowData);
@@ -1132,7 +1132,7 @@ export default function ConsultaDetalle() {
                         <td key={idx} className={`p-2 border-r border-border last:border-r-0 ${ac ? "" : "text-center"}`}>
                           {ac ? (
                             <div className="space-y-1">
-                              <div className="text-sm font-semibold text-foreground truncate max-w-[180px]" title={ac.padre_nombre}>{ac.padre_nombre}</div>
+                              <div className="text-sm font-semibold text-foreground truncate max-w-[180px]" title={ac.acudiente_nombre}>{ac.acudiente_nombre}</div>
                               {(() => {
                                 const kids = ac.padre_id ? kidsDePadre(ac.padre_id) : [];
                                 if (kids.length <= 1) return null; // si solo tiene 1 hijo (el del row), no agrega valor
@@ -1279,7 +1279,7 @@ export default function ConsultaDetalle() {
                   {respuestasEstudiantes.map((r) => (
                     <tr key={`est-${r.padre_id}-${r.estudiante_id}`} className="border-t hover:bg-accent/30">
                       <td className="p-2 font-medium border-r border-border">
-                        {(r.estudiante_apellidos || "") + " " + (r.estudiante_nombre || "") || r.padre_nombre || `Estudiante ${r.padre_id}`}
+                        {(r.estudiante_apellidos || "") + " " + (r.estudiante_nombre || "") || r.acudiente_nombre || `Estudiante ${r.padre_id}`}
                       </td>
                       <td className="p-2 text-muted-foreground border-r border-border text-center whitespace-nowrap">
                         {r.estudiante_grado || "—"} {r.estudiante_salon || ""}

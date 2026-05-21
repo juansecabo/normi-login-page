@@ -136,10 +136,10 @@ export default function MisConsultas() {
 
   return (
     <div className="min-h-screen bg-background">
-      <HeaderNormi backLink="/dashboard-padre" />
+      <HeaderNormi backLink="/dashboard-acudiente" />
       <div className="max-w-3xl mx-auto p-4 sm:p-6">
         <div className="flex items-center gap-3 mb-4">
-          <Button onClick={() => navigate("/dashboard-padre")} variant="outline" size="sm">
+          <Button onClick={() => navigate("/dashboard-acudiente")} variant="outline" size="sm">
             ← Volver
           </Button>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">

@@ -99,36 +99,36 @@ interface Perfil {
   estudiante_nivel: string | null;
   estudiante_grado: string | null;
   estudiante_salon: string | null;
-  padre_nombre: string | null;
+  acudiente_nombre: string | null;
   /** Nombres y apellidos por separado para la tabla. */
-  padre_nombres_only?: string;
+  acudiente_nombres_only?: string;
   padre_apellidos_only?: string;
   padre_id: string | null;
-  padre_numero_de_estudiantes: string | null;
-  padre_estudiante1_id: number | null;
-  padre_estudiante1_nombre: string | null;
-  padre_estudiante1_apellidos: string | null;
-  padre_estudiante1_nivel: string | null;
-  padre_estudiante1_grado: string | null;
-  padre_estudiante1_salon: string | null;
-  padre_estudiante2_id: number | null;
-  padre_estudiante2_nombre: string | null;
-  padre_estudiante2_apellidos: string | null;
-  padre_estudiante2_nivel: string | null;
-  padre_estudiante2_grado: string | null;
-  padre_estudiante2_salon: string | null;
-  padre_estudiante3_id: number | null;
-  padre_estudiante3_nombre: string | null;
-  padre_estudiante3_apellidos: string | null;
-  padre_estudiante3_nivel: string | null;
-  padre_estudiante3_grado: string | null;
-  padre_estudiante3_salon: string | null;
-  padre_estudiante4_id: number | null;
-  padre_estudiante4_nombre: string | null;
-  padre_estudiante4_apellidos: string | null;
-  padre_estudiante4_nivel: string | null;
-  padre_estudiante4_grado: string | null;
-  padre_estudiante4_salon: string | null;
+  numero_de_acudidos: string | null;
+  acudido1_id: number | null;
+  acudido1_nombre: string | null;
+  acudido1_apellidos: string | null;
+  acudido1_nivel: string | null;
+  acudido1_grado: string | null;
+  acudido1_salon: string | null;
+  acudido2_id: number | null;
+  acudido2_nombre: string | null;
+  acudido2_apellidos: string | null;
+  acudido2_nivel: string | null;
+  acudido2_grado: string | null;
+  acudido2_salon: string | null;
+  acudido3_id: number | null;
+  acudido3_nombre: string | null;
+  acudido3_apellidos: string | null;
+  acudido3_nivel: string | null;
+  acudido3_grado: string | null;
+  acudido3_salon: string | null;
+  acudido4_id: number | null;
+  acudido4_nombre: string | null;
+  acudido4_apellidos: string | null;
+  acudido4_nivel: string | null;
+  acudido4_grado: string | null;
+  acudido4_salon: string | null;
   contrasena: string | null;
 }
 
@@ -521,11 +521,11 @@ const PanelControl = () => {
           estudiante_nivel: null,
           estudiante_grado: null,
           estudiante_salon: null,
-          padre_nombre: `${acuUser?.nombres || ""} ${acuUser?.apellidos || ""}`.trim(),
-          padre_nombres_only: acuUser?.nombres || "",
+          acudiente_nombre: `${acuUser?.nombres || ""} ${acuUser?.apellidos || ""}`.trim(),
+          acudiente_nombres_only: acuUser?.nombres || "",
           padre_apellidos_only: acuUser?.apellidos || "",
           padre_id: String(a.id),
-          padre_numero_de_estudiantes: null,
+          numero_de_acudidos: null,
           contrasena: acuUser?.contrasena || null,
         };
         // Mapear los 4 slots de hijos con sufijo secuencial 1..N.
@@ -535,30 +535,30 @@ const PanelControl = () => {
           if (!hijoId) continue;
           const hijoUser = usrMap.get(String(hijoId));
           const hijoEst = estMap.get(String(hijoId));
-          perfil[`padre_estudiante${pos}_id`] = Number(hijoId);
-          perfil[`padre_estudiante${pos}_nombre`] = hijoUser?.nombres || null;
-          perfil[`padre_estudiante${pos}_apellidos`] = hijoUser?.apellidos || null;
-          perfil[`padre_estudiante${pos}_nivel`] = hijoEst?.nivel || null;
-          perfil[`padre_estudiante${pos}_grado`] = hijoEst?.grado || null;
-          perfil[`padre_estudiante${pos}_salon`] = hijoEst?.salon || null;
+          perfil[`acudido${pos}_id`] = Number(hijoId);
+          perfil[`acudido${pos}_nombre`] = hijoUser?.nombres || null;
+          perfil[`acudido${pos}_apellidos`] = hijoUser?.apellidos || null;
+          perfil[`acudido${pos}_nivel`] = hijoEst?.nivel || null;
+          perfil[`acudido${pos}_grado`] = hijoEst?.grado || null;
+          perfil[`acudido${pos}_salon`] = hijoEst?.salon || null;
           pos++;
         }
         // Llenar slots restantes con nulls.
         for (let i = pos; i <= 4; i++) {
-          perfil[`padre_estudiante${i}_id`] = null;
-          perfil[`padre_estudiante${i}_nombre`] = null;
-          perfil[`padre_estudiante${i}_apellidos`] = null;
-          perfil[`padre_estudiante${i}_nivel`] = null;
-          perfil[`padre_estudiante${i}_grado`] = null;
-          perfil[`padre_estudiante${i}_salon`] = null;
+          perfil[`acudido${i}_id`] = null;
+          perfil[`acudido${i}_nombre`] = null;
+          perfil[`acudido${i}_apellidos`] = null;
+          perfil[`acudido${i}_nivel`] = null;
+          perfil[`acudido${i}_grado`] = null;
+          perfil[`acudido${i}_salon`] = null;
         }
         return perfil as Perfil;
       });
 
       // Sort por apellidos+nombres del acudiente (locale español).
       perfilesConstruidos.sort((a: any, b: any) => {
-        const sa = `${a.padre_apellidos_only || ""} ${a.padre_nombres_only || ""}`.toLowerCase();
-        const sb = `${b.padre_apellidos_only || ""} ${b.padre_nombres_only || ""}`.toLowerCase();
+        const sa = `${a.padre_apellidos_only || ""} ${a.acudiente_nombres_only || ""}`.toLowerCase();
+        const sb = `${b.padre_apellidos_only || ""} ${b.acudiente_nombres_only || ""}`.toLowerCase();
         return sa.localeCompare(sb, "es");
       });
 
@@ -1106,29 +1106,29 @@ const PanelControl = () => {
       setPerfEstApellidos(p.estudiante_apellidos || "");
       setPerfEstGrado(p.estudiante_grado || "");
       setPerfEstSalon(p.estudiante_salon || "");
-      setPerfPadreNombre(p.padre_nombre || "");
+      setPerfPadreNombre(p.acudiente_nombre || "");
       setPerfPadreId(p.padre_id || "");
-      setPerfNumEst(p.padre_numero_de_estudiantes || "1 (uno)");
-      setPerfHijo1Id(p.padre_estudiante1_id != null ? String(p.padre_estudiante1_id) : "");
-      setPerfHijo1Nombre(p.padre_estudiante1_nombre || "");
-      setPerfHijo1Apellidos(p.padre_estudiante1_apellidos || "");
-      setPerfHijo1Grado(p.padre_estudiante1_grado || "");
-      setPerfHijo1Salon(p.padre_estudiante1_salon || "");
-      setPerfHijo2Id(p.padre_estudiante2_id != null ? String(p.padre_estudiante2_id) : "");
-      setPerfHijo2Nombre(p.padre_estudiante2_nombre || "");
-      setPerfHijo2Apellidos(p.padre_estudiante2_apellidos || "");
-      setPerfHijo2Grado(p.padre_estudiante2_grado || "");
-      setPerfHijo2Salon(p.padre_estudiante2_salon || "");
-      setPerfHijo3Id(p.padre_estudiante3_id != null ? String(p.padre_estudiante3_id) : "");
-      setPerfHijo3Nombre(p.padre_estudiante3_nombre || "");
-      setPerfHijo3Apellidos(p.padre_estudiante3_apellidos || "");
-      setPerfHijo3Grado(p.padre_estudiante3_grado || "");
-      setPerfHijo3Salon(p.padre_estudiante3_salon || "");
-      setPerfHijo4Id(p.padre_estudiante4_id != null ? String(p.padre_estudiante4_id) : "");
-      setPerfHijo4Nombre(p.padre_estudiante4_nombre || "");
-      setPerfHijo4Apellidos(p.padre_estudiante4_apellidos || "");
-      setPerfHijo4Grado(p.padre_estudiante4_grado || "");
-      setPerfHijo4Salon(p.padre_estudiante4_salon || "");
+      setPerfNumEst(p.numero_de_acudidos || "1 (uno)");
+      setPerfHijo1Id(p.acudido1_id != null ? String(p.acudido1_id) : "");
+      setPerfHijo1Nombre(p.acudido1_nombre || "");
+      setPerfHijo1Apellidos(p.acudido1_apellidos || "");
+      setPerfHijo1Grado(p.acudido1_grado || "");
+      setPerfHijo1Salon(p.acudido1_salon || "");
+      setPerfHijo2Id(p.acudido2_id != null ? String(p.acudido2_id) : "");
+      setPerfHijo2Nombre(p.acudido2_nombre || "");
+      setPerfHijo2Apellidos(p.acudido2_apellidos || "");
+      setPerfHijo2Grado(p.acudido2_grado || "");
+      setPerfHijo2Salon(p.acudido2_salon || "");
+      setPerfHijo3Id(p.acudido3_id != null ? String(p.acudido3_id) : "");
+      setPerfHijo3Nombre(p.acudido3_nombre || "");
+      setPerfHijo3Apellidos(p.acudido3_apellidos || "");
+      setPerfHijo3Grado(p.acudido3_grado || "");
+      setPerfHijo3Salon(p.acudido3_salon || "");
+      setPerfHijo4Id(p.acudido4_id != null ? String(p.acudido4_id) : "");
+      setPerfHijo4Nombre(p.acudido4_nombre || "");
+      setPerfHijo4Apellidos(p.acudido4_apellidos || "");
+      setPerfHijo4Grado(p.acudido4_grado || "");
+      setPerfHijo4Salon(p.acudido4_salon || "");
       setPerfContrasena(p.contrasena || "");
       setPerfTelefono(p.numero_de_telefono || "");
     } else {
@@ -1179,27 +1179,27 @@ const PanelControl = () => {
       payload.estudiante_grado = perfEstGrado || null;
       payload.estudiante_salon = perfEstSalon || null;
       // Clear padre fields
-      payload.padre_nombre = null;
+      payload.acudiente_nombre = null;
       payload.padre_id = null;
-      payload.padre_numero_de_estudiantes = null;
-      payload.padre_estudiante1_id = null;
-      payload.padre_estudiante1_nombre = null;
-      payload.padre_estudiante1_apellidos = null;
-      payload.padre_estudiante1_nivel = null;
-      payload.padre_estudiante1_grado = null;
-      payload.padre_estudiante1_salon = null;
-      payload.padre_estudiante2_id = null;
-      payload.padre_estudiante2_nombre = null;
-      payload.padre_estudiante2_apellidos = null;
-      payload.padre_estudiante2_nivel = null;
-      payload.padre_estudiante2_grado = null;
-      payload.padre_estudiante2_salon = null;
-      payload.padre_estudiante3_id = null;
-      payload.padre_estudiante3_nombre = null;
-      payload.padre_estudiante3_apellidos = null;
-      payload.padre_estudiante3_nivel = null;
-      payload.padre_estudiante3_grado = null;
-      payload.padre_estudiante3_salon = null;
+      payload.numero_de_acudidos = null;
+      payload.acudido1_id = null;
+      payload.acudido1_nombre = null;
+      payload.acudido1_apellidos = null;
+      payload.acudido1_nivel = null;
+      payload.acudido1_grado = null;
+      payload.acudido1_salon = null;
+      payload.acudido2_id = null;
+      payload.acudido2_nombre = null;
+      payload.acudido2_apellidos = null;
+      payload.acudido2_nivel = null;
+      payload.acudido2_grado = null;
+      payload.acudido2_salon = null;
+      payload.acudido3_id = null;
+      payload.acudido3_nombre = null;
+      payload.acudido3_apellidos = null;
+      payload.acudido3_nivel = null;
+      payload.acudido3_grado = null;
+      payload.acudido3_salon = null;
     } else {
       if (!perfPadreNombre) {
         toast({ title: "Campos requeridos", description: "Completa el nombre del padre", variant: "destructive" });
@@ -1213,68 +1213,68 @@ const PanelControl = () => {
       payload.estudiante_nivel = null;
       payload.estudiante_grado = null;
       payload.estudiante_salon = null;
-      payload.padre_nombre = perfPadreNombre.trim();
+      payload.acudiente_nombre = perfPadreNombre.trim();
       payload.padre_id = perfPadreId || null;
-      payload.padre_numero_de_estudiantes = perfNumEst;
+      payload.numero_de_acudidos = perfNumEst;
       // Hijo 1
       const n1 = getNivelFromGrado(perfHijo1Grado);
-      payload.padre_estudiante1_id = perfHijo1Id ? Number(perfHijo1Id) : null;
-      payload.padre_estudiante1_nombre = perfHijo1Nombre || null;
-      payload.padre_estudiante1_apellidos = perfHijo1Apellidos || null;
-      payload.padre_estudiante1_nivel = n1;
-      payload.padre_estudiante1_grado = perfHijo1Grado || null;
-      payload.padre_estudiante1_salon = perfHijo1Salon || null;
+      payload.acudido1_id = perfHijo1Id ? Number(perfHijo1Id) : null;
+      payload.acudido1_nombre = perfHijo1Nombre || null;
+      payload.acudido1_apellidos = perfHijo1Apellidos || null;
+      payload.acudido1_nivel = n1;
+      payload.acudido1_grado = perfHijo1Grado || null;
+      payload.acudido1_salon = perfHijo1Salon || null;
       // Hijo 2
       const numEst = parseInt(perfNumEst);
       if (numEst >= 2) {
         const n2 = getNivelFromGrado(perfHijo2Grado);
-        payload.padre_estudiante2_id = perfHijo2Id ? Number(perfHijo2Id) : null;
-        payload.padre_estudiante2_nombre = perfHijo2Nombre || null;
-        payload.padre_estudiante2_apellidos = perfHijo2Apellidos || null;
-        payload.padre_estudiante2_nivel = n2;
-        payload.padre_estudiante2_grado = perfHijo2Grado || null;
-        payload.padre_estudiante2_salon = perfHijo2Salon || null;
+        payload.acudido2_id = perfHijo2Id ? Number(perfHijo2Id) : null;
+        payload.acudido2_nombre = perfHijo2Nombre || null;
+        payload.acudido2_apellidos = perfHijo2Apellidos || null;
+        payload.acudido2_nivel = n2;
+        payload.acudido2_grado = perfHijo2Grado || null;
+        payload.acudido2_salon = perfHijo2Salon || null;
       } else {
-        payload.padre_estudiante2_id = null;
-        payload.padre_estudiante2_nombre = null;
-        payload.padre_estudiante2_apellidos = null;
-        payload.padre_estudiante2_nivel = null;
-        payload.padre_estudiante2_grado = null;
-        payload.padre_estudiante2_salon = null;
+        payload.acudido2_id = null;
+        payload.acudido2_nombre = null;
+        payload.acudido2_apellidos = null;
+        payload.acudido2_nivel = null;
+        payload.acudido2_grado = null;
+        payload.acudido2_salon = null;
       }
       // Hijo 3
       if (numEst >= 3) {
         const n3 = getNivelFromGrado(perfHijo3Grado);
-        payload.padre_estudiante3_id = perfHijo3Id ? Number(perfHijo3Id) : null;
-        payload.padre_estudiante3_nombre = perfHijo3Nombre || null;
-        payload.padre_estudiante3_apellidos = perfHijo3Apellidos || null;
-        payload.padre_estudiante3_nivel = n3;
-        payload.padre_estudiante3_grado = perfHijo3Grado || null;
-        payload.padre_estudiante3_salon = perfHijo3Salon || null;
+        payload.acudido3_id = perfHijo3Id ? Number(perfHijo3Id) : null;
+        payload.acudido3_nombre = perfHijo3Nombre || null;
+        payload.acudido3_apellidos = perfHijo3Apellidos || null;
+        payload.acudido3_nivel = n3;
+        payload.acudido3_grado = perfHijo3Grado || null;
+        payload.acudido3_salon = perfHijo3Salon || null;
       } else {
-        payload.padre_estudiante3_id = null;
-        payload.padre_estudiante3_nombre = null;
-        payload.padre_estudiante3_apellidos = null;
-        payload.padre_estudiante3_nivel = null;
-        payload.padre_estudiante3_grado = null;
-        payload.padre_estudiante3_salon = null;
+        payload.acudido3_id = null;
+        payload.acudido3_nombre = null;
+        payload.acudido3_apellidos = null;
+        payload.acudido3_nivel = null;
+        payload.acudido3_grado = null;
+        payload.acudido3_salon = null;
       }
       // Hijo 4
       if (numEst >= 4) {
         const n4 = getNivelFromGrado(perfHijo4Grado);
-        payload.padre_estudiante4_id = perfHijo4Id ? Number(perfHijo4Id) : null;
-        payload.padre_estudiante4_nombre = perfHijo4Nombre || null;
-        payload.padre_estudiante4_apellidos = perfHijo4Apellidos || null;
-        payload.padre_estudiante4_nivel = n4;
-        payload.padre_estudiante4_grado = perfHijo4Grado || null;
-        payload.padre_estudiante4_salon = perfHijo4Salon || null;
+        payload.acudido4_id = perfHijo4Id ? Number(perfHijo4Id) : null;
+        payload.acudido4_nombre = perfHijo4Nombre || null;
+        payload.acudido4_apellidos = perfHijo4Apellidos || null;
+        payload.acudido4_nivel = n4;
+        payload.acudido4_grado = perfHijo4Grado || null;
+        payload.acudido4_salon = perfHijo4Salon || null;
       } else {
-        payload.padre_estudiante4_id = null;
-        payload.padre_estudiante4_nombre = null;
-        payload.padre_estudiante4_apellidos = null;
-        payload.padre_estudiante4_nivel = null;
-        payload.padre_estudiante4_grado = null;
-        payload.padre_estudiante4_salon = null;
+        payload.acudido4_id = null;
+        payload.acudido4_nombre = null;
+        payload.acudido4_apellidos = null;
+        payload.acudido4_nivel = null;
+        payload.acudido4_grado = null;
+        payload.acudido4_salon = null;
       }
     }
 
@@ -1378,7 +1378,7 @@ const PanelControl = () => {
     if (p.perfil === "Estudiante") {
       return `${p.estudiante_apellidos || ""} ${p.estudiante_nombre || ""}`.trim() || "Sin nombre";
     }
-    return p.padre_nombre || "Sin nombre";
+    return p.acudiente_nombre || "Sin nombre";
   };
 
   const getPerfilDisplayCode = (p: Perfil) => {
@@ -1808,13 +1808,13 @@ const PanelControl = () => {
                           <TableRow key={p.padre_id || p.numero_de_telefono}>
                             <TableCell className="font-mono">{p.padre_id || "—"}</TableCell>
                             <TableCell>{p.padre_apellidos_only || "—"}</TableCell>
-                            <TableCell>{p.padre_nombres_only || "—"}</TableCell>
+                            <TableCell>{p.acudiente_nombres_only || "—"}</TableCell>
                             <TableCell className="text-sm text-muted-foreground">
                               {[
-                                p.padre_estudiante1_grado && `${p.padre_estudiante1_grado} ${p.padre_estudiante1_salon || ""}`.trim(),
-                                p.padre_estudiante2_grado && `${p.padre_estudiante2_grado} ${p.padre_estudiante2_salon || ""}`.trim(),
-                                p.padre_estudiante3_grado && `${p.padre_estudiante3_grado} ${p.padre_estudiante3_salon || ""}`.trim(),
-                                p.padre_estudiante4_grado && `${p.padre_estudiante4_grado} ${p.padre_estudiante4_salon || ""}`.trim(),
+                                p.acudido1_grado && `${p.acudido1_grado} ${p.acudido1_salon || ""}`.trim(),
+                                p.acudido2_grado && `${p.acudido2_grado} ${p.acudido2_salon || ""}`.trim(),
+                                p.acudido3_grado && `${p.acudido3_grado} ${p.acudido3_salon || ""}`.trim(),
+                                p.acudido4_grado && `${p.acudido4_grado} ${p.acudido4_salon || ""}`.trim(),
                               ].filter(Boolean).map((g, i) => <div key={i}>{g}</div>) || <span>—</span>}
                             </TableCell>
                             <TableCell className="font-mono text-xs">{p.numero_de_telefono || "—"}</TableCell>

@@ -48,7 +48,7 @@ const Dashboard = () => {
       if (isAdmin()) navigate("/dashboard-admin", { replace: true });
       else if (isRectorOrCoordinador()) navigate("/dashboard-rector", { replace: true });
       else if (isEstudiante()) navigate("/dashboard-estudiante", { replace: true });
-      else if (isPadreDeFamilia()) navigate("/dashboard-padre", { replace: true });
+      else if (isPadreDeFamilia()) navigate("/dashboard-acudiente", { replace: true });
       else navigate("/", { replace: true });
       return;
     }
