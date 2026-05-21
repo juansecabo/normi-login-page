@@ -77,7 +77,7 @@ async function request<T = unknown>(
 export type AuthRol =
   | 'Administrador' | 'Rector' | 'Coordinador(a)' | 'Administrativo(a)'
   | 'Secretaria General' | 'Orientador(a) Escolar' | 'Profesor(a)'
-  | 'Estudiante' | 'Acudiente' | 'Padre de familia';
+  | 'Estudiante' | 'Acudiente';
 
 export interface AcudidoData {
   id: string;

@@ -27,7 +27,7 @@ const computeBackLinkFromSession = (): string => {
   ) {
     return "/dashboard-rector";
   }
-  if (cargo === "Acudiente" || cargo === "Padre de familia") return "/dashboard-acudiente";
+  if (cargo === "Acudiente") return "/dashboard-acudiente";
   if (cargo === "Estudiante") return "/dashboard-estudiante";
   return "/dashboard";
 };

@@ -1294,7 +1294,7 @@ const PanelControl = () => {
           if (perfContrasena) usuariosPayload.contrasena = perfContrasena;
           await supabase.from("Usuarios").upsert(usuariosPayload, { onConflict: "id" });
           // El teléfono ya quedó en Usuarios (Fase 10.E.15). Estudiantes ya no tiene esa columna.
-        } else if ((perfTipo === "Acudiente" || perfTipo === "Padre de familia") && perfPadreId) {
+        } else if ((perfTipo === "Acudiente") && perfPadreId) {
           // Separar nombres y apellidos heurísticamente (últimas 2 palabras = apellidos)
           const words = perfPadreNombre.trim().split(/\s+/);
           const nombres = words.length <= 2 ? words[0] : words.slice(0, -2).join(" ");
@@ -1354,7 +1354,7 @@ const PanelControl = () => {
         // Borrar la fila de Usuarios (la persona deja de poder loguearse) — el teléfono
         // vive en Usuarios desde la Fase 10.E.15.
         await supabase.from("Usuarios").delete().eq("id", String(showDeletePerf.estudiante_id));
-      } else if ((showDeletePerf.perfil === "Acudiente" || showDeletePerf.perfil === "Padre de familia") && showDeletePerf.padre_id) {
+      } else if ((showDeletePerf.perfil === "Acudiente") && showDeletePerf.padre_id) {
         // Para acudientes: borrar la fila en Acudientes y de Usuarios
         await supabase.from("Acudientes").delete().eq("id", showDeletePerf.padre_id);
         await supabase.from("Usuarios").delete().eq("id", showDeletePerf.padre_id);

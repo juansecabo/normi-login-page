@@ -160,7 +160,7 @@ export default function Consultas() {
       return;
     }
     const session = getSession();
-    if (!session.cargo || session.cargo === "Acudiente" || session.cargo === "Padre de familia" || session.cargo === "Estudiante") {
+    if (!session.cargo || session.cargo === "Acudiente" || session.cargo === "Estudiante") {
       navigate("/");
       return;
     }

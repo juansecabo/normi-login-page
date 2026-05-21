@@ -31,7 +31,6 @@ const BuzonSugerencias = () => {
         contacto = `${session.grado || ""}-${session.salon || ""}`;
         break;
       case "Acudiente":
-      case "Padre de familia":
         rol = "Acudiente";
         if (session.acudidos && session.acudidos.length > 0) {
           contacto = session.acudidos

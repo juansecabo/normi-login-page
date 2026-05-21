@@ -201,7 +201,7 @@ const RegistroNormi = () => {
   const padreInfoPorId = useMemo(() => {
     const map = new Map<number, ParentInfo[]>();
     for (const p of perfiles) {
-      if (p.perfil === "Acudiente" || p.perfil === "Padre de familia") {
+      if (p.perfil === "Acudiente") {
         const info: ParentInfo = {
           acudiente_nombre: p.acudiente_nombre || "Sin nombre",
           telefono: p.numero_de_telefono || "Sin teléfono",

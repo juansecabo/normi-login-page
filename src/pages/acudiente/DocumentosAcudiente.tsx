@@ -44,7 +44,7 @@ const DocumentosAcudiente = () => {
           .from('Comunicados')
           .select('*')
           .not('archivo_url', 'is', null)
-          .overlaps('perfil', ['Acudientes', 'Padres de familia'])
+          .overlaps('perfil', ['Acudientes'])
           .order('fecha', { ascending: false });
 
         if (!error && data) {
@@ -84,7 +84,7 @@ const DocumentosAcudiente = () => {
             if (!noHayFiltros) return false;
 
             const destLower = (c.destinatarios || "").trim().toLowerCase();
-            if (destLower === "padres de familia") return true;
+            if (destLower === "acudientes") return true;
             const destNorm = norm(c.destinatarios || "");
             return acudidos.some(h => {
               if (!h.nombre || !h.apellidos) return false;

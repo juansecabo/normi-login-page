@@ -70,7 +70,7 @@ const DashboardAcudiente = () => {
           supabase
             .from('Comunicados')
             .select('id, nivel, grado, salon, id_estudiantil, archivo_url, destinatarios, id_destinatarios')
-            .overlaps('perfil', ['Acudientes', 'Padres de familia'])
+            .overlaps('perfil', ['Acudientes'])
             .gt('id', minComLastSeen),
           ...acudidosData.flatMap((acudido, i) => [
             supabase
@@ -127,7 +127,7 @@ const DashboardAcudiente = () => {
             if (!noHayFiltros) return false;
 
             const destLower = (c.destinatarios || "").trim().toLowerCase();
-            if (destLower === "padres de familia") return true;
+            if (destLower === "acudientes") return true;
             const destNorm = norm(c.destinatarios || "");
             return acudidosData.some(h => {
               if (!h.nombre || !h.apellidos) return false;

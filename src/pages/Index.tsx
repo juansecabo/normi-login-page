@@ -40,7 +40,7 @@ const Index = () => {
       navigate(getPostLoginRoute("/dashboard-estudiante"));
       return;
     }
-    if (user.rol === 'Acudiente' || user.rol === 'Padre de familia') {
+    if (user.rol === 'Acudiente') {
       saveSession(
         user.id, user.nombres, user.apellidos, 'Acudiente',
         null, null, null,
@@ -96,7 +96,7 @@ const Index = () => {
         navigate(getPostLoginRoute("/dashboard-rector"), { replace: true });
       } else if (session.cargo === 'Estudiante') {
         navigate(getPostLoginRoute("/dashboard-estudiante"), { replace: true });
-      } else if (session.cargo === 'Acudiente' || session.cargo === 'Padre de familia') {
+      } else if (session.cargo === 'Acudiente') {
         navigate(getPostLoginRoute("/dashboard-acudiente"), { replace: true });
       } else {
         navigate(getPostLoginRoute("/dashboard"), { replace: true });
