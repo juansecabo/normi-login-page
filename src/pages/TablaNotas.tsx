@@ -40,9 +40,10 @@ import NotaCelda from "@/components/notas/NotaCelda";
 import FinalPeriodoCelda from "@/components/notas/FinalPeriodoCelda";
 import ComentarioModal from "@/components/notas/ComentarioModal";
 import NotificacionModal, { TipoNotificacion } from "@/components/notas/NotificacionModal";
+import { apiRequest } from "@/lib/apiClient";
 
-// Configuración del webhook de n8n
-const N8N_WEBHOOK_URL = 'https://n8n.notasnormi.com/webhook/notificar-notas';
+// Notificación de notas migrada al server (multi-tenant via JWT).
+// Antes apuntaba a https://n8n.notasnormi.com/webhook/notificar-notas.
 
 interface Estudiante {
   id: string;
@@ -2185,32 +2186,19 @@ const TablaNotas = () => {
     setNotificacionModalOpen(true);
   };
 
-  // Función para enviar datos al webhook de n8n
+  // Función para enviar datos al server (multi-tenant via JWT).
   const enviarNotificacionN8n = async (payload: any) => {
     try {
-      console.log('📤 Enviando a n8n:', payload);
-      
-      const response = await fetch(N8N_WEBHOOK_URL, {
+      const data = await apiRequest('/api/notificaciones/notas-actualizadas', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Error HTTP ${response.status}: ${errorText}`);
-      }
-
-      const resultado = await response.json();
-      console.log('✅ Respuesta de n8n:', resultado);
-      return { success: true, data: resultado };
+      return { success: true, data };
     } catch (error) {
-      console.error('❌ Error:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Error desconocido' 
+      console.error('Notificación notas error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error desconocido',
       };
     }
   };
