@@ -28,16 +28,16 @@ const SolicitudEntrevistaAcudiente = () => {
   useEffect(() => {
     const session = getSession();
     if (!session.id || !isPadreDeFamilia()) { navigate("/"); return; }
-    setHijos(session.hijos || []);
+    setHijos(session.acudidos || []);
 
-    const hijosNombres = (session.hijos || []).map(h => h.nombre);
-    const hijosApellidos = (session.hijos || []).map(h => h.apellidos);
+    const hijosNombres = (session.acudidos || []).map(h => h.nombre);
+    const hijosApellidos = (session.acudidos || []).map(h => h.apellidos);
 
     // Fetch solicitudes for all children of this parent
     supabase.from("Solicitudes_Entrevista").select("*").order("fecha_entrevista", { ascending: true })
       .then(({ data }) => {
         const filtradas = (data || []).filter(s =>
-          (session.hijos || []).some(h =>
+          (session.acudidos || []).some(h =>
             s.estudiante_nombre === h.nombre && s.estudiante_apellidos === h.apellidos
           )
         );

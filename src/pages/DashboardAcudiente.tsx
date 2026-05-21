@@ -43,16 +43,16 @@ const DashboardAcudiente = () => {
     }
 
     setNombres(session.nombres || "");
-    setHijos(session.hijos || []);
+    setHijos(session.acudidos || []);
 
     // Si solo tiene un hijo, auto-seleccionar en localStorage para las páginas internas
-    if (session.hijos && session.hijos.length === 1) {
-      localStorage.setItem("hijoSeleccionado", JSON.stringify(session.hijos[0]));
+    if (session.acudidos && session.acudidos.length === 1) {
+      localStorage.setItem("acudidoSeleccionado", JSON.stringify(session.acudidos[0]));
     }
 
     const fetchBadges = async () => {
       const id = session.id!;
-      const hijosData = session.hijos || [];
+      const hijosData = session.acudidos || [];
       const b = { notas: 0, actividades: 0, comunicados: 0, documentos: 0 };
 
       try {

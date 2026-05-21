@@ -33,8 +33,8 @@ const BuzonSugerencias = () => {
       case "Acudiente":
       case "Padre de familia":
         rol = "Acudiente";
-        if (session.hijos && session.hijos.length > 0) {
-          contacto = session.hijos
+        if (session.acudidos && session.acudidos.length > 0) {
+          contacto = session.acudidos
             .map((h) => `${h.nombre} ${h.apellidos} (${h.grado} ${h.salon})`)
             .join(", ");
         }

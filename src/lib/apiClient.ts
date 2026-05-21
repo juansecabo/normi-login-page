@@ -79,7 +79,7 @@ export type AuthRol =
   | 'Secretaria General' | 'Orientador(a) Escolar' | 'Profesor(a)'
   | 'Estudiante' | 'Acudiente' | 'Padre de familia';
 
-export interface HijoData {
+export interface AcudidoData {
   id: string;
   nombre: string;
   apellidos: string;
@@ -87,6 +87,8 @@ export interface HijoData {
   grado: string;
   salon: string;
 }
+/** @deprecated Alias legacy. Usar AcudidoData. */
+export type HijoData = AcudidoData;
 
 export interface ColegioInfo {
   id: string;
@@ -104,7 +106,7 @@ export interface AuthUser {
   nivel?: string;
   grado?: string;
   salon?: string;
-  hijos?: HijoData[];
+  acudidos?: AcudidoData[];
   colegio: ColegioInfo;
 }
 

@@ -7,7 +7,7 @@ import cailicoLogo from "@/assets/cailico-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { saveSession, getSession, HijoData } from "@/hooks/useSession";
+import { saveSession, getSession, AcudidoData } from "@/hooks/useSession";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import { apiClient, ApiError, isMultiMembership, type AuthUser, type MembershipChoice } from "@/lib/apiClient";
 
@@ -44,7 +44,7 @@ const Index = () => {
       saveSession(
         user.id, user.nombres, user.apellidos, 'Acudiente',
         null, null, null,
-        (user.hijos || []) as HijoData[],
+        (user.acudidos || []) as AcudidoData[],
       );
       navigate(getPostLoginRoute("/dashboard-acudiente"));
       return;

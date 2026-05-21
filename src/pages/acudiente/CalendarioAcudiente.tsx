@@ -91,7 +91,7 @@ const CalendarioAcudiente = () => {
       return;
     }
 
-    const hijosData = session.hijos || [];
+    const hijosData = session.acudidos || [];
     setHijos(hijosData);
 
     const cargar = async () => {

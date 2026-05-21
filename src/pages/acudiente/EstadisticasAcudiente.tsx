@@ -22,7 +22,7 @@ const EstadisticasAcudiente = () => {
       return;
     }
 
-    const hijosData = session.hijos || [];
+    const hijosData = session.acudidos || [];
     setHijos(hijosData);
 
     if (hijosData.length === 1) {

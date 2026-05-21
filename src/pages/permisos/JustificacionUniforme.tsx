@@ -55,7 +55,7 @@ const JustificacionUniforme = () => {
     setNombresAcudiente(session.nombres || "");
     setApellidosAcudiente(session.apellidos || "");
     setIdAcudiente(session.id);
-    setHijos(session.hijos || []);
+    setHijos(session.acudidos || []);
     // Tel del acudiente logueado vive en Usuarios (fuente única).
     supabase.from("Usuarios").select("numero_de_telefono").eq("id", session.id).maybeSingle()
       .then(({ data }) => { if (data?.numero_de_telefono) setTelefonoAcudiente(data.numero_de_telefono); });

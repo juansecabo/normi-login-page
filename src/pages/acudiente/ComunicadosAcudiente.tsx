@@ -36,7 +36,7 @@ const ComunicadosAcudiente = () => {
       return;
     }
 
-    const hijos = session.hijos || [];
+    const hijos = session.acudidos || [];
 
     const cargar = async () => {
       try {

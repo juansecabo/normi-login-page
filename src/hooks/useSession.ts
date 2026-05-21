@@ -18,7 +18,7 @@ const getCookieOptions = () => {
   };
 };
 
-export interface HijoData {
+export interface AcudidoData {
   id: string;
   nombre: string;
   apellidos: string;
@@ -26,6 +26,8 @@ export interface HijoData {
   grado: string;
   salon: string;
 }
+/** @deprecated Alias legacy. Usar AcudidoData. */
+export type HijoData = AcudidoData;
 
 export interface SessionData {
   id: string | null;
@@ -35,7 +37,7 @@ export interface SessionData {
   nivel: string | null;
   grado: string | null;
   salon: string | null;
-  hijos: HijoData[] | null;
+  acudidos: AcudidoData[] | null;
 }
 
 // Cookie de sesión (sin expires → muere cuando el navegador se cierra)
@@ -49,7 +51,7 @@ export const saveSession = (
   nivel?: string | null,
   grado?: string | null,
   salon?: string | null,
-  hijos?: HijoData[] | null
+  acudidos?: AcudidoData[] | null
 ) => {
   const cookieOptions = getCookieOptions();
 
@@ -68,8 +70,13 @@ export const saveSession = (
   if (salon) localStorage.setItem("salon", salon);
   else localStorage.removeItem("salon");
 
-  if (hijos && hijos.length > 0) localStorage.setItem("hijos", JSON.stringify(hijos));
-  else localStorage.removeItem("hijos");
+  if (acudidos && acudidos.length > 0) {
+    localStorage.setItem("acudidos", JSON.stringify(acudidos));
+  } else {
+    localStorage.removeItem("acudidos");
+  }
+  // Limpiar clave legacy si existía.
+  localStorage.removeItem("hijos");
 
   // Cookie de sesión sin expires → se borra al cerrar el navegador
   Cookies.set(SESSION_COOKIE, '1', cookieOptions);
@@ -85,8 +92,9 @@ export const getSession = (): SessionData => {
     localStorage.removeItem("nivel");
     localStorage.removeItem("grado");
     localStorage.removeItem("salon");
-    localStorage.removeItem("hijos");
-    return { id: null, nombres: null, apellidos: null, cargo: null, nivel: null, grado: null, salon: null, hijos: null };
+    localStorage.removeItem("acudidos");
+    localStorage.removeItem("hijos"); // legacy
+    return { id: null, nombres: null, apellidos: null, cargo: null, nivel: null, grado: null, salon: null, acudidos: null };
   }
 
   const id = localStorage.getItem("id") || null;
@@ -97,13 +105,15 @@ export const getSession = (): SessionData => {
   const grado = localStorage.getItem("grado") || null;
   const salon = localStorage.getItem("salon") || null;
 
-  let hijos: HijoData[] | null = null;
-  const hijosStr = localStorage.getItem("hijos");
-  if (hijosStr) {
-    try { hijos = JSON.parse(hijosStr); } catch { hijos = null; }
+  let acudidos: AcudidoData[] | null = null;
+  // Lee "acudidos" primero; si no existe, intenta "hijos" (clave legacy de
+  // sesiones guardadas antes del rename).
+  const acudidosStr = localStorage.getItem("acudidos") || localStorage.getItem("hijos");
+  if (acudidosStr) {
+    try { acudidos = JSON.parse(acudidosStr); } catch { acudidos = null; }
   }
 
-  return { id, nombres, apellidos, cargo, nivel, grado, salon, hijos };
+  return { id, nombres, apellidos, cargo, nivel, grado, salon, acudidos };
 };
 
 export const clearSession = () => {
@@ -116,13 +126,15 @@ export const clearSession = () => {
   localStorage.removeItem("nivel");
   localStorage.removeItem("grado");
   localStorage.removeItem("salon");
-  localStorage.removeItem("hijos");
+  localStorage.removeItem("acudidos");
+  localStorage.removeItem("hijos"); // legacy
   localStorage.removeItem("asignaturaSeleccionada");
   localStorage.removeItem("gradoSeleccionado");
   localStorage.removeItem("salonSeleccionado");
   localStorage.removeItem("modoVisualizacion");
   localStorage.removeItem("estudianteSeleccionado");
-  localStorage.removeItem("hijoSeleccionado");
+  localStorage.removeItem("acudidoSeleccionado");
+  localStorage.removeItem("hijoSeleccionado"); // legacy
 
   Cookies.remove(SESSION_COOKIE, cookieOptions);
 };

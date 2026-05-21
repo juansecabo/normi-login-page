@@ -46,7 +46,7 @@ export default function MisConsultas() {
       return;
     }
     const session = getSession();
-    if (!session.id || !session.hijos || session.hijos.length === 0) {
+    if (!session.id || !session.acudidos || session.acudidos.length === 0) {
       setLoading(false);
       return;
     }
@@ -77,7 +77,7 @@ export default function MisConsultas() {
             continue;
           }
 
-          const hijosQueAplican = session.hijos!.filter((h) => {
+          const hijosQueAplican = session.acudidos!.filter((h) => {
             const hijoId = Number(h.id);
             if (c.estudiantes_objetivo && c.estudiantes_objetivo.length > 0) {
               return c.estudiantes_objetivo.includes(hijoId);
