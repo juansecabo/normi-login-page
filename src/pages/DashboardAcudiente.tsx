@@ -26,6 +26,7 @@ const Badge = ({ count }: { count: number }) => {
 const DashboardAcudiente = () => {
   const navigate = useNavigate();
   const [nombres, setNombres] = useState("");
+  const [apellidos, setApellidos] = useState("");
   const [acudidos, setAcudidos] = useState<AcudidoData[]>([]);
   const [badges, setBadges] = useState({ notas: 0, actividades: 0, comunicados: 0, documentos: 0 });
 
@@ -43,6 +44,7 @@ const DashboardAcudiente = () => {
     }
 
     setNombres(session.nombres || "");
+    setApellidos(session.apellidos || "");
     setAcudidos(session.acudidos || []);
 
     // Si solo tiene un acudido, auto-seleccionar en localStorage para las páginas internas
@@ -181,7 +183,7 @@ const DashboardAcudiente = () => {
             Bienvenido(a)
           </h2>
           <p className="text-lg text-primary font-semibold">
-            {nombres}
+            {`${nombres} ${apellidos}`.trim()}
           </p>
           <p className="text-sm text-muted-foreground mt-1 mb-1">
             Padre de familia de
