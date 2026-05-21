@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { getSession, isPadreDeFamilia, HijoData } from "@/hooks/useSession";
+import { getSession, isPadreDeFamilia, AcudidoData } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -53,7 +53,7 @@ const RetiroEstudiantes = () => {
   const [horaH, setHoraH] = useState("");
   const [horaM, setHoraM] = useState("");
   const [horaAP, setHoraAP] = useState("");
-  const [hijoSeleccionado, setHijoSeleccionado] = useState<HijoData | null>(null);
+  const [acudidoSeleccionado, setAcudidoSeleccionado] = useState<AcudidoData | null>(null);
   const [tipoSalida, setTipoSalida] = useState("");
   const [nombrePersona, setNombrePersona] = useState("");
   const [parentesco, setParentesco] = useState("");
@@ -63,7 +63,7 @@ const RetiroEstudiantes = () => {
   const [archivos, setArchivos] = useState<File[]>([]);
 
   // Session data
-  const [hijos, setHijos] = useState<HijoData[]>([]);
+  const [acudidos, setAcudidos] = useState<AcudidoData[]>([]);
   const [nombreAcudiente, setNombreAcudiente] = useState("");
   const [nombresAcudiente, setNombresAcudiente] = useState("");
   const [apellidosAcudiente, setApellidosAcudiente] = useState("");
@@ -89,7 +89,7 @@ const RetiroEstudiantes = () => {
     setNombresAcudiente(session.nombres || "");
     setApellidosAcudiente(session.apellidos || "");
     setIdAcudiente(session.id);
-    setHijos(session.acudidos || []);
+    setAcudidos(session.acudidos || []);
     // Tel del acudiente logueado vive en Usuarios (fuente única).
     supabase.from("Usuarios").select("numero_de_telefono").eq("id", session.id).maybeSingle()
       .then(({ data }) => { if (data?.numero_de_telefono) setTelefonoAcudiente(data.numero_de_telefono); });
@@ -127,7 +127,7 @@ const RetiroEstudiantes = () => {
     aceptoTerminos &&
     fecha &&
     horaH && horaM && horaAP &&
-    hijoSeleccionado &&
+    acudidoSeleccionado &&
     tipoSalida &&
     motivo.trim() &&
     firma &&
@@ -135,7 +135,7 @@ const RetiroEstudiantes = () => {
     (tipoSalida !== "transporte" || nombrePersona.trim());
 
   const handleCrear = async () => {
-    if (!camposCompletos || !hijoSeleccionado || !fecha || !firma) return;
+    if (!camposCompletos || !acudidoSeleccionado || !fecha || !firma) return;
     setSaving(true);
 
     // Upload signature to Storage
@@ -187,10 +187,10 @@ const RetiroEstudiantes = () => {
       acudiente_id: idAcudiente,
       acudiente_telefono: telefonoAcudiente,
       acudiente_correo: correo || null,
-      estudiante_nombre: hijoSeleccionado.nombre,
-      estudiante_apellidos: hijoSeleccionado.apellidos,
-      estudiante_grado: hijoSeleccionado.grado,
-      estudiante_salon: hijoSeleccionado.salon,
+      estudiante_nombre: acudidoSeleccionado.nombre,
+      estudiante_apellidos: acudidoSeleccionado.apellidos,
+      estudiante_grado: acudidoSeleccionado.grado,
+      estudiante_salon: acudidoSeleccionado.salon,
       tipo_salida: tipoSalida,
       nombre_persona_autorizada: tipoSalida === "motocicleta_vehiculo" ? null : nombrePersona || null,
       parentesco: tipoSalida === "familiar" ? parentesco : null,
@@ -215,7 +215,7 @@ const RetiroEstudiantes = () => {
         : `\nPersona autorizada: ${nombrePersona}${tipoSalida === "familiar" && parentesco ? ` (${parentesco})` : ""}.`;
       const mensaje =
         `Nueva autorización de retiro registrada en la plataforma.\n\n` +
-        `Estudiante: ${hijoSeleccionado.nombre} ${hijoSeleccionado.apellidos} — ${hijoSeleccionado.grado} ${hijoSeleccionado.salon} (id ${hijoSeleccionado.id}).\n` +
+        `Estudiante: ${acudidoSeleccionado.nombre} ${acudidoSeleccionado.apellidos} — ${acudidoSeleccionado.grado} ${acudidoSeleccionado.salon} (id ${acudidoSeleccionado.id}).\n` +
         `Fecha de retiro: ${fechaLabel}.\n` +
         `Hora de retiro: ${horaLabel}.\n` +
         `Tipo de salida: ${tipoLabel}.${personaLinea}\n` +
@@ -223,14 +223,14 @@ const RetiroEstudiantes = () => {
         `Acudiente: ${nombreAcudiente} (C.C. ${idAcudiente}${telefonoAcudiente ? `, tel. ${telefonoAcudiente}` : ""}).\n` +
         `Pueden revisarla en la plataforma en Permisos y Excusas.`;
       notifyRectorCoord(mensaje, "Sistema Normi (Retiro)", {
-        grado: hijoSeleccionado.grado,
-        salon: hijoSeleccionado.salon,
+        grado: acudidoSeleccionado.grado,
+        salon: acudidoSeleccionado.salon,
       }, "retiro");
 
       // Reset form
       setFecha(undefined);
       setHoraH(""); setHoraM(""); setHoraAP("");
-      setHijoSeleccionado(null);
+      setAcudidoSeleccionado(null);
       setTipoSalida("");
       setNombrePersona("");
       setParentesco("");
@@ -281,7 +281,7 @@ const RetiroEstudiantes = () => {
           <div className="bg-card rounded-lg shadow-soft p-6">
             {/* Intro message */}
             <p className="text-sm text-muted-foreground mb-4">
-              Si su hijo(a) debe salir de la institución solo o con una persona diferente a sus padres, debe diligenciar el siguiente formato:
+              Si su acudido(a) debe salir de la institución solo o con una persona diferente a sus padres, debe diligenciar el siguiente formato:
             </p>
 
             {/* Legal text */}
@@ -344,32 +344,32 @@ const RetiroEstudiantes = () => {
                 </select>
               </div>
 
-              {/* Yo ___ identificado(a) con C.C. No. ___ autorizo a mi hijo(a) ___ del grado ___ */}
+              {/* Yo ___ identificado(a) con C.C. No. ___ autorizo a mi acudido(a) ___ del grado ___ */}
               <div className="text-sm text-foreground leading-relaxed space-y-3">
                 <p className="items-baseline" style={{ wordBreak: "normal", overflowWrap: "normal" }}>
-                  Yo <span className="inline px-1 border-b-2 border-primary/40 text-primary font-medium">{nombreAcudiente || "___"}</span> identificado(a) con C.C. No. <span className="inline px-1 border-b-2 border-primary/40 text-primary font-medium">{idAcudiente || "___"}</span> autorizo a mi hijo(a)
+                  Yo <span className="inline px-1 border-b-2 border-primary/40 text-primary font-medium">{nombreAcudiente || "___"}</span> identificado(a) con C.C. No. <span className="inline px-1 border-b-2 border-primary/40 text-primary font-medium">{idAcudiente || "___"}</span> autorizo a mi acudido(a)
                   <select
-                    value={hijoSeleccionado?.id || ""}
+                    value={acudidoSeleccionado?.id || ""}
                     onChange={(e) => {
-                      const h = hijos.find(h => h.id === e.target.value);
-                      setHijoSeleccionado(h || null);
+                      const h = acudidos.find(h => h.id === e.target.value);
+                      setAcudidoSeleccionado(h || null);
                     }}
                     className="inline-block px-2 py-1 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm min-w-[200px] cursor-pointer outline-none appearance-none"
                     style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2316a34a' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 4px center" }}
                   >
                     <option value="">Seleccionar estudiante</option>
-                    {hijos.map((h) => (
+                    {acudidos.map((h) => (
                       <option key={h.id} value={h.id}>{h.nombre} {h.apellidos}</option>
                     ))}
                   </select>
-                  {hijoSeleccionado && (
-                    <> del grado: <span className="inline px-1 border-b-2 border-primary/40 text-primary font-medium">{hijoSeleccionado.grado} {hijoSeleccionado.salon}</span>, para que salga de la institución: (Marque una de las siguientes opciones)</>
+                  {acudidoSeleccionado && (
+                    <> del grado: <span className="inline px-1 border-b-2 border-primary/40 text-primary font-medium">{acudidoSeleccionado.grado} {acudidoSeleccionado.salon}</span>, para que salga de la institución: (Marque una de las siguientes opciones)</>
                   )}
                 </p>
               </div>
 
               {/* Tipo de salida — checkboxes like the document */}
-              {hijoSeleccionado && (
+              {acudidoSeleccionado && (
                 <div className="space-y-3 ml-2">
                   {TIPOS_SALIDA.map((tipo) => (
                     <div key={tipo.value} className="space-y-2">
@@ -591,7 +591,7 @@ const RetiroEstudiantes = () => {
                             </p>
 
                             <p>
-                              Yo <span className="text-primary font-medium">{[auth.acudiente_nombres, auth.acudiente_apellidos].filter(Boolean).join(" ")}</span> identificado(a) con C.C. No. <span className="text-primary font-medium">{auth.acudiente_id}</span> autorizo a mi hijo(a) <span className="text-primary font-medium">{auth.estudiante_nombre} {auth.estudiante_apellidos}</span> del grado: <span className="text-primary font-medium">{auth.estudiante_grado} {auth.estudiante_salon}</span>, para que salga de la institución:
+                              Yo <span className="text-primary font-medium">{[auth.acudiente_nombres, auth.acudiente_apellidos].filter(Boolean).join(" ")}</span> identificado(a) con C.C. No. <span className="text-primary font-medium">{auth.acudiente_id}</span> autorizo a mi acudido(a) <span className="text-primary font-medium">{auth.estudiante_nombre} {auth.estudiante_apellidos}</span> del grado: <span className="text-primary font-medium">{auth.estudiante_grado} {auth.estudiante_salon}</span>, para que salga de la institución:
                             </p>
 
                             <p>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getSession, isPadreDeFamilia, HijoData } from "@/hooks/useSession";
+import { getSession, isPadreDeFamilia, AcudidoData } from "@/hooks/useSession";
 import { supabase } from "@/integrations/supabase/client";
 import HeaderNormi from "@/components/HeaderNormi";
 import { Button } from "@/components/ui/button";
@@ -26,10 +26,10 @@ interface ConsultaRow {
   perfiles_objetivo: string[] | null;
 }
 
-interface ConsultaConHijos {
+interface ConsultaConAcudidos {
   consulta: ConsultaRow;
-  hijosObjetivo: {
-    hijo: HijoData;
+  acudidosObjetivo: {
+    acudido: AcudidoData;
     opcion: string | null;
     fecha_respuesta: string | null;
   }[];
@@ -38,7 +38,7 @@ interface ConsultaConHijos {
 export default function MisConsultas() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [consultas, setConsultas] = useState<ConsultaConHijos[]>([]);
+  const [consultas, setConsultas] = useState<ConsultaConAcudidos[]>([]);
 
   useEffect(() => {
     if (!isPadreDeFamilia()) {
@@ -62,7 +62,7 @@ export default function MisConsultas() {
           .order("fecha_creacion", { ascending: false });
 
         // 2. Filtrar a las que aplican a algún hijo del padre
-        const consultasAplicables: ConsultaConHijos[] = [];
+        const consultasAplicables: ConsultaConAcudidos[] = [];
         for (const c of (todasConsultas || []) as unknown as ConsultaRow[]) {
           // 2a. Verificar que la consulta esté dirigida a padres.
           // Esquema nuevo: perfiles_objetivo debe incluir "Acudientes" (alias legacy: "Padres de familia").
@@ -106,10 +106,10 @@ export default function MisConsultas() {
 
           consultasAplicables.push({
             consulta: c,
-            hijosObjetivo: hijosQueAplican.map((h) => {
+            acudidosObjetivo: hijosQueAplican.map((h) => {
               const r = respMap.get(Number(h.id));
               return {
-                hijo: h,
+                acudido: h,
                 opcion: r?.opcion_seleccionada || null,
                 fecha_respuesta: r?.fecha_respuesta || null,
               };
@@ -126,9 +126,9 @@ export default function MisConsultas() {
     })();
   }, [navigate]);
 
-  const estadoConsulta = (c: ConsultaConHijos) => {
-    const total = c.hijosObjetivo.length;
-    const respondidos = c.hijosObjetivo.filter((h) => h.opcion).length;
+  const estadoConsulta = (c: ConsultaConAcudidos) => {
+    const total = c.acudidosObjetivo.length;
+    const respondidos = c.acudidosObjetivo.filter((h) => h.opcion).length;
     if (respondidos === 0) return { label: "Pendiente", variant: "secondary" as const };
     if (respondidos === total) return { label: "Respondida", variant: "default" as const };
     return { label: `${respondidos}/${total}`, variant: "outline" as const };
@@ -160,9 +160,9 @@ export default function MisConsultas() {
           </div>
         ) : (
           <div className="space-y-3">
-            {consultas.map(({ consulta: c, hijosObjetivo }) => {
-              const est = estadoConsulta({ consulta: c, hijosObjetivo });
-              const pendiente = hijosObjetivo.some((h) => !h.opcion);
+            {consultas.map(({ consulta: c, acudidosObjetivo }) => {
+              const est = estadoConsulta({ consulta: c, acudidosObjetivo });
+              const pendiente = acudidosObjetivo.some((h) => !h.opcion);
               return (
                 <Card key={c.id} className={pendiente && c.activa ? "border-primary" : ""}>
                   <CardContent className="p-4 space-y-3">
@@ -189,16 +189,16 @@ export default function MisConsultas() {
                     </div>
 
                     <div className="space-y-1 text-sm">
-                      {hijosObjetivo.map((h) => (
-                        <div key={h.hijo.id} className="flex items-center gap-2">
+                      {acudidosObjetivo.map((h) => (
+                        <div key={h.acudido.id} className="flex items-center gap-2">
                           {h.opcion ? (
                             <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
                           ) : (
                             <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
                           )}
                           <span className="flex-1 truncate">
-                            {h.hijo.nombre} {h.hijo.apellidos}
-                            <span className="text-muted-foreground"> — {h.hijo.grado} {h.hijo.salon}</span>
+                            {h.acudido.nombre} {h.acudido.apellidos}
+                            <span className="text-muted-foreground"> — {h.acudido.grado} {h.acudido.salon}</span>
                           </span>
                           <Badge variant="outline" className="text-xs">
                             {h.opcion || "Sin respuesta"}

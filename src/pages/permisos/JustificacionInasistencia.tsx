@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { getSession, isPadreDeFamilia, HijoData } from "@/hooks/useSession";
+import { getSession, isPadreDeFamilia, AcudidoData } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -44,7 +44,7 @@ const JustificacionInasistencia = () => {
   const [calOpen1, setCalOpen1] = useState(false);
   const [calOpen2, setCalOpen2] = useState(false);
   const [calOpenUnica, setCalOpenUnica] = useState(false);
-  const [hijoSeleccionado, setHijoSeleccionado] = useState<HijoData | null>(null);
+  const [acudidoSeleccionado, setAcudidoSeleccionado] = useState<AcudidoData | null>(null);
   const [motivoTipo, setMotivoTipo] = useState("");
   const [motivoOtro, setMotivoOtro] = useState("");
   const [motivoDescripcion, setMotivoDescripcion] = useState("");
@@ -52,7 +52,7 @@ const JustificacionInasistencia = () => {
   const [archivos, setArchivos] = useState<File[]>([]);
 
   // Session
-  const [hijos, setHijos] = useState<HijoData[]>([]);
+  const [acudidos, setAcudidos] = useState<AcudidoData[]>([]);
   const [nombreAcudiente, setNombreAcudiente] = useState("");
   const [nombresAcudiente, setNombresAcudiente] = useState("");
   const [apellidosAcudiente, setApellidosAcudiente] = useState("");
@@ -74,7 +74,7 @@ const JustificacionInasistencia = () => {
     setNombresAcudiente(session.nombres || "");
     setApellidosAcudiente(session.apellidos || "");
     setIdAcudiente(session.id);
-    setHijos(session.acudidos || []);
+    setAcudidos(session.acudidos || []);
     // Tel del acudiente logueado vive en Usuarios (fuente única).
     supabase.from("Usuarios").select("numero_de_telefono").eq("id", session.id).maybeSingle()
       .then(({ data }) => { if (data?.numero_de_telefono) setTelefonoAcudiente(data.numero_de_telefono); });
@@ -105,14 +105,14 @@ const JustificacionInasistencia = () => {
     ? Math.max(1, Math.round((fechaFinFinal.getTime() - fechaInicioFinal.getTime()) / 86400000) + 1)
     : 0;
 
-  const camposCompletos = aceptoTerminos && tipoRango && fechaInicioFinal && fechaFinFinal && hijoSeleccionado
+  const camposCompletos = aceptoTerminos && tipoRango && fechaInicioFinal && fechaFinFinal && acudidoSeleccionado
     && motivoTipo && motivoDescripcion.trim() && firma
     && (motivoTipo !== "otro" || motivoOtro.trim());
 
   const fmtLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
   const handleCrear = async () => {
-    if (!camposCompletos || !hijoSeleccionado || !fechaInicioFinal || !fechaFinFinal || !firma) return;
+    if (!camposCompletos || !acudidoSeleccionado || !fechaInicioFinal || !fechaFinFinal || !firma) return;
     setSaving(true);
 
     let firmaUrl: string | null = null;
@@ -152,11 +152,11 @@ const JustificacionInasistencia = () => {
       fecha_fin: fmtLocal(fechaFinFinal),
       dias_ausente: diasAusente,
       ciudad_fecha: `Corozal, ${hoy.toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" })}`,
-      estudiante_nombre: hijoSeleccionado.nombre,
-      estudiante_apellidos: hijoSeleccionado.apellidos,
-      estudiante_grado: hijoSeleccionado.grado,
-      estudiante_salon: hijoSeleccionado.salon,
-      estudiante_documento: hijoSeleccionado.id,
+      estudiante_nombre: acudidoSeleccionado.nombre,
+      estudiante_apellidos: acudidoSeleccionado.apellidos,
+      estudiante_grado: acudidoSeleccionado.grado,
+      estudiante_salon: acudidoSeleccionado.salon,
+      estudiante_documento: acudidoSeleccionado.id,
       motivo_tipo: motivoTipo,
       motivo_otro: motivoTipo === "otro" ? motivoOtro : null,
       motivo_descripcion: motivoDescripcion,
@@ -184,19 +184,19 @@ const JustificacionInasistencia = () => {
         : `${fmtFecha(payload.fecha_inicio)} — ${fmtFecha(payload.fecha_fin)} (${diasAusente} días)`;
       const mensaje =
         `Nueva justificación por inasistencia registrada en la plataforma.\n\n` +
-        `Estudiante: ${hijoSeleccionado.nombre} ${hijoSeleccionado.apellidos} — ${hijoSeleccionado.grado} ${hijoSeleccionado.salon} (id ${hijoSeleccionado.id}).\n` +
+        `Estudiante: ${acudidoSeleccionado.nombre} ${acudidoSeleccionado.apellidos} — ${acudidoSeleccionado.grado} ${acudidoSeleccionado.salon} (id ${acudidoSeleccionado.id}).\n` +
         `Fecha(s): ${fechasTexto}.\n` +
         `Motivo: ${motivoTexto}.\n` +
         `Descripción: ${motivoDescripcion}.\n` +
         `Acudiente: ${nombreAcudiente} (C.C. ${idAcudiente}${telefonoAcudiente ? `, tel. ${telefonoAcudiente}` : ""}).\n` +
         `Pueden revisarla en la plataforma en Permisos y Excusas.`;
       notifyRectorCoord(mensaje, "Sistema Normi (Excusas)", {
-        grado: hijoSeleccionado.grado,
-        salon: hijoSeleccionado.salon,
+        grado: acudidoSeleccionado.grado,
+        salon: acudidoSeleccionado.salon,
       }, "inasistencia");
 
       setTipoRango(""); setFechaUnica(undefined); setFechaInicio(undefined); setFechaFin(undefined);
-      setHijoSeleccionado(null); setMotivoTipo(""); setMotivoOtro(""); setMotivoDescripcion("");
+      setAcudidoSeleccionado(null); setMotivoTipo(""); setMotivoOtro(""); setMotivoDescripcion("");
       setFirma(null); setArchivos([]); sigCanvas.current?.clear(); setAceptoTerminos(false);
     }
     setSaving(false); setShowConfirm(false);
@@ -231,7 +231,7 @@ const JustificacionInasistencia = () => {
         {tab === "crear" && (
           <div className="bg-card rounded-lg shadow-soft p-6">
             <p className="text-sm text-muted-foreground mb-4">
-              Si su hijo(a) faltó o faltará a la institución, debe diligenciar el siguiente formato de justificación:
+              Si su acudido(a) faltó o faltará a la institución, debe diligenciar el siguiente formato de justificación:
             </p>
 
             <div className="bg-muted/50 rounded-lg p-4 mb-4 border border-border">
@@ -255,15 +255,15 @@ const JustificacionInasistencia = () => {
               <div className="text-sm text-foreground leading-relaxed">
                 <p className="font-bold mb-3">1. Datos del estudiante</p>
                 <p>
-                  Nombre completo: <select value={hijoSeleccionado?.id || ""} onChange={(e) => setHijoSeleccionado(hijos.find(h => h.id === e.target.value) || null)}
+                  Nombre completo: <select value={acudidoSeleccionado?.id || ""} onChange={(e) => setAcudidoSeleccionado(acudidos.find(h => h.id === e.target.value) || null)}
                     className="inline px-2 py-1 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm min-w-[200px] cursor-pointer outline-none"
                   >
                     <option value="">Seleccionar estudiante</option>
-                    {hijos.map(h => <option key={h.id} value={h.id}>{h.nombre} {h.apellidos}</option>)}
+                    {acudidos.map(h => <option key={h.id} value={h.id}>{h.nombre} {h.apellidos}</option>)}
                   </select>
-                  {hijoSeleccionado && <> Grado y Curso: <span className="text-primary font-medium">{hijoSeleccionado.grado} {hijoSeleccionado.salon}</span></>}
+                  {acudidoSeleccionado && <> Grado y Curso: <span className="text-primary font-medium">{acudidoSeleccionado.grado} {acudidoSeleccionado.salon}</span></>}
                 </p>
-                {hijoSeleccionado && <p className="mt-1">Documento de identidad: <span className="text-primary font-medium">{hijoSeleccionado.id}</span></p>}
+                {acudidoSeleccionado && <p className="mt-1">Documento de identidad: <span className="text-primary font-medium">{acudidoSeleccionado.id}</span></p>}
               </div>
 
               {/* 2. Fechas de inasistencia */}

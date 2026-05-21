@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ClipboardList, X, Paperclip, Eye, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { getSession, isPadreDeFamilia, HijoData } from "@/hooks/useSession";
+import { getSession, isPadreDeFamilia, AcudidoData } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { Calendar } from "@/components/ui/calendar";
 import { es } from "date-fns/locale";
@@ -21,7 +21,7 @@ interface ActividadCalendario {
 }
 
 interface ActividadConHijo extends ActividadCalendario {
-  hijo: HijoData;
+  acudido: AcudidoData;
 }
 
 const parsearFecha = (fechaStr: string): Date | null => {
@@ -77,7 +77,7 @@ const handleDescargarArchivo = async (url: string) => {
 
 const CalendarioAcudiente = () => {
   const navigate = useNavigate();
-  const [hijos, setHijos] = useState<HijoData[]>([]);
+  const [acudidos, setAcudidos] = useState<AcudidoData[]>([]);
   const [actividades, setActividades] = useState<ActividadConHijo[]>([]);
   const [loading, setLoading] = useState(true);
   const [mesActual, setMesActual] = useState(new Date());
@@ -91,31 +91,31 @@ const CalendarioAcudiente = () => {
       return;
     }
 
-    const hijosData = session.acudidos || [];
-    setHijos(hijosData);
+    const acudidosData = session.acudidos || [];
+    setAcudidos(acudidosData);
 
     const cargar = async () => {
       try {
-        // Queries por hijo en paralelo — todas se piden al mismo tiempo.
-        const resultados = await Promise.all(hijosData.map(hijo =>
+        // Queries por acudido en paralelo — todas se piden al mismo tiempo.
+        const resultados = await Promise.all(acudidosData.map(acudido =>
           supabase
             .from('Calendario Actividades')
             .select('*')
-            .eq('Grado', hijo.grado)
-            .eq('Salon', hijo.salon)
+            .eq('Grado', acudido.grado)
+            .eq('Salon', acudido.salon)
             .order('fecha_de_presentacion', { ascending: true })
-            .then(res => ({ hijo, ...res }))
+            .then(res => ({ acudido, ...res }))
         ));
 
         const todasActividades: ActividadConHijo[] = [];
-        for (const { hijo, data, error } of resultados) {
+        for (const { acudido, data, error } of resultados) {
           if (!error && data) {
             data.forEach((a: ActividadCalendario) => {
-              todasActividades.push({ ...a, hijo });
+              todasActividades.push({ ...a, acudido });
             });
             const ids = data.map((a: any) => Number(a.auto_id)).filter((id: number) => !isNaN(id) && id > 0);
             const maxId = ids.length > 0 ? Math.max(...ids) : 0;
-            markLastSeen('actividades', hijo.id, maxId);
+            markLastSeen('actividades', acudido.id, maxId);
           }
         }
 
@@ -146,20 +146,20 @@ const CalendarioAcudiente = () => {
     return new Date(y, m - 1, d);
   });
 
-  // Actividades del día agrupadas por hijo
+  // Actividades del día agrupadas por acudido
   const actividadesDelDia = diaSeleccionado
     ? actividadesPorFecha[fechaKey(diaSeleccionado)] || []
     : [];
 
-  // Agrupar por hijo, manteniendo el orden de hijos
-  const actividadesPorHijo: { hijo: HijoData; actividades: ActividadConHijo[] }[] = [];
+  // Agrupar por acudido, manteniendo el orden de acudidos
+  const actividadesPorAcudido: { acudido: AcudidoData; actividades: ActividadConHijo[] }[] = [];
   if (actividadesDelDia.length > 0) {
-    for (const hijo of hijos) {
+    for (const acudido of acudidos) {
       const delHijo = actividadesDelDia
-        .filter(a => a.hijo.id === hijo.id)
+        .filter(a => a.acudido.id === acudido.id)
         .sort((a, b) => a.Asignatura.localeCompare(b.Asignatura));
       if (delHijo.length > 0) {
-        actividadesPorHijo.push({ hijo, actividades: delHijo });
+        actividadesPorAcudido.push({ acudido, actividades: delHijo });
       }
     }
   }
@@ -206,7 +206,7 @@ const CalendarioAcudiente = () => {
               </div>
 
               <div className="flex-1 min-w-0 lg:max-h-[500px] lg:overflow-y-auto">
-                {diaSeleccionado && actividadesPorHijo.length > 0 ? (
+                {diaSeleccionado && actividadesPorAcudido.length > 0 ? (
                   <div>
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-semibold text-foreground">
@@ -224,11 +224,11 @@ const CalendarioAcudiente = () => {
                     </p>
 
                     <div className="space-y-6">
-                      {actividadesPorHijo.map(({ hijo, actividades: acts }) => (
-                        <div key={hijo.id}>
+                      {actividadesPorAcudido.map(({ acudido, actividades: acts }) => (
+                        <div key={acudido.id}>
                           <h4 className="text-lg font-bold text-primary mb-2">
-                            Actividades de {hijo.nombre} {hijo.apellidos}
-                            <span className="text-muted-foreground font-normal text-sm"> — {hijo.grado} {hijo.salon}</span>
+                            Actividades de {acudido.nombre} {acudido.apellidos}
+                            <span className="text-muted-foreground font-normal text-sm"> — {acudido.grado} {acudido.salon}</span>
                           </h4>
                           <div className="space-y-3">
                             {acts.map(actividad => (
@@ -286,7 +286,7 @@ const CalendarioAcudiente = () => {
               </DialogHeader>
               <div className="space-y-3">
                 <p className="text-sm font-semibold text-primary">
-                  {detalle.hijo.nombre} {detalle.hijo.apellidos} — {detalle.hijo.grado} {detalle.hijo.salon}
+                  {detalle.acudido.nombre} {detalle.acudido.apellidos} — {detalle.acudido.grado} {detalle.acudido.salon}
                 </p>
                 <span className="inline-block px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full">
                   {detalle.Asignatura}

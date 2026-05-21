@@ -26,7 +26,7 @@ interface ConsultaRow {
   activa: boolean;
 }
 
-// Una "fila" de respuesta. Para padres, hay una fila por hijo. Para internos
+// Una "fila" de respuesta. Para padres, hay una fila por acudido. Para internos
 // o estudiantes que respondan directo, hay una sola fila.
 interface Respondent {
   // Clave única usada por React y por el state de respuestas/firmas.
@@ -287,7 +287,7 @@ export default function ConsultaPublica() {
         const padreId = session.id;
         setRespondenteId(padreId);
 
-        // Resolver datos de cada hijo desde Estudiantes
+        // Resolver datos de cada acudido desde Estudiantes
         const idsValidos = hijoIds.filter((h): h is number => h != null);
         let hijosData: any[] = [];
         if (idsValidos.length > 0) {
@@ -303,7 +303,7 @@ export default function ConsultaPublica() {
         const hijoMap = new Map<string, any>();
         for (const h of hijosData) hijoMap.set(String(h.id), h);
 
-        // Filtrar hijos que coinciden con la consulta
+        // Filtrar acudidos que coinciden con la consulta
         const todosHijos: Respondent[] = [];
         for (const idx of [1, 2, 3, 4]) {
           const hijoId = hijoIds[idx - 1];
@@ -347,7 +347,7 @@ export default function ConsultaPublica() {
         }
 
         if (todosHijos.length === 0) {
-          setError("Esta consulta no aplica a sus hijos registrados.");
+          setError("Esta consulta no aplica a sus acudidos registrados.");
           setLoading(false);
           return;
         }

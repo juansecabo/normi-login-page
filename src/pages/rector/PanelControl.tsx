@@ -446,7 +446,7 @@ const PanelControl = () => {
   const fetchPerfiles = async () => {
     // Fase 10.E.19+: la pestaña "Acudientes" muestra los acudientes (padres
     // de familia) reales que viven en la tabla Acudientes, enriquecidos con
-    // nombre/teléfono desde Usuarios y con datos de cada hijo vinculado desde
+    // nombre/teléfono desde Usuarios y con datos de cada acudido vinculado desde
     // Estudiantes + Usuarios. Reemplaza el listado legacy de Perfiles_Generales.
     setLoadingPerf(true);
     try {
@@ -457,7 +457,7 @@ const PanelControl = () => {
           .range(from, to)
       );
 
-      // IDs únicos para batch: acudientes + sus hijos.
+      // IDs únicos para batch: acudientes + sus acudidos.
       const acuIds = acudientesRaw.map((a) => String(a.id));
       const hijoIds = new Set<string>();
       for (const a of acudientesRaw) {
@@ -491,7 +491,7 @@ const PanelControl = () => {
         }
       }
 
-      // Batch a Estudiantes para grado/salón/nivel de cada hijo.
+      // Batch a Estudiantes para grado/salón/nivel de cada acudido.
       const estMap = new Map<string, { nivel: string; grado: string; salon: string }>();
       const hijoIdsArr = [...hijoIds];
       for (let i = 0; i < hijoIdsArr.length; i += CHUNK) {
@@ -528,7 +528,7 @@ const PanelControl = () => {
           numero_de_acudidos: null,
           contrasena: acuUser?.contrasena || null,
         };
-        // Mapear los 4 slots de hijos con sufijo secuencial 1..N.
+        // Mapear los 4 slots de acudidos con sufijo secuencial 1..N.
         let pos = 1;
         for (let i = 1; i <= 4; i++) {
           const hijoId = a[`acudido${i}_id`];
@@ -1307,7 +1307,7 @@ const PanelControl = () => {
           };
           if (perfContrasena) usuariosPayload.contrasena = perfContrasena;
           await supabase.from("Usuarios").upsert(usuariosPayload, { onConflict: "id" });
-          // Determinar colegio_id desde el primer hijo
+          // Determinar colegio_id desde el primer acudido
           const refHijoId = perfHijo1Id ? Number(perfHijo1Id) : null;
           if (refHijoId) {
             const { data: refEst } = await supabase.from("Estudiantes")
@@ -1415,7 +1415,7 @@ const PanelControl = () => {
     )
   );
 
-  // Helper: render hijo fields for Asignacion dialog
+  // Helper: render acudido fields for Asignacion dialog
   const renderHijoFields = (
     num: number,
     id: string, setId: (v: string) => void,
@@ -1425,7 +1425,7 @@ const PanelControl = () => {
     salon: string, setSalon: (v: string) => void,
   ) => (
     <div key={num} className="border rounded-md p-3 space-y-3">
-      <p className="text-sm font-medium">Hijo {num}</p>
+      <p className="text-sm font-medium">Acudido {num}</p>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label className="text-xs">ID</Label>

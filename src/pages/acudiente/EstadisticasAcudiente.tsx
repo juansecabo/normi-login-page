@@ -1,7 +1,7 @@
 import { getPeriodoActual } from "@/utils/periodoActual";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getSession, isPadreDeFamilia, HijoData } from "@/hooks/useSession";
+import { getSession, isPadreDeFamilia, AcudidoData } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { useEstadisticas } from "@/hooks/useEstadisticas";
 import { AnalisisEstudiante } from "@/components/estadisticas/AnalisisEstudiante";
@@ -11,8 +11,8 @@ import { Loader2, User } from "lucide-react";
 const EstadisticasAcudiente = () => {
   const navigate = useNavigate();
   const { loading } = useEstadisticas();
-  const [hijos, setHijos] = useState<HijoData[]>([]);
-  const [hijo, setHijo] = useState<HijoData | null>(null);
+  const [acudidos, setAcudidos] = useState<AcudidoData[]>([]);
+  const [acudido, setAcudido] = useState<AcudidoData | null>(null);
   const [periodoSeleccionado, setPeriodoSeleccionado] = useState(String(getPeriodoActual()));
 
   useEffect(() => {
@@ -22,30 +22,30 @@ const EstadisticasAcudiente = () => {
       return;
     }
 
-    const hijosData = session.acudidos || [];
-    setHijos(hijosData);
+    const acudidosData = session.acudidos || [];
+    setAcudidos(acudidosData);
 
-    if (hijosData.length === 1) {
-      setHijo(hijosData[0]);
-      localStorage.setItem("hijoSeleccionado", JSON.stringify(hijosData[0]));
+    if (acudidosData.length === 1) {
+      setAcudido(acudidosData[0]);
+      localStorage.setItem("acudidoSeleccionado", JSON.stringify(acudidosData[0]));
     }
   }, [navigate]);
 
   // Handle browser back button to return to student selection
   useEffect(() => {
     const handlePopState = () => {
-      if (hijo) {
-        setHijo(null);
+      if (acudido) {
+        setAcudido(null);
       }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [hijo]);
+  }, [acudido]);
 
-  const seleccionar = (h: HijoData) => {
-    setHijo(h);
-    window.history.pushState({ hijoSelected: true }, '');
-    localStorage.setItem("hijoSeleccionado", JSON.stringify(h));
+  const seleccionar = (h: AcudidoData) => {
+    setAcudido(h);
+    window.history.pushState({ acudidoSelected: true }, '');
+    localStorage.setItem("acudidoSeleccionado", JSON.stringify(h));
   };
 
   const periodoNumerico = periodoSeleccionado === "anual"
@@ -65,27 +65,27 @@ const EstadisticasAcudiente = () => {
               Inicio
             </button>
             <span className="text-muted-foreground">&rarr;</span>
-            {hijo && hijos.length > 1 ? (
+            {acudido && acudidos.length > 1 ? (
               <>
-                <button onClick={() => setHijo(null)} className="text-primary hover:underline">
+                <button onClick={() => setAcudido(null)} className="text-primary hover:underline">
                   Escoger Estudiante
                 </button>
                 <span className="text-muted-foreground">&rarr;</span>
-                <span className="text-foreground font-medium">Estadísticas de {hijo.nombre}</span>
+                <span className="text-foreground font-medium">Estadísticas de {acudido.nombre}</span>
               </>
             ) : (
-              <span className="text-foreground font-medium">Estadísticas{hijo ? ` de ${hijo.nombre}` : ''}</span>
+              <span className="text-foreground font-medium">Estadísticas{acudido ? ` de ${acudido.nombre}` : ''}</span>
             )}
           </div>
         </div>
 
-        {!hijo && hijos.length > 1 && (
+        {!acudido && acudidos.length > 1 && (
           <div className="bg-card rounded-lg shadow-soft p-6 mb-6">
             <h3 className="text-lg font-bold text-foreground mb-4 text-center">
               Selecciona un estudiante
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {hijos.map((h) => (
+              {acudidos.map((h) => (
                 <button
                   key={h.id}
                   onClick={() => seleccionar(h)}
@@ -104,7 +104,7 @@ const EstadisticasAcudiente = () => {
           </div>
         )}
 
-        {hijo && (
+        {acudido && (
           <>
             {loading ? (
               <div className="flex items-center justify-center h-64">
@@ -132,9 +132,9 @@ const EstadisticasAcudiente = () => {
                 </div>
 
                 <AnalisisEstudiante
-                  idEstudiante={hijo.id}
+                  idEstudiante={acudido.id}
                   periodo={periodoNumerico}
-                  titulo={`${hijo.nombre} ${hijo.apellidos} - ${periodoTexto}`}
+                  titulo={`${acudido.nombre} ${acudido.apellidos} - ${periodoTexto}`}
                 />
               </>
             )}

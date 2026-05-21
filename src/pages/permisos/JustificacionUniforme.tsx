@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { getSession, isPadreDeFamilia, HijoData } from "@/hooks/useSession";
+import { getSession, isPadreDeFamilia, AcudidoData } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -28,12 +28,12 @@ const JustificacionUniforme = () => {
   // Form
   const [fecha, setFecha] = useState<Date | undefined>(undefined);
   const [calOpen, setCalOpen] = useState(false);
-  const [hijoSeleccionado, setHijoSeleccionado] = useState<HijoData | null>(null);
+  const [acudidoSeleccionado, setAcudidoSeleccionado] = useState<AcudidoData | null>(null);
   const [justificacion, setJustificacion] = useState("");
   const [firma, setFirma] = useState<string | null>(null);
 
   // Session
-  const [hijos, setHijos] = useState<HijoData[]>([]);
+  const [acudidos, setAcudidos] = useState<AcudidoData[]>([]);
   const [nombreAcudiente, setNombreAcudiente] = useState("");
   const [nombresAcudiente, setNombresAcudiente] = useState("");
   const [apellidosAcudiente, setApellidosAcudiente] = useState("");
@@ -55,7 +55,7 @@ const JustificacionUniforme = () => {
     setNombresAcudiente(session.nombres || "");
     setApellidosAcudiente(session.apellidos || "");
     setIdAcudiente(session.id);
-    setHijos(session.acudidos || []);
+    setAcudidos(session.acudidos || []);
     // Tel del acudiente logueado vive en Usuarios (fuente única).
     supabase.from("Usuarios").select("numero_de_telefono").eq("id", session.id).maybeSingle()
       .then(({ data }) => { if (data?.numero_de_telefono) setTelefonoAcudiente(data.numero_de_telefono); });
@@ -78,13 +78,13 @@ const JustificacionUniforme = () => {
 
   const limpiarFirma = () => { sigCanvas.current?.clear(); setFirma(null); };
 
-  const camposCompletos = !!fecha && !!hijoSeleccionado && justificacion.trim().length > 0 && !!firma;
+  const camposCompletos = !!fecha && !!acudidoSeleccionado && justificacion.trim().length > 0 && !!firma;
 
   const fmtLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const fmtFecha = (s: string) => new Date(s + "T12:00:00").toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
   const handleCrear = async () => {
-    if (!camposCompletos || !hijoSeleccionado || !fecha || !firma) return;
+    if (!camposCompletos || !acudidoSeleccionado || !fecha || !firma) return;
     setSaving(true);
 
     let firmaUrl: string | null = null;
@@ -103,11 +103,11 @@ const JustificacionUniforme = () => {
 
     const payload = {
       fecha: fmtLocal(fecha),
-      estudiante_id: hijoSeleccionado.id,
-      estudiante_nombre: hijoSeleccionado.nombre,
-      estudiante_apellidos: hijoSeleccionado.apellidos,
-      estudiante_grado: hijoSeleccionado.grado,
-      estudiante_salon: hijoSeleccionado.salon,
+      estudiante_id: acudidoSeleccionado.id,
+      estudiante_nombre: acudidoSeleccionado.nombre,
+      estudiante_apellidos: acudidoSeleccionado.apellidos,
+      estudiante_grado: acudidoSeleccionado.grado,
+      estudiante_salon: acudidoSeleccionado.salon,
       justificacion: justificacion.trim(),
       acudiente_nombres: nombresAcudiente,
       acudiente_apellidos: apellidosAcudiente,
@@ -124,17 +124,17 @@ const JustificacionUniforme = () => {
 
       const mensaje =
         `Nueva justificación por uniforme registrada en la plataforma.\n\n` +
-        `Estudiante: ${hijoSeleccionado.nombre} ${hijoSeleccionado.apellidos} — ${hijoSeleccionado.grado} ${hijoSeleccionado.salon} (id ${hijoSeleccionado.id}).\n` +
+        `Estudiante: ${acudidoSeleccionado.nombre} ${acudidoSeleccionado.apellidos} — ${acudidoSeleccionado.grado} ${acudidoSeleccionado.salon} (id ${acudidoSeleccionado.id}).\n` +
         `Fecha: ${fmtFecha(payload.fecha)}.\n` +
         `Justificación: ${justificacion.trim()}.\n` +
         `Acudiente: ${nombreAcudiente} (C.C. ${idAcudiente}${telefonoAcudiente ? `, tel. ${telefonoAcudiente}` : ""}).\n` +
         `Pueden revisarla en la plataforma en Permisos y Excusas.`;
       notifyRectorCoord(mensaje, "Sistema Normi (Uniforme)", {
-        grado: hijoSeleccionado.grado,
-        salon: hijoSeleccionado.salon,
+        grado: acudidoSeleccionado.grado,
+        salon: acudidoSeleccionado.salon,
       }, "uniforme");
 
-      setFecha(undefined); setHijoSeleccionado(null); setJustificacion("");
+      setFecha(undefined); setAcudidoSeleccionado(null); setJustificacion("");
       setFirma(null); sigCanvas.current?.clear();
     }
     setSaving(false); setShowConfirm(false);
@@ -166,7 +166,7 @@ const JustificacionUniforme = () => {
         {tab === "crear" && (
           <div className="bg-card rounded-lg shadow-soft p-6">
             <p className="text-sm text-muted-foreground mb-4">
-              Si su hijo(a) no podrá portar el uniforme correspondiente algún día, debe diligenciar el siguiente formato de justificación:
+              Si su acudido(a) no podrá portar el uniforme correspondiente algún día, debe diligenciar el siguiente formato de justificación:
             </p>
 
             <div className="space-y-5">
@@ -174,13 +174,13 @@ const JustificacionUniforme = () => {
               <div className="text-sm text-foreground leading-relaxed">
                 <p className="font-bold mb-3">1. Datos del estudiante</p>
                 <p>
-                  Nombre completo: <select value={hijoSeleccionado?.id || ""} onChange={(e) => setHijoSeleccionado(hijos.find(h => h.id === e.target.value) || null)}
+                  Nombre completo: <select value={acudidoSeleccionado?.id || ""} onChange={(e) => setAcudidoSeleccionado(acudidos.find(h => h.id === e.target.value) || null)}
                     className="inline px-2 py-1 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm min-w-[200px] cursor-pointer outline-none"
                   >
                     <option value="">Seleccionar estudiante</option>
-                    {hijos.map(h => <option key={h.id} value={h.id}>{h.nombre} {h.apellidos}</option>)}
+                    {acudidos.map(h => <option key={h.id} value={h.id}>{h.nombre} {h.apellidos}</option>)}
                   </select>
-                  {hijoSeleccionado && <> Grado y Curso: <span className="text-primary font-medium">{hijoSeleccionado.grado} {hijoSeleccionado.salon}</span></>}
+                  {acudidoSeleccionado && <> Grado y Curso: <span className="text-primary font-medium">{acudidoSeleccionado.grado} {acudidoSeleccionado.salon}</span></>}
                 </p>
               </div>
 

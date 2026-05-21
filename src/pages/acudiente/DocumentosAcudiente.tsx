@@ -36,7 +36,7 @@ const DocumentosAcudiente = () => {
       return;
     }
 
-    const hijos = session.acudidos || [];
+    const acudidos = session.acudidos || [];
 
     const cargar = async () => {
       try {
@@ -56,9 +56,9 @@ const DocumentosAcudiente = () => {
             // documento; el filtro de visibilidad debe ser identico al de comunicados.
             const matchIds =
               (c.id_destinatarios && c.id_destinatarios.length > 0 &&
-                hijos.some(h => c.id_destinatarios!.includes(String(h.id)))) ||
-              (c.id && hijos.some(h => h.id === c.id)) ||
-              hijos.some(h => {
+                acudidos.some(h => c.id_destinatarios!.includes(String(h.id)))) ||
+              (c.id && acudidos.some(h => h.id === c.id)) ||
+              acudidos.some(h => {
                 if (!h.id) return false;
                 const cod = String(h.id);
                 return new RegExp(`\\b${cod}\\b`).test(c.destinatarios || "");
@@ -69,7 +69,7 @@ const DocumentosAcudiente = () => {
 
             const matchAula =
               (c.nivel || grados || salones) &&
-              hijos.some(h => {
+              acudidos.some(h => {
                 if (c.nivel && c.nivel !== h.nivel) return false;
                 if (grados && !grados.includes(h.grado)) return false;
                 if (salones && !salones.includes(h.salon)) return false;
@@ -86,7 +86,7 @@ const DocumentosAcudiente = () => {
             const destLower = (c.destinatarios || "").trim().toLowerCase();
             if (destLower === "padres de familia") return true;
             const destNorm = norm(c.destinatarios || "");
-            return hijos.some(h => {
+            return acudidos.some(h => {
               if (!h.nombre || !h.apellidos) return false;
               const nombreNorm = norm(h.nombre);
               const apellidosParts = norm(h.apellidos).split(/\s+/).filter(p => p.length > 2);

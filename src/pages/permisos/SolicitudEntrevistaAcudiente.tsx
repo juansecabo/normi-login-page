@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getSession, isPadreDeFamilia, HijoData } from "@/hooks/useSession";
+import { getSession, isPadreDeFamilia, AcudidoData } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { Calendar } from "@/components/ui/calendar";
@@ -23,12 +23,12 @@ const SolicitudEntrevistaAcudiente = () => {
   const [mesActual, setMesActual] = useState(new Date());
   const [diaSeleccionado, setDiaSeleccionado] = useState<Date | undefined>(new Date());
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [hijos, setHijos] = useState<HijoData[]>([]);
+  const [acudidos, setAcudidos] = useState<AcudidoData[]>([]);
 
   useEffect(() => {
     const session = getSession();
     if (!session.id || !isPadreDeFamilia()) { navigate("/"); return; }
-    setHijos(session.acudidos || []);
+    setAcudidos(session.acudidos || []);
 
     const hijosNombres = (session.acudidos || []).map(h => h.nombre);
     const hijosApellidos = (session.acudidos || []).map(h => h.apellidos);

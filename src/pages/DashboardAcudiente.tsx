@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getSession, isPadreDeFamilia, HijoData } from "@/hooks/useSession";
+import { getSession, isPadreDeFamilia, AcudidoData } from "@/hooks/useSession";
 import iconNotas from "@/assets/icons/notas.webp";
 import iconActividades from "@/assets/icons/actividades.webp";
 import iconPermisos from "@/assets/icons/permisos-y-excusas.webp";
@@ -26,7 +26,7 @@ const Badge = ({ count }: { count: number }) => {
 const DashboardAcudiente = () => {
   const navigate = useNavigate();
   const [nombres, setNombres] = useState("");
-  const [hijos, setHijos] = useState<HijoData[]>([]);
+  const [acudidos, setAcudidos] = useState<AcudidoData[]>([]);
   const [badges, setBadges] = useState({ notas: 0, actividades: 0, comunicados: 0, documentos: 0 });
 
   useEffect(() => {
@@ -43,48 +43,48 @@ const DashboardAcudiente = () => {
     }
 
     setNombres(session.nombres || "");
-    setHijos(session.acudidos || []);
+    setAcudidos(session.acudidos || []);
 
-    // Si solo tiene un hijo, auto-seleccionar en localStorage para las páginas internas
+    // Si solo tiene un acudido, auto-seleccionar en localStorage para las páginas internas
     if (session.acudidos && session.acudidos.length === 1) {
       localStorage.setItem("acudidoSeleccionado", JSON.stringify(session.acudidos[0]));
     }
 
     const fetchBadges = async () => {
       const id = session.id!;
-      const hijosData = session.acudidos || [];
+      const acudidosData = session.acudidos || [];
       const b = { notas: 0, actividades: 0, comunicados: 0, documentos: 0 };
 
       try {
-        // Paso 1: lastSeen del padre y de cada hijo, en paralelo.
-        const [lastSeenPadre, ...lastSeenHijos] = await Promise.all([
+        // Paso 1: lastSeen del acudiente y de cada acudido, en paralelo.
+        const [lastSeenPadre, ...lastSeenAcudidos] = await Promise.all([
           getAllLastSeen(id),
-          ...hijosData.map(h => getAllLastSeen(h.id)),
+          ...acudidosData.map(h => getAllLastSeen(h.id)),
         ]);
 
         // Paso 2: queries de datos en paralelo (count puro o filas nuevas via .gt).
         const minComLastSeen = Math.min(lastSeenPadre['comunicados'] ?? 0, lastSeenPadre['documentos'] ?? 0);
-        const [msgRes, ...hijosResults] = await Promise.all([
+        const [msgRes, ...acudidosResults] = await Promise.all([
           supabase
             .from('Comunicados')
             .select('id, nivel, grado, salon, id_estudiantil, archivo_url, destinatarios, id_destinatarios')
             .overlaps('perfil', ['Acudientes', 'Padres de familia'])
             .gt('id', minComLastSeen),
-          ...hijosData.flatMap((hijo, i) => [
+          ...acudidosData.flatMap((acudido, i) => [
             supabase
               .from('Calendario Actividades')
               .select('*', { count: 'exact', head: true })
-              .eq('Grado', hijo.grado)
-              .eq('Salon', hijo.salon)
-              .gt('auto_id', lastSeenHijos[i]['actividades'] ?? 0),
+              .eq('Grado', acudido.grado)
+              .eq('Salon', acudido.salon)
+              .gt('auto_id', lastSeenAcudidos[i]['actividades'] ?? 0),
             // Notas: fetch+JS (ver explicacion en DashboardEstudiante.tsx).
             supabase
               .from('Notas')
               .select('fecha_modificacion')
               .eq('ano_escolar', anoEscolarActual())
-              .eq('id_estudiantil', hijo.id)
-              .eq('grado', hijo.grado)
-              .eq('salon', hijo.salon)
+              .eq('id_estudiantil', acudido.id)
+              .eq('grado', acudido.grado)
+              .eq('salon', acudido.salon)
               .not('nombre_actividad', 'in', '("Definitiva Periodo","Definitiva Anual")'),
           ]),
         ]);
@@ -97,9 +97,9 @@ const DashboardAcudiente = () => {
           const filtrados = msgRes.data.filter((c: any) => {
             const matchIds =
               (c.id_destinatarios && c.id_destinatarios.length > 0 &&
-                hijosData.some(h => c.id_destinatarios.includes(String(h.id)))) ||
-              (c.id_estudiantil && hijosData.some(h => h.id === c.id_estudiantil)) ||
-              hijosData.some(h => {
+                acudidosData.some(h => c.id_destinatarios.includes(String(h.id)))) ||
+              (c.id_estudiantil && acudidosData.some(h => h.id === c.id_estudiantil)) ||
+              acudidosData.some(h => {
                 if (!h.id) return false;
                 const cod = String(h.id);
                 return new RegExp(`\\b${cod}\\b`).test(c.destinatarios || "");
@@ -110,7 +110,7 @@ const DashboardAcudiente = () => {
 
             const matchAula =
               (c.nivel || grados || salones) &&
-              hijosData.some(h => {
+              acudidosData.some(h => {
                 if (c.nivel && c.nivel !== h.nivel) return false;
                 if (grados && !grados.includes(h.grado)) return false;
                 if (salones && !salones.includes(h.salon)) return false;
@@ -127,7 +127,7 @@ const DashboardAcudiente = () => {
             const destLower = (c.destinatarios || "").trim().toLowerCase();
             if (destLower === "padres de familia") return true;
             const destNorm = norm(c.destinatarios || "");
-            return hijosData.some(h => {
+            return acudidosData.some(h => {
               if (!h.nombre || !h.apellidos) return false;
               const nombreNorm = norm(h.nombre);
               const apellidosParts = norm(h.apellidos).split(/\s+/).filter(p => p.length > 2);
@@ -148,17 +148,17 @@ const DashboardAcudiente = () => {
           b.documentos = dedup.filter((c: any) => c.archivo_url && c.id > (lastSeenPadre['documentos'] ?? 0)).length;
         }
 
-        // Cada hijo aportó 2 entradas: actResult, notasResult.
-        for (let i = 0; i < hijosData.length; i++) {
-          const actResult = hijosResults[i * 2] as any;
-          const notasResult = hijosResults[i * 2 + 1] as any;
+        // Cada acudido aportó 2 entradas: actResult, notasResult.
+        for (let i = 0; i < acudidosData.length; i++) {
+          const actResult = acudidosResults[i * 2] as any;
+          const notasResult = acudidosResults[i * 2 + 1] as any;
           b.actividades += actResult.count ?? 0;
 
           if (notasResult.data) {
             const notasEpochs = notasResult.data
               .map((n: any) => n.fecha_modificacion ? Math.floor(new Date(n.fecha_modificacion).getTime() / 1000) : 0)
               .filter((e: number) => e > 0);
-            b.notas += countNewItems(notasEpochs, lastSeenHijos[i]['notas']);
+            b.notas += countNewItems(notasEpochs, lastSeenAcudidos[i]['notas']);
           }
         }
       } catch (err) {
@@ -187,7 +187,7 @@ const DashboardAcudiente = () => {
             Padre de familia de
           </p>
           <div className="space-y-0.5">
-            {hijos.map(h => (
+            {acudidos.map(h => (
               <p key={h.id} className="text-sm text-foreground">
                 {h.nombre} {h.apellidos} <span className="text-muted-foreground">({h.grado} {h.salon})</span>
               </p>

@@ -229,7 +229,7 @@ export default function ConsultaDetalle() {
       setPadres([]);
     }
 
-    // 3. Cargar padres que tienen alguno de estos estudiantes como hijo (Acudientes).
+    // 3. Cargar acudientes que tienen alguno de estos estudiantes como acudido.
     if (ests && ests.length > 0) {
       const idsEst = ests.map((e: any) => e.id);
       const acudientesMap = new Map<string, any>();
@@ -260,7 +260,7 @@ export default function ConsultaDetalle() {
         (data || []).forEach((u: any) => usuariosMap.set(String(u.id), u));
       }
 
-      // Resolver datos de Estudiantes para los hijos
+      // Resolver datos de Estudiantes para los acudidos
       const allHijoIds = new Set<number>();
       for (const a of acudientesMap.values()) {
         for (const hid of [a.acudido1_id, a.acudido2_id, a.acudido3_id, a.acudido4_id]) {
@@ -1135,12 +1135,12 @@ export default function ConsultaDetalle() {
                               <div className="text-sm font-semibold text-foreground truncate max-w-[180px]" title={ac.acudiente_nombre}>{ac.acudiente_nombre}</div>
                               {(() => {
                                 const kids = ac.padre_id ? kidsDePadre(ac.padre_id) : [];
-                                if (kids.length <= 1) return null; // si solo tiene 1 hijo (el del row), no agrega valor
+                                if (kids.length <= 1) return null; // si solo tiene 1 acudido (el del row), no agrega valor
                                 const otros = kids.filter((k) => !k.startsWith(est.nombre_completo));
                                 if (otros.length === 0) return null;
                                 return (
                                   <div className="text-[10px] text-muted-foreground truncate max-w-[200px]" title={otros.join(", ")}>
-                                    Otros hijos: {otros.join(", ")}
+                                    Otros acudidos: {otros.join(", ")}
                                   </div>
                                 );
                               })()}

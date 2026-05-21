@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getSession, isPadreDeFamilia, HijoData } from "@/hooks/useSession";
+import { getSession, isPadreDeFamilia, AcudidoData } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import ConsolidadoNotas from "@/components/ConsolidadoNotas";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,9 +10,9 @@ import { User } from "lucide-react";
 
 const NotasAcudiente = () => {
   const navigate = useNavigate();
-  const [hijos, setHijos] = useState<HijoData[]>([]);
-  const [hijo, setHijo] = useState<HijoData | null>(null);
-  const [badgesPorHijo, setBadgesPorHijo] = useState<Record<string, number>>({});
+  const [acudidos, setAcudidos] = useState<AcudidoData[]>([]);
+  const [acudido, setAcudido] = useState<AcudidoData | null>(null);
+  const [badgesPorAcudido, setBadgesPorAcudido] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const session = getSession();
@@ -21,15 +21,15 @@ const NotasAcudiente = () => {
       return;
     }
 
-    const hijosData = session.acudidos || [];
-    setHijos(hijosData);
+    const acudidosData = session.acudidos || [];
+    setAcudidos(acudidosData);
 
-    if (hijosData.length === 1) {
-      seleccionar(hijosData[0]);
+    if (acudidosData.length === 1) {
+      seleccionar(acudidosData[0]);
     } else {
-      // Calcular badges por hijo — todas las queries en paralelo.
+      // Calcular badges por acudido — todas las queries en paralelo.
       const fetchBadges = async () => {
-        const results = await Promise.all(hijosData.map(async (h) => {
+        const results = await Promise.all(acudidosData.map(async (h) => {
           const [lastSeen, { data }] = await Promise.all([
             getAllLastSeen(h.id),
             supabase
@@ -47,7 +47,7 @@ const NotasAcudiente = () => {
         }));
         const b: Record<string, number> = {};
         results.forEach(([id, count]) => { b[id] = count; });
-        setBadgesPorHijo(b);
+        setBadgesPorAcudido(b);
       };
       fetchBadges();
     }
@@ -56,18 +56,18 @@ const NotasAcudiente = () => {
   // Handle browser back button to return to student selection
   useEffect(() => {
     const handlePopState = () => {
-      if (hijo) {
-        setHijo(null);
+      if (acudido) {
+        setAcudido(null);
       }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [hijo]);
+  }, [acudido]);
 
-  const seleccionar = (h: HijoData) => {
-    setHijo(h);
-    window.history.pushState({ hijoSelected: true }, '');
-    localStorage.setItem("hijoSeleccionado", JSON.stringify(h));
+  const seleccionar = (h: AcudidoData) => {
+    setAcudido(h);
+    window.history.pushState({ acudidoSelected: true }, '');
+    localStorage.setItem("acudidoSeleccionado", JSON.stringify(h));
 
     const marcarVisto = async () => {
       const { data } = await supabase
@@ -98,35 +98,35 @@ const NotasAcudiente = () => {
               Inicio
             </button>
             <span className="text-muted-foreground">&rarr;</span>
-            {hijo && hijos.length > 1 ? (
+            {acudido && acudidos.length > 1 ? (
               <>
-                <button onClick={() => setHijo(null)} className="text-primary hover:underline">
+                <button onClick={() => setAcudido(null)} className="text-primary hover:underline">
                   Escoger Estudiante
                 </button>
                 <span className="text-muted-foreground">&rarr;</span>
-                <span className="text-foreground font-medium">Notas de {hijo.nombre}</span>
+                <span className="text-foreground font-medium">Notas de {acudido.nombre}</span>
               </>
             ) : (
-              <span className="text-foreground font-medium">Notas{hijo ? ` de ${hijo.nombre}` : ''}</span>
+              <span className="text-foreground font-medium">Notas{acudido ? ` de ${acudido.nombre}` : ''}</span>
             )}
           </div>
         </div>
 
-        {!hijo && hijos.length > 1 && (
+        {!acudido && acudidos.length > 1 && (
           <div className="bg-card rounded-lg shadow-soft p-6 mb-6">
             <h3 className="text-lg font-bold text-foreground mb-4 text-center">
               Selecciona un estudiante
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {hijos.map((h) => (
+              {acudidos.map((h) => (
                 <button
                   key={h.id}
                   onClick={() => seleccionar(h)}
                   className="relative flex items-center gap-3 p-4 rounded-lg border-2 border-border hover:border-primary/50 hover:bg-muted/50 transition-all duration-200 text-left"
                 >
-                  {(badgesPorHijo[h.id] || 0) > 0 && (
+                  {(badgesPorAcudido[h.id] || 0) > 0 && (
                     <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 shadow-sm animate-badge-pop">
-                      {badgesPorHijo[h.id]}
+                      {badgesPorAcudido[h.id]}
                     </span>
                   )}
                   <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-muted text-muted-foreground">
@@ -142,14 +142,14 @@ const NotasAcudiente = () => {
           </div>
         )}
 
-        {hijo && (
+        {acudido && (
           <>
             <ConsolidadoNotas
-              idEstudiante={hijo.id}
-              nombreEstudiante={hijo.nombre}
-              apellidosEstudiante={hijo.apellidos}
-              grado={hijo.grado}
-              salon={hijo.salon}
+              idEstudiante={acudido.id}
+              nombreEstudiante={acudido.nombre}
+              apellidosEstudiante={acudido.apellidos}
+              grado={acudido.grado}
+              salon={acudido.salon}
             />
           </>
         )}
