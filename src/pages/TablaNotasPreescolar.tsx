@@ -9,6 +9,7 @@ import { getSession } from "@/hooks/useSession";
 import { getPeriodoActual } from "@/utils/periodoActual";
 import { anoEscolarActual } from "@/utils/anoEscolar";
 import { ACTIVIDADES_PREESCOLAR, esGradoPreescolar } from "@/utils/preescolar";
+import { apiRequest } from "@/lib/apiClient";
 import HeaderNormi from "@/components/HeaderNormi";
 import {
   DropdownMenu,
@@ -18,7 +19,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import NotificacionModal from "@/components/notas/NotificacionModal";
 
-const N8N_WEBHOOK_URL = "https://n8n.notasnormi.com/webhook/notificar-preescolar";
+// Notificación migrada al server. Antes apuntaba a
+// https://n8n.notasnormi.com/webhook/notificar-preescolar.
 
 interface Estudiante {
   id: string;
@@ -403,18 +405,12 @@ const TablaNotasPreescolar = () => {
     );
 
     try {
-      const response = await fetch(N8N_WEBHOOK_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      await apiRequest('/api/notificaciones/notas-preescolar-actualizadas', {
+        method: 'POST',
         body: JSON.stringify(payload),
       });
 
       sonnerToast.dismiss(toastId);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
-      }
 
       sonnerToast.success(
         `✅ Informes enviados a padres de ${payload.estudiantes_ids.length} estudiante(s)`,
