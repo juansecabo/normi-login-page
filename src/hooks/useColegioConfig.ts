@@ -31,23 +31,25 @@ const DEFAULT_CONFIG: ColegioConfig = {
   ],
 };
 
-let cached: { config: ColegioConfig; expiresAt: number } | null = null;
+let cached: { nombre: string; config: ColegioConfig; expiresAt: number } | null = null;
 const TTL_MS = 60_000;
 
 /**
- * Config del colegio actual: escala, nota aprobatoria, rangos de desempeño, etc.
+ * Config del colegio actual: nombre, escala, nota aprobatoria, rangos de desempeño, etc.
  * Se carga desde Supabase (RLS hace el filtrado por colegio) y se cachea 60s.
  *
  * Todos los componentes que muestran notas o rangos deben usar esto en lugar
  * de constantes hardcodeadas (3.0, 4.5, etc).
  */
 export function useColegioConfig() {
+  const [nombre, setNombre] = useState<string>(() => cached?.nombre || "");
   const [config, setConfig] = useState<ColegioConfig>(() => cached?.config || DEFAULT_CONFIG);
   const [loading, setLoading] = useState(!cached || cached.expiresAt < Date.now());
 
   useEffect(() => {
     const now = Date.now();
     if (cached && cached.expiresAt > now) {
+      setNombre(cached.nombre);
       setConfig(cached.config);
       setLoading(false);
       return;
@@ -56,7 +58,7 @@ export function useColegioConfig() {
     (async () => {
       const { data, error } = await supabase
         .from("Colegios")
-        .select("configuracion")
+        .select("nombre, configuracion")
         .maybeSingle();
       if (cancel) return;
       const cfg: ColegioConfig = error || !data?.configuracion
@@ -65,14 +67,16 @@ export function useColegioConfig() {
       if (!Array.isArray(cfg.rangos_desempeno) || cfg.rangos_desempeno.length === 0) {
         cfg.rangos_desempeno = DEFAULT_CONFIG.rangos_desempeno;
       }
-      cached = { config: cfg, expiresAt: Date.now() + TTL_MS };
+      const nom = (data?.nombre as string) || "";
+      cached = { nombre: nom, config: cfg, expiresAt: Date.now() + TTL_MS };
+      setNombre(nom);
       setConfig(cfg);
       setLoading(false);
     })();
     return () => { cancel = true; };
   }, []);
 
-  return { config, loading };
+  return { nombre, config, loading };
 }
 
 /** Invalida la cache (úsalo cuando el rector modifica la config). */

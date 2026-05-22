@@ -8,6 +8,7 @@ import iconComunicados from "@/assets/icons/comunicados.webp";
 import iconDocumentos from "@/assets/icons/documentos.webp";
 import iconConsultas from "@/assets/icons/consultas.png";
 import HeaderNormi from "@/components/HeaderNormi";
+import EncabezadoColegio from "@/components/EncabezadoColegio";
 import BuzonSugerencias from "@/components/BuzonSugerencias";
 import { supabase } from "@/integrations/supabase/client";
 import { getAllLastSeen, countNewItems } from "@/utils/notificaciones";
@@ -154,6 +155,7 @@ const DashboardEstudiante = () => {
       <HeaderNormi backLink="/dashboard-estudiante" />
 
       <main className="flex-1 container mx-auto p-8">
+        <EncabezadoColegio />
         <div className="bg-card rounded-lg shadow-soft p-8 max-w-2xl mx-auto text-center">
           <h2 className="text-2xl lg:text-3xl font-bold text-foreground mb-4">
             Bienvenido(a)

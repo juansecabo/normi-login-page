@@ -9,6 +9,7 @@ import iconEstadisticas from "@/assets/icons/estadisticas.webp";
 import iconComunicados from "@/assets/icons/comunicados.webp";
 import iconDocumentos from "@/assets/icons/documentos.webp";
 import HeaderNormi from "@/components/HeaderNormi";
+import EncabezadoColegio from "@/components/EncabezadoColegio";
 import BuzonSugerencias from "@/components/BuzonSugerencias";
 import { supabase } from "@/integrations/supabase/client";
 import { getAllLastSeen, countNewItems } from "@/utils/notificaciones";
@@ -178,6 +179,7 @@ const DashboardAcudiente = () => {
       <HeaderNormi backLink="/dashboard-acudiente" />
 
       <main className="flex-1 container mx-auto p-8">
+        <EncabezadoColegio />
         <div className="bg-card rounded-lg shadow-soft p-5 max-w-2xl mx-auto text-center">
           <h2 className="text-2xl font-bold text-foreground mb-1">
             Bienvenido(a)
