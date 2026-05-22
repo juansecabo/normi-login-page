@@ -135,6 +135,7 @@ const EstadisticasAcudiente = () => {
                   idEstudiante={acudido.id}
                   periodo={periodoNumerico}
                   titulo={`${acudido.nombre} ${acudido.apellidos} - ${periodoTexto}`}
+                  mostrarPuesto={false}
                 />
               </>
             )}

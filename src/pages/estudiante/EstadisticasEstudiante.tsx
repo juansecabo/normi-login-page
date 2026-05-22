@@ -75,6 +75,7 @@ const EstadisticasEstudiantePage = () => {
               idEstudiante={session.id}
               periodo={periodoNumerico}
               titulo={`${session.nombres} ${session.apellidos} - ${periodoTexto}`}
+              mostrarPuesto={false}
             />
           </>
         )}

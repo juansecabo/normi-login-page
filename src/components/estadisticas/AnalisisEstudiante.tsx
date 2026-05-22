@@ -7,13 +7,13 @@ import { ListaComparativa } from "./ListaComparativa";
 import BotonDescarga from "./BotonDescarga";
 import { User, TrendingUp, Award, AlertTriangle, Medal, Star, ShieldAlert, ShieldCheck, Loader2 } from "lucide-react";
 
-interface AnalisisEstudianteProps { idEstudiante: string; periodo: number | "anual"; titulo?: string; }
+interface AnalisisEstudianteProps { idEstudiante: string; periodo: number | "anual"; titulo?: string; mostrarPuesto?: boolean; }
 
 // Umbral mínimo de porcentaje para evaluar riesgo (matchea historic logic)
 const UMBRAL_PORCENTAJE_MINIMO = 40;
 const UMBRAL_PORCENTAJE_ANUAL = 160;
 
-export const AnalisisEstudiante = ({ idEstudiante, periodo, titulo }: AnalisisEstudianteProps) => {
+export const AnalisisEstudiante = ({ idEstudiante, periodo, titulo, mostrarPuesto = true }: AnalisisEstudianteProps) => {
   const contenidoRef = useRef<HTMLDivElement>(null);
   const { data, loading, error } = useEstadisticasEstudiante(idEstudiante, periodo);
   const { config } = useColegioConfig();
@@ -70,15 +70,17 @@ export const AnalisisEstudiante = ({ idEstudiante, periodo, titulo }: AnalisisEs
                 <p className="text-muted-foreground">{estudiante.grado} {estudiante.salon}</p>
               </div>
             </div>
-            <div className="flex flex-col items-end gap-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-base text-foreground font-bold">Puesto:</span>
-                <div className="text-center px-4 py-2 bg-muted rounded-lg"><p className="text-xs text-muted-foreground">Salón</p><p className="text-lg font-bold text-foreground">#{estudiante.posicion_salon}/{estudiante.total_salon}</p></div>
-                <div className="text-center px-4 py-2 bg-muted rounded-lg"><p className="text-xs text-muted-foreground">Grado</p><p className="text-lg font-bold text-foreground">#{estudiante.posicion_grado}/{estudiante.total_grado}</p></div>
-                <div className="text-center px-4 py-2 bg-muted rounded-lg"><p className="text-xs text-muted-foreground">Institución</p><p className="text-lg font-bold text-foreground">#{estudiante.posicion_institucional}/{estudiante.total_institucional}</p></div>
+            {mostrarPuesto && (
+              <div className="flex flex-col items-end gap-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-base text-foreground font-bold">Puesto:</span>
+                  <div className="text-center px-4 py-2 bg-muted rounded-lg"><p className="text-xs text-muted-foreground">Salón</p><p className="text-lg font-bold text-foreground">#{estudiante.posicion_salon}/{estudiante.total_salon}</p></div>
+                  <div className="text-center px-4 py-2 bg-muted rounded-lg"><p className="text-xs text-muted-foreground">Grado</p><p className="text-lg font-bold text-foreground">#{estudiante.posicion_grado}/{estudiante.total_grado}</p></div>
+                  <div className="text-center px-4 py-2 bg-muted rounded-lg"><p className="text-xs text-muted-foreground">Institución</p><p className="text-lg font-bold text-foreground">#{estudiante.posicion_institucional}/{estudiante.total_institucional}</p></div>
+                </div>
+                <p className="text-[10px] text-muted-foreground">Solo se tienen en cuenta estudiantes con notas registradas</p>
               </div>
-              <p className="text-[10px] text-muted-foreground">Solo se tienen en cuenta estudiantes con notas registradas</p>
-            </div>
+            )}
           </div>
         </div>
 
