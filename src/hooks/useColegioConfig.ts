@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { apiRequest } from "@/lib/apiClient";
 
 export interface RangoDesempeno {
   label: string;
@@ -56,22 +56,29 @@ export function useColegioConfig() {
     }
     let cancel = false;
     (async () => {
-      const { data, error } = await supabase
-        .from("Colegios")
-        .select("nombre, configuracion")
-        .maybeSingle();
-      if (cancel) return;
-      const cfg: ColegioConfig = error || !data?.configuracion
-        ? DEFAULT_CONFIG
-        : { ...DEFAULT_CONFIG, ...(data.configuracion as Record<string, unknown>) } as ColegioConfig;
-      if (!Array.isArray(cfg.rangos_desempeno) || cfg.rangos_desempeno.length === 0) {
-        cfg.rangos_desempeno = DEFAULT_CONFIG.rangos_desempeno;
+      try {
+        // /api/colegio/config filtra por colegio_id del JWT — el shim de
+        // Supabase no sirve porque `Colegios` está marcada NO_TENANT y
+        // devuelve TODOS los colegios (.maybeSingle() falla con N>1).
+        const res = await apiRequest<{ nombre: string; config: Partial<ColegioConfig> }>(
+          "/api/colegio/config",
+        );
+        if (cancel) return;
+        const cfg: ColegioConfig = res.config
+          ? { ...DEFAULT_CONFIG, ...res.config } as ColegioConfig
+          : DEFAULT_CONFIG;
+        if (!Array.isArray(cfg.rangos_desempeno) || cfg.rangos_desempeno.length === 0) {
+          cfg.rangos_desempeno = DEFAULT_CONFIG.rangos_desempeno;
+        }
+        const nom = res.nombre || "";
+        cached = { nombre: nom, config: cfg, expiresAt: Date.now() + TTL_MS };
+        setNombre(nom);
+        setConfig(cfg);
+        setLoading(false);
+      } catch {
+        if (cancel) return;
+        setLoading(false);
       }
-      const nom = (data?.nombre as string) || "";
-      cached = { nombre: nom, config: cfg, expiresAt: Date.now() + TTL_MS };
-      setNombre(nom);
-      setConfig(cfg);
-      setLoading(false);
     })();
     return () => { cancel = true; };
   }, []);
