@@ -733,10 +733,34 @@ const PanelControl = () => {
       || snap.grado !== curEst.grado
       || snap.salon !== curEst.salon;
 
-    // ── 1) Escribir Estudiantes (solo columnas que existen tras Fase 10.E.19:
-    //       id, nivel, grado, salon — nombres/apellidos viven en Usuarios)
-    //       y Usuarios (nombres/apellidos del estudiante mismo).
+    // ── 1) Orden: primero Usuarios (donde viven nombres/apellidos del
+    //       estudiante), después Estudiantes (solo id, nivel, grado, salon
+    //       tras Fase 10.E.19). Si Estudiantes falla por id duplicado y el
+    //       Usuario era nuevo, lo borramos para no dejarlo huérfano.
     if (estCambio) {
+      const { data: existingUserEst } = await supabase
+        .from("Usuarios").select("id").eq("id", estId).maybeSingle();
+      const usuarioYaExistia = !!existingUserEst;
+
+      const usuariosEstPayload: Record<string, unknown> = {
+        id: estId,
+        nombres: curEst.nombres,
+        apellidos: curEst.apellidos,
+      };
+      if (!existingUserEst) usuariosEstPayload.contrasena = estId;
+      const { error: errUsrEst } = await supabase
+        .from("Usuarios")
+        .upsert(usuariosEstPayload, { onConflict: "id" });
+      if (errUsrEst) {
+        setSavingEst(false);
+        toast({
+          title: "Error",
+          description: errUsrEst.message || `No se pudo guardar el usuario (${(errUsrEst as any).code || "sin código"})`,
+          variant: "destructive",
+        });
+        return;
+      }
+
       const payload = {
         id: Number(estId),
         nivel: nivel,
@@ -750,31 +774,19 @@ const PanelControl = () => {
         ({ error } = await supabase.from("Estudiantes").insert(payload));
       }
       if (error) {
+        if (!editingEst && !usuarioYaExistia) {
+          await supabase.from("Usuarios").delete().eq("id", estId);
+        }
         setSavingEst(false);
         if (error.code === "23505") {
           toast({ title: "Error", description: `Ya existe un estudiante con el id ${estId}`, variant: "destructive" });
         } else {
-          toast({ title: "Error", description: error.message, variant: "destructive" });
+          toast({
+            title: "Error",
+            description: error.message || `No se pudo guardar el estudiante (${error.code || "sin código"})`,
+            variant: "destructive",
+          });
         }
-        return;
-      }
-
-      // Upsert SIEMPRE a Usuarios (nombres/apellidos del estudiante).
-      // Si es nuevo y no había en Usuarios, dejar el id como contraseña por default.
-      const { data: existingUserEst } = await supabase
-        .from("Usuarios").select("id").eq("id", estId).maybeSingle();
-      const usuariosEstPayload: Record<string, unknown> = {
-        id: estId,
-        nombres: curEst.nombres,
-        apellidos: curEst.apellidos,
-      };
-      if (!existingUserEst) usuariosEstPayload.contrasena = estId;
-      const { error: errUsrEst } = await supabase
-        .from("Usuarios")
-        .upsert(usuariosEstPayload, { onConflict: "id" });
-      if (errUsrEst) {
-        setSavingEst(false);
-        toast({ title: "Error", description: errUsrEst.message, variant: "destructive" });
         return;
       }
     }
@@ -941,14 +953,46 @@ const PanelControl = () => {
     }
 
     setSavingInt(true);
-    // Internos solo tiene: id, cargo, direccion_de_grupo, last_message_received_at, colegio_id.
-    // Nombres/apellidos viven solo en Usuarios desde Fase 10.E.19.
+
+    // Orden importante: primero Usuarios (donde viven nombres/apellidos/contrasena),
+    // después Internos (solo id + cargo). Si falla Usuarios y va primero, no
+    // queda un Interno huérfano sin datos. Si Internos falla por id duplicado,
+    // borramos el Usuario que acabamos de crear si era nuevo (no había antes).
+    const usuariosPayload: Record<string, unknown> = {
+      id: intId,
+      nombres: intNombres.trim(),
+      apellidos: intApellidos.trim(),
+    };
+    if (intContrasena) {
+      usuariosPayload.contrasena = intContrasena;
+    } else if (!editingInt) {
+      // Nuevo Interno sin contraseña → default = id.
+      usuariosPayload.contrasena = intId;
+    }
+    // ¿El usuario ya existía? (para saber si revertir en caso de fallo de Internos)
+    const { data: prevUsr } = await supabase
+      .from("Usuarios").select("id").eq("id", intId).maybeSingle();
+    const usuarioYaExistia = !!prevUsr;
+
+    const { error: errUsr } = await supabase
+      .from("Usuarios")
+      .upsert(usuariosPayload, { onConflict: "id" });
+    if (errUsr) {
+      setSavingInt(false);
+      toast({
+        title: "Error",
+        description: errUsr.message || `No se pudo guardar el usuario (${(errUsr as any).code || "sin código"})`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Internos: solo id + cargo (Fase 10.E.19 dropeó nombres/apellidos).
     const payload: Record<string, unknown> = {
       id: Number(intId),
       cargo: intCargo,
     };
-
-    let error;
+    let error: any;
     if (editingInt) {
       ({ error } = await supabase
         .from("Internos")
@@ -958,36 +1002,25 @@ const PanelControl = () => {
       ({ error } = await supabase.from("Internos").insert(payload));
     }
 
-    // Upsert SIEMPRE a Usuarios (nombres/apellidos viven ahí).
-    // Si no se dio contraseña al crear, se usa el id como contraseña por
-    // default — el usuario podrá entrar con su cédula y cambiarla después.
-    if (!error) {
-      const usuariosPayload: Record<string, unknown> = {
-        id: intId,
-        nombres: intNombres.trim(),
-        apellidos: intApellidos.trim(),
-      };
-      if (intContrasena) {
-        usuariosPayload.contrasena = intContrasena;
-      } else if (!editingInt) {
-        // Nuevo Interno sin contraseña → default = id.
-        usuariosPayload.contrasena = intId;
-      }
-      const { error: errUsr } = await supabase
-        .from("Usuarios")
-        .upsert(usuariosPayload, { onConflict: "id" });
-      if (errUsr) error = errUsr;
-    }
-
-    setSavingInt(false);
     if (error) {
+      // Si Internos falló y el Usuario era nuevo (creado por nosotros recién),
+      // lo borramos para que no quede huérfano.
+      if (!editingInt && !usuarioYaExistia) {
+        await supabase.from("Usuarios").delete().eq("id", intId);
+      }
+      setSavingInt(false);
       if (error.code === "23505") {
         toast({ title: "Error", description: `Ya existe un funcionario con el id ${intId}`, variant: "destructive" });
       } else {
-        toast({ title: "Error", description: error.message, variant: "destructive" });
+        toast({
+          title: "Error",
+          description: error.message || `No se pudo guardar el funcionario (${error.code || "sin código"})`,
+          variant: "destructive",
+        });
       }
       return;
     }
+    setSavingInt(false);
     toast({ title: editingInt ? "Funcionario actualizado" : "Funcionario agregado" });
     setShowIntDialog(false);
     fetchInternos();
