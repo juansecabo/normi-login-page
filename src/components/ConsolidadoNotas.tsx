@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getPeriodoActual } from "@/utils/periodoActual";
 import { anoEscolarActual } from "@/utils/anoEscolar";
+import ComentarioModalReadOnly from "@/components/notas/ComentarioModalReadOnly";
+import { MessageSquareText } from "lucide-react";
 
 interface ConsolidadoNotasProps {
   idEstudiante: string;
@@ -27,6 +29,14 @@ type NotasEstudiante = {
   };
 };
 
+type ComentariosEstudiante = {
+  [asignatura: string]: {
+    [periodo: number]: {
+      [actividadId: string]: string;
+    };
+  };
+};
+
 type ActividadesPorAsignatura = {
   [asignatura: string]: Actividad[];
 };
@@ -46,8 +56,14 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
   const [asignaturas, setAsignaturas] = useState<string[]>([]);
   const [actividadesPorAsignatura, setActividadesPorAsignatura] = useState<ActividadesPorAsignatura>({});
   const [notas, setNotas] = useState<NotasEstudiante>({});
+  const [comentarios, setComentarios] = useState<ComentariosEstudiante>({});
   const [periodosActivos, setPeriodosActivos] = useState<PeriodosActivos>({});
   const [loading, setLoading] = useState(true);
+  // Modal de comentario en modo solo lectura para estudiantes y acudientes.
+  const [comentarioAbierto, setComentarioAbierto] = useState<{
+    nombreActividad: string;
+    comentario: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!idEstudiante || !grado || !salon) {
@@ -137,16 +153,24 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
 
         if (!notasError && notasData) {
           const notasFormateadas: NotasEstudiante = {};
+          const comentariosFormateados: ComentariosEstudiante = {};
           notasData.forEach((nota) => {
-            const { asignatura, periodo, nombre_actividad, nota: valorNota } = nota;
+            const { asignatura, periodo, nombre_actividad, nota: valorNota, comentario } = nota;
             if (nombre_actividad === "Definitiva Anual" || nombre_actividad === "Definitiva Periodo") return;
 
             const actividadId = `${periodo}-${nombre_actividad}`;
             if (!notasFormateadas[asignatura]) notasFormateadas[asignatura] = {};
             if (!notasFormateadas[asignatura][periodo]) notasFormateadas[asignatura][periodo] = {};
             notasFormateadas[asignatura][periodo][actividadId] = valorNota;
+
+            if (comentario && String(comentario).trim()) {
+              if (!comentariosFormateados[asignatura]) comentariosFormateados[asignatura] = {};
+              if (!comentariosFormateados[asignatura][periodo]) comentariosFormateados[asignatura][periodo] = {};
+              comentariosFormateados[asignatura][periodo][actividadId] = String(comentario);
+            }
           });
           setNotas(notasFormateadas);
+          setComentarios(comentariosFormateados);
         }
       } catch (error) {
         console.error('Error:', error);
@@ -307,12 +331,31 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
                     <tr>
                       {actividadesDelPeriodo.map((actividad) => {
                         const nota = notas[asignatura]?.[periodoActivo]?.[actividad.id];
+                        const comentario = comentarios[asignatura]?.[periodoActivo]?.[actividad.id];
                         return (
                           <td
                             key={actividad.id}
                             className="p-2 text-center text-sm border-r border-b border-border"
                           >
-                            {nota !== undefined ? nota.toFixed(2) : '—'}
+                            <div className="inline-flex items-center justify-center gap-1">
+                              <span>{nota !== undefined ? nota.toFixed(2) : '—'}</span>
+                              {comentario && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setComentarioAbierto({
+                                      nombreActividad: actividad.nombre,
+                                      comentario,
+                                    })
+                                  }
+                                  className="text-primary hover:text-primary/80"
+                                  title="Ver comentario del profesor"
+                                  aria-label="Ver comentario del profesor"
+                                >
+                                  <MessageSquareText className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
                           </td>
                         );
                       })}
@@ -333,6 +376,14 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
           No hay asignaturas asignadas para este grado y salón
         </div>
       )}
+
+      <ComentarioModalReadOnly
+        open={!!comentarioAbierto}
+        onOpenChange={(open) => { if (!open) setComentarioAbierto(null); }}
+        nombreEstudiante={`${nombreEstudiante} ${apellidosEstudiante}`.trim()}
+        nombreActividad={comentarioAbierto?.nombreActividad || ""}
+        comentario={comentarioAbierto?.comentario || null}
+      />
     </div>
   );
 };
