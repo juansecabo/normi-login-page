@@ -35,7 +35,8 @@ const SALONES = ["1", "2", "3", "4", "5", "6"];
 
 const CARGOS = [
   "Profesor(a)", "Rector", "Coordinador(a)", "Administrativo(a)",
-  "Secretaria General", "Portero", "Servicios Generales", "Administrador",
+  "Secretaria General", "Orientador(a) Escolar", "Portero",
+  "Servicios Generales", "Administrador",
 ];
 
 // El catálogo de asignaturas vive en la tabla "Asignaturas" (por colegio).
@@ -1029,12 +1030,15 @@ const PanelControl = () => {
   const deleteInterno = async () => {
     if (!showDeleteInt) return;
     setSavingInt(true);
+    const internoId = showDeleteInt.id;
+    const internoIdStr = String(internoId);
+
     const { error } = await supabase
       .from("Internos")
       .delete()
-      .eq("id", showDeleteInt.id);
-    setSavingInt(false);
+      .eq("id", internoId);
     if (error) {
+      setSavingInt(false);
       if (error.code === "23503") {
         toast({
           title: "No se puede eliminar",
@@ -1046,6 +1050,28 @@ const PanelControl = () => {
       }
       return;
     }
+
+    // Cleanup: si el Usuario ya no es Estudiante, Acudiente ni Interno en
+    // OTRO colegio, lo borramos para no dejar la cédula huérfana ocupada en
+    // Usuarios. Multi-perfil por colegio: una persona puede mantenerse en
+    // Usuarios si todavía tiene algún rol en algún colegio.
+    try {
+      const [estCheck, acuCheck, intCheck] = await Promise.all([
+        supabase.from("Estudiantes").select("id").eq("id", internoId).limit(1),
+        supabase.from("Acudientes").select("id").eq("id", internoIdStr).limit(1),
+        supabase.from("Internos").select("id").eq("id", internoId).limit(1),
+      ]);
+      const tieneOtroRol = ((estCheck.data?.length || 0) > 0)
+        || ((acuCheck.data?.length || 0) > 0)
+        || ((intCheck.data?.length || 0) > 0);
+      if (!tieneOtroRol) {
+        await supabase.from("Usuarios").delete().eq("id", internoIdStr);
+      }
+    } catch (err) {
+      console.warn("[deleteInterno] cleanup Usuarios falló (no crítico):", err);
+    }
+
+    setSavingInt(false);
     toast({ title: "Funcionario eliminado" });
     setShowDeleteInt(null);
     fetchInternos();

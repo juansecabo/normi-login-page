@@ -179,7 +179,7 @@ const Index = () => {
           <div className="flex justify-center">
             <img
               src={escudoImg}
-              alt="Escudo Escuela Normal Superior de Corozal"
+              alt="Escudo Escuela Normal Superior"
               className="w-28 h-auto object-contain"
             />
           </div>
@@ -192,7 +192,7 @@ const Index = () => {
             <p className="text-muted-foreground text-sm lg:text-base">
               {memberships
                 ? "¿En cuál perfil quieres entrar?"
-                : "Escuela Normal Superior de Corozal"}
+                : "Escuela Normal Superior"}
             </p>
           </div>
 

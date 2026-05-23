@@ -451,6 +451,14 @@ const ProgramarActividad = () => {
         console.error('Error enviando notificación:', err);
       }
 
+      // Refrescar la lista de actividades programadas para que la nueva
+      // aparezca de inmediato (antes solo aparecía tras reload de la página).
+      try {
+        await cargarActividades();
+      } catch (e) {
+        console.warn('No se pudo refrescar la lista de actividades:', e);
+      }
+
       toast({
         title: "Actividad programada",
         description: "La actividad se ha programado correctamente y se notificó a estudiantes y padres",
