@@ -161,7 +161,7 @@ const DashboardAdmin = () => {
             </button>
 
             <button
-              onClick={() => window.open("https://chat.notasnormi.com", "_blank")}
+              onClick={() => window.open("https://chat.notasnormy.com", "_blank")}
               className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-blue-100 transition-all duration-200 hover:shadow-md hover:bg-blue-200"
             >
               <img src={iconConversaciones} alt="" className="w-16 h-16 object-contain" />
