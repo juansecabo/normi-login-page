@@ -194,6 +194,22 @@ const DashboardAdmin = () => {
             </button>
           </div>
         </div>
+
+        <div className="flex items-start justify-center gap-8 mt-8">
+          <button
+            onClick={() => navigate("/manual-convivencia")}
+            className="flex flex-col items-center gap-2 transition-all duration-200 hover:scale-105"
+          >
+            <img
+              src="/manual-de-convivencia.webp"
+              alt="Manual de Convivencia"
+              className="w-20 h-20 object-contain"
+            />
+            <span className="font-semibold text-foreground text-sm">
+              Manual de Convivencia
+            </span>
+          </button>
+        </div>
       </main>
     </div>
   );
