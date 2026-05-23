@@ -2138,8 +2138,9 @@ const PanelControl = () => {
               <Label>Contraseña {editingInt && "(dejar vacío para no cambiar)"}</Label>
               <Input
                 value={intContrasena}
-                onChange={(e) => setIntContrasena(e.target.value)}
+                onChange={(e) => setIntContrasena(e.target.value.slice(0, 50))}
                 placeholder={editingInt ? "Nueva contraseña (opcional)" : "Contraseña"}
+                maxLength={50}
               />
             </div>
           </div>
@@ -2457,8 +2458,9 @@ const PanelControl = () => {
               <Label>Contraseña</Label>
               <Input
                 value={perfContrasena}
-                onChange={(e) => setPerfContrasena(e.target.value)}
+                onChange={(e) => setPerfContrasena(e.target.value.slice(0, 50))}
                 placeholder="Contraseña"
+                maxLength={50}
               />
             </div>
           </div>

@@ -142,9 +142,10 @@ const CambiarContrasenaModal = ({ open, onOpenChange }: CambiarContrasenaModalPr
               <input
                 type={showNueva ? "text" : "password"}
                 value={nuevaContrasena}
-                onChange={(e) => setNuevaContrasena(e.target.value)}
+                onChange={(e) => setNuevaContrasena(e.target.value.slice(0, 50))}
+                maxLength={50}
                 className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                placeholder="Ingresa la nueva contraseña"
+                placeholder="Máximo 50 caracteres"
               />
               <button
                 type="button"
@@ -164,7 +165,8 @@ const CambiarContrasenaModal = ({ open, onOpenChange }: CambiarContrasenaModalPr
               <input
                 type={showConfirmar ? "text" : "password"}
                 value={confirmarContrasena}
-                onChange={(e) => setConfirmarContrasena(e.target.value)}
+                onChange={(e) => setConfirmarContrasena(e.target.value.slice(0, 50))}
+                maxLength={50}
                 className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                 placeholder="Repite la nueva contraseña"
               />
