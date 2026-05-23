@@ -145,11 +145,11 @@ const TablaNotasPreescolar = () => {
         }
 
         // Verificar primero cuáles ya existen
+        // Aula compartida: chequear si ya hay seed sin filtrar por profesor.
         const { data: existentes } = await supabase
           .from("Nombre de Actividades")
           .select("periodo, nombre_actividad")
           .eq("ano_escolar", anoEscolarActual())
-          .eq("id_profesor", session.id)
           .eq("asignatura", storedAsignatura)
           .eq("grado", storedGrado)
           .eq("salon", storedSalon)

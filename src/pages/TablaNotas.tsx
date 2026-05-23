@@ -100,6 +100,10 @@ const TablaNotas = () => {
   const [actividades, setActividades] = useState<Actividad[]>([]);
   const [notas, setNotas] = useState<NotasEstudiantes>({});
   const [comentarios, setComentarios] = useState<ComentariosEstudiantes>({});
+  // Nombres de TODOS los profesores que dan esta asignatura+grado+salon
+  // (formato: "Nombre1 Apellidos1, Nombre2 Apellidos2", orden alfabético).
+  // Se usa en el header del PDF descargado.
+  const [nombresProfesores, setNombresProfesores] = useState<string>("");
   
   // Estado para período activo (pestañas)
   const [periodoActivo, setPeriodoActivo] = useState<number>(getPeriodoActual());
@@ -222,11 +226,12 @@ const TablaNotas = () => {
 
         // PRIMERO: Cargar actividades desde "Nombre de Actividades"
         console.log("=== CARGANDO ACTIVIDADES DESDE NOMBRE DE ACTIVIDADES ===");
+        // Compartido entre profesores del mismo aula (asignatura+grado+salon):
+        // sin filtro por id_profesor, todos ven y editan la misma tabla.
         const { data: actividadesData, error: actividadesError } = await supabase
           .from('Nombre de Actividades')
           .select('*')
           .eq('ano_escolar', anoEscolarActual())
-          .eq('id_profesor', idProfesor)
           .eq('asignatura', storedAsignatura)
           .eq('grado', storedGrado)
           .eq('salon', storedSalon)
@@ -357,6 +362,43 @@ const TablaNotas = () => {
       } catch (error) {
         console.error('Error obteniendo otros salones:', error);
       }
+
+      // Cargar nombres de TODOS los profesores que dan esta asignatura+grado+salon.
+      // Si hay 2 o más profesores compartiendo el aula, todos aparecen separados
+      // por coma en el PDF, en orden alfabético por apellidos.
+      try {
+        const { data: asigAula } = await supabase
+          .from('Asignación Profesores')
+          .select('id, "Asignatura(s)", "Grado(s)", "Salon(es)"');
+        const idsProfes = new Set<number>();
+        for (const a of asigAula || []) {
+          const asigs = (a['Asignatura(s)'] || []).flat();
+          const grds = (a['Grado(s)'] || []).flat();
+          const slns = (a['Salon(es)'] || []).flat();
+          if (asigs.includes(storedAsignatura) && grds.includes(storedGrado) && slns.includes(storedSalon)) {
+            if (a.id != null) idsProfes.add(Number(a.id));
+          }
+        }
+        if (idsProfes.size > 0) {
+          const { data: usrs } = await supabase
+            .from('Usuarios')
+            .select('id, nombres, apellidos')
+            .in('id', [...idsProfes].map(String));
+          const ordenados = (usrs || [])
+            .map((u: any) => ({
+              nombres: (u.nombres || '').trim(),
+              apellidos: (u.apellidos || '').trim(),
+            }))
+            .sort((a, b) => a.apellidos.localeCompare(b.apellidos, 'es'));
+          const formateados = ordenados
+            .map((u) => `${u.nombres} ${u.apellidos}`.trim())
+            .filter(Boolean)
+            .join(', ');
+          setNombresProfesores(formateados);
+        }
+      } catch (error) {
+        console.error('Error obteniendo nombres de profesores del aula:', error);
+      }
     };
 
     inicializar();
@@ -431,12 +473,11 @@ const TablaNotas = () => {
   };
 
   const buscarSalonesConActividad = async (nombreAct: string, periodo: number) => {
-    const session = getSession();
+    // Aula compartida: buscar entre todos los profesores del mismo aula.
     const { data } = await supabase
       .from('Nombre de Actividades')
       .select('salon')
       .eq('ano_escolar', anoEscolarActual())
-      .eq('id_profesor', session.id)
       .eq('asignatura', asignaturaSeleccionada)
       .eq('grado', gradoSeleccionado)
       .eq('periodo', periodo)
@@ -516,7 +557,6 @@ const TablaNotas = () => {
           .from('Nombre de Actividades')
           .select('salon')
           .eq('ano_escolar', anoEscolarActual())
-          .eq('id_profesor', session.id)
           .eq('asignatura', asignaturaSeleccionada)
           .eq('grado', gradoSeleccionado)
           .eq('periodo', actividadEditando.periodo)
@@ -529,6 +569,7 @@ const TablaNotas = () => {
         ? [salonSeleccionado, ...salonesOtros]
         : [salonSeleccionado];
       try {
+        // Aula compartida: cualquier profesor del aula puede editar la actividad.
         const { error } = await supabase
           .from('Nombre de Actividades')
           .update({
@@ -536,7 +577,6 @@ const TablaNotas = () => {
             porcentaje: porcentaje
           })
           .eq('ano_escolar', anoEscolarActual())
-          .eq('id_profesor', session.id)
           .eq('asignatura', asignaturaSeleccionada)
           .eq('grado', gradoSeleccionado)
           .in('salon', salonesAEditar)
@@ -636,7 +676,6 @@ const TablaNotas = () => {
             .from('Nombre de Actividades')
             .select('salon, porcentaje')
             .eq('ano_escolar', anoEscolarActual())
-            .eq('id_profesor', session.id)
             .eq('asignatura', asignaturaSeleccionada)
             .eq('grado', gradoSeleccionado)
             .in('salon', otrosSalones)
@@ -772,11 +811,11 @@ const TablaNotas = () => {
         periodo: actividadAEliminar.periodo,
         nombre_actividad: actividadAEliminar.nombre,
       });
+      // Aula compartida: cualquier profesor del aula puede borrar.
       const { data: deletedRows, error: errorActividad } = await supabase
         .from('Nombre de Actividades')
         .delete()
         .eq('ano_escolar', anoEscolarActual())
-        .eq('id_profesor', session.id)
         .eq('asignatura', asignaturaSeleccionada)
         .eq('grado', gradoSeleccionado)
         .in('salon', salonesAEliminar)
@@ -1202,11 +1241,14 @@ const TablaNotas = () => {
 
           container.appendChild(headerDiv);
 
-          // Profesor
-          if (nombreProfesor) {
+          // Profesor(es) — si hay más de uno compartiendo el aula, salen todos
+          // separados por coma. Si el query falló, fallback al profesor logueado.
+          const nombresHeader = nombresProfesores || nombreProfesor;
+          if (nombresHeader) {
             const profDiv = document.createElement("div");
             profDiv.style.cssText = "font-size:13px;color:#444;margin-bottom:4px;font-weight:500;";
-            profDiv.textContent = `Profesor(a): ${nombreProfesor}`;
+            const etiqueta = nombresHeader.includes(",") ? "Profesores(as)" : "Profesor(a)";
+            profDiv.textContent = `${etiqueta}: ${nombresHeader}`;
             container.appendChild(profDiv);
           }
 

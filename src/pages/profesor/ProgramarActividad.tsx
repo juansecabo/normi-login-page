@@ -285,10 +285,10 @@ const ProgramarActividad = () => {
   const cargarActividades = async () => {
     setLoadingActividades(true);
     try {
+      // Aula compartida: ver actividades programadas por cualquier profesor.
       const { data, error } = await supabase
         .from('Calendario Actividades')
         .select('*')
-        .eq('id_profesor', profesorIdReal)
         .eq('Asignatura', actAsignatura)
         .eq('Grado', actGrado)
         .eq('Salon', actSalon)

@@ -204,10 +204,11 @@ const ActividadesCalendario = () => {
   ) => {
     setLoading(true);
     try {
+      // Aula compartida: ver actividades programadas por cualquier profesor
+      // del mismo aula (asignatura+grado+salon).
       const { data, error } = await supabase
         .from('Calendario Actividades')
         .select('*')
-        .eq('id_profesor', profIdReal)
         .eq('Asignatura', asignatura)
         .eq('Grado', grado)
         .eq('Salon', salon)
