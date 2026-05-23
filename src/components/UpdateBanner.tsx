@@ -15,9 +15,11 @@ export default function UpdateBanner() {
   } = useRegisterSW({
     onRegistered(r) {
       if (r) {
+        // Check inmediato — no esperar el primer intervalo.
+        r.update().catch(() => {});
         setInterval(() => {
           r.update().catch(() => {});
-        }, 60 * 1000);
+        }, 30 * 1000);
       }
     },
     onRegisterError(error) {
