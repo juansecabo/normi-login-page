@@ -733,12 +733,12 @@ const PanelControl = () => {
       || snap.grado !== curEst.grado
       || snap.salon !== curEst.salon;
 
-    // ── 1) Escribir Estudiantes solo si cambió algo (o si es INSERT)
+    // ── 1) Escribir Estudiantes (solo columnas que existen tras Fase 10.E.19:
+    //       id, nivel, grado, salon — nombres/apellidos viven en Usuarios)
+    //       y Usuarios (nombres/apellidos del estudiante mismo).
     if (estCambio) {
       const payload = {
         id: Number(estId),
-        nombres: curEst.nombres,
-        apellidos: curEst.apellidos,
         nivel: nivel,
         grado: estGrado,
         salon: estSalon,
@@ -756,6 +756,25 @@ const PanelControl = () => {
         } else {
           toast({ title: "Error", description: error.message, variant: "destructive" });
         }
+        return;
+      }
+
+      // Upsert SIEMPRE a Usuarios (nombres/apellidos del estudiante).
+      // Si es nuevo y no había en Usuarios, dejar el id como contraseña por default.
+      const { data: existingUserEst } = await supabase
+        .from("Usuarios").select("id").eq("id", estId).maybeSingle();
+      const usuariosEstPayload: Record<string, unknown> = {
+        id: estId,
+        nombres: curEst.nombres,
+        apellidos: curEst.apellidos,
+      };
+      if (!existingUserEst) usuariosEstPayload.contrasena = estId;
+      const { error: errUsrEst } = await supabase
+        .from("Usuarios")
+        .upsert(usuariosEstPayload, { onConflict: "id" });
+      if (errUsrEst) {
+        setSavingEst(false);
+        toast({ title: "Error", description: errUsrEst.message, variant: "destructive" });
         return;
       }
     }
@@ -920,16 +939,12 @@ const PanelControl = () => {
       toast({ title: "Campos requeridos", description: "Completa id, nombres, apellidos y cargo", variant: "destructive" });
       return;
     }
-    if (!editingInt && !intContrasena) {
-      toast({ title: "Campos requeridos", description: "La contraseña es requerida para nuevos funcionarios", variant: "destructive" });
-      return;
-    }
 
     setSavingInt(true);
+    // Internos solo tiene: id, cargo, direccion_de_grupo, last_message_received_at, colegio_id.
+    // Nombres/apellidos viven solo en Usuarios desde Fase 10.E.19.
     const payload: Record<string, unknown> = {
       id: Number(intId),
-      nombres: intNombres.trim(),
-      apellidos: intApellidos.trim(),
       cargo: intCargo,
     };
 
@@ -943,14 +958,24 @@ const PanelControl = () => {
       ({ error } = await supabase.from("Internos").insert(payload));
     }
 
-    // La contraseña vive en Usuarios (no en Internos).
-    if (!error && intContrasena) {
-      const { error: errUsr } = await supabase.from("Usuarios").upsert({
+    // Upsert SIEMPRE a Usuarios (nombres/apellidos viven ahí).
+    // Si no se dio contraseña al crear, se usa el id como contraseña por
+    // default — el usuario podrá entrar con su cédula y cambiarla después.
+    if (!error) {
+      const usuariosPayload: Record<string, unknown> = {
         id: intId,
         nombres: intNombres.trim(),
         apellidos: intApellidos.trim(),
-        contrasena: intContrasena,
-      }, { onConflict: "id" });
+      };
+      if (intContrasena) {
+        usuariosPayload.contrasena = intContrasena;
+      } else if (!editingInt) {
+        // Nuevo Interno sin contraseña → default = id.
+        usuariosPayload.contrasena = intId;
+      }
+      const { error: errUsr } = await supabase
+        .from("Usuarios")
+        .upsert(usuariosPayload, { onConflict: "id" });
       if (errUsr) error = errUsr;
     }
 
