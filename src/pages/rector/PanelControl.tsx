@@ -1090,7 +1090,7 @@ const PanelControl = () => {
 
   const saveAsignacion = async () => {
     if (
-      !asigApellidos ||
+      !asigProfesorId ||
       asigAsignaturas.length === 0 ||
       asigGrados.length === 0 ||
       asigSalones.length === 0
@@ -1104,17 +1104,17 @@ const PanelControl = () => {
     }
 
     setSavingAsig(true);
+    // Asignación Profesores solo tiene: row_id, id, Asignatura(s), Grado(s),
+    // Salon(es), colegio_id. Nombres/apellidos/telefono fueron dropeados en
+    // Fase 10.E.19 — viven solo en Usuarios y se resuelven vía join por id.
     const payload = {
-      nombres: asigNombres.trim(),
-      apellidos: asigApellidos.trim(),
-      numero_de_telefono: asigId || null,
-      id: asigProfesorId ? Number(asigProfesorId) : null,
+      id: Number(asigProfesorId),
       "Asignatura(s)": asigAsignaturas,
       "Grado(s)": asigGrados,
       "Salon(es)": asigSalones,
     };
 
-    let error;
+    let error: any;
     if (editingAsig) {
       ({ error } = await supabase
         .from("Asignación Profesores")
@@ -1126,7 +1126,11 @@ const PanelControl = () => {
 
     setSavingAsig(false);
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error.message || `No se pudo guardar la asignación (${error.code || "sin código"})`,
+        variant: "destructive",
+      });
       return;
     }
     toast({ title: editingAsig ? "Asignación actualizada" : "Asignación agregada" });
