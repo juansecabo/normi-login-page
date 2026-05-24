@@ -107,6 +107,9 @@ export interface AuthUser {
   grado?: string;
   salon?: string;
   acudidos?: AcudidoData[];
+  /** True si la cedula tiene >=2 membresias. Frontend lo usa para decidir
+   *  si mostrar el boton "Cambiar perfil" en el header. */
+  multi_membership?: boolean;
   colegio: ColegioInfo;
 }
 

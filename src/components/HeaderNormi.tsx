@@ -96,15 +96,17 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
                   <span className="sm:hidden">App</span>
                 </button>
               )}
-              <button
-                onClick={handleSwitchProfile}
-                disabled={switching}
-                className="px-2 sm:px-3 py-1.5 sm:py-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground font-medium rounded-lg transition-all duration-200 text-[10px] sm:text-sm whitespace-nowrap flex items-center gap-1 disabled:opacity-50"
-              >
-                <Repeat className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Cambiar perfil</span>
-                <span className="sm:hidden">Perfil</span>
-              </button>
+              {getSession().multi_membership && (
+                <button
+                  onClick={handleSwitchProfile}
+                  disabled={switching}
+                  className="px-2 sm:px-3 py-1.5 sm:py-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground font-medium rounded-lg transition-all duration-200 text-[10px] sm:text-sm whitespace-nowrap flex items-center gap-1 disabled:opacity-50"
+                >
+                  <Repeat className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Cambiar perfil</span>
+                  <span className="sm:hidden">Perfil</span>
+                </button>
+              )}
               <button
                 onClick={() => setShowCambiarContrasena(true)}
                 className="px-2 sm:px-3 py-1.5 sm:py-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground font-medium rounded-lg transition-all duration-200 text-[10px] sm:text-sm whitespace-nowrap"

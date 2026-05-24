@@ -38,6 +38,7 @@ export interface SessionData {
   grado: string | null;
   salon: string | null;
   acudidos: AcudidoData[] | null;
+  multi_membership: boolean;
 }
 
 // Cookie de sesión (sin expires → muere cuando el navegador se cierra)
@@ -51,7 +52,8 @@ export const saveSession = (
   nivel?: string | null,
   grado?: string | null,
   salon?: string | null,
-  acudidos?: AcudidoData[] | null
+  acudidos?: AcudidoData[] | null,
+  multi_membership: boolean = false,
 ) => {
   const cookieOptions = getCookieOptions();
 
@@ -78,6 +80,9 @@ export const saveSession = (
   // Limpiar clave legacy si existía.
   localStorage.removeItem("hijos");
 
+  if (multi_membership) localStorage.setItem("multi_membership", "1");
+  else localStorage.removeItem("multi_membership");
+
   // Cookie de sesión sin expires → se borra al cerrar el navegador
   Cookies.set(SESSION_COOKIE, '1', cookieOptions);
 };
@@ -94,7 +99,8 @@ export const getSession = (): SessionData => {
     localStorage.removeItem("salon");
     localStorage.removeItem("acudidos");
     localStorage.removeItem("hijos"); // legacy
-    return { id: null, nombres: null, apellidos: null, cargo: null, nivel: null, grado: null, salon: null, acudidos: null };
+    localStorage.removeItem("multi_membership");
+    return { id: null, nombres: null, apellidos: null, cargo: null, nivel: null, grado: null, salon: null, acudidos: null, multi_membership: false };
   }
 
   const id = localStorage.getItem("id") || null;
@@ -104,6 +110,7 @@ export const getSession = (): SessionData => {
   const nivel = localStorage.getItem("nivel") || null;
   const grado = localStorage.getItem("grado") || null;
   const salon = localStorage.getItem("salon") || null;
+  const multi_membership = localStorage.getItem("multi_membership") === "1";
 
   let acudidos: AcudidoData[] | null = null;
   // Lee "acudidos" primero; si no existe, intenta "hijos" (clave legacy de
@@ -113,7 +120,7 @@ export const getSession = (): SessionData => {
     try { acudidos = JSON.parse(acudidosStr); } catch { acudidos = null; }
   }
 
-  return { id, nombres, apellidos, cargo, nivel, grado, salon, acudidos };
+  return { id, nombres, apellidos, cargo, nivel, grado, salon, acudidos, multi_membership };
 };
 
 export const clearSession = () => {
@@ -128,6 +135,7 @@ export const clearSession = () => {
   localStorage.removeItem("salon");
   localStorage.removeItem("acudidos");
   localStorage.removeItem("hijos"); // legacy
+  localStorage.removeItem("multi_membership");
   localStorage.removeItem("asignaturaSeleccionada");
   localStorage.removeItem("gradoSeleccionado");
   localStorage.removeItem("salonSeleccionado");
