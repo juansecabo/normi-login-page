@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Eye, EyeOff, Download, Share } from "lucide-react";
 import escudoImg from "@/assets/escudo.webp";
 import normiImg from "@/assets/normi-placeholder.webp";
@@ -24,8 +24,11 @@ const Index = () => {
   const [contrasena, setContrasena] = useState("");
   const [showContrasena, setShowContrasena] = useState(false);
   const [loading, setLoading] = useState(false);
-  // Estado para el selector multi-membresía
-  const [memberships, setMemberships] = useState<MembershipChoice[] | null>(null);
+  // Estado para el selector multi-membresía. Si llegamos desde el botón
+  // "Cambiar perfil" del header, vienen precargadas en location.state.
+  const location = useLocation();
+  const initialMemberships = (location.state as { memberships?: MembershipChoice[] } | null)?.memberships ?? null;
+  const [memberships, setMemberships] = useState<MembershipChoice[] | null>(initialMemberships);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { canInstall, isIOS, installApp } = useInstallPrompt();
@@ -80,8 +83,12 @@ const Index = () => {
     }
   };
 
-  // Si ya hay sesión activa, redirigir sin pedir contraseña
+  // Si ya hay sesión activa, redirigir sin pedir contraseña.
+  // EXCEPCIÓN: si veninos del botón "Cambiar perfil" con memberships en
+  // location.state, mostramos el selector aunque la sesión vieja siga viva
+  // un instante (clearSession se llama antes del navigate, así que no debería).
   useEffect(() => {
+    if (initialMemberships) return;
     const session = getSession();
     if (session.id) {
       if (session.cargo === 'Administrador') {

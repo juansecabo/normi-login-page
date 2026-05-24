@@ -343,6 +343,24 @@ export const apiClient = {
      * cross-tenant, el cleanup desde PanelControl destruiría la identidad
      * de una persona con multi-membresía. Solo Admin/Rector/Coord.
      */
+    /**
+     * Cambiar de perfil sin cerrar sesion. Si la cedula tiene >=2 membresias,
+     * devuelve memberships para mostrar el selector; borra el JWT final y
+     * guarda un tempToken. Si solo tiene 1, devuelve {onlyOne: true} y la
+     * sesion sigue intacta.
+     */
+    async switchProfile(): Promise<MultiMembershipResponse | { onlyOne: true }> {
+      const res = await request<MultiMembershipResponse | { onlyOne: true }>(
+        '/auth/switch-profile',
+        { method: 'POST' },
+      );
+      if ('tempToken' in res) {
+        setTempToken(res.tempToken);
+        setToken(null);
+      }
+      return res;
+    },
+
     async cleanupUsuarioOrphan(cedula: string): Promise<{ deleted: boolean; remaining: number }> {
       return request<{ deleted: boolean; remaining: number }>('/auth/cleanup-usuario', {
         method: 'POST',
