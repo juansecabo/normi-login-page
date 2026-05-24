@@ -40,7 +40,12 @@ const loadImage = (src: string): Promise<HTMLImageElement> =>
     img.src = src;
   });
 
-/** Recorta el área indicada del archivo original y devuelve un Blob JPG. */
+/**
+ * Recorta el área indicada del archivo original y devuelve un Blob.
+ * Prefiere WebP (más liviano para la misma calidad visual) y cae a JPG
+ * si el browser no lo soporta — algunos navegadores corporativos viejos
+ * ignoran "image/webp" y devuelven PNG sin avisar.
+ */
 async function cropToBlob(imageSrc: string, area: Area): Promise<Blob> {
   const img = await loadImage(imageSrc);
   const outH = OUTPUT_HEIGHT;
@@ -55,13 +60,13 @@ async function cropToBlob(imageSrc: string, area: Area): Promise<Blob> {
     area.x, area.y, area.width, area.height,
     0, 0, outW, outH,
   );
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(
-      (b) => (b ? resolve(b) : reject(new Error("toBlob falló"))),
-      "image/jpeg",
-      0.9,
-    );
-  });
+  const tryEncode = (mime: string): Promise<Blob | null> =>
+    new Promise((resolve) => canvas.toBlob((b) => resolve(b), mime, 0.8));
+  const webp = await tryEncode("image/webp");
+  if (webp && webp.type === "image/webp") return webp;
+  const jpg = await tryEncode("image/jpeg");
+  if (jpg) return jpg;
+  throw new Error("No se pudo codificar la imagen");
 }
 
 const AvatarUploader = ({ width = 110, height = 140 }: AvatarUploaderProps) => {
@@ -124,7 +129,9 @@ const AvatarUploader = ({ width = 110, height = 140 }: AvatarUploaderProps) => {
     try {
       const blob = await cropToBlob(pickedSrc, croppedArea);
       // Convertimos el blob a File para reusar apiClient.auth.uploadAvatar.
-      const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
+      // El nombre/extension respeta el mime real (webp si el browser lo soporta).
+      const ext = blob.type === "image/webp" ? "webp" : "jpg";
+      const file = new File([blob], `avatar.${ext}`, { type: blob.type });
       const { avatar_url } = await apiClient.auth.uploadAvatar(file);
       setAvatarUrl(avatar_url);
       updateSessionAvatar(avatar_url);
