@@ -128,8 +128,8 @@ const DashboardRector = () => {
       {/* Main Content */}
       <main className="flex-1 container mx-auto p-8">
         <EncabezadoColegio />
-        <div className="bg-card rounded-lg shadow-soft p-8 max-w-2xl mx-auto flex items-center gap-5">
-          <div className="flex-1 text-center">
+        <div className="max-w-3xl mx-auto flex items-center gap-6">
+          <div className="bg-card rounded-lg shadow-soft p-8 flex-1 text-center">
             <h2 className="text-2xl lg:text-3xl font-bold text-foreground mb-4">
               Bienvenido(a)
             </h2>
@@ -140,7 +140,7 @@ const DashboardRector = () => {
               {cargo}
             </p>
           </div>
-          <AvatarUploader size={96} />
+          <AvatarUploader />
         </div>
 
         {/* Botones principales */}

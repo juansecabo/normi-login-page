@@ -5,8 +5,10 @@ import { updateSessionAvatar, getSession } from "@/hooks/useSession";
 import { useToast } from "@/hooks/use-toast";
 
 interface AvatarUploaderProps {
-  /** Tamaño en píxeles (cuadrado/ovalado). Default 96. */
-  size?: number;
+  /** Ancho en píxeles. Default 110. */
+  width?: number;
+  /** Alto en píxeles. Default 140 (óvalo vertical). */
+  height?: number;
   /** Si false, oculta el mensaje "Sube una foto formal..." cuando aún no hay foto. */
   showHint?: boolean;
 }
@@ -24,7 +26,7 @@ const initials = (nombres?: string | null, apellidos?: string | null): string =>
  * Avatar circular con upload inline. Click sobre el círculo → file picker.
  * Al subir actualiza la membresía del JWT actual (server determina la tabla).
  */
-const AvatarUploader = ({ size = 96, showHint = true }: AvatarUploaderProps) => {
+const AvatarUploader = ({ width = 110, height = 140, showHint = true }: AvatarUploaderProps) => {
   const session = getSession();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(session.avatar_url);
   const [uploading, setUploading] = useState(false);
@@ -65,7 +67,8 @@ const AvatarUploader = ({ size = 96, showHint = true }: AvatarUploaderProps) => 
     }
   };
 
-  const dimension = { width: size, height: size };
+  const dimension = { width, height, borderRadius: '50%' };
+  const fontSize = Math.round(Math.min(width, height) * 0.4);
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -73,19 +76,19 @@ const AvatarUploader = ({ size = 96, showHint = true }: AvatarUploaderProps) => 
         type="button"
         onClick={handlePick}
         disabled={uploading}
-        className="group relative rounded-full overflow-hidden border-4 border-primary/20 shadow-soft bg-secondary flex items-center justify-center transition-all hover:border-primary/40 disabled:opacity-60"
+        className="group relative overflow-hidden border-4 border-primary/20 shadow-soft bg-secondary flex items-center justify-center transition-all hover:border-primary/40 disabled:opacity-60"
         style={dimension}
         title={avatarUrl ? "Cambiar foto" : "Subir foto"}
       >
         {avatarUrl ? (
           <img src={avatarUrl} alt="Foto de perfil" className="w-full h-full object-cover" />
         ) : (
-          <span className="text-primary font-bold" style={{ fontSize: size * 0.4 }}>
+          <span className="text-primary font-bold" style={{ fontSize }}>
             {initials(session.nombres, session.apellidos)}
           </span>
         )}
         {/* Overlay hover */}
-        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
+        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white" style={{ borderRadius: '50%' }}>
           {uploading ? (
             <Loader2 className="w-6 h-6 animate-spin" />
           ) : (
