@@ -36,11 +36,12 @@ const Index = () => {
   // Una vez tenemos el AuthUser final (con colegio), guarda sesión local y navega
   const enterAsUser = (user: AuthUser) => {
     const multi = user.multi_membership === true;
+    const avatar = user.avatar_url || null;
     if (user.rol === 'Estudiante') {
       saveSession(
         user.id, user.nombres, user.apellidos, 'Estudiante',
         user.nivel || null, user.grado || null, user.salon || null,
-        null, multi,
+        null, multi, avatar,
       );
       navigate(getPostLoginRoute("/dashboard-estudiante"));
       return;
@@ -49,12 +50,12 @@ const Index = () => {
       saveSession(
         user.id, user.nombres, user.apellidos, 'Acudiente',
         null, null, null,
-        (user.acudidos || []) as AcudidoData[], multi,
+        (user.acudidos || []) as AcudidoData[], multi, avatar,
       );
       navigate(getPostLoginRoute("/dashboard-acudiente"));
       return;
     }
-    saveSession(user.id, user.nombres, user.apellidos, user.rol, null, null, null, null, multi);
+    saveSession(user.id, user.nombres, user.apellidos, user.rol, null, null, null, null, multi, avatar);
     if (user.rol === 'Administrador') {
       navigate(getPostLoginRoute("/dashboard-admin"));
     } else if (

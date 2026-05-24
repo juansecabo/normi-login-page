@@ -10,6 +10,7 @@ import iconComunicados from "@/assets/icons/comunicados.webp";
 import iconDocumentos from "@/assets/icons/documentos.webp";
 import HeaderNormi from "@/components/HeaderNormi";
 import EncabezadoColegio from "@/components/EncabezadoColegio";
+import AvatarUploader from "@/components/AvatarUploader";
 import BuzonSugerencias from "@/components/BuzonSugerencias";
 import { supabase } from "@/integrations/supabase/client";
 import { getAllLastSeen, countNewItems } from "@/utils/notificaciones";
@@ -180,22 +181,25 @@ const DashboardAcudiente = () => {
 
       <main className="flex-1 container mx-auto p-8">
         <EncabezadoColegio />
-        <div className="bg-card rounded-lg shadow-soft p-5 max-w-2xl mx-auto text-center">
-          <h2 className="text-2xl font-bold text-foreground mb-1">
-            Bienvenido(a)
-          </h2>
-          <p className="text-lg text-primary font-semibold">
-            {`${nombres} ${apellidos}`.trim()}
-          </p>
-          <p className="text-sm text-muted-foreground mt-1 mb-1">
-            Acudiente de
-          </p>
-          <div className="space-y-0.5">
-            {acudidos.map(h => (
-              <p key={h.id} className="text-sm text-foreground">
-                {h.nombre} {h.apellidos} <span className="text-muted-foreground">({h.grado} {h.salon})</span>
-              </p>
-            ))}
+        <div className="bg-card rounded-lg shadow-soft p-5 max-w-2xl mx-auto flex items-center gap-5">
+          <AvatarUploader size={96} />
+          <div className="flex-1 text-center">
+            <h2 className="text-2xl font-bold text-foreground mb-1">
+              Bienvenido(a)
+            </h2>
+            <p className="text-lg text-primary font-semibold">
+              {`${nombres} ${apellidos}`.trim()}
+            </p>
+            <p className="text-sm text-muted-foreground mt-1 mb-1">
+              Acudiente de
+            </p>
+            <div className="space-y-0.5">
+              {acudidos.map(h => (
+                <p key={h.id} className="text-sm text-foreground">
+                  {h.nombre} {h.apellidos} <span className="text-muted-foreground">({h.grado} {h.salon})</span>
+                </p>
+              ))}
+            </div>
           </div>
         </div>
 

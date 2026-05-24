@@ -39,6 +39,7 @@ export interface SessionData {
   salon: string | null;
   acudidos: AcudidoData[] | null;
   multi_membership: boolean;
+  avatar_url: string | null;
 }
 
 // Cookie de sesión (sin expires → muere cuando el navegador se cierra)
@@ -54,6 +55,7 @@ export const saveSession = (
   salon?: string | null,
   acudidos?: AcudidoData[] | null,
   multi_membership: boolean = false,
+  avatar_url?: string | null,
 ) => {
   const cookieOptions = getCookieOptions();
 
@@ -83,6 +85,9 @@ export const saveSession = (
   if (multi_membership) localStorage.setItem("multi_membership", "1");
   else localStorage.removeItem("multi_membership");
 
+  if (avatar_url) localStorage.setItem("avatar_url", avatar_url);
+  else localStorage.removeItem("avatar_url");
+
   // Cookie de sesión sin expires → se borra al cerrar el navegador
   Cookies.set(SESSION_COOKIE, '1', cookieOptions);
 };
@@ -100,7 +105,8 @@ export const getSession = (): SessionData => {
     localStorage.removeItem("acudidos");
     localStorage.removeItem("hijos"); // legacy
     localStorage.removeItem("multi_membership");
-    return { id: null, nombres: null, apellidos: null, cargo: null, nivel: null, grado: null, salon: null, acudidos: null, multi_membership: false };
+    localStorage.removeItem("avatar_url");
+    return { id: null, nombres: null, apellidos: null, cargo: null, nivel: null, grado: null, salon: null, acudidos: null, multi_membership: false, avatar_url: null };
   }
 
   const id = localStorage.getItem("id") || null;
@@ -111,6 +117,7 @@ export const getSession = (): SessionData => {
   const grado = localStorage.getItem("grado") || null;
   const salon = localStorage.getItem("salon") || null;
   const multi_membership = localStorage.getItem("multi_membership") === "1";
+  const avatar_url = localStorage.getItem("avatar_url") || null;
 
   let acudidos: AcudidoData[] | null = null;
   // Lee "acudidos" primero; si no existe, intenta "hijos" (clave legacy de
@@ -120,7 +127,13 @@ export const getSession = (): SessionData => {
     try { acudidos = JSON.parse(acudidosStr); } catch { acudidos = null; }
   }
 
-  return { id, nombres, apellidos, cargo, nivel, grado, salon, acudidos, multi_membership };
+  return { id, nombres, apellidos, cargo, nivel, grado, salon, acudidos, multi_membership, avatar_url };
+};
+
+/** Actualiza solo el avatar en la sesion local (sin tocar el resto). */
+export const updateSessionAvatar = (avatar_url: string | null) => {
+  if (avatar_url) localStorage.setItem("avatar_url", avatar_url);
+  else localStorage.removeItem("avatar_url");
 };
 
 export const clearSession = () => {
@@ -136,6 +149,7 @@ export const clearSession = () => {
   localStorage.removeItem("acudidos");
   localStorage.removeItem("hijos"); // legacy
   localStorage.removeItem("multi_membership");
+  localStorage.removeItem("avatar_url");
   localStorage.removeItem("asignaturaSeleccionada");
   localStorage.removeItem("gradoSeleccionado");
   localStorage.removeItem("salonSeleccionado");

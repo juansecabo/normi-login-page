@@ -110,6 +110,8 @@ export interface AuthUser {
   /** True si la cedula tiene >=2 membresias. Frontend lo usa para decidir
    *  si mostrar el boton "Cambiar perfil" en el header. */
   multi_membership?: boolean;
+  /** Foto de perfil de ESTA membresia (puede ser distinta en otro colegio/rol) */
+  avatar_url?: string | null;
   colegio: ColegioInfo;
 }
 
@@ -362,6 +364,27 @@ export const apiClient = {
         setToken(null);
       }
       return res;
+    },
+
+    /**
+     * Sube foto de perfil para la membresia actual del JWT.
+     * El server determina la tabla (Internos/Estudiantes/Acudientes) por el rol.
+     */
+    async uploadAvatar(file: File): Promise<{ avatar_url: string }> {
+      const contentBase64 = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => {
+          const result = r.result as string;
+          // result viene como "data:image/jpeg;base64,XXXX..."
+          resolve(result.split(',')[1] || '');
+        };
+        r.onerror = () => reject(r.error);
+        r.readAsDataURL(file);
+      });
+      return request<{ avatar_url: string }>('/api/avatar/upload', {
+        method: 'POST',
+        body: JSON.stringify({ contentBase64, contentType: file.type }),
+      });
     },
 
     async cleanupUsuarioOrphan(cedula: string): Promise<{ deleted: boolean; remaining: number }> {

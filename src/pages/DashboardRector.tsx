@@ -19,6 +19,7 @@ import iconConsultas from "@/assets/icons/consultas.png";
 import iconRegistros from "@/assets/icons/registros-comportamiento.png";
 import HeaderNormi from "@/components/HeaderNormi";
 import EncabezadoColegio from "@/components/EncabezadoColegio";
+import AvatarUploader from "@/components/AvatarUploader";
 import { getAllLastSeen } from "@/utils/notificaciones";
 
 const perfilesDelCargo = (cargo: string | undefined): string[] => {
@@ -127,16 +128,19 @@ const DashboardRector = () => {
       {/* Main Content */}
       <main className="flex-1 container mx-auto p-8">
         <EncabezadoColegio />
-        <div className="bg-card rounded-lg shadow-soft p-8 max-w-2xl mx-auto text-center">
-          <h2 className="text-2xl lg:text-3xl font-bold text-foreground mb-4">
-            Bienvenido(a)
-          </h2>
-          <p className="text-xl text-primary font-semibold">
-            {nombres} {apellidos}
-          </p>
-          <p className="text-muted-foreground mt-2">
-            {cargo}
-          </p>
+        <div className="bg-card rounded-lg shadow-soft p-8 max-w-2xl mx-auto flex items-center gap-5">
+          <AvatarUploader size={96} />
+          <div className="flex-1 text-center">
+            <h2 className="text-2xl lg:text-3xl font-bold text-foreground mb-4">
+              Bienvenido(a)
+            </h2>
+            <p className="text-xl text-primary font-semibold">
+              {nombres} {apellidos}
+            </p>
+            <p className="text-muted-foreground mt-2">
+              {cargo}
+            </p>
+          </div>
         </div>
 
         {/* Botones principales */}
