@@ -129,7 +129,6 @@ const DashboardRector = () => {
       <main className="flex-1 container mx-auto p-8">
         <EncabezadoColegio />
         <div className="bg-card rounded-lg shadow-soft p-8 max-w-2xl mx-auto flex items-center gap-5">
-          <AvatarUploader size={96} />
           <div className="flex-1 text-center">
             <h2 className="text-2xl lg:text-3xl font-bold text-foreground mb-4">
               Bienvenido(a)
@@ -141,6 +140,7 @@ const DashboardRector = () => {
               {cargo}
             </p>
           </div>
+          <AvatarUploader size={96} />
         </div>
 
         {/* Botones principales */}
