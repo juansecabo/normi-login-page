@@ -181,8 +181,8 @@ const DashboardAcudiente = () => {
 
       <main className="flex-1 container mx-auto p-8">
         <EncabezadoColegio />
-        <div className="max-w-3xl mx-auto flex items-center gap-6">
-          <div className="bg-card rounded-lg shadow-soft p-5 flex-1 text-center">
+        <div className="relative max-w-2xl mx-auto">
+          <div className="bg-card rounded-lg shadow-soft p-5 text-center">
             <h2 className="text-2xl font-bold text-foreground mb-1">
               Bienvenido(a)
             </h2>
@@ -200,7 +200,12 @@ const DashboardAcudiente = () => {
               ))}
             </div>
           </div>
-          <AvatarUploader />
+          <div className="hidden xl:block absolute top-1/2 -translate-y-1/2 left-full ml-10">
+            <AvatarUploader />
+          </div>
+          <div className="xl:hidden flex justify-center mt-4">
+            <AvatarUploader />
+          </div>
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-8 max-w-4xl mx-auto mt-8">

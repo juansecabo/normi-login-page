@@ -1,20 +1,28 @@
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Camera, Loader2 } from "lucide-react";
+import Cropper, { type Area } from "react-easy-crop";
 import { apiClient } from "@/lib/apiClient";
 import { updateSessionAvatar, getSession } from "@/hooks/useSession";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 
 interface AvatarUploaderProps {
   /** Ancho en píxeles. Default 110. */
   width?: number;
   /** Alto en píxeles. Default 140 (óvalo vertical). */
   height?: number;
-  /** Si false, oculta el mensaje "Sube una foto formal..." cuando aún no hay foto. */
-  showHint?: boolean;
 }
 
 const ACCEPT = "image/jpeg,image/png,image/webp";
 const MAX_BYTES = 5 * 1024 * 1024;
+
+// Aspecto del óvalo (ancho/alto). El cropper genera una imagen rectangular
+// con ESTE mismo ratio para que el preview oval coincida 1:1 con el resultado.
+const OVAL_ASPECT = 110 / 140;
+// Tamaño en píxeles del output final que se sube (alto). Mantiene el aspect.
+const OUTPUT_HEIGHT = 560;
 
 const initials = (nombres?: string | null, apellidos?: string | null): string => {
   const n = (nombres || "").trim().charAt(0).toUpperCase();
@@ -22,23 +30,70 @@ const initials = (nombres?: string | null, apellidos?: string | null): string =>
   return (n + a) || "?";
 };
 
-/**
- * Avatar circular con upload inline. Click sobre el círculo → file picker.
- * Al subir actualiza la membresía del JWT actual (server determina la tabla).
- */
-const AvatarUploader = ({ width = 110, height = 140, showHint = true }: AvatarUploaderProps) => {
+/** Carga un dataURL/blobURL en un <img> y resuelve con el HTMLImageElement. */
+const loadImage = (src: string): Promise<HTMLImageElement> =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+
+/** Recorta el área indicada del archivo original y devuelve un Blob JPG. */
+async function cropToBlob(imageSrc: string, area: Area): Promise<Blob> {
+  const img = await loadImage(imageSrc);
+  const outH = OUTPUT_HEIGHT;
+  const outW = Math.round(outH * OVAL_ASPECT);
+  const canvas = document.createElement("canvas");
+  canvas.width = outW;
+  canvas.height = outH;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas no disponible");
+  ctx.drawImage(
+    img,
+    area.x, area.y, area.width, area.height,
+    0, 0, outW, outH,
+  );
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error("toBlob falló"))),
+      "image/jpeg",
+      0.9,
+    );
+  });
+}
+
+const AvatarUploader = ({ width = 110, height = 140 }: AvatarUploaderProps) => {
   const session = getSession();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(session.avatar_url);
+
+  // Diálogo: 'instructions' antes de elegir; 'crop' una vez elegida la foto.
+  const [stage, setStage] = useState<"closed" | "instructions" | "crop">("closed");
+  const [pickedSrc, setPickedSrc] = useState<string | null>(null);
+  const [pickedMime, setPickedMime] = useState<string>("image/jpeg");
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedArea, setCroppedArea] = useState<Area | null>(null);
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const { toast } = useToast();
 
-  const handlePick = () => {
-    if (uploading) return;
-    inputRef.current?.click();
+  const dimension = { width, height, borderRadius: "50%" };
+  const fontSize = Math.round(Math.min(width, height) * 0.4);
+
+  const openInstructions = () => setStage("instructions");
+  const closeDialog = () => {
+    setStage("closed");
+    setPickedSrc(null);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedArea(null);
   };
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePick = () => inputRef.current?.click();
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
@@ -50,12 +105,31 @@ const AvatarUploader = ({ width = 110, height = 140, showHint = true }: AvatarUp
       toast({ title: "Formato no soportado", description: "Usa JPG, PNG o WEBP.", variant: "destructive" });
       return;
     }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPickedSrc(reader.result as string);
+      setPickedMime(file.type);
+      setStage("crop");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const onCropComplete = useCallback((_: Area, areaPx: Area) => {
+    setCroppedArea(areaPx);
+  }, []);
+
+  const handleSave = async () => {
+    if (!pickedSrc || !croppedArea) return;
     setUploading(true);
     try {
+      const blob = await cropToBlob(pickedSrc, croppedArea);
+      // Convertimos el blob a File para reusar apiClient.auth.uploadAvatar.
+      const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
       const { avatar_url } = await apiClient.auth.uploadAvatar(file);
       setAvatarUrl(avatar_url);
       updateSessionAvatar(avatar_url);
       toast({ title: "Foto actualizada" });
+      closeDialog();
     } catch (err: any) {
       toast({
         title: "No se pudo subir",
@@ -67,14 +141,11 @@ const AvatarUploader = ({ width = 110, height = 140, showHint = true }: AvatarUp
     }
   };
 
-  const dimension = { width, height, borderRadius: '50%' };
-  const fontSize = Math.round(Math.min(width, height) * 0.4);
-
   return (
-    <div className="flex flex-col items-center gap-2">
+    <>
       <button
         type="button"
-        onClick={handlePick}
+        onClick={openInstructions}
         disabled={uploading}
         className="group relative overflow-hidden border-4 border-primary/20 shadow-soft bg-secondary flex items-center justify-center transition-all hover:border-primary/40 disabled:opacity-60"
         style={dimension}
@@ -87,8 +158,10 @@ const AvatarUploader = ({ width = 110, height = 140, showHint = true }: AvatarUp
             {initials(session.nombres, session.apellidos)}
           </span>
         )}
-        {/* Overlay hover */}
-        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white" style={{ borderRadius: '50%' }}>
+        <div
+          className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white"
+          style={{ borderRadius: "50%" }}
+        >
           {uploading ? (
             <Loader2 className="w-6 h-6 animate-spin" />
           ) : (
@@ -101,11 +174,7 @@ const AvatarUploader = ({ width = 110, height = 140, showHint = true }: AvatarUp
           )}
         </div>
       </button>
-      {showHint && !avatarUrl && (
-        <p className="text-xs text-muted-foreground text-center max-w-[200px] leading-tight">
-          Sube una foto formal donde se vea tu cara claramente
-        </p>
-      )}
+
       <input
         ref={inputRef}
         type="file"
@@ -113,7 +182,78 @@ const AvatarUploader = ({ width = 110, height = 140, showHint = true }: AvatarUp
         onChange={handleFile}
         className="hidden"
       />
-    </div>
+
+      <Dialog open={stage !== "closed"} onOpenChange={(o) => { if (!o) closeDialog(); }}>
+        {stage === "instructions" && (
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Foto de perfil</DialogTitle>
+              <DialogDescription>
+                Sube una foto formal donde se vea tu cara claramente. Después podrás ajustarla dentro del óvalo (mover y agrandar/encoger).
+              </DialogDescription>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">
+              Formatos: JPG, PNG o WEBP. Tamaño máximo: 5 MB.
+            </p>
+            <DialogFooter>
+              <Button variant="outline" onClick={closeDialog}>Cancelar</Button>
+              <Button onClick={handlePick}>Seleccionar foto</Button>
+            </DialogFooter>
+          </DialogContent>
+        )}
+
+        {stage === "crop" && pickedSrc && (
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Acomoda tu foto</DialogTitle>
+              <DialogDescription>
+                Arrastra para mover y usa el control para agrandar o encoger.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="relative w-full bg-black/80 rounded-md overflow-hidden" style={{ height: 360 }}>
+              <Cropper
+                image={pickedSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={OVAL_ASPECT}
+                cropShape="rect"
+                showGrid={false}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropComplete}
+                style={{
+                  cropAreaStyle: {
+                    borderRadius: "50%",
+                    border: "3px solid white",
+                    boxShadow: "0 0 0 9999px rgba(0,0,0,0.55)",
+                  },
+                }}
+              />
+            </div>
+            <div className="px-1 pt-2">
+              <label className="text-xs text-muted-foreground">Zoom</label>
+              <Slider
+                value={[zoom]}
+                min={1}
+                max={4}
+                step={0.05}
+                onValueChange={(v) => setZoom(v[0])}
+                className="mt-1"
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={closeDialog} disabled={uploading}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSave} disabled={uploading || !croppedArea}>
+                {uploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                Guardar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        )}
+      </Dialog>
+    </>
   );
 };
 
