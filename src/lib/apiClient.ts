@@ -75,9 +75,22 @@ async function request<T = unknown>(
 // ───────────────────────────────────────────────────────────────────────────
 
 export type AuthRol =
+  | 'SuperAdmin'
   | 'Administrador' | 'Rector' | 'Coordinador(a)' | 'Administrativo(a)'
   | 'Secretaria General' | 'Orientador(a) Escolar' | 'Profesor(a)'
   | 'Estudiante' | 'Acudiente';
+
+export interface ColegioPlataforma {
+  id: string;
+  slug: string;
+  nombre: string;
+  logo_url: string | null;
+  color_primario: string;
+  plan: string;
+  estado: string;
+  fecha_alta: string;
+  counts: { internos: number; estudiantes: number; acudientes: number };
+}
 
 export interface AcudidoData {
   id: string;
@@ -406,6 +419,12 @@ export const apiClient = {
     getToken,
     isAuthenticated(): boolean {
       return getToken() !== null;
+    },
+  },
+
+  plataforma: {
+    colegios(): Promise<{ colegios: ColegioPlataforma[] }> {
+      return request<{ colegios: ColegioPlataforma[] }>('/api/plataforma/colegios');
     },
   },
 

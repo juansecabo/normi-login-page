@@ -21,6 +21,7 @@ interface HeaderNormiProps {
 
 const computeBackLinkFromSession = (): string => {
   const { cargo } = getSession();
+  if (cargo === "SuperAdmin") return "/dashboard-plataforma";
   if (cargo === "Administrador") return "/dashboard-admin";
   if (
     cargo === "Rector" ||

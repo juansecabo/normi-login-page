@@ -10,6 +10,7 @@ import DashboardRector from "./pages/DashboardRector";
 import DashboardEstudiante from "./pages/DashboardEstudiante";
 import DashboardAcudiente from "./pages/DashboardAcudiente";
 import DashboardAdmin from "./pages/DashboardAdmin";
+import DashboardPlataforma from "./pages/DashboardPlataforma";
 import SeleccionarGrado from "./pages/SeleccionarGrado";
 import SeleccionarSalon from "./pages/SeleccionarSalon";
 import ActividadesCalendario from "./pages/ActividadesCalendario";
@@ -107,6 +108,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard-plataforma" element={<DashboardPlataforma />} />
           <Route path="/dashboard-rector" element={<DashboardRector />} />
           <Route path="/dashboard-estudiante" element={<DashboardEstudiante />} />
           <Route path="/dashboard-acudiente" element={<DashboardAcudiente />} />

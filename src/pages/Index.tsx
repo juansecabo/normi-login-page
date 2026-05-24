@@ -37,6 +37,11 @@ const Index = () => {
   const enterAsUser = (user: AuthUser) => {
     const multi = user.multi_membership === true;
     const avatar = user.avatar_url || null;
+    if (user.rol === 'SuperAdmin') {
+      saveSession(user.id, user.nombres, user.apellidos, 'SuperAdmin', null, null, null, null, multi, avatar);
+      navigate(getPostLoginRoute("/dashboard-plataforma"));
+      return;
+    }
     if (user.rol === 'Estudiante') {
       saveSession(
         user.id, user.nombres, user.apellidos, 'Estudiante',
@@ -94,7 +99,9 @@ const Index = () => {
     if (initialMemberships) return;
     const session = getSession();
     if (session.id) {
-      if (session.cargo === 'Administrador') {
+      if (session.cargo === 'SuperAdmin') {
+        navigate(getPostLoginRoute("/dashboard-plataforma"), { replace: true });
+      } else if (session.cargo === 'Administrador') {
         navigate(getPostLoginRoute("/dashboard-admin"), { replace: true });
       } else if (
         session.cargo === 'Rector' ||
