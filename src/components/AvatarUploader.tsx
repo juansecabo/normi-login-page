@@ -118,6 +118,25 @@ const AvatarUploader = ({ width = 110, height = 140 }: AvatarUploaderProps) => {
 
   const handlePick = () => inputRef.current?.click();
 
+  const handleDelete = async () => {
+    setUploading(true);
+    try {
+      await apiClient.auth.deleteAvatar();
+      setAvatarUrl(null);
+      updateSessionAvatar(null);
+      toast({ title: "Foto eliminada" });
+      closeDialog();
+    } catch (err: any) {
+      toast({
+        title: "No se pudo quitar",
+        description: err?.message || "Intenta de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -222,9 +241,23 @@ const AvatarUploader = ({ width = 110, height = 140 }: AvatarUploaderProps) => {
             <p className="text-sm text-muted-foreground">
               Formatos: JPG, PNG o WEBP. Tamaño máximo: 5 MB.
             </p>
-            <DialogFooter>
-              <Button variant="outline" onClick={closeDialog}>Cancelar</Button>
-              <Button onClick={handlePick}>Seleccionar foto</Button>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={closeDialog} disabled={uploading}>
+                Cancelar
+              </Button>
+              {avatarUrl && (
+                <Button
+                  variant="destructive"
+                  onClick={handleDelete}
+                  disabled={uploading}
+                >
+                  {uploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Quitar foto
+                </Button>
+              )}
+              <Button onClick={handlePick} disabled={uploading}>
+                {avatarUrl ? "Cambiar foto" : "Seleccionar foto"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         )}

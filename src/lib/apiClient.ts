@@ -370,6 +370,10 @@ export const apiClient = {
      * Sube foto de perfil para la membresia actual del JWT.
      * El server determina la tabla (Internos/Estudiantes/Acudientes) por el rol.
      */
+    async deleteAvatar(): Promise<{ ok: true }> {
+      return request<{ ok: true }>('/api/avatar', { method: 'DELETE' });
+    },
+
     async uploadAvatar(file: File): Promise<{ avatar_url: string }> {
       const contentBase64 = await new Promise<string>((resolve, reject) => {
         const r = new FileReader();
