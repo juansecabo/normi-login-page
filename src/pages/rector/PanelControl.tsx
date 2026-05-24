@@ -21,6 +21,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Plus, Pencil, Trash2, Search, X } from "lucide-react";
 import { useAsignaturas } from "@/hooks/useAsignaturas";
 import CatalogoAsignaturas from "@/components/CatalogoAsignaturas";
+import { apiClient } from "@/lib/apiClient";
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
@@ -1051,22 +1052,12 @@ const PanelControl = () => {
       return;
     }
 
-    // Cleanup: si el Usuario ya no es Estudiante, Acudiente ni Interno en
-    // OTRO colegio, lo borramos para no dejar la cédula huérfana ocupada en
-    // Usuarios. Multi-perfil por colegio: una persona puede mantenerse en
-    // Usuarios si todavía tiene algún rol en algún colegio.
+    // Cleanup cross-tenant: el endpoint verifica con service_role en TODOS los
+    // colegios. Si la cédula sigue siendo Estudiante/Acudiente/Interno en
+    // CUALQUIER colegio, no borra Usuarios. Esto evita destruir la identidad
+    // global de personas con multi-membresía.
     try {
-      const [estCheck, acuCheck, intCheck] = await Promise.all([
-        supabase.from("Estudiantes").select("id").eq("id", internoId).limit(1),
-        supabase.from("Acudientes").select("id").eq("id", internoIdStr).limit(1),
-        supabase.from("Internos").select("id").eq("id", internoId).limit(1),
-      ]);
-      const tieneOtroRol = ((estCheck.data?.length || 0) > 0)
-        || ((acuCheck.data?.length || 0) > 0)
-        || ((intCheck.data?.length || 0) > 0);
-      if (!tieneOtroRol) {
-        await supabase.from("Usuarios").delete().eq("id", internoIdStr);
-      }
+      await apiClient.auth.cleanupUsuarioOrphan(internoIdStr);
     } catch (err) {
       console.warn("[deleteInterno] cleanup Usuarios falló (no crítico):", err);
     }
@@ -1436,16 +1427,17 @@ const PanelControl = () => {
   const deletePerfil = async () => {
     if (!showDeletePerf) return;
     setSavingPerf(true);
-    // Fase 10: eliminar también del modelo nuevo
+    // Fase 10: eliminar también del modelo nuevo. El cleanup de Usuarios pasa
+    // por el endpoint server que verifica TODOS los colegios — si la cédula
+    // sigue siendo Estudiante/Acudiente/Interno en otro colegio, Usuarios
+    // se conserva (preserva multi-membresía cross-tenant).
     try {
       if (showDeletePerf.perfil === "Estudiante" && showDeletePerf.estudiante_id) {
-        // Borrar la fila de Usuarios (la persona deja de poder loguearse) — el teléfono
-        // vive en Usuarios desde la Fase 10.E.15.
-        await supabase.from("Usuarios").delete().eq("id", String(showDeletePerf.estudiante_id));
+        await supabase.from("Estudiantes").delete().eq("id", showDeletePerf.estudiante_id);
+        await apiClient.auth.cleanupUsuarioOrphan(String(showDeletePerf.estudiante_id));
       } else if ((showDeletePerf.perfil === "Acudiente") && showDeletePerf.padre_id) {
-        // Para acudientes: borrar la fila en Acudientes y de Usuarios
         await supabase.from("Acudientes").delete().eq("id", showDeletePerf.padre_id);
-        await supabase.from("Usuarios").delete().eq("id", showDeletePerf.padre_id);
+        await apiClient.auth.cleanupUsuarioOrphan(String(showDeletePerf.padre_id));
       }
     } catch (e) {
       console.error("[deletePerfil] Error borrando modelo nuevo:", e);

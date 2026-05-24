@@ -337,6 +337,19 @@ export const apiClient = {
       });
     },
 
+    /**
+     * Borra Usuarios.id=cedula SOLO si la cédula ya no tiene rol en NINGÚN
+     * colegio (Internos/Estudiantes/Acudientes). Sin esta verificación
+     * cross-tenant, el cleanup desde PanelControl destruiría la identidad
+     * de una persona con multi-membresía. Solo Admin/Rector/Coord.
+     */
+    async cleanupUsuarioOrphan(cedula: string): Promise<{ deleted: boolean; remaining: number }> {
+      return request<{ deleted: boolean; remaining: number }>('/auth/cleanup-usuario', {
+        method: 'POST',
+        body: JSON.stringify({ cedula }),
+      });
+    },
+
     logout() {
       setToken(null);
       setTempToken(null);
