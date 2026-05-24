@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Camera, Loader2 } from "lucide-react";
 import Cropper, { type Area } from "react-easy-crop";
 import { apiClient } from "@/lib/apiClient";
@@ -72,6 +72,26 @@ async function cropToBlob(imageSrc: string, area: Area): Promise<Blob> {
 const AvatarUploader = ({ width = 110, height = 140 }: AvatarUploaderProps) => {
   const session = getSession();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(session.avatar_url);
+
+  // Sync con BD al montar: si la foto se subio en otro dispositivo despues del
+  // login en este, la sesion local no se enteraria. /auth/me devuelve el
+  // avatar_url vivo desde BD.
+  useEffect(() => {
+    let cancelled = false;
+    apiClient.auth.me()
+      .then(({ user }) => {
+        if (cancelled) return;
+        const fresh = (user as any).avatar_url || null;
+        if (fresh !== avatarUrl) {
+          setAvatarUrl(fresh);
+          updateSessionAvatar(fresh);
+        }
+      })
+      .catch(() => { /* silencio: el avatar no es critico */ });
+    return () => { cancelled = true; };
+    // Solo al montar — no queremos refetch en cada cambio interno.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Diálogo: 'instructions' antes de elegir; 'crop' una vez elegida la foto.
   const [stage, setStage] = useState<"closed" | "instructions" | "crop">("closed");
