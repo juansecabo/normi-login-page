@@ -38,24 +38,29 @@ const EscudoColegio = ({
   className = "",
 }: EscudoColegioProps) => {
   const dimension = { width: size, height: size };
-  const borderClass = conBorde
-    ? "border-4 border-white shadow-md ring-1 ring-black/5"
-    : "";
-  const baseClass = `rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 ${borderClass} ${className}`;
 
+  // CON escudo: mostramos la imagen tal cual la subio el colegio,
+  // sin recortar a circulo. object-contain preserva el aspect original.
   if (logoUrl) {
     return (
-      <div className={baseClass} style={dimension}>
+      <div
+        className={`flex items-center justify-center flex-shrink-0 ${className}`}
+        style={dimension}
+      >
         <img
           src={logoUrl}
           alt={nombre ? `Escudo de ${nombre}` : "Escudo"}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain"
         />
       </div>
     );
   }
 
-  // Placeholder: inicial o icono
+  // SIN escudo: placeholder circular con la inicial sobre el color del colegio.
+  const borderClass = conBorde
+    ? "border-4 border-white shadow-md ring-1 ring-black/5"
+    : "";
+  const baseClass = `rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 ${borderClass} ${className}`;
   const ini = initial(nombre);
   return (
     <div
