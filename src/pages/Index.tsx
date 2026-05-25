@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Eye, EyeOff, Download, Share } from "lucide-react";
+import { Eye, EyeOff, Download, Share, AlertCircle } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
 import normiImg from "@/assets/normi-placeholder.webp";
 import cailicoLogo from "@/assets/cailico-logo.png";
 import { Button } from "@/components/ui/button";
@@ -29,6 +32,7 @@ const Index = () => {
   const location = useLocation();
   const initialMemberships = (location.state as { memberships?: MembershipChoice[] } | null)?.memberships ?? null;
   const [memberships, setMemberships] = useState<MembershipChoice[] | null>(initialMemberships);
+  const [userError, setUserError] = useState<{ title: string; description: string } | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { canInstall, isIOS, installApp } = useInstallPrompt();
@@ -132,11 +136,11 @@ const Index = () => {
     const passInput = contrasena.trim();
 
     if (!idInput) {
-      toast({ title: "Falta tu # de identidad", description: "Ingrésalo en el campo correspondiente." });
+      setUserError({ title: "Falta tu # de identidad", description: "Ingrésalo en el campo correspondiente." });
       return;
     }
     if (!passInput) {
-      toast({ title: "Falta tu contraseña", description: "Ingrésala en el campo correspondiente." });
+      setUserError({ title: "Falta tu contraseña", description: "Ingrésala en el campo correspondiente." });
       return;
     }
 
@@ -157,12 +161,12 @@ const Index = () => {
       enterAsUser(res.user);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
-        toast({
+        setUserError({
           title: "Datos incorrectos",
           description: "El número de identidad o la contraseña no coinciden. Revísalos e intenta de nuevo.",
         });
       } else if (err instanceof ApiError && err.status === 403) {
-        toast({
+        setUserError({
           title: "Acceso denegado",
           description: "Tu cédula no está registrada en ningún colegio activo.",
         });
@@ -338,6 +342,23 @@ const Index = () => {
           </div>
         </div>
       </div>
+
+      <Dialog open={!!userError} onOpenChange={(o) => { if (!o) setUserError(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-6 h-6 text-primary shrink-0" />
+              <DialogTitle>{userError?.title}</DialogTitle>
+            </div>
+            <DialogDescription className="pt-3 text-base text-foreground">
+              {userError?.description}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setUserError(null)}>Entendido</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
