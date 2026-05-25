@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Camera, CameraOff, Loader2, RotateCcw, Upload } from "lucide-react";
+import { Camera, CameraOff, Loader2, RotateCcw, Trash2, Upload, X } from "lucide-react";
 import Cropper, { type Area } from "react-easy-crop";
 import { apiClient } from "@/lib/apiClient";
 import { updateSessionAvatar, getSession } from "@/hooks/useSession";
@@ -16,8 +16,10 @@ interface AvatarUploaderProps {
 const ACCEPT = "image/jpeg,image/png,image/webp";
 const MAX_BYTES = 5 * 1024 * 1024;
 
-const OVAL_ASPECT = 110 / 140;
-const OUTPUT_HEIGHT = 560;
+// Marco circular: el crop genera una imagen cuadrada que se muestra
+// recortada a circulo via border-radius: 50%.
+const AVATAR_ASPECT = 1;
+const OUTPUT_SIZE = 560;
 
 const initials = (nombres?: string | null, apellidos?: string | null): string => {
   const n = (nombres || "").trim().charAt(0).toUpperCase();
@@ -36,14 +38,13 @@ const loadImage = (src: string): Promise<HTMLImageElement> =>
 
 async function cropToBlob(imageSrc: string, area: Area): Promise<Blob> {
   const img = await loadImage(imageSrc);
-  const outH = OUTPUT_HEIGHT;
-  const outW = Math.round(outH * OVAL_ASPECT);
+  const out = OUTPUT_SIZE;
   const canvas = document.createElement("canvas");
-  canvas.width = outW;
-  canvas.height = outH;
+  canvas.width = out;
+  canvas.height = out;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas no disponible");
-  ctx.drawImage(img, area.x, area.y, area.width, area.height, 0, 0, outW, outH);
+  ctx.drawImage(img, area.x, area.y, area.width, area.height, 0, 0, out, out);
   const tryEncode = (mime: string): Promise<Blob | null> =>
     new Promise((resolve) => canvas.toBlob((b) => resolve(b), mime, 0.8));
   const webp = await tryEncode("image/webp");
@@ -61,7 +62,7 @@ const cameraSupported =
   !!navigator.mediaDevices?.getUserMedia &&
   (window.isSecureContext || window.location.hostname === "localhost");
 
-const AvatarUploader = ({ width = 110, height = 140 }: AvatarUploaderProps) => {
+const AvatarUploader = ({ width = 130, height = 130 }: AvatarUploaderProps) => {
   const session = getSession();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(session.avatar_url);
 
@@ -292,20 +293,35 @@ const AvatarUploader = ({ width = 110, height = 140 }: AvatarUploaderProps) => {
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Foto de perfil</DialogTitle>
-              <DialogDescription>
-                Sube una foto formal donde se vea tu cara claramente, o tómate una en el momento. Después podrás ajustarla dentro del óvalo.
-              </DialogDescription>
+              {!avatarUrl && (
+                <DialogDescription>
+                  Sube una foto formal donde se vea tu cara claramente, o tómate una en el momento. Después podrás ajustarla dentro del marco.
+                </DialogDescription>
+              )}
             </DialogHeader>
-            <p className="text-sm text-muted-foreground">
-              Formatos: JPG, PNG o WEBP. Tamaño máximo: 5 MB.
-            </p>
-            <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2">
-              <Button variant="outline" onClick={closeDialog} disabled={uploading} className="sm:mr-auto">
-                Cancelar
+
+            {avatarUrl ? (
+              <div className="flex justify-center py-2">
+                <div
+                  className="rounded-full overflow-hidden border-4 border-primary/20 shadow-soft"
+                  style={{ width: 220, height: 220 }}
+                >
+                  <img src={avatarUrl} alt="Foto actual" className="w-full h-full object-cover" />
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Formatos: JPG, PNG o WEBP. Tamaño máximo: 5 MB.
+              </p>
+            )}
+
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:flex-wrap sm:justify-end">
+              <Button variant="outline" onClick={closeDialog} disabled={uploading}>
+                <X className="w-4 h-4 mr-2" /> Cancelar
               </Button>
               {avatarUrl && (
                 <Button variant="destructive" onClick={handleDelete} disabled={uploading}>
-                  {uploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
                   Quitar foto
                 </Button>
               )}
@@ -318,7 +334,7 @@ const AvatarUploader = ({ width = 110, height = 140 }: AvatarUploaderProps) => {
                 <Upload className="w-4 h-4 mr-2" />
                 {avatarUrl ? "Subir otra" : "Subir archivo"}
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         )}
 
@@ -391,7 +407,7 @@ const AvatarUploader = ({ width = 110, height = 140 }: AvatarUploaderProps) => {
                 image={pickedSrc}
                 crop={crop}
                 zoom={zoom}
-                aspect={OVAL_ASPECT}
+                aspect={AVATAR_ASPECT}
                 cropShape="rect"
                 showGrid={false}
                 onCropChange={setCrop}
