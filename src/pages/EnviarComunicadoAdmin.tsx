@@ -16,6 +16,7 @@ import { getSession, isAdmin } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { Loader2, Send, Clock, Trash2, Search, Users, Eye, Paperclip, X, FileText, Download, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import ComunicadoEnviadoDialog from "@/components/ComunicadoEnviadoDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { apiRequest } from "@/lib/apiClient";
 import CharCircle from "@/components/CharCircle";
@@ -101,6 +102,8 @@ const EnviarComunicadoAdmin = () => {
   const [idRemitente, setIdRemitente] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showSentDialog, setShowSentDialog] = useState(false);
+  const [sentInfo, setSentInfo] = useState<{ enviados?: number; fallos?: number }>({});
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
   // Destinatarios state — perfiles (multi-select con checkboxes)
@@ -624,10 +627,8 @@ const EnviarComunicadoAdmin = () => {
         },
       );
 
-      toast({
-        title: "Comunicado enviado",
-        description: `Se enviaron ${response.enviados} mensajes como Normi${response.fallos > 0 ? ` (${response.fallos} fallaron)` : ''}.`,
-      });
+      setSentInfo({ enviados: response.enviados, fallos: response.fallos });
+      setShowSentDialog(true);
 
       setMensaje("");
       setArchivosSeleccionados([]);
@@ -1529,6 +1530,12 @@ const EnviarComunicadoAdmin = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <ComunicadoEnviadoDialog
+        open={showSentDialog}
+        onOpenChange={setShowSentDialog}
+        enviados={sentInfo.enviados}
+        fallos={sentInfo.fallos}
+      />
     </div>
   );
 };
