@@ -252,7 +252,7 @@ const AvatarUploader = ({ width = 130, height = 130 }: AvatarUploaderProps) => {
         type="button"
         onClick={openInstructions}
         disabled={uploading}
-        className="group relative overflow-hidden border-4 border-primary/20 shadow-soft bg-secondary flex items-center justify-center transition-all hover:border-primary/40 disabled:opacity-60"
+        className="group relative overflow-hidden border-4 border-primary/20 shadow-soft bg-secondary flex items-center justify-center transition-all hover:border-primary/40 disabled:opacity-60 flex-shrink-0 aspect-square"
         style={dimension}
         title={avatarUrl ? "Cambiar foto" : "Subir foto"}
       >
@@ -301,13 +301,12 @@ const AvatarUploader = ({ width = 130, height = 130 }: AvatarUploaderProps) => {
             </DialogHeader>
 
             {avatarUrl ? (
-              <div className="flex justify-center py-2">
-                <div
-                  className="rounded-full overflow-hidden border-4 border-primary/20 shadow-soft"
-                  style={{ width: 220, height: 220 }}
-                >
-                  <img src={avatarUrl} alt="Foto actual" className="w-full h-full object-cover" />
-                </div>
+              <div className="flex justify-center py-2 bg-secondary/40 rounded-lg">
+                <img
+                  src={avatarUrl}
+                  alt="Foto actual"
+                  className="max-h-[55vh] max-w-full object-contain"
+                />
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">
