@@ -103,7 +103,7 @@ const EnviarComunicadoAdmin = () => {
   const [enviando, setEnviando] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showSentDialog, setShowSentDialog] = useState(false);
-  const [sentInfo, setSentInfo] = useState<{ enviados?: number; fallos?: number }>({});
+  const [sentInfo, setSentInfo] = useState<{ jobId?: string; total?: number }>({});
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
   // Destinatarios state — perfiles (multi-select con checkboxes)
@@ -627,7 +627,7 @@ const EnviarComunicadoAdmin = () => {
         },
       );
 
-      setSentInfo({ enviados: response.enviados, fallos: response.fallos });
+      setSentInfo({ jobId: response.job_id, total: response.total });
       setShowSentDialog(true);
 
       setMensaje("");
@@ -1533,8 +1533,8 @@ const EnviarComunicadoAdmin = () => {
       <ComunicadoEnviadoDialog
         open={showSentDialog}
         onOpenChange={setShowSentDialog}
-        enviados={sentInfo.enviados}
-        fallos={sentInfo.fallos}
+        jobId={sentInfo.jobId}
+        total={sentInfo.total}
       />
     </div>
   );
