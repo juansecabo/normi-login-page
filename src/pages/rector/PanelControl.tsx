@@ -144,7 +144,15 @@ function normalize(str: string): string {
 // Allows matching "jesus abad" against "Abad Arrieta Jesús Andrés".
 function matchesSearch(haystack: string, search: string): boolean {
   const h = normalize(haystack);
-  const tokens = normalize(search).split(/\s+/).filter(Boolean);
+  const searchNorm = normalize(search);
+  // Si la búsqueda es puramente numérica (con/sin puntos/espacios), matchear
+  // contra el haystack también sin puntos/espacios para que "1.103.114.625"
+  // encuentre la cédula "1103114625".
+  const searchNoPunct = searchNorm.replace(/[.\s]/g, "");
+  if (searchNoPunct && /^\d+$/.test(searchNoPunct)) {
+    return h.replace(/[.\s]/g, "").includes(searchNoPunct);
+  }
+  const tokens = searchNorm.split(/\s+/).filter(Boolean);
   if (tokens.length === 0) return true;
   return tokens.every((t) => h.includes(t));
 }

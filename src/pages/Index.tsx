@@ -132,7 +132,8 @@ const Index = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const idInput = identificacion.trim();
+    // Ignorar puntos y espacios en la cédula (acepta "1.103.114.625" o "1 103 114 625").
+    const idInput = identificacion.replace(/[.\s]/g, "");
     const passInput = contrasena.trim();
 
     if (!idInput) {
