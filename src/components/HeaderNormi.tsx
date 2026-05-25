@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Download, Repeat } from "lucide-react";
+import { Download, Repeat, KeyRound, LogOut } from "lucide-react";
 import { clearSession, getSession } from "@/hooks/useSession";
 import { useColegioConfig } from "@/hooks/useColegioConfig";
 import EscudoColegio from "@/components/EscudoColegio";
@@ -88,40 +88,43 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
               </div>
               <h1 className="text-base md:text-xl font-bold whitespace-nowrap">Notas Normi</h1>
             </Link>
-            <div className="flex items-center gap-1 sm:gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
               {canInstall && (
                 <button
                   onClick={installApp}
-                  className="px-2 sm:px-3 py-1.5 sm:py-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground font-medium rounded-lg transition-all duration-200 text-[10px] sm:text-sm flex items-center gap-1"
+                  title="Descargar App"
+                  className="p-2 sm:px-3 sm:py-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground font-medium rounded-lg transition-all duration-200 text-sm flex items-center gap-1.5 whitespace-nowrap"
                 >
-                  <Download className="w-3.5 h-3.5" />
+                  <Download className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                   <span className="hidden sm:inline">Descargar App</span>
-                  <span className="sm:hidden">App</span>
                 </button>
               )}
               {getSession().multi_membership && (
                 <button
                   onClick={handleSwitchProfile}
                   disabled={switching}
-                  className="px-2 sm:px-3 py-1.5 sm:py-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground font-medium rounded-lg transition-all duration-200 text-[10px] sm:text-sm whitespace-nowrap flex items-center gap-1 disabled:opacity-50"
+                  title="Cambiar perfil"
+                  className="p-2 sm:px-3 sm:py-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground font-medium rounded-lg transition-all duration-200 text-sm flex items-center gap-1.5 whitespace-nowrap disabled:opacity-50"
                 >
-                  <Repeat className="w-3.5 h-3.5" />
+                  <Repeat className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                   <span className="hidden sm:inline">Cambiar perfil</span>
-                  <span className="sm:hidden">Perfil</span>
                 </button>
               )}
               <button
                 onClick={() => setShowCambiarContrasena(true)}
-                className="px-2 sm:px-3 py-1.5 sm:py-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground font-medium rounded-lg transition-all duration-200 text-[10px] sm:text-sm whitespace-nowrap"
+                title="Cambiar contraseña"
+                className="p-2 sm:px-3 sm:py-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground font-medium rounded-lg transition-all duration-200 text-sm flex items-center gap-1.5 whitespace-nowrap"
               >
+                <KeyRound className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                 <span className="hidden sm:inline">Cambiar contraseña</span>
-                <span className="sm:hidden">Contraseña</span>
               </button>
               <button
                 onClick={handleLogout}
-                className="px-2 sm:px-3 py-1.5 sm:py-2 bg-background text-foreground hover:bg-background/90 font-medium rounded-lg transition-all duration-200 text-[10px] sm:text-sm whitespace-nowrap"
+                title="Cerrar sesión"
+                className="p-2 sm:px-3 sm:py-2 bg-background text-foreground hover:bg-background/90 font-medium rounded-lg transition-all duration-200 text-sm flex items-center gap-1.5 whitespace-nowrap"
               >
-                Cerrar sesión
+                <LogOut className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                <span className="hidden sm:inline">Cerrar sesión</span>
               </button>
             </div>
           </div>
