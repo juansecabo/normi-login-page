@@ -18,11 +18,11 @@ const MAX_BYTES = 5 * 1024 * 1024;
 
 // Marco circular: el crop genera una imagen cuadrada que se muestra
 // recortada a circulo via border-radius: 50%.
-const AVATAR_ASPECT = 1;
-// 560 fue el valor que daba mejor balance entre nitidez y peso cuando el
-// marco era oval. Subirlo a 720 sobre-escalaba en zooms altos del cropper
-// porque el area recortada del original era chiquita.
-const OUTPUT_SIZE = 560;
+// Aspecto del óvalo (ancho/alto). El cropper genera una imagen rectangular
+// con ESTE mismo ratio para que el preview oval coincida 1:1 con el resultado.
+const OVAL_ASPECT = 110 / 140;
+// Tamaño en píxeles del output final que se sube (alto). Mantiene el aspect.
+const OUTPUT_HEIGHT = 560;
 
 const initials = (nombres?: string | null, apellidos?: string | null): string => {
   const n = (nombres || "").trim().charAt(0).toUpperCase();
@@ -41,13 +41,14 @@ const loadImage = (src: string): Promise<HTMLImageElement> =>
 
 async function cropToBlob(imageSrc: string, area: Area): Promise<Blob> {
   const img = await loadImage(imageSrc);
-  const out = OUTPUT_SIZE;
+  const outH = OUTPUT_HEIGHT;
+  const outW = Math.round(outH * OVAL_ASPECT);
   const canvas = document.createElement("canvas");
-  canvas.width = out;
-  canvas.height = out;
+  canvas.width = outW;
+  canvas.height = outH;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas no disponible");
-  ctx.drawImage(img, area.x, area.y, area.width, area.height, 0, 0, out, out);
+  ctx.drawImage(img, area.x, area.y, area.width, area.height, 0, 0, outW, outH);
   const tryEncode = (mime: string): Promise<Blob | null> =>
     new Promise((resolve) => canvas.toBlob((b) => resolve(b), mime, 0.8));
   const webp = await tryEncode("image/webp");
@@ -65,7 +66,7 @@ const cameraSupported =
   !!navigator.mediaDevices?.getUserMedia &&
   (window.isSecureContext || window.location.hostname === "localhost");
 
-const AvatarUploader = ({ width = 130, height = 130 }: AvatarUploaderProps) => {
+const AvatarUploader = ({ width = 110, height = 140 }: AvatarUploaderProps) => {
   const session = getSession();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(session.avatar_url);
 
@@ -117,7 +118,7 @@ const AvatarUploader = ({ width = 130, height = 130 }: AvatarUploaderProps) => {
     let cancelled = false;
     setCameraError(null);
     navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: "user", width: { ideal: 1920 }, height: { ideal: 1920 } }, audio: false })
+      .getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 1280 } }, audio: false })
       .then((stream) => {
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
@@ -210,10 +211,7 @@ const AvatarUploader = ({ width = 130, height = 130 }: AvatarUploaderProps) => {
     // Mirror horizontal: el preview se muestra invertido para que sea "espejo",
     // pero el frame real NO está espejado. Lo guardamos sin mirror.
     ctx.drawImage(video, 0, 0);
-    // Snapshot en JPEG 0.95: el formato lossy suaviza ligeramente el grano del
-    // sensor (especialmente en interior con poca luz) pero a 0.95 conserva
-    // todo el detalle. PNG puro exponia el ruido bruto de la camara.
-    setCameraSnapshot(canvas.toDataURL("image/jpeg", 0.95));
+    setCameraSnapshot(canvas.toDataURL("image/jpeg", 0.9));
     stopCamera();
   };
 
@@ -412,7 +410,7 @@ const AvatarUploader = ({ width = 130, height = 130 }: AvatarUploaderProps) => {
                 image={pickedSrc}
                 crop={crop}
                 zoom={zoom}
-                aspect={AVATAR_ASPECT}
+                aspect={OVAL_ASPECT}
                 cropShape="rect"
                 showGrid={false}
                 onCropChange={setCrop}
