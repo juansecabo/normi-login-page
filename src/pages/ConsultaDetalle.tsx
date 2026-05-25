@@ -13,6 +13,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useToast } from "@/hooks/use-toast";
 import { Search, FileSpreadsheet, Eye, Copy, Pencil, Trash2, CheckCircle2 } from "lucide-react";
 import SignatureCanvas from "react-signature-canvas";
+import DestinatariosSelector, {
+  type DestinatariosValue,
+  type DestinatariosOutput,
+  type DestinatariosSnapshot,
+  emptyDestinatariosValue,
+  destinatariosFromConsulta,
+  diffNuevosDestinatarios,
+} from "@/components/DestinatariosSelector";
+import { apiRequest } from "@/lib/apiClient";
 
 // Mapeo entre etiqueta legacy (cargos_objetivo) y cargos reales del usuario.
 const CARGO_OBJETIVO_LEGACY: Record<string, string[]> = {
@@ -48,6 +57,9 @@ interface ConsultaRow {
   salones_objetivo: string[] | null;
   estudiantes_objetivo: number[] | null;
   cargos_objetivo: string[] | null;
+  perfiles_objetivo: string[] | null;
+  internos_objetivo: string[] | null;
+  mensaje_whatsapp?: string | null;
 }
 
 interface EstudianteRow {
@@ -793,10 +805,67 @@ export default function ConsultaDetalle() {
     }
   };
 
-  const abrirEditar = () => {
+  // Snapshot original de destinatarios para calcular diff al guardar.
+  const [destinatariosInitial, setDestinatariosInitial] = useState<DestinatariosValue>(emptyDestinatariosValue());
+  const [destinatariosOriginalSnap, setDestinatariosOriginalSnap] = useState<DestinatariosSnapshot | null>(null);
+  // Output actual del selector (se actualiza por callback).
+  const [destinatariosNuevo, setDestinatariosNuevo] = useState<DestinatariosOutput | null>(null);
+
+  // Cache de listas de internos para hidratar el initial del selector.
+  // No es crítico — si falla, el componente carga sus propias listas pero los
+  // chips de "internos específicos" arrancan vacíos.
+  const [internosPorCargoCache, setInternosPorCargoCache] = useState<{
+    profesores: string[]; coordinadores: string[]; administrativos: string[]; secretarias: string[]; orientadores: string[];
+  }>({ profesores: [], coordinadores: [], administrativos: [], secretarias: [], orientadores: [] });
+
+  const esCreador = useMemo(() => {
+    const sid = Number(getSession().id);
+    return consulta?.creado_por != null && Number(consulta.creado_por) === sid;
+  }, [consulta]);
+
+  const abrirEditar = async () => {
     if (!consulta) return;
     setEditTitulo(consulta.titulo);
     setEditMensaje(consulta.mensaje_consulta);
+
+    // Construir snapshot ORIGINAL para el diff.
+    const orig: DestinatariosSnapshot = {
+      perfiles_objetivo: consulta.perfiles_objetivo || null,
+      grados_objetivo: consulta.grados_objetivo || null,
+      salones_objetivo: consulta.salones_objetivo || null,
+      estudiantes_objetivo: consulta.estudiantes_objetivo || null,
+      cargos_objetivo: consulta.cargos_objetivo || null,
+      internos_objetivo: consulta.internos_objetivo || null,
+      destinatarios_label: "",
+      segmentos: [],
+      isEmpty: false,
+    };
+    setDestinatariosOriginalSnap(orig);
+
+    // Cargar internos para clasificar ids por cargo (mejor UX al editar).
+    try {
+      const { data: rawInt } = await supabase
+        .from("Internos")
+        .select("id, cargo")
+        .in("cargo", ["Profesor(a)", "Coordinador(a)", "Administrativo(a)", "Secretaria General", "Orientador(a) Escolar"]);
+      const grupos = {
+        profesores: [] as string[], coordinadores: [] as string[],
+        administrativos: [] as string[], secretarias: [] as string[], orientadores: [] as string[],
+      };
+      for (const r of (rawInt || []) as any[]) {
+        const id = String(r.id);
+        if (r.cargo === "Profesor(a)") grupos.profesores.push(id);
+        else if (r.cargo === "Coordinador(a)") grupos.coordinadores.push(id);
+        else if (r.cargo === "Administrativo(a)") grupos.administrativos.push(id);
+        else if (r.cargo === "Secretaria General") grupos.secretarias.push(id);
+        else if (r.cargo === "Orientador(a) Escolar") grupos.orientadores.push(id);
+      }
+      setInternosPorCargoCache(grupos);
+      setDestinatariosInitial(destinatariosFromConsulta(consulta, grupos));
+    } catch {
+      setDestinatariosInitial(destinatariosFromConsulta(consulta));
+    }
+    setDestinatariosNuevo(null);
     setEditarOpen(true);
   };
 
@@ -805,16 +874,69 @@ export default function ConsultaDetalle() {
     if (!editTitulo.trim() || !editMensaje.trim()) {
       return toast({ title: "El título y el mensaje no pueden estar vacíos", variant: "destructive" });
     }
+    if (destinatariosNuevo && destinatariosNuevo.isEmpty) {
+      return toast({ title: "Selecciona al menos un perfil destinatario", variant: "destructive" });
+    }
     setGuardandoEdit(true);
+
+    // 1) UPDATE incluyendo destinatarios si el selector emitió output.
+    const updatePayload: any = {
+      titulo: editTitulo.trim(),
+      mensaje_consulta: editMensaje,
+    };
+    if (destinatariosNuevo) {
+      updatePayload.perfiles_objetivo = destinatariosNuevo.perfiles_objetivo;
+      updatePayload.grados_objetivo = destinatariosNuevo.grados_objetivo;
+      updatePayload.salones_objetivo = destinatariosNuevo.salones_objetivo;
+      updatePayload.estudiantes_objetivo = destinatariosNuevo.estudiantes_objetivo;
+      updatePayload.cargos_objetivo = destinatariosNuevo.cargos_objetivo;
+      updatePayload.internos_objetivo = destinatariosNuevo.internos_objetivo;
+    }
     const { error } = await supabase
       .from("Consultas" as any)
-      .update({ titulo: editTitulo.trim(), mensaje_consulta: editMensaje })
+      .update(updatePayload)
       .eq("id", consulta.id);
+    if (error) {
+      setGuardandoEdit(false);
+      return toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+
+    // 2) Si hubo cambio de destinatarios, notificar SOLO a los nuevos.
+    let notificoNuevos = false;
+    if (destinatariosNuevo && destinatariosOriginalSnap) {
+      const diff = diffNuevosDestinatarios(destinatariosOriginalSnap, destinatariosNuevo);
+      if (diff) {
+        try {
+          const linkConsulta = `${window.location.origin}/consulta/${consulta.id}`;
+          const mensajeBase = (consulta.mensaje_whatsapp || consulta.titulo || "Tienes una consulta pendiente").trim();
+          const mensajeFinal = `${mensajeBase}\n\n👉 ${linkConsulta}`;
+          await apiRequest("/api/comunicados/enviar", {
+            method: "POST",
+            body: JSON.stringify({
+              como_normi: getSession().cargo === "Administrador",
+              destinatarios_label: diff.destinatarios_label,
+              mensaje: mensajeFinal,
+              segmentos: diff.segmentos,
+            }),
+          });
+          notificoNuevos = true;
+        } catch (err: any) {
+          console.error("[ConsultaDetalle] Error notificando nuevos destinatarios:", err);
+          toast({
+            title: "Consulta actualizada pero falló la notificación",
+            description: "Los datos se guardaron. Reintenta o avisa manualmente a los nuevos destinatarios.",
+            variant: "destructive",
+          });
+        }
+      }
+    }
+
     setGuardandoEdit(false);
-    if (error) return toast({ title: "Error", description: error.message, variant: "destructive" });
     toast({
       title: "Consulta actualizada",
-      description: "Los acudientes que entren al link verán los cambios.",
+      description: notificoNuevos
+        ? "Se envió notificación a los destinatarios nuevos."
+        : "Los acudientes que entren al link verán los cambios.",
     });
     setEditarOpen(false);
     cargar();
@@ -852,7 +974,7 @@ export default function ConsultaDetalle() {
               <Copy className="h-4 w-4 mr-1" />
               {linkCopiado ? "¡Copiado!" : "Copiar link"}
             </Button>
-            {consulta.activa && (
+            {consulta.activa && esCreador && (
               <Button variant="outline" size="sm" onClick={abrirEditar} className="bg-white">
                 <Pencil className="h-4 w-4 mr-1" /> Editar
               </Button>
@@ -1393,6 +1515,17 @@ export default function ConsultaDetalle() {
               <p className="text-xs text-muted-foreground mt-1">
                 Lo verán tanto los nuevos acudientes que entren al link, como los que ya respondieron y vuelvan a abrirlo.
               </p>
+            </div>
+
+            <div className="border-t pt-3">
+              <Label className="font-medium">Destinatarios</Label>
+              <p className="text-xs text-muted-foreground mt-1 mb-3">
+                Solo recibirán notificación los <strong>nuevos</strong> destinatarios que agregues. Los que ya estaban no reciben mensajes repetidos.
+              </p>
+              <DestinatariosSelector
+                initial={destinatariosInitial}
+                onChange={setDestinatariosNuevo}
+              />
             </div>
           </div>
           <DialogFooter>
