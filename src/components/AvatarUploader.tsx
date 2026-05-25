@@ -19,7 +19,10 @@ const MAX_BYTES = 5 * 1024 * 1024;
 // Marco circular: el crop genera una imagen cuadrada que se muestra
 // recortada a circulo via border-radius: 50%.
 const AVATAR_ASPECT = 1;
-const OUTPUT_SIZE = 720;
+// 560 fue el valor que daba mejor balance entre nitidez y peso cuando el
+// marco era oval. Subirlo a 720 sobre-escalaba en zooms altos del cropper
+// porque el area recortada del original era chiquita.
+const OUTPUT_SIZE = 560;
 
 const initials = (nombres?: string | null, apellidos?: string | null): string => {
   const n = (nombres || "").trim().charAt(0).toUpperCase();
@@ -46,7 +49,7 @@ async function cropToBlob(imageSrc: string, area: Area): Promise<Blob> {
   if (!ctx) throw new Error("Canvas no disponible");
   ctx.drawImage(img, area.x, area.y, area.width, area.height, 0, 0, out, out);
   const tryEncode = (mime: string): Promise<Blob | null> =>
-    new Promise((resolve) => canvas.toBlob((b) => resolve(b), mime, 0.85));
+    new Promise((resolve) => canvas.toBlob((b) => resolve(b), mime, 0.8));
   const webp = await tryEncode("image/webp");
   if (webp && webp.type === "image/webp") return webp;
   const jpg = await tryEncode("image/jpeg");
