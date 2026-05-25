@@ -63,7 +63,9 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
         return;
       }
       clearSession();
-      navigate("/", { state: { memberships: res.memberships } });
+      // replace para que "atras" del celular desde el selector no vuelva al
+      // dashboard anterior (cuya sesion ya borramos).
+      navigate("/", { state: { memberships: res.memberships }, replace: true });
     } catch {
       toast({
         title: "Error",

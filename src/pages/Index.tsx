@@ -33,13 +33,17 @@ const Index = () => {
   const { toast } = useToast();
   const { canInstall, isIOS, installApp } = useInstallPrompt();
 
-  // Una vez tenemos el AuthUser final (con colegio), guarda sesión local y navega
+  // Una vez tenemos el AuthUser final (con colegio), guarda sesión local y navega.
+  // Usamos replace:true en TODAS las navegaciones para que el boton "atras" del
+  // celular NO devuelva al selector de membresias — su tempToken ya fue
+  // consumido y volveria a fallar con "Error en el sistema". Con replace, atras
+  // sale de la PWA igual que para un usuario de un solo perfil.
   const enterAsUser = (user: AuthUser) => {
     const multi = user.multi_membership === true;
     const avatar = user.avatar_url || null;
     if (user.rol === 'SuperAdmin') {
       saveSession(user.id, user.nombres, user.apellidos, 'SuperAdmin', null, null, null, null, multi, avatar);
-      navigate(getPostLoginRoute("/dashboard-plataforma"));
+      navigate(getPostLoginRoute("/dashboard-plataforma"), { replace: true });
       return;
     }
     if (user.rol === 'Estudiante') {
@@ -48,7 +52,7 @@ const Index = () => {
         user.nivel || null, user.grado || null, user.salon || null,
         null, multi, avatar,
       );
-      navigate(getPostLoginRoute("/dashboard-estudiante"));
+      navigate(getPostLoginRoute("/dashboard-estudiante"), { replace: true });
       return;
     }
     if (user.rol === 'Acudiente') {
@@ -57,20 +61,20 @@ const Index = () => {
         null, null, null,
         (user.acudidos || []) as AcudidoData[], multi, avatar,
       );
-      navigate(getPostLoginRoute("/dashboard-acudiente"));
+      navigate(getPostLoginRoute("/dashboard-acudiente"), { replace: true });
       return;
     }
     saveSession(user.id, user.nombres, user.apellidos, user.rol, null, null, null, null, multi, avatar);
     if (user.rol === 'Administrador') {
-      navigate(getPostLoginRoute("/dashboard-admin"));
+      navigate(getPostLoginRoute("/dashboard-admin"), { replace: true });
     } else if (
       user.rol === 'Rector' || user.rol === 'Coordinador(a)' ||
       user.rol === 'Administrativo(a)' || user.rol === 'Secretaria General' ||
       user.rol === 'Orientador(a) Escolar'
     ) {
-      navigate(getPostLoginRoute("/dashboard-rector"));
+      navigate(getPostLoginRoute("/dashboard-rector"), { replace: true });
     } else {
-      navigate(getPostLoginRoute("/dashboard"));
+      navigate(getPostLoginRoute("/dashboard"), { replace: true });
     }
   };
 
