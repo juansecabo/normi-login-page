@@ -207,9 +207,10 @@ const AvatarUploader = ({ width = 130, height = 130 }: AvatarUploaderProps) => {
     // Mirror horizontal: el preview se muestra invertido para que sea "espejo",
     // pero el frame real NO está espejado. Lo guardamos sin mirror.
     ctx.drawImage(video, 0, 0);
-    // Snapshot intermedio en PNG (lossless) — el crop final lo comprime a WebP.
-    // Evita la doble compresion JPEG -> WebP que perdia calidad innecesaria.
-    setCameraSnapshot(canvas.toDataURL("image/png"));
+    // Snapshot en JPEG 0.95: el formato lossy suaviza ligeramente el grano del
+    // sensor (especialmente en interior con poca luz) pero a 0.95 conserva
+    // todo el detalle. PNG puro exponia el ruido bruto de la camara.
+    setCameraSnapshot(canvas.toDataURL("image/jpeg", 0.95));
     stopCamera();
   };
 
