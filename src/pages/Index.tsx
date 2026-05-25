@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Eye, EyeOff, Download, Share } from "lucide-react";
-import escudoImg from "@/assets/escudo.webp";
 import normiImg from "@/assets/normi-placeholder.webp";
 import cailicoLogo from "@/assets/cailico-logo.png";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { saveSession, getSession, AcudidoData } from "@/hooks/useSession";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import { apiClient, ApiError, isMultiMembership, type AuthUser, type MembershipChoice } from "@/lib/apiClient";
+import EscudoColegio from "@/components/EscudoColegio";
 
 // Si viene con ?redirect=/alguna-ruta válida, usamos esa; si no, el default.
 const getPostLoginRoute = (defaultRoute: string): string => {
@@ -192,15 +192,6 @@ const Index = () => {
       {/* Columna Derecha - Formulario de Login */}
       <div className="lg:w-1/2 flex items-center justify-center p-8 lg:p-12">
         <div className="w-full max-w-md space-y-8 animate-fade-in">
-          {/* Escudo */}
-          <div className="flex justify-center">
-            <img
-              src={escudoImg}
-              alt="Escudo Escuela Normal Superior"
-              className="w-28 h-auto object-contain"
-            />
-          </div>
-
           {/* Títulos */}
           <div className="text-center space-y-2">
             <h1 className="text-3xl lg:text-4xl font-bold text-foreground tracking-tight">
@@ -209,7 +200,7 @@ const Index = () => {
             <p className="text-muted-foreground text-sm lg:text-base">
               {memberships
                 ? "¿En cuál perfil quieres entrar?"
-                : "Escuela Normal Superior"}
+                : "Ingresa con tu cédula y contraseña"}
             </p>
           </div>
 
@@ -223,13 +214,12 @@ const Index = () => {
                   disabled={loading}
                   className="w-full flex items-center gap-4 p-4 rounded-lg border-2 border-input bg-background hover:border-primary hover:bg-primary/5 transition-all text-left disabled:opacity-50"
                 >
-                  {m.colegio_logo_url ? (
-                    <img src={m.colegio_logo_url} alt="" className="w-14 h-14 object-contain flex-shrink-0" />
-                  ) : (
-                    <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl flex-shrink-0">
-                      {m.colegio_nombre.charAt(0)}
-                    </div>
-                  )}
+                  <EscudoColegio
+                    logoUrl={m.colegio_logo_url}
+                    nombre={m.colegio_nombre}
+                    colorFondo={m.colegio_color}
+                    size={56}
+                  />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-muted-foreground">{m.rol} de</p>
                     <p className="font-semibold text-foreground truncate">{m.colegio_nombre}</p>

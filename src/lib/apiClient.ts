@@ -426,6 +426,21 @@ export const apiClient = {
     colegios(): Promise<{ colegios: ColegioPlataforma[] }> {
       return request<{ colegios: ColegioPlataforma[] }>('/api/plataforma/colegios');
     },
+    async uploadColegioLogo(colegio_id: string, file: File): Promise<{ logo_url: string }> {
+      const contentBase64 = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => {
+          const result = r.result as string;
+          resolve(result.split(',')[1] || '');
+        };
+        r.onerror = () => reject(r.error);
+        r.readAsDataURL(file);
+      });
+      return request<{ logo_url: string }>('/api/plataforma/colegio/logo', {
+        method: 'POST',
+        body: JSON.stringify({ colegio_id, contentBase64, contentType: file.type }),
+      });
+    },
   },
 
   estadisticas: {

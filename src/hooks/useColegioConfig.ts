@@ -31,7 +31,7 @@ const DEFAULT_CONFIG: ColegioConfig = {
   ],
 };
 
-let cached: { nombre: string; config: ColegioConfig; expiresAt: number } | null = null;
+let cached: { nombre: string; logoUrl: string | null; config: ColegioConfig; expiresAt: number } | null = null;
 const TTL_MS = 60_000;
 
 /**
@@ -43,6 +43,7 @@ const TTL_MS = 60_000;
  */
 export function useColegioConfig() {
   const [nombre, setNombre] = useState<string>(() => cached?.nombre || "");
+  const [logoUrl, setLogoUrl] = useState<string | null>(() => cached?.logoUrl || null);
   const [config, setConfig] = useState<ColegioConfig>(() => cached?.config || DEFAULT_CONFIG);
   const [loading, setLoading] = useState(!cached || cached.expiresAt < Date.now());
 
@@ -50,6 +51,7 @@ export function useColegioConfig() {
     const now = Date.now();
     if (cached && cached.expiresAt > now) {
       setNombre(cached.nombre);
+      setLogoUrl(cached.logoUrl);
       setConfig(cached.config);
       setLoading(false);
       return;
@@ -57,10 +59,7 @@ export function useColegioConfig() {
     let cancel = false;
     (async () => {
       try {
-        // /api/colegio/config filtra por colegio_id del JWT — el shim de
-        // Supabase no sirve porque `Colegios` está marcada NO_TENANT y
-        // devuelve TODOS los colegios (.maybeSingle() falla con N>1).
-        const res = await apiRequest<{ nombre: string; config: Partial<ColegioConfig> }>(
+        const res = await apiRequest<{ nombre: string; logo_url: string | null; config: Partial<ColegioConfig> | null }>(
           "/api/colegio/config",
         );
         if (cancel) return;
@@ -71,8 +70,10 @@ export function useColegioConfig() {
           cfg.rangos_desempeno = DEFAULT_CONFIG.rangos_desempeno;
         }
         const nom = res.nombre || "";
-        cached = { nombre: nom, config: cfg, expiresAt: Date.now() + TTL_MS };
+        const lu = res.logo_url || null;
+        cached = { nombre: nom, logoUrl: lu, config: cfg, expiresAt: Date.now() + TTL_MS };
         setNombre(nom);
+        setLogoUrl(lu);
         setConfig(cfg);
         setLoading(false);
       } catch {
@@ -83,7 +84,7 @@ export function useColegioConfig() {
     return () => { cancel = true; };
   }, []);
 
-  return { nombre, config, loading };
+  return { nombre, logoUrl, config, loading };
 }
 
 /** Invalida la cache (úsalo cuando el rector modifica la config). */

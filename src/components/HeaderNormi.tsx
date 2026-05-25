@@ -2,8 +2,9 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Download, Repeat } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import escudoImg from "@/assets/escudo.webp";
 import { clearSession, getSession } from "@/hooks/useSession";
+import { useColegioConfig } from "@/hooks/useColegioConfig";
+import EscudoColegio from "@/components/EscudoColegio";
 import CambiarContrasenaModal from "@/components/CambiarContrasenaModal";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import UpdateBanner from "@/components/UpdateBanner";
@@ -41,6 +42,7 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
   const [showCambiarContrasena, setShowCambiarContrasena] = useState(false);
   const [switching, setSwitching] = useState(false);
   const { canInstall, installApp } = useInstallPrompt();
+  const { nombre: colegioNombre, logoUrl: colegioLogoUrl } = useColegioConfig();
 
   const finalBackLink = backLink || computeBackLinkFromSession();
 
@@ -79,11 +81,12 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
         <div className="bg-primary text-primary-foreground py-2 md:py-3 px-3 md:px-4">
           <div className="container mx-auto flex items-center justify-between">
             <Link to={finalBackLink} className="flex items-center gap-2 md:gap-3 hover:opacity-80 transition-opacity cursor-pointer">
-              <img
-                src={escudoImg}
-                alt="Escudo"
-                className="w-10 h-10 md:w-16 md:h-16 object-contain -my-1 md:-my-2"
-              />
+              <div className="hidden md:block">
+                <EscudoColegio logoUrl={colegioLogoUrl} nombre={colegioNombre} size={56} />
+              </div>
+              <div className="md:hidden">
+                <EscudoColegio logoUrl={colegioLogoUrl} nombre={colegioNombre} size={40} />
+              </div>
               <h1 className="text-base md:text-xl font-bold">Notas Normi</h1>
             </Link>
             <div className="flex items-center gap-1 sm:gap-2">
