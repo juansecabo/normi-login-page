@@ -132,11 +132,11 @@ const Index = () => {
     const passInput = contrasena.trim();
 
     if (!idInput) {
-      toast({ title: "Error", description: "Por favor ingresa tu # de identidad", variant: "destructive" });
+      toast({ title: "Falta tu # de identidad", description: "Ingrésalo en el campo correspondiente." });
       return;
     }
     if (!passInput) {
-      toast({ title: "Error", description: "Por favor ingresa tu contraseña", variant: "destructive" });
+      toast({ title: "Falta tu contraseña", description: "Ingrésala en el campo correspondiente." });
       return;
     }
 
@@ -158,15 +158,13 @@ const Index = () => {
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         toast({
-          title: "Error",
-          description: "Identificación o contraseña incorrectas",
-          variant: "destructive",
+          title: "Datos incorrectos",
+          description: "El número de identidad o la contraseña no coinciden. Revísalos e intenta de nuevo.",
         });
       } else if (err instanceof ApiError && err.status === 403) {
         toast({
           title: "Acceso denegado",
           description: "Tu cédula no está registrada en ningún colegio activo.",
-          variant: "destructive",
         });
       } else {
         toast({
