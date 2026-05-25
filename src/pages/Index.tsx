@@ -192,6 +192,12 @@ const Index = () => {
       {/* Columna Derecha - Formulario de Login */}
       <div className="lg:w-1/2 flex items-center justify-center p-8 lg:p-12">
         <div className="w-full max-w-md space-y-8 animate-fade-in">
+          {/* Cailico presenta: */}
+          <div className="flex flex-col items-center gap-1">
+            <img src={cailicoLogo} alt="Cailico" className="h-10" />
+            <p className="text-sm text-muted-foreground">presenta:</p>
+          </div>
+
           {/* Títulos */}
           <div className="text-center space-y-2">
             <h1 className="text-3xl lg:text-4xl font-bold text-foreground tracking-tight">
@@ -314,22 +320,19 @@ const Index = () => {
             </div>
           )}
 
-          {/* Desarrollado por */}
-          <div className="text-center pt-4 space-y-2">
-            <p className="text-xs text-muted-foreground">Desarrollado por:</p>
-            <img
-              src={cailicoLogo}
-              alt="Cailico"
-              className="h-8 mx-auto"
-            />
-            <a
-              href="https://cailico.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-primary hover:underline"
-            >
-              cailico.com
-            </a>
+          {/* Más información */}
+          <div className="text-center pt-4">
+            <p className="text-xs text-muted-foreground">
+              Más información en:{" "}
+              <a
+                href="https://cailico.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                cailico.com
+              </a>
+            </p>
           </div>
         </div>
       </div>
