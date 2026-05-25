@@ -19,7 +19,7 @@ const MAX_BYTES = 5 * 1024 * 1024;
 // Marco circular: el crop genera una imagen cuadrada que se muestra
 // recortada a circulo via border-radius: 50%.
 const AVATAR_ASPECT = 1;
-const OUTPUT_SIZE = 560;
+const OUTPUT_SIZE = 720;
 
 const initials = (nombres?: string | null, apellidos?: string | null): string => {
   const n = (nombres || "").trim().charAt(0).toUpperCase();
@@ -46,7 +46,7 @@ async function cropToBlob(imageSrc: string, area: Area): Promise<Blob> {
   if (!ctx) throw new Error("Canvas no disponible");
   ctx.drawImage(img, area.x, area.y, area.width, area.height, 0, 0, out, out);
   const tryEncode = (mime: string): Promise<Blob | null> =>
-    new Promise((resolve) => canvas.toBlob((b) => resolve(b), mime, 0.8));
+    new Promise((resolve) => canvas.toBlob((b) => resolve(b), mime, 0.85));
   const webp = await tryEncode("image/webp");
   if (webp && webp.type === "image/webp") return webp;
   const jpg = await tryEncode("image/jpeg");
@@ -114,7 +114,7 @@ const AvatarUploader = ({ width = 130, height = 130 }: AvatarUploaderProps) => {
     let cancelled = false;
     setCameraError(null);
     navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 1280 } }, audio: false })
+      .getUserMedia({ video: { facingMode: "user", width: { ideal: 1920 }, height: { ideal: 1920 } }, audio: false })
       .then((stream) => {
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
@@ -207,7 +207,9 @@ const AvatarUploader = ({ width = 130, height = 130 }: AvatarUploaderProps) => {
     // Mirror horizontal: el preview se muestra invertido para que sea "espejo",
     // pero el frame real NO está espejado. Lo guardamos sin mirror.
     ctx.drawImage(video, 0, 0);
-    setCameraSnapshot(canvas.toDataURL("image/jpeg", 0.9));
+    // Snapshot intermedio en PNG (lossless) — el crop final lo comprime a WebP.
+    // Evita la doble compresion JPEG -> WebP que perdia calidad innecesaria.
+    setCameraSnapshot(canvas.toDataURL("image/png"));
     stopCamera();
   };
 
