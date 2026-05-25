@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Download, Repeat } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { clearSession, getSession } from "@/hooks/useSession";
 import { useColegioConfig } from "@/hooks/useColegioConfig";
 import EscudoColegio from "@/components/EscudoColegio";
@@ -87,7 +86,7 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
               <div className="md:hidden">
                 <EscudoColegio logoUrl={colegioLogoUrl} nombre={colegioNombre} size={40} />
               </div>
-              <h1 className="text-base md:text-xl font-bold">Notas Normi</h1>
+              <h1 className="text-base md:text-xl font-bold whitespace-nowrap">Notas Normi</h1>
             </Link>
             <div className="flex items-center gap-1 sm:gap-2">
               {canInstall && (
@@ -118,13 +117,12 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
                 <span className="hidden sm:inline">Cambiar contraseña</span>
                 <span className="sm:hidden">Contraseña</span>
               </button>
-              <Button
-                variant="secondary"
+              <button
                 onClick={handleLogout}
-                className="font-medium text-[10px] sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+                className="px-2 sm:px-3 py-1.5 sm:py-2 bg-background text-foreground hover:bg-background/90 font-medium rounded-lg transition-all duration-200 text-[10px] sm:text-sm whitespace-nowrap"
               >
                 Cerrar sesión
-              </Button>
+              </button>
             </div>
           </div>
         </div>
