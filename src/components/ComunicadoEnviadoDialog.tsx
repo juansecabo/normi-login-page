@@ -25,12 +25,18 @@ interface Progress {
 const ComunicadoEnviadoDialog = ({ open, onOpenChange, jobId, total }: ComunicadoEnviadoDialogProps) => {
   const [progress, setProgress] = useState<Progress | null>(null);
   const [cancelando, setCancelando] = useState(false);
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
 
-  const handleCancelar = async () => {
+  // Reset state cuando se abre con un job nuevo o el modal se cierra,
+  // para que el "Cancelando..." de un envio anterior no quede pegado.
+  useEffect(() => {
+    setCancelando(false);
+    setConfirmCancelOpen(false);
+  }, [jobId, open]);
+
+  const handleCancelarConfirmado = async () => {
+    setConfirmCancelOpen(false);
     if (!jobId) return;
-    if (!window.confirm("¿Detener el envío?\n\nLos mensajes que ya salieron NO se pueden revertir, pero los siguientes se cancelan.")) {
-      return;
-    }
     setCancelando(true);
     try {
       await apiRequest(`/api/comunicados/cancelar/${jobId}`, { method: "POST" });
@@ -115,13 +121,30 @@ const ComunicadoEnviadoDialog = ({ open, onOpenChange, jobId, total }: Comunicad
           </div>
           <DialogFooter className="gap-2 sm:gap-2">
             {!completado && !cancelado && (
-              <Button variant="outline" onClick={handleCancelar} disabled={cancelando} className="border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800">
+              <Button variant="outline" onClick={() => setConfirmCancelOpen(true)} disabled={cancelando} className="border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800">
                 {cancelando ? "Cancelando..." : "Cancelar envío"}
               </Button>
             )}
             <Button onClick={() => onOpenChange(false)}>{completado || cancelado ? "Cerrar" : "Entendido"}</Button>
           </DialogFooter>
         </DialogContent>
+
+        <Dialog open={confirmCancelOpen} onOpenChange={setConfirmCancelOpen}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>¿Detener el envío?</DialogTitle>
+              <DialogDescription>
+                Los mensajes ya enviados <strong>no se pueden revertir</strong>. Solo se cancelan los próximos pendientes.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:gap-2">
+              <Button variant="outline" onClick={() => setConfirmCancelOpen(false)}>Volver</Button>
+              <Button onClick={handleCancelarConfirmado} className="bg-red-600 hover:bg-red-700 text-white">
+                Sí, detener
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </Dialog>
     );
   }

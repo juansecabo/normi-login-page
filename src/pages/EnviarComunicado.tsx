@@ -682,10 +682,13 @@ const EnviarComunicado = () => {
     } catch (error) {
       console.error("Error enviando comunicado:", error);
       const errorMsg = error instanceof Error ? error.message : "No se pudo enviar el comunicado. Intenta de nuevo.";
+      const sinDestinatarios = /no[_ ]destinatarios|no se encontraron destinatarios/i.test(errorMsg);
       toast({
-        title: "Error",
-        description: errorMsg,
-        variant: "destructive",
+        title: sinDestinatarios ? "Sin destinatarios" : "Error",
+        description: sinDestinatarios
+          ? "Ningún usuario coincide con los filtros seleccionados. Revisa los destinatarios."
+          : errorMsg,
+        variant: sinDestinatarios ? "default" : "destructive",
       });
     } finally {
       setEnviando(false);
