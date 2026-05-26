@@ -636,10 +636,11 @@ const EnviarComunicadoAdmin = () => {
     } catch (error) {
       console.error("Error enviando comunicado:", error);
       const errorMsg = error instanceof Error ? error.message : "No se pudo enviar el comunicado. Intenta de nuevo.";
-      const sinDestinatarios = /no[_ ]destinatarios|no se encontraron destinatarios/i.test(errorMsg);
-      // Si es "no se encontraron destinatarios" es un error del usuario (filtro
-      // que no matchea a nadie), no del sistema — no abrir el popup rojo de
-      // "Error en el sistema. Comuníquese al admin."
+      // ApiError tiene el body en .body, no en .message. Revisar ambos para
+      // detectar el caso 'no_destinatarios' (filtro vacio, no error sistema).
+      const body = (error as { body?: { error?: string; detail?: string } })?.body;
+      const bodyStr = body ? `${body.error || ""} ${body.detail || ""}` : "";
+      const sinDestinatarios = /no[_ ]destinatarios|no se encontraron destinatarios/i.test(`${errorMsg} ${bodyStr}`);
       toast({
         title: sinDestinatarios ? "Sin destinatarios" : "Error",
         description: sinDestinatarios
