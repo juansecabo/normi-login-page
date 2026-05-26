@@ -163,15 +163,15 @@ const DashboardPlataforma = () => {
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">slug: {c.slug}</p>
-                      <div className="flex items-center gap-4 mt-1.5 text-sm text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
-                          <Users className="w-3.5 h-3.5" /> {c.counts.internos}
+                          <GraduationCap className="w-3.5 h-3.5" /> {c.counts.estudiantes} Estudiantes
                         </span>
                         <span className="flex items-center gap-1">
-                          <GraduationCap className="w-3.5 h-3.5" /> {c.counts.estudiantes}
+                          <UserCheck className="w-3.5 h-3.5" /> {c.counts.acudientes} Acudientes
                         </span>
                         <span className="flex items-center gap-1">
-                          <UserCheck className="w-3.5 h-3.5" /> {c.counts.acudientes}
+                          <Users className="w-3.5 h-3.5" /> {c.counts.internos} Internos
                         </span>
                       </div>
                     </div>
