@@ -613,19 +613,21 @@ const EnviarComunicadoAdmin = () => {
         segmentos.push({ perfil: internosTodos });
       }
 
-      // TOC ritual temporal: envío vía webhook n8n viejo. Revertir a /api/comunicados/enviar al terminar.
-      const n8nResp = await fetch("https://n8n.notasnormy.com/webhook/9bd1a575-84f9-4b7f-989a-b2a3d1814721", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          destinatarios: destinatariosTexto,
-          mensaje: mensaje.trim(),
-          archivo_url: archivoUrl || "",
-        }),
-      });
-      if (!n8nResp.ok) throw new Error(`Webhook n8n falló: ${n8nResp.status}`);
+      const response = await apiRequest<{ ok: true; enviados: number; fallos: number; total: number }>(
+        '/api/comunicados/enviar',
+        {
+          method: "POST",
+          body: JSON.stringify({
+            como_normi: true, // admin envía anónimo (remitente = "Normi")
+            destinatarios_label: destinatariosTexto,
+            mensaje: mensaje.trim(),
+            archivo_url: archivoUrl || null,
+            segmentos,
+          }),
+        },
+      );
 
-      setSentInfo({ jobId: "n8n-ritual", total: 0 });
+      setSentInfo({ jobId: response.job_id, total: response.total });
       setShowSentDialog(true);
 
       setMensaje("");
