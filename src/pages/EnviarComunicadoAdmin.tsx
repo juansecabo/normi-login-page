@@ -1360,7 +1360,7 @@ const EnviarComunicadoAdmin = () => {
 
       {/* Diálogo de confirmación */}
       <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Confirmar envío</DialogTitle>
             <DialogDescription asChild>
@@ -1403,7 +1403,7 @@ const EnviarComunicadoAdmin = () => {
 
       {/* Diálogo de confirmación masivo */}
       <Dialog open={showConfirmMasivo} onOpenChange={setShowConfirmMasivo}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Confirmar envío masivo</DialogTitle>
             <DialogDescription asChild>
