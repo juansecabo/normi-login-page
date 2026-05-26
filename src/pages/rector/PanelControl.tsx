@@ -1591,11 +1591,11 @@ const PanelControl = () => {
                 llegue hasta el borde de la card. */}
             <div className="overflow-x-auto -mx-6 px-6 md:-mx-8 md:px-8 sm:mx-0 sm:px-0 mb-6">
               <TabsList className="inline-flex sm:flex sm:w-full">
-                <TabsTrigger value="estudiantes" className="sm:flex-1">Estudiantes</TabsTrigger>
-                <TabsTrigger value="perfiles" className="sm:flex-1">Acudientes</TabsTrigger>
-                <TabsTrigger value="internos" className="sm:flex-1">Internos</TabsTrigger>
-                <TabsTrigger value="asignaciones" className="sm:flex-1">Asignaciones</TabsTrigger>
-                <TabsTrigger value="catalogo-asignaturas" className="sm:flex-1">Asignaturas</TabsTrigger>
+                <TabsTrigger value="estudiantes" className="sm:flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Estudiantes</TabsTrigger>
+                <TabsTrigger value="perfiles" className="sm:flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Acudientes</TabsTrigger>
+                <TabsTrigger value="internos" className="sm:flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Internos</TabsTrigger>
+                <TabsTrigger value="asignaciones" className="sm:flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Asignaciones</TabsTrigger>
+                <TabsTrigger value="catalogo-asignaturas" className="sm:flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Asignaturas</TabsTrigger>
               </TabsList>
             </div>
 
