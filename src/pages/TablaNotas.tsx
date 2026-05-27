@@ -3116,10 +3116,14 @@ const TablaNotas = () => {
   const [grupoAEditar, setGrupoAEditar] = useState<GrupoNotas | null>(null);
   const [editNombre, setEditNombre] = useState("");
   const [editPorcentaje, setEditPorcentaje] = useState("");
+  const [editReplicarPeriodos, setEditReplicarPeriodos] = useState(false);
+  const [editReplicarSalones, setEditReplicarSalones] = useState(false);
   const handleAbrirEditarGrupo = (g: GrupoNotas) => {
     setGrupoAEditar(g);
     setEditNombre(g.nombre || "");
     setEditPorcentaje(g.porcentaje !== null && g.porcentaje !== undefined ? String(g.porcentaje) : "");
+    setEditReplicarPeriodos(false);
+    setEditReplicarSalones(false);
   };
   const handleGuardarEdicionGrupo = async () => {
     if (!grupoAEditar) return;
@@ -3139,7 +3143,14 @@ const TablaNotas = () => {
       pct = n;
     }
     try {
-      await apiClient.gruposNotas.editar(grupoAEditar.id, { nombre: nombreLimpio, porcentaje: pct });
+      const body: any = { nombre: nombreLimpio, porcentaje: pct };
+      if (editReplicarPeriodos) {
+        body.replicar_periodos = [1, 2, 3, 4].filter(p => p !== periodoActual);
+      }
+      if (editReplicarSalones && otrosSalones.length > 0) {
+        body.replicar_salones = otrosSalones;
+      }
+      await apiClient.gruposNotas.editar(grupoAEditar.id, body);
       await reloadGrupos();
       setGrupoAEditar(null);
     } catch (e: any) {
@@ -4041,46 +4052,57 @@ const TablaNotas = () => {
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>
-              {(() => {
-                const periodoNombre = periodos[periodoActual - 1]?.nombre;
-                // Construir path del grupo destino: "Grupo" o "Grupo → Subgrupo"
-                const buildPath = (grupoId: string | null) => {
-                  if (!grupoId) return '';
-                  const g = gruposPeriodoActual.find(x => x.id === grupoId);
-                  if (!g) return '';
-                  if (g.parent_id) {
-                    const padre = gruposPeriodoActual.find(x => x.id === g.parent_id);
-                    return padre ? `${padre.nombre} → ${g.nombre}` : g.nombre;
-                  }
-                  return g.nombre;
-                };
-
-                if (actividadEditando) {
-                  const path = buildPath((actividadEditando as any).grupo_id ?? null);
-                  return path
-                    ? `Editar Actividad en ${path} — ${periodoNombre}`
-                    : `Editar Actividad — ${periodoNombre}`;
-                }
-                if (tipoNuevoItem === 'grupo') {
-                  // Nuevo grupo: si tiene padre, mostrarlo en el título
-                  if (grupoPadrePara) {
-                    const padre = gruposPeriodoActual.find(x => x.id === grupoPadrePara);
-                    return `Nuevo Subgrupo de ${padre?.nombre || ''} — ${periodoNombre}`;
-                  }
-                  return `Nuevo Grupo — ${periodoNombre}`;
-                }
-                // Nueva actividad
-                const path = buildPath(grupoActividadId);
-                return path
-                  ? `Nueva Actividad en ${path} — ${periodoNombre}`
-                  : `Nueva Actividad — ${periodoNombre}`;
-              })()}
+              {actividadEditando
+                ? `Editar Actividad - ${periodos[periodoActual - 1]?.nombre}`
+                : tipoNuevoItem === 'grupo'
+                  ? `Nuevo Grupo - ${periodos[periodoActual - 1]?.nombre}`
+                  : `Nueva Actividad - ${periodos[periodoActual - 1]?.nombre}`}
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            {/* El tipo (Actividad/Grupo) se decide al presionar el +:
-                click rápido = Actividad, mantener presionado = Grupo.
-                No mostramos selector dentro del modal — el título ya lo deja claro. */}
+            {/* Breadcrumb: muestra el path del destino (Grupo → Subgrupo →) para
+                que el profe vea siempre dónde está creando/editando. */}
+            {(() => {
+              let pathPartes: string[] = [];
+              if (actividadEditando) {
+                const gid = (actividadEditando as any).grupo_id;
+                if (gid) {
+                  const g = gruposPeriodoActual.find(x => x.id === gid);
+                  if (g) {
+                    if (g.parent_id) {
+                      const padre = gruposPeriodoActual.find(x => x.id === g.parent_id);
+                      if (padre) pathPartes.push(padre.nombre);
+                    }
+                    pathPartes.push(g.nombre);
+                  }
+                }
+              } else if (tipoNuevoItem === 'grupo') {
+                if (grupoPadrePara) {
+                  const padre = gruposPeriodoActual.find(x => x.id === grupoPadrePara);
+                  if (padre) pathPartes.push(padre.nombre);
+                }
+              } else if (grupoActividadId) {
+                const g = gruposPeriodoActual.find(x => x.id === grupoActividadId);
+                if (g) {
+                  if (g.parent_id) {
+                    const padre = gruposPeriodoActual.find(x => x.id === g.parent_id);
+                    if (padre) pathPartes.push(padre.nombre);
+                  }
+                  pathPartes.push(g.nombre);
+                }
+              }
+              if (pathPartes.length === 0) return null;
+              return (
+                <div className="flex items-center gap-2 text-sm text-primary font-medium">
+                  {pathPartes.map((parte, i) => (
+                    <span key={i} className="flex items-center gap-2">
+                      {i > 0 && <span className="text-muted-foreground">→</span>}
+                      {parte}
+                    </span>
+                  ))}
+                </div>
+              );
+            })()}
             <div className="grid gap-2">
               <Label htmlFor="nombre">
                 {tipoNuevoItem === 'grupo' && !actividadEditando ? 'Nombre del grupo *' : 'Nombre de la actividad *'}
@@ -4342,6 +4364,27 @@ const TablaNotas = () => {
               <p className="text-xs text-muted-foreground">
                 Déjalo en blanco si aún no quieres asignarle peso. La suma de subgrupos no puede pasar del % del padre, y los grupos top no pueden pasar de 100% del periodo.
               </p>
+            </div>
+            {/* Replicación al editar: aplicar el mismo cambio a grupos equivalentes
+                (mismo nombre + posición) en otros periodos / salones. */}
+            <div className="space-y-2 border-t pt-3">
+              <Label className="text-xs text-muted-foreground">Aplicar también a:</Label>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={editReplicarPeriodos}
+                  onCheckedChange={(c) => setEditReplicarPeriodos(c === true)}
+                />
+                Los demás periodos de este salón
+              </label>
+              {otrosSalones.length > 0 && (
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <Checkbox
+                    checked={editReplicarSalones}
+                    onCheckedChange={(c) => setEditReplicarSalones(c === true)}
+                  />
+                  Los otros salones donde dicto ({otrosSalones.join(', ')})
+                </label>
+              )}
             </div>
           </div>
           <DialogFooter>
