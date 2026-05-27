@@ -90,6 +90,17 @@ export const saveSession = (
 
   // Cookie de sesión sin expires → se borra al cerrar el navegador
   Cookies.set(SESSION_COOKIE, '1', cookieOptions);
+
+  // Salvaguarda: si NO es Administrador, eliminar cualquier backup de
+  // SuperAdmin que pudiera haber quedado en sessionStorage (de una
+  // impersonación anterior). El backup solo es válido cuando un Admin
+  // está operando dentro de un colegio en nombre del SuperAdmin.
+  if (cargo !== 'Administrador') {
+    try {
+      sessionStorage.removeItem('normi_jwt_sa_backup');
+      sessionStorage.removeItem('normi_session_sa_backup');
+    } catch {}
+  }
 };
 
 export const getSession = (): SessionData => {
@@ -161,11 +172,31 @@ export const guardarSesionSuperAdmin = () => {
   } catch {}
 };
 
-/** Indica si hay una sesion SuperAdmin respaldada (para mostrar el boton
- *  "Volver a Plataforma" en el header). */
+/** Decodifica el payload de un JWT sin verificar firma. Solo para chequear
+ *  campos no sensibles (rol). El server siempre re-valida con la firma. */
+const decodeJwtPayload = (tok: string): { rol?: string; colegio_id?: string } | null => {
+  try {
+    const parts = tok.split('.');
+    if (parts.length !== 3) return null;
+    const json = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
+    return JSON.parse(json);
+  } catch { return null; }
+};
+
+/** Indica si hay una sesion SuperAdmin respaldada Y válida (para mostrar el
+ *  boton "Volver a Plataforma" en el header). Si el backup no tiene rol
+ *  SuperAdmin, lo elimina por seguridad — fue contaminado por algún logout
+ *  defectuoso de versiones anteriores. */
 export const haySesionSuperAdminRespaldada = (): boolean => {
   try {
-    return !!sessionStorage.getItem(SA_JWT_BACKUP);
+    const tok = sessionStorage.getItem(SA_JWT_BACKUP);
+    if (!tok) return false;
+    const payload = decodeJwtPayload(tok);
+    if (payload?.rol === 'SuperAdmin') return true;
+    // Backup inválido: limpiarlo y no mostrar el botón.
+    sessionStorage.removeItem(SA_JWT_BACKUP);
+    sessionStorage.removeItem(SA_SESSION_BACKUP);
+    return false;
   } catch { return false; }
 };
 
@@ -175,6 +206,15 @@ export const restaurarSesionSuperAdmin = (): boolean => {
     const tok = sessionStorage.getItem(SA_JWT_BACKUP);
     const snapStr = sessionStorage.getItem(SA_SESSION_BACKUP);
     if (!tok || !snapStr) return false;
+    // Validar que el JWT respaldado realmente sea de un SuperAdmin antes
+    // de restaurarlo. Si no, descartarlo silenciosamente (era basura de un
+    // logout defectuoso anterior).
+    const payload = decodeJwtPayload(tok);
+    if (payload?.rol !== 'SuperAdmin') {
+      sessionStorage.removeItem(SA_JWT_BACKUP);
+      sessionStorage.removeItem(SA_SESSION_BACKUP);
+      return false;
+    }
     const snap = JSON.parse(snapStr) as Record<string, string | null>;
     localStorage.setItem(JWT_KEY, tok);
     for (const k of ['id', 'nombres', 'apellidos', 'cargo', 'avatar_url', 'multi_membership']) {
@@ -215,6 +255,14 @@ export const clearSession = () => {
   localStorage.removeItem("estudianteSeleccionado");
   localStorage.removeItem("acudidoSeleccionado");
   localStorage.removeItem("hijoSeleccionado"); // legacy
+
+  // Limpiar también el JWT del SuperAdmin (si quedó de una impersonación):
+  // si no se limpia, un usuario distinto que se loguee después en la misma
+  // pestaña podría darle "Volver a Plataforma" y escalar a SuperAdmin.
+  try {
+    sessionStorage.removeItem('normi_jwt_sa_backup');
+    sessionStorage.removeItem('normi_session_sa_backup');
+  } catch {}
 
   Cookies.remove(SESSION_COOKIE, cookieOptions);
 };
