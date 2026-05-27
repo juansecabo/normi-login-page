@@ -3435,9 +3435,6 @@ const TablaNotas = () => {
                                           </button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end" className="bg-background z-50">
-                                          <DropdownMenuItem onClick={() => handleAbrirEditarGrupo(sec.grupo as any)}>
-                                            <Pencil className="w-4 h-4 mr-2" /> Editar grupo
-                                          </DropdownMenuItem>
                                           <DropdownMenuItem onClick={() => handleAbrirModal(periodoActivo, 'actividad', sec.grupo.id)}>
                                             <Plus className="w-4 h-4 mr-2" /> Agregar actividad
                                           </DropdownMenuItem>
@@ -3448,6 +3445,9 @@ const TablaNotas = () => {
                                               <Plus className="w-4 h-4 mr-2" /> Agregar subgrupo
                                             </DropdownMenuItem>
                                           )}
+                                          <DropdownMenuItem onClick={() => handleAbrirEditarGrupo(sec.grupo as any)}>
+                                            <Pencil className="w-4 h-4 mr-2" /> Editar grupo
+                                          </DropdownMenuItem>
                                           <DropdownMenuItem onClick={() => setGrupoAEliminar(sec.grupo as any)} className="text-destructive focus:text-destructive">
                                             <Trash2 className="w-4 h-4 mr-2" /> Eliminar grupo
                                           </DropdownMenuItem>
@@ -3476,13 +3476,13 @@ const TablaNotas = () => {
                                         </button>
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent align="end" className="bg-background z-50">
-                                        <DropdownMenuItem onClick={() => handleAbrirEditarGrupo(sec.grupo as any)}>
-                                          <Pencil className="w-4 h-4 mr-2" /> Editar grupo
-                                        </DropdownMenuItem>
                                         {/* Este grupo ya tiene subgrupos → no aceptar actividades directas.
                                             Solo se puede agregar otro subgrupo. */}
                                         <DropdownMenuItem onClick={() => handleAbrirModal(periodoActivo, 'grupo', sec.grupo.id)}>
                                           <Plus className="w-4 h-4 mr-2" /> Agregar subgrupo
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleAbrirEditarGrupo(sec.grupo as any)}>
+                                          <Pencil className="w-4 h-4 mr-2" /> Editar grupo
                                         </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => setGrupoAEliminar(sec.grupo as any)} className="text-destructive focus:text-destructive">
                                           <Trash2 className="w-4 h-4 mr-2" /> Eliminar grupo
@@ -3659,11 +3659,11 @@ const TablaNotas = () => {
                                         </button>
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent align="end" className="bg-background z-50">
-                                        <DropdownMenuItem onClick={() => handleAbrirEditarGrupo(sub.grupo as any)}>
-                                          <Pencil className="w-4 h-4 mr-2" /> Editar grupo
-                                        </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => handleAbrirModal(periodoActivo, 'actividad', sub.grupo!.id)}>
                                           <Plus className="w-4 h-4 mr-2" /> Agregar actividad
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleAbrirEditarGrupo(sub.grupo as any)}>
+                                          <Pencil className="w-4 h-4 mr-2" /> Editar grupo
                                         </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => setGrupoAEliminar(sub.grupo as any)} className="text-destructive focus:text-destructive">
                                           <Trash2 className="w-4 h-4 mr-2" /> Eliminar grupo
