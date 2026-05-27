@@ -175,8 +175,13 @@ const BotonAgregarConLongPress = ({
         />
       )}
       <Plus className={`${compact ? 'w-2.5 h-2.5' : 'w-3 h-3'} relative shrink-0`} />
-      <span className="relative font-medium whitespace-nowrap">
-        {label || 'Agregar'}
+      {/* Texto con ancho reservado para el más largo, así no cambia el botón
+          de tamaño durante el long-press. */}
+      <span className="relative font-medium whitespace-nowrap inline-block">
+        <span className="invisible">Creando grupo…</span>
+        <span className="absolute inset-0 flex items-center justify-center">
+          {pressing && progress > 25 ? 'Creando grupo…' : (label || 'Agregar')}
+        </span>
       </span>
     </button>
   );
