@@ -4119,8 +4119,8 @@ const TablaNotas = () => {
                   ) : (
                     <p className="text-xs text-muted-foreground">
                       Puedes dejarlo en blanco y ponerlo después. {grupoPadrePara
-                        ? `Disponible dentro de "${padre?.nombre}": ${disponible}%`
-                        : `Disponible en el periodo: ${disponible}% / 100%`}
+                        ? <>Disponible dentro de <strong>"{padre?.nombre}"</strong>: <strong>{disponible}%</strong></>
+                        : <>Disponible en el periodo: <strong>{disponible}%</strong> de 100%</>}
                     </p>
                   )}
                 </div>
@@ -4191,20 +4191,22 @@ const TablaNotas = () => {
                 );
               }
 
+              const usado = getPorcentajeUsadoParaModal();
+              const disponible = Math.max(0, 100 - usado);
               return (
                 <div className="grid gap-2">
                   <Label htmlFor="porcentaje">Porcentaje (opcional)</Label>
                   <Input
                     id="porcentaje"
                     type="number"
-                    placeholder="Ej: 25"
+                    placeholder={`Ej: ${Math.min(25, disponible || 25)}`}
                     min={0}
                     max={100}
                     value={porcentajeActividad}
                     onChange={(e) => setPorcentajeActividad(e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Porcentaje usado en el periodo: {getPorcentajeUsadoParaModal()}% / 100%
+                    Disponible en el periodo: <strong>{disponible}%</strong> de 100%
                   </p>
                 </div>
               );
