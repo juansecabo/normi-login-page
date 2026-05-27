@@ -7,7 +7,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Plus, MoreVertical, Pencil, Trash2, Send, Calendar, Download, FileSpreadsheet, Loader2 } from "lucide-react";
 import { getSession } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
-import EditorGruposNotas from "@/components/EditorGruposNotas";
 import { useGruposNotas } from "@/hooks/useGruposNotas";
 import { promedioGeneral, type NotaCalc, type GrupoCalc } from "@/lib/gradeCalculator";
 import {
@@ -119,11 +118,19 @@ const TablaNotas = () => {
   const [porcentajeActividad, setPorcentajeActividad] = useState("");
   const [actividadEditando, setActividadEditando] = useState<Actividad | null>(null);
 
-  // Editor de Grupos_Notas (sistema jerárquico).
-  // El hook trae grupos de los 4 periodos del salón actual (sin filtrar por
-  // periodo). El editor visual y el cálculo filtran por periodo al usarlos.
-  const [showEditorGrupos, setShowEditorGrupos] = useState(false);
+  // Sistema jerárquico (Grupos_Notas).
   const [confirmarVolverPlano, setConfirmarVolverPlano] = useState(false);
+  // Intención del usuario por aula+periodo: 'grupos' significa que ya
+  // clickeó "Grupos" en el dropdown aunque todavía no haya creado ninguno.
+  // Se persiste en localStorage para que la tabla siga en modo Grupos al
+  // recargar incluso si no hay grupos aún.
+  const [modoIntentTick, setModoIntentTick] = useState(0); // fuerza re-render
+  // Modal "+ Agregar" tiene dos tipos cuando el periodo está en modo Grupos
+  const [tipoNuevoItem, setTipoNuevoItem] = useState<'actividad' | 'grupo'>('actividad');
+  const [grupoPadrePara, setGrupoPadrePara] = useState<string | null>(null); // si se crea subgrupo
+  // Replicación al crear un grupo top: a otros periodos y/o a otros salones del profe
+  const [replicarGrupoOtrosPeriodos, setReplicarGrupoOtrosPeriodos] = useState(false);
+  const [replicarGrupoOtrosSalones, setReplicarGrupoOtrosSalones] = useState(false);
   const aulaSalon = (asignaturaSeleccionada && gradoSeleccionado && salonSeleccionado)
     ? { asignatura: asignaturaSeleccionada, grado: gradoSeleccionado, salon: salonSeleccionado, ano_escolar: anoEscolarActual() }
     : null;
@@ -609,10 +616,24 @@ const TablaNotas = () => {
     setPorcentajeActividad("");
     setActividadEditando(null);
     setCrearParaTodosSalones(false);
-    // Si el aula tiene jerarquía definida, pre-seleccionamos el primer grupo
-    // hoja: una vez creada la jerarquía se asume que TODAS las actividades
-    // nuevas van dentro de ella (no "Sin grupo").
+    setGrupoPadrePara(null);
+    setReplicarGrupoOtrosPeriodos(false);
+    setReplicarGrupoOtrosSalones(false);
+
     const gruposDelPeriodo = gruposNotas.filter(g => g.periodo === periodo);
+    const modoActual = gruposDelPeriodo.length > 0
+      ? 'grupos'
+      : (localStorage.getItem(modoIntentKey() || '') === 'grupos' ? 'grupos' : 'plana');
+
+    // En modo grupos sin grupos creados, el default es crear el primer grupo.
+    // Con grupos ya existentes, default es nueva actividad.
+    if (modoActual === 'grupos' && gruposDelPeriodo.length === 0) {
+      setTipoNuevoItem('grupo');
+    } else {
+      setTipoNuevoItem('actividad');
+    }
+
+    // Pre-seleccionar primer grupo hoja para nuevas actividades.
     const grupoHojaPredet = gruposDelPeriodo.find(
       g => !gruposDelPeriodo.some(h => h.parent_id === g.id)
     );
@@ -662,7 +683,9 @@ const TablaNotas = () => {
     if (!nombreActividad.trim()) {
       toast({
         title: "Error",
-        description: "El nombre de la actividad es requerido",
+        description: tipoNuevoItem === 'grupo' && !actividadEditando
+          ? "El nombre del grupo es requerido"
+          : "El nombre de la actividad es requerido",
         variant: "destructive",
       });
       return;
@@ -675,6 +698,50 @@ const TablaNotas = () => {
         variant: "destructive",
       });
       return;
+    }
+
+    // Si estoy CREANDO un grupo, ramifico al endpoint de Grupos_Notas y salgo.
+    if (!actividadEditando && tipoNuevoItem === 'grupo') {
+      const pct = parseFloat(porcentajeActividad);
+      if (!Number.isFinite(pct) || pct <= 0 || pct > 100) {
+        toast({
+          title: "Error",
+          description: "El porcentaje del grupo debe estar entre 0.01 y 100",
+          variant: "destructive",
+        });
+        return;
+      }
+      setGuardandoMultiple(true);
+      try {
+        const body: any = {
+          nombre: nombreActividad.trim(),
+          porcentaje: pct,
+          parent_id: grupoPadrePara || null,
+          asignatura: asignaturaSeleccionada,
+          grado: gradoSeleccionado,
+          salon: salonSeleccionado,
+          periodo: periodoActual,
+          ano_escolar: anoEscolarActual(),
+        };
+        // Replicación solo para grupos top
+        if (!grupoPadrePara) {
+          if (replicarGrupoOtrosPeriodos) {
+            body.replicar_periodos = [1, 2, 3, 4].filter(p => p !== periodoActual);
+          }
+          if (replicarGrupoOtrosSalones && otrosSalones.length > 0) {
+            body.replicar_salones = otrosSalones;
+          }
+        }
+        await apiClient.gruposNotas.crear(body);
+        await reloadGrupos();
+        setModalOpen(false);
+        setGuardandoMultiple(false);
+        return;
+      } catch (e: any) {
+        setGuardandoMultiple(false);
+        toast({ title: "Error", description: e?.message || "No se pudo crear el grupo.", variant: "destructive" });
+        return;
+      }
     }
 
     // Si la actividad pertenece a un grupo, NO debe llevar porcentaje
@@ -2830,12 +2897,88 @@ const TablaNotas = () => {
   }, [celdaEditando]);
 
   /**
+   * Clave localStorage para la "intención" de modo del usuario en un periodo
+   * antes de que cree grupos. Si ya hay grupos creados, el modo se deriva
+   * automáticamente (no se necesita esta intención).
+   */
+  const modoIntentKey = () => {
+    if (!asignaturaSeleccionada || !gradoSeleccionado || !salonSeleccionado) return null;
+    return `modoGrupos:${asignaturaSeleccionada}:${gradoSeleccionado}:${salonSeleccionado}:${periodoActual}`;
+  };
+  const getModoIntent = (): 'plana' | 'grupos' | null => {
+    const k = modoIntentKey();
+    if (!k) return null;
+    const v = localStorage.getItem(k);
+    return v === 'grupos' || v === 'plana' ? v : null;
+  };
+  const setModoIntent = (m: 'plana' | 'grupos') => {
+    const k = modoIntentKey();
+    if (k) localStorage.setItem(k, m);
+    setModoIntentTick(t => t + 1);
+  };
+  /** Modo efectivo del periodo: si hay grupos creados o user marcó 'grupos'. */
+  const modoEfectivo = (): 'plana' | 'grupos' => {
+    if (gruposPeriodoActual.length > 0) return 'grupos';
+    return getModoIntent() === 'grupos' ? 'grupos' : 'plana';
+  };
+
+  /**
+   * En modo Grupos: el profesor debe marcar manualmente "periodo completo"
+   * para que la Definitiva del Periodo se calcule/muestre. Esto evita que
+   * notas parciales se vean como final por error.
+   */
+  const periodoCompletoKey = (periodo: number) => {
+    if (!asignaturaSeleccionada || !gradoSeleccionado || !salonSeleccionado) return null;
+    return `periodoCompleto:${asignaturaSeleccionada}:${gradoSeleccionado}:${salonSeleccionado}:${periodo}:${anoEscolarActual()}`;
+  };
+  const getPeriodoCompleto = (periodo: number): boolean => {
+    const k = periodoCompletoKey(periodo);
+    if (!k) return false;
+    return localStorage.getItem(k) === '1';
+  };
+  const setPeriodoCompleto = (periodo: number, valor: boolean) => {
+    const k = periodoCompletoKey(periodo);
+    if (k) {
+      if (valor) localStorage.setItem(k, '1');
+      else localStorage.removeItem(k);
+    }
+    setModoIntentTick(t => t + 1);
+  };
+  /**
+   * Verifica si el periodo es "calificable" en modo grupos:
+   *  - Suma de grupos top ≈ 100%
+   *  - Cada grupo hoja tiene al menos 1 actividad
+   */
+  const periodoEsCalificable = (periodo: number): boolean => {
+    const gruposPeriodo = gruposNotas.filter(g => g.periodo === periodo);
+    if (gruposPeriodo.length === 0) return false;
+    const tops = gruposPeriodo.filter(g => !g.parent_id);
+    const sumaTop = tops.reduce((s, g) => s + Number(g.porcentaje), 0);
+    if (Math.abs(sumaTop - 100) > 0.01) return false;
+    const hojas = gruposPeriodo.filter(g => !gruposPeriodo.some(h => h.parent_id === g.id));
+    const actsPeriodo = actividades.filter(a => a.periodo === periodo);
+    return hojas.every(h => actsPeriodo.some(a => a.grupo_id === h.id));
+  };
+
+  /**
    * Cambiar a modo Plana. Si el periodo ya está en modo plano (sin grupos),
    * no hace nada. Si tiene grupos, pide confirmación antes de borrarlos.
    */
   const handleSeleccionarModoPlano = () => {
-    if (gruposPeriodoActual.length === 0) return;
+    if (gruposPeriodoActual.length === 0) {
+      setModoIntent('plana');
+      return;
+    }
     setConfirmarVolverPlano(true);
+  };
+
+  /**
+   * Cambiar a modo Grupos. Solo marca la intención; no abre popup.
+   * El profesor verá la tabla con la cabecera de grupos vacía y un botón "+"
+   * que ahora ofrece crear "Actividad" o "Grupo".
+   */
+  const handleSeleccionarModoGrupos = () => {
+    setModoIntent('grupos');
   };
 
   /**
@@ -2900,39 +3043,40 @@ const TablaNotas = () => {
                 <Calendar className="h-4 w-4" />
                 Ver Actividades Asignadas
               </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2"
-                    disabled={!aulaActual}
-                    title="Elegir cómo se calcula este periodo"
-                  >
-                    ⚙️ Jerarquía{gruposPeriodoActual.length > 0 ? `: Grupos (${gruposPeriodoActual.length})` : ": Plana"}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-background z-50">
-                  <DropdownMenuItem
-                    onClick={() => handleSeleccionarModoPlano()}
-                    className={gruposPeriodoActual.length === 0 ? "font-semibold" : ""}
-                  >
-                    <span className="mr-2">📊</span> Plana
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      {gruposPeriodoActual.length === 0 ? "(actual)" : ""}
-                    </span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setShowEditorGrupos(true)}
-                    className={gruposPeriodoActual.length > 0 ? "font-semibold" : ""}
-                  >
-                    <span className="mr-2">📑</span> Grupos
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      {gruposPeriodoActual.length > 0 ? `(${gruposPeriodoActual.length} configurados)` : "(configurar)"}
-                    </span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {(() => {
+                const modo = modoEfectivo();
+                return (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        disabled={!aulaActual}
+                        title="Elegir cómo se califica este periodo"
+                      >
+                        ⚙️ Jerarquía: {modo === 'grupos' ? `Grupos${gruposPeriodoActual.length > 0 ? ` (${gruposPeriodoActual.length})` : ''}` : 'Plana'}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-background z-50">
+                      <DropdownMenuItem
+                        onClick={handleSeleccionarModoPlano}
+                        className={modo === 'plana' ? "font-semibold" : ""}
+                      >
+                        <span className="mr-2">📊</span> Plana
+                        {modo === 'plana' && <span className="ml-2 text-xs text-muted-foreground">(actual)</span>}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={handleSeleccionarModoGrupos}
+                        className={modo === 'grupos' ? "font-semibold" : ""}
+                      >
+                        <span className="mr-2">📑</span> Grupos
+                        {modo === 'grupos' && <span className="ml-2 text-xs text-muted-foreground">(actual)</span>}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                );
+              })()}
               <Button
                 variant="outline"
                 size="sm"
@@ -3159,16 +3303,28 @@ const TablaNotas = () => {
                                 </Button>
                               </th>
                               {(() => {
-                                const porcentajeUsado = getPorcentajeUsado(periodoActivo);
-                                const isComplete = porcentajeUsado === 100;
+                                // Modo Grupos: checkbox "¿Periodo completo?" cuando es calificable
+                                const calificable = periodoEsCalificable(periodoActivo);
+                                const marcado = getPeriodoCompleto(periodoActivo);
                                 return (
-                                  <th rowSpan={filasThead} className="border-r border-b border-border/30 p-2 text-center text-xs font-medium min-w-[130px] bg-primary">
-                                    <div className="flex flex-col items-center">
+                                  <th rowSpan={filasThead} className="border-r border-b border-border/30 p-2 text-center text-xs font-semibold min-w-[150px] bg-primary">
+                                    <div className="flex flex-col items-center gap-1">
                                       <span>Definitiva Periodo</span>
-                                      <span className={`text-xs ${isComplete ? 'text-green-300' : 'text-primary-foreground/70'}`}>
-                                        ({porcentajeUsado}/100%)
-                                        {isComplete && ' ✓'}
-                                      </span>
+                                      {calificable ? (
+                                        <label className="flex items-center gap-1 cursor-pointer text-xs text-primary-foreground/90 hover:text-primary-foreground">
+                                          <span>(¿Periodo completo?)</span>
+                                          <input
+                                            type="checkbox"
+                                            checked={marcado}
+                                            onChange={(e) => setPeriodoCompleto(periodoActivo, e.target.checked)}
+                                            className="w-4 h-4 rounded border-white/50 accent-green-400 cursor-pointer"
+                                          />
+                                        </label>
+                                      ) : (
+                                        <span className="text-[10px] text-primary-foreground/60">
+                                          (faltan grupos o actividades)
+                                        </span>
+                                      )}
                                     </div>
                                   </th>
                                 );
@@ -3488,11 +3644,15 @@ const TablaNotas = () => {
                             {(() => {
                               const notaFinal = calcularFinalPeriodo(estudiante.id, periodoActivo);
                               const tieneNotas = tieneAlgunaNotaEnPeriodo(estudiante.id, periodoActivo);
+                              // En modo Grupos solo se muestra la final si el profe
+                              // marcó "periodo completo". En modo Plana se muestra
+                              // siempre que haya notas (comportamiento histórico).
+                              const debeMostrar = modoEfectivo() === 'plana' || getPeriodoCompleto(periodoActivo);
                               return (
                                 <FinalPeriodoCelda
-                                  notaFinal={notaFinal}
+                                  notaFinal={debeMostrar ? notaFinal : null}
                                   comentario={comentarios[estudiante.id]?.[periodoActivo]?.[`${periodoActivo}-Definitiva Periodo`] || null}
-                                  tieneAlgunaNota={tieneNotas}
+                                  tieneAlgunaNota={tieneNotas && debeMostrar}
                                   onAbrirComentario={() => handleAbrirComentario(
                                     estudiante.id,
                                     `${estudiante.nombres} ${estudiante.apellidos}`,
@@ -3506,7 +3666,7 @@ const TablaNotas = () => {
                                     'Definitiva Periodo',
                                     periodoActivo
                                   )}
-                                  onNotificarPadre={tieneNotas ? () => handleNotificarFinalPeriodoIndividual(estudiante, periodoActivo, notaFinal) : undefined}
+                                  onNotificarPadre={(tieneNotas && debeMostrar) ? () => handleNotificarFinalPeriodoIndividual(estudiante, periodoActivo, notaFinal) : undefined}
                                 />
                               );
                             })()}
@@ -3600,20 +3760,57 @@ const TablaNotas = () => {
         </div>
       </main>
 
-      {/* Modal para crear/editar actividad */}
+      {/* Modal para crear/editar actividad o grupo */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>
-              {actividadEditando ? "Editar Actividad" : "Nueva Actividad"} - {periodos[periodoActual - 1]?.nombre}
+              {actividadEditando
+                ? `Editar Actividad - ${periodos[periodoActual - 1]?.nombre}`
+                : tipoNuevoItem === 'grupo'
+                  ? `Nuevo Grupo - ${periodos[periodoActual - 1]?.nombre}`
+                  : `Nueva Actividad - ${periodos[periodoActual - 1]?.nombre}`}
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            {/* Selector Actividad/Grupo (solo al crear, en modo Grupos) */}
+            {!actividadEditando && modoEfectivo() === 'grupos' && (
+              <div className="flex gap-2 p-1 bg-muted rounded-md">
+                <button
+                  type="button"
+                  onClick={() => setTipoNuevoItem('actividad')}
+                  className={`flex-1 py-2 px-3 rounded text-sm font-medium transition-colors ${
+                    tipoNuevoItem === 'actividad' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                  disabled={gruposPeriodoActual.length === 0}
+                >
+                  📝 Actividad
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTipoNuevoItem('grupo')}
+                  className={`flex-1 py-2 px-3 rounded text-sm font-medium transition-colors ${
+                    tipoNuevoItem === 'grupo' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  📑 Grupo
+                </button>
+              </div>
+            )}
+            {!actividadEditando && modoEfectivo() === 'grupos' && tipoNuevoItem === 'actividad' && gruposPeriodoActual.length === 0 && (
+              <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 px-3 py-2 rounded">
+                Primero debes crear al menos un grupo. Vuelve a la pestaña "Grupo" arriba.
+              </div>
+            )}
             <div className="grid gap-2">
-              <Label htmlFor="nombre">Nombre de la actividad *</Label>
+              <Label htmlFor="nombre">
+                {tipoNuevoItem === 'grupo' && !actividadEditando ? 'Nombre del grupo *' : 'Nombre de la actividad *'}
+              </Label>
               <Input
                 id="nombre"
-                placeholder="Ej: Evaluación 1, Taller, Exposición"
+                placeholder={tipoNuevoItem === 'grupo' && !actividadEditando
+                  ? 'Ej: Cognitivo, Praxeológico, Actitudinal'
+                  : 'Ej: Evaluación 1, Taller, Exposición'}
                 value={nombreActividad}
                 onChange={(e) => setNombreActividad(e.target.value)}
                 maxLength={100}
@@ -3622,10 +3819,48 @@ const TablaNotas = () => {
                 {nombreActividad.length}/100 caracteres
               </p>
             </div>
-            {gruposPeriodoActual.length > 0 && (() => {
-              // Solo los grupos hoja (los que NO tienen subgrupos) pueden recibir
-              // actividades. Los grupos padre con subgrupos no aceptan actividades
-              // directas: las actividades viven en las hojas.
+            {/* Modo Grupo: campos para crear un grupo */}
+            {!actividadEditando && tipoNuevoItem === 'grupo' && (
+              <>
+                <div className="grid gap-2">
+                  <Label htmlFor="porcentajeGrupo">Porcentaje *</Label>
+                  <Input
+                    id="porcentajeGrupo"
+                    type="number"
+                    placeholder="Ej: 60"
+                    min={0.01}
+                    max={100}
+                    step={0.01}
+                    value={porcentajeActividad}
+                    onChange={(e) => setPorcentajeActividad(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {grupoPadrePara
+                      ? `Porcentaje dentro del grupo padre seleccionado.`
+                      : `Porcentaje del periodo. Suma actual de grupos de primer nivel: ${gruposPeriodoActual.filter(g => !g.parent_id).reduce((s, g) => s + Number(g.porcentaje), 0)}% / 100%`}
+                  </p>
+                </div>
+                {gruposPeriodoActual.filter(g => !g.parent_id).length > 0 && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="grupoPadre">¿Subgrupo de? (opcional)</Label>
+                    <select
+                      id="grupoPadre"
+                      value={grupoPadrePara || ""}
+                      onChange={(e) => setGrupoPadrePara(e.target.value || null)}
+                      className="h-10 px-3 rounded border border-input bg-background text-sm"
+                    >
+                      <option value="">— Grupo de primer nivel —</option>
+                      {gruposPeriodoActual.filter(g => !g.parent_id).map((g) => (
+                        <option key={g.id} value={g.id}>↳ Dentro de "{g.nombre}" ({g.porcentaje}%)</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Modo Actividad: selector de grupo + aviso/porcentaje */}
+            {(actividadEditando || tipoNuevoItem === 'actividad') && gruposPeriodoActual.length > 0 && (() => {
               const gruposHoja = gruposPeriodoActual.filter(
                 g => !gruposPeriodoActual.some(h => h.parent_id === g.id)
               );
@@ -3652,7 +3887,7 @@ const TablaNotas = () => {
                 </div>
               );
             })()}
-            {(() => {
+            {(actividadEditando || tipoNuevoItem === 'actividad') && (() => {
               const grupoSel = grupoActividadId
                 ? gruposPeriodoActual.find((g) => g.id === grupoActividadId)
                 : null;
@@ -3669,7 +3904,6 @@ const TablaNotas = () => {
               }
 
               if (grupoSel) {
-                // Grupo hoja: actividades dentro se promedian (mismo peso).
                 return (
                   <div className="text-xs text-muted-foreground bg-muted/30 border border-border px-3 py-2 rounded">
                     Esta actividad va dentro del grupo <strong>"{grupoSel.nombre}"</strong> ({grupoSel.porcentaje}% del periodo). Todas las actividades del grupo se promedian con el mismo peso — no necesita porcentaje individual.
@@ -3695,7 +3929,7 @@ const TablaNotas = () => {
                 </div>
               );
             })()}
-            {(actividadEditando ? (salonesConActividad.length > 0 || otrosSalones.length > 0) : otrosSalones.length > 0) && (
+            {((actividadEditando || tipoNuevoItem === 'actividad') && (actividadEditando ? (salonesConActividad.length > 0 || otrosSalones.length > 0) : otrosSalones.length > 0)) && (
               <div className="flex items-start space-x-2">
                 <Checkbox
                   id="crearParaTodos"
@@ -3716,6 +3950,28 @@ const TablaNotas = () => {
                 </div>
               </div>
             )}
+            {/* Replicar grupo a otros periodos / salones */}
+            {!actividadEditando && tipoNuevoItem === 'grupo' && !grupoPadrePara && (
+              <div className="space-y-2 border-t pt-3">
+                <Label className="text-xs text-muted-foreground">Aplicar también a:</Label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <Checkbox
+                    checked={replicarGrupoOtrosPeriodos}
+                    onCheckedChange={(c) => setReplicarGrupoOtrosPeriodos(c === true)}
+                  />
+                  Los demás periodos de este salón
+                </label>
+                {otrosSalones.length > 0 && (
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Checkbox
+                      checked={replicarGrupoOtrosSalones}
+                      onCheckedChange={(c) => setReplicarGrupoOtrosSalones(c === true)}
+                    />
+                    Los otros salones donde dicto ({otrosSalones.join(', ')})
+                  </label>
+                )}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalOpen(false)} disabled={guardandoMultiple}>
@@ -3724,9 +3980,15 @@ const TablaNotas = () => {
             <Button
               onClick={handleGuardarActividad}
               className="bg-primary hover:bg-primary/90"
-              disabled={guardandoMultiple}
+              disabled={guardandoMultiple || (!actividadEditando && tipoNuevoItem === 'actividad' && modoEfectivo() === 'grupos' && gruposPeriodoActual.length === 0)}
             >
-              {guardandoMultiple ? "Creando..." : actividadEditando ? "Guardar cambios" : "Crear Actividad"}
+              {guardandoMultiple
+                ? "Creando..."
+                : actividadEditando
+                  ? "Guardar cambios"
+                  : tipoNuevoItem === 'grupo'
+                    ? "Crear Grupo"
+                    : "Crear Actividad"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3808,17 +4070,6 @@ const TablaNotas = () => {
         onConfirmar={handleEnviarNotificacion}
       />
 
-      {/* Editor de Grupos_Notas (solo muestra los del periodo activo) */}
-      {aulaActual && (
-        <EditorGruposNotas
-          open={showEditorGrupos}
-          onOpenChange={setShowEditorGrupos}
-          aula={aulaActual}
-          grupos={gruposPeriodoActual as any}
-          otrosSalones={otrosSalones}
-          onChange={reloadGrupos}
-        />
-      )}
     </div>
   );
 };
