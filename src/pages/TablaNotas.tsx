@@ -4041,11 +4041,40 @@ const TablaNotas = () => {
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>
-              {actividadEditando
-                ? `Editar Actividad - ${periodos[periodoActual - 1]?.nombre}`
-                : tipoNuevoItem === 'grupo'
-                  ? `Nuevo Grupo - ${periodos[periodoActual - 1]?.nombre}`
-                  : `Nueva Actividad - ${periodos[periodoActual - 1]?.nombre}`}
+              {(() => {
+                const periodoNombre = periodos[periodoActual - 1]?.nombre;
+                // Construir path del grupo destino: "Grupo" o "Grupo → Subgrupo"
+                const buildPath = (grupoId: string | null) => {
+                  if (!grupoId) return '';
+                  const g = gruposPeriodoActual.find(x => x.id === grupoId);
+                  if (!g) return '';
+                  if (g.parent_id) {
+                    const padre = gruposPeriodoActual.find(x => x.id === g.parent_id);
+                    return padre ? `${padre.nombre} → ${g.nombre}` : g.nombre;
+                  }
+                  return g.nombre;
+                };
+
+                if (actividadEditando) {
+                  const path = buildPath((actividadEditando as any).grupo_id ?? null);
+                  return path
+                    ? `Editar Actividad en ${path} — ${periodoNombre}`
+                    : `Editar Actividad — ${periodoNombre}`;
+                }
+                if (tipoNuevoItem === 'grupo') {
+                  // Nuevo grupo: si tiene padre, mostrarlo en el título
+                  if (grupoPadrePara) {
+                    const padre = gruposPeriodoActual.find(x => x.id === grupoPadrePara);
+                    return `Nuevo Subgrupo de ${padre?.nombre || ''} — ${periodoNombre}`;
+                  }
+                  return `Nuevo Grupo — ${periodoNombre}`;
+                }
+                // Nueva actividad
+                const path = buildPath(grupoActividadId);
+                return path
+                  ? `Nueva Actividad en ${path} — ${periodoNombre}`
+                  : `Nueva Actividad — ${periodoNombre}`;
+              })()}
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
