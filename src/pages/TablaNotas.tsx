@@ -3340,7 +3340,9 @@ const TablaNotas = () => {
                                     >
                                       <div className="flex flex-col items-center">
                                         <span>{sec.grupo.nombre}</span>
-                                        <span className="text-white/70 text-[10px]">{sec.grupo.porcentaje !== null ? `(${sec.grupo.porcentaje}%)` : '(sin %)'}</span>
+                                        {sec.grupo.porcentaje !== null && (
+                                          <span className="text-white/70 text-[10px]">({sec.grupo.porcentaje}%)</span>
+                                        )}
                                       </div>
                                       <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
@@ -3508,7 +3510,9 @@ const TablaNotas = () => {
                                 >
                                   <div className="flex flex-col items-center">
                                     <span>{sub.grupo.nombre}</span>
-                                    <span className="text-white/70 text-[10px]">{sub.grupo.porcentaje !== null ? `(${sub.grupo.porcentaje}%)` : '(sin %)'}</span>
+                                    {sub.grupo.porcentaje !== null && (
+                                      <span className="text-white/70 text-[10px]">({sub.grupo.porcentaje}%)</span>
+                                    )}
                                   </div>
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -3982,7 +3986,7 @@ const TablaNotas = () => {
                         : null;
                       return (
                         <option key={g.id} value={g.id}>
-                          {padre ? `${padre.nombre} → ${g.nombre}` : g.nombre} {g.porcentaje !== null ? `(${g.porcentaje}%)` : '(sin %)'}
+                          {padre ? `${padre.nombre} → ${g.nombre}` : g.nombre}{g.porcentaje !== null ? ` (${g.porcentaje}%)` : ''}
                         </option>
                       );
                     })}
