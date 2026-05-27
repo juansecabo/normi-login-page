@@ -4,6 +4,7 @@ import { getPeriodoActual } from "@/utils/periodoActual";
 import { anoEscolarActual } from "@/utils/anoEscolar";
 import ComentarioModalReadOnly from "@/components/notas/ComentarioModalReadOnly";
 import { MessageSquareText } from "lucide-react";
+import { promedioGeneral, type NotaCalc, type GrupoCalc } from "@/lib/gradeCalculator";
 
 interface ConsolidadoNotasProps {
   idEstudiante: string;
@@ -19,6 +20,12 @@ interface Actividad {
   nombre: string;
   porcentaje: number | null;
   asignatura: string;
+  grupo_id?: string | null;
+}
+
+interface GrupoLocal extends GrupoCalc {
+  asignatura: string;
+  periodo: number;
 }
 
 type NotasEstudiante = {
@@ -58,6 +65,11 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
   const [notas, setNotas] = useState<NotasEstudiante>({});
   const [comentarios, setComentarios] = useState<ComentariosEstudiante>({});
   const [periodosActivos, setPeriodosActivos] = useState<PeriodosActivos>({});
+  // Grupos jerárquicos por asignatura. Si una (asignatura, periodo) tiene
+  // grupos, calcularFinalPeriodo usa promedioGeneral con ellos.
+  const [grupos, setGrupos] = useState<GrupoLocal[]>([]);
+  // Mapeo actividadId → grupo_id (heredado de Nombre de Actividades)
+  const [actividadGrupo, setActividadGrupo] = useState<Map<string, string | null>>(new Map());
   const [loading, setLoading] = useState(true);
   // Modal de comentario en modo solo lectura para estudiantes y acudientes.
   const [comentarioAbierto, setComentarioAbierto] = useState<{
@@ -126,19 +138,42 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
 
         if (!actividadesError && actividadesData) {
           const actividadesPorAsig: ActividadesPorAsignatura = {};
+          const mapActGrupo = new Map<string, string | null>();
           actividadesData.forEach((act) => {
+            const actId = `${act.periodo}-${act.nombre_actividad}`;
+            mapActGrupo.set(`${act.asignatura}|${actId}`, act.grupo_id ?? null);
             if (!actividadesPorAsig[act.asignatura]) {
               actividadesPorAsig[act.asignatura] = [];
             }
             actividadesPorAsig[act.asignatura].push({
-              id: `${act.periodo}-${act.nombre_actividad}`,
+              id: actId,
               periodo: act.periodo,
               nombre: act.nombre_actividad,
               porcentaje: act.porcentaje,
               asignatura: act.asignatura,
+              grupo_id: act.grupo_id ?? null,
             });
           });
           setActividadesPorAsignatura(actividadesPorAsig);
+          setActividadGrupo(mapActGrupo);
+        }
+
+        // Cargar Grupos_Notas para todas las asignaturas del aula del estudiante
+        const { data: gruposData } = await supabase
+          .from('Grupos_Notas')
+          .select('id, asignatura, periodo, porcentaje, parent_id')
+          .eq('ano_escolar', anoEscolarActual())
+          .eq('grado', grado)
+          .eq('salon', salon)
+          .in('asignatura', asignaturasDelGrado);
+        if (gruposData) {
+          setGrupos(gruposData.map((g: any) => ({
+            id: g.id,
+            asignatura: g.asignatura,
+            periodo: g.periodo,
+            porcentaje: Number(g.porcentaje),
+            parent_id: g.parent_id,
+          })));
         }
 
         // Obtener notas del estudiante
@@ -201,20 +236,24 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
 
   const calcularFinalPeriodo = (asignatura: string, periodo: number): number | null => {
     const actividadesDelPeriodo = getActividadesPorPeriodo(asignatura, periodo);
-    const actividadesConPorcentaje = actividadesDelPeriodo.filter(a => a.porcentaje !== null && a.porcentaje > 0);
-    if (actividadesConPorcentaje.length === 0) return null;
+    if (actividadesDelPeriodo.length === 0) return null;
 
-    let suma = 0;
-    let porcentajeCalificado = 0;
-    actividadesConPorcentaje.forEach((actividad) => {
-      const nota = notas[asignatura]?.[periodo]?.[actividad.id];
-      if (nota !== undefined) {
-        suma += nota * ((actividad.porcentaje || 0) / 100);
-        porcentajeCalificado += actividad.porcentaje || 0;
-      }
-    });
-    if (porcentajeCalificado === 0) return null;
-    return Math.round((suma / (porcentajeCalificado / 100)) * 10) / 10;
+    const notasCalc: NotaCalc[] = actividadesDelPeriodo
+      .filter(a => a.porcentaje !== null && a.porcentaje > 0 && notas[asignatura]?.[periodo]?.[a.id] !== undefined)
+      .map(a => ({
+        porcentaje: a.porcentaje,
+        nota: notas[asignatura][periodo][a.id] as number,
+        grupo_id: a.grupo_id ?? actividadGrupo.get(`${asignatura}|${a.id}`) ?? null,
+      }));
+
+    if (notasCalc.length === 0) return null;
+
+    const gruposPeriodo: GrupoCalc[] = grupos
+      .filter(g => g.asignatura === asignatura && g.periodo === periodo)
+      .map(g => ({ id: g.id, porcentaje: g.porcentaje, parent_id: g.parent_id }));
+
+    const res = promedioGeneral(notasCalc, gruposPeriodo);
+    return res.promedio;
   };
 
   const calcularFinalDefinitiva = (asignatura: string): number | null => {
