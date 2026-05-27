@@ -1283,11 +1283,17 @@ const TablaNotas = () => {
     }
   };
 
-  // Calcular porcentaje usado excluyendo la actividad en edición
+  // Calcular porcentaje usado en el periodo excluyendo la actividad en edición.
+  // Incluye actividades sueltas (sin grupo) + grupos top (con %).
+  // Las actividades dentro de grupo NO suman al total — su peso lo aporta el grupo.
   const getPorcentajeUsadoParaModal = () => {
-    return actividades
-      .filter(a => a.periodo === periodoActual && a.porcentaje !== null && a.id !== actividadEditando?.id)
+    const actsSueltas = actividades
+      .filter(a => a.periodo === periodoActual && !a.grupo_id && a.porcentaje !== null && a.id !== actividadEditando?.id)
       .reduce((sum, a) => sum + (a.porcentaje || 0), 0);
+    const gruposTop = gruposNotas
+      .filter(g => g.periodo === periodoActual && !g.parent_id && g.porcentaje !== null)
+      .reduce((sum, g) => sum + Number(g.porcentaje || 0), 0);
+    return actsSueltas + gruposTop;
   };
 
   // Calcular el ancho mínimo de cada período basado en sus actividades (+ columna Final)
@@ -3906,9 +3912,16 @@ const TablaNotas = () => {
               const hermanos = grupoPadrePara
                 ? gruposPeriodoActual.filter(g => g.parent_id === grupoPadrePara)
                 : gruposPeriodoActual.filter(g => !g.parent_id);
-              const sumaHermanos = hermanos
+              let sumaHermanos = hermanos
                 .filter(h => h.porcentaje !== null)
                 .reduce((s, h) => s + Number(h.porcentaje), 0);
+              // Si es grupo TOP, también suma % de actividades sueltas del periodo
+              if (!grupoPadrePara) {
+                const actsSueltas = actividades
+                  .filter(a => a.periodo === periodoActual && !a.grupo_id && a.porcentaje !== null)
+                  .reduce((s, a) => s + Number(a.porcentaje || 0), 0);
+                sumaHermanos += actsSueltas;
+              }
               const disponible = Math.max(0, padrePct - sumaHermanos);
               return (
               <>
