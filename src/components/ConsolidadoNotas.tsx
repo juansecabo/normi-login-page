@@ -26,6 +26,7 @@ interface Actividad {
 interface GrupoLocal extends GrupoCalc {
   asignatura: string;
   periodo: number;
+  nombre: string;
 }
 
 type NotasEstudiante = {
@@ -161,14 +162,16 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
         // Cargar Grupos_Notas para todas las asignaturas del aula del estudiante
         const { data: gruposData } = await supabase
           .from('Grupos_Notas')
-          .select('id, asignatura, periodo, porcentaje, parent_id')
+          .select('id, nombre, asignatura, periodo, porcentaje, parent_id, orden')
           .eq('ano_escolar', anoEscolarActual())
           .eq('grado', grado)
           .eq('salon', salon)
-          .in('asignatura', asignaturasDelGrado);
+          .in('asignatura', asignaturasDelGrado)
+          .order('orden');
         if (gruposData) {
           setGrupos(gruposData.map((g: any) => ({
             id: g.id,
+            nombre: g.nombre,
             asignatura: g.asignatura,
             periodo: g.periodo,
             porcentaje: Number(g.porcentaje),
@@ -339,72 +342,127 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
                 <div className="p-4 text-center text-muted-foreground text-sm">
                   No hay actividades registradas en este período
                 </div>
-              ) : (
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-muted/50">
-                      {actividadesDelPeriodo.map((actividad) => (
-                        <th
-                          key={actividad.id}
-                          className="p-2 text-center text-xs font-medium border-r border-b border-border min-w-[100px]"
-                        >
-                          <div className="truncate" title={actividad.nombre}>
-                            {actividad.nombre}
-                          </div>
-                          {actividad.porcentaje !== null && (
-                            <div className="text-muted-foreground text-xs">
-                              ({actividad.porcentaje}%)
-                            </div>
-                          )}
-                        </th>
-                      ))}
-                      <th className="p-2 text-center text-xs font-semibold border-b border-border min-w-[100px] bg-primary/10">
-                        <div>Definitiva Periodo</div>
-                        <div className="text-muted-foreground text-xs font-normal">
-                          ({getPorcentajeCalificado(asignatura, periodoActivo)}%)
-                        </div>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      {actividadesDelPeriodo.map((actividad) => {
-                        const nota = notas[asignatura]?.[periodoActivo]?.[actividad.id];
-                        const comentario = comentarios[asignatura]?.[periodoActivo]?.[actividad.id];
+              ) : (() => {
+                // Detectar si el período usa jerarquía (algún grupo definido)
+                const gruposPeriodo = grupos
+                  .filter(g => g.asignatura === asignatura && g.periodo === periodoActivo)
+                  .sort((a, b) => (a as any).parent_id ? 1 : -1);
+                const top = gruposPeriodo.filter(g => g.parent_id === null);
+
+                if (top.length === 0) {
+                  // Modo plano clásico (sin cambios)
+                  return (
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-muted/50">
+                          {actividadesDelPeriodo.map((actividad) => (
+                            <th key={actividad.id} className="p-2 text-center text-xs font-medium border-r border-b border-border min-w-[100px]">
+                              <div className="truncate" title={actividad.nombre}>{actividad.nombre}</div>
+                              {actividad.porcentaje !== null && <div className="text-muted-foreground text-xs">({actividad.porcentaje}%)</div>}
+                            </th>
+                          ))}
+                          <th className="p-2 text-center text-xs font-semibold border-b border-border min-w-[100px] bg-primary/10">
+                            <div>Definitiva Periodo</div>
+                            <div className="text-muted-foreground text-xs font-normal">({getPorcentajeCalificado(asignatura, periodoActivo)}%)</div>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          {actividadesDelPeriodo.map((actividad) => {
+                            const nota = notas[asignatura]?.[periodoActivo]?.[actividad.id];
+                            const comentario = comentarios[asignatura]?.[periodoActivo]?.[actividad.id];
+                            return (
+                              <td key={actividad.id} className="p-2 text-center text-sm border-r border-b border-border">
+                                <div className="inline-flex items-center justify-center gap-1">
+                                  <span>{nota !== undefined ? nota.toFixed(2) : '—'}</span>
+                                  {comentario && (
+                                    <button type="button" onClick={() => setComentarioAbierto({ nombreActividad: actividad.nombre, comentario })} className="text-primary hover:text-primary/80" title="Ver comentario del profesor" aria-label="Ver comentario del profesor">
+                                      <MessageSquareText className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            );
+                          })}
+                          <td className="p-2 text-center text-sm font-semibold border-b border-border bg-primary/5">
+                            {calcularFinalPeriodo(asignatura, periodoActivo)?.toFixed(1) || '—'}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  );
+                }
+
+                // Modo jerárquico: bloques por grupo
+                return (
+                  <div className="p-4 space-y-3">
+                    {top.map((g) => {
+                      const subgrupos = gruposPeriodo.filter((sg) => sg.parent_id === g.id);
+                      const actsDirectas = actividadesDelPeriodo.filter(a => a.grupo_id === g.id || (a.grupo_id == null && subgrupos.length === 0));
+                      const renderActFila = (act: Actividad) => {
+                        const nota = notas[asignatura]?.[periodoActivo]?.[act.id];
+                        const comentario = comentarios[asignatura]?.[periodoActivo]?.[act.id];
                         return (
-                          <td
-                            key={actividad.id}
-                            className="p-2 text-center text-sm border-r border-b border-border"
-                          >
-                            <div className="inline-flex items-center justify-center gap-1">
-                              <span>{nota !== undefined ? nota.toFixed(2) : '—'}</span>
+                          <div key={act.id} className="flex items-center justify-between py-1 text-sm border-b border-border/30 last:border-b-0">
+                            <span className="truncate flex-1">{act.nombre}{act.porcentaje !== null ? ` (${act.porcentaje}%)` : ''}</span>
+                            <div className="flex items-center gap-1">
+                              <span className="font-medium">{nota !== undefined ? nota.toFixed(2) : '—'}</span>
                               {comentario && (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setComentarioAbierto({
-                                      nombreActividad: actividad.nombre,
-                                      comentario,
-                                    })
-                                  }
-                                  className="text-primary hover:text-primary/80"
-                                  title="Ver comentario del profesor"
-                                  aria-label="Ver comentario del profesor"
-                                >
+                                <button type="button" onClick={() => setComentarioAbierto({ nombreActividad: act.nombre, comentario })} className="text-primary hover:text-primary/80" aria-label="Ver comentario">
                                   <MessageSquareText className="w-4 h-4" />
                                 </button>
                               )}
                             </div>
-                          </td>
+                          </div>
                         );
-                      })}
-                      <td className="p-2 text-center text-sm font-semibold border-b border-border bg-primary/5">
-                        {calcularFinalPeriodo(asignatura, periodoActivo)?.toFixed(1) || '—'}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              )}
+                      };
+                      return (
+                        <div key={g.id} className="border border-border rounded bg-muted/20">
+                          <div className="px-3 py-1.5 bg-primary/10 font-semibold text-sm">
+                            {(g as any).nombre || ''} <span className="text-muted-foreground font-normal">({g.porcentaje}%)</span>
+                          </div>
+                          <div className="px-3 py-1">
+                            {actsDirectas.map(renderActFila)}
+                            {subgrupos.map((sg) => {
+                              const actsSub = actividadesDelPeriodo.filter(a => a.grupo_id === sg.id);
+                              if (actsSub.length === 0) return null;
+                              return (
+                                <div key={sg.id} className="ml-3 mt-1.5 border-l-2 border-primary/30 pl-3">
+                                  <div className="text-xs font-medium text-muted-foreground py-1">
+                                    {(sg as any).nombre || ''} ({sg.porcentaje}% del grupo padre)
+                                  </div>
+                                  {actsSub.map(renderActFila)}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {/* Notas sueltas sin grupo */}
+                    {actividadesDelPeriodo.filter(a => !a.grupo_id).length > 0 && (
+                      <div className="border border-dashed border-border rounded p-3">
+                        <div className="text-xs font-medium text-muted-foreground mb-1">Otras actividades</div>
+                        {actividadesDelPeriodo.filter(a => !a.grupo_id).map((act) => {
+                          const nota = notas[asignatura]?.[periodoActivo]?.[act.id];
+                          return (
+                            <div key={act.id} className="flex items-center justify-between py-1 text-sm">
+                              <span>{act.nombre}{act.porcentaje !== null ? ` (${act.porcentaje}%)` : ''}</span>
+                              <span className="font-medium">{nota !== undefined ? nota.toFixed(2) : '—'}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {/* Definitiva */}
+                    <div className="bg-primary/10 px-3 py-2 rounded flex items-center justify-between">
+                      <span className="font-bold text-sm">Definitiva Periodo</span>
+                      <span className="font-bold text-lg">{calcularFinalPeriodo(asignatura, periodoActivo)?.toFixed(1) || '—'}</span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         );
