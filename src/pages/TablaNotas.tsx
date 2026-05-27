@@ -93,6 +93,95 @@ interface ComentarioEditando {
   periodo: number;
 }
 
+/**
+ * Botón "+ Agregar" con comportamiento dual:
+ *  - Click rápido (release antes de HOLD_MS) → ejecuta `onActividad`.
+ *  - Mantener presionado >= HOLD_MS         → ejecuta `onGrupo`.
+ * Muestra una barra de progreso mientras se está presionando.
+ */
+const BotonAgregarConLongPress = ({
+  onActividad,
+  onGrupo,
+  disabled,
+  label,
+  compact,
+  title,
+}: {
+  onActividad: () => void;
+  onGrupo: () => void;
+  disabled?: boolean;
+  label?: string;
+  compact?: boolean;
+  title?: string;
+}) => {
+  const HOLD_MS = 1200;
+  const [pressing, setPressing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const intervalRef = useRef<number | null>(null);
+  const triggeredGrupoRef = useRef(false);
+
+  const cleanup = () => {
+    if (intervalRef.current) {
+      window.clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    setPressing(false);
+    setProgress(0);
+  };
+
+  const start = (e: React.PointerEvent) => {
+    if (disabled) return;
+    e.preventDefault();
+    triggeredGrupoRef.current = false;
+    setPressing(true);
+    setProgress(0);
+    const startTime = Date.now();
+    intervalRef.current = window.setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const p = Math.min(100, (elapsed / HOLD_MS) * 100);
+      setProgress(p);
+      if (p >= 100 && !triggeredGrupoRef.current) {
+        triggeredGrupoRef.current = true;
+        cleanup();
+        onGrupo();
+      }
+    }, 30);
+  };
+
+  const end = () => {
+    if (!triggeredGrupoRef.current && intervalRef.current) {
+      cleanup();
+      onActividad();
+    } else {
+      cleanup();
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onPointerDown={start}
+      onPointerUp={end}
+      onPointerLeave={cleanup}
+      onContextMenu={(e) => e.preventDefault()}
+      className={`relative ${compact ? 'h-6 px-1.5 text-[10px]' : 'h-8 px-2 text-xs'} rounded-md bg-green-100 hover:bg-green-200 text-green-800 border border-green-300 inline-flex items-center justify-center gap-1 overflow-hidden select-none w-full transition-colors disabled:opacity-50`}
+      title={title || 'Click rápido: nueva actividad. Mantener presionado: nuevo grupo'}
+    >
+      {pressing && (
+        <span
+          className="absolute inset-y-0 left-0 bg-emerald-500/40 transition-[width]"
+          style={{ width: `${progress}%` }}
+        />
+      )}
+      <Plus className={`${compact ? 'w-2.5 h-2.5' : 'w-3 h-3'} relative`} />
+      <span className="relative font-medium truncate">
+        {pressing && progress > 25 ? 'Creando grupo…' : (label || 'Agregar')}
+      </span>
+    </button>
+  );
+};
+
 const TablaNotas = () => {
   const navigate = useNavigate();
   const [asignaturaSeleccionada, setAsignaturaSeleccionada] = useState("");
@@ -120,11 +209,8 @@ const TablaNotas = () => {
 
   // Sistema jerárquico (Grupos_Notas).
   const [confirmarVolverPlano, setConfirmarVolverPlano] = useState(false);
-  // Intención del usuario por aula+periodo: 'grupos' significa que ya
-  // clickeó "Grupos" en el dropdown aunque todavía no haya creado ninguno.
-  // Se persiste en localStorage para que la tabla siga en modo Grupos al
-  // recargar incluso si no hay grupos aún.
-  const [modoIntentTick, setModoIntentTick] = useState(0); // fuerza re-render
+  // Tick para forzar re-render cuando cambia el flag local de "periodo completo".
+  const [modoIntentTick, setModoIntentTick] = useState(0);
   // Modal "+ Agregar" tiene dos tipos cuando el periodo está en modo Grupos
   const [tipoNuevoItem, setTipoNuevoItem] = useState<'actividad' | 'grupo'>('actividad');
   const [grupoPadrePara, setGrupoPadrePara] = useState<string | null>(null); // si se crea subgrupo
@@ -610,30 +696,38 @@ const TablaNotas = () => {
     return false;
   };
 
-  const handleAbrirModal = (periodo: number) => {
+  /**
+   * Abre el modal de creación con un tipo específico.
+   * - tipo='actividad' → modal nueva actividad
+   * - tipo='grupo'     → modal nuevo grupo (con padre opcional pre-seleccionado)
+   * - tipo='subgrupo'  → nuevo grupo cuyo padre es `parentId`
+   *
+   * El usuario lo dispara con el botón "+": click rápido = actividad,
+   * long-press (>= 1.2s) = grupo.
+   */
+  const handleAbrirModal = (periodo: number, tipo: 'actividad' | 'grupo' = 'actividad', parentId: string | null = null) => {
     setPeriodoActual(periodo);
     setNombreActividad("");
     setPorcentajeActividad("");
     setActividadEditando(null);
     setCrearParaTodosSalones(false);
-    setGrupoPadrePara(null);
+    setGrupoPadrePara(parentId);
     setReplicarGrupoOtrosPeriodos(false);
     setReplicarGrupoOtrosSalones(false);
 
     const gruposDelPeriodo = gruposNotas.filter(g => g.periodo === periodo);
-    const modoActual = gruposDelPeriodo.length > 0
-      ? 'grupos'
-      : (localStorage.getItem(modoIntentKey() || '') === 'grupos' ? 'grupos' : 'plana');
 
-    // En modo grupos sin grupos creados, el default es crear el primer grupo.
-    // Con grupos ya existentes, default es nueva actividad.
-    if (modoActual === 'grupos' && gruposDelPeriodo.length === 0) {
+    // Si pidieron actividad pero todavía no hay grupos, fuerza tipo a 'actividad'
+    // (modo plano puro). Si pidieron actividad y SÍ hay grupos, también, pero
+    // pre-seleccionamos el primer grupo hoja.
+    if (tipo === 'grupo') {
       setTipoNuevoItem('grupo');
     } else {
+      // Si hay grupos, la nueva actividad debe ir dentro de uno (la jerarquía
+      // ya está activa); si no, modo plano libre.
       setTipoNuevoItem('actividad');
     }
 
-    // Pre-seleccionar primer grupo hoja para nuevas actividades.
     const grupoHojaPredet = gruposDelPeriodo.find(
       g => !gruposDelPeriodo.some(h => h.parent_id === g.id)
     );
@@ -702,14 +796,20 @@ const TablaNotas = () => {
 
     // Si estoy CREANDO un grupo, ramifico al endpoint de Grupos_Notas y salgo.
     if (!actividadEditando && tipoNuevoItem === 'grupo') {
-      const pct = parseFloat(porcentajeActividad);
-      if (!Number.isFinite(pct) || pct <= 0 || pct > 100) {
-        toast({
-          title: "Error",
-          description: "El porcentaje del grupo debe estar entre 0.01 y 100",
-          variant: "destructive",
-        });
-        return;
+      // % es opcional: si está vacío mandamos null y el grupo queda sin %
+      // (el profe lo asigna después). Si lo dieron, validamos rango.
+      let pct: number | null = null;
+      if (porcentajeActividad.trim() !== '') {
+        const n = parseFloat(porcentajeActividad);
+        if (!Number.isFinite(n) || n <= 0 || n > 100) {
+          toast({
+            title: "Error",
+            description: "El porcentaje debe estar entre 0.01 y 100, o vacío.",
+            variant: "destructive",
+          });
+          return;
+        }
+        pct = n;
       }
       setGuardandoMultiple(true);
       try {
@@ -739,7 +839,9 @@ const TablaNotas = () => {
         return;
       } catch (e: any) {
         setGuardandoMultiple(false);
-        toast({ title: "Error", description: e?.message || "No se pudo crear el grupo.", variant: "destructive" });
+        const body = e?.body || {};
+        const detail = body.detail || e?.message || "No se pudo crear el grupo.";
+        toast({ title: "No se pudo crear el grupo", description: detail, variant: "destructive" });
         return;
       }
     }
@@ -2897,29 +2999,13 @@ const TablaNotas = () => {
   }, [celdaEditando]);
 
   /**
-   * Clave localStorage para la "intención" de modo del usuario en un periodo
-   * antes de que cree grupos. Si ya hay grupos creados, el modo se deriva
-   * automáticamente (no se necesita esta intención).
+   * Modo del periodo: derivado de la existencia de grupos creados.
+   * Sin grupos → plana. Con grupos → jerárquica.
+   * El usuario alterna entre uno y otro creando o eliminando grupos con
+   * el botón "+" (long-press para crear grupo).
    */
-  const modoIntentKey = () => {
-    if (!asignaturaSeleccionada || !gradoSeleccionado || !salonSeleccionado) return null;
-    return `modoGrupos:${asignaturaSeleccionada}:${gradoSeleccionado}:${salonSeleccionado}:${periodoActual}`;
-  };
-  const getModoIntent = (): 'plana' | 'grupos' | null => {
-    const k = modoIntentKey();
-    if (!k) return null;
-    const v = localStorage.getItem(k);
-    return v === 'grupos' || v === 'plana' ? v : null;
-  };
-  const setModoIntent = (m: 'plana' | 'grupos') => {
-    const k = modoIntentKey();
-    if (k) localStorage.setItem(k, m);
-    setModoIntentTick(t => t + 1);
-  };
-  /** Modo efectivo del periodo: si hay grupos creados o user marcó 'grupos'. */
   const modoEfectivo = (): 'plana' | 'grupos' => {
-    if (gruposPeriodoActual.length > 0) return 'grupos';
-    return getModoIntent() === 'grupos' ? 'grupos' : 'plana';
+    return gruposPeriodoActual.length > 0 ? 'grupos' : 'plana';
   };
 
   /**
@@ -2960,26 +3046,6 @@ const TablaNotas = () => {
     return hojas.every(h => actsPeriodo.some(a => a.grupo_id === h.id));
   };
 
-  /**
-   * Cambiar a modo Plana. Si el periodo ya está en modo plano (sin grupos),
-   * no hace nada. Si tiene grupos, pide confirmación antes de borrarlos.
-   */
-  const handleSeleccionarModoPlano = () => {
-    if (gruposPeriodoActual.length === 0) {
-      setModoIntent('plana');
-      return;
-    }
-    setConfirmarVolverPlano(true);
-  };
-
-  /**
-   * Cambiar a modo Grupos. Solo marca la intención; no abre popup.
-   * El profesor verá la tabla con la cabecera de grupos vacía y un botón "+"
-   * que ahora ofrece crear "Actividad" o "Grupo".
-   */
-  const handleSeleccionarModoGrupos = () => {
-    setModoIntent('grupos');
-  };
 
   /**
    * Elimina TODOS los grupos del periodo activo y vuelve a modo plano.
@@ -3043,40 +3109,6 @@ const TablaNotas = () => {
                 <Calendar className="h-4 w-4" />
                 Ver Actividades Asignadas
               </Button>
-              {(() => {
-                const modo = modoEfectivo();
-                return (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                        disabled={!aulaActual}
-                        title="Elegir cómo se califica este periodo"
-                      >
-                        ⚙️ Jerarquía: {modo === 'grupos' ? `Grupos${gruposPeriodoActual.length > 0 ? ` (${gruposPeriodoActual.length})` : ''}` : 'Plana'}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-background z-50">
-                      <DropdownMenuItem
-                        onClick={handleSeleccionarModoPlano}
-                        className={modo === 'plana' ? "font-semibold" : ""}
-                      >
-                        <span className="mr-2">📊</span> Plana
-                        {modo === 'plana' && <span className="ml-2 text-xs text-muted-foreground">(actual)</span>}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={handleSeleccionarModoGrupos}
-                        className={modo === 'grupos' ? "font-semibold" : ""}
-                      >
-                        <span className="mr-2">📑</span> Grupos
-                        {modo === 'grupos' && <span className="ml-2 text-xs text-muted-foreground">(actual)</span>}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                );
-              })()}
               <Button
                 variant="outline"
                 size="sm"
@@ -3272,7 +3304,7 @@ const TablaNotas = () => {
                                     >
                                       <div className="flex flex-col items-center">
                                         <span>{sec.grupo.nombre}</span>
-                                        <span className="text-white/70 text-[10px]">({sec.grupo.porcentaje}% del periodo)</span>
+                                        <span className="text-white/70 text-[10px]">{sec.grupo.porcentaje !== null ? `(${sec.grupo.porcentaje}%)` : '(sin %)'}</span>
                                       </div>
                                     </th>
                                   );
@@ -3291,16 +3323,12 @@ const TablaNotas = () => {
                                   </th>
                                 );
                               })}
-                              <th rowSpan={filasThead} className="border-r border-b border-border/30 p-2 text-center min-w-[100px] bg-primary/90">
-                                <Button
-                                  variant="secondary"
-                                  size="sm"
-                                  className="h-7 text-xs bg-green-100 hover:bg-green-200 text-green-800 border-green-300"
-                                  onClick={() => handleAbrirModal(periodoActivo)}
-                                >
-                                  <Plus className="w-3 h-3 mr-1" />
-                                  Agregar
-                                </Button>
+                              <th rowSpan={filasThead} className="border-r border-b border-border/30 p-2 text-center min-w-[110px] bg-primary/90">
+                                <BotonAgregarConLongPress
+                                  onActividad={() => handleAbrirModal(periodoActivo, 'actividad')}
+                                  onGrupo={() => handleAbrirModal(periodoActivo, 'grupo')}
+                                  disabled={!aulaActual}
+                                />
                               </th>
                               {(() => {
                                 // Modo Grupos: checkbox "¿Periodo completo?" cuando es calificable
@@ -3372,16 +3400,12 @@ const TablaNotas = () => {
                                   </div>
                                 </th>
                               ))}
-                              <th className="border-r border-b border-border/30 p-2 text-center min-w-[100px] bg-primary/90">
-                                <Button
-                                  variant="secondary"
-                                  size="sm"
-                                  className="h-7 text-xs bg-green-100 hover:bg-green-200 text-green-800 border-green-300"
-                                  onClick={() => handleAbrirModal(periodoActivo)}
-                                >
-                                  <Plus className="w-3 h-3 mr-1" />
-                                  Agregar
-                                </Button>
+                              <th className="border-r border-b border-border/30 p-2 text-center min-w-[110px] bg-primary/90">
+                                <BotonAgregarConLongPress
+                                  onActividad={() => handleAbrirModal(periodoActivo, 'actividad')}
+                                  onGrupo={() => handleAbrirModal(periodoActivo, 'grupo')}
+                                  disabled={!aulaActual}
+                                />
                               </th>
                               {(() => {
                                 const porcentajeUsado = getPorcentajeUsado(periodoActivo);
@@ -3415,7 +3439,7 @@ const TablaNotas = () => {
                                 >
                                   <div className="flex flex-col items-center">
                                     <span>{sub.grupo.nombre}</span>
-                                    <span className="text-white/70 text-[10px]">({sub.grupo.porcentaje}% del grupo)</span>
+                                    <span className="text-white/70 text-[10px]">{sub.grupo.porcentaje !== null ? `(${sub.grupo.porcentaje}%)` : '(sin %)'}</span>
                                   </div>
                                 </th>
                               ));
@@ -3773,35 +3797,9 @@ const TablaNotas = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            {/* Selector Actividad/Grupo (solo al crear, en modo Grupos) */}
-            {!actividadEditando && modoEfectivo() === 'grupos' && (
-              <div className="flex gap-2 p-1 bg-muted rounded-md">
-                <button
-                  type="button"
-                  onClick={() => setTipoNuevoItem('actividad')}
-                  className={`flex-1 py-2 px-3 rounded text-sm font-medium transition-colors ${
-                    tipoNuevoItem === 'actividad' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                  disabled={gruposPeriodoActual.length === 0}
-                >
-                  📝 Actividad
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTipoNuevoItem('grupo')}
-                  className={`flex-1 py-2 px-3 rounded text-sm font-medium transition-colors ${
-                    tipoNuevoItem === 'grupo' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  📑 Grupo
-                </button>
-              </div>
-            )}
-            {!actividadEditando && modoEfectivo() === 'grupos' && tipoNuevoItem === 'actividad' && gruposPeriodoActual.length === 0 && (
-              <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 px-3 py-2 rounded">
-                Primero debes crear al menos un grupo. Vuelve a la pestaña "Grupo" arriba.
-              </div>
-            )}
+            {/* El tipo (Actividad/Grupo) se decide al presionar el +:
+                click rápido = Actividad, mantener presionado = Grupo.
+                No mostramos selector dentro del modal — el título ya lo deja claro. */}
             <div className="grid gap-2">
               <Label htmlFor="nombre">
                 {tipoNuevoItem === 'grupo' && !actividadEditando ? 'Nombre del grupo *' : 'Nombre de la actividad *'}
@@ -3820,25 +3818,46 @@ const TablaNotas = () => {
               </p>
             </div>
             {/* Modo Grupo: campos para crear un grupo */}
-            {!actividadEditando && tipoNuevoItem === 'grupo' && (
+            {!actividadEditando && tipoNuevoItem === 'grupo' && (() => {
+              // Cálculo de máximo permitido para el % del grupo
+              const padre = grupoPadrePara
+                ? gruposPeriodoActual.find(g => g.id === grupoPadrePara)
+                : null;
+              const padrePct = padre && padre.porcentaje !== null ? Number(padre.porcentaje) : 100;
+              const padreSinPct = !!padre && padre.porcentaje === null;
+              const hermanos = grupoPadrePara
+                ? gruposPeriodoActual.filter(g => g.parent_id === grupoPadrePara)
+                : gruposPeriodoActual.filter(g => !g.parent_id);
+              const sumaHermanos = hermanos
+                .filter(h => h.porcentaje !== null)
+                .reduce((s, h) => s + Number(h.porcentaje), 0);
+              const disponible = Math.max(0, padrePct - sumaHermanos);
+              return (
               <>
                 <div className="grid gap-2">
-                  <Label htmlFor="porcentajeGrupo">Porcentaje *</Label>
+                  <Label htmlFor="porcentajeGrupo">Porcentaje (opcional)</Label>
                   <Input
                     id="porcentajeGrupo"
                     type="number"
-                    placeholder="Ej: 60"
+                    placeholder={`Ej: ${Math.min(60, disponible || 60)}`}
                     min={0.01}
                     max={100}
                     step={0.01}
                     value={porcentajeActividad}
                     onChange={(e) => setPorcentajeActividad(e.target.value)}
+                    disabled={padreSinPct}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    {grupoPadrePara
-                      ? `Porcentaje dentro del grupo padre seleccionado.`
-                      : `Porcentaje del periodo. Suma actual de grupos de primer nivel: ${gruposPeriodoActual.filter(g => !g.parent_id).reduce((s, g) => s + Number(g.porcentaje), 0)}% / 100%`}
-                  </p>
+                  {padreSinPct ? (
+                    <p className="text-xs text-amber-700">
+                      Primero asígnale porcentaje al grupo padre.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Puedes dejarlo en blanco y ponerlo después. {grupoPadrePara
+                        ? `Disponible dentro de "${padre?.nombre}": ${disponible}%`
+                        : `Disponible en el periodo: ${disponible}% / 100%`}
+                    </p>
+                  )}
                 </div>
                 {gruposPeriodoActual.filter(g => !g.parent_id).length > 0 && (
                   <div className="grid gap-2">
@@ -3851,13 +3870,14 @@ const TablaNotas = () => {
                     >
                       <option value="">— Grupo de primer nivel —</option>
                       {gruposPeriodoActual.filter(g => !g.parent_id).map((g) => (
-                        <option key={g.id} value={g.id}>↳ Dentro de "{g.nombre}" ({g.porcentaje}%)</option>
+                        <option key={g.id} value={g.id}>↳ Dentro de "{g.nombre}"{g.porcentaje !== null ? ` (${g.porcentaje}%)` : ''}</option>
                       ))}
                     </select>
                   </div>
                 )}
               </>
-            )}
+              );
+            })()}
 
             {/* Modo Actividad: selector de grupo + aviso/porcentaje */}
             {(actividadEditando || tipoNuevoItem === 'actividad') && gruposPeriodoActual.length > 0 && (() => {
@@ -3879,7 +3899,7 @@ const TablaNotas = () => {
                         : null;
                       return (
                         <option key={g.id} value={g.id}>
-                          {padre ? `${padre.nombre} → ${g.nombre}` : g.nombre} ({g.porcentaje}% {padre ? "del grupo padre" : "del periodo"})
+                          {padre ? `${padre.nombre} → ${g.nombre}` : g.nombre} {g.porcentaje !== null ? `(${g.porcentaje}%)` : '(sin %)'}
                         </option>
                       );
                     })}
@@ -3906,7 +3926,7 @@ const TablaNotas = () => {
               if (grupoSel) {
                 return (
                   <div className="text-xs text-muted-foreground bg-muted/30 border border-border px-3 py-2 rounded">
-                    Esta actividad va dentro del grupo <strong>"{grupoSel.nombre}"</strong> ({grupoSel.porcentaje}% del periodo). Todas las actividades del grupo se promedian con el mismo peso — no necesita porcentaje individual.
+                    Esta actividad va dentro del grupo <strong>"{grupoSel.nombre}"</strong>{grupoSel.porcentaje !== null ? ` (${grupoSel.porcentaje}%)` : ''}. Todas las actividades del grupo se promedian con el mismo peso — no necesita porcentaje individual.
                   </div>
                 );
               }
