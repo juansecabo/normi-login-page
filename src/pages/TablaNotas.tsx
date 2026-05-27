@@ -3423,7 +3423,7 @@ const TablaNotas = () => {
                                             <Pencil className="w-4 h-4 mr-2" /> Editar grupo
                                           </DropdownMenuItem>
                                           <DropdownMenuItem onClick={() => handleAbrirModal(periodoActivo, 'actividad', sec.grupo.id)}>
-                                            <Plus className="w-4 h-4 mr-2" /> Agregar actividad aquí
+                                            <Plus className="w-4 h-4 mr-2" /> Agregar actividad
                                           </DropdownMenuItem>
                                           <DropdownMenuItem onClick={() => handleAbrirModal(periodoActivo, 'grupo', sec.grupo.id)}>
                                             <Plus className="w-4 h-4 mr-2" /> Agregar subgrupo
@@ -3460,7 +3460,7 @@ const TablaNotas = () => {
                                           <Pencil className="w-4 h-4 mr-2" /> Editar grupo
                                         </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => handleAbrirModal(periodoActivo, 'actividad', sec.grupo.id)}>
-                                          <Plus className="w-4 h-4 mr-2" /> Agregar actividad aquí
+                                          <Plus className="w-4 h-4 mr-2" /> Agregar actividad
                                         </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => handleAbrirModal(periodoActivo, 'grupo', sec.grupo.id)}>
                                           <Plus className="w-4 h-4 mr-2" /> Agregar subgrupo
@@ -3644,7 +3644,7 @@ const TablaNotas = () => {
                                           <Pencil className="w-4 h-4 mr-2" /> Editar grupo
                                         </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => handleAbrirModal(periodoActivo, 'actividad', sub.grupo!.id)}>
-                                          <Plus className="w-4 h-4 mr-2" /> Agregar actividad aquí
+                                          <Plus className="w-4 h-4 mr-2" /> Agregar actividad
                                         </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => setGrupoAEliminar(sub.grupo as any)} className="text-destructive focus:text-destructive">
                                           <Trash2 className="w-4 h-4 mr-2" /> Eliminar grupo
