@@ -90,9 +90,9 @@ const EditorGruposNotas = ({ open, onOpenChange, aula, grupos, otrosSalones = []
         if (replicarPeriodos.length > 0) body.replicar_periodos = replicarPeriodos;
         if (replicarSalones.length > 0) body.replicar_salones = replicarSalones;
       }
-      const res = await apiClient.gruposNotas.crear(body);
-      toast({ title: "Grupo creado", description: `Se crearon ${res.creados} grupos (con replicaciones).` });
-      // Reset form
+      await apiClient.gruposNotas.crear(body);
+      // Sin popup: reset form + refresh silencioso. El grupo aparece en la
+      // lista de arriba (con la suma actualizada) — feedback visual suficiente.
       setNuevoNombre("");
       setNuevoPorcentaje("");
       setNuevoParent("");
@@ -109,8 +109,7 @@ const EditorGruposNotas = ({ open, onOpenChange, aula, grupos, otrosSalones = []
   const handleEliminar = async (g: GrupoNotas) => {
     setSaving(true);
     try {
-      const res = await apiClient.gruposNotas.eliminar(g.id);
-      toast({ title: "Grupo eliminado", description: `Se eliminaron ${res.eliminados} grupos (incluyendo subgrupos).` });
+      await apiClient.gruposNotas.eliminar(g.id);
       onChange();
     } catch (e: any) {
       toast({ title: "Error", description: e?.message || "No se pudo eliminar." });

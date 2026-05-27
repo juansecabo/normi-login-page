@@ -676,12 +676,7 @@ const TablaNotas = () => {
       }
 
       setModalOpen(false);
-      toast({
-        title: "Actividad actualizada",
-        description: salonesAEditar.length > 1
-          ? `"${nombreNuevo}" actualizada en ${salonesAEditar.length} salones`
-          : `"${nombreNuevo}" ha sido actualizada`,
-      });
+      // Sin popup: el cambio se refleja al instante en la tabla.
     } else {
       // CREAR nueva actividad
       const nombreTrimmed = nombreActividad.trim();
@@ -795,18 +790,7 @@ const TablaNotas = () => {
       setActividades([...actividades, nuevaActividad]);
       setModalOpen(false);
       setGuardandoMultiple(false);
-
-      if (salonesParaCrear.length > 1) {
-        toast({
-          title: "Actividad creada",
-          description: `"${nuevaActividad.nombre}" creada en ${salonesParaCrear.length} salones del ${periodos[periodoActual - 1].nombre}`,
-        });
-      } else {
-        toast({
-          title: "Actividad creada",
-          description: `"${nuevaActividad.nombre}" agregada al ${periodos[periodoActual - 1].nombre}`,
-        });
-      }
+      // Sin popup: la nueva columna aparece al instante en la tabla.
     }
   };
 
