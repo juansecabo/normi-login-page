@@ -4184,9 +4184,29 @@ const TablaNotas = () => {
               }
 
               if (grupoSel) {
+                // Cantidad de actividades actualmente dentro del grupo (excluyendo la
+                // que se está editando, si aplica). Si está creando, contamos +1 para
+                // mostrar el peso esperado de cada nota.
+                const enGrupo = actividades.filter(a =>
+                  a.periodo === periodoActual &&
+                  a.grupo_id === grupoSel.id &&
+                  a.id !== actividadEditando?.id
+                ).length;
+                const totalConEsta = actividadEditando ? enGrupo : enGrupo + 1;
+                const pctGrupo = grupoSel.porcentaje;
+                const pesoCada = pctGrupo !== null && totalConEsta > 0
+                  ? Math.round((Number(pctGrupo) / totalConEsta) * 100) / 100
+                  : null;
                 return (
-                  <div className="text-xs text-muted-foreground bg-muted/30 border border-border px-3 py-2 rounded">
-                    Esta actividad va dentro del grupo <strong>"{grupoSel.nombre}"</strong>{grupoSel.porcentaje !== null ? ` (${grupoSel.porcentaje}%)` : ''}. Todas las actividades del grupo se promedian con el mismo peso — no necesita porcentaje individual.
+                  <div className="text-xs text-muted-foreground bg-muted/30 border border-border px-3 py-2 rounded space-y-1">
+                    <div>
+                      Esta actividad va dentro de <strong>"{grupoSel.nombre}"</strong>{pctGrupo !== null ? ` (${pctGrupo}%)` : ''}. Todas las actividades del grupo se promedian con el mismo peso — no necesita porcentaje individual.
+                    </div>
+                    {pesoCada !== null && (
+                      <div className="text-emerald-700">
+                        Con esta serán <strong>{totalConEsta}</strong> actividad{totalConEsta === 1 ? '' : 'es'} en el grupo; cada una pesará <strong>~{pesoCada}%</strong> del periodo.
+                      </div>
+                    )}
                   </div>
                 );
               }
