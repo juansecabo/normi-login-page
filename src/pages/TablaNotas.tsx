@@ -743,16 +743,14 @@ const TablaNotas = () => {
     }
 
     // Si la actividad viene de un grupo específico (parentId pasado), fijamos
-    // ese grupo y NO mostramos selector en el modal. Si viene del "+ Agregar"
-    // general, pre-seleccionamos la primera hoja como sugerencia.
+    // ese grupo y NO mostramos selector. Si viene del "+ Agregar" general,
+    // arrancamos en "sin grupo" (suelta) para que el profe vea el % disponible
+    // del periodo. Puede cambiar al grupo que quiera desde el desplegable.
     if (tipo === 'actividad' && parentId) {
       setGrupoActividadId(parentId);
       setGrupoActividadFijo(true);
     } else {
-      const grupoHojaPredet = gruposDelPeriodo.find(
-        g => !gruposDelPeriodo.some(h => h.parent_id === g.id)
-      );
-      setGrupoActividadId(grupoHojaPredet ? grupoHojaPredet.id : null);
+      setGrupoActividadId(null);
       setGrupoActividadFijo(false);
     }
     setModalOpen(true);
@@ -4136,14 +4134,15 @@ const TablaNotas = () => {
               );
             })()}
 
-            {/* Selector de grupo: solo si hay más de una hoja Y no viene fijo
-                desde un "+ Actividad" de una celda específica. */}
+            {/* Selector de grupo: aparece si hay grupos hoja Y la actividad no
+                está fija desde un "+ Actividad" de una celda específica.
+                Permite elegir entre "Sin grupo" (suelta en el periodo) o un
+                grupo hoja existente. */}
             {(actividadEditando || tipoNuevoItem === 'actividad') && gruposPeriodoActual.length > 0 && (() => {
               const gruposHoja = gruposPeriodoActual.filter(
                 g => !gruposPeriodoActual.some(h => h.parent_id === g.id)
               );
-              // Ocultar el selector si solo hay una hoja o si el grupo está fijo.
-              if (gruposHoja.length <= 1 || grupoActividadFijo) return null;
+              if (gruposHoja.length === 0 || grupoActividadFijo) return null;
               return (
                 <div className="grid gap-2">
                   <Label htmlFor="grupo">¿Dentro de cuál grupo va?</Label>
@@ -4153,6 +4152,7 @@ const TablaNotas = () => {
                     onChange={(e) => setGrupoActividadId(e.target.value || null)}
                     className="h-10 px-3 rounded border border-input bg-background text-sm"
                   >
+                    <option value="">Sin grupo (suelta en el periodo)</option>
                     {gruposHoja.map((g) => {
                       const padre = g.parent_id
                         ? gruposPeriodoActual.find(x => x.id === g.parent_id)
@@ -4184,29 +4184,9 @@ const TablaNotas = () => {
               }
 
               if (grupoSel) {
-                // Cantidad de actividades actualmente dentro del grupo (excluyendo la
-                // que se está editando, si aplica). Si está creando, contamos +1 para
-                // mostrar el peso esperado de cada nota.
-                const enGrupo = actividades.filter(a =>
-                  a.periodo === periodoActual &&
-                  a.grupo_id === grupoSel.id &&
-                  a.id !== actividadEditando?.id
-                ).length;
-                const totalConEsta = actividadEditando ? enGrupo : enGrupo + 1;
-                const pctGrupo = grupoSel.porcentaje;
-                const pesoCada = pctGrupo !== null && totalConEsta > 0
-                  ? Math.round((Number(pctGrupo) / totalConEsta) * 100) / 100
-                  : null;
                 return (
-                  <div className="text-xs text-muted-foreground bg-muted/30 border border-border px-3 py-2 rounded space-y-1">
-                    <div>
-                      Esta actividad va dentro de <strong>"{grupoSel.nombre}"</strong>{pctGrupo !== null ? ` (${pctGrupo}%)` : ''}. Todas las actividades del grupo se promedian con el mismo peso — no necesita porcentaje individual.
-                    </div>
-                    {pesoCada !== null && (
-                      <div className="text-emerald-700">
-                        Con esta serán <strong>{totalConEsta}</strong> actividad{totalConEsta === 1 ? '' : 'es'} en el grupo; cada una pesará <strong>~{pesoCada}%</strong> del periodo.
-                      </div>
-                    )}
+                  <div className="text-xs text-muted-foreground bg-muted/30 border border-border px-3 py-2 rounded">
+                    Esta actividad va dentro de <strong>"{grupoSel.nombre}"</strong>{grupoSel.porcentaje !== null ? ` (${grupoSel.porcentaje}%)` : ''}. Todas las actividades del grupo se promedian con el mismo peso — no necesita porcentaje individual.
                   </div>
                 );
               }
