@@ -9,6 +9,7 @@ import { getSession } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import EditorGruposNotas from "@/components/EditorGruposNotas";
 import { useGruposNotas } from "@/hooks/useGruposNotas";
+import { promedioGeneral, type NotaCalc, type GrupoCalc } from "@/lib/gradeCalculator";
 import {
   Dialog,
   DialogContent,
@@ -58,6 +59,7 @@ interface Actividad {
   periodo: number;
   nombre: string;
   porcentaje: number | null;
+  grupo_id?: string | null;
 }
 
 // Estructura: { [id_estudiantil]: { [periodo]: { [actividad_id]: nota } } }
@@ -117,12 +119,21 @@ const TablaNotas = () => {
   const [porcentajeActividad, setPorcentajeActividad] = useState("");
   const [actividadEditando, setActividadEditando] = useState<Actividad | null>(null);
 
-  // Editor de Grupos_Notas (sistema jerárquico)
+  // Editor de Grupos_Notas (sistema jerárquico).
+  // El hook trae grupos de los 4 periodos del salón actual (sin filtrar por
+  // periodo). El editor visual y el cálculo filtran por periodo al usarlos.
   const [showEditorGrupos, setShowEditorGrupos] = useState(false);
-  const aulaActual = (asignaturaSeleccionada && gradoSeleccionado && salonSeleccionado)
-    ? { asignatura: asignaturaSeleccionada, grado: gradoSeleccionado, salon: salonSeleccionado, periodo: periodoActual, ano_escolar: anoEscolarActual() }
+  const aulaSalon = (asignaturaSeleccionada && gradoSeleccionado && salonSeleccionado)
+    ? { asignatura: asignaturaSeleccionada, grado: gradoSeleccionado, salon: salonSeleccionado, ano_escolar: anoEscolarActual() }
     : null;
-  const { grupos: gruposNotas, reload: reloadGrupos } = useGruposNotas(aulaActual);
+  const { grupos: gruposNotas, reload: reloadGrupos } = useGruposNotas(aulaSalon);
+  // Aula con periodo actual (para pasar al editor; se replica solo este periodo
+  // como base cuando el profesor crea grupos nuevos, y permite "replicar a otros").
+  const aulaActual = aulaSalon ? { ...aulaSalon, periodo: periodoActual } : null;
+  // Grupos del periodo activo (para mostrar en el editor y en el contador del botón)
+  const gruposPeriodoActual = gruposNotas.filter(g => g.periodo === periodoActual);
+  // Grupo asignado a la actividad que se está creando/editando (null = modo plano).
+  const [grupoActividadId, setGrupoActividadId] = useState<string | null>(null);
 
   // Estado para crear actividad en múltiples salones
   const [otrosSalones, setOtrosSalones] = useState<string[]>([]);
@@ -255,6 +266,7 @@ const TablaNotas = () => {
             periodo: act.periodo,
             nombre: act.nombre_actividad,
             porcentaje: act.porcentaje,
+            grupo_id: act.grupo_id ?? null,
           }));
           setActividades(actividadesCargadas);
           console.log("Actividades cargadas:", actividadesCargadas);
@@ -478,6 +490,7 @@ const TablaNotas = () => {
     setPorcentajeActividad("");
     setActividadEditando(null);
     setCrearParaTodosSalones(false);
+    setGrupoActividadId(null);
     setModalOpen(true);
   };
 
@@ -501,6 +514,7 @@ const TablaNotas = () => {
     setPorcentajeActividad(actividad.porcentaje?.toString() || "");
     setActividadEditando(actividad);
     setCrearParaTodosSalones(false);
+    setGrupoActividadId((actividad as any).grupo_id ?? null);
     await buscarSalonesConActividad(actividad.nombre, actividad.periodo);
     setModalOpen(true);
   };
@@ -583,7 +597,8 @@ const TablaNotas = () => {
           .from('Nombre de Actividades')
           .update({
             nombre_actividad: nombreNuevo,
-            porcentaje: porcentaje
+            porcentaje: porcentaje,
+            grupo_id: grupoActividadId,
           })
           .eq('ano_escolar', anoEscolarActual())
           .eq('asignatura', asignaturaSeleccionada)
@@ -736,6 +751,7 @@ const TablaNotas = () => {
         periodo: periodoActual,
         nombre_actividad: nombreTrimmed,
         porcentaje: porcentaje,
+        grupo_id: grupoActividadId,
       }));
 
       try {
@@ -989,38 +1005,36 @@ const TablaNotas = () => {
   };
 
   // Calcular nota final del periodo para un estudiante (usando notas proporcionadas o estado)
-  // FÓRMULA: Σ(nota * porcentaje/100) - Solo actividades con porcentaje
+  // Usa promedioGeneral del módulo gradeCalculator: retrocompatible para
+  // modo plano (todas las actividades con grupo_id=null) y soporta jerárquico
+  // y mixto cuando hay Grupos_Notas configurados para este aula+periodo.
   const calcularFinalPeriodoConNotas = useCallback((notasParam: NotasEstudiantes, idEstudiantil: string, periodo: number): number | null => {
     const actividadesDelPeriodo = getActividadesPorPeriodo(periodo);
     if (actividadesDelPeriodo.length === 0) return null;
-    
+
     const notasEstudiante = notasParam[idEstudiantil]?.[periodo] || {};
-    
-    // Solo considerar actividades que tienen porcentaje asignado
-    const actividadesConPorcentaje = actividadesDelPeriodo.filter(a => a.porcentaje !== null && a.porcentaje > 0);
-    if (actividadesConPorcentaje.length === 0) return null;
-    
-    // Verificar que el estudiante tenga al menos una nota en actividades con porcentaje
-    const actividadesConNotaYPorcentaje = actividadesConPorcentaje.filter(a => notasEstudiante[a.id] !== undefined);
-    if (actividadesConNotaYPorcentaje.length === 0) return null;
-    
-    // Calcular nota relativa: Σ(nota * porcentaje/100) / (porcentajeCalificado / 100)
-    let sumaPonderada = 0;
-    let porcentajeCalificado = 0;
 
-    actividadesConNotaYPorcentaje.forEach(actividad => {
-      const notaValue = notasEstudiante[actividad.id];
-      if (notaValue !== undefined && actividad.porcentaje) {
-        sumaPonderada += notaValue * (actividad.porcentaje / 100);
-        porcentajeCalificado += actividad.porcentaje;
-      }
-    });
+    // Construir lista de NotaCalc con el porcentaje de la actividad y la nota del estudiante.
+    // Si la actividad no tiene nota para este estudiante, se omite (no se cuenta como 0).
+    const notasCalc: NotaCalc[] = actividadesDelPeriodo
+      .filter(a => a.porcentaje !== null && a.porcentaje > 0 && notasEstudiante[a.id] !== undefined)
+      .map(a => ({
+        porcentaje: a.porcentaje,
+        nota: notasEstudiante[a.id] as number,
+        grupo_id: a.grupo_id ?? null,
+      }));
 
-    if (porcentajeCalificado === 0) return null;
+    if (notasCalc.length === 0) return null;
 
-    // Redondear a 1 decimal (redondeo matemático estándar)
-    return Math.round((sumaPonderada / (porcentajeCalificado / 100)) * 10) / 10;
-  }, [actividades]);
+    // Filtrar grupos del periodo actual (gruposNotas viene del hook y ya está
+    // filtrado por aula+ano_escolar, pero puede contener periodos distintos).
+    const gruposDelPeriodo: GrupoCalc[] = gruposNotas
+      .filter(g => g.periodo === periodo)
+      .map(g => ({ id: g.id, porcentaje: g.porcentaje, parent_id: g.parent_id }));
+
+    const res = promedioGeneral(notasCalc, gruposDelPeriodo);
+    return res.promedio;
+  }, [actividades, gruposNotas]);
 
   // Versión que usa el estado actual
   const calcularFinalPeriodo = useCallback((idEstudiantil: string, periodo: number): number | null => {
@@ -2742,7 +2756,7 @@ const TablaNotas = () => {
                 disabled={!aulaActual}
                 title="Configurar grupos de evaluación para este salón y periodo"
               >
-                ⚙️ {gruposNotas.length > 0 ? `Grupos (${gruposNotas.length})` : "Configurar grupos"}
+                ⚙️ {gruposPeriodoActual.length > 0 ? `Grupos (${gruposPeriodoActual.length})` : "Configurar grupos"}
               </Button>
               <Button
                 variant="outline"
@@ -3239,8 +3253,30 @@ const TablaNotas = () => {
                 {nombreActividad.length}/100 caracteres
               </p>
             </div>
+            {gruposPeriodoActual.length > 0 && (
+              <div className="grid gap-2">
+                <Label htmlFor="grupo">Grupo (opcional)</Label>
+                <select
+                  id="grupo"
+                  value={grupoActividadId || ""}
+                  onChange={(e) => setGrupoActividadId(e.target.value || null)}
+                  className="h-10 px-3 rounded border border-input bg-background text-sm"
+                >
+                  <option value="">Sin grupo — % del periodo</option>
+                  {gruposPeriodoActual.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.nombre} ({g.porcentaje}% {g.parent_id ? "del grupo padre" : "del periodo"})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="grid gap-2">
-              <Label htmlFor="porcentaje">Porcentaje (opcional)</Label>
+              <Label htmlFor="porcentaje">
+                Porcentaje (opcional) {grupoActividadId
+                  ? `— del grupo "${gruposPeriodoActual.find((g) => g.id === grupoActividadId)?.nombre || ""}"`
+                  : "— del periodo"}
+              </Label>
               <Input
                 id="porcentaje"
                 type="number"
@@ -3250,9 +3286,16 @@ const TablaNotas = () => {
                 value={porcentajeActividad}
                 onChange={(e) => setPorcentajeActividad(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">
-                Porcentaje usado: {getPorcentajeUsadoParaModal()}% / 100%
-              </p>
+              {!grupoActividadId && (
+                <p className="text-xs text-muted-foreground">
+                  Porcentaje usado en el periodo: {getPorcentajeUsadoParaModal()}% / 100%
+                </p>
+              )}
+              {grupoActividadId && (
+                <p className="text-xs text-muted-foreground">
+                  Este porcentaje es del grupo, no del periodo. La suma del grupo no debe pasar 100%.
+                </p>
+              )}
             </div>
             {(actividadEditando ? (salonesConActividad.length > 0 || otrosSalones.length > 0) : otrosSalones.length > 0) && (
               <div className="flex items-start space-x-2">
@@ -3349,13 +3392,13 @@ const TablaNotas = () => {
         onConfirmar={handleEnviarNotificacion}
       />
 
-      {/* Editor de Grupos_Notas */}
+      {/* Editor de Grupos_Notas (solo muestra los del periodo activo) */}
       {aulaActual && (
         <EditorGruposNotas
           open={showEditorGrupos}
           onOpenChange={setShowEditorGrupos}
           aula={aulaActual}
-          grupos={gruposNotas as any}
+          grupos={gruposPeriodoActual as any}
           otrosSalones={otrosSalones}
           onChange={reloadGrupos}
         />
