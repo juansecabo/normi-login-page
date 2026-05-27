@@ -584,7 +584,10 @@ const TablaNotas = () => {
     const subs = (parentId: string) =>
       gruposPeriodo.filter(g => g.parent_id === parentId).sort((a, b) => a.orden - b.orden);
 
-    type Sub = { grupo: typeof gruposPeriodo[number]; actividades: Actividad[]; colSpan: number };
+    // grupo === null indica un "sub virtual" que agrupa actividades directas
+    // del grupo padre, cuando coexisten subgrupos reales + actividades sueltas
+    // (caso mixto).
+    type Sub = { grupo: typeof gruposPeriodo[number] | null; actividades: Actividad[]; colSpan: number };
     type Seccion =
       | { tipo: 'sin-grupo'; actividades: Actividad[]; colSpan: number }
       | { tipo: 'grupo-hoja'; grupo: typeof gruposPeriodo[number]; actividades: Actividad[]; colSpan: number }
@@ -610,6 +613,12 @@ const TablaNotas = () => {
           const aH = acts.filter(a => a.grupo_id === h.id);
           return { grupo: h, actividades: aH, colSpan: Math.max(1, aH.length) };
         });
+        // Caso mixto: el padre también tiene actividades directas → se
+        // agregan como un "sub virtual" al inicio para que sigan visibles.
+        const actsDirectas = acts.filter(a => a.grupo_id === top.id);
+        if (actsDirectas.length > 0) {
+          subgrupos.unshift({ grupo: null, actividades: actsDirectas, colSpan: actsDirectas.length });
+        }
         const total = subgrupos.reduce((s, x) => s + x.colSpan, 0);
         secciones.push({ tipo: 'grupo-con-sub', grupo: top, subgrupos, colSpan: total });
       }
@@ -644,7 +653,9 @@ const TablaNotas = () => {
       } else {
         for (const sub of sec.subgrupos) {
           if (sub.actividades.length === 0) {
-            out.push({ tipo: 'placeholder', grupoId: sub.grupo.id });
+            // Solo subs reales pueden tener placeholder (un grupo virtual nunca
+            // entra acá porque solo se crea cuando tiene actividades).
+            if (sub.grupo) out.push({ tipo: 'placeholder', grupoId: sub.grupo.id });
           } else {
             for (const a of sub.actividades) out.push({ tipo: 'actividad', actividad: a });
           }
@@ -3395,7 +3406,9 @@ const TablaNotas = () => {
                                   >
                                     <div className="flex flex-col items-center">
                                       <span>{sec.grupo.nombre}</span>
-                                      <span className="text-white/70 text-[10px]">{sec.grupo.porcentaje !== null ? `(${sec.grupo.porcentaje}%)` : '(sin %)'}</span>
+                                      {sec.grupo.porcentaje !== null && (
+                                        <span className="text-white/70 text-[10px]">({sec.grupo.porcentaje}%)</span>
+                                      )}
                                     </div>
                                     <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
@@ -3523,35 +3536,49 @@ const TablaNotas = () => {
                           <tr className="bg-primary text-primary-foreground">
                             {estructura.secciones.map((sec) => {
                               if (sec.tipo !== 'grupo-con-sub') return null;
-                              return sec.subgrupos.map((sub) => (
-                                <th
-                                  key={`th-sub-${sub.grupo.id}`}
-                                  colSpan={sub.colSpan}
-                                  className="border-r border-b border-border/30 p-2 text-center text-xs font-semibold bg-emerald-600 text-white relative"
-                                >
-                                  <div className="flex flex-col items-center">
-                                    <span>{sub.grupo.nombre}</span>
-                                    {sub.grupo.porcentaje !== null && (
-                                      <span className="text-white/70 text-[10px]">({sub.grupo.porcentaje}%)</span>
-                                    )}
-                                  </div>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <button className="absolute top-1 right-1 p-1 rounded hover:bg-white/20" title="Más opciones">
-                                        <MoreVertical className="w-3 h-3 text-white" />
-                                      </button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="bg-background z-50">
-                                      <DropdownMenuItem onClick={() => handleAbrirModal(periodoActivo, 'actividad', sub.grupo.id)}>
-                                        <Plus className="w-4 h-4 mr-2" /> Agregar actividad aquí
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem onClick={() => setGrupoAEliminar(sub.grupo as any)} className="text-destructive focus:text-destructive">
-                                        <Trash2 className="w-4 h-4 mr-2" /> Eliminar grupo
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </th>
-                              ));
+                              return sec.subgrupos.map((sub, idx) => {
+                                // Sub virtual: actividades directas del padre (sin nombre propio).
+                                if (sub.grupo === null) {
+                                  return (
+                                    <th
+                                      key={`th-sub-virt-${sec.grupo.id}-${idx}`}
+                                      colSpan={sub.colSpan}
+                                      className="border-r border-b border-border/30 p-2 text-center text-xs font-semibold bg-emerald-700 text-white/80 italic"
+                                    >
+                                      Actividades sueltas
+                                    </th>
+                                  );
+                                }
+                                return (
+                                  <th
+                                    key={`th-sub-${sub.grupo.id}`}
+                                    colSpan={sub.colSpan}
+                                    className="border-r border-b border-border/30 p-2 text-center text-xs font-semibold bg-emerald-600 text-white relative"
+                                  >
+                                    <div className="flex flex-col items-center">
+                                      <span>{sub.grupo.nombre}</span>
+                                      {sub.grupo.porcentaje !== null && (
+                                        <span className="text-white/70 text-[10px]">({sub.grupo.porcentaje}%)</span>
+                                      )}
+                                    </div>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <button className="absolute top-1 right-1 p-1 rounded hover:bg-white/20" title="Más opciones">
+                                          <MoreVertical className="w-3 h-3 text-white" />
+                                        </button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end" className="bg-background z-50">
+                                        <DropdownMenuItem onClick={() => handleAbrirModal(periodoActivo, 'actividad', sub.grupo!.id)}>
+                                          <Plus className="w-4 h-4 mr-2" /> Agregar actividad aquí
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setGrupoAEliminar(sub.grupo as any)} className="text-destructive focus:text-destructive">
+                                          <Trash2 className="w-4 h-4 mr-2" /> Eliminar grupo
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </th>
+                                );
+                              });
                             })}
                           </tr>
                         )}
@@ -3559,12 +3586,36 @@ const TablaNotas = () => {
                         {/* Fila inferior (modo jerárquico): actividades individuales */}
                         {usarJerarquia && (
                           <tr className="bg-primary text-primary-foreground">
-                            {estructura.secciones.flatMap((sec) => {
+                            {estructura.secciones.flatMap((sec, secIdx) => {
                               if (sec.tipo === 'sin-grupo') return []; // ya consumidas con rowSpan
-                              const acts = sec.tipo === 'grupo-hoja'
-                                ? sec.actividades
-                                : sec.subgrupos.flatMap(s => s.actividades);
-                              return acts.map((actividad) => (
+                              // Construye lista de items en orden (actividades o placeholders)
+                              type Item = { tipo: 'act'; act: Actividad } | { tipo: 'ph'; key: string };
+                              let items: Item[] = [];
+                              if (sec.tipo === 'grupo-hoja') {
+                                if (sec.actividades.length === 0) {
+                                  items.push({ tipo: 'ph', key: `ph-h-${sec.grupo.id}` });
+                                } else {
+                                  items.push(...sec.actividades.map(a => ({ tipo: 'act' as const, act: a })));
+                                }
+                              } else {
+                                for (const sub of sec.subgrupos) {
+                                  if (sub.actividades.length === 0) {
+                                    items.push({ tipo: 'ph', key: `ph-s-${sub.grupo?.id || `v-${secIdx}`}` });
+                                  } else {
+                                    items.push(...sub.actividades.map(a => ({ tipo: 'act' as const, act: a })));
+                                  }
+                                }
+                              }
+                              return items.map((it) => {
+                                if (it.tipo === 'ph') {
+                                  return (
+                                    <th key={it.key} className="border-r border-b border-border/30 p-2 text-center text-xs bg-emerald-300/40 text-emerald-700 italic min-w-[120px]">
+                                      —
+                                    </th>
+                                  );
+                                }
+                                const actividad = it.act;
+                                return (
                                 <th
                                   key={`th-act-${actividad.id}`}
                                   className="border-r border-b border-border/30 p-2 text-center text-xs font-medium min-w-[120px] bg-emerald-300 text-emerald-950"
@@ -3597,8 +3648,9 @@ const TablaNotas = () => {
                                     </DropdownMenu>
                                   </div>
                                 </th>
-                              ));
-                            })}
+                              );
+                            });
+                          })}
                           </tr>
                         )}
                       </>
