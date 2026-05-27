@@ -4134,39 +4134,11 @@ const TablaNotas = () => {
               );
             })()}
 
-            {/* Selector de grupo: solo aparece al EDITAR una actividad que ya
-                pertenece a un grupo y se quiere cambiar de grupo. Al crear
-                desde el "+ Agregar" general la actividad es suelta y desde
-                el "+ Actividad" de un grupo específico el grupo viene fijo. */}
-            {actividadEditando && gruposPeriodoActual.length > 0 && (() => {
-              const gruposHoja = gruposPeriodoActual.filter(
-                g => !gruposPeriodoActual.some(h => h.parent_id === g.id)
-              );
-              if (gruposHoja.length === 0) return null;
-              return (
-                <div className="grid gap-2">
-                  <Label htmlFor="grupo">¿Dentro de cuál grupo va?</Label>
-                  <select
-                    id="grupo"
-                    value={grupoActividadId || ""}
-                    onChange={(e) => setGrupoActividadId(e.target.value || null)}
-                    className="h-10 px-3 rounded border border-input bg-background text-sm"
-                  >
-                    <option value="">Sin grupo (suelta en el periodo)</option>
-                    {gruposHoja.map((g) => {
-                      const padre = g.parent_id
-                        ? gruposPeriodoActual.find(x => x.id === g.parent_id)
-                        : null;
-                      return (
-                        <option key={g.id} value={g.id}>
-                          {padre ? `${padre.nombre} → ${g.nombre}` : g.nombre}{g.porcentaje !== null ? ` (${g.porcentaje}%)` : ''}
-                        </option>
-                      );
-                    })}
-                  </select>
-                </div>
-              );
-            })()}
+            {/* Regla: una actividad nace en un lugar y se queda ahí (suelta o
+                dentro de un grupo específico). No se permite cambiarla de
+                ubicación al editar — para moverla, se crea de nuevo en el
+                destino y se vuelven a calificar las notas. Por eso no hay
+                selector de grupo en este modal. */}
             {(actividadEditando || tipoNuevoItem === 'actividad') && (() => {
               const grupoSel = grupoActividadId
                 ? gruposPeriodoActual.find((g) => g.id === grupoActividadId)
