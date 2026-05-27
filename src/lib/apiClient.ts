@@ -446,6 +446,21 @@ export const apiClient = {
     },
   },
 
+  gruposNotas: {
+    list(qs: string): Promise<{ grupos: any[] }> {
+      return request(`/api/grupos-notas?${qs}`);
+    },
+    crear(body: any): Promise<{ ok: true; grupos: any[]; creados: number }> {
+      return request('/api/grupos-notas', { method: 'POST', body: JSON.stringify(body) });
+    },
+    editar(id: string, body: any): Promise<{ ok: true; grupo: any }> {
+      return request(`/api/grupos-notas/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+    },
+    eliminar(id: string): Promise<{ ok: true; eliminados: number }> {
+      return request(`/api/grupos-notas/${id}`, { method: 'DELETE' });
+    },
+  },
+
   estadisticas: {
     meta(): Promise<ApiMeta> {
       return request<ApiMeta>('/api/estadisticas/meta');

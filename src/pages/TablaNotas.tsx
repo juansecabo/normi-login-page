@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Plus, MoreVertical, Pencil, Trash2, Send, Calendar, Download, FileSpreadsheet, Loader2 } from "lucide-react";
 import { getSession } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
+import EditorGruposNotas from "@/components/EditorGruposNotas";
+import { useGruposNotas } from "@/hooks/useGruposNotas";
 import {
   Dialog,
   DialogContent,
@@ -114,6 +116,13 @@ const TablaNotas = () => {
   const [nombreActividad, setNombreActividad] = useState("");
   const [porcentajeActividad, setPorcentajeActividad] = useState("");
   const [actividadEditando, setActividadEditando] = useState<Actividad | null>(null);
+
+  // Editor de Grupos_Notas (sistema jerárquico)
+  const [showEditorGrupos, setShowEditorGrupos] = useState(false);
+  const aulaActual = (asignaturaSeleccionada && gradoSeleccionado && salonSeleccionado)
+    ? { asignatura: asignaturaSeleccionada, grado: gradoSeleccionado, salon: salonSeleccionado, periodo: periodoActual, ano_escolar: anoEscolarActual() }
+    : null;
+  const { grupos: gruposNotas, reload: reloadGrupos } = useGruposNotas(aulaActual);
 
   // Estado para crear actividad en múltiples salones
   const [otrosSalones, setOtrosSalones] = useState<string[]>([]);
@@ -2728,6 +2737,16 @@ const TablaNotas = () => {
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => setShowEditorGrupos(true)}
+                className="gap-2"
+                disabled={!aulaActual}
+                title="Configurar grupos de evaluación para este salón y periodo"
+              >
+                ⚙️ {gruposNotas.length > 0 ? `Grupos (${gruposNotas.length})` : "Configurar grupos"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={descargarExcel}
                 disabled={descargandoExcel}
                 className="gap-2"
@@ -3329,6 +3348,18 @@ const TablaNotas = () => {
         nombreEstudiante={notificacionPendiente?.nombreEstudiante}
         onConfirmar={handleEnviarNotificacion}
       />
+
+      {/* Editor de Grupos_Notas */}
+      {aulaActual && (
+        <EditorGruposNotas
+          open={showEditorGrupos}
+          onOpenChange={setShowEditorGrupos}
+          aula={aulaActual}
+          grupos={gruposNotas as any}
+          otrosSalones={otrosSalones}
+          onChange={reloadGrupos}
+        />
+      )}
     </div>
   );
 };
