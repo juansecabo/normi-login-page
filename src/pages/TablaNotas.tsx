@@ -1077,9 +1077,17 @@ const TablaNotas = () => {
 
         if (error) {
           console.error('Error guardando actividad:', error);
-          const msg = error.message?.includes('unique') || error.message?.includes('duplicate')
-            ? "Ya existe una actividad con ese nombre en este período"
-            : `No se pudo guardar la actividad: ${error.message}`;
+          const raw = (error.message || error.details || error.hint || '').toLowerCase();
+          let msg: string;
+          if (raw.includes('unique') || raw.includes('duplicate')) {
+            msg = `Ya existe una actividad llamada "${nombreTrimmed}" en este periodo`;
+          } else if (raw.includes('foreign key') || raw.includes('grupo_id')) {
+            msg = 'El grupo seleccionado ya no existe. Recarga la página y vuelve a intentar.';
+          } else if (raw) {
+            msg = `No se pudo guardar la actividad: ${raw}`;
+          } else {
+            msg = 'No se pudo guardar la actividad. Revisa que el nombre no esté repetido en este periodo.';
+          }
           toast({
             title: "Error",
             description: msg,
@@ -1106,6 +1114,7 @@ const TablaNotas = () => {
         periodo: periodoActual,
         nombre: nombreTrimmed,
         porcentaje,
+        grupo_id: grupoActividadId,
       };
 
       setActividades([...actividades, nuevaActividad]);
