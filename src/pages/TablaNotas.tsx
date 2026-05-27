@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Plus, MoreVertical, Pencil, Trash2, Send, Calendar, Download, FileSpreadsheet, Loader2 } from "lucide-react";
 import { getSession } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
-import { useGruposNotas } from "@/hooks/useGruposNotas";
+import { useGruposNotas, type GrupoNotas } from "@/hooks/useGruposNotas";
 import { promedioGeneral, type NotaCalc, type GrupoCalc } from "@/lib/gradeCalculator";
 import {
   Dialog,
@@ -174,9 +174,9 @@ const BotonAgregarConLongPress = ({
           style={{ width: `${progress}%` }}
         />
       )}
-      <Plus className={`${compact ? 'w-2.5 h-2.5' : 'w-3 h-3'} relative`} />
-      <span className="relative font-medium truncate">
-        {pressing && progress > 25 ? 'Creando grupo…' : (label || 'Agregar')}
+      <Plus className={`${compact ? 'w-2.5 h-2.5' : 'w-3 h-3'} relative shrink-0`} />
+      <span className="relative font-medium whitespace-nowrap">
+        {label || 'Agregar'}
       </span>
     </button>
   );
@@ -3047,6 +3047,21 @@ const TablaNotas = () => {
   };
 
 
+  /** Estado para confirmar eliminación de un grupo individual desde el menú "..." */
+  const [grupoAEliminar, setGrupoAEliminar] = useState<GrupoNotas | null>(null);
+  const handleEliminarGrupo = async () => {
+    if (!grupoAEliminar) return;
+    try {
+      await apiClient.gruposNotas.eliminar(grupoAEliminar.id);
+      await reloadGrupos();
+    } catch (e: any) {
+      const body = (e?.body || {}) as any;
+      toast({ title: "No se pudo eliminar", description: body.detail || e?.message || 'Error', variant: 'destructive' });
+    } finally {
+      setGrupoAEliminar(null);
+    }
+  };
+
   /**
    * Elimina TODOS los grupos del periodo activo y vuelve a modo plano.
    * Las actividades que estuvieran dentro de grupos quedan con grupo_id=NULL
@@ -3300,12 +3315,30 @@ const TablaNotas = () => {
                                       key={`th-gh-${sec.grupo.id}`}
                                       colSpan={sec.colSpan}
                                       rowSpan={estructura.necesitaFila2 ? 2 : 1}
-                                      className="border-r border-b border-border/30 p-2 text-center text-xs font-semibold bg-emerald-800 text-white"
+                                      className="border-r border-b border-border/30 p-2 text-center text-xs font-semibold bg-emerald-800 text-white relative"
                                     >
                                       <div className="flex flex-col items-center">
                                         <span>{sec.grupo.nombre}</span>
                                         <span className="text-white/70 text-[10px]">{sec.grupo.porcentaje !== null ? `(${sec.grupo.porcentaje}%)` : '(sin %)'}</span>
                                       </div>
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <button className="absolute top-1 right-1 p-1 rounded hover:bg-white/20" title="Más opciones">
+                                            <MoreVertical className="w-3 h-3 text-white" />
+                                          </button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="bg-background z-50">
+                                          <DropdownMenuItem onClick={() => handleAbrirModal(periodoActivo, 'actividad', sec.grupo.id)}>
+                                            <Plus className="w-4 h-4 mr-2" /> Agregar actividad aquí
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => handleAbrirModal(periodoActivo, 'grupo', sec.grupo.id)}>
+                                            <Plus className="w-4 h-4 mr-2" /> Agregar subgrupo
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => setGrupoAEliminar(sec.grupo as any)} className="text-destructive focus:text-destructive">
+                                            <Trash2 className="w-4 h-4 mr-2" /> Eliminar grupo
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
                                     </th>
                                   );
                                 }
@@ -3314,12 +3347,27 @@ const TablaNotas = () => {
                                   <th
                                     key={`th-gp-${sec.grupo.id}`}
                                     colSpan={sec.colSpan}
-                                    className="border-r border-b border-border/30 p-2 text-center text-xs font-semibold bg-emerald-800 text-white"
+                                    className="border-r border-b border-border/30 p-2 text-center text-xs font-semibold bg-emerald-800 text-white relative"
                                   >
                                     <div className="flex flex-col items-center">
                                       <span>{sec.grupo.nombre}</span>
-                                      <span className="text-white/70 text-[10px]">({sec.grupo.porcentaje}% del periodo)</span>
+                                      <span className="text-white/70 text-[10px]">{sec.grupo.porcentaje !== null ? `(${sec.grupo.porcentaje}%)` : '(sin %)'}</span>
                                     </div>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <button className="absolute top-1 right-1 p-1 rounded hover:bg-white/20" title="Más opciones">
+                                          <MoreVertical className="w-3 h-3 text-white" />
+                                        </button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end" className="bg-background z-50">
+                                        <DropdownMenuItem onClick={() => handleAbrirModal(periodoActivo, 'grupo', sec.grupo.id)}>
+                                          <Plus className="w-4 h-4 mr-2" /> Agregar subgrupo
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setGrupoAEliminar(sec.grupo as any)} className="text-destructive focus:text-destructive">
+                                          <Trash2 className="w-4 h-4 mr-2" /> Eliminar grupo
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
                                   </th>
                                 );
                               })}
@@ -3435,12 +3483,27 @@ const TablaNotas = () => {
                                 <th
                                   key={`th-sub-${sub.grupo.id}`}
                                   colSpan={sub.colSpan}
-                                  className="border-r border-b border-border/30 p-2 text-center text-xs font-semibold bg-emerald-600 text-white"
+                                  className="border-r border-b border-border/30 p-2 text-center text-xs font-semibold bg-emerald-600 text-white relative"
                                 >
                                   <div className="flex flex-col items-center">
                                     <span>{sub.grupo.nombre}</span>
                                     <span className="text-white/70 text-[10px]">{sub.grupo.porcentaje !== null ? `(${sub.grupo.porcentaje}%)` : '(sin %)'}</span>
                                   </div>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <button className="absolute top-1 right-1 p-1 rounded hover:bg-white/20" title="Más opciones">
+                                        <MoreVertical className="w-3 h-3 text-white" />
+                                      </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="bg-background z-50">
+                                      <DropdownMenuItem onClick={() => handleAbrirModal(periodoActivo, 'actividad', sub.grupo.id)}>
+                                        <Plus className="w-4 h-4 mr-2" /> Agregar actividad aquí
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => setGrupoAEliminar(sub.grupo as any)} className="text-destructive focus:text-destructive">
+                                        <Trash2 className="w-4 h-4 mr-2" /> Eliminar grupo
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
                                 </th>
                               ));
                             })}
@@ -3859,22 +3922,14 @@ const TablaNotas = () => {
                     </p>
                   )}
                 </div>
-                {gruposPeriodoActual.filter(g => !g.parent_id).length > 0 && (
-                  <div className="grid gap-2">
-                    <Label htmlFor="grupoPadre">¿Subgrupo de? (opcional)</Label>
-                    <select
-                      id="grupoPadre"
-                      value={grupoPadrePara || ""}
-                      onChange={(e) => setGrupoPadrePara(e.target.value || null)}
-                      className="h-10 px-3 rounded border border-input bg-background text-sm"
-                    >
-                      <option value="">— Grupo de primer nivel —</option>
-                      {gruposPeriodoActual.filter(g => !g.parent_id).map((g) => (
-                        <option key={g.id} value={g.id}>↳ Dentro de "{g.nombre}"{g.porcentaje !== null ? ` (${g.porcentaje}%)` : ''}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+                {grupoPadrePara && (() => {
+                  const p = gruposPeriodoActual.find(g => g.id === grupoPadrePara);
+                  return p ? (
+                    <div className="text-xs text-muted-foreground bg-muted/30 border border-border px-3 py-2 rounded">
+                      Este subgrupo va dentro de <strong>"{p.nombre}"</strong>{p.porcentaje !== null ? ` (${p.porcentaje}%)` : ''}.
+                    </div>
+                  ) : null;
+                })()}
               </>
               );
             })()}
@@ -3933,7 +3988,7 @@ const TablaNotas = () => {
 
               return (
                 <div className="grid gap-2">
-                  <Label htmlFor="porcentaje">Porcentaje (opcional) — del periodo</Label>
+                  <Label htmlFor="porcentaje">Porcentaje (opcional)</Label>
                   <Input
                     id="porcentaje"
                     type="number"
@@ -4046,6 +4101,24 @@ const TablaNotas = () => {
               onClick={handleEliminarActividad}
               className="bg-destructive hover:bg-destructive/90"
             >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmación de eliminar un grupo individual desde el menú "..." */}
+      <AlertDialog open={!!grupoAEliminar} onOpenChange={(o) => !o && setGrupoAEliminar(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar grupo "{grupoAEliminar?.nombre}"</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se elimina el grupo y sus subgrupos. Las actividades que estuvieran dentro pasan a modo plano con su porcentaje efectivo (la nota final del estudiante no cambia).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleEliminarGrupo} className="bg-destructive hover:bg-destructive/90">
               Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>
