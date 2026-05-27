@@ -441,6 +441,9 @@ export const apiClient = {
         body: JSON.stringify({ colegio_id, contentBase64, contentType: file.type }),
       });
     },
+    entrarComoAdmin(colegio_id: string): Promise<{ ok: true; token: string; colegio: { id: string; nombre: string; slug: string } }> {
+      return request(`/api/plataforma/entrar-como-admin/${colegio_id}`, { method: 'POST' });
+    },
   },
 
   estadisticas: {

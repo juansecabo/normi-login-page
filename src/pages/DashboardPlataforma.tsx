@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, Users, GraduationCap, UserCheck, Loader2, Pencil } from "lucide-react";
+import { Building2, Users, GraduationCap, UserCheck, Loader2, Pencil, LogIn } from "lucide-react";
 import HeaderNormi from "@/components/HeaderNormi";
 import EscudoColegio from "@/components/EscudoColegio";
-import { getSession } from "@/hooks/useSession";
+import { getSession, guardarSesionSuperAdmin, saveSession } from "@/hooks/useSession";
 import { apiClient, type ColegioPlataforma } from "@/lib/apiClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -18,8 +18,39 @@ const DashboardPlataforma = () => {
   const [colegios, setColegios] = useState<ColegioPlataforma[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [entrandoId, setEntrandoId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const pendingColegioId = useRef<string | null>(null);
+
+  const entrarComoAdmin = async (c: ColegioPlataforma) => {
+    if (entrandoId || uploadingId) return;
+    setEntrandoId(c.id);
+    try {
+      // Respaldar sesion del SuperAdmin antes de sobreescribir el JWT.
+      guardarSesionSuperAdmin();
+      const resp = await apiClient.plataforma.entrarComoAdmin(c.id);
+      // Reemplazar JWT actual con el de Admin del colegio.
+      localStorage.setItem("normi_jwt", resp.token);
+      // Reemplazar datos de sesion como Admin de ese colegio.
+      const sa = getSession();
+      saveSession(
+        sa.id || "",
+        sa.nombres || "SuperAdmin",
+        sa.apellidos || "",
+        "Administrador",
+        null, null, null, null, false,
+        sa.avatar_url || null,
+      );
+      navigate("/dashboard-admin");
+    } catch (err: any) {
+      toast({
+        title: "No se pudo entrar al colegio",
+        description: err?.message || "Intenta de nuevo.",
+        variant: "destructive",
+      });
+      setEntrandoId(null);
+    }
+  };
 
   const reload = () => {
     return apiClient.plataforma.colegios()
@@ -123,11 +154,15 @@ const DashboardPlataforma = () => {
                 {colegios.map((c) => (
                   <div
                     key={c.id}
-                    className="border border-border rounded-lg p-4 flex items-center gap-4 hover:border-primary/40 transition-colors"
+                    onClick={() => entrarComoAdmin(c)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); entrarComoAdmin(c); } }}
+                    className={`border border-border rounded-lg p-4 flex items-center gap-4 hover:border-primary/60 hover:bg-secondary/40 transition-colors cursor-pointer ${entrandoId === c.id ? "opacity-50 pointer-events-none" : ""}`}
                   >
                     <button
                       type="button"
-                      onClick={() => triggerUpload(c.id)}
+                      onClick={(e) => { e.stopPropagation(); triggerUpload(c.id); }}
                       disabled={uploadingId !== null}
                       className="relative group disabled:opacity-50"
                       title="Cambiar escudo"
@@ -174,6 +209,9 @@ const DashboardPlataforma = () => {
                           <Users className="w-3.5 h-3.5" /> {c.counts.internos} Internos
                         </span>
                       </div>
+                    </div>
+                    <div className="flex items-center text-primary shrink-0" title="Entrar al colegio">
+                      {entrandoId === c.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <LogIn className="w-5 h-5" />}
                     </div>
                   </div>
                 ))}

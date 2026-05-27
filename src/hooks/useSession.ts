@@ -136,6 +136,64 @@ export const updateSessionAvatar = (avatar_url: string | null) => {
   else localStorage.removeItem("avatar_url");
 };
 
+// ───── SuperAdmin impersonation ─────
+// Cuando el SuperAdmin entra a un colegio, su JWT + sesion original se
+// respaldan en sessionStorage (persisten F5 pero se pierden al cerrar
+// pestana, que es lo deseado).
+const SA_JWT_BACKUP = 'normi_jwt_sa_backup';
+const SA_SESSION_BACKUP = 'normi_session_sa_backup';
+const JWT_KEY = 'normi_jwt';
+
+/** Llamar antes de reemplazar el JWT con uno de Admin del colegio elegido. */
+export const guardarSesionSuperAdmin = () => {
+  try {
+    const tok = localStorage.getItem(JWT_KEY);
+    if (tok) sessionStorage.setItem(SA_JWT_BACKUP, tok);
+    const snap: Record<string, string | null> = {
+      id: localStorage.getItem('id'),
+      nombres: localStorage.getItem('nombres'),
+      apellidos: localStorage.getItem('apellidos'),
+      cargo: localStorage.getItem('cargo'),
+      avatar_url: localStorage.getItem('avatar_url'),
+      multi_membership: localStorage.getItem('multi_membership'),
+    };
+    sessionStorage.setItem(SA_SESSION_BACKUP, JSON.stringify(snap));
+  } catch {}
+};
+
+/** Indica si hay una sesion SuperAdmin respaldada (para mostrar el boton
+ *  "Volver a Plataforma" en el header). */
+export const haySesionSuperAdminRespaldada = (): boolean => {
+  try {
+    return !!sessionStorage.getItem(SA_JWT_BACKUP);
+  } catch { return false; }
+};
+
+/** Restaura la sesion del SuperAdmin (revierte impersonacion). */
+export const restaurarSesionSuperAdmin = (): boolean => {
+  try {
+    const tok = sessionStorage.getItem(SA_JWT_BACKUP);
+    const snapStr = sessionStorage.getItem(SA_SESSION_BACKUP);
+    if (!tok || !snapStr) return false;
+    const snap = JSON.parse(snapStr) as Record<string, string | null>;
+    localStorage.setItem(JWT_KEY, tok);
+    for (const k of ['id', 'nombres', 'apellidos', 'cargo', 'avatar_url', 'multi_membership']) {
+      const v = snap[k];
+      if (v === null || v === undefined) localStorage.removeItem(k);
+      else localStorage.setItem(k, v);
+    }
+    // Limpiar campos que no aplican a SuperAdmin
+    localStorage.removeItem('nivel');
+    localStorage.removeItem('grado');
+    localStorage.removeItem('salon');
+    localStorage.removeItem('acudidos');
+    localStorage.removeItem('hijos');
+    sessionStorage.removeItem(SA_JWT_BACKUP);
+    sessionStorage.removeItem(SA_SESSION_BACKUP);
+    return true;
+  } catch { return false; }
+};
+
 export const clearSession = () => {
   const cookieOptions = getCookieOptions();
 
