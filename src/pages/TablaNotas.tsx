@@ -4134,15 +4134,15 @@ const TablaNotas = () => {
               );
             })()}
 
-            {/* Selector de grupo: aparece si hay grupos hoja Y la actividad no
-                está fija desde un "+ Actividad" de una celda específica.
-                Permite elegir entre "Sin grupo" (suelta en el periodo) o un
-                grupo hoja existente. */}
-            {(actividadEditando || tipoNuevoItem === 'actividad') && gruposPeriodoActual.length > 0 && (() => {
+            {/* Selector de grupo: solo aparece al EDITAR una actividad que ya
+                pertenece a un grupo y se quiere cambiar de grupo. Al crear
+                desde el "+ Agregar" general la actividad es suelta y desde
+                el "+ Actividad" de un grupo específico el grupo viene fijo. */}
+            {actividadEditando && gruposPeriodoActual.length > 0 && (() => {
               const gruposHoja = gruposPeriodoActual.filter(
                 g => !gruposPeriodoActual.some(h => h.parent_id === g.id)
               );
-              if (gruposHoja.length === 0 || grupoActividadFijo) return null;
+              if (gruposHoja.length === 0) return null;
               return (
                 <div className="grid gap-2">
                   <Label htmlFor="grupo">¿Dentro de cuál grupo va?</Label>
