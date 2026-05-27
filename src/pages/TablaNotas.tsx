@@ -3531,23 +3531,50 @@ const TablaNotas = () => {
                           )}
                         </tr>
 
-                        {/* Fila 2 (modo jerárquico): subgrupos. Los grupos hoja ya usaron rowSpan. */}
+                        {/* Fila 2 (modo jerárquico): subgrupos. Los grupos hoja ya usaron rowSpan.
+                            Las actividades directas de un grupo padre (sub virtual) se renderizan
+                            como TH de actividad con rowSpan=2, así ocupan ambas filas y se ven
+                            centradas al lado de los subgrupos reales — sin etiqueta extra. */}
                         {usarJerarquia && estructura.necesitaFila2 && (
                           <tr className="bg-primary text-primary-foreground">
-                            {estructura.secciones.map((sec) => {
-                              if (sec.tipo !== 'grupo-con-sub') return null;
+                            {estructura.secciones.flatMap((sec) => {
+                              if (sec.tipo !== 'grupo-con-sub') return [];
                               return sec.subgrupos.map((sub, idx) => {
-                                // Sub virtual: actividades directas del padre (sin nombre propio).
+                                // Sub virtual: render directo de las actividades con rowSpan=2.
                                 if (sub.grupo === null) {
-                                  return (
+                                  return sub.actividades.map((actividad) => (
                                     <th
-                                      key={`th-sub-virt-${sec.grupo.id}-${idx}`}
-                                      colSpan={sub.colSpan}
-                                      className="border-r border-b border-border/30 p-2 text-center text-xs font-semibold bg-emerald-700 text-white/80 italic"
+                                      key={`th-act-virt-${actividad.id}`}
+                                      rowSpan={2}
+                                      className="border-r border-b border-border/30 p-2 text-center text-xs font-medium min-w-[120px] bg-emerald-300 text-emerald-950"
                                     >
-                                      Actividades sueltas
+                                      <div className="flex items-center justify-center gap-1">
+                                        <div className="flex-1 min-w-0">
+                                          <div className="whitespace-nowrap" title={actividad.nombre}>
+                                            {actividad.nombre}
+                                          </div>
+                                        </div>
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                            <button className="p-1 hover:bg-emerald-200 rounded transition-colors">
+                                              <MoreVertical className="w-3 h-3" />
+                                            </button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align="end" className="bg-background z-50">
+                                            <DropdownMenuItem onClick={() => handleAbrirModalEditar(actividad)}>
+                                              <Pencil className="w-4 h-4 mr-2" /> Editar actividad
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                              onClick={() => handleConfirmarEliminar(actividad)}
+                                              className="text-destructive focus:text-destructive"
+                                            >
+                                              <Trash2 className="w-4 h-4 mr-2" /> Eliminar actividad
+                                            </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
+                                      </div>
                                     </th>
-                                  );
+                                  ));
                                 }
                                 return (
                                   <th
@@ -3599,8 +3626,11 @@ const TablaNotas = () => {
                                 }
                               } else {
                                 for (const sub of sec.subgrupos) {
+                                  // Sub virtual ya se pintó con rowSpan=2 en fila 2 → no
+                                  // renderizar nada acá.
+                                  if (sub.grupo === null) continue;
                                   if (sub.actividades.length === 0) {
-                                    items.push({ tipo: 'ph', key: `ph-s-${sub.grupo?.id || `v-${secIdx}`}` });
+                                    items.push({ tipo: 'ph', key: `ph-s-${sub.grupo.id}` });
                                   } else {
                                     items.push(...sub.actividades.map(a => ({ tipo: 'act' as const, act: a })));
                                   }
