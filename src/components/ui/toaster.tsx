@@ -97,7 +97,7 @@ export function Toaster() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog informativo o de validación */}
+      {/* Dialog informativo o de validacion */}
       <Dialog open={infoMsg !== null} onOpenChange={(o) => !o && setInfoMsg(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
