@@ -869,6 +869,21 @@ const TablaNotas = () => {
       }
     }
 
+    // Regla de no-mezcla: si la actividad va a un grupo, ese grupo no debe
+    // tener subgrupos (un grupo con subgrupos no acepta actividades directas).
+    if (grupoActividadId) {
+      const tieneSubgrupos = gruposNotas.some(g => g.parent_id === grupoActividadId);
+      if (tieneSubgrupos) {
+        const grupoSel = gruposNotas.find(g => g.id === grupoActividadId);
+        toast({
+          title: "No se puede crear aquí",
+          description: `El grupo "${grupoSel?.nombre || ''}" ya tiene subgrupos. Las actividades deben ir dentro de un subgrupo, no del grupo padre.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     // Si la actividad pertenece a un grupo, NO debe llevar porcentaje
     // individual: el peso lo da el grupo (igual reparto entre actividades).
     // Validar porcentaje si existe (sólo en modo plano sin grupo)
@@ -3355,12 +3370,13 @@ const TablaNotas = () => {
                               {/* Bloques de grupos top (con colSpan / rowSpan según jerarquía) */}
                               {estructura.secciones.map((sec, i) => {
                                 if (sec.tipo === 'sin-grupo') {
-                                  // Cada actividad sin grupo va como th individual, ocupando todas las filas
+                                  // Cada actividad sin grupo va como th individual, ocupando todas las filas.
+                                  // Color de actividad (verde claro estilo Pati), no de grupo.
                                   return sec.actividades.map((actividad) => (
                                     <th
                                       key={`th-sg-${actividad.id}`}
                                       rowSpan={filasThead}
-                                      className="border-r border-b border-border/30 p-2 text-center text-xs font-medium min-w-[120px] bg-primary/90"
+                                      className="border-r border-b border-border/30 p-2 text-center text-xs font-medium min-w-[120px] bg-emerald-300 text-emerald-950"
                                     >
                                       <div className="flex items-center justify-center gap-1">
                                         <div className="flex-1 min-w-0">
@@ -3368,14 +3384,14 @@ const TablaNotas = () => {
                                             {actividad.nombre}
                                           </div>
                                           {actividad.porcentaje !== null && (
-                                            <div className="text-primary-foreground/70 text-xs">
+                                            <div className="text-emerald-900/70 text-xs">
                                               ({actividad.porcentaje}%)
                                             </div>
                                           )}
                                         </div>
                                         <DropdownMenu>
                                           <DropdownMenuTrigger asChild>
-                                            <button className="p-1 hover:bg-primary-foreground/20 rounded transition-colors">
+                                            <button className="p-1 hover:bg-emerald-200 rounded transition-colors">
                                               <MoreVertical className="w-3 h-3" />
                                             </button>
                                           </DropdownMenuTrigger>
@@ -3425,9 +3441,13 @@ const TablaNotas = () => {
                                           <DropdownMenuItem onClick={() => handleAbrirModal(periodoActivo, 'actividad', sec.grupo.id)}>
                                             <Plus className="w-4 h-4 mr-2" /> Agregar actividad
                                           </DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => handleAbrirModal(periodoActivo, 'grupo', sec.grupo.id)}>
-                                            <Plus className="w-4 h-4 mr-2" /> Agregar subgrupo
-                                          </DropdownMenuItem>
+                                          {/* Solo permitir crear subgrupo si el grupo está vacío
+                                              (no tiene actividades directas), para evitar mezcla. */}
+                                          {sec.actividades.length === 0 && (
+                                            <DropdownMenuItem onClick={() => handleAbrirModal(periodoActivo, 'grupo', sec.grupo.id)}>
+                                              <Plus className="w-4 h-4 mr-2" /> Agregar subgrupo
+                                            </DropdownMenuItem>
+                                          )}
                                           <DropdownMenuItem onClick={() => setGrupoAEliminar(sec.grupo as any)} className="text-destructive focus:text-destructive">
                                             <Trash2 className="w-4 h-4 mr-2" /> Eliminar grupo
                                           </DropdownMenuItem>
@@ -3459,9 +3479,8 @@ const TablaNotas = () => {
                                         <DropdownMenuItem onClick={() => handleAbrirEditarGrupo(sec.grupo as any)}>
                                           <Pencil className="w-4 h-4 mr-2" /> Editar grupo
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleAbrirModal(periodoActivo, 'actividad', sec.grupo.id)}>
-                                          <Plus className="w-4 h-4 mr-2" /> Agregar actividad
-                                        </DropdownMenuItem>
+                                        {/* Este grupo ya tiene subgrupos → no aceptar actividades directas.
+                                            Solo se puede agregar otro subgrupo. */}
                                         <DropdownMenuItem onClick={() => handleAbrirModal(periodoActivo, 'grupo', sec.grupo.id)}>
                                           <Plus className="w-4 h-4 mr-2" /> Agregar subgrupo
                                         </DropdownMenuItem>
