@@ -43,7 +43,7 @@ import NotaCelda from "@/components/notas/NotaCelda";
 import FinalPeriodoCelda from "@/components/notas/FinalPeriodoCelda";
 import ComentarioModal from "@/components/notas/ComentarioModal";
 import NotificacionModal, { TipoNotificacion } from "@/components/notas/NotificacionModal";
-import { apiRequest } from "@/lib/apiClient";
+import { apiRequest, apiClient } from "@/lib/apiClient";
 
 // Notificación de notas migrada al server (multi-tenant via JWT).
 // Antes apuntaba a https://n8n.notasnormi.com/webhook/notificar-notas.
@@ -123,6 +123,7 @@ const TablaNotas = () => {
   // El hook trae grupos de los 4 periodos del salón actual (sin filtrar por
   // periodo). El editor visual y el cálculo filtran por periodo al usarlos.
   const [showEditorGrupos, setShowEditorGrupos] = useState(false);
+  const [confirmarVolverPlano, setConfirmarVolverPlano] = useState(false);
   const aulaSalon = (asignaturaSeleccionada && gradoSeleccionado && salonSeleccionado)
     ? { asignatura: asignaturaSeleccionada, grado: gradoSeleccionado, salon: salonSeleccionado, ano_escolar: anoEscolarActual() }
     : null;
@@ -502,25 +503,59 @@ const TablaNotas = () => {
     for (const top of tops) {
       const hijos = subs(top.id);
       if (hijos.length === 0) {
+        // Grupo hoja: colSpan = max(1, actividades). Si está vacío reservamos
+        // 1 columna placeholder para que el grupo se vea en la cabecera.
         const aDirectas = acts.filter(a => a.grupo_id === top.id);
-        // Si el grupo está vacío no lo renderizamos: la tabla muestra
-        // actividades reales y mantenemos el thead alineado con el tbody.
-        // El grupo sigue existiendo en el modal "Configurar grupos" y en el
-        // contador del botón "Grupos (N)".
-        if (aDirectas.length === 0) continue;
-        secciones.push({ tipo: 'grupo-hoja', grupo: top, actividades: aDirectas, colSpan: aDirectas.length });
+        const colSpan = Math.max(1, aDirectas.length);
+        secciones.push({ tipo: 'grupo-hoja', grupo: top, actividades: aDirectas, colSpan });
       } else {
-        const subgrupos: Sub[] = hijos
-          .map(h => ({ grupo: h, actividades: acts.filter(a => a.grupo_id === h.id), colSpan: 0 }))
-          .filter(x => x.actividades.length > 0)
-          .map(x => ({ ...x, colSpan: x.actividades.length }));
-        if (subgrupos.length === 0) continue;
         necesitaFila2 = true;
+        const subgrupos: Sub[] = hijos.map(h => {
+          const aH = acts.filter(a => a.grupo_id === h.id);
+          return { grupo: h, actividades: aH, colSpan: Math.max(1, aH.length) };
+        });
         const total = subgrupos.reduce((s, x) => s + x.colSpan, 0);
         secciones.push({ tipo: 'grupo-con-sub', grupo: top, subgrupos, colSpan: total });
       }
     }
     return { hayJerarquia: secciones.some(s => s.tipo !== 'sin-grupo'), secciones, necesitaFila2 };
+  };
+
+  /**
+   * Devuelve la lista lineal de celdas para la fila de datos del tbody/tfoot,
+   * alineada con la fila inferior del thead jerárquico. Cada celda es una
+   * actividad real o un placeholder (grupo vacío).
+   */
+  type CeldaFila =
+    | { tipo: 'actividad'; actividad: Actividad }
+    | { tipo: 'placeholder'; grupoId: string };
+
+  const getCeldasFila = (periodo: number): CeldaFila[] => {
+    const estructura = getEstructuraThead(periodo);
+    if (!estructura.hayJerarquia) {
+      return getActividadesPorPeriodo(periodo).map(a => ({ tipo: 'actividad' as const, actividad: a }));
+    }
+    const out: CeldaFila[] = [];
+    for (const sec of estructura.secciones) {
+      if (sec.tipo === 'sin-grupo') {
+        for (const a of sec.actividades) out.push({ tipo: 'actividad', actividad: a });
+      } else if (sec.tipo === 'grupo-hoja') {
+        if (sec.actividades.length === 0) {
+          out.push({ tipo: 'placeholder', grupoId: sec.grupo.id });
+        } else {
+          for (const a of sec.actividades) out.push({ tipo: 'actividad', actividad: a });
+        }
+      } else {
+        for (const sub of sec.subgrupos) {
+          if (sub.actividades.length === 0) {
+            out.push({ tipo: 'placeholder', grupoId: sub.grupo.id });
+          } else {
+            for (const a of sub.actividades) out.push({ tipo: 'actividad', actividad: a });
+          }
+        }
+      }
+    }
+    return out;
   };
 
   const getPorcentajeUsado = (periodo: number) => {
@@ -2794,6 +2829,34 @@ const TablaNotas = () => {
     }
   }, [celdaEditando]);
 
+  /**
+   * Cambiar a modo Plana. Si el periodo ya está en modo plano (sin grupos),
+   * no hace nada. Si tiene grupos, pide confirmación antes de borrarlos.
+   */
+  const handleSeleccionarModoPlano = () => {
+    if (gruposPeriodoActual.length === 0) return;
+    setConfirmarVolverPlano(true);
+  };
+
+  /**
+   * Elimina TODOS los grupos del periodo activo y vuelve a modo plano.
+   * Las actividades que estuvieran dentro de grupos quedan con grupo_id=NULL
+   * (el endpoint DELETE de cada grupo ya se encarga de convertir sus
+   * actividades a plano calculando su pct_efectivo).
+   */
+  const handleConfirmarVolverPlano = async () => {
+    try {
+      for (const g of gruposPeriodoActual) {
+        await apiClient.gruposNotas.eliminar(g.id);
+      }
+      await reloadGrupos();
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message || "No se pudieron eliminar los grupos." });
+    } finally {
+      setConfirmarVolverPlano(false);
+    }
+  };
+
   return (
     <div className="min-h-screen md:h-screen bg-background flex flex-col">
       <HeaderNormi backLink="/dashboard" />
@@ -2837,16 +2900,39 @@ const TablaNotas = () => {
                 <Calendar className="h-4 w-4" />
                 Ver Actividades Asignadas
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowEditorGrupos(true)}
-                className="gap-2"
-                disabled={!aulaActual}
-                title="Configurar jerarquía de evaluación para este salón y periodo"
-              >
-                ⚙️ {gruposPeriodoActual.length > 0 ? `Jerarquía (${gruposPeriodoActual.length})` : "Configurar jerarquía"}
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    disabled={!aulaActual}
+                    title="Elegir cómo se calcula este periodo"
+                  >
+                    ⚙️ Jerarquía{gruposPeriodoActual.length > 0 ? `: Grupos (${gruposPeriodoActual.length})` : ": Plana"}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-background z-50">
+                  <DropdownMenuItem
+                    onClick={() => handleSeleccionarModoPlano()}
+                    className={gruposPeriodoActual.length === 0 ? "font-semibold" : ""}
+                  >
+                    <span className="mr-2">📊</span> Plana
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      {gruposPeriodoActual.length === 0 ? "(actual)" : ""}
+                    </span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setShowEditorGrupos(true)}
+                    className={gruposPeriodoActual.length > 0 ? "font-semibold" : ""}
+                  >
+                    <span className="mr-2">📑</span> Grupos
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      {gruposPeriodoActual.length > 0 ? `(${gruposPeriodoActual.length} configurados)` : "(configurar)"}
+                    </span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button
                 variant="outline"
                 size="sm"
@@ -3343,13 +3429,24 @@ const TablaNotas = () => {
                           </>
                         ) : (
                           <>
-                            {/* Celdas de actividades del período activo */}
-                            {getActividadesPorPeriodo(periodoActivo).map((actividad) => {
+                            {/* Celdas alineadas con la cabecera (actividades reales o placeholders de grupos vacíos) */}
+                            {getCeldasFila(periodoActivo).map((celda, idx) => {
+                              if (celda.tipo === 'placeholder') {
+                                return (
+                                  <td
+                                    key={`ph-${celda.grupoId}-${idx}`}
+                                    className="border-r border-b border-border p-3 text-center text-sm text-muted-foreground/50 min-w-[120px] bg-emerald-50"
+                                  >
+                                    —
+                                  </td>
+                                );
+                              }
+                              const actividad = celda.actividad;
                               const nota = notas[estudiante.id]?.[periodoActivo]?.[actividad.id];
-                              const estaEditando = celdaEditando?.idEstudiantil === estudiante.id 
+                              const estaEditando = celdaEditando?.idEstudiantil === estudiante.id
                                 && celdaEditando?.actividadId === actividad.id;
                               const inputKey = `${estudiante.id}-${actividad.id}`;
-                              
+
                               return (
                                 <NotaCelda
                                   key={inputKey}
@@ -3458,21 +3555,27 @@ const TablaNotas = () => {
                       </>
                     ) : (
                       <>
-                        {/* Botones para cada actividad */}
-                        {getActividadesPorPeriodo(periodoActivo).map((actividad) => (
-                          <td key={actividad.id} className="border-r border-b border-border p-1 text-center">
-                            {actividadTieneNotas(actividad) && (
-                              <button
-                                onClick={() => handleNotificarActividad(actividad)}
-                                className="w-full px-1 py-1 text-xs rounded-md bg-green-100 hover:bg-green-200 text-green-800 transition-colors flex flex-col items-center justify-center h-10"
-                                title={`Notificar ${actividad.nombre}`}
-                              >
-                                <span className="text-[10px]">📱 Notificar</span>
-                                <span className="font-semibold text-[10px] leading-tight truncate max-w-full">{actividad.nombre}</span>
-                              </button>
-                            )}
-                          </td>
-                        ))}
+                        {/* Botones para cada celda (actividad o placeholder de grupo vacío) */}
+                        {getCeldasFila(periodoActivo).map((celda, idx) => {
+                          if (celda.tipo === 'placeholder') {
+                            return <td key={`pf-${celda.grupoId}-${idx}`} className="border-r border-b border-border p-1 min-w-[120px]"></td>;
+                          }
+                          const actividad = celda.actividad;
+                          return (
+                            <td key={actividad.id} className="border-r border-b border-border p-1 text-center">
+                              {actividadTieneNotas(actividad) && (
+                                <button
+                                  onClick={() => handleNotificarActividad(actividad)}
+                                  className="w-full px-1 py-1 text-xs rounded-md bg-green-100 hover:bg-green-200 text-green-800 transition-colors flex flex-col items-center justify-center h-10"
+                                  title={`Notificar ${actividad.nombre}`}
+                                >
+                                  <span className="text-[10px]">📱 Notificar</span>
+                                  <span className="font-semibold text-[10px] leading-tight truncate max-w-full">{actividad.nombre}</span>
+                                </button>
+                              )}
+                            </td>
+                          );
+                        })}
                         {/* Celda vacía bajo botón Agregar */}
                         <td className="border-r border-b border-border p-1 min-w-[100px]"></td>
                         {/* Botón Definitiva Periodo */}
@@ -3662,6 +3765,24 @@ const TablaNotas = () => {
               className="bg-destructive hover:bg-destructive/90"
             >
               Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmación cambio Grupos → Plana */}
+      <AlertDialog open={confirmarVolverPlano} onOpenChange={setConfirmarVolverPlano}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cambiar a calificación plana</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se van a eliminar los <strong>{gruposPeriodoActual.length}</strong> grupos del {periodos[periodoActual - 1]?.nombre}. Las actividades que estuvieran dentro de grupos pasan a modo plano con su porcentaje efectivo del periodo (la nota final del estudiante no cambia). ¿Continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmarVolverPlano} className="bg-destructive hover:bg-destructive/90">
+              Eliminar grupos
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
