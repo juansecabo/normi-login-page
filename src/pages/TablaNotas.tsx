@@ -1245,14 +1245,10 @@ const TablaNotas = () => {
       setDeleteDialogOpen(false);
       const periodoEliminado = actividadAEliminar.periodo;
       setActividadAEliminar(null);
+      // Sin popup post-eliminación: la confirmación previa del AlertDialog
+      // ya deja claro que la actividad se borra.
 
-      toast({
-        title: "Actividad eliminada",
-        description: salonesAEliminar.length > 1
-          ? `"${actividadAEliminar.nombre}" eliminada en ${salonesAEliminar.length} salones`
-          : `"${actividadAEliminar.nombre}" y todas sus notas han sido eliminadas`,
-      });
-      
+
       // Recalcular y guardar Definitiva Periodo y Definitiva Anualpara todos los estudiantes afectados
       setTimeout(async () => {
         console.log('=== RECALCULANDO FINALES DESPUÉS DE ELIMINAR ACTIVIDAD ===');
