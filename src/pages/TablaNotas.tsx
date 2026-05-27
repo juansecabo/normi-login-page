@@ -574,7 +574,14 @@ const TablaNotas = () => {
     setPorcentajeActividad("");
     setActividadEditando(null);
     setCrearParaTodosSalones(false);
-    setGrupoActividadId(null);
+    // Si el aula tiene jerarquía definida, pre-seleccionamos el primer grupo
+    // hoja: una vez creada la jerarquía se asume que TODAS las actividades
+    // nuevas van dentro de ella (no "Sin grupo").
+    const gruposDelPeriodo = gruposNotas.filter(g => g.periodo === periodo);
+    const grupoHojaPredet = gruposDelPeriodo.find(
+      g => !gruposDelPeriodo.some(h => h.parent_id === g.id)
+    );
+    setGrupoActividadId(grupoHojaPredet ? grupoHojaPredet.id : null);
     setModalOpen(true);
   };
 
@@ -598,7 +605,19 @@ const TablaNotas = () => {
     setPorcentajeActividad(actividad.porcentaje?.toString() || "");
     setActividadEditando(actividad);
     setCrearParaTodosSalones(false);
-    setGrupoActividadId((actividad as any).grupo_id ?? null);
+    // Si la actividad ya tiene grupo, lo respetamos. Si no tiene grupo pero
+    // el periodo ya tiene jerarquía definida, pre-seleccionamos la primera
+    // hoja para forzar consistencia con la jerarquía.
+    const grupoOriginal = (actividad as any).grupo_id as string | null | undefined;
+    if (grupoOriginal) {
+      setGrupoActividadId(grupoOriginal);
+    } else {
+      const gruposDelPeriodo = gruposNotas.filter(g => g.periodo === actividad.periodo);
+      const grupoHojaPredet = gruposDelPeriodo.find(
+        g => !gruposDelPeriodo.some(h => h.parent_id === g.id)
+      );
+      setGrupoActividadId(grupoHojaPredet ? grupoHojaPredet.id : null);
+    }
     await buscarSalonesConActividad(actividad.nombre, actividad.periodo);
     setModalOpen(true);
   };
@@ -2824,9 +2843,9 @@ const TablaNotas = () => {
                 onClick={() => setShowEditorGrupos(true)}
                 className="gap-2"
                 disabled={!aulaActual}
-                title="Configurar grupos de evaluación para este salón y periodo"
+                title="Configurar jerarquía de evaluación para este salón y periodo"
               >
-                ⚙️ {gruposPeriodoActual.length > 0 ? `Grupos (${gruposPeriodoActual.length})` : "Configurar grupos"}
+                ⚙️ {gruposPeriodoActual.length > 0 ? `Jerarquía (${gruposPeriodoActual.length})` : "Configurar jerarquía"}
               </Button>
               <Button
                 variant="outline"
@@ -3500,24 +3519,36 @@ const TablaNotas = () => {
                 {nombreActividad.length}/100 caracteres
               </p>
             </div>
-            {gruposPeriodoActual.length > 0 && (
-              <div className="grid gap-2">
-                <Label htmlFor="grupo">Grupo (opcional)</Label>
-                <select
-                  id="grupo"
-                  value={grupoActividadId || ""}
-                  onChange={(e) => setGrupoActividadId(e.target.value || null)}
-                  className="h-10 px-3 rounded border border-input bg-background text-sm"
-                >
-                  <option value="">Sin grupo — % del periodo</option>
-                  {gruposPeriodoActual.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.nombre} ({g.porcentaje}% {g.parent_id ? "del grupo padre" : "del periodo"})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+            {gruposPeriodoActual.length > 0 && (() => {
+              // Solo los grupos hoja (los que NO tienen subgrupos) pueden recibir
+              // actividades. Los grupos padre con subgrupos no aceptan actividades
+              // directas: las actividades viven en las hojas.
+              const gruposHoja = gruposPeriodoActual.filter(
+                g => !gruposPeriodoActual.some(h => h.parent_id === g.id)
+              );
+              return (
+                <div className="grid gap-2">
+                  <Label htmlFor="grupo">¿Dentro de cuál grupo va?</Label>
+                  <select
+                    id="grupo"
+                    value={grupoActividadId || ""}
+                    onChange={(e) => setGrupoActividadId(e.target.value || null)}
+                    className="h-10 px-3 rounded border border-input bg-background text-sm"
+                  >
+                    {gruposHoja.map((g) => {
+                      const padre = g.parent_id
+                        ? gruposPeriodoActual.find(x => x.id === g.parent_id)
+                        : null;
+                      return (
+                        <option key={g.id} value={g.id}>
+                          {padre ? `${padre.nombre} → ${g.nombre}` : g.nombre} ({g.porcentaje}% {padre ? "del grupo padre" : "del periodo"})
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              );
+            })()}
             {(() => {
               const grupoSel = grupoActividadId
                 ? gruposPeriodoActual.find((g) => g.id === grupoActividadId)

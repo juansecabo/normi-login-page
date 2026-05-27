@@ -151,7 +151,7 @@ const EditorGruposNotas = ({ open, onOpenChange, aula, grupos, otrosSalones = []
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Configurar grupos de evaluación</DialogTitle>
+          <DialogTitle>Configurar jerarquía de evaluación</DialogTitle>
           <DialogDescription>
             {aula.asignatura} — {aula.grado} {aula.salon} — Periodo {aula.periodo}
           </DialogDescription>
@@ -171,7 +171,7 @@ const EditorGruposNotas = ({ open, onOpenChange, aula, grupos, otrosSalones = []
         <div className="border border-border rounded">
           {arbol.length === 0 ? (
             <div className="p-6 text-center text-muted-foreground text-sm">
-              Aún no has creado grupos. Este aula calificará en modo plano (cada actividad con su propio porcentaje).
+              Aún no has creado jerarquía. Este aula calificará en modo plano (cada actividad con su propio porcentaje del periodo).
             </div>
           ) : (
             <div className="p-2">
