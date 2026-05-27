@@ -2762,15 +2762,15 @@ const TablaNotas = () => {
   // Función para enfocar la siguiente celda (abajo)
   const focusCeldaAbajo = useCallback((currentStudentIndex: number, actividadId: string, periodo: number) => {
     const nextStudentIndex = currentStudentIndex + 1;
-    
+
     // Si no hay más estudiantes, no hacer nada
     if (nextStudentIndex >= estudiantes.length) return;
-    
+
     const nextStudent = estudiantes[nextStudentIndex];
-    const nota = notas[nextStudent.id_estudiantil]?.[periodo]?.[actividadId];
-    
+    const nota = notas[nextStudent.id]?.[periodo]?.[actividadId];
+
     // Activar edición en la siguiente celda
-    const celda = { idEstudiantil: nextStudent.id_estudiantil, actividadId, periodo };
+    const celda = { idEstudiantil: nextStudent.id, actividadId, periodo };
     setCeldaEditando(celda);
     celdaEditandoRef.current = celda;
     setValorEditando(nota !== undefined ? nota.toString() : "");
