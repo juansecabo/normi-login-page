@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getSession, isPadreDeFamilia, AcudidoData } from "@/hooks/useSession";
+import { useColegioConfig } from "@/hooks/useColegioConfig";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +33,11 @@ const JustificacionInasistencia = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const sigCanvas = useRef<SignatureCanvas>(null);
+  const { config: colegioConfig } = useColegioConfig();
+  // La ciudad se toma de la config del colegio (Colegios.configuracion.ciudad).
+  // Si no está configurada, fallback a "Corozal" porque ambos colegios actuales
+  // están allí — para otros colegios debe configurarse explícitamente.
+  const ciudadColegio = (colegioConfig as any)?.ciudad || "Corozal";
 
   const [tab, setTab] = useState<Tab>("crear");
   const [aceptoTerminos, setAceptoTerminos] = useState(false);
@@ -151,7 +157,7 @@ const JustificacionInasistencia = () => {
       fecha_inicio: fmtLocal(fechaInicioFinal),
       fecha_fin: fmtLocal(fechaFinFinal),
       dias_ausente: diasAusente,
-      ciudad_fecha: `Corozal, ${hoy.toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" })}`,
+      ciudad_fecha: `${ciudadColegio}, ${hoy.toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" })}`,
       estudiante_nombre: acudidoSeleccionado.nombre,
       estudiante_apellidos: acudidoSeleccionado.apellidos,
       estudiante_grado: acudidoSeleccionado.grado,
