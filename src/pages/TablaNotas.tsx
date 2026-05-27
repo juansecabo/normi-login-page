@@ -3031,19 +3031,34 @@ const TablaNotas = () => {
     setModoIntentTick(t => t + 1);
   };
   /**
-   * Verifica si el periodo es "calificable" en modo grupos:
-   *  - Suma de grupos top ≈ 100%
-   *  - Cada grupo hoja tiene al menos 1 actividad
+   * Verifica si el periodo es "calificable" — habilita el checkbox
+   * "¿Periodo completo?". Soporta:
+   *  - Modo plano puro: actividades sin grupo, sus % suman 100.
+   *  - Modo grupos puro: grupos top con %, suman 100; cada hoja tiene
+   *    al menos una actividad; todos los grupos tienen % asignado.
+   *  - Modo mixto: actividades sueltas (%) + grupos top (%) suman 100.
    */
   const periodoEsCalificable = (periodo: number): boolean => {
     const gruposPeriodo = gruposNotas.filter(g => g.periodo === periodo);
-    if (gruposPeriodo.length === 0) return false;
-    const tops = gruposPeriodo.filter(g => !g.parent_id);
-    const sumaTop = tops.reduce((s, g) => s + Number(g.porcentaje), 0);
-    if (Math.abs(sumaTop - 100) > 0.01) return false;
-    const hojas = gruposPeriodo.filter(g => !gruposPeriodo.some(h => h.parent_id === g.id));
     const actsPeriodo = actividades.filter(a => a.periodo === periodo);
-    return hojas.every(h => actsPeriodo.some(a => a.grupo_id === h.id));
+
+    // Todos los grupos deben tener porcentaje asignado
+    if (gruposPeriodo.some(g => g.porcentaje === null)) return false;
+
+    // Suma del periodo = % grupos top + % actividades sueltas (sin grupo)
+    const tops = gruposPeriodo.filter(g => !g.parent_id);
+    const sumaTops = tops.reduce((s, g) => s + Number(g.porcentaje || 0), 0);
+    const actsSueltas = actsPeriodo.filter(a => !a.grupo_id && a.porcentaje !== null);
+    const sumaSueltas = actsSueltas.reduce((s, a) => s + Number(a.porcentaje || 0), 0);
+    const sumaTotal = sumaTops + sumaSueltas;
+    if (Math.abs(sumaTotal - 100) > 0.01) return false;
+
+    // Si hay grupos, cada hoja debe tener al menos 1 actividad
+    if (gruposPeriodo.length > 0) {
+      const hojas = gruposPeriodo.filter(g => !gruposPeriodo.some(h => h.parent_id === g.id));
+      if (!hojas.every(h => actsPeriodo.some(a => a.grupo_id === h.id))) return false;
+    }
+    return true;
   };
 
 
@@ -3398,7 +3413,7 @@ const TablaNotas = () => {
                                         </label>
                                       ) : (
                                         <span className="text-[10px] text-primary-foreground/60">
-                                          (faltan grupos o actividades)
+                                          (faltan actividades)
                                         </span>
                                       )}
                                     </div>

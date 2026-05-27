@@ -22,7 +22,7 @@ export interface NotaCalc {
 
 export interface GrupoCalc {
   id: string;
-  porcentaje: number;
+  porcentaje: number | null;
   parent_id: string | null;
 }
 
@@ -46,32 +46,49 @@ export function promedioPlano(notas: NotaCalc[]): {
   };
 }
 
+/**
+ * Modelo nuevo (como Pati):
+ *  - Grupo hoja (sin subgrupos): promedio SIMPLE de actividades directas.
+ *    El % individual de cada actividad se ignora — todas pesan igual.
+ *  - Grupo con subgrupos: nota = Σ(nota_sub × %_sub) / Σ(%_sub).
+ *  - Mixto (actividades sueltas + subgrupos): subgrupos ponderados por %,
+ *    actividades sueltas tratadas como sub-bloque con peso = % restante.
+ */
 function notaDelGrupo(
   g: GrupoCalc,
   notas: NotaCalc[],
   grupos: GrupoCalc[],
 ): { nota: number | null; pesoTotal: number } {
   const subgrupos = grupos.filter((s) => s.parent_id === g.id);
-  const notasDelGrupo = notas.filter((n) => n.grupo_id === g.id && n.porcentaje !== null && n.porcentaje > 0 && n.nota !== null);
+  const notasDirectas = notas.filter((n) => n.grupo_id === g.id && n.nota !== null);
+
+  if (subgrupos.length === 0) {
+    if (notasDirectas.length === 0) return { nota: null, pesoTotal: 0 };
+    const prom = notasDirectas.reduce((s, n) => s + (n.nota as number), 0) / notasDirectas.length;
+    return { nota: r1(prom), pesoTotal: g.porcentaje || 0 };
+  }
 
   let sumaProd = 0;
   let sumaPesos = 0;
-
-  for (const n of notasDelGrupo) {
-    sumaProd += (n.nota as number) * (n.porcentaje as number);
-    sumaPesos += n.porcentaje as number;
-  }
-
   for (const sg of subgrupos) {
     const sub = notaDelGrupo(sg, notas, grupos);
-    if (sub.nota !== null) {
+    if (sub.nota !== null && sg.porcentaje !== null && sg.porcentaje > 0) {
       sumaProd += sub.nota * sg.porcentaje;
       sumaPesos += sg.porcentaje;
     }
   }
+  if (notasDirectas.length > 0 && g.porcentaje !== null && g.porcentaje > 0) {
+    const sumaPesosSubs = subgrupos.reduce((s, sg) => s + (sg.porcentaje || 0), 0);
+    const pesoRestante = Math.max(0, g.porcentaje - sumaPesosSubs);
+    if (pesoRestante > 0) {
+      const promDirectas = notasDirectas.reduce((s, n) => s + (n.nota as number), 0) / notasDirectas.length;
+      sumaProd += promDirectas * pesoRestante;
+      sumaPesos += pesoRestante;
+    }
+  }
 
   if (sumaPesos === 0) return { nota: null, pesoTotal: 0 };
-  return { nota: r1(sumaProd / sumaPesos), pesoTotal: sumaPesos };
+  return { nota: r1(sumaProd / sumaPesos), pesoTotal: g.porcentaje || 0 };
 }
 
 export function promedioJerarquico(notas: NotaCalc[], grupos: GrupoCalc[]): {
@@ -83,7 +100,7 @@ export function promedioJerarquico(notas: NotaCalc[], grupos: GrupoCalc[]): {
   let sumaPesos = 0;
   for (const g of top) {
     const res = notaDelGrupo(g, notas, grupos);
-    if (res.nota !== null) {
+    if (res.nota !== null && g.porcentaje !== null && g.porcentaje > 0) {
       sumaProd += res.nota * g.porcentaje;
       sumaPesos += g.porcentaje;
     }
@@ -127,7 +144,7 @@ export function promedioGeneral(notas: NotaCalc[], grupos: GrupoCalc[] = []): {
   }
   for (const g of top) {
     const res = notaDelGrupo(g, notasEnGrupos, grupos);
-    if (res.nota !== null) {
+    if (res.nota !== null && g.porcentaje !== null && g.porcentaje > 0) {
       sumaProd += res.nota * g.porcentaje;
       sumaPesos += g.porcentaje;
     }
