@@ -18,6 +18,7 @@ import { AlertTriangle, Info } from "lucide-react";
 interface InfoMsg {
   title: string;
   description: string;
+  tipo: 'info' | 'error';
 }
 
 export function Toaster() {
@@ -31,17 +32,34 @@ export function Toaster() {
       const isDestructive = (t as any).variant === "destructive";
       const title = typeof t.title === "string" ? t.title : "";
       const description = typeof t.description === "string" ? t.description : "";
-      if (isDestructive) {
-        // Log técnico para debug — el usuario solo ve el mensaje genérico.
-        console.error("[Toaster] error interceptado:", title, description);
+
+      // Heurística "error de sistema vs error de validación":
+      // - Si destructive y description está vacío o es un mensaje genérico
+      //   (típico de un throw o fetch sin detalle), mostrar el Dialog rojo
+      //   con WhatsApp del admin.
+      // - Si destructive PERO description tiene contenido específico
+      //   (validación: "queda 50% disponible", "ya existe la actividad",
+      //   etc.), mostrarlo al usuario tal cual como error informativo.
+      const esGenerico =
+        !description ||
+        /^api\s*\d+$/i.test(description.trim()) ||
+        /^error\s*\d*$/i.test(description.trim()) ||
+        /failed to fetch/i.test(description);
+
+      if (isDestructive && esGenerico) {
+        console.error("[Toaster] error sistema interceptado:", title, description);
         dismiss(t.id);
         setErrorOpen(true);
       } else {
-        // Mensaje informativo (Sin destinatarios, Guardado OK, etc.) —
-        // mostrar como Dialog centrado con el contenido del toast.
+        // Mensaje informativo o de validación. Si era destructive, se
+        // muestra como dialog rojo (validación), si no, como dialog azul (info).
         dismiss(t.id);
         if (title || description) {
-          setInfoMsg({ title: title || "Aviso", description: description || "" });
+          setInfoMsg({
+            title: title || "Aviso",
+            description: description || "",
+            tipo: isDestructive ? 'error' : 'info',
+          });
         }
       }
     }
@@ -79,13 +97,19 @@ export function Toaster() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog informativo (cualquier toast no-destructive) */}
+      {/* Dialog informativo o de validación */}
       <Dialog open={infoMsg !== null} onOpenChange={(o) => !o && setInfoMsg(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <div className="flex items-center gap-3">
-              <Info className="w-6 h-6 text-primary shrink-0" />
-              <DialogTitle>{infoMsg?.title}</DialogTitle>
+              {infoMsg?.tipo === 'error' ? (
+                <AlertTriangle className="w-6 h-6 text-destructive shrink-0" />
+              ) : (
+                <Info className="w-6 h-6 text-primary shrink-0" />
+              )}
+              <DialogTitle className={infoMsg?.tipo === 'error' ? 'text-destructive' : undefined}>
+                {infoMsg?.title}
+              </DialogTitle>
             </div>
             {infoMsg?.description && (
               <DialogDescription className="pt-3 text-base text-foreground">
