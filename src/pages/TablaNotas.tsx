@@ -435,8 +435,92 @@ const TablaNotas = () => {
   // Verificar si estamos en la pestaña Definitiva Anual
   const esFinalDefinitiva = periodoActivo === 0;
 
+  /**
+   * Devuelve las actividades de un período EN EL ORDEN del agrupamiento
+   * jerárquico, para que la fila inferior del thead y los <td> del tbody
+   * estén alineados con los <th> superiores.
+   *
+   * Orden:
+   *   1. Actividades sin grupo (legacy / flat)
+   *   2. Por cada grupo top (orden por .orden):
+   *        - Si tiene subgrupos: actividades de cada subgrupo (en orden)
+   *        - Si no tiene subgrupos: actividades del grupo directamente
+   */
   const getActividadesPorPeriodo = (periodo: number) => {
-    return actividades.filter(a => a.periodo === periodo);
+    const acts = actividades.filter(a => a.periodo === periodo);
+    const gruposPeriodo = gruposNotas.filter(g => g.periodo === periodo);
+    if (gruposPeriodo.length === 0) return acts;
+
+    const tops = gruposPeriodo.filter(g => !g.parent_id).sort((a, b) => a.orden - b.orden);
+    const subs = (parentId: string) =>
+      gruposPeriodo.filter(g => g.parent_id === parentId).sort((a, b) => a.orden - b.orden);
+
+    const ordenadas: Actividad[] = [];
+    // 1. Sin grupo primero
+    ordenadas.push(...acts.filter(a => !a.grupo_id));
+    // 2. Recorrido jerárquico
+    for (const top of tops) {
+      const hijos = subs(top.id);
+      if (hijos.length === 0) {
+        ordenadas.push(...acts.filter(a => a.grupo_id === top.id));
+      } else {
+        for (const h of hijos) {
+          ordenadas.push(...acts.filter(a => a.grupo_id === h.id));
+        }
+      }
+    }
+    return ordenadas;
+  };
+
+  /**
+   * Estructura para renderizar el encabezado jerárquico de la tabla.
+   * Devuelve secciones (sin grupo + cada grupo top) con sus subgrupos.
+   * El componente decide colSpan / rowSpan según haya o no subgrupos.
+   */
+  const getEstructuraThead = (periodo: number) => {
+    const acts = actividades.filter(a => a.periodo === periodo);
+    const gruposPeriodo = gruposNotas.filter(g => g.periodo === periodo);
+    const hayJerarquia = gruposPeriodo.length > 0;
+    if (!hayJerarquia) return { hayJerarquia: false as const, secciones: [] as any[], necesitaFila2: false };
+
+    const tops = gruposPeriodo.filter(g => !g.parent_id).sort((a, b) => a.orden - b.orden);
+    const subs = (parentId: string) =>
+      gruposPeriodo.filter(g => g.parent_id === parentId).sort((a, b) => a.orden - b.orden);
+
+    type Sub = { grupo: typeof gruposPeriodo[number]; actividades: Actividad[]; colSpan: number };
+    type Seccion =
+      | { tipo: 'sin-grupo'; actividades: Actividad[]; colSpan: number }
+      | { tipo: 'grupo-hoja'; grupo: typeof gruposPeriodo[number]; actividades: Actividad[]; colSpan: number }
+      | { tipo: 'grupo-con-sub'; grupo: typeof gruposPeriodo[number]; subgrupos: Sub[]; colSpan: number };
+
+    const secciones: Seccion[] = [];
+    const sinGrupo = acts.filter(a => !a.grupo_id);
+    if (sinGrupo.length > 0) {
+      secciones.push({ tipo: 'sin-grupo', actividades: sinGrupo, colSpan: sinGrupo.length });
+    }
+    let necesitaFila2 = false;
+    for (const top of tops) {
+      const hijos = subs(top.id);
+      if (hijos.length === 0) {
+        const aDirectas = acts.filter(a => a.grupo_id === top.id);
+        // Si el grupo está vacío no lo renderizamos: la tabla muestra
+        // actividades reales y mantenemos el thead alineado con el tbody.
+        // El grupo sigue existiendo en el modal "Configurar grupos" y en el
+        // contador del botón "Grupos (N)".
+        if (aDirectas.length === 0) continue;
+        secciones.push({ tipo: 'grupo-hoja', grupo: top, actividades: aDirectas, colSpan: aDirectas.length });
+      } else {
+        const subgrupos: Sub[] = hijos
+          .map(h => ({ grupo: h, actividades: acts.filter(a => a.grupo_id === h.id), colSpan: 0 }))
+          .filter(x => x.actividades.length > 0)
+          .map(x => ({ ...x, colSpan: x.actividades.length }));
+        if (subgrupos.length === 0) continue;
+        necesitaFila2 = true;
+        const total = subgrupos.reduce((s, x) => s + x.colSpan, 0);
+        secciones.push({ tipo: 'grupo-con-sub', grupo: top, subgrupos, colSpan: total });
+      }
+    }
+    return { hayJerarquia: secciones.some(s => s.tipo !== 'sin-grupo'), secciones, necesitaFila2 };
   };
 
   const getPorcentajeUsado = (periodo: number) => {
@@ -539,9 +623,11 @@ const TablaNotas = () => {
       return;
     }
 
-    // Validar porcentaje si existe
+    // Si la actividad pertenece a un grupo, NO debe llevar porcentaje
+    // individual: el peso lo da el grupo (igual reparto entre actividades).
+    // Validar porcentaje si existe (sólo en modo plano sin grupo)
     let porcentaje: number | null = null;
-    if (porcentajeActividad.trim()) {
+    if (!grupoActividadId && porcentajeActividad.trim()) {
       porcentaje = parseFloat(porcentajeActividad);
       if (isNaN(porcentaje) || porcentaje < 0 || porcentaje > 100) {
         toast({
@@ -2847,106 +2933,283 @@ const TablaNotas = () => {
             <div ref={tableContainerRef} className="overflow-x-auto md:overflow-auto md:flex-1 md:min-h-0 border-l border-t border-border">
               <table className="w-full border-separate border-spacing-0">
                 <thead>
-                  <tr className="bg-primary text-primary-foreground">
-                    {/* Columnas fijas en desktop, normales en móvil */}
-                    <th className="md:sticky md:left-0 z-20 bg-primary border-r border-b border-border/30 w-[80px] md:w-[100px] min-w-[80px] md:min-w-[100px] p-2 md:p-3 text-left font-semibold text-xs md:text-sm">
-                      ID
-                    </th>
-                    <th className="md:sticky md:left-[100px] z-20 bg-primary border-r border-b border-border/30 w-[120px] md:w-[180px] min-w-[120px] md:min-w-[180px] p-2 md:p-3 text-left font-semibold text-xs md:text-sm">
-                      Apellidos
-                    </th>
-                    <th className="md:sticky md:left-[280px] z-20 bg-primary border-r border-b border-border/30 w-[100px] md:w-[150px] min-w-[100px] md:min-w-[150px] p-2 md:p-3 text-left font-semibold text-xs md:text-sm">
-                      Nombre
-                    </th>
-                    
-                    {/* Vista Definitiva Anual*/}
-                    {esFinalDefinitiva ? (
+                  {(() => {
+                    const estructura = !esFinalDefinitiva ? getEstructuraThead(periodoActivo) : null;
+                    const usarJerarquia = !!estructura && estructura.hayJerarquia;
+                    const filasThead = usarJerarquia ? (estructura.necesitaFila2 ? 3 : 2) : 1;
+                    return (
                       <>
-                        {periodos.map((periodo) => (
-                          <th 
-                            key={periodo.numero}
-                            className="border-r border-b border-border/30 p-2 text-center text-xs font-medium min-w-[120px] bg-primary/80"
-                          >
-                            {periodo.nombre}
+                        {/* Fila 1: cabecera principal (IDs + grupos top + Definitiva) */}
+                        <tr className="bg-primary text-primary-foreground">
+                          <th rowSpan={filasThead} className="md:sticky md:left-0 z-20 bg-primary border-r border-b border-border/30 w-[80px] md:w-[100px] min-w-[80px] md:min-w-[100px] p-2 md:p-3 text-left font-semibold text-xs md:text-sm">
+                            ID
                           </th>
-                        ))}
-                        <th className="border-r border-b border-border/30 p-2 text-center text-xs font-semibold min-w-[130px] bg-primary" id="col-final-definitiva">
-                          Definitiva Anual
-                        </th>
-                      </>
-                    ) : (
-                      <>
-                        {/* Columnas de actividades del período activo */}
-                        {getActividadesPorPeriodo(periodoActivo).map((actividad) => (
-                          <th 
-                            key={actividad.id}
-                            className="border-r border-b border-border/30 p-2 text-center text-xs font-medium min-w-[120px] bg-primary/90"
-                          >
-                            <div className="flex items-center justify-center gap-1">
-                              <div className="flex-1 min-w-0">
-                                <div className="whitespace-nowrap" title={actividad.nombre}>
-                                  {actividad.nombre}
-                                </div>
-                                {actividad.porcentaje !== null && (
-                                  <div className="text-primary-foreground/70 text-xs">
-                                    ({actividad.porcentaje}%)
-                                  </div>
-                                )}
-                              </div>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <button className="p-1 hover:bg-primary-foreground/20 rounded transition-colors">
-                                    <MoreVertical className="w-3 h-3" />
-                                  </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="bg-background z-50">
-                                  <DropdownMenuItem onClick={() => handleAbrirModalEditar(actividad)}>
-                                    <Pencil className="w-4 h-4 mr-2" />
-                                    Editar actividad
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={() => handleConfirmarEliminar(actividad)}
-                                    className="text-destructive focus:text-destructive"
+                          <th rowSpan={filasThead} className="md:sticky md:left-[100px] z-20 bg-primary border-r border-b border-border/30 w-[120px] md:w-[180px] min-w-[120px] md:min-w-[180px] p-2 md:p-3 text-left font-semibold text-xs md:text-sm">
+                            Apellidos
+                          </th>
+                          <th rowSpan={filasThead} className="md:sticky md:left-[280px] z-20 bg-primary border-r border-b border-border/30 w-[100px] md:w-[150px] min-w-[100px] md:min-w-[150px] p-2 md:p-3 text-left font-semibold text-xs md:text-sm">
+                            Nombre
+                          </th>
+
+                          {esFinalDefinitiva ? (
+                            <>
+                              {periodos.map((periodo) => (
+                                <th
+                                  key={periodo.numero}
+                                  className="border-r border-b border-border/30 p-2 text-center text-xs font-medium min-w-[120px] bg-primary/80"
+                                >
+                                  {periodo.nombre}
+                                </th>
+                              ))}
+                              <th className="border-r border-b border-border/30 p-2 text-center text-xs font-semibold min-w-[130px] bg-primary" id="col-final-definitiva">
+                                Definitiva Anual
+                              </th>
+                            </>
+                          ) : usarJerarquia ? (
+                            <>
+                              {/* Bloques de grupos top (con colSpan / rowSpan según jerarquía) */}
+                              {estructura.secciones.map((sec, i) => {
+                                if (sec.tipo === 'sin-grupo') {
+                                  // Cada actividad sin grupo va como th individual, ocupando todas las filas
+                                  return sec.actividades.map((actividad) => (
+                                    <th
+                                      key={`th-sg-${actividad.id}`}
+                                      rowSpan={filasThead}
+                                      className="border-r border-b border-border/30 p-2 text-center text-xs font-medium min-w-[120px] bg-primary/90"
+                                    >
+                                      <div className="flex items-center justify-center gap-1">
+                                        <div className="flex-1 min-w-0">
+                                          <div className="whitespace-nowrap" title={actividad.nombre}>
+                                            {actividad.nombre}
+                                          </div>
+                                          {actividad.porcentaje !== null && (
+                                            <div className="text-primary-foreground/70 text-xs">
+                                              ({actividad.porcentaje}%)
+                                            </div>
+                                          )}
+                                        </div>
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                            <button className="p-1 hover:bg-primary-foreground/20 rounded transition-colors">
+                                              <MoreVertical className="w-3 h-3" />
+                                            </button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align="end" className="bg-background z-50">
+                                            <DropdownMenuItem onClick={() => handleAbrirModalEditar(actividad)}>
+                                              <Pencil className="w-4 h-4 mr-2" />
+                                              Editar actividad
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                              onClick={() => handleConfirmarEliminar(actividad)}
+                                              className="text-destructive focus:text-destructive"
+                                            >
+                                              <Trash2 className="w-4 h-4 mr-2" />
+                                              Eliminar actividad
+                                            </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
+                                      </div>
+                                    </th>
+                                  ));
+                                }
+                                if (sec.tipo === 'grupo-hoja') {
+                                  // Grupo sin subgrupos: ocupa fila 1 (y fila 2 si necesitaFila2)
+                                  return (
+                                    <th
+                                      key={`th-gh-${sec.grupo.id}`}
+                                      colSpan={sec.colSpan}
+                                      rowSpan={estructura.necesitaFila2 ? 2 : 1}
+                                      className="border-r border-b border-border/30 p-2 text-center text-xs font-semibold bg-emerald-800 text-white"
+                                    >
+                                      <div className="flex flex-col items-center">
+                                        <span>{sec.grupo.nombre}</span>
+                                        <span className="text-white/70 text-[10px]">({sec.grupo.porcentaje}% del periodo)</span>
+                                      </div>
+                                    </th>
+                                  );
+                                }
+                                // grupo-con-sub: en fila 1 solo el padre con colSpan total
+                                return (
+                                  <th
+                                    key={`th-gp-${sec.grupo.id}`}
+                                    colSpan={sec.colSpan}
+                                    className="border-r border-b border-border/30 p-2 text-center text-xs font-semibold bg-emerald-800 text-white"
                                   >
-                                    <Trash2 className="w-4 h-4 mr-2" />
-                                    Eliminar actividad
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </th>
-                        ))}
-                        {/* Botón Agregar */}
-                        <th className="border-r border-b border-border/30 p-2 text-center min-w-[100px] bg-primary/90">
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            className="h-7 text-xs bg-green-100 hover:bg-green-200 text-green-800 border-green-300"
-                            onClick={() => handleAbrirModal(periodoActivo)}
-                          >
-                            <Plus className="w-3 h-3 mr-1" />
-                            Agregar
-                          </Button>
-                        </th>
-                        {/* Header columna Definitiva Periodo con porcentaje */}
-                        {(() => {
-                          const porcentajeUsado = getPorcentajeUsado(periodoActivo);
-                          const isComplete = porcentajeUsado === 100;
-                          return (
-                            <th className="border-r border-b border-border/30 p-2 text-center text-xs font-medium min-w-[130px] bg-primary">
-                              <div className="flex flex-col items-center">
-                                <span>Definitiva Periodo</span>
-                                <span className={`text-xs ${isComplete ? 'text-green-300' : 'text-primary-foreground/70'}`}>
-                                  ({porcentajeUsado}/100%)
-                                  {isComplete && ' ✓'}
-                                </span>
-                              </div>
-                            </th>
-                          );
-                        })()}
+                                    <div className="flex flex-col items-center">
+                                      <span>{sec.grupo.nombre}</span>
+                                      <span className="text-white/70 text-[10px]">({sec.grupo.porcentaje}% del periodo)</span>
+                                    </div>
+                                  </th>
+                                );
+                              })}
+                              <th rowSpan={filasThead} className="border-r border-b border-border/30 p-2 text-center min-w-[100px] bg-primary/90">
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  className="h-7 text-xs bg-green-100 hover:bg-green-200 text-green-800 border-green-300"
+                                  onClick={() => handleAbrirModal(periodoActivo)}
+                                >
+                                  <Plus className="w-3 h-3 mr-1" />
+                                  Agregar
+                                </Button>
+                              </th>
+                              {(() => {
+                                const porcentajeUsado = getPorcentajeUsado(periodoActivo);
+                                const isComplete = porcentajeUsado === 100;
+                                return (
+                                  <th rowSpan={filasThead} className="border-r border-b border-border/30 p-2 text-center text-xs font-medium min-w-[130px] bg-primary">
+                                    <div className="flex flex-col items-center">
+                                      <span>Definitiva Periodo</span>
+                                      <span className={`text-xs ${isComplete ? 'text-green-300' : 'text-primary-foreground/70'}`}>
+                                        ({porcentajeUsado}/100%)
+                                        {isComplete && ' ✓'}
+                                      </span>
+                                    </div>
+                                  </th>
+                                );
+                              })()}
+                            </>
+                          ) : (
+                            <>
+                              {/* Modo plano (sin grupos): una columna por actividad */}
+                              {getActividadesPorPeriodo(periodoActivo).map((actividad) => (
+                                <th
+                                  key={actividad.id}
+                                  className="border-r border-b border-border/30 p-2 text-center text-xs font-medium min-w-[120px] bg-primary/90"
+                                >
+                                  <div className="flex items-center justify-center gap-1">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="whitespace-nowrap" title={actividad.nombre}>
+                                        {actividad.nombre}
+                                      </div>
+                                      {actividad.porcentaje !== null && (
+                                        <div className="text-primary-foreground/70 text-xs">
+                                          ({actividad.porcentaje}%)
+                                        </div>
+                                      )}
+                                    </div>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <button className="p-1 hover:bg-primary-foreground/20 rounded transition-colors">
+                                          <MoreVertical className="w-3 h-3" />
+                                        </button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end" className="bg-background z-50">
+                                        <DropdownMenuItem onClick={() => handleAbrirModalEditar(actividad)}>
+                                          <Pencil className="w-4 h-4 mr-2" />
+                                          Editar actividad
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onClick={() => handleConfirmarEliminar(actividad)}
+                                          className="text-destructive focus:text-destructive"
+                                        >
+                                          <Trash2 className="w-4 h-4 mr-2" />
+                                          Eliminar actividad
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
+                                </th>
+                              ))}
+                              <th className="border-r border-b border-border/30 p-2 text-center min-w-[100px] bg-primary/90">
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  className="h-7 text-xs bg-green-100 hover:bg-green-200 text-green-800 border-green-300"
+                                  onClick={() => handleAbrirModal(periodoActivo)}
+                                >
+                                  <Plus className="w-3 h-3 mr-1" />
+                                  Agregar
+                                </Button>
+                              </th>
+                              {(() => {
+                                const porcentajeUsado = getPorcentajeUsado(periodoActivo);
+                                const isComplete = porcentajeUsado === 100;
+                                return (
+                                  <th className="border-r border-b border-border/30 p-2 text-center text-xs font-medium min-w-[130px] bg-primary">
+                                    <div className="flex flex-col items-center">
+                                      <span>Definitiva Periodo</span>
+                                      <span className={`text-xs ${isComplete ? 'text-green-300' : 'text-primary-foreground/70'}`}>
+                                        ({porcentajeUsado}/100%)
+                                        {isComplete && ' ✓'}
+                                      </span>
+                                    </div>
+                                  </th>
+                                );
+                              })()}
+                            </>
+                          )}
+                        </tr>
+
+                        {/* Fila 2 (modo jerárquico): subgrupos. Los grupos hoja ya usaron rowSpan. */}
+                        {usarJerarquia && estructura.necesitaFila2 && (
+                          <tr className="bg-primary text-primary-foreground">
+                            {estructura.secciones.map((sec) => {
+                              if (sec.tipo !== 'grupo-con-sub') return null;
+                              return sec.subgrupos.map((sub) => (
+                                <th
+                                  key={`th-sub-${sub.grupo.id}`}
+                                  colSpan={sub.colSpan}
+                                  className="border-r border-b border-border/30 p-2 text-center text-xs font-semibold bg-emerald-600 text-white"
+                                >
+                                  <div className="flex flex-col items-center">
+                                    <span>{sub.grupo.nombre}</span>
+                                    <span className="text-white/70 text-[10px]">({sub.grupo.porcentaje}% del grupo)</span>
+                                  </div>
+                                </th>
+                              ));
+                            })}
+                          </tr>
+                        )}
+
+                        {/* Fila inferior (modo jerárquico): actividades individuales */}
+                        {usarJerarquia && (
+                          <tr className="bg-primary text-primary-foreground">
+                            {estructura.secciones.flatMap((sec) => {
+                              if (sec.tipo === 'sin-grupo') return []; // ya consumidas con rowSpan
+                              const acts = sec.tipo === 'grupo-hoja'
+                                ? sec.actividades
+                                : sec.subgrupos.flatMap(s => s.actividades);
+                              return acts.map((actividad) => (
+                                <th
+                                  key={`th-act-${actividad.id}`}
+                                  className="border-r border-b border-border/30 p-2 text-center text-xs font-medium min-w-[120px] bg-emerald-300 text-emerald-950"
+                                >
+                                  <div className="flex items-center justify-center gap-1">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="whitespace-nowrap" title={actividad.nombre}>
+                                        {actividad.nombre}
+                                      </div>
+                                    </div>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <button className="p-1 hover:bg-emerald-200 rounded transition-colors">
+                                          <MoreVertical className="w-3 h-3" />
+                                        </button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end" className="bg-background z-50">
+                                        <DropdownMenuItem onClick={() => handleAbrirModalEditar(actividad)}>
+                                          <Pencil className="w-4 h-4 mr-2" />
+                                          Editar actividad
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onClick={() => handleConfirmarEliminar(actividad)}
+                                          className="text-destructive focus:text-destructive"
+                                        >
+                                          <Trash2 className="w-4 h-4 mr-2" />
+                                          Eliminar actividad
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
+                                </th>
+                              ));
+                            })}
+                          </tr>
+                        )}
                       </>
-                    )}
-                  </tr>
+                    );
+                  })()}
                 </thead>
                 <tbody>
                   {estudiantes.map((estudiante, studentIndex) => {
@@ -3255,32 +3518,49 @@ const TablaNotas = () => {
                 </select>
               </div>
             )}
-            <div className="grid gap-2">
-              <Label htmlFor="porcentaje">
-                Porcentaje (opcional) {grupoActividadId
-                  ? `— del grupo "${gruposPeriodoActual.find((g) => g.id === grupoActividadId)?.nombre || ""}"`
-                  : "— del periodo"}
-              </Label>
-              <Input
-                id="porcentaje"
-                type="number"
-                placeholder="Ej: 25"
-                min={0}
-                max={100}
-                value={porcentajeActividad}
-                onChange={(e) => setPorcentajeActividad(e.target.value)}
-              />
-              {!grupoActividadId && (
-                <p className="text-xs text-muted-foreground">
-                  Porcentaje usado en el periodo: {getPorcentajeUsadoParaModal()}% / 100%
-                </p>
-              )}
-              {grupoActividadId && (
-                <p className="text-xs text-muted-foreground">
-                  Este porcentaje es del grupo, no del periodo. La suma del grupo no debe pasar 100%.
-                </p>
-              )}
-            </div>
+            {(() => {
+              const grupoSel = grupoActividadId
+                ? gruposPeriodoActual.find((g) => g.id === grupoActividadId)
+                : null;
+              const tieneSubgrupos = grupoSel
+                ? gruposPeriodoActual.some((g) => g.parent_id === grupoSel.id)
+                : false;
+
+              if (grupoSel && tieneSubgrupos) {
+                return (
+                  <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 px-3 py-2 rounded">
+                    El grupo <strong>"{grupoSel.nombre}"</strong> tiene subgrupos. Selecciona uno de los subgrupos en el desplegable, no el grupo padre.
+                  </div>
+                );
+              }
+
+              if (grupoSel) {
+                // Grupo hoja: actividades dentro se promedian (mismo peso).
+                return (
+                  <div className="text-xs text-muted-foreground bg-muted/30 border border-border px-3 py-2 rounded">
+                    Esta actividad va dentro del grupo <strong>"{grupoSel.nombre}"</strong> ({grupoSel.porcentaje}% del periodo). Todas las actividades del grupo se promedian con el mismo peso — no necesita porcentaje individual.
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid gap-2">
+                  <Label htmlFor="porcentaje">Porcentaje (opcional) — del periodo</Label>
+                  <Input
+                    id="porcentaje"
+                    type="number"
+                    placeholder="Ej: 25"
+                    min={0}
+                    max={100}
+                    value={porcentajeActividad}
+                    onChange={(e) => setPorcentajeActividad(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Porcentaje usado en el periodo: {getPorcentajeUsadoParaModal()}% / 100%
+                  </p>
+                </div>
+              );
+            })()}
             {(actividadEditando ? (salonesConActividad.length > 0 || otrosSalones.length > 0) : otrosSalones.length > 0) && (
               <div className="flex items-start space-x-2">
                 <Checkbox
