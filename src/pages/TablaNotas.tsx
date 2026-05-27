@@ -3102,6 +3102,42 @@ const TablaNotas = () => {
 
   /** Estado para confirmar eliminación de un grupo individual desde el menú "..." */
   const [grupoAEliminar, setGrupoAEliminar] = useState<GrupoNotas | null>(null);
+
+  /** Edición de un grupo (cambiar nombre y/o %) desde el menú "..." */
+  const [grupoAEditar, setGrupoAEditar] = useState<GrupoNotas | null>(null);
+  const [editNombre, setEditNombre] = useState("");
+  const [editPorcentaje, setEditPorcentaje] = useState("");
+  const handleAbrirEditarGrupo = (g: GrupoNotas) => {
+    setGrupoAEditar(g);
+    setEditNombre(g.nombre || "");
+    setEditPorcentaje(g.porcentaje !== null && g.porcentaje !== undefined ? String(g.porcentaje) : "");
+  };
+  const handleGuardarEdicionGrupo = async () => {
+    if (!grupoAEditar) return;
+    const nombreLimpio = editNombre.trim();
+    if (!nombreLimpio) {
+      toast({ title: "Error", description: "El nombre del grupo no puede estar vacío.", variant: "destructive" });
+      return;
+    }
+    // % opcional: vacío → null. Si lo da, debe estar entre 0.01 y 100.
+    let pct: number | null = null;
+    if (editPorcentaje.trim() !== '') {
+      const n = parseFloat(editPorcentaje);
+      if (!Number.isFinite(n) || n <= 0 || n > 100) {
+        toast({ title: "Error", description: "El porcentaje debe estar entre 0.01 y 100, o vacío.", variant: "destructive" });
+        return;
+      }
+      pct = n;
+    }
+    try {
+      await apiClient.gruposNotas.editar(grupoAEditar.id, { nombre: nombreLimpio, porcentaje: pct });
+      await reloadGrupos();
+      setGrupoAEditar(null);
+    } catch (e: any) {
+      const body = e?.body || {};
+      toast({ title: "No se pudo guardar", description: body.detail || e?.message || 'Error', variant: 'destructive' });
+    }
+  };
   const handleEliminarGrupo = async () => {
     if (!grupoAEliminar) return;
     try {
@@ -3383,6 +3419,9 @@ const TablaNotas = () => {
                                           </button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end" className="bg-background z-50">
+                                          <DropdownMenuItem onClick={() => handleAbrirEditarGrupo(sec.grupo as any)}>
+                                            <Pencil className="w-4 h-4 mr-2" /> Editar grupo
+                                          </DropdownMenuItem>
                                           <DropdownMenuItem onClick={() => handleAbrirModal(periodoActivo, 'actividad', sec.grupo.id)}>
                                             <Plus className="w-4 h-4 mr-2" /> Agregar actividad aquí
                                           </DropdownMenuItem>
@@ -3417,6 +3456,12 @@ const TablaNotas = () => {
                                         </button>
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent align="end" className="bg-background z-50">
+                                        <DropdownMenuItem onClick={() => handleAbrirEditarGrupo(sec.grupo as any)}>
+                                          <Pencil className="w-4 h-4 mr-2" /> Editar grupo
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleAbrirModal(periodoActivo, 'actividad', sec.grupo.id)}>
+                                          <Plus className="w-4 h-4 mr-2" /> Agregar actividad aquí
+                                        </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => handleAbrirModal(periodoActivo, 'grupo', sec.grupo.id)}>
                                           <Plus className="w-4 h-4 mr-2" /> Agregar subgrupo
                                         </DropdownMenuItem>
@@ -3595,6 +3640,9 @@ const TablaNotas = () => {
                                         </button>
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent align="end" className="bg-background z-50">
+                                        <DropdownMenuItem onClick={() => handleAbrirEditarGrupo(sub.grupo as any)}>
+                                          <Pencil className="w-4 h-4 mr-2" /> Editar grupo
+                                        </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => handleAbrirModal(periodoActivo, 'actividad', sub.grupo!.id)}>
                                           <Plus className="w-4 h-4 mr-2" /> Agregar actividad aquí
                                         </DropdownMenuItem>
@@ -3639,7 +3687,7 @@ const TablaNotas = () => {
                               return items.map((it) => {
                                 if (it.tipo === 'ph') {
                                   return (
-                                    <th key={it.key} className="border-r border-b border-border/30 p-2 text-center text-xs bg-emerald-300/40 text-emerald-700 italic min-w-[120px]">
+                                    <th key={it.key} className="border-r border-b border-border/30 p-2 text-center text-xs font-medium bg-emerald-200 text-emerald-700 min-w-[120px]">
                                       —
                                     </th>
                                   );
@@ -4244,6 +4292,46 @@ const TablaNotas = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edición de un grupo (cambiar nombre / porcentaje) */}
+      <Dialog open={!!grupoAEditar} onOpenChange={(o) => !o && setGrupoAEditar(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Editar grupo</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="editNombreGrupo">Nombre *</Label>
+              <Input
+                id="editNombreGrupo"
+                value={editNombre}
+                onChange={(e) => setEditNombre(e.target.value)}
+                maxLength={100}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="editPctGrupo">Porcentaje (opcional)</Label>
+              <Input
+                id="editPctGrupo"
+                type="number"
+                min={0.01}
+                max={100}
+                step={0.01}
+                placeholder="Ej: 60"
+                value={editPorcentaje}
+                onChange={(e) => setEditPorcentaje(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Déjalo en blanco si aún no quieres asignarle peso. La suma de subgrupos no puede pasar del % del padre, y los grupos top no pueden pasar de 100% del periodo.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setGrupoAEditar(null)}>Cancelar</Button>
+            <Button onClick={handleGuardarEdicionGrupo} className="bg-primary hover:bg-primary/90">Guardar cambios</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Confirmación de eliminar un grupo individual desde el menú "..." */}
       <AlertDialog open={!!grupoAEliminar} onOpenChange={(o) => !o && setGrupoAEliminar(null)}>
