@@ -228,6 +228,9 @@ const TablaNotas = () => {
   const gruposPeriodoActual = gruposNotas.filter(g => g.periodo === periodoActual);
   // Grupo asignado a la actividad que se está creando/editando (null = modo plano).
   const [grupoActividadId, setGrupoActividadId] = useState<string | null>(null);
+  // true cuando la actividad se crea desde el "+ Actividad" de un grupo
+  // específico (el grupo destino ya está fijo, no se muestra selector).
+  const [grupoActividadFijo, setGrupoActividadFijo] = useState(false);
 
   // Estado para crear actividad en múltiples salones
   const [otrosSalones, setOtrosSalones] = useState<string[]>([]);
@@ -728,10 +731,19 @@ const TablaNotas = () => {
       setTipoNuevoItem('actividad');
     }
 
-    const grupoHojaPredet = gruposDelPeriodo.find(
-      g => !gruposDelPeriodo.some(h => h.parent_id === g.id)
-    );
-    setGrupoActividadId(grupoHojaPredet ? grupoHojaPredet.id : null);
+    // Si la actividad viene de un grupo específico (parentId pasado), fijamos
+    // ese grupo y NO mostramos selector en el modal. Si viene del "+ Agregar"
+    // general, pre-seleccionamos la primera hoja como sugerencia.
+    if (tipo === 'actividad' && parentId) {
+      setGrupoActividadId(parentId);
+      setGrupoActividadFijo(true);
+    } else {
+      const grupoHojaPredet = gruposDelPeriodo.find(
+        g => !gruposDelPeriodo.some(h => h.parent_id === g.id)
+      );
+      setGrupoActividadId(grupoHojaPredet ? grupoHojaPredet.id : null);
+      setGrupoActividadFijo(false);
+    }
     setModalOpen(true);
   };
 
@@ -3966,11 +3978,14 @@ const TablaNotas = () => {
               );
             })()}
 
-            {/* Modo Actividad: selector de grupo + aviso/porcentaje */}
+            {/* Selector de grupo: solo si hay más de una hoja Y no viene fijo
+                desde un "+ Actividad" de una celda específica. */}
             {(actividadEditando || tipoNuevoItem === 'actividad') && gruposPeriodoActual.length > 0 && (() => {
               const gruposHoja = gruposPeriodoActual.filter(
                 g => !gruposPeriodoActual.some(h => h.parent_id === g.id)
               );
+              // Ocultar el selector si solo hay una hoja o si el grupo está fijo.
+              if (gruposHoja.length <= 1 || grupoActividadFijo) return null;
               return (
                 <div className="grid gap-2">
                   <Label htmlFor="grupo">¿Dentro de cuál grupo va?</Label>
