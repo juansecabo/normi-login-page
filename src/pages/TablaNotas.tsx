@@ -175,13 +175,16 @@ const BotonAgregarConLongPress = ({
         />
       )}
       <Plus className={`${compact ? 'w-2.5 h-2.5' : 'w-3 h-3'} relative shrink-0`} />
-      {/* Texto con ancho reservado para el más largo, así no cambia el botón
-          de tamaño durante el long-press. */}
-      <span className="relative font-medium whitespace-nowrap inline-block">
-        <span className="invisible">Creando grupo…</span>
-        <span className="absolute inset-0 flex items-center justify-center">
-          {pressing && progress > 25 ? 'Creando grupo…' : (label || 'Agregar')}
-        </span>
+      {/* Durante el long-press el texto cambia a "Creando grupo…" pero se
+          encoge un poco (text-[10px]) para que quepa dentro del ancho actual
+          del botón sin ensancharlo. Cuando el botón ya es grande (porque hay
+          muchas columnas) el cambio es imperceptible. */}
+      <span
+        className={`relative font-medium whitespace-nowrap ${
+          pressing && progress > 25 ? 'text-[10px]' : ''
+        }`}
+      >
+        {pressing && progress > 25 ? 'Creando grupo…' : (label || 'Agregar')}
       </span>
     </button>
   );
