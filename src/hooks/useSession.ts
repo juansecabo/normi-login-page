@@ -183,17 +183,39 @@ const decodeJwtPayload = (tok: string): { rol?: string; colegio_id?: string } | 
   } catch { return null; }
 };
 
-/** Indica si hay una sesion SuperAdmin respaldada Y válida (para mostrar el
- *  boton "Volver a Plataforma" en el header). Si el backup no tiene rol
- *  SuperAdmin, lo elimina por seguridad — fue contaminado por algún logout
- *  defectuoso de versiones anteriores. */
+/** Cédula del único SuperAdmin actual. Si en el futuro se agregan más,
+ *  mover esto a la tabla Usuarios con un flag o a una env var. */
+const SUPERADMIN_CEDULAS = ['1103114625'];
+
+/** Indica si la sesion actual es una impersonacion ACTIVA de SuperAdmin →
+ *  Admin de un colegio. Para que devuelva true se requieren TODAS:
+ *    1. La sesion actual en localStorage es cargo === 'Administrador'.
+ *    2. El id (cédula) de la sesion actual está en la lista de SuperAdmins.
+ *    3. Existe un backup en sessionStorage cuyo JWT tiene rol SuperAdmin
+ *       y cuyo sub coincide con el id actual (misma persona).
+ *
+ *  Si falta cualquiera de las tres, NO es impersonación válida y el botón
+ *  no debe mostrarse. Limpia el backup automáticamente si detecta basura. */
 export const haySesionSuperAdminRespaldada = (): boolean => {
   try {
+    const cargoActual = localStorage.getItem('cargo');
+    const idActual = localStorage.getItem('id');
+
+    // Cualquier condición de identidad/rol no cumplida → limpiar y salir.
+    if (cargoActual !== 'Administrador' || !idActual || !SUPERADMIN_CEDULAS.includes(idActual)) {
+      if (sessionStorage.getItem(SA_JWT_BACKUP)) {
+        sessionStorage.removeItem(SA_JWT_BACKUP);
+        sessionStorage.removeItem(SA_SESSION_BACKUP);
+      }
+      return false;
+    }
+
     const tok = sessionStorage.getItem(SA_JWT_BACKUP);
     if (!tok) return false;
     const payload = decodeJwtPayload(tok);
-    if (payload?.rol === 'SuperAdmin') return true;
-    // Backup inválido: limpiarlo y no mostrar el botón.
+    // El JWT respaldado debe ser SuperAdmin Y de la misma persona que opera ahora
+    if (payload?.rol === 'SuperAdmin' && payload?.sub === idActual) return true;
+    // Backup con rol o sub incorrectos: limpiarlo.
     sessionStorage.removeItem(SA_JWT_BACKUP);
     sessionStorage.removeItem(SA_SESSION_BACKUP);
     return false;
