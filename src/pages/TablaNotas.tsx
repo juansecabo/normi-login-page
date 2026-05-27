@@ -37,7 +37,9 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { toast as sonnerToast } from "sonner";
-import escudoImg from "@/assets/escudo.png";
+// El escudo y nombre del colegio se obtienen dinámicamente desde la sesión
+// (colegio_logo_url / colegio_nombre) para que cada colegio muestre el suyo
+// en PDFs/Excels exportados.
 import NotaCelda from "@/components/notas/NotaCelda";
 import FinalPeriodoCelda from "@/components/notas/FinalPeriodoCelda";
 import ComentarioModal from "@/components/notas/ComentarioModal";
@@ -1596,18 +1598,26 @@ const TablaNotas = () => {
         container.style.cssText = "position:absolute;left:-9999px;top:0;background:white;padding:24px;font-family:'Segoe UI',Arial,sans-serif;-webkit-font-smoothing:antialiased;";
 
         if (showTitle) {
-          // Encabezado institucional: escudo + nombre
+          // Encabezado institucional: escudo + nombre — dinámico desde sesión
+          const sess = getSession();
+          const colegioNombre = sess.colegio_nombre || "Colegio";
+          const colegioLogoUrl = sess.colegio_logo_url || "";
+
           const headerDiv = document.createElement("div");
           headerDiv.style.cssText = "display:flex;align-items:center;gap:12px;margin-bottom:8px;";
 
-          const img = document.createElement("img");
-          img.src = escudoImg;
-          img.style.cssText = "width:48px;height:48px;object-fit:contain;";
-          headerDiv.appendChild(img);
+          if (colegioLogoUrl) {
+            const img = document.createElement("img");
+            img.src = colegioLogoUrl;
+            img.style.cssText = "width:48px;height:48px;object-fit:contain;";
+            // Si la imagen no carga, no rompemos el render
+            img.onerror = () => { img.style.display = "none"; };
+            headerDiv.appendChild(img);
+          }
 
           const instName = document.createElement("div");
           instName.style.cssText = "font-size:18px;font-weight:700;color:#1a1a1a;";
-          instName.textContent = "I.E. Normal Superior de Corozal";
+          instName.textContent = colegioNombre;
           headerDiv.appendChild(instName);
 
           container.appendChild(headerDiv);

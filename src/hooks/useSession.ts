@@ -40,6 +40,12 @@ export interface SessionData {
   acudidos: AcudidoData[] | null;
   multi_membership: boolean;
   avatar_url: string | null;
+  // Branding y aislamiento del colegio donde el usuario está autenticado.
+  // Se usa en PDFs/Excels exportados y en cualquier UI institucional.
+  colegio_id: string | null;
+  colegio_nombre: string | null;
+  colegio_logo_url: string | null;
+  colegio_slug: string | null;
 }
 
 // Cookie de sesión (sin expires → muere cuando el navegador se cierra)
@@ -56,6 +62,10 @@ export const saveSession = (
   acudidos?: AcudidoData[] | null,
   multi_membership: boolean = false,
   avatar_url?: string | null,
+  colegio_id?: string | null,
+  colegio_nombre?: string | null,
+  colegio_logo_url?: string | null,
+  colegio_slug?: string | null,
 ) => {
   const cookieOptions = getCookieOptions();
 
@@ -88,6 +98,15 @@ export const saveSession = (
   if (avatar_url) localStorage.setItem("avatar_url", avatar_url);
   else localStorage.removeItem("avatar_url");
 
+  if (colegio_id) localStorage.setItem("colegio_id", colegio_id);
+  else localStorage.removeItem("colegio_id");
+  if (colegio_nombre) localStorage.setItem("colegio_nombre", colegio_nombre);
+  else localStorage.removeItem("colegio_nombre");
+  if (colegio_logo_url) localStorage.setItem("colegio_logo_url", colegio_logo_url);
+  else localStorage.removeItem("colegio_logo_url");
+  if (colegio_slug) localStorage.setItem("colegio_slug", colegio_slug);
+  else localStorage.removeItem("colegio_slug");
+
   // Cookie de sesión sin expires → se borra al cerrar el navegador
   Cookies.set(SESSION_COOKIE, '1', cookieOptions);
 
@@ -117,7 +136,11 @@ export const getSession = (): SessionData => {
     localStorage.removeItem("hijos"); // legacy
     localStorage.removeItem("multi_membership");
     localStorage.removeItem("avatar_url");
-    return { id: null, nombres: null, apellidos: null, cargo: null, nivel: null, grado: null, salon: null, acudidos: null, multi_membership: false, avatar_url: null };
+    localStorage.removeItem("colegio_id");
+    localStorage.removeItem("colegio_nombre");
+    localStorage.removeItem("colegio_logo_url");
+    localStorage.removeItem("colegio_slug");
+    return { id: null, nombres: null, apellidos: null, cargo: null, nivel: null, grado: null, salon: null, acudidos: null, multi_membership: false, avatar_url: null, colegio_id: null, colegio_nombre: null, colegio_logo_url: null, colegio_slug: null };
   }
 
   const id = localStorage.getItem("id") || null;
@@ -129,6 +152,10 @@ export const getSession = (): SessionData => {
   const salon = localStorage.getItem("salon") || null;
   const multi_membership = localStorage.getItem("multi_membership") === "1";
   const avatar_url = localStorage.getItem("avatar_url") || null;
+  const colegio_id = localStorage.getItem("colegio_id") || null;
+  const colegio_nombre = localStorage.getItem("colegio_nombre") || null;
+  const colegio_logo_url = localStorage.getItem("colegio_logo_url") || null;
+  const colegio_slug = localStorage.getItem("colegio_slug") || null;
 
   let acudidos: AcudidoData[] | null = null;
   // Lee "acudidos" primero; si no existe, intenta "hijos" (clave legacy de
@@ -138,7 +165,7 @@ export const getSession = (): SessionData => {
     try { acudidos = JSON.parse(acudidosStr); } catch { acudidos = null; }
   }
 
-  return { id, nombres, apellidos, cargo, nivel, grado, salon, acudidos, multi_membership, avatar_url };
+  return { id, nombres, apellidos, cargo, nivel, grado, salon, acudidos, multi_membership, avatar_url, colegio_id, colegio_nombre, colegio_logo_url, colegio_slug };
 };
 
 /** Actualiza solo el avatar en la sesion local (sin tocar el resto). */

@@ -45,8 +45,12 @@ const Index = () => {
   const enterAsUser = (user: AuthUser) => {
     const multi = user.multi_membership === true;
     const avatar = user.avatar_url || null;
+    const colegio_id = user.colegio?.id || null;
+    const colegio_nombre = user.colegio?.nombre || null;
+    const colegio_logo_url = user.colegio?.logo_url || null;
+    const colegio_slug = user.colegio?.slug || null;
     if (user.rol === 'SuperAdmin') {
-      saveSession(user.id, user.nombres, user.apellidos, 'SuperAdmin', null, null, null, null, multi, avatar);
+      saveSession(user.id, user.nombres, user.apellidos, 'SuperAdmin', null, null, null, null, multi, avatar, colegio_id, colegio_nombre, colegio_logo_url, colegio_slug);
       navigate(getPostLoginRoute("/dashboard-plataforma"), { replace: true });
       return;
     }
@@ -55,6 +59,7 @@ const Index = () => {
         user.id, user.nombres, user.apellidos, 'Estudiante',
         user.nivel || null, user.grado || null, user.salon || null,
         null, multi, avatar,
+        colegio_id, colegio_nombre, colegio_logo_url, colegio_slug,
       );
       navigate(getPostLoginRoute("/dashboard-estudiante"), { replace: true });
       return;
@@ -64,11 +69,12 @@ const Index = () => {
         user.id, user.nombres, user.apellidos, 'Acudiente',
         null, null, null,
         (user.acudidos || []) as AcudidoData[], multi, avatar,
+        colegio_id, colegio_nombre, colegio_logo_url, colegio_slug,
       );
       navigate(getPostLoginRoute("/dashboard-acudiente"), { replace: true });
       return;
     }
-    saveSession(user.id, user.nombres, user.apellidos, user.rol, null, null, null, null, multi, avatar);
+    saveSession(user.id, user.nombres, user.apellidos, user.rol, null, null, null, null, multi, avatar, colegio_id, colegio_nombre, colegio_logo_url, colegio_slug);
     if (user.rol === 'Administrador') {
       navigate(getPostLoginRoute("/dashboard-admin"), { replace: true });
     } else if (
