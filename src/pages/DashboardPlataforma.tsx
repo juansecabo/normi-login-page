@@ -184,9 +184,6 @@ const DashboardPlataforma = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-foreground truncate">{c.nombre}</h3>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
-                          {c.plan}
-                        </span>
                         <span
                           className={`text-xs px-2 py-0.5 rounded-full ${
                             c.estado === "activo"
