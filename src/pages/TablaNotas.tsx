@@ -3663,10 +3663,10 @@ const TablaNotas = () => {
                                           <Plus className="w-4 h-4 mr-2" /> Agregar actividad
                                         </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => handleAbrirEditarGrupo(sub.grupo as any)}>
-                                          <Pencil className="w-4 h-4 mr-2" /> Editar grupo
+                                          <Pencil className="w-4 h-4 mr-2" /> Editar subgrupo
                                         </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => setGrupoAEliminar(sub.grupo as any)} className="text-destructive focus:text-destructive">
-                                          <Trash2 className="w-4 h-4 mr-2" /> Eliminar grupo
+                                          <Trash2 className="w-4 h-4 mr-2" /> Eliminar subgrupo
                                         </DropdownMenuItem>
                                       </DropdownMenuContent>
                                     </DropdownMenu>
@@ -4312,11 +4312,11 @@ const TablaNotas = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Edición de un grupo (cambiar nombre / porcentaje) */}
+      {/* Edición de un grupo o subgrupo (cambiar nombre / porcentaje) */}
       <Dialog open={!!grupoAEditar} onOpenChange={(o) => !o && setGrupoAEditar(null)}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Editar grupo</DialogTitle>
+            <DialogTitle>{grupoAEditar?.parent_id ? 'Editar subgrupo' : 'Editar grupo'}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
@@ -4356,9 +4356,13 @@ const TablaNotas = () => {
       <AlertDialog open={!!grupoAEliminar} onOpenChange={(o) => !o && setGrupoAEliminar(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar grupo "{grupoAEliminar?.nombre}"</AlertDialogTitle>
+            <AlertDialogTitle>
+              Eliminar {grupoAEliminar?.parent_id ? 'subgrupo' : 'grupo'} "{grupoAEliminar?.nombre}"
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Se elimina el grupo y sus subgrupos. Las actividades que estuvieran dentro pasan a modo plano con su porcentaje efectivo (la nota final del estudiante no cambia).
+              {grupoAEliminar?.parent_id
+                ? 'Se elimina el subgrupo. Las actividades que estuvieran dentro pasan a modo plano con su porcentaje efectivo (la nota final del estudiante no cambia).'
+                : 'Se elimina el grupo y sus subgrupos. Las actividades que estuvieran dentro pasan a modo plano con su porcentaje efectivo (la nota final del estudiante no cambia).'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
