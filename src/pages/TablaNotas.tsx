@@ -4361,9 +4361,43 @@ const TablaNotas = () => {
                 value={editPorcentaje}
                 onChange={(e) => setEditPorcentaje(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">
-                Déjalo en blanco si aún no quieres asignarle peso. La suma de subgrupos no puede pasar del % del padre, y los grupos top no pueden pasar de 100% del periodo.
-              </p>
+              {(() => {
+                if (!grupoAEditar) return null;
+                // Disponible = % límite (100 si es top, % del padre si es sub)
+                //              menos % de hermanos (excluyendo el grupo en edición)
+                //              menos % de actividades sueltas (solo si es top)
+                let limite = 100;
+                if (grupoAEditar.parent_id) {
+                  const padre = gruposPeriodoActual.find(g => g.id === grupoAEditar.parent_id);
+                  if (padre && padre.porcentaje !== null) limite = Number(padre.porcentaje);
+                  else if (padre && padre.porcentaje === null) {
+                    return (
+                      <p className="text-xs text-amber-700">
+                        El grupo padre aún no tiene porcentaje. Asígnaselo primero.
+                      </p>
+                    );
+                  }
+                }
+                const hermanos = grupoAEditar.parent_id
+                  ? gruposPeriodoActual.filter(g => g.parent_id === grupoAEditar.parent_id && g.id !== grupoAEditar.id)
+                  : gruposPeriodoActual.filter(g => !g.parent_id && g.id !== grupoAEditar.id);
+                let sumaHermanos = hermanos
+                  .filter(h => h.porcentaje !== null)
+                  .reduce((s, h) => s + Number(h.porcentaje), 0);
+                if (!grupoAEditar.parent_id) {
+                  // Grupo top: también sumar % de actividades sueltas
+                  const actsSueltas = actividades
+                    .filter(a => a.periodo === grupoAEditar.periodo && !a.grupo_id && a.porcentaje !== null)
+                    .reduce((s, a) => s + Number(a.porcentaje || 0), 0);
+                  sumaHermanos += actsSueltas;
+                }
+                const disponible = Math.max(0, limite - sumaHermanos);
+                return (
+                  <p className="text-xs text-muted-foreground">
+                    Disponible: <strong>{disponible}%</strong>
+                  </p>
+                );
+              })()}
             </div>
             {/* Replicación al editar: aplicar el mismo cambio a grupos equivalentes
                 (mismo nombre + posición) en otros periodos / salones. */}
