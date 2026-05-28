@@ -348,46 +348,43 @@ export default function ConsultaDetalle() {
     if (filasInternos.length > 0) {
       const idsInternos = Array.from(new Set(filasInternos.map((r) => r.padre_id)));
       const idsNumericos = idsInternos.map((i) => Number(i)).filter((n) => Number.isFinite(n));
+      // Fase 10.E.19: nombres/apellidos viven en Usuarios; Internos solo tiene cargo.
       const [internosRes, usuariosRes] = await Promise.all([
         idsNumericos.length > 0
           ? supabase
               .from("Internos" as any)
-              .select("id, nombres, apellidos, cargo")
+              .select("id, cargo")
               .in("id" as any, idsNumericos)
           : Promise.resolve({ data: [] as any[] }),
         idsInternos.length > 0
           ? supabase
               .from("Usuarios" as any)
-              .select("id, numero_de_telefono")
+              .select("id, nombres, apellidos, numero_de_telefono")
               .in("id" as any, idsInternos)
           : Promise.resolve({ data: [] as any[] }),
       ]);
       const internoMap = new Map<string, any>();
       (internosRes.data || []).forEach((i: any) => internoMap.set(String(i.id), i));
-      const telMap = new Map<string, string | null>();
-      (usuariosRes.data || []).forEach((u: any) => telMap.set(String(u.id), u.numero_de_telefono ?? null));
+      const usuMap = new Map<string, any>();
+      (usuariosRes.data || []).forEach((u: any) => usuMap.set(String(u.id), u));
       const filasEnriquecidas: RespuestaInternoTabla[] = filasInternos.map((r) => {
         const info = internoMap.get(String(r.padre_id));
+        const usu = usuMap.get(String(r.padre_id));
         const nombre = r.acudiente_nombre
-          || (info ? `${info.apellidos || ""} ${info.nombres || ""}`.trim() : `Interno ${r.padre_id}`);
+          || (usu ? `${usu.apellidos || ""} ${usu.nombres || ""}`.trim() : `Interno ${r.padre_id}`);
         return {
           padre_id: r.padre_id,
           nombre,
           cargo: info?.cargo || null,
-          telefono: telMap.get(String(r.padre_id)) || null,
+          telefono: usu?.numero_de_telefono ?? null,
           opcion: r.opcion_seleccionada,
           firma_url: r.firma_url,
           firma_nombre: r.firma_nombre,
           fecha_respuesta: r.fecha_respuesta,
         };
       });
-      // Ordenar por cargo, luego nombre
-      filasEnriquecidas.sort((a, b) => {
-        const cargoA = a.cargo || "zzz";
-        const cargoB = b.cargo || "zzz";
-        if (cargoA !== cargoB) return cargoA.localeCompare(cargoB);
-        return a.nombre.localeCompare(b.nombre);
-      });
+      // Orden alfabético por nombre (empieza por el apellido).
+      filasEnriquecidas.sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
       setRespuestasInternos(filasEnriquecidas);
     } else {
       setRespuestasInternos([]);
