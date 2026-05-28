@@ -335,6 +335,28 @@ const EnviarComunicadoAdmin = () => {
     setDeleteId(null);
   };
 
+  // "Todos": marcado solo cuando TODOS los perfiles están marcados (derivado).
+  const todosPerfilesMarcados = PERFILES_UI.every((p) => perfilesMarcados[p.key]);
+  const toggleTodosPerfiles = () => {
+    const marcar = !todosPerfilesMarcados;
+    setPerfilesMarcados(() => {
+      const next = {} as Record<PerfilKey, boolean>;
+      PERFILES_UI.forEach((p) => { next[p.key] = marcar; });
+      return next;
+    });
+    if (!marcar) {
+      setCoordinadoresSeleccionados([]);
+      setAdministrativosSeleccionados([]);
+      setSecretariasSeleccionadas([]);
+      setOrientadoresSeleccionados([]);
+      setProfesoresSeleccionados([]); setMostrarProfesores(false);
+      setNivelesMarcados({}); setGradosMarcados({}); setSalonesMarcados({});
+      setEstudiantesSeleccionados([]);
+      setOpenNivel(false); setOpenGrado(false); setOpenSalon(false);
+      setMostrarEstudiantes(false);
+    }
+  };
+
   const togglePerfil = (key: PerfilKey) => {
     setPerfilesMarcados(prev => {
       const nuevo = { ...prev, [key]: !prev[key] };
@@ -810,6 +832,15 @@ const EnviarComunicadoAdmin = () => {
                       </button>
                       {openPerfiles && (
                         <div className="border rounded p-2 bg-muted/20 flex flex-col gap-2">
+                          <label className="flex items-center gap-2 cursor-pointer select-none text-sm font-semibold border-b pb-2 mb-1">
+                            <input
+                              type="checkbox"
+                              checked={todosPerfilesMarcados}
+                              onChange={toggleTodosPerfiles}
+                              className="w-4 h-4 accent-primary cursor-pointer"
+                            />
+                            <span>Todos</span>
+                          </label>
                           {PERFILES_UI.map((p) => (
                             <label key={p.key} className="flex items-center gap-2 cursor-pointer select-none text-sm">
                               <input
