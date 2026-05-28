@@ -45,6 +45,7 @@ import FinalPeriodoCelda from "@/components/notas/FinalPeriodoCelda";
 import ComentarioModal from "@/components/notas/ComentarioModal";
 import NotificacionModal, { TipoNotificacion } from "@/components/notas/NotificacionModal";
 import { apiRequest, apiClient } from "@/lib/apiClient";
+import { useColegioConfig } from "@/hooks/useColegioConfig";
 
 // Notificación de notas migrada al server (multi-tenant via JWT).
 // Antes apuntaba a https://n8n.notasnormi.com/webhook/notificar-notas.
@@ -194,6 +195,7 @@ const BotonAgregarConLongPress = ({
 
 const TablaNotas = () => {
   const navigate = useNavigate();
+  const { config: colegioConfig } = useColegioConfig();
   const [asignaturaSeleccionada, setAsignaturaSeleccionada] = useState("");
   const [gradoSeleccionado, setGradoSeleccionado] = useState("");
   const [salonSeleccionado, setSalonSeleccionado] = useState("");
@@ -2915,11 +2917,11 @@ const TablaNotas = () => {
     } else {
       const nota = parseFloat(valorEditando);
       
-      // Validar rango
-      if (isNaN(nota) || nota < 0 || nota > 5) {
+      // Validar rango según la escala del colegio (0-5, 0-10, etc.)
+      if (isNaN(nota) || nota < colegioConfig.escala_min || nota > colegioConfig.escala_max) {
         toast({
           title: "Error",
-          description: "La nota debe estar entre 0 y 5",
+          description: `La nota debe estar entre ${colegioConfig.escala_min} y ${colegioConfig.escala_max}`,
           variant: "destructive",
         });
         setCeldaEditando(null);
@@ -3911,6 +3913,7 @@ const TablaNotas = () => {
                               return (
                                 <NotaCelda
                                   key={inputKey}
+                                  placeholder={`${colegioConfig.escala_min}-${colegioConfig.escala_max}`}
                                   nota={nota}
                                   comentario={comentarios[estudiante.id]?.[periodoActivo]?.[actividad.id] || null}
                                   estaEditando={estaEditando}

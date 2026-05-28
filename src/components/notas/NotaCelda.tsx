@@ -21,6 +21,7 @@ interface NotaCeldaProps {
   onAbrirComentario: () => void;
   onEliminarComentario: () => void;
   onNotificarPadre?: () => void;
+  placeholder?: string;
 }
 
 const NotaCelda = ({
@@ -36,6 +37,7 @@ const NotaCelda = ({
   onAbrirComentario,
   onEliminarComentario,
   onNotificarPadre,
+  placeholder = "0-5",
 }: NotaCeldaProps) => {
   const [showMenu, setShowMenu] = useState(false);
 
@@ -54,7 +56,7 @@ const NotaCelda = ({
               onBlur={onBlur}
               onKeyDown={onKeyDown}
               autoFocus
-              placeholder="0-5"
+              placeholder={placeholder}
             />
           </div>
         </>
