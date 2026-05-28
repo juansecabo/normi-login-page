@@ -20,7 +20,7 @@ import ComunicadoEnviadoDialog from "@/components/ComunicadoEnviadoDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { apiRequest } from "@/lib/apiClient";
 import CharCircle from "@/components/CharCircle";
-import { MAX_WA_TEMPLATE_BODY, WA_TEMPLATE_OVERHEAD } from "@/lib/wapBody";
+import { buildAdminBodyPreview, MAX_WA_TEMPLATE_BODY, WA_TEMPLATE_OVERHEAD } from "@/lib/wapBody";
 
 // Migrado de n8n → normi-server. Endpoint /api/comunicados/enviar con
 // como_normi=true para que el remitente quede anónimo.
@@ -484,14 +484,20 @@ const EnviarComunicadoAdmin = () => {
   const algunPerfilMarcado = Object.values(perfilesMarcados).some(Boolean);
 
   // El comunicado del admin se envía como Normi sin los encabezados (*COMUNICADO*, *Remitente*, etc.),
-  // pero la plantilla de WhatsApp aún suma su overhead fijo (*Notificación académica:*…Estoy a tu servicio.).
-  const templateBodyLength = mensaje.length + WA_TEMPLATE_OVERHEAD;
+  // pero la plantilla de WhatsApp suma su overhead fijo Y, cuando hay adjuntos fuera de la ventana
+  // de 24h, el servidor anexa la URL de cada archivo al cuerpo. Esas URLs gastan caracteres del
+  // límite de 1024, así que el contador las incluye (igual que la página normal cuenta sus adjuntos).
+  const templateBodyLength = buildAdminBodyPreview({
+    mensaje,
+    archivos: archivosSeleccionados,
+  }).length + WA_TEMPLATE_OVERHEAD;
   const bodyOverLimit = templateBodyLength > MAX_WA_TEMPLATE_BODY;
 
-  // El baseline del admin es solo el overhead de la plantilla (49 chars). No tiene encabezados
-  // ni remitente personal, así que su límite efectivo es el mismo para todos los admins.
-  const personalMax = MAX_WA_TEMPLATE_BODY - WA_TEMPLATE_OVERHEAD;
-  const usedChars = mensaje.length;
+  // El baseline del admin es solo el overhead de la plantilla (49 chars): sin encabezados ni
+  // remitente personal. Los adjuntos cuentan dentro de usedChars (no del baseline).
+  const baselineLength = buildAdminBodyPreview({ mensaje: "", archivos: [] }).length + WA_TEMPLATE_OVERHEAD;
+  const personalMax = MAX_WA_TEMPLATE_BODY - baselineLength;
+  const usedChars = Math.max(0, templateBodyLength - baselineLength);
 
   const canSend = algunPerfilMarcado && (mensaje.trim() || archivosSeleccionados.length > 0);
 
