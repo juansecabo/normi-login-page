@@ -72,6 +72,9 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
   // Mapeo actividadId → grupo_id (heredado de Nombre de Actividades)
   const [actividadGrupo, setActividadGrupo] = useState<Map<string, string | null>>(new Map());
   const [loading, setLoading] = useState(true);
+  // Profesor(es) por asignatura y estado "periodo completo" por (asignatura|periodo).
+  const [profesoresPorAsignatura, setProfesoresPorAsignatura] = useState<Record<string, string>>({});
+  const [periodosCompletos, setPeriodosCompletos] = useState<Record<string, boolean>>({});
   // Modal de comentario en modo solo lectura para estudiantes y acudientes.
   const [comentarioAbierto, setComentarioAbierto] = useState<{
     nombreActividad: string;
@@ -90,7 +93,7 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
         // Obtener asignaturas del grado/salón
         const { data: asignaciones, error: asignacionesError } = await supabase
           .from('Asignación Profesores')
-          .select('"Asignatura(s)", "Grado(s)", "Salon(es)"');
+          .select('id, "Asignatura(s)", "Grado(s)", "Salon(es)"');
 
         if (asignacionesError) {
           console.error('Error fetching asignaciones:', asignacionesError);
@@ -99,7 +102,8 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
         }
 
         const asignaturasDelGrado: string[] = [];
-        asignaciones?.forEach((asignacion) => {
+        const idsPorAsignatura: Record<string, Set<string>> = {};
+        asignaciones?.forEach((asignacion: any) => {
           const grados = asignacion['Grado(s)'] || [];
           const salones = asignacion['Salon(es)'] || [];
           const asignaturasAsig = asignacion['Asignatura(s)'] || [];
@@ -109,12 +113,39 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
               if (!asignaturasDelGrado.includes(asignatura)) {
                 asignaturasDelGrado.push(asignatura);
               }
+              if (!idsPorAsignatura[asignatura]) idsPorAsignatura[asignatura] = new Set();
+              if (asignacion.id) idsPorAsignatura[asignatura].add(String(asignacion.id));
             });
           }
         });
 
         asignaturasDelGrado.sort((a, b) => a.localeCompare(b, 'es'));
         setAsignaturas(asignaturasDelGrado);
+
+        // Nombre del/los profesor(es) por asignatura (desde Usuarios)
+        const todosIds = Array.from(new Set(Object.values(idsPorAsignatura).flatMap((s) => Array.from(s))));
+        const nombreById: Record<string, string> = {};
+        if (todosIds.length > 0) {
+          const { data: us } = await supabase.from('Usuarios').select('id, nombres, apellidos').in('id', todosIds);
+          (us || []).forEach((u: any) => { nombreById[String(u.id)] = `${u.nombres || ''} ${u.apellidos || ''}`.trim(); });
+        }
+        const profesMap: Record<string, string> = {};
+        Object.entries(idsPorAsignatura).forEach(([asig, ids]) => {
+          const nombres = Array.from(ids).map((id) => nombreById[id]).filter(Boolean);
+          if (nombres.length) profesMap[asig] = nombres.join(', ');
+        });
+        setProfesoresPorAsignatura(profesMap);
+
+        // Estado "periodo completo" por (asignatura, periodo) — desde la BD
+        const { data: pcData } = await supabase
+          .from('Periodos_Completos')
+          .select('asignatura, periodo, completo')
+          .eq('grado', grado)
+          .eq('salon', salon)
+          .eq('ano_escolar', anoEscolarActual());
+        const pcMap: Record<string, boolean> = {};
+        (pcData || []).forEach((pc: any) => { pcMap[`${pc.asignatura}|${pc.periodo}`] = !!pc.completo; });
+        setPeriodosCompletos(pcMap);
 
         const periodosIniciales: PeriodosActivos = {};
         asignaturasDelGrado.forEach(asignatura => {
@@ -342,8 +373,25 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
         return (
           <div key={asignatura} className="bg-card rounded-lg shadow-soft overflow-hidden">
             {/* Header de la asignatura */}
-            <div className="bg-primary/10 p-4 border-b border-border">
-              <h3 className="text-lg font-bold text-foreground">{asignatura}</h3>
+            <div className="bg-primary/10 p-4 border-b border-border flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 className="text-lg font-bold text-foreground">{asignatura}</h3>
+                {profesoresPorAsignatura[asignatura] && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {profesoresPorAsignatura[asignatura].includes(',') ? 'Profesores(as): ' : 'Profesor(a): '}
+                    {profesoresPorAsignatura[asignatura]}
+                  </p>
+                )}
+              </div>
+              {(periodosCompletos[`${asignatura}|${periodoActivo}`] || getPorcentajeUsado(asignatura, periodoActivo) === 100) ? (
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-semibold whitespace-nowrap">
+                  ✓ {periodos.find(p => p.numero === periodoActivo)?.nombre || `${periodoActivo}°`} Periodo completo
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-medium whitespace-nowrap">
+                  {periodos.find(p => p.numero === periodoActivo)?.nombre || `${periodoActivo}°`} Periodo en curso
+                </span>
+              )}
             </div>
 
             {/* Tabs de períodos */}

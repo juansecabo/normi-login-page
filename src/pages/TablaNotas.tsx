@@ -223,6 +223,8 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   const [confirmarVolverPlano, setConfirmarVolverPlano] = useState(false);
   // Tick para forzar re-render cuando cambia el flag local de "periodo completo".
   const [modoIntentTick, setModoIntentTick] = useState(0);
+  // Marca "periodo completo" por periodo (persistida en BD: tabla Periodos_Completos).
+  const [periodosCompletos, setPeriodosCompletos] = useState<Record<number, boolean>>({});
   // Modal "+ Agregar" tiene dos tipos cuando el periodo está en modo Grupos
   const [tipoNuevoItem, setTipoNuevoItem] = useState<'actividad' | 'grupo'>('actividad');
   const [grupoPadrePara, setGrupoPadrePara] = useState<string | null>(null); // si se crea subgrupo
@@ -3109,27 +3111,49 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   };
 
   /**
-   * En modo Grupos: el profesor debe marcar manualmente "periodo completo"
-   * para que la Definitiva del Periodo se calcule/muestre. Esto evita que
-   * notas parciales se vean como final por error.
+   * "Periodo completo": el profesor lo marca y se PERSISTE en la BD
+   * (tabla Periodos_Completos), para que internos, estudiantes, padres y el
+   * agente vean si el periodo está cerrado. Antes vivía en localStorage (solo
+   * el navegador del profe lo veía).
    */
-  const periodoCompletoKey = (periodo: number) => {
-    if (!asignaturaSeleccionada || !gradoSeleccionado || !salonSeleccionado) return null;
-    return `periodoCompleto:${asignaturaSeleccionada}:${gradoSeleccionado}:${salonSeleccionado}:${periodo}:${anoEscolarActual()}`;
-  };
-  const getPeriodoCompleto = (periodo: number): boolean => {
-    const k = periodoCompletoKey(periodo);
-    if (!k) return false;
-    return localStorage.getItem(k) === '1';
-  };
-  const setPeriodoCompleto = (periodo: number, valor: boolean) => {
+  const cargarPeriodosCompletos = useCallback(async () => {
+    if (!asignaturaSeleccionada || !gradoSeleccionado || !salonSeleccionado) return;
+    const { data } = await supabase
+      .from('Periodos_Completos')
+      .select('periodo, completo')
+      .eq('asignatura', asignaturaSeleccionada)
+      .eq('grado', gradoSeleccionado)
+      .eq('salon', salonSeleccionado)
+      .eq('ano_escolar', anoEscolarActual());
+    const map: Record<number, boolean> = {};
+    (data || []).forEach((pc: any) => { map[pc.periodo] = !!pc.completo; });
+    setPeriodosCompletos(map);
+  }, [asignaturaSeleccionada, gradoSeleccionado, salonSeleccionado]);
+
+  useEffect(() => { cargarPeriodosCompletos(); }, [cargarPeriodosCompletos]);
+
+  const getPeriodoCompleto = (periodo: number): boolean => periodosCompletos[periodo] === true;
+
+  const setPeriodoCompleto = async (periodo: number, valor: boolean) => {
     if (soloLectura) return;
-    const k = periodoCompletoKey(periodo);
-    if (k) {
-      if (valor) localStorage.setItem(k, '1');
-      else localStorage.removeItem(k);
-    }
+    setPeriodosCompletos(prev => ({ ...prev, [periodo]: valor }));
     setModoIntentTick(t => t + 1);
+    const { error } = await supabase
+      .from('Periodos_Completos')
+      .upsert({
+        asignatura: asignaturaSeleccionada,
+        grado: gradoSeleccionado,
+        salon: salonSeleccionado,
+        periodo,
+        ano_escolar: anoEscolarActual(),
+        completo: valor,
+        fecha_marcado: new Date().toISOString(),
+      }, { onConflict: 'colegio_id,asignatura,grado,salon,periodo,ano_escolar' });
+    if (error) {
+      // revertir el estado local si falló el guardado
+      setPeriodosCompletos(prev => ({ ...prev, [periodo]: !valor }));
+      toast({ title: 'No se pudo guardar', description: 'No se pudo marcar el periodo como completo.', variant: 'destructive' });
+    }
   };
   /**
    * Verifica si el periodo es "calificable" — habilita el checkbox
@@ -3313,6 +3337,31 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               </Button>
             </div>
           </div>
+        </div>
+
+        {/* Barra de info: profesor(es) del aula + estado del periodo (visible para todos) */}
+        <div className="bg-card rounded-lg shadow-soft px-4 py-2.5 mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="text-sm text-foreground">
+            {nombresProfesores ? (
+              <span>
+                <span className="font-semibold">{nombresProfesores.includes(',') ? 'Profesores(as): ' : 'Profesor(a): '}</span>
+                {nombresProfesores}
+              </span>
+            ) : (
+              <span className="text-muted-foreground">Sin profesor asignado</span>
+            )}
+          </div>
+          {periodoActivo >= 1 && (
+            (getPeriodoCompleto(periodoActivo) || getPorcentajeUsado(periodoActivo) === 100) ? (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-semibold">
+                ✓ {periodos.find(p => p.numero === periodoActivo)?.nombre} completo
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-medium">
+                {periodos.find(p => p.numero === periodoActivo)?.nombre} en curso
+              </span>
+            )
+          )}
         </div>
 
         {/* Pestañas de Períodos */}
