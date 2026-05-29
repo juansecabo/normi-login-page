@@ -30,22 +30,18 @@ export default function UpdateBanner() {
   if (!needRefresh) return null;
 
   const handleClick = async () => {
+    // En modo 'prompt' (vite-plugin-pwa), updateServiceWorker SOLO envía
+    // SKIP_WAITING al SW nuevo; la recarga la dispara la propia librería UNA
+    // vez, vía su listener interno 'controlling', cuando el SW nuevo toma
+    // control. NO recargamos a mano: hacerlo recargaba ANTES de que el SW
+    // activara, la nueva carga volvía a detectar el SW en "waiting", se
+    // re-armaba el listener 'controlling' y al activar disparaba otro reload
+    // automático → bucle infinito de recargas (favicon parpadeando).
     try {
-      // Activa el SW nuevo y recarga la página automáticamente cuando este
-      // toma control (controllerchange).
       await updateServiceWorker(true);
     } catch (e) {
-      console.warn("updateServiceWorker falló, forzando reload:", e);
+      console.warn("updateServiceWorker falló:", e);
     }
-    // Salvavidas: solo si el SW nuevo no tomó control y la página no recargó
-    // sola, forzamos la recarga a los 3s. Antes era 500ms, lo que disparaba
-    // ANTES de que el SW nuevo activara: recargaba con el viejo aún en control,
-    // needRefresh volvía a true y la barra reaparecía en bucle ("actualizando"
-    // infinito). Con 3s la recarga normal del SW ocurre primero y este timeout
-    // muere al navegar la página.
-    setTimeout(() => {
-      window.location.reload();
-    }, 3000);
   };
 
   return (
