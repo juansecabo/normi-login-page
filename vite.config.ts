@@ -14,8 +14,13 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
-      // 'prompt' = el SW descarga la nueva versión en background pero NO se activa
-      // automáticamente. La app muestra un banner y el usuario hace click para refrescar.
+      // PWA desactivado. selfDestroying genera un SW que, al activarse,
+      // desregistra cualquier SW previo y recarga los clientes hacia una página
+      // SIN service worker. Esto rompe el loop de recarga del banner amarillo
+      // en los navegadores que quedaron atascados (sin pedirles limpiar nada a
+      // mano) y elimina toda la clase de bugs del SW. Los cambios futuros se
+      // ven con un F5 normal, como en cualquier web.
+      selfDestroying: true,
       registerType: "prompt",
       includeAssets: ["favicon.png", "apple-touch-icon.png"],
       manifest: {
