@@ -1368,8 +1368,10 @@ const TablaNotas = () => {
 
     // Construir lista de NotaCalc con el porcentaje de la actividad y la nota del estudiante.
     // Si la actividad no tiene nota para este estudiante, se omite (no se cuenta como 0).
+    // Cuenta una actividad calificada si: pertenece a un grupo (el % lo aporta el
+    // grupo, la actividad no necesita % propio) O tiene su propio % > 0 (modo plano).
     const notasCalc: NotaCalc[] = actividadesDelPeriodo
-      .filter(a => a.porcentaje !== null && a.porcentaje > 0 && notasEstudiante[a.id] !== undefined)
+      .filter(a => notasEstudiante[a.id] !== undefined && ((a.grupo_id ?? null) !== null || (a.porcentaje !== null && a.porcentaje > 0)))
       .map(a => ({
         porcentaje: a.porcentaje,
         nota: notasEstudiante[a.id] as number,

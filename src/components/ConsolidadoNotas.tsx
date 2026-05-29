@@ -242,7 +242,12 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
     if (actividadesDelPeriodo.length === 0) return null;
 
     const notasCalc: NotaCalc[] = actividadesDelPeriodo
-      .filter(a => a.porcentaje !== null && a.porcentaje > 0 && notas[asignatura]?.[periodo]?.[a.id] !== undefined)
+      .filter(a => {
+        if (notas[asignatura]?.[periodo]?.[a.id] === undefined) return false;
+        const gid = a.grupo_id ?? actividadGrupo.get(`${asignatura}|${a.id}`) ?? null;
+        // Cuenta si está en un grupo (el % lo aporta el grupo) o tiene % propio > 0.
+        return gid !== null || (a.porcentaje !== null && a.porcentaje > 0);
+      })
       .map(a => ({
         porcentaje: a.porcentaje,
         nota: notas[asignatura][periodo][a.id] as number,
