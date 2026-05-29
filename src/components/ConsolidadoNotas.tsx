@@ -4,7 +4,7 @@ import { getPeriodoActual } from "@/utils/periodoActual";
 import { anoEscolarActual } from "@/utils/anoEscolar";
 import ComentarioModalReadOnly from "@/components/notas/ComentarioModalReadOnly";
 import { MessageSquareText } from "lucide-react";
-import { promedioGeneral, type NotaCalc, type GrupoCalc } from "@/lib/gradeCalculator";
+import { promedioGeneral, esPeriodoCompleto, type NotaCalc, type GrupoCalc } from "@/lib/gradeCalculator";
 
 interface ConsolidadoNotasProps {
   idEstudiante: string;
@@ -259,6 +259,35 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
     return res.promedio;
   };
 
+  // ¿El periodo está objetivamente completo? (si no, la definitiva es provisional)
+  const periodoCompletoParaAsig = (asignatura: string, periodo: number): boolean => {
+    const acts = getActividadesPorPeriodo(asignatura, periodo);
+    if (acts.length === 0) return false;
+    const notasCalc: NotaCalc[] = acts.map(a => ({
+      porcentaje: a.porcentaje,
+      nota: notas[asignatura]?.[periodo]?.[a.id] !== undefined ? (notas[asignatura][periodo][a.id] as number) : null,
+      grupo_id: a.grupo_id ?? actividadGrupo.get(`${asignatura}|${a.id}`) ?? null,
+    }));
+    const gruposPeriodo: GrupoCalc[] = grupos
+      .filter(g => g.asignatura === asignatura && g.periodo === periodo)
+      .map(g => ({ id: g.id, porcentaje: g.porcentaje, parent_id: g.parent_id }));
+    return esPeriodoCompleto(notasCalc, gruposPeriodo);
+  };
+
+  // Render de la definitiva del periodo: muestra el valor en vivo y lo marca
+  // "provisional" si el periodo aún no está completo.
+  const renderDefinitivaPeriodo = (asignatura: string, periodo: number, claseValor: string) => {
+    const nf = calcularFinalPeriodo(asignatura, periodo);
+    if (nf === null) return <span className={claseValor}>—</span>;
+    const prov = !periodoCompletoParaAsig(asignatura, periodo);
+    if (!prov) return <span className={claseValor}>{nf.toFixed(1)}</span>;
+    return (
+      <span className={`${claseValor} italic text-amber-600`} title="Provisional — el periodo aún no está completo">
+        ~{nf.toFixed(1)} <span className="text-[10px] font-normal not-italic">prov.</span>
+      </span>
+    );
+  };
+
   const calcularFinalDefinitiva = (asignatura: string): number | null => {
     let suma = 0;
     let periodosConNota = 0;
@@ -386,7 +415,7 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
                             );
                           })}
                           <td className="p-2 text-center text-sm font-semibold border-b border-border bg-primary/5">
-                            {calcularFinalPeriodo(asignatura, periodoActivo)?.toFixed(1) || '—'}
+                            {renderDefinitivaPeriodo(asignatura, periodoActivo, "")}
                           </td>
                         </tr>
                       </tbody>
@@ -458,7 +487,7 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
                     {/* Definitiva */}
                     <div className="bg-primary/10 px-3 py-2 rounded flex items-center justify-between">
                       <span className="font-bold text-sm">Definitiva Periodo</span>
-                      <span className="font-bold text-lg">{calcularFinalPeriodo(asignatura, periodoActivo)?.toFixed(1) || '—'}</span>
+                      {renderDefinitivaPeriodo(asignatura, periodoActivo, "font-bold text-lg")}
                     </div>
                   </div>
                 );

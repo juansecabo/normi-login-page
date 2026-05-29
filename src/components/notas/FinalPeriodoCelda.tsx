@@ -12,6 +12,7 @@ interface FinalPeriodoCeldaProps {
   notaFinal: number | null;
   comentario: string | null;
   tieneAlgunaNota: boolean; // Nueva prop: si el estudiante tiene al menos una nota en el período
+  provisional?: boolean; // true → el periodo aún no está completo; la nota es provisional
   onAbrirComentario: () => void;
   onEliminarComentario: () => void;
   onNotificarPadre?: () => void;
@@ -21,19 +22,27 @@ const FinalPeriodoCelda = ({
   notaFinal,
   comentario,
   tieneAlgunaNota,
+  provisional = false,
   onAbrirComentario,
   onEliminarComentario,
   onNotificarPadre,
 }: FinalPeriodoCeldaProps) => {
   const [showMenu, setShowMenu] = useState(false);
+  const esProvisional = provisional && notaFinal !== null;
 
   return (
     <td className="border-r border-b border-border p-1 text-center text-sm min-w-[100px] bg-primary/10 font-semibold relative group">
-      <div className="relative flex items-center justify-center h-8">
-        <span className={notaFinal !== null ? "" : "text-muted-foreground"}>
-          {notaFinal !== null ? notaFinal.toFixed(1) : "—"}
+      <div className="relative flex flex-col items-center justify-center min-h-8">
+        <span
+          className={notaFinal === null ? "text-muted-foreground" : (esProvisional ? "italic text-amber-600" : "")}
+          title={esProvisional ? "Provisional — el periodo aún no está completo" : undefined}
+        >
+          {notaFinal !== null ? `${esProvisional ? "~" : ""}${notaFinal.toFixed(1)}` : "—"}
         </span>
-        
+        {esProvisional && (
+          <span className="text-[9px] font-normal leading-none text-amber-600/90">provisional</span>
+        )}
+
         {/* Indicador de comentario */}
         {comentario && (
           <div className="absolute top-0 right-6 w-2 h-2 bg-amber-500 rounded-full" title={comentario} />

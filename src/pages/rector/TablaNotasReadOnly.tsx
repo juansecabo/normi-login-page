@@ -7,7 +7,7 @@ import { getSession, isRectorOrCoordinador } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import ComentarioModalReadOnly from "@/components/notas/ComentarioModalReadOnly";
 import { MessageSquare } from "lucide-react";
-import { promedioGeneral, type NotaCalc, type GrupoCalc } from "@/lib/gradeCalculator";
+import { promedioGeneral, esPeriodoCompleto, type NotaCalc, type GrupoCalc } from "@/lib/gradeCalculator";
 
 interface Estudiante {
   id: string;
@@ -272,6 +272,21 @@ const TablaNotasReadOnly = () => {
     return res.promedio;
   };
 
+  // ¿El periodo está objetivamente completo? (si no, la definitiva es provisional)
+  const periodoCompletoParaEst = (idEstudiantil: string, periodo: number): boolean => {
+    const acts = getActividadesPorPeriodo(periodo);
+    if (acts.length === 0) return false;
+    const notasCalc: NotaCalc[] = acts.map(a => ({
+      porcentaje: a.porcentaje,
+      nota: notas[idEstudiantil]?.[periodo]?.[a.id] !== undefined ? (notas[idEstudiantil][periodo][a.id] as number) : null,
+      grupo_id: a.grupo_id ?? null,
+    }));
+    const gruposPeriodo: GrupoCalc[] = gruposAula
+      .filter(g => g.periodo === periodo)
+      .map(g => ({ id: g.id, porcentaje: g.porcentaje, parent_id: g.parent_id }));
+    return esPeriodoCompleto(notasCalc, gruposPeriodo);
+  };
+
   const calcularFinalDefinitiva = (idEstudiantil: string): number | null => {
     let suma = 0;
     let periodosConNota = 0;
@@ -480,7 +495,16 @@ const TablaNotasReadOnly = () => {
                               );
                             })}
                             <td className="border-r border-b border-border p-2 text-center text-sm font-semibold bg-primary/5">
-                              {calcularFinalPeriodo(estudiante.id, periodoActivo)?.toFixed(1) || '—'}
+                              {(() => {
+                                const nf = calcularFinalPeriodo(estudiante.id, periodoActivo);
+                                if (nf === null) return '—';
+                                const prov = !periodoCompletoParaEst(estudiante.id, periodoActivo);
+                                return prov ? (
+                                  <span className="italic text-amber-600" title="Provisional — el periodo aún no está completo">
+                                    ~{nf.toFixed(1)} <span className="text-[9px] font-normal">prov.</span>
+                                  </span>
+                                ) : nf.toFixed(1);
+                              })()}
                             </td>
                       </tr>
                     );

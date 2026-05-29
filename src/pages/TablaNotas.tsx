@@ -8,7 +8,7 @@ import { Plus, MoreVertical, Pencil, Trash2, Send, Calendar, Download, FileSprea
 import { getSession } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { useGruposNotas, type GrupoNotas } from "@/hooks/useGruposNotas";
-import { promedioGeneral, type NotaCalc, type GrupoCalc } from "@/lib/gradeCalculator";
+import { promedioGeneral, esPeriodoCompleto, type NotaCalc, type GrupoCalc } from "@/lib/gradeCalculator";
 import {
   Dialog,
   DialogContent,
@@ -1392,6 +1392,26 @@ const TablaNotas = () => {
   const calcularFinalPeriodo = useCallback((idEstudiantil: string, periodo: number): number | null => {
     return calcularFinalPeriodoConNotas(notas, idEstudiantil, periodo);
   }, [calcularFinalPeriodoConNotas, notas]);
+
+  // ¿El periodo está objetivamente completo para este estudiante? (vs provisional)
+  // Construye TODAS las actividades del periodo (con nota null si falta) para
+  // detectar las no calificadas, y delega en esPeriodoCompleto (mismo criterio
+  // que el backend/agente). No depende del checkbox del profe (ese solo gatea
+  // las notificaciones).
+  const periodoCompletoParaEst = useCallback((idEstudiantil: string, periodo: number): boolean => {
+    const acts = getActividadesPorPeriodo(periodo);
+    if (acts.length === 0) return false;
+    const notasEst = notas[idEstudiantil]?.[periodo] || {};
+    const notasCalc: NotaCalc[] = acts.map((a) => ({
+      porcentaje: a.porcentaje,
+      nota: notasEst[a.id] !== undefined ? (notasEst[a.id] as number) : null,
+      grupo_id: a.grupo_id ?? null,
+    }));
+    const gruposDelPeriodo: GrupoCalc[] = gruposNotas
+      .filter((g) => g.periodo === periodo)
+      .map((g) => ({ id: g.id, porcentaje: g.porcentaje, parent_id: g.parent_id }));
+    return esPeriodoCompleto(notasCalc, gruposDelPeriodo);
+  }, [actividades, gruposNotas, notas]);
 
   // Calcular Definitiva Anual (promedio de las notas relativas de los períodos que tienen datos)
   const calcularFinalDefinitiva = useCallback((idEstudiantil: string): number | null => {
@@ -3952,15 +3972,17 @@ const TablaNotas = () => {
                             {(() => {
                               const notaFinal = calcularFinalPeriodo(estudiante.id, periodoActivo);
                               const tieneNotas = tieneAlgunaNotaEnPeriodo(estudiante.id, periodoActivo);
-                              // En modo Grupos solo se muestra la final si el profe
-                              // marcó "periodo completo". En modo Plana se muestra
-                              // siempre que haya notas (comportamiento histórico).
-                              const debeMostrar = modoEfectivo() === 'plana' || getPeriodoCompleto(periodoActivo);
+                              const completo = periodoCompletoParaEst(estudiante.id, periodoActivo);
+                              // La definitiva se muestra SIEMPRE (en vivo). Si el periodo no
+                              // está completo se marca "provisional". El checkbox del profe ya
+                              // NO oculta la nota; solo sigue gateando las notificaciones.
+                              const puedeNotificar = modoEfectivo() === 'plana' || getPeriodoCompleto(periodoActivo);
                               return (
                                 <FinalPeriodoCelda
-                                  notaFinal={debeMostrar ? notaFinal : null}
+                                  notaFinal={notaFinal}
+                                  provisional={!completo}
                                   comentario={comentarios[estudiante.id]?.[periodoActivo]?.[`${periodoActivo}-Definitiva Periodo`] || null}
-                                  tieneAlgunaNota={tieneNotas && debeMostrar}
+                                  tieneAlgunaNota={tieneNotas}
                                   onAbrirComentario={() => handleAbrirComentario(
                                     estudiante.id,
                                     `${estudiante.nombres} ${estudiante.apellidos}`,
@@ -3974,7 +3996,7 @@ const TablaNotas = () => {
                                     'Definitiva Periodo',
                                     periodoActivo
                                   )}
-                                  onNotificarPadre={(tieneNotas && debeMostrar) ? () => handleNotificarFinalPeriodoIndividual(estudiante, periodoActivo, notaFinal) : undefined}
+                                  onNotificarPadre={(tieneNotas && puedeNotificar) ? () => handleNotificarFinalPeriodoIndividual(estudiante, periodoActivo, notaFinal) : undefined}
                                 />
                               );
                             })()}

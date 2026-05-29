@@ -160,3 +160,33 @@ export function promedioGeneral(notas: NotaCalc[], grupos: GrupoCalc[] = []): {
     modo: 'mixto',
   };
 }
+
+/**
+ * ¿El periodo está OBJETIVAMENTE completo para este estudiante?
+ * (es decir: la definitiva ya es FINAL, no provisional)
+ *
+ * `notas` debe incluir TODAS las actividades del periodo (con nota null/undefined
+ * si aún no está calificada). Criterio — espejo del backend (consultarNotas):
+ *  - Ninguna actividad sin nota.
+ *  - Modo plano: los % de las actividades suman ≈ 100.
+ *  - Modo grupos: todos los grupos con % asignado; % de grupos raíz (+ sueltas)
+ *    suma ≈ 100; cada hoja de grupo tiene al menos una actividad calificada.
+ * Conservador: ante la duda devuelve false (→ se muestra como "Provisional").
+ */
+export function esPeriodoCompleto(notas: NotaCalc[], grupos: GrupoCalc[] = []): boolean {
+  if (notas.length === 0) return false;
+  if (notas.some((n) => n.nota === null || n.nota === undefined)) return false;
+
+  const usaGrupos = grupos.length > 0 && notas.some((n) => n.grupo_id);
+  if (usaGrupos) {
+    if (grupos.some((g) => g.porcentaje === null || g.porcentaje === undefined)) return false;
+    const tops = grupos.filter((g) => g.parent_id === null);
+    const sumaTops = tops.reduce((s, g) => s + Number(g.porcentaje || 0), 0);
+    const sumaSueltas = notas.filter((n) => !n.grupo_id).reduce((s, n) => s + Number(n.porcentaje || 0), 0);
+    if (Math.abs(sumaTops + sumaSueltas - 100) > 0.5) return false;
+    const hojas = grupos.filter((g) => !grupos.some((h) => h.parent_id === g.id));
+    return hojas.every((h) => notas.some((n) => n.grupo_id === h.id && n.nota !== null && n.nota !== undefined));
+  }
+  const suma = notas.reduce((s, n) => s + Number(n.porcentaje || 0), 0);
+  return suma >= 99.5;
+}
