@@ -193,7 +193,7 @@ const BotonAgregarConLongPress = ({
   );
 };
 
-const TablaNotas = () => {
+const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => {
   const navigate = useNavigate();
   const { config: colegioConfig } = useColegioConfig();
   const [asignaturaSeleccionada, setAsignaturaSeleccionada] = useState("");
@@ -732,6 +732,7 @@ const TablaNotas = () => {
    * long-press (>= 1.2s) = grupo.
    */
   const handleAbrirModal = (periodo: number, tipo: 'actividad' | 'grupo' = 'actividad', parentId: string | null = null) => {
+    if (soloLectura) return;
     setPeriodoActual(periodo);
     setNombreActividad("");
     setPorcentajeActividad("");
@@ -783,6 +784,7 @@ const TablaNotas = () => {
   };
 
   const handleAbrirModalEditar = async (actividad: Actividad) => {
+    if (soloLectura) return;
     setPeriodoActual(actividad.periodo);
     setNombreActividad(actividad.nombre);
     setPorcentajeActividad(actividad.porcentaje?.toString() || "");
@@ -806,6 +808,7 @@ const TablaNotas = () => {
   };
 
   const handleGuardarActividad = async () => {
+    if (soloLectura) return;
     // Validar nombre
     if (!nombreActividad.trim()) {
       toast({
@@ -1161,6 +1164,7 @@ const TablaNotas = () => {
   };
 
   const handleConfirmarEliminar = async (actividad: Actividad) => {
+    if (soloLectura) return;
     setActividadAEliminar(actividad);
     setEliminarEnTodosSalones(false);
     await buscarSalonesConActividad(actividad.nombre, actividad.periodo);
@@ -1168,6 +1172,7 @@ const TablaNotas = () => {
   };
 
   const handleEliminarActividad = async () => {
+    if (soloLectura) return;
     if (!actividadAEliminar) return;
 
     const session = getSession();
@@ -1961,6 +1966,7 @@ const TablaNotas = () => {
     nombreActividad: string,
     periodo: number
   ) => {
+    if (soloLectura) return;
     setComentarioEditando({
       idEstudiantil,
       nombreEstudiante,
@@ -1973,6 +1979,7 @@ const TablaNotas = () => {
 
   // Guardar comentario en Supabase
   const handleGuardarComentario = async (nuevoComentario: string | null) => {
+    if (soloLectura) return;
     if (!comentarioEditando) return;
     
     const { idEstudiantil, actividadId, periodo, nombreActividad } = comentarioEditando;
@@ -2335,6 +2342,7 @@ const TablaNotas = () => {
 
   // Preparar notificación masiva para una actividad
   const handleNotificarActividad = (actividad: Actividad) => {
+    if (soloLectura) return;
     // Contar estudiantes con y sin nota
     const estudiantesConNota = estudiantes.filter(est => 
       notas[est.id]?.[actividad.periodo]?.[actividad.id] !== undefined
@@ -2383,6 +2391,7 @@ const TablaNotas = () => {
 
   // Preparar notificación masiva para período completo
   const handleNotificarPeriodoCompleto = (periodo: number) => {
+    if (soloLectura) return;
     const porcentajeUsado = getPorcentajeUsado(periodo);
     const esCompleto = porcentajeUsado === 100;
     const actividadesDelPeriodo = getActividadesPorPeriodo(periodo);
@@ -2829,6 +2838,7 @@ const TablaNotas = () => {
   };
 
   const handleGuardarNota = async () => {
+    if (soloLectura) return;
     if (!celdaEditando) return;
 
     const { idEstudiantil, actividadId, periodo } = celdaEditando;
@@ -3053,6 +3063,7 @@ const TablaNotas = () => {
 
   // Handler para cuando se presiona Enter (navegar a celda de abajo)
   const handleKeyDownNota = async (e: React.KeyboardEvent<HTMLInputElement>, studentIndex: number, actividadId: string, periodo: number) => {
+    if (soloLectura) return;
     if (e.key === 'Enter') {
       e.preventDefault();
       // Marcar que estamos navegando (evita doble guardado con onBlur)
@@ -3112,6 +3123,7 @@ const TablaNotas = () => {
     return localStorage.getItem(k) === '1';
   };
   const setPeriodoCompleto = (periodo: number, valor: boolean) => {
+    if (soloLectura) return;
     const k = periodoCompletoKey(periodo);
     if (k) {
       if (valor) localStorage.setItem(k, '1');
@@ -3161,6 +3173,7 @@ const TablaNotas = () => {
   const [editReplicarPeriodos, setEditReplicarPeriodos] = useState(false);
   const [editReplicarSalones, setEditReplicarSalones] = useState(false);
   const handleAbrirEditarGrupo = (g: GrupoNotas) => {
+    if (soloLectura) return;
     setGrupoAEditar(g);
     setEditNombre(g.nombre || "");
     setEditPorcentaje(g.porcentaje !== null && g.porcentaje !== undefined ? String(g.porcentaje) : "");
@@ -3168,6 +3181,7 @@ const TablaNotas = () => {
     setEditReplicarSalones(false);
   };
   const handleGuardarEdicionGrupo = async () => {
+    if (soloLectura) return;
     if (!grupoAEditar) return;
     const nombreLimpio = editNombre.trim();
     if (!nombreLimpio) {
@@ -3201,6 +3215,7 @@ const TablaNotas = () => {
     }
   };
   const handleEliminarGrupo = async () => {
+    if (soloLectura) return;
     if (!grupoAEliminar) return;
     try {
       await apiClient.gruposNotas.eliminar(grupoAEliminar.id);
@@ -3220,6 +3235,7 @@ const TablaNotas = () => {
    * actividades a plano calculando su pct_efectivo).
    */
   const handleConfirmarVolverPlano = async () => {
+    if (soloLectura) return;
     try {
       for (const g of gruposPeriodoActual) {
         await apiClient.gruposNotas.eliminar(g.id);
@@ -3378,7 +3394,10 @@ const TablaNotas = () => {
             </div>
           ) : (
             <div ref={tableContainerRef} className="overflow-x-auto md:overflow-auto md:flex-1 md:min-h-0 border-l border-t border-border">
-              <table className="w-full border-separate border-spacing-0">
+              {soloLectura && (
+                <style>{`.ro-notas thead button{display:none!important;}`}</style>
+              )}
+              <table className={`w-full border-separate border-spacing-0${soloLectura ? ' ro-notas' : ''}`}>
                 <thead>
                   {(() => {
                     const estructura = !esFinalDefinitiva ? getEstructuraThead(periodoActivo) : null;
@@ -3475,6 +3494,7 @@ const TablaNotas = () => {
                                           <span className="text-white/70 text-[10px]">({sec.grupo.porcentaje}%)</span>
                                         )}
                                       </div>
+                                      {!soloLectura && (
                                       <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
                                           <button className="absolute top-1 right-1 p-1 rounded hover:bg-white/20" title="Más opciones">
@@ -3500,6 +3520,7 @@ const TablaNotas = () => {
                                           </DropdownMenuItem>
                                         </DropdownMenuContent>
                                       </DropdownMenu>
+                                      )}
                                     </th>
                                   );
                                 }
@@ -3516,6 +3537,7 @@ const TablaNotas = () => {
                                         <span className="text-white/70 text-[10px]">({sec.grupo.porcentaje}%)</span>
                                       )}
                                     </div>
+                                    {!soloLectura && (
                                     <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
                                         <button className="absolute top-1 right-1 p-1 rounded hover:bg-white/20" title="Más opciones">
@@ -3536,9 +3558,11 @@ const TablaNotas = () => {
                                         </DropdownMenuItem>
                                       </DropdownMenuContent>
                                     </DropdownMenu>
+                                    )}
                                   </th>
                                 );
                               })}
+                              {!soloLectura && (
                               <th rowSpan={filasThead} className="border-r border-b border-border/30 p-2 text-center min-w-[110px] bg-primary/90">
                                 <BotonAgregarConLongPress
                                   onActividad={() => handleAbrirModal(periodoActivo, 'actividad')}
@@ -3546,6 +3570,7 @@ const TablaNotas = () => {
                                   disabled={!aulaActual}
                                 />
                               </th>
+                              )}
                               {(() => {
                                 // Modo Grupos: checkbox "¿Periodo completo?" cuando es calificable
                                 const calificable = periodoEsCalificable(periodoActivo);
@@ -3554,7 +3579,7 @@ const TablaNotas = () => {
                                   <th rowSpan={filasThead} className="border-r border-b border-border/30 p-2 text-center text-xs font-semibold min-w-[150px] bg-primary">
                                     <div className="flex flex-col items-center gap-1">
                                       <span>Definitiva Periodo</span>
-                                      {calificable ? (
+                                      {!soloLectura && (calificable ? (
                                         <label className="flex items-center gap-1 cursor-pointer text-xs text-primary-foreground/90 hover:text-primary-foreground">
                                           <span>(¿Periodo completo?)</span>
                                           <input
@@ -3568,7 +3593,7 @@ const TablaNotas = () => {
                                         <span className="text-[10px] text-primary-foreground/60">
                                           (faltan actividades)
                                         </span>
-                                      )}
+                                      ))}
                                     </div>
                                   </th>
                                 );
@@ -3616,6 +3641,7 @@ const TablaNotas = () => {
                                   </div>
                                 </th>
                               ))}
+                              {!soloLectura && (
                               <th className="border-r border-b border-border/30 p-2 text-center min-w-[110px] bg-primary/90">
                                 <BotonAgregarConLongPress
                                   onActividad={() => handleAbrirModal(periodoActivo, 'actividad')}
@@ -3623,6 +3649,7 @@ const TablaNotas = () => {
                                   disabled={!aulaActual}
                                 />
                               </th>
+                              )}
                               {(() => {
                                 const porcentajeUsado = getPorcentajeUsado(periodoActivo);
                                 const isComplete = porcentajeUsado === 100;
@@ -3935,6 +3962,7 @@ const TablaNotas = () => {
                               return (
                                 <NotaCelda
                                   key={inputKey}
+                                  soloLectura={soloLectura}
                                   placeholder={`${colegioConfig.escala_min}-${colegioConfig.escala_max}`}
                                   nota={nota}
                                   comentario={comentarios[estudiante.id]?.[periodoActivo]?.[actividad.id] || null}
@@ -3966,10 +3994,12 @@ const TablaNotas = () => {
                                 />
                               );
                             })}
-                            {/* Celda vacía bajo botón Agregar */}
+                            {/* Celda vacía bajo botón Agregar (oculta en solo-lectura) */}
+                            {!soloLectura && (
                             <td className="border-r border-b border-border p-3 text-center text-sm text-muted-foreground/50 min-w-[100px]">
-                              
+
                             </td>
+                            )}
                             {/* Celda Definitiva Periodo */}
                             {(() => {
                               const notaFinal = calcularFinalPeriodo(estudiante.id, periodoActivo);
@@ -3983,6 +4013,7 @@ const TablaNotas = () => {
                                 <FinalPeriodoCelda
                                   notaFinal={notaFinal}
                                   provisional={!completo}
+                                  soloLectura={soloLectura}
                                   comentario={comentarios[estudiante.id]?.[periodoActivo]?.[`${periodoActivo}-Definitiva Periodo`] || null}
                                   tieneAlgunaNota={tieneNotas}
                                   onAbrirComentario={() => handleAbrirComentario(
@@ -4008,7 +4039,8 @@ const TablaNotas = () => {
                     );
                   })}
                 </tbody>
-                {/* Fila de botones de notificación integrados en la tabla */}
+                {/* Fila de botones de notificación integrados en la tabla (oculta en solo-lectura) */}
+                {!soloLectura && (
                 <tfoot>
                   <tr className="bg-muted">
                     {/* Celdas fijas vacías - sticky solo en desktop con fondo sólido */}
@@ -4086,6 +4118,7 @@ const TablaNotas = () => {
                     )}
                   </tr>
                 </tfoot>
+                )}
               </table>
             </div>
           )}

@@ -23,7 +23,6 @@ import SeleccionarSalonRector from "./pages/rector/SeleccionarSalonRector";
 import ModoVisualizacion from "./pages/rector/ModoVisualizacion";
 import ListaAsignaturas from "./pages/rector/ListaAsignaturas";
 import ListaEstudiantes from "./pages/rector/ListaEstudiantes";
-import TablaNotasReadOnly from "./pages/rector/TablaNotasReadOnly";
 import EstudianteConsolidado from "./pages/rector/EstudianteConsolidado";
 import EstadisticasDashboard from "./pages/rector/EstadisticasDashboard";
 import EstudiantesEnRiesgo from "./pages/rector/EstudiantesEnRiesgo";
@@ -82,6 +81,7 @@ import MisConsultas from "./pages/acudiente/MisConsultas";
 import MisConsultasEstudiante from "./pages/estudiante/MisConsultasEstudiante";
 import RegistrosComportamiento from "./pages/RegistrosComportamiento";
 import TablaNotasRouter from "./pages/TablaNotasRouter";
+import TablaNotasReadOnlyRouter from "./pages/TablaNotasReadOnlyRouter";
 
 // Rutas para Padre
 import NotasAcudiente from "./pages/acudiente/NotasAcudiente";
@@ -127,7 +127,7 @@ const App = () => (
           <Route path="/rector/modo-visualizacion" element={<ModoVisualizacion />} />
           <Route path="/rector/lista-asignaturas" element={<ListaAsignaturas />} />
           <Route path="/rector/lista-estudiantes" element={<ListaEstudiantes />} />
-          <Route path="/rector/tabla-notas" element={<TablaNotasReadOnly />} />
+          <Route path="/rector/tabla-notas" element={<TablaNotasReadOnlyRouter />} />
           <Route path="/rector/estudiante-consolidado" element={<EstudianteConsolidado />} />
           <Route path="/rector/estadisticas" element={<EstadisticasDashboard />} />
           <Route path="/rector/estudiantes-riesgo" element={<EstudiantesEnRiesgo />} />

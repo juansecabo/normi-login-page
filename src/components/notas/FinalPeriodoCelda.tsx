@@ -13,6 +13,7 @@ interface FinalPeriodoCeldaProps {
   comentario: string | null;
   tieneAlgunaNota: boolean; // Nueva prop: si el estudiante tiene al menos una nota en el período
   provisional?: boolean; // true → el periodo aún no está completo; la nota es provisional
+  soloLectura?: boolean;
   onAbrirComentario: () => void;
   onEliminarComentario: () => void;
   onNotificarPadre?: () => void;
@@ -23,6 +24,7 @@ const FinalPeriodoCelda = ({
   comentario,
   tieneAlgunaNota,
   provisional = false,
+  soloLectura = false,
   onAbrirComentario,
   onEliminarComentario,
   onNotificarPadre,
@@ -49,7 +51,7 @@ const FinalPeriodoCelda = ({
         )}
         
         {/* Menú de opciones (visible on hover on desktop, always visible on mobile) */}
-        {tieneAlgunaNota && (
+        {tieneAlgunaNota && !soloLectura && (
           <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
             <DropdownMenu open={showMenu} onOpenChange={setShowMenu}>
               <DropdownMenuTrigger asChild>

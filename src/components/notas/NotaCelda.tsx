@@ -22,6 +22,7 @@ interface NotaCeldaProps {
   onEliminarComentario: () => void;
   onNotificarPadre?: () => void;
   placeholder?: string;
+  soloLectura?: boolean;
 }
 
 const NotaCelda = ({
@@ -38,8 +39,22 @@ const NotaCelda = ({
   onEliminarComentario,
   onNotificarPadre,
   placeholder = "0-5",
+  soloLectura = false,
 }: NotaCeldaProps) => {
   const [showMenu, setShowMenu] = useState(false);
+
+  if (soloLectura) {
+    return (
+      <td className="border-r border-b border-border p-1 text-center text-sm min-w-[120px] relative">
+        <div className="relative flex items-center justify-center h-8">
+          <span>{nota !== undefined ? nota.toFixed(2) : <span className="text-muted-foreground">—</span>}</span>
+          {comentario && (
+            <div className="absolute top-0 right-2 w-2 h-2 bg-amber-500 rounded-full" title={comentario} />
+          )}
+        </div>
+      </td>
+    );
+  }
 
   return (
     <td className="border-r border-b border-border p-1 text-center text-sm min-w-[120px] relative group">
