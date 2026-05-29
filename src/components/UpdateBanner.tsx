@@ -31,16 +31,21 @@ export default function UpdateBanner() {
 
   const handleClick = async () => {
     try {
-      // Activa el SW nuevo y recarga la página automáticamente.
+      // Activa el SW nuevo y recarga la página automáticamente cuando este
+      // toma control (controllerchange).
       await updateServiceWorker(true);
     } catch (e) {
       console.warn("updateServiceWorker falló, forzando reload:", e);
     }
-    // Salvavidas: si updateServiceWorker no logra recargar (por ejemplo si el SW
-    // no está en estado waiting, o si la promesa se cuelga), recargamos a mano.
+    // Salvavidas: solo si el SW nuevo no tomó control y la página no recargó
+    // sola, forzamos la recarga a los 3s. Antes era 500ms, lo que disparaba
+    // ANTES de que el SW nuevo activara: recargaba con el viejo aún en control,
+    // needRefresh volvía a true y la barra reaparecía en bucle ("actualizando"
+    // infinito). Con 3s la recarga normal del SW ocurre primero y este timeout
+    // muere al navegar la página.
     setTimeout(() => {
       window.location.reload();
-    }, 500);
+    }, 3000);
   };
 
   return (
