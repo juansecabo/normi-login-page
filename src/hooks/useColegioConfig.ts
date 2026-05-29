@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "@/lib/apiClient";
+import { getSession } from "@/hooks/useSession";
 
 export interface RangoDesempeno {
   label: string;
@@ -31,8 +32,16 @@ const DEFAULT_CONFIG: ColegioConfig = {
   ],
 };
 
-let cached: { nombre: string; logoUrl: string | null; config: ColegioConfig; expiresAt: number } | null = null;
+let cached: { nombre: string; logoUrl: string | null; config: ColegioConfig; expiresAt: number; colegioId: string | null } | null = null;
 const TTL_MS = 60_000;
+
+const colegioActualId = (): string | null => {
+  try { return getSession().colegio_id || null; } catch { return null; }
+};
+// Cache válido solo si no expiró Y es del colegio activo. Así, al "Cambiar perfil"
+// a otro colegio, el escudo/nombre/escala se refrescan en vez de quedarse pegados.
+const cacheValido = (): boolean =>
+  !!cached && cached.expiresAt > Date.now() && cached.colegioId === colegioActualId();
 
 /**
  * Config del colegio actual: nombre, escala, nota aprobatoria, rangos de desempeño, etc.
@@ -42,20 +51,23 @@ const TTL_MS = 60_000;
  * de constantes hardcodeadas (3.0, 4.5, etc).
  */
 export function useColegioConfig() {
-  const [nombre, setNombre] = useState<string>(() => cached?.nombre || "");
-  const [logoUrl, setLogoUrl] = useState<string | null>(() => cached?.logoUrl || null);
-  const [config, setConfig] = useState<ColegioConfig>(() => cached?.config || DEFAULT_CONFIG);
-  const [loading, setLoading] = useState(!cached || cached.expiresAt < Date.now());
+  const [nombre, setNombre] = useState<string>(() => (cacheValido() ? cached!.nombre : ""));
+  const [logoUrl, setLogoUrl] = useState<string | null>(() => (cacheValido() ? cached!.logoUrl : null));
+  const [config, setConfig] = useState<ColegioConfig>(() => (cacheValido() ? cached!.config : DEFAULT_CONFIG));
+  const [loading, setLoading] = useState(!cacheValido());
+
+  // Reacciona al colegio de la sesión: al cambiar de perfil (otro colegio) se re-pide.
+  const sesionColegioId = colegioActualId();
 
   useEffect(() => {
-    const now = Date.now();
-    if (cached && cached.expiresAt > now) {
-      setNombre(cached.nombre);
-      setLogoUrl(cached.logoUrl);
-      setConfig(cached.config);
+    if (cacheValido()) {
+      setNombre(cached!.nombre);
+      setLogoUrl(cached!.logoUrl);
+      setConfig(cached!.config);
       setLoading(false);
       return;
     }
+    setLoading(true);
     let cancel = false;
     (async () => {
       try {
@@ -71,7 +83,7 @@ export function useColegioConfig() {
         }
         const nom = res.nombre || "";
         const lu = res.logo_url || null;
-        cached = { nombre: nom, logoUrl: lu, config: cfg, expiresAt: Date.now() + TTL_MS };
+        cached = { nombre: nom, logoUrl: lu, config: cfg, expiresAt: Date.now() + TTL_MS, colegioId: colegioActualId() };
         setNombre(nom);
         setLogoUrl(lu);
         setConfig(cfg);
@@ -82,7 +94,7 @@ export function useColegioConfig() {
       }
     })();
     return () => { cancel = true; };
-  }, []);
+  }, [sesionColegioId]);
 
   return { nombre, logoUrl, config, loading };
 }
