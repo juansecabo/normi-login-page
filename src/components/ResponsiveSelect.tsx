@@ -41,7 +41,7 @@ const ResponsiveSelect = ({ value, onValueChange, placeholder, options, disabled
 
       {/* Desktop: shadcn Select */}
       <div className="hidden md:block">
-        <Select value={value} onValueChange={onValueChange} disabled={disabled}>
+        <Select value={value || undefined} onValueChange={onValueChange} disabled={disabled}>
           <SelectTrigger>
             <SelectValue placeholder={placeholder} />
           </SelectTrigger>
