@@ -173,6 +173,19 @@ export function promedioGeneral(notas: NotaCalc[], grupos: GrupoCalc[] = []): {
  *    suma ≈ 100; cada hoja de grupo tiene al menos una actividad calificada.
  * Conservador: ante la duda devuelve false (→ se muestra como "Provisional").
  */
+/**
+ * Promedio (recursivo) de UN grupo/subgrupo para un set de notas:
+ *  - grupo hoja: promedio simple de sus actividades calificadas.
+ *  - grupo con subgrupos: combinación de los promedios de subgrupos ponderada
+ *    por su % (igual que notaDelGrupo). Solo visual (no se guarda).
+ * Devuelve null si aún no hay nada calificado dentro del grupo.
+ */
+export function promedioDeGrupo(grupoId: string, notas: NotaCalc[], grupos: GrupoCalc[]): number | null {
+  const g = grupos.find((x) => x.id === grupoId);
+  if (!g) return null;
+  return notaDelGrupo(g, notas, grupos).nota;
+}
+
 export function esPeriodoCompleto(notas: NotaCalc[], grupos: GrupoCalc[] = []): boolean {
   if (notas.length === 0) return false;
   if (notas.some((n) => n.nota === null || n.nota === undefined)) return false;

@@ -4,7 +4,7 @@ import { getPeriodoActual } from "@/utils/periodoActual";
 import { anoEscolarActual } from "@/utils/anoEscolar";
 import ComentarioModalReadOnly from "@/components/notas/ComentarioModalReadOnly";
 import { MessageSquareText } from "lucide-react";
-import { promedioGeneral, esPeriodoCompleto, type NotaCalc, type GrupoCalc } from "@/lib/gradeCalculator";
+import { promedioGeneral, esPeriodoCompleto, promedioDeGrupo, type NotaCalc, type GrupoCalc } from "@/lib/gradeCalculator";
 
 interface ConsolidadoNotasProps {
   idEstudiante: string;
@@ -65,7 +65,9 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
   const [actividadesPorAsignatura, setActividadesPorAsignatura] = useState<ActividadesPorAsignatura>({});
   const [notas, setNotas] = useState<NotasEstudiante>({});
   const [comentarios, setComentarios] = useState<ComentariosEstudiante>({});
-  const [periodosActivos, setPeriodosActivos] = useState<PeriodosActivos>({});
+  // Periodo activo COMPARTIDO entre todas las asignaturas: cambiarlo en una
+  // cambia la vista de todas (pedido del usuario).
+  const [periodoGlobal, setPeriodoGlobal] = useState<number>(getPeriodoActual());
   // Grupos jerárquicos por asignatura. Si una (asignatura, periodo) tiene
   // grupos, calcularFinalPeriodo usa promedioGeneral con ellos.
   const [grupos, setGrupos] = useState<GrupoLocal[]>([]);
@@ -147,11 +149,6 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
         (pcData || []).forEach((pc: any) => { pcMap[`${pc.asignatura}|${pc.periodo}`] = !!pc.completo; });
         setPeriodosCompletos(pcMap);
 
-        const periodosIniciales: PeriodosActivos = {};
-        asignaturasDelGrado.forEach(asignatura => {
-          periodosIniciales[asignatura] = getPeriodoActual();
-        });
-        setPeriodosActivos(periodosIniciales);
 
         if (asignaturasDelGrado.length === 0) {
           setLoading(false);
@@ -295,6 +292,20 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
     return res.promedio;
   };
 
+  // Promedio (visual) de un grupo/subgrupo para este estudiante.
+  const promedioGrupoVista = (asignatura: string, periodo: number, grupoId: string): number | null => {
+    const acts = getActividadesPorPeriodo(asignatura, periodo);
+    const notasCalc: NotaCalc[] = acts.map((a) => ({
+      porcentaje: a.porcentaje,
+      nota: notas[asignatura]?.[periodo]?.[a.id] !== undefined ? (notas[asignatura][periodo][a.id] as number) : null,
+      grupo_id: a.grupo_id ?? actividadGrupo.get(`${asignatura}|${a.id}`) ?? null,
+    }));
+    const gruposCalc: GrupoCalc[] = grupos
+      .filter((g) => g.asignatura === asignatura && g.periodo === periodo)
+      .map((g) => ({ id: g.id, porcentaje: g.porcentaje, parent_id: g.parent_id }));
+    return promedioDeGrupo(grupoId, notasCalc, gruposCalc);
+  };
+
   // ¿El periodo está objetivamente completo? (si no, la definitiva es provisional)
   const periodoCompletoParaAsig = (asignatura: string, periodo: number): boolean => {
     const acts = getActividadesPorPeriodo(asignatura, periodo);
@@ -338,8 +349,9 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
     return Math.round((suma / periodosConNota) * 10) / 10;
   };
 
-  const handleChangePeriodo = (asignatura: string, periodo: number) => {
-    setPeriodosActivos(prev => ({ ...prev, [asignatura]: periodo }));
+  const handleChangePeriodo = (_asignatura: string, periodo: number) => {
+    // Periodo compartido: cambiar en una asignatura cambia todas.
+    setPeriodoGlobal(periodo);
   };
 
   if (loading) {
@@ -366,7 +378,7 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
 
       {/* Tabla por cada asignatura */}
       {asignaturas.map((asignatura) => {
-        const periodoActivo = periodosActivos[asignatura] || 1;
+        const periodoActivo = periodoGlobal;
         const actividadesDelPeriodo = getActividadesPorPeriodo(asignatura, periodoActivo);
         const finalDefinitiva = calcularFinalDefinitiva(asignatura);
 
@@ -385,11 +397,11 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
               </div>
               {(periodosCompletos[`${asignatura}|${periodoActivo}`] || getPorcentajeUsado(asignatura, periodoActivo) === 100) ? (
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-semibold whitespace-nowrap">
-                  ✓ {periodos.find(p => p.numero === periodoActivo)?.nombre || `${periodoActivo}°`} Periodo completo
+                  ✓ Periodo completo
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-medium whitespace-nowrap">
-                  {periodos.find(p => p.numero === periodoActivo)?.nombre || `${periodoActivo}°`} Periodo en curso
+                  Periodo no completo
                 </span>
               )}
             </div>
@@ -501,8 +513,9 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
                       };
                       return (
                         <div key={g.id} className="border border-border rounded bg-muted/20">
-                          <div className="px-3 py-1.5 bg-primary/10 font-semibold text-sm">
-                            {(g as any).nombre || ''} <span className="text-muted-foreground font-normal">({g.porcentaje}%)</span>
+                          <div className="px-3 py-1.5 bg-primary/10 font-semibold text-sm flex items-center justify-between">
+                            <span>{(g as any).nombre || ''} <span className="text-muted-foreground font-normal">({g.porcentaje}%)</span></span>
+                            {(() => { const pg = promedioGrupoVista(asignatura, periodoActivo, g.id); return pg !== null ? <span className="text-primary font-bold">Prom: {pg.toFixed(1)}</span> : null; })()}
                           </div>
                           <div className="px-3 py-1">
                             {actsDirectas.map(renderActFila)}
@@ -511,8 +524,9 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
                               if (actsSub.length === 0) return null;
                               return (
                                 <div key={sg.id} className="ml-3 mt-1.5 border-l-2 border-primary/30 pl-3">
-                                  <div className="text-xs font-medium text-muted-foreground py-1">
-                                    {(sg as any).nombre || ''} ({sg.porcentaje}% del grupo padre)
+                                  <div className="text-xs font-medium text-muted-foreground py-1 flex items-center justify-between">
+                                    <span>{(sg as any).nombre || ''} ({sg.porcentaje}% del grupo padre)</span>
+                                    {(() => { const ps = promedioGrupoVista(asignatura, periodoActivo, sg.id); return ps !== null ? <span className="text-primary font-bold">Prom: {ps.toFixed(1)}</span> : null; })()}
                                   </div>
                                   {actsSub.map(renderActFila)}
                                 </div>

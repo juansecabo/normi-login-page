@@ -8,7 +8,7 @@ import { Plus, MoreVertical, Pencil, Trash2, Send, Calendar, Download, FileSprea
 import { getSession } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { useGruposNotas, type GrupoNotas } from "@/hooks/useGruposNotas";
-import { promedioGeneral, esPeriodoCompleto, type NotaCalc, type GrupoCalc } from "@/lib/gradeCalculator";
+import { promedioGeneral, esPeriodoCompleto, promedioDeGrupo, type NotaCalc, type GrupoCalc } from "@/lib/gradeCalculator";
 import {
   Dialog,
   DialogContent,
@@ -1407,6 +1407,29 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   // detectar las no calificadas, y delega en esPeriodoCompleto (mismo criterio
   // que el backend/agente). No depende del checkbox del profe (ese solo gatea
   // las notificaciones).
+  // Promedio de la CLASE para un grupo/subgrupo en un periodo (visual): media de
+  // los promedios de cada estudiante en ese grupo. (En la tabla del profe/rector,
+  // que es multi-estudiante, mostramos el promedio del curso por grupo.)
+  const promedioGrupoClase = useCallback((periodo: number, grupoId: string): number | null => {
+    const acts = getActividadesPorPeriodo(periodo);
+    const gruposCalc: GrupoCalc[] = gruposNotas
+      .filter((g) => g.periodo === periodo)
+      .map((g) => ({ id: g.id, porcentaje: g.porcentaje, parent_id: g.parent_id }));
+    const vals: number[] = [];
+    for (const est of estudiantes) {
+      const notasEst = notas[est.id]?.[periodo] || {};
+      const notasCalc: NotaCalc[] = acts.map((a) => ({
+        porcentaje: a.porcentaje,
+        nota: notasEst[a.id] !== undefined ? (notasEst[a.id] as number) : null,
+        grupo_id: a.grupo_id ?? null,
+      }));
+      const p = promedioDeGrupo(grupoId, notasCalc, gruposCalc);
+      if (p !== null) vals.push(p);
+    }
+    if (vals.length === 0) return null;
+    return Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 10) / 10;
+  }, [actividades, gruposNotas, notas, estudiantes]);
+
   const periodoCompletoParaEst = useCallback((idEstudiantil: string, periodo: number): boolean => {
     const acts = getActividadesPorPeriodo(periodo);
     if (acts.length === 0) return false;
@@ -3354,11 +3377,11 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
           {periodoActivo >= 1 && (
             (getPeriodoCompleto(periodoActivo) || getPorcentajeUsado(periodoActivo) === 100) ? (
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-semibold">
-                ✓ {periodos.find(p => p.numero === periodoActivo)?.nombre} completo
+                ✓ Periodo completo
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-medium">
-                {periodos.find(p => p.numero === periodoActivo)?.nombre} en curso
+                Periodo no completo
               </span>
             )
           )}
@@ -3542,6 +3565,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                         {sec.grupo.porcentaje !== null && (
                                           <span className="text-white/70 text-[10px]">({sec.grupo.porcentaje}%)</span>
                                         )}
+                                        {(() => { const pc = promedioGrupoClase(periodoActivo, sec.grupo.id); return pc !== null ? <span className="text-amber-200 text-[10px] font-bold">Prom: {pc.toFixed(1)}</span> : null; })()}
                                       </div>
                                       {!soloLectura && (
                                       <DropdownMenu>
@@ -3585,6 +3609,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                       {sec.grupo.porcentaje !== null && (
                                         <span className="text-white/70 text-[10px]">({sec.grupo.porcentaje}%)</span>
                                       )}
+                                      {(() => { const pc = promedioGrupoClase(periodoActivo, sec.grupo.id); return pc !== null ? <span className="text-amber-200 text-[10px] font-bold">Prom: {pc.toFixed(1)}</span> : null; })()}
                                     </div>
                                     {!soloLectura && (
                                     <DropdownMenu>
@@ -3774,6 +3799,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                       {sub.grupo.porcentaje !== null && (
                                         <span className="text-white/70 text-[10px]">({sub.grupo.porcentaje}%)</span>
                                       )}
+                                      {(() => { const pc = promedioGrupoClase(periodoActivo, sub.grupo!.id); return pc !== null ? <span className="text-amber-200 text-[10px] font-bold">Prom: {pc.toFixed(1)}</span> : null; })()}
                                     </div>
                                     <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
