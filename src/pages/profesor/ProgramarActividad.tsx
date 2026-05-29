@@ -41,7 +41,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Calendar, Paperclip, FileText, X, Loader2, Pencil, Trash2, Eye, Download } from "lucide-react";
+import { Calendar, Paperclip, FileText, X, Loader2, Pencil, Trash2, Eye, Download, RotateCcw } from "lucide-react";
 import { es } from "date-fns/locale";
 
 const diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
@@ -344,6 +344,16 @@ const ProgramarActividad = () => {
     setActSalon("");
   };
 
+  const limpiarFormulario = () => {
+    setAsignaturaSeleccionada("");
+    setGradoSeleccionado("");
+    setSalonSeleccionado("");
+    setTipoSeleccionado("");
+    setDescripcion("");
+    setFechaSeleccionada(undefined);
+    setArchivosSeleccionados([]);
+  };
+
   const handleProgramar = async () => {
     if (!salonSeleccionado) {
       toast({ title: "Error", description: "Selecciona un salón", variant: "destructive" });
@@ -631,6 +641,17 @@ const ProgramarActividad = () => {
                 <div className="text-center text-muted-foreground py-8">No tienes asignaturas asignadas</div>
               ) : (
                 <>
+                  <div className="flex justify-end -mt-1">
+                    <button
+                      type="button"
+                      onClick={limpiarFormulario}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-input bg-background rounded-md hover:bg-muted transition-colors"
+                      title="Limpiar todos los campos"
+                    >
+                      <RotateCcw className="w-4 h-4" /> Limpiar
+                    </button>
+                  </div>
+
                   {/* 1. Asignatura */}
                   <div className="space-y-2">
                     <Label>Asignatura</Label>
