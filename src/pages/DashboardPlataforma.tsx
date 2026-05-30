@@ -40,6 +40,7 @@ const DashboardPlataforma = () => {
         "Administrador",
         null, null, null, null, false,
         sa.avatar_url || null,
+        c.id, c.nombre, c.logo_url, c.slug,
       );
       navigate("/dashboard-admin");
     } catch (err: any) {
