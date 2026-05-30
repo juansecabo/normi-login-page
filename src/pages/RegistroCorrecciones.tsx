@@ -154,6 +154,11 @@ export default function RegistroCorrecciones() {
                 </button>
               ))}
             </div>
+            <img
+              src="/normi-registro.png"
+              alt="Normi"
+              className="mx-auto w-56 max-w-[70%] drop-shadow-sm select-none pointer-events-none"
+            />
           </section>
         )}
 
