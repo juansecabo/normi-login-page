@@ -81,7 +81,7 @@ export default function CorreccionesRegistroAdmin() {
       return [`Aparece como ${s.perfil_actual} → quiere ${s.perfil_solicitado}`, hijos].filter(Boolean).join(" · ");
     }
     if (s.tipo === "no_registrado") {
-      return [`Quiere registrarse como Acudiente`, hijos].filter(Boolean).join(" · ");
+      return [`Quiere registrarse como ${s.perfil_solicitado || "—"}`, hijos].filter(Boolean).join(" · ");
     }
     return hijos;
   };

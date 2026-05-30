@@ -91,15 +91,18 @@ export default function RegistroCorrecciones() {
     setHijos((prev) => prev.map((h, idx) => (idx === i ? v.replace(/\D/g, "") : h)));
   };
 
-  const pideHijos = tipo === "no_registrado" || tipo === "hijos_faltantes" ||
-    (tipo === "perfil_incorrecto" && perfilSolicitado === "Acudiente");
+  const pideHijos = tipo === "hijos_faltantes" ||
+    ((tipo === "no_registrado" || tipo === "perfil_incorrecto") && perfilSolicitado === "Acudiente");
 
   const enviar = async () => {
     const hijosLimpios = hijos.map((h) => h.replace(/\D/g, "")).filter(Boolean);
     const payload: Record<string, unknown> = { colegio_id: colegioId, tipo, cedula };
 
     if (tipo === "no_registrado") {
-      payload.apellidos = apellidos; payload.nombres = nombres; payload.celular = celular; payload.hijos = hijosLimpios;
+      payload.perfil_solicitado = perfilSolicitado;
+      if (perfilSolicitado === "Acudiente") {
+        payload.apellidos = apellidos; payload.nombres = nombres; payload.celular = celular; payload.hijos = hijosLimpios;
+      }
     } else if (tipo === "perfil_incorrecto") {
       payload.perfil_actual = perfilActual; payload.perfil_solicitado = perfilSolicitado;
       if (perfilSolicitado === "Acudiente") payload.hijos = hijosLimpios;
@@ -206,14 +209,35 @@ export default function RegistroCorrecciones() {
             <Card className="p-5 space-y-4">
               <h2 className="text-lg font-bold text-foreground">{CASOS.find((c) => c.tipo === tipo)?.titulo}</h2>
 
-              {/* Cédula (todos los casos) */}
-              <div className="space-y-1.5">
-                <Label>Tu número de cédula</Label>
-                <Input inputMode="numeric" value={cedula} onChange={(e) => setCedula(e.target.value.replace(/\D/g, ""))} placeholder="Ej: 1102345678" />
-              </div>
-
-              {/* Caso 1: no registrado → apellidos, nombres */}
+              {/* No registrado: primero el perfil (estudiante o acudiente) */}
               {tipo === "no_registrado" && (
+                <div className="space-y-1.5">
+                  <Label>¿Eres estudiante o acudiente?</Label>
+                  <div className="flex gap-2">
+                    {PERFILES.map((p) => (
+                      <Button key={p} type="button" variant={perfilSolicitado === p ? "default" : "outline"} className="flex-1"
+                        onClick={() => setPerfilSolicitado(p)}>
+                        {p}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Documento de la persona (en no registrado solo aparece tras elegir perfil) */}
+              {(tipo !== "no_registrado" || perfilSolicitado) && (
+                <div className="space-y-1.5">
+                  <Label>
+                    {tipo === "no_registrado" && perfilSolicitado === "Estudiante"
+                      ? "Tu número de identificación"
+                      : "Tu número de cédula"}
+                  </Label>
+                  <Input inputMode="numeric" value={cedula} onChange={(e) => setCedula(e.target.value.replace(/\D/g, ""))} placeholder="Ej: 1102345678" />
+                </div>
+              )}
+
+              {/* No registrado + acudiente: apellidos, nombres, celular */}
+              {tipo === "no_registrado" && perfilSolicitado === "Acudiente" && (
                 <>
                   <div className="space-y-1.5">
                     <Label>Tus apellidos</Label>
@@ -276,7 +300,7 @@ export default function RegistroCorrecciones() {
                 </div>
               )}
 
-              <Button onClick={enviar} disabled={enviando} className="w-full">
+              <Button onClick={enviar} disabled={enviando || (tipo === "no_registrado" && !perfilSolicitado)} className="w-full">
                 {enviando ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Enviando…</> : "Enviar solicitud"}
               </Button>
               <p className="text-xs text-muted-foreground text-center">
