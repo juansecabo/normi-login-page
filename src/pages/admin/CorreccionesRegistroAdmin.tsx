@@ -6,7 +6,7 @@ import { toast } from "@/hooks/use-toast";
 import { apiRequest, ApiError } from "@/lib/apiClient";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
-type Estado = "pendiente" | "activo" | "solucionado";
+type Estado = "pendiente" | "solucionado";
 interface Solicitud {
   id: number;
   tipo: "no_registrado" | "perfil_incorrecto" | "hijos_faltantes";
@@ -29,7 +29,6 @@ const TIPO_LABEL: Record<Solicitud["tipo"], string> = {
 
 const ESTADOS: { v: Estado; label: string; on: string }[] = [
   { v: "pendiente", label: "Pendiente", on: "bg-amber-500 hover:bg-amber-500 text-white" },
-  { v: "activo", label: "Activo", on: "bg-blue-600 hover:bg-blue-600 text-white" },
   { v: "solucionado", label: "Solucionado", on: "bg-green-600 hover:bg-green-600 text-white" },
 ];
 

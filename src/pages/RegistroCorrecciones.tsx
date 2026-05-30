@@ -15,7 +15,7 @@ interface SolicitudPub {
   nombre: string;
   tipo: Tipo;
   tipo_label: string;
-  estado: "pendiente" | "activo" | "solucionado";
+  estado: "pendiente" | "solucionado";
   created_at: string;
 }
 
@@ -30,14 +30,13 @@ const MENSAJES_ERROR: Record<string, string> = {
   tipo_invalido: "Selecciona un caso válido.",
   cedula_requerida: "La cédula es obligatoria.",
   nombre_requerido: "Escribe tus apellidos y nombres.",
-  hijos_requeridos: "Escribe al menos la cédula de un estudiante.",
+  hijos_requeridos: "Escribe al menos la identificación de un estudiante.",
   perfil_invalido: "Selecciona los perfiles.",
   perfiles_iguales: "El perfil actual y el deseado no pueden ser el mismo.",
 };
 
 const estadoEstilo: Record<SolicitudPub["estado"], { label: string; clase: string }> = {
   pendiente: { label: "Pendiente", clase: "bg-amber-100 text-amber-800 border-amber-300" },
-  activo: { label: "Activo", clase: "bg-blue-100 text-blue-800 border-blue-300" },
   solucionado: { label: "Solucionado", clase: "bg-green-100 text-green-800 border-green-300" },
 };
 
@@ -249,8 +248,8 @@ export default function RegistroCorrecciones() {
                 <div className="space-y-1.5">
                   <Label>
                     {tipo === "hijos_faltantes"
-                      ? "Cédulas de los estudiantes que te faltan (hasta 4)"
-                      : "Cédulas de tus estudiantes en el colegio (hasta 4)"}
+                      ? "Identificación de los estudiantes que te faltan (hasta 4)"
+                      : "Identificación de tus estudiantes en el colegio (hasta 4)"}
                   </Label>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {hijos.map((h, i) => (
@@ -306,7 +305,7 @@ export default function RegistroCorrecciones() {
                 </table>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">Las cédulas no se muestran aquí por privacidad; solo el colegio las ve.</p>
+            <p className="text-xs text-muted-foreground">Los documentos de identidad no se muestran aquí por privacidad; solo el colegio los ve.</p>
           </section>
         )}
       </main>
