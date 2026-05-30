@@ -30,6 +30,7 @@ const MENSAJES_ERROR: Record<string, string> = {
   tipo_invalido: "Selecciona un caso válido.",
   cedula_requerida: "La cédula es obligatoria.",
   nombre_requerido: "Escribe tus apellidos y nombres.",
+  celular_requerido: "Escribe un número de celular válido.",
   hijos_requeridos: "Escribe al menos la identificación de un estudiante.",
   perfil_invalido: "Selecciona los perfiles.",
   perfiles_iguales: "El perfil actual y el deseado no pueden ser el mismo.",
@@ -51,6 +52,7 @@ export default function RegistroCorrecciones() {
   const [cedula, setCedula] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [nombres, setNombres] = useState("");
+  const [celular, setCelular] = useState("");
   const [perfilActual, setPerfilActual] = useState("");
   const [perfilSolicitado, setPerfilSolicitado] = useState("");
   const [hijos, setHijos] = useState<string[]>(["", "", "", ""]);
@@ -81,7 +83,7 @@ export default function RegistroCorrecciones() {
   useEffect(() => { if (colegioId) cargarSolicitudes(colegioId); }, [colegioId, cargarSolicitudes]);
 
   const limpiarForm = () => {
-    setCedula(""); setApellidos(""); setNombres("");
+    setCedula(""); setApellidos(""); setNombres(""); setCelular("");
     setPerfilActual(""); setPerfilSolicitado(""); setHijos(["", "", "", ""]);
   };
 
@@ -97,7 +99,7 @@ export default function RegistroCorrecciones() {
     const payload: Record<string, unknown> = { colegio_id: colegioId, tipo, cedula };
 
     if (tipo === "no_registrado") {
-      payload.apellidos = apellidos; payload.nombres = nombres; payload.hijos = hijosLimpios;
+      payload.apellidos = apellidos; payload.nombres = nombres; payload.celular = celular; payload.hijos = hijosLimpios;
     } else if (tipo === "perfil_incorrecto") {
       payload.perfil_actual = perfilActual; payload.perfil_solicitado = perfilSolicitado;
       if (perfilSolicitado === "Acudiente") payload.hijos = hijosLimpios;
@@ -220,6 +222,10 @@ export default function RegistroCorrecciones() {
                   <div className="space-y-1.5">
                     <Label>Tus nombres</Label>
                     <Input value={nombres} onChange={(e) => setNombres(e.target.value)} placeholder="Nombres" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Tu número de celular</Label>
+                    <Input inputMode="numeric" value={celular} onChange={(e) => setCelular(e.target.value.replace(/\D/g, ""))} placeholder="Ej: 3001234567" />
                   </div>
                 </>
               )}

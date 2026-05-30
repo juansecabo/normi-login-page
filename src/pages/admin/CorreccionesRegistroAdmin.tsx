@@ -12,6 +12,7 @@ interface Solicitud {
   tipo: "no_registrado" | "perfil_incorrecto" | "hijos_faltantes";
   estado: Estado;
   cedula: string;
+  celular: string | null;
   apellidos: string | null;
   nombres: string | null;
   perfil_actual: string | null;
@@ -112,6 +113,7 @@ export default function CorreccionesRegistroAdmin() {
                     <p className="font-semibold text-foreground">
                       {s.apellidos && s.nombres ? `${s.apellidos}, ${s.nombres}` : "—"}
                       <span className="ml-2 font-mono text-sm text-muted-foreground">CC {s.cedula}</span>
+                      {s.celular && <span className="ml-2 font-mono text-sm text-muted-foreground">· 📱 {s.celular}</span>}
                     </p>
                     <p className="text-sm text-muted-foreground">{detalle(s)}</p>
                   </div>
