@@ -139,7 +139,7 @@ export default function RegistroCorrecciones() {
           paso de selección de colegio. Detrás del contenido y sin capturar clics. */}
       {!colegioId && (
         <img
-          src="/normi-registro.png"
+          src="/normi-registro.webp"
           alt="Normi"
           className="fixed bottom-0 left-1/2 -translate-x-1/2 h-[55vh] sm:h-[72vh] max-h-[780px] w-auto z-0 pointer-events-none select-none"
         />
