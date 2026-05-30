@@ -135,7 +135,17 @@ export default function RegistroCorrecciones() {
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+      {/* Imagen de Normi tipo hero: fija al fondo de la pantalla, solo en el
+          paso de selección de colegio. Detrás del contenido y sin capturar clics. */}
+      {!colegioId && (
+        <img
+          src="/normi-registro.png"
+          alt="Normi"
+          className="fixed bottom-0 left-1/2 -translate-x-1/2 h-[55vh] sm:h-[72vh] max-h-[780px] w-auto z-0 pointer-events-none select-none"
+        />
+      )}
+
+      <main className="relative z-10 max-w-3xl mx-auto px-4 py-6 space-y-6">
         {/* PASO 1: elegir colegio */}
         {!colegioId && (
           <section className="space-y-4">
@@ -154,11 +164,6 @@ export default function RegistroCorrecciones() {
                 </button>
               ))}
             </div>
-            <img
-              src="/normi-registro.png"
-              alt="Normi"
-              className="mx-auto w-56 max-w-[70%] drop-shadow-sm select-none pointer-events-none"
-            />
           </section>
         )}
 
