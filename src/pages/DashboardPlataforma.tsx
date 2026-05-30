@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Building2, Users, GraduationCap, UserCheck, Loader2, Pencil, LogIn } from "lucide-react";
 import HeaderNormi from "@/components/HeaderNormi";
 import EscudoColegio from "@/components/EscudoColegio";
-import { getSession, guardarSesionSuperAdmin, saveSession } from "@/hooks/useSession";
+import { getSession, guardarSesionSuperAdmin, restaurarSesionSuperAdmin, saveSession } from "@/hooks/useSession";
 import { apiClient, type ColegioPlataforma } from "@/lib/apiClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -100,15 +100,19 @@ const DashboardPlataforma = () => {
     }
   };
 
-  // Guard de sesion: si no es SuperAdmin redirigimos al login.
+  // Guard de sesión + carga inicial. Si llegamos aquí (p.ej. con el botón
+  // atrás del navegador) mientras estábamos impersonando un colegio como
+  // Administrador, restauramos la sesión del SuperAdmin para no fallar con
+  // 403 al cargar los colegios. Así "atrás" devuelve al selector de colegios.
   useEffect(() => {
-    const s = getSession();
+    let s = getSession();
+    if (s.cargo !== "SuperAdmin" && restaurarSesionSuperAdmin()) {
+      s = getSession();
+    }
     if (!s.id || s.cargo !== "SuperAdmin") {
       navigate("/", { replace: true });
+      return;
     }
-  }, [navigate]);
-
-  useEffect(() => {
     reload().finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
