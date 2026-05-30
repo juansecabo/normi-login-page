@@ -20,7 +20,7 @@ interface SolicitudPub {
 }
 
 const CASOS: { tipo: Tipo; titulo: string; desc: string; icon: typeof UserPlus }[] = [
-  { tipo: "no_registrado", titulo: "No estoy registrado", desc: "Soy acudiente y no aparezco en el sistema.", icon: UserPlus },
+  { tipo: "no_registrado", titulo: "No estoy registrado", desc: "Eres estudiante o acudiente y no apareces en el sistema.", icon: UserPlus },
   { tipo: "perfil_incorrecto", titulo: "Tengo el perfil equivocado", desc: "Aparezco como estudiante siendo acudiente, o al revés.", icon: UserCog },
   { tipo: "hijos_faltantes", titulo: "Me faltan hijos por registrar", desc: "Soy acudiente pero no tengo a todos mis estudiantes.", icon: Users },
 ];
@@ -100,8 +100,9 @@ export default function RegistroCorrecciones() {
 
     if (tipo === "no_registrado") {
       payload.perfil_solicitado = perfilSolicitado;
+      payload.celular = celular;
       if (perfilSolicitado === "Acudiente") {
-        payload.apellidos = apellidos; payload.nombres = nombres; payload.celular = celular; payload.hijos = hijosLimpios;
+        payload.apellidos = apellidos; payload.nombres = nombres; payload.hijos = hijosLimpios;
       }
     } else if (tipo === "perfil_incorrecto") {
       payload.perfil_actual = perfilActual; payload.perfil_solicitado = perfilSolicitado;
@@ -236,7 +237,7 @@ export default function RegistroCorrecciones() {
                 </div>
               )}
 
-              {/* No registrado + acudiente: apellidos, nombres, celular */}
+              {/* No registrado + acudiente: apellidos, nombres */}
               {tipo === "no_registrado" && perfilSolicitado === "Acudiente" && (
                 <>
                   <div className="space-y-1.5">
@@ -247,11 +248,15 @@ export default function RegistroCorrecciones() {
                     <Label>Tus nombres</Label>
                     <Input value={nombres} onChange={(e) => setNombres(e.target.value)} placeholder="Nombres" />
                   </div>
-                  <div className="space-y-1.5">
-                    <Label>Tu número de celular</Label>
-                    <Input inputMode="numeric" value={celular} onChange={(e) => setCelular(e.target.value.replace(/\D/g, ""))} placeholder="Ej: 3001234567" />
-                  </div>
                 </>
+              )}
+
+              {/* No registrado: celular (tanto estudiante como acudiente) */}
+              {tipo === "no_registrado" && perfilSolicitado && (
+                <div className="space-y-1.5">
+                  <Label>Tu número de celular</Label>
+                  <Input inputMode="numeric" value={celular} onChange={(e) => setCelular(e.target.value.replace(/\D/g, ""))} placeholder="Ej: 3001234567" />
+                </div>
               )}
 
               {/* Caso 2: perfil incorrecto → perfiles */}
