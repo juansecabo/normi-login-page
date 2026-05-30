@@ -233,12 +233,20 @@ const Index = () => {
                   disabled={loading}
                   className="w-full flex items-center gap-4 p-4 rounded-lg border-2 border-input bg-background hover:border-primary hover:bg-primary/5 transition-all text-left disabled:opacity-50"
                 >
-                  <EscudoColegio
-                    logoUrl={m.colegio_logo_url}
-                    nombre={m.colegio_nombre}
-                    colorFondo={m.colegio_color}
-                    size={56}
-                  />
+                  {m.rol === "SuperAdmin" ? (
+                    <img
+                      src="/cailico-logo.webp"
+                      alt="Cailico"
+                      className="h-14 w-14 rounded-full object-contain bg-white shrink-0"
+                    />
+                  ) : (
+                    <EscudoColegio
+                      logoUrl={m.colegio_logo_url}
+                      nombre={m.colegio_nombre}
+                      colorFondo={m.colegio_color}
+                      size={56}
+                    />
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-muted-foreground">{m.rol} de</p>
                     <p className="font-semibold text-foreground truncate">{m.colegio_nombre}</p>
