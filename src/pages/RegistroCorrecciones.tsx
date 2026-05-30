@@ -141,7 +141,7 @@ export default function RegistroCorrecciones() {
         <img
           src="/normi-registro.webp"
           alt="Normi"
-          className="fixed bottom-0 left-1/2 -translate-x-1/2 h-[55vh] sm:h-[72vh] max-h-[780px] w-auto z-0 pointer-events-none select-none"
+          className="fixed bottom-0 left-1/2 -translate-x-1/2 w-[78vw] h-auto sm:w-auto sm:h-[62vh] max-w-none object-contain object-bottom z-0 pointer-events-none select-none"
         />
       )}
 
