@@ -90,7 +90,7 @@ export default function CorreccionesRegistroAdmin() {
       <header className="bg-primary text-primary-foreground py-4 px-4 shadow">
         <div className="max-w-5xl mx-auto flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="p-1 hover:bg-white/10 rounded"><ArrowLeft className="w-5 h-5" /></button>
-          <h1 className="text-lg font-bold">Correcciones de registro</h1>
+          <h1 className="text-lg font-bold">Registro</h1>
         </div>
       </header>
 

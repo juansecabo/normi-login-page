@@ -129,7 +129,7 @@ export default function RegistroCorrecciones() {
             <img src={colegioSel.logo_url} alt="" className="h-10 w-10 rounded-full bg-white object-contain" />
           )}
           <div>
-            <h1 className="text-lg font-bold leading-tight">Correcciones de registro</h1>
+            <h1 className="text-lg font-bold leading-tight">Registro</h1>
             <p className="text-xs opacity-90">{colegioSel ? colegioSel.nombre : "Notas Normi"}</p>
           </div>
         </div>
