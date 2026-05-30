@@ -226,7 +226,9 @@ const Index = () => {
           {/* Selector de membresía cuando la cédula está en varios colegios/roles */}
           {memberships && (
             <div className="space-y-3">
-              {memberships.map((m) => (
+              {[...memberships]
+                .sort((a, b) => (b.rol === "SuperAdmin" ? 1 : 0) - (a.rol === "SuperAdmin" ? 1 : 0))
+                .map((m) => (
                 <button
                   key={`${m.colegio_id}-${m.rol}`}
                   onClick={() => handleSelectMembership(m)}
