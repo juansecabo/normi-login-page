@@ -36,13 +36,13 @@ const FinalPeriodoCelda = ({
     <td className="border-r border-b border-border p-1 text-center text-sm min-w-[100px] bg-primary/10 font-semibold relative group">
       <div className="relative flex flex-col items-center justify-center min-h-8">
         <span
-          className={notaFinal === null ? "text-muted-foreground" : (esProvisional ? "italic text-amber-600" : "")}
+          className={notaFinal === null ? "text-muted-foreground" : ""}
           title={esProvisional ? "Provisional — el periodo aún no está completo" : undefined}
         >
-          {notaFinal !== null ? `${esProvisional ? "~" : ""}${notaFinal.toFixed(1)}` : "—"}
+          {notaFinal !== null ? notaFinal.toFixed(1) : "—"}
         </span>
         {esProvisional && (
-          <span className="text-[9px] font-normal leading-none text-amber-600/90">provisional</span>
+          <span className="text-[9px] font-normal leading-none text-muted-foreground">provisional</span>
         )}
 
         {/* Indicador de comentario */}

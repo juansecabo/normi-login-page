@@ -329,8 +329,8 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
     const prov = !periodoCompletoParaAsig(asignatura, periodo);
     if (!prov) return <span className={claseValor}>{nf.toFixed(1)}</span>;
     return (
-      <span className={`${claseValor} italic text-amber-600`} title="Provisional — el periodo aún no está completo">
-        ~{nf.toFixed(1)} <span className="text-[10px] font-normal not-italic">prov.</span>
+      <span className={claseValor} title="Provisional — el periodo aún no está completo">
+        {nf.toFixed(1)} <span className="text-[10px] font-normal text-muted-foreground">prov.</span>
       </span>
     );
   };
@@ -515,7 +515,6 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
                         <div key={g.id} className="border border-border rounded bg-muted/20">
                           <div className="px-3 py-1.5 bg-primary/10 font-semibold text-sm flex items-center justify-between">
                             <span>{(g as any).nombre || ''} <span className="text-muted-foreground font-normal">({g.porcentaje}%)</span></span>
-                            {(() => { const pg = promedioGrupoVista(asignatura, periodoActivo, g.id); return pg !== null ? <span className="text-primary font-bold">Prom: {pg.toFixed(1)}</span> : null; })()}
                           </div>
                           <div className="px-3 py-1">
                             {actsDirectas.map(renderActFila)}
@@ -526,7 +525,6 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
                                 <div key={sg.id} className="ml-3 mt-1.5 border-l-2 border-primary/30 pl-3">
                                   <div className="text-xs font-medium text-muted-foreground py-1 flex items-center justify-between">
                                     <span>{(sg as any).nombre || ''} ({sg.porcentaje}% del grupo padre)</span>
-                                    {(() => { const ps = promedioGrupoVista(asignatura, periodoActivo, sg.id); return ps !== null ? <span className="text-primary font-bold">Prom: {ps.toFixed(1)}</span> : null; })()}
                                   </div>
                                   {actsSub.map(renderActFila)}
                                 </div>

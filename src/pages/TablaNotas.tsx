@@ -3564,9 +3564,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                         <span>{sec.grupo.nombre}</span>
                                         {sec.grupo.porcentaje !== null && (
                                           <span className="text-white/70 text-[10px]">({sec.grupo.porcentaje}%)</span>
-                                        )}
-                                        {(() => { const pc = promedioGrupoClase(periodoActivo, sec.grupo.id); return pc !== null ? <span className="text-amber-200 text-[10px] font-bold">Prom: {pc.toFixed(1)}</span> : null; })()}
-                                      </div>
+                                        )}                                      </div>
                                       {!soloLectura && (
                                       <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
@@ -3798,9 +3796,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                       <span>{sub.grupo.nombre}</span>
                                       {sub.grupo.porcentaje !== null && (
                                         <span className="text-white/70 text-[10px]">({sub.grupo.porcentaje}%)</span>
-                                      )}
-                                      {(() => { const pc = promedioGrupoClase(periodoActivo, sub.grupo!.id); return pc !== null ? <span className="text-amber-200 text-[10px] font-bold">Prom: {pc.toFixed(1)}</span> : null; })()}
-                                    </div>
+                                      )}                                    </div>
                                     <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
                                         <button className="absolute top-1 right-1 p-1 rounded hover:bg-white/20" title="Más opciones">
