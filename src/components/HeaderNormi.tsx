@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Download, Repeat, KeyRound, LogOut, ArrowLeft } from "lucide-react";
+import { Download, Repeat, KeyRound, LogOut } from "lucide-react";
 import { clearSession, getSession, haySesionSuperAdminRespaldada, restaurarSesionSuperAdmin } from "@/hooks/useSession";
 import { useColegioConfig } from "@/hooks/useColegioConfig";
 import EscudoColegio from "@/components/EscudoColegio";
@@ -129,11 +129,11 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
               {enImpersonacion && (
                 <button
                   onClick={handleVolverPlataforma}
-                  title="Volver a Plataforma"
+                  title="Cambiar institución"
                   className="p-2 sm:px-3 sm:py-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground font-medium rounded-lg transition-all duration-200 text-sm flex items-center gap-1.5 whitespace-nowrap"
                 >
-                  <ArrowLeft className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-                  <span className="hidden sm:inline">Volver a Plataforma</span>
+                  <Repeat className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                  <span className="hidden sm:inline">Cambiar institución</span>
                 </button>
               )}
               {!enImpersonacion && getSession().multi_membership && (

@@ -201,7 +201,7 @@ export const guardarSesionSuperAdmin = () => {
 
 /** Decodifica el payload de un JWT sin verificar firma. Solo para chequear
  *  campos no sensibles (rol). El server siempre re-valida con la firma. */
-const decodeJwtPayload = (tok: string): { rol?: string; colegio_id?: string } | null => {
+const decodeJwtPayload = (tok: string): { rol?: string; sub?: string; colegio_id?: string } | null => {
   try {
     const parts = tok.split('.');
     if (parts.length !== 3) return null;
@@ -228,24 +228,21 @@ export const haySesionSuperAdminRespaldada = (): boolean => {
     const cargoActual = localStorage.getItem('cargo');
     const idActual = localStorage.getItem('id');
 
-    // Cualquier condición de identidad/rol no cumplida → limpiar y salir.
+    // Check de SOLO LECTURA: NO borra el backup. Antes lo borraba aquí, lo que
+    // causaba un bug: durante la impersonación el backup se crea mientras el
+    // cargo todavía es 'SuperAdmin' (seguimos en /dashboard-plataforma); un
+    // re-render intermedio entraba a esta rama y borraba el backup recién
+    // creado, así que al llegar al colegio ya no existía. La limpieza de
+    // backups huérfanos la hacen clearSession (logout) y saveSession (al entrar
+    // a un perfil que no sea Administrador).
     if (cargoActual !== 'Administrador' || !idActual || !SUPERADMIN_CEDULAS.includes(idActual)) {
-      if (sessionStorage.getItem(SA_JWT_BACKUP)) {
-        sessionStorage.removeItem(SA_JWT_BACKUP);
-        sessionStorage.removeItem(SA_SESSION_BACKUP);
-      }
       return false;
     }
-
     const tok = sessionStorage.getItem(SA_JWT_BACKUP);
     if (!tok) return false;
     const payload = decodeJwtPayload(tok);
-    // El JWT respaldado debe ser SuperAdmin Y de la misma persona que opera ahora
-    if (payload?.rol === 'SuperAdmin' && payload?.sub === idActual) return true;
-    // Backup con rol o sub incorrectos: limpiarlo.
-    sessionStorage.removeItem(SA_JWT_BACKUP);
-    sessionStorage.removeItem(SA_SESSION_BACKUP);
-    return false;
+    // El JWT respaldado debe ser SuperAdmin Y de la misma persona que opera ahora.
+    return payload?.rol === 'SuperAdmin' && payload?.sub === idActual;
   } catch { return false; }
 };
 
