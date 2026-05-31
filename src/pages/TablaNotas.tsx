@@ -3607,7 +3607,6 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                       {sec.grupo.porcentaje !== null && (
                                         <span className="text-white/70 text-[10px]">({sec.grupo.porcentaje}%)</span>
                                       )}
-                                      {(() => { const pc = promedioGrupoClase(periodoActivo, sec.grupo.id); return pc !== null ? <span className="text-amber-200 text-[10px] font-bold">Prom: {pc.toFixed(1)}</span> : null; })()}
                                     </div>
                                     {!soloLectura && (
                                     <DropdownMenu>
