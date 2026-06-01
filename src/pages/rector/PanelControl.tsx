@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { getSession, puedeAccederDashboard } from "@/hooks/useSession";
+import { getSession, puedeAccederDashboard, isAdmin } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { useGradosColegio } from "@/utils/grados";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +15,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -63,6 +64,7 @@ interface Estudiante {
   nivel: string;
   grado: string;
   salon: string;
+  avatar_url?: string | null;
 }
 
 interface Interno {
@@ -101,6 +103,7 @@ interface Perfil {
   padre_apellidos_only?: string;
   padre_id: string | null;
   numero_de_acudidos: string | null;
+  avatar_url?: string | null;
   acudido1_id: number | null;
   acudido1_nombre: string | null;
   acudido1_apellidos: string | null;
@@ -206,6 +209,8 @@ const PanelControl = () => {
   const [searchEst, setSearchEst] = useState("");
   const [filtroGradoEst, setFiltroGradoEst] = useState("todos");
   const [filtroSalonEst, setFiltroSalonEst] = useState("todos");
+  const [filtroFotoEst, setFiltroFotoEst] = useState("todos");
+  const esAdmin = isAdmin();
   const [showEstDialog, setShowEstDialog] = useState(false);
   const [editingEst, setEditingEst] = useState<Estudiante | null>(null);
   const [showDeleteEst, setShowDeleteEst] = useState<Estudiante | null>(null);
@@ -279,6 +284,7 @@ const PanelControl = () => {
   const [searchPerf, setSearchPerf] = useState("");
   const [filtroGradoPerf, setFiltroGradoPerf] = useState("todos");
   const [filtroSalonPerf, setFiltroSalonPerf] = useState("todos");
+  const [filtroFotoPerf, setFiltroFotoPerf] = useState("todos");
   const [showPerfDialog, setShowPerfDialog] = useState(false);
   const [editingPerf, setEditingPerf] = useState<Perfil | null>(null);
   const [showDeletePerf, setShowDeletePerf] = useState<Perfil | null>(null);
@@ -349,15 +355,15 @@ const PanelControl = () => {
   // con .range — chunks manuales son más confiables.
   // La columna `contrasena` está en denyColumns, pero el proxy hace bypass
   // para Rector/Coordinador/Administrador (los únicos que entran al PanelControl).
-  const fetchUsuariosBatch = async (ids: string[]): Promise<Map<string, { nombres: string; apellidos: string; tel: string; contrasena: string }>> => {
-    const map = new Map<string, { nombres: string; apellidos: string; tel: string; contrasena: string }>();
+  const fetchUsuariosBatch = async (ids: string[]): Promise<Map<string, { nombres: string; apellidos: string; tel: string; contrasena: string; avatar_url: string | null }>> => {
+    const map = new Map<string, { nombres: string; apellidos: string; tel: string; contrasena: string; avatar_url: string | null }>();
     const CHUNK = 500;
     const unique = [...new Set(ids)];
     for (let i = 0; i < unique.length; i += CHUNK) {
       const slice = unique.slice(i, i + CHUNK);
       const { data } = await supabase
         .from("Usuarios")
-        .select("id, nombres, apellidos, numero_de_telefono, contrasena")
+        .select("id, nombres, apellidos, numero_de_telefono, contrasena, avatar_url")
         .in("id", slice);
       for (const u of (data || []) as any[]) {
         map.set(String(u.id), {
@@ -365,6 +371,7 @@ const PanelControl = () => {
           apellidos: (u.apellidos as string) || "",
           tel: (u.numero_de_telefono as string) || "",
           contrasena: (u.contrasena as string) || "",
+          avatar_url: (u.avatar_url as string) || null,
         });
       }
     }
@@ -389,6 +396,7 @@ const PanelControl = () => {
         apellidos: u?.apellidos || "",
         numero_de_telefono: u?.tel || "",
         contrasena: u?.contrasena || "",
+        avatar_url: u?.avatar_url || null,
       };
     });
     data.sort((a, b) => {
@@ -538,6 +546,7 @@ const PanelControl = () => {
           padre_id: String(a.id),
           numero_de_acudidos: null,
           contrasena: acuUser?.contrasena || null,
+          avatar_url: acuUser?.avatar_url || null,
         };
         // Mapear los 4 slots de acudidos con sufijo secuencial 1..N.
         let pos = 1;
@@ -1499,6 +1508,18 @@ const PanelControl = () => {
   const salonesParaGrado = (grado: string) =>
     grado === "todos" ? salonesTodos : (salonesPorGrado[grado] || []);
 
+  // Celda de foto de perfil (solo admin). Muestra la foto o las iniciales.
+  const renderFotoCell = (url: string | null | undefined, nombre: string) => (
+    <TableCell>
+      <Avatar className="h-9 w-9">
+        {url ? <AvatarImage src={url} alt={nombre} className="object-cover" /> : null}
+        <AvatarFallback className="text-[10px]">
+          {(nombre || "?").trim().split(/\s+/).slice(0, 2).map((w) => w[0] || "").join("").toUpperCase() || "?"}
+        </AvatarFallback>
+      </Avatar>
+    </TableCell>
+  );
+
   const filteredEst = estudiantes.filter((e) =>
     matchesSearch(
       `${e.apellidos} ${e.nombres} ${e.id} ${e.grado} ${e.salon}`,
@@ -1506,6 +1527,7 @@ const PanelControl = () => {
     )
     && (filtroGradoEst === "todos" || e.grado === filtroGradoEst)
     && (filtroSalonEst === "todos" || String(e.salon) === filtroSalonEst)
+    && (filtroFotoEst === "todos" || (filtroFotoEst === "con" ? !!e.avatar_url : !e.avatar_url))
   );
 
   // Un acudiente pasa el filtro si tiene AL MENOS un acudido que cumpla el
@@ -1540,6 +1562,7 @@ const PanelControl = () => {
       searchPerf
     )
     && perfAcudidoMatch(p, filtroGradoPerf, filtroSalonPerf)
+    && (filtroFotoPerf === "todos" || (filtroFotoPerf === "con" ? !!p.avatar_url : !p.avatar_url))
   );
 
   // Helper: render acudido fields for Asignacion dialog
@@ -1680,6 +1703,16 @@ const PanelControl = () => {
                     {salonesParaGrado(filtroGradoEst).map((s) => <SelectItem key={s} value={s}>Salón {s}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                {esAdmin && (
+                  <Select value={filtroFotoEst} onValueChange={setFiltroFotoEst}>
+                    <SelectTrigger className="sm:w-52"><SelectValue placeholder="Foto" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      <SelectItem value="con">Con foto</SelectItem>
+                      <SelectItem value="sin">Sin foto</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
               {loadingEst ? (
@@ -1691,6 +1724,7 @@ const PanelControl = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        {esAdmin && <TableHead>Foto</TableHead>}
                         <TableHead>ID</TableHead>
                         <TableHead>Apellidos</TableHead>
                         <TableHead>Nombres</TableHead>
@@ -1704,13 +1738,14 @@ const PanelControl = () => {
                     <TableBody>
                       {filteredEst.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={8} className="text-center text-muted-foreground">
+                          <TableCell colSpan={esAdmin ? 9 : 8} className="text-center text-muted-foreground">
                             No se encontraron estudiantes
                           </TableCell>
                         </TableRow>
                       ) : (
                         filteredEst.map((e: any) => (
                           <TableRow key={e.id}>
+                            {esAdmin && renderFotoCell(e.avatar_url, `${e.nombres || ""} ${e.apellidos || ""}`)}
                             <TableCell className="font-mono">{e.id}</TableCell>
                             <TableCell>{e.apellidos}</TableCell>
                             <TableCell>{e.nombres}</TableCell>
@@ -1937,6 +1972,16 @@ const PanelControl = () => {
                     {salonesParaGrado(filtroGradoPerf).map((s) => <SelectItem key={s} value={s}>Salón {s}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                {esAdmin && (
+                  <Select value={filtroFotoPerf} onValueChange={setFiltroFotoPerf}>
+                    <SelectTrigger className="sm:w-52"><SelectValue placeholder="Foto" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      <SelectItem value="con">Con foto</SelectItem>
+                      <SelectItem value="sin">Sin foto</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
               {loadingPerf ? (
@@ -1948,6 +1993,7 @@ const PanelControl = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        {esAdmin && <TableHead>Foto</TableHead>}
                         <TableHead>ID</TableHead>
                         <TableHead>Apellidos</TableHead>
                         <TableHead>Nombres</TableHead>
@@ -1960,13 +2006,14 @@ const PanelControl = () => {
                     <TableBody>
                       {filteredPerf.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center text-muted-foreground">
+                          <TableCell colSpan={esAdmin ? 8 : 7} className="text-center text-muted-foreground">
                             No se encontraron acudientes
                           </TableCell>
                         </TableRow>
                       ) : (
                         filteredPerf.map((p: any) => (
                           <TableRow key={p.padre_id || p.numero_de_telefono}>
+                            {esAdmin && renderFotoCell(p.avatar_url, `${p.acudiente_nombres_only || ""} ${p.padre_apellidos_only || ""}`)}
                             <TableCell className="font-mono">{p.padre_id || "—"}</TableCell>
                             <TableCell>{p.padre_apellidos_only || "—"}</TableCell>
                             <TableCell>{p.acudiente_nombres_only || "—"}</TableCell>
