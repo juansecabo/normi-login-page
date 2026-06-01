@@ -1098,8 +1098,40 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         }
       }
 
+      // Excluir salones donde la actividad con este nombre YA existe en el
+      // periodo. El insert de varias filas es atómico: si una choca con el
+      // UNIQUE (p.ej. al "También crear en" un salón donde ya estaba), fallaba
+      // TODO y no se creaba en ninguno. Ahora se crea solo donde falta.
+      let salonesFinal = salonesParaCrear;
+      try {
+        const { data: yaExisten } = await supabase
+          .from('Nombre de Actividades')
+          .select('salon')
+          .eq('ano_escolar', anoEscolarActual())
+          .eq('asignatura', asignaturaSeleccionada)
+          .eq('grado', gradoSeleccionado)
+          .eq('periodo', periodoActual)
+          .eq('nombre_actividad', nombreTrimmed)
+          .in('salon', salonesParaCrear);
+        const conflicto = new Set((yaExisten || []).map((r: any) => r.salon));
+        if (conflicto.size > 0) {
+          salonesFinal = salonesParaCrear.filter(s => !conflicto.has(s));
+          if (salonesFinal.length === 0) {
+            setGuardandoMultiple(false);
+            toast({
+              title: "Ya existe",
+              description: `La actividad "${nombreTrimmed}" ya existe en ${[...conflicto].join(', ')} para este periodo.`,
+              variant: "destructive",
+            });
+            return;
+          }
+        }
+      } catch (e) {
+        console.error('Error verificando duplicados por salón:', e);
+      }
+
       // Construir filas para insertar
-      const filasParaInsertar = salonesParaCrear.map(salon => ({
+      const filasParaInsertar = salonesFinal.map(salon => ({
         id_profesor: session.id,
         ano_escolar: anoEscolarActual(),
         asignatura: asignaturaSeleccionada,
@@ -1138,7 +1170,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
           return;
         }
 
-        console.log(`✅ Actividad guardada en ${salonesParaCrear.length} salón(es)`);
+        console.log(`✅ Actividad guardada en ${salonesFinal.length} salón(es)`);
       } catch (error) {
         console.error('Error:', error);
         toast({
@@ -1158,7 +1190,11 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         grupo_id: grupoActividadId,
       };
 
-      setActividades([...actividades, nuevaActividad]);
+      // Reflejar la columna en la tabla del salón actual solo si de verdad se
+      // creó ahí (si se omitió por ya existir, no duplicarla visualmente).
+      if (salonesFinal.includes(salonSeleccionado)) {
+        setActividades([...actividades, nuevaActividad]);
+      }
       setModalOpen(false);
       setGuardandoMultiple(false);
       // Sin popup: la nueva columna aparece al instante en la tabla.
