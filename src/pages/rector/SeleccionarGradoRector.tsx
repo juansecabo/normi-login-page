@@ -2,17 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getSession, isRectorOrCoordinador } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
-import { supabase } from "@/integrations/supabase/client";
-
-// Orden canónico de referencia. La lista REAL de grados se deriva por colegio
-// desde la tabla Estudiantes (RLS filtra por colegio), para que cada colegio
-// vea solo los grados que tiene: "Párvulo" existe en el Pestalozziano y no en
-// la Normal. Esto solo fija el ORDEN de presentación.
-const ORDEN_GRADOS = [
-  "Párvulo", "Prejardín", "Jardín", "Transición",
-  "Primero", "Segundo", "Tercero", "Cuarto", "Quinto",
-  "Sexto", "Séptimo", "Octavo", "Noveno", "Décimo", "Undécimo",
-];
+import { gradosDelColegio } from "@/utils/grados";
 
 const SeleccionarGradoRector = () => {
   const navigate = useNavigate();
@@ -32,14 +22,7 @@ const SeleccionarGradoRector = () => {
       return;
     }
 
-    (async () => {
-      const { data } = await supabase.from("Estudiantes").select("grado");
-      const existentes = new Set(
-        (data as { grado: string | null }[] | null)?.map(r => r.grado).filter(Boolean) || []
-      );
-      setGrados(ORDEN_GRADOS.filter(g => existentes.has(g)));
-      setLoading(false);
-    })();
+    gradosDelColegio().then((g) => { setGrados(g); setLoading(false); });
   }, [navigate]);
 
   const handleSelectGrado = (grado: string) => {

@@ -25,7 +25,7 @@ interface Comunicado {
 }
 
 const NIVELES_GRADOS: Record<string, string[]> = {
-  Preescolar: ["Prejardín", "Jardín", "Transición"],
+  Preescolar: ["Párvulo", "Prejardín", "Jardín", "Transición"],
   Primaria: ["Primero", "Segundo", "Tercero", "Cuarto", "Quinto"],
   Secundaria: ["Sexto", "Séptimo", "Octavo", "Noveno"],
   Media: ["Décimo", "Undécimo"],

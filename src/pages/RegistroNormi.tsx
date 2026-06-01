@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, isProfesor, puedeAccederDashboard, isAdmin } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
+import { useGradosColegio } from "@/utils/grados";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -17,13 +18,6 @@ import { Progress } from "@/components/ui/progress";
 import { Loader2, Search, Download } from "lucide-react";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-const GRADOS = [
-  "Prejardín", "Jardín", "Transición",
-  "Primero", "Segundo", "Tercero", "Cuarto", "Quinto",
-  "Sexto", "Séptimo", "Octavo", "Noveno",
-  "Décimo", "Undécimo",
-];
 
 const SALONES = ["1", "2", "3", "4", "5", "6"];
 
@@ -93,6 +87,7 @@ const RegistroNormi = () => {
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
   const [perfiles, setPerfiles] = useState<Perfil[]>([]);
   const [loading, setLoading] = useState(true);
+  const { grados } = useGradosColegio();
   const [gradoFilter, setGradoFilter] = useState("todos");
   const [salonFilter, setSalonFilter] = useState("todos");
   const [estadoFilter, setEstadoFilter] = useState("todos");
@@ -491,7 +486,7 @@ const RegistroNormi = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos los grados</SelectItem>
-              {GRADOS.map((g) => (
+              {grados.map((g) => (
                 <SelectItem key={g} value={g}>{g}</SelectItem>
               ))}
             </SelectContent>

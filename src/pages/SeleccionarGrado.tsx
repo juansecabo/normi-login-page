@@ -53,7 +53,7 @@ const SeleccionarGrado = () => {
           ?.flatMap(a => a['Grado(s)'] || [])
           .flat() || [];
         const ordenGrados = [
-          'Prejardín', 'Jardín', 'Transición',
+          'Párvulo', 'Prejardín', 'Jardín', 'Transición',
           'Primero', 'Segundo', 'Tercero', 'Cuarto', 'Quinto',
           'Sexto', 'Séptimo', 'Octavo', 'Noveno',
           'Décimo', 'Undécimo'

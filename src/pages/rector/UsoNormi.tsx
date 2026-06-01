@@ -27,7 +27,7 @@ interface SalonStats {
 }
 
 const GRADE_ORDER = [
-  "Prejardín", "Jardín", "Transición",
+  "Párvulo", "Prejardín", "Jardín", "Transición",
   "Primero", "Segundo", "Tercero", "Cuarto", "Quinto",
   "Sexto", "Séptimo", "Octavo", "Noveno",
   "Décimo", "Undécimo",

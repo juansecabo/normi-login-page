@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, puedeAccederDashboard } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
+import { useGradosColegio } from "@/utils/grados";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -25,13 +26,6 @@ import { apiClient } from "@/lib/apiClient";
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
-const GRADOS = [
-  "Prejardín", "Jardín", "Transición",
-  "Primero", "Segundo", "Tercero", "Cuarto", "Quinto",
-  "Sexto", "Séptimo", "Octavo", "Noveno",
-  "Décimo", "Undécimo",
-];
-
 const SALONES = ["1", "2", "3", "4", "5", "6"];
 
 const CARGOS = [
@@ -47,7 +41,7 @@ const CARGOS = [
 const NUM_ESTUDIANTES = ["1 (uno)", "2 (dos)", "3 (tres)", "4 (cuatro)"];
 
 const NIVELES_GRADOS: Record<string, string[]> = {
-  Preescolar: ["Prejardín", "Jardín", "Transición"],
+  Preescolar: ["Párvulo", "Prejardín", "Jardín", "Transición"],
   Primaria: ["Primero", "Segundo", "Tercero", "Cuarto", "Quinto"],
   Secundaria: ["Sexto", "Séptimo", "Octavo", "Noveno"],
   Media: ["Décimo", "Undécimo"],
@@ -191,6 +185,9 @@ const PanelControl = () => {
     refrescar: refrescarAsignaturas,
   } = useAsignaturas();
   const ASIGNATURAS_NOMBRES = asignaturasActivas.map((a) => a.nombre);
+  // Grados que realmente tiene el colegio (deriva de Estudiantes). El
+  // Pestalozziano incluye "Párvulo"; la Normal no.
+  const { grados: gradosColegio } = useGradosColegio();
 
   // Auth
   useEffect(() => {
@@ -1542,7 +1539,7 @@ const PanelControl = () => {
           <Select value={grado} onValueChange={setGrado}>
             <SelectTrigger><SelectValue placeholder="Grado" /></SelectTrigger>
             <SelectContent>
-              {GRADOS.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+              {gradosColegio.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -1983,7 +1980,7 @@ const PanelControl = () => {
                     <SelectValue placeholder="Seleccionar" />
                   </SelectTrigger>
                   <SelectContent>
-                    {GRADOS.map((g) => (
+                    {gradosColegio.map((g) => (
                       <SelectItem key={g} value={g}>{g}</SelectItem>
                     ))}
                   </SelectContent>
@@ -2250,7 +2247,7 @@ const PanelControl = () => {
                 </span>
               </Label>
               <div className="border rounded-md p-3 max-h-40 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {GRADOS.map((g) => (
+                {gradosColegio.map((g) => (
                   <label key={g} className="flex items-center gap-2 text-sm cursor-pointer">
                     <Checkbox
                       checked={asigGrados.includes(g)}
@@ -2378,7 +2375,7 @@ const PanelControl = () => {
                     <Select value={perfEstGrado} onValueChange={setPerfEstGrado}>
                       <SelectTrigger><SelectValue placeholder="Grado" /></SelectTrigger>
                       <SelectContent>
-                        {GRADOS.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                        {gradosColegio.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>

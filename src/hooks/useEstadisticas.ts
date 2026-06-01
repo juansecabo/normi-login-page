@@ -62,7 +62,7 @@ export interface DistribucionDesempeno {
 
 // Ordenamiento de grados para visualización consistente
 export const ordenGrados = [
-  "Prejardín", "Jardín", "Transición",
+  "Párvulo", "Prejardín", "Jardín", "Transición",
   "Primero", "Segundo", "Tercero", "Cuarto", "Quinto",
   "Sexto", "Séptimo", "Octavo", "Noveno", "Décimo", "Undécimo"
 ];

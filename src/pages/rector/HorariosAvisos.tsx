@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { apiRequest } from "@/lib/apiClient";
 import { isAdmin, puedeAccederDashboard } from "@/hooks/useSession";
+import { useGradosColegio, NIVEL_DE_GRADO } from "@/utils/grados";
 
 /**
  * UI del rector para configurar a qué hora se disparan los avisos
@@ -40,16 +41,11 @@ interface HorarioAviso {
 }
 
 const NIVELES = ["Preescolar", "Primaria", "Secundaria", "Media"] as const;
-const GRADOS_POR_NIVEL: Record<string, string[]> = {
-  Preescolar: ["Prejardín", "Jardín", "Transición"],
-  Primaria: ["Primero", "Segundo", "Tercero", "Cuarto", "Quinto"],
-  Secundaria: ["Sexto", "Séptimo", "Octavo", "Noveno"],
-  Media: ["Décimo", "Undécimo"],
-};
 
 export default function HorariosAvisos() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { grados } = useGradosColegio();
   const [horarios, setHorarios] = useState<HorarioAviso[]>([]);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -258,7 +254,7 @@ export default function HorariosAvisos() {
                   <SelectTrigger><SelectValue placeholder="Sin override" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="_none">Todo el nivel</SelectItem>
-                    {(GRADOS_POR_NIVEL[nuevoNivel] || []).map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                    {grados.filter((g) => NIVEL_DE_GRADO[g] === nuevoNivel).map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
