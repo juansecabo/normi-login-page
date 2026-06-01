@@ -28,7 +28,7 @@ interface Comunicado {
 // recibidos. Incluye "Párvulo" (Pestalozziano); es inocuo para colegios que no
 // lo tengan, porque ningún profesor de ellos tendrá Párvulo en su asignación.
 const NIVELES_GRADOS: Record<string, string[]> = {
-  Preescolar: ["Párvulo", "Prejardín", "Jardín", "Transición"],
+  Preescolar: ["Prejardín", "Jardín", "Transición"],
   Primaria: ["Primero", "Segundo", "Tercero", "Cuarto", "Quinto"],
   Secundaria: ["Sexto", "Séptimo", "Octavo", "Noveno"],
   Media: ["Décimo", "Undécimo"],
