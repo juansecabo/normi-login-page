@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, MoreVertical, Pencil, Trash2, Send, Calendar, Download, FileSpreadsheet, Loader2 } from "lucide-react";
-import { getSession } from "@/hooks/useSession";
+import { getSession, isAdmin } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { useGruposNotas, type GrupoNotas } from "@/hooks/useGruposNotas";
 import { promedioGeneral, esPeriodoCompleto, promedioDeGrupo, type NotaCalc, type GrupoCalc } from "@/lib/gradeCalculator";
@@ -3277,29 +3277,46 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
 
   return (
     <div className="min-h-screen md:h-screen bg-background flex flex-col">
-      <HeaderNormi backLink="/dashboard" />
+      <HeaderNormi backLink={soloLectura ? (isAdmin() ? "/dashboard-admin" : "/dashboard-rector") : "/dashboard"} />
 
       {/* Main Content */}
       <main className="flex-1 min-w-0 md:flex md:flex-col md:overflow-hidden container mx-auto p-4 md:p-8">
-        {/* Breadcrumb */}
+        {/* Breadcrumb — el orden y los enlaces dependen del flujo de entrada:
+            profesor entra por Asignaturas; admin/rector (soloLectura) entra por
+            Notas → grado → salón → Por Asignatura, con la asignatura al final. */}
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
+            {soloLectura ? (
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <button onClick={() => navigate(isAdmin() ? "/dashboard-admin" : "/dashboard-rector")} className="text-primary hover:underline">Inicio</button>
+                <span className="text-muted-foreground">→</span>
+                <button onClick={() => navigate("/rector/seleccionar-grado")} className="text-primary hover:underline">Notas</button>
+                <span className="text-muted-foreground">→</span>
+                <button onClick={() => navigate("/rector/seleccionar-salon")} className="text-primary hover:underline">{gradoSeleccionado}</button>
+                <span className="text-muted-foreground">→</span>
+                <button onClick={() => navigate("/rector/modo-visualizacion")} className="text-primary hover:underline">{salonSeleccionado}</button>
+                <span className="text-muted-foreground">→</span>
+                <button onClick={() => navigate("/rector/lista-asignaturas")} className="text-primary hover:underline">Por Asignatura</button>
+                <span className="text-muted-foreground">→</span>
+                <span className="text-foreground font-medium">{asignaturaSeleccionada}</span>
+              </div>
+            ) : (
             <div className="flex flex-wrap items-center gap-2 text-sm">
-              <button 
+              <button
                 onClick={() => navigate("/dashboard")}
                 className="text-primary hover:underline"
               >
                 Asignaturas
               </button>
               <span className="text-muted-foreground">→</span>
-              <button 
+              <button
                 onClick={() => navigate("/seleccionar-grado")}
                 className="text-primary hover:underline"
               >
                 {asignaturaSeleccionada}
               </button>
               <span className="text-muted-foreground">→</span>
-              <button 
+              <button
                 onClick={() => navigate("/seleccionar-salon")}
                 className="text-primary hover:underline"
               >
@@ -3308,6 +3325,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               <span className="text-muted-foreground">→</span>
               <span className="text-foreground font-medium">{salonSeleccionado}</span>
             </div>
+            )}
             <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
