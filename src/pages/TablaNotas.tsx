@@ -1130,7 +1130,52 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         console.error('Error verificando duplicados por salón:', e);
       }
 
-      // Construir filas para insertar
+      // Mapear el grupo al EQUIVALENTE de cada salón destino. grupoActividadId
+      // es el grupo de ESTE salón; en otro salón el mismo grupo (p.ej.
+      // "Evaluaciones") tiene OTRO id, o no existe (salón en modelo plano). Sin
+      // re-mapear, la actividad quedaría colgada de un grupo de otro salón y NO
+      // se vería en el destino. Se omiten los salones que no tengan el grupo.
+      const grupoIdPorSalon: Record<string, string | null> = {};
+      if (grupoActividadId) {
+        const gOrigen = gruposNotas.find(g => g.id === grupoActividadId);
+        const nombreGrupo = gOrigen?.nombre;
+        const nombrePadre = gOrigen?.parent_id
+          ? (gruposNotas.find(g => g.id === gOrigen.parent_id)?.nombre ?? null)
+          : null;
+        let gruposDestino: Array<{ id: string; nombre: string; salon: string; parent_id: string | null }> = [];
+        try {
+          const { data } = await supabase
+            .from('Grupos_Notas')
+            .select('id, nombre, salon, parent_id')
+            .eq('asignatura', asignaturaSeleccionada)
+            .eq('grado', gradoSeleccionado)
+            .eq('periodo', periodoActual)
+            .in('salon', salonesFinal);
+          gruposDestino = (data as any) || [];
+        } catch (e) {
+          console.error('Error cargando grupos de salones destino:', e);
+        }
+        const sinGrupo: string[] = [];
+        for (const salon of salonesFinal) {
+          const delSalon = gruposDestino.filter(g => String(g.salon) === String(salon));
+          const match = nombrePadre
+            ? delSalon.find(g => g.nombre === nombreGrupo && g.parent_id &&
+                delSalon.some(p => p.id === g.parent_id && p.nombre === nombrePadre))
+            : delSalon.find(g => g.nombre === nombreGrupo && !g.parent_id);
+          if (match) grupoIdPorSalon[salon] = match.id;
+          else sinGrupo.push(salon);
+        }
+        if (sinGrupo.length > 0) {
+          salonesFinal = salonesFinal.filter(s => !sinGrupo.includes(s));
+          toast({
+            title: "Algunos salones no tienen ese grupo",
+            description: `No se creó en ${sinGrupo.join(', ')} porque ahí no existe el grupo "${nombreGrupo}". Créalo en ese salón primero si lo necesitas.`,
+          });
+          if (salonesFinal.length === 0) { setGuardandoMultiple(false); return; }
+        }
+      }
+
+      // Construir filas para insertar (cada salón con SU grupo equivalente)
       const filasParaInsertar = salonesFinal.map(salon => ({
         id_profesor: session.id,
         ano_escolar: anoEscolarActual(),
@@ -1140,7 +1185,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         periodo: periodoActual,
         nombre_actividad: nombreTrimmed,
         porcentaje: porcentaje,
-        grupo_id: grupoActividadId,
+        grupo_id: grupoActividadId ? (grupoIdPorSalon[salon] ?? null) : null,
       }));
 
       try {
