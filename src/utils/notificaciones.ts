@@ -30,7 +30,10 @@ export const markLastSeen = async (seccion: string, id: string, maxId: number) =
           ultimo_id_visto: maxId,
           updated_at: new Date().toISOString(),
         },
-        { onConflict: 'usuario_id,seccion' }
+        // El UNIQUE real es (usuario_id, seccion, colegio_id) desde el multi-tenant.
+        // El server inyecta colegio_id en la data; el onConflict debe incluirlo o
+        // el upsert falla ("no unique constraint matching") y el badge nunca baja.
+        { onConflict: 'usuario_id,seccion,colegio_id' }
       );
   } catch {}
 };
