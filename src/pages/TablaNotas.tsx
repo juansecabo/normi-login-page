@@ -1410,6 +1410,26 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   // Promedio de la CLASE para un grupo/subgrupo en un periodo (visual): media de
   // los promedios de cada estudiante en ese grupo. (En la tabla del profe/rector,
   // que es multi-estudiante, mostramos el promedio del curso por grupo.)
+  const promedioGrupoClase = useCallback((periodo: number, grupoId: string): number | null => {
+    const acts = getActividadesPorPeriodo(periodo);
+    const gruposCalc: GrupoCalc[] = gruposNotas
+      .filter((g) => g.periodo === periodo)
+      .map((g) => ({ id: g.id, porcentaje: g.porcentaje, parent_id: g.parent_id }));
+    const vals: number[] = [];
+    for (const est of estudiantes) {
+      const notasEst = notas[est.id]?.[periodo] || {};
+      const notasCalc: NotaCalc[] = acts.map((a) => ({
+        porcentaje: a.porcentaje,
+        nota: notasEst[a.id] !== undefined ? (notasEst[a.id] as number) : null,
+        grupo_id: a.grupo_id ?? null,
+      }));
+      const p = promedioDeGrupo(grupoId, notasCalc, gruposCalc);
+      if (p !== null) vals.push(p);
+    }
+    if (vals.length === 0) return null;
+    return Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 10) / 10;
+  }, [actividades, gruposNotas, notas, estudiantes]);
+
   const periodoCompletoParaEst = useCallback((idEstudiantil: string, periodo: number): boolean => {
     const acts = getActividadesPorPeriodo(periodo);
     if (acts.length === 0) return false;
