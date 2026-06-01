@@ -355,15 +355,15 @@ const PanelControl = () => {
   // con .range — chunks manuales son más confiables.
   // La columna `contrasena` está en denyColumns, pero el proxy hace bypass
   // para Rector/Coordinador/Administrador (los únicos que entran al PanelControl).
-  const fetchUsuariosBatch = async (ids: string[]): Promise<Map<string, { nombres: string; apellidos: string; tel: string; contrasena: string; avatar_url: string | null }>> => {
-    const map = new Map<string, { nombres: string; apellidos: string; tel: string; contrasena: string; avatar_url: string | null }>();
+  const fetchUsuariosBatch = async (ids: string[]): Promise<Map<string, { nombres: string; apellidos: string; tel: string; contrasena: string }>> => {
+    const map = new Map<string, { nombres: string; apellidos: string; tel: string; contrasena: string }>();
     const CHUNK = 500;
     const unique = [...new Set(ids)];
     for (let i = 0; i < unique.length; i += CHUNK) {
       const slice = unique.slice(i, i + CHUNK);
       const { data } = await supabase
         .from("Usuarios")
-        .select("id, nombres, apellidos, numero_de_telefono, contrasena, avatar_url")
+        .select("id, nombres, apellidos, numero_de_telefono, contrasena")
         .in("id", slice);
       for (const u of (data || []) as any[]) {
         map.set(String(u.id), {
@@ -371,7 +371,6 @@ const PanelControl = () => {
           apellidos: (u.apellidos as string) || "",
           tel: (u.numero_de_telefono as string) || "",
           contrasena: (u.contrasena as string) || "",
-          avatar_url: (u.avatar_url as string) || null,
         });
       }
     }
@@ -384,7 +383,7 @@ const PanelControl = () => {
       // Fase 10.E.19: nombres/apellidos/teléfono viven en Usuarios.
       supabase
         .from("Estudiantes")
-        .select("id, nivel, grado, salon")
+        .select("id, nivel, grado, salon, avatar_url")
         .range(from, to)
     );
     const usrMap = await fetchUsuariosBatch(raw.map((e: any) => String(e.id)));
@@ -396,7 +395,7 @@ const PanelControl = () => {
         apellidos: u?.apellidos || "",
         numero_de_telefono: u?.tel || "",
         contrasena: u?.contrasena || "",
-        avatar_url: u?.avatar_url || null,
+        avatar_url: (e as any).avatar_url || null,
       };
     });
     data.sort((a, b) => {
@@ -472,7 +471,7 @@ const PanelControl = () => {
       const acudientesRaw = await fetchAllPages<any>((from, to) =>
         supabase
           .from("Acudientes")
-          .select("id, acudido1_id, acudido2_id, acudido3_id, acudido4_id")
+          .select("id, acudido1_id, acudido2_id, acudido3_id, acudido4_id, avatar_url")
           .range(from, to)
       );
 
@@ -546,7 +545,7 @@ const PanelControl = () => {
           padre_id: String(a.id),
           numero_de_acudidos: null,
           contrasena: acuUser?.contrasena || null,
-          avatar_url: acuUser?.avatar_url || null,
+          avatar_url: (a as any).avatar_url || null,
         };
         // Mapear los 4 slots de acudidos con sufijo secuencial 1..N.
         let pos = 1;
