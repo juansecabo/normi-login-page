@@ -293,19 +293,6 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
   };
 
   // Promedio (visual) de un grupo/subgrupo para este estudiante.
-  const promedioGrupoVista = (asignatura: string, periodo: number, grupoId: string): number | null => {
-    const acts = getActividadesPorPeriodo(asignatura, periodo);
-    const notasCalc: NotaCalc[] = acts.map((a) => ({
-      porcentaje: a.porcentaje,
-      nota: notas[asignatura]?.[periodo]?.[a.id] !== undefined ? (notas[asignatura][periodo][a.id] as number) : null,
-      grupo_id: a.grupo_id ?? actividadGrupo.get(`${asignatura}|${a.id}`) ?? null,
-    }));
-    const gruposCalc: GrupoCalc[] = grupos
-      .filter((g) => g.asignatura === asignatura && g.periodo === periodo)
-      .map((g) => ({ id: g.id, porcentaje: g.porcentaje, parent_id: g.parent_id }));
-    return promedioDeGrupo(grupoId, notasCalc, gruposCalc);
-  };
-
   // ¿El periodo está objetivamente completo? (si no, la definitiva es provisional)
   const periodoCompletoParaAsig = (asignatura: string, periodo: number): boolean => {
     const acts = getActividadesPorPeriodo(asignatura, periodo);
