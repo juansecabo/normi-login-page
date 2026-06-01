@@ -204,6 +204,8 @@ const PanelControl = () => {
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
   const [loadingEst, setLoadingEst] = useState(true);
   const [searchEst, setSearchEst] = useState("");
+  const [filtroGradoEst, setFiltroGradoEst] = useState("todos");
+  const [filtroSalonEst, setFiltroSalonEst] = useState("todos");
   const [showEstDialog, setShowEstDialog] = useState(false);
   const [editingEst, setEditingEst] = useState<Estudiante | null>(null);
   const [showDeleteEst, setShowDeleteEst] = useState<Estudiante | null>(null);
@@ -275,6 +277,8 @@ const PanelControl = () => {
   const [perfiles, setPerfiles] = useState<Perfil[]>([]);
   const [loadingPerf, setLoadingPerf] = useState(true);
   const [searchPerf, setSearchPerf] = useState("");
+  const [filtroGradoPerf, setFiltroGradoPerf] = useState("todos");
+  const [filtroSalonPerf, setFiltroSalonPerf] = useState("todos");
   const [showPerfDialog, setShowPerfDialog] = useState(false);
   const [editingPerf, setEditingPerf] = useState<Perfil | null>(null);
   const [showDeletePerf, setShowDeletePerf] = useState<Perfil | null>(null);
@@ -1480,7 +1484,24 @@ const PanelControl = () => {
       `${e.apellidos} ${e.nombres} ${e.id} ${e.grado} ${e.salon}`,
       searchEst
     )
+    && (filtroGradoEst === "todos" || e.grado === filtroGradoEst)
+    && (filtroSalonEst === "todos" || String(e.salon) === filtroSalonEst)
   );
+
+  // Un acudiente pasa el filtro si tiene AL MENOS un acudido que cumpla el
+  // grado y/o salón escogido (el mismo acudido cumple ambos si ambos están).
+  const perfAcudidoMatch = (p: Perfil, grado: string, salon: string): boolean => {
+    if (grado === "todos" && salon === "todos") return true;
+    for (let i = 1; i <= 4; i++) {
+      if ((p as any)[`acudido${i}_id`] == null) continue;
+      const g = (p as any)[`acudido${i}_grado`];
+      const s = (p as any)[`acudido${i}_salon`];
+      const okG = grado === "todos" || g === grado;
+      const okS = salon === "todos" || String(s) === salon;
+      if (okG && okS) return true;
+    }
+    return false;
+  };
 
   const filteredInt = internos.filter((i) =>
     matchesSearch(`${i.apellidos} ${i.nombres} ${i.id} ${i.cargo}`, searchInt)
@@ -1498,6 +1519,7 @@ const PanelControl = () => {
       `${getPerfilDisplayName(p)} ${getPerfilDisplayCode(p)} ${p.perfil} ${p.contrasena || ""} ${p.numero_de_telefono || ""}`,
       searchPerf
     )
+    && perfAcudidoMatch(p, filtroGradoPerf, filtroSalonPerf)
   );
 
   // Helper: render acudido fields for Asignacion dialog
@@ -1621,6 +1643,23 @@ const PanelControl = () => {
                 <Button onClick={() => openEstDialog()}>
                   <Plus className="w-4 h-4 mr-2" /> Agregar
                 </Button>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                <Select value={filtroGradoEst} onValueChange={setFiltroGradoEst}>
+                  <SelectTrigger className="sm:w-52"><SelectValue placeholder="Grado" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los grados</SelectItem>
+                    {gradosColegio.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={filtroSalonEst} onValueChange={setFiltroSalonEst}>
+                  <SelectTrigger className="sm:w-52"><SelectValue placeholder="Salón" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los salones</SelectItem>
+                    {SALONES.map((s) => <SelectItem key={s} value={s}>Salón {s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
 
               {loadingEst ? (
@@ -1861,6 +1900,23 @@ const PanelControl = () => {
                 <Button onClick={() => openPerfDialog()}>
                   <Plus className="w-4 h-4 mr-2" /> Agregar
                 </Button>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                <Select value={filtroGradoPerf} onValueChange={setFiltroGradoPerf}>
+                  <SelectTrigger className="sm:w-52"><SelectValue placeholder="Grado del acudido" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los grados</SelectItem>
+                    {gradosColegio.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={filtroSalonPerf} onValueChange={setFiltroSalonPerf}>
+                  <SelectTrigger className="sm:w-52"><SelectValue placeholder="Salón del acudido" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los salones</SelectItem>
+                    {SALONES.map((s) => <SelectItem key={s} value={s}>Salón {s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
 
               {loadingPerf ? (
