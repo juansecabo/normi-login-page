@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, puedeAccederDashboard } from "@/hooks/useSession";
@@ -1479,6 +1479,26 @@ const PanelControl = () => {
   // FILTERS
   // ═══════════════════════════════════════════════════════════════════════════
 
+  // Salones que existen por grado (derivado de los estudiantes del colegio):
+  // cada grado muestra solo SUS salones reales; "todos" muestra la unión.
+  const salonesPorGrado = useMemo(() => {
+    const m: Record<string, Set<string>> = {};
+    for (const e of estudiantes) {
+      if (!e.grado || e.salon == null) continue;
+      (m[e.grado] ||= new Set()).add(String(e.salon));
+    }
+    const out: Record<string, string[]> = {};
+    for (const g in m) out[g] = [...m[g]].sort((a, b) => Number(a) - Number(b));
+    return out;
+  }, [estudiantes]);
+  const salonesTodos = useMemo(() => {
+    const s = new Set<string>();
+    for (const e of estudiantes) if (e.salon != null) s.add(String(e.salon));
+    return [...s].sort((a, b) => Number(a) - Number(b));
+  }, [estudiantes]);
+  const salonesParaGrado = (grado: string) =>
+    grado === "todos" ? salonesTodos : (salonesPorGrado[grado] || []);
+
   const filteredEst = estudiantes.filter((e) =>
     matchesSearch(
       `${e.apellidos} ${e.nombres} ${e.id} ${e.grado} ${e.salon}`,
@@ -1646,7 +1666,7 @@ const PanelControl = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                <Select value={filtroGradoEst} onValueChange={setFiltroGradoEst}>
+                <Select value={filtroGradoEst} onValueChange={(v) => { setFiltroGradoEst(v); setFiltroSalonEst("todos"); }}>
                   <SelectTrigger className="sm:w-52"><SelectValue placeholder="Grado" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos los grados</SelectItem>
@@ -1657,7 +1677,7 @@ const PanelControl = () => {
                   <SelectTrigger className="sm:w-52"><SelectValue placeholder="Salón" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos los salones</SelectItem>
-                    {SALONES.map((s) => <SelectItem key={s} value={s}>Salón {s}</SelectItem>)}
+                    {salonesParaGrado(filtroGradoEst).map((s) => <SelectItem key={s} value={s}>Salón {s}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -1903,7 +1923,7 @@ const PanelControl = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                <Select value={filtroGradoPerf} onValueChange={setFiltroGradoPerf}>
+                <Select value={filtroGradoPerf} onValueChange={(v) => { setFiltroGradoPerf(v); setFiltroSalonPerf("todos"); }}>
                   <SelectTrigger className="sm:w-52"><SelectValue placeholder="Grado del acudido" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos los grados</SelectItem>
@@ -1914,7 +1934,7 @@ const PanelControl = () => {
                   <SelectTrigger className="sm:w-52"><SelectValue placeholder="Salón del acudido" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos los salones</SelectItem>
-                    {SALONES.map((s) => <SelectItem key={s} value={s}>Salón {s}</SelectItem>)}
+                    {salonesParaGrado(filtroGradoPerf).map((s) => <SelectItem key={s} value={s}>Salón {s}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
