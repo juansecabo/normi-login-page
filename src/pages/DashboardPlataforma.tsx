@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, Users, GraduationCap, UserCheck, Loader2, Pencil, LogIn } from "lucide-react";
+import { Building2, Users, GraduationCap, UserCheck, Loader2, Pencil, LogIn, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+
+/** Normaliza texto para búsqueda flexible: minúsculas y sin tildes. */
+const normalizarBusqueda = (s: string) =>
+  (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 import HeaderNormi from "@/components/HeaderNormi";
 import EscudoColegio from "@/components/EscudoColegio";
 import { getSession, guardarSesionSuperAdmin, restaurarSesionSuperAdmin, saveSession } from "@/hooks/useSession";
@@ -16,6 +21,7 @@ const DashboardPlataforma = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [colegios, setColegios] = useState<ColegioPlataforma[] | null>(null);
+  const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [entrandoId, setEntrandoId] = useState<string | null>(null);
@@ -117,6 +123,15 @@ const DashboardPlataforma = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Búsqueda flexible: TODAS las palabras del query deben aparecer (en cualquier
+  // orden) en el nombre o slug del colegio, ignorando mayúsculas y tildes.
+  const tokensBusqueda = normalizarBusqueda(query).split(/\s+/).filter(Boolean);
+  const colegiosFiltrados = (colegios || []).filter((c) => {
+    if (tokensBusqueda.length === 0) return true;
+    const heno = normalizarBusqueda(`${c.nombre} ${c.slug || ""}`);
+    return tokensBusqueda.every((t) => heno.includes(t));
+  });
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <HeaderNormi backLink="/dashboard-plataforma" />
@@ -141,6 +156,18 @@ const DashboardPlataforma = () => {
               </span>
             </div>
 
+            {!loading && colegios && colegios.length > 0 && (
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Buscar colegio…"
+                  className="pl-9"
+                />
+              </div>
+            )}
+
             {loading && (
               <div className="flex items-center justify-center py-12 text-muted-foreground">
                 <Loader2 className="w-6 h-6 animate-spin mr-2" />
@@ -154,9 +181,15 @@ const DashboardPlataforma = () => {
               </p>
             )}
 
-            {!loading && colegios && colegios.length > 0 && (
+            {!loading && colegios && colegios.length > 0 && colegiosFiltrados.length === 0 && (
+              <p className="text-center text-muted-foreground py-8">
+                No se encontraron colegios para “{query}”.
+              </p>
+            )}
+
+            {!loading && colegiosFiltrados.length > 0 && (
               <div className="space-y-3">
-                {colegios.map((c) => (
+                {colegiosFiltrados.map((c) => (
                   <div
                     key={c.id}
                     onClick={() => entrarComoAdmin(c)}
