@@ -2,31 +2,26 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getSession, isRectorOrCoordinador } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
+import { supabase } from "@/integrations/supabase/client";
 
-const GRADOS = [
-  "Prejardín",
-  "Jardín",
-  "Transición",
-  "Primero",
-  "Segundo",
-  "Tercero",
-  "Cuarto",
-  "Quinto",
-  "Sexto",
-  "Séptimo",
-  "Octavo",
-  "Noveno",
-  "Décimo",
-  "Undécimo"
+// Orden canónico de referencia. La lista REAL de grados se deriva por colegio
+// desde la tabla Estudiantes (RLS filtra por colegio), para que cada colegio
+// vea solo los grados que tiene: "Párvulo" existe en el Pestalozziano y no en
+// la Normal. Esto solo fija el ORDEN de presentación.
+const ORDEN_GRADOS = [
+  "Párvulo", "Prejardín", "Jardín", "Transición",
+  "Primero", "Segundo", "Tercero", "Cuarto", "Quinto",
+  "Sexto", "Séptimo", "Octavo", "Noveno", "Décimo", "Undécimo",
 ];
 
 const SeleccionarGradoRector = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [grados, setGrados] = useState<string[]>([]);
 
   useEffect(() => {
     const session = getSession();
-    
+
     if (!session.id) {
       navigate("/");
       return;
@@ -37,7 +32,14 @@ const SeleccionarGradoRector = () => {
       return;
     }
 
-    setLoading(false);
+    (async () => {
+      const { data } = await supabase.from("Estudiantes").select("grado");
+      const existentes = new Set(
+        (data as { grado: string | null }[] | null)?.map(r => r.grado).filter(Boolean) || []
+      );
+      setGrados(ORDEN_GRADOS.filter(g => existentes.has(g)));
+      setLoading(false);
+    })();
   }, [navigate]);
 
   const handleSelectGrado = (grado: string) => {
@@ -80,7 +82,7 @@ const SeleccionarGradoRector = () => {
           </h3>
           
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {GRADOS.map((grado) => (
+            {grados.map((grado) => (
               <button
                 key={grado}
                 onClick={() => handleSelectGrado(grado)}
