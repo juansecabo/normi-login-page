@@ -28,8 +28,13 @@ import { buildAdminBodyPreview, MAX_WA_TEMPLATE_BODY, WA_TEMPLATE_OVERHEAD } fro
 // El envío masivo personalizado ahora vive en el server:
 // POST /api/comunicados/enviar-masivo con como_normi=true (anonimato admin).
 
-const NIVELES_GRADOS: Record<string, string[]> = {
-  Preescolar: ["Prejardín", "Jardín", "Transición"],
+// Orden canónico de referencia. La lista REAL de grados/niveles disponibles se
+// deriva por colegio desde la tabla Estudiantes (ver estado `nivelesGrados`),
+// para que cada colegio vea solo sus grados ("Párvulo" existe en el
+// Pestalozziano pero no en la Normal). Esto solo fija el ORDEN de presentación.
+const ORDEN_NIVELES = ["Preescolar", "Primaria", "Secundaria", "Media"];
+const NIVELES_GRADOS_REF: Record<string, string[]> = {
+  Preescolar: ["Párvulo", "Prejardín", "Jardín", "Transición"],
   Primaria: ["Primero", "Segundo", "Tercero", "Cuarto", "Quinto"],
   Secundaria: ["Sexto", "Séptimo", "Octavo", "Noveno"],
   Media: ["Décimo", "Undécimo"],
@@ -111,6 +116,29 @@ const EnviarComunicadoAdmin = () => {
     Estudiantes: false, Padres: false, Profesores: false,
     Coordinadores: false, Rector: false, Administrativos: false, Secretaria: false, Orientador: false,
   });
+
+  // Niveles y grados REALMENTE existentes en este colegio, derivados de la tabla
+  // Estudiantes (RLS filtra por colegio). Reemplaza la lista hardcodeada que era
+  // igual para todos: así "Párvulo" aparece en el Pestalozziano pero no en la
+  // Normal, y cualquier colegio nuevo muestra solo los grados que de verdad tiene.
+  const [nivelesGrados, setNivelesGrados] = useState<Record<string, string[]>>({});
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("Estudiantes").select("nivel, grado");
+      const rankNivel = (n: string) => { const i = ORDEN_NIVELES.indexOf(n); return i < 0 ? 999 : i; };
+      const rankGrado = (niv: string, g: string) => { const i = (NIVELES_GRADOS_REF[niv] || []).indexOf(g); return i < 0 ? 999 : i; };
+      const porNivel: Record<string, Set<string>> = {};
+      for (const r of (data as { nivel: string | null; grado: string | null }[] | null) || []) {
+        if (!r.nivel || !r.grado) continue;
+        (porNivel[r.nivel] ||= new Set()).add(r.grado);
+      }
+      const mapa: Record<string, string[]> = {};
+      for (const niv of Object.keys(porNivel).sort((a, b) => rankNivel(a) - rankNivel(b))) {
+        mapa[niv] = [...porNivel[niv]].sort((a, b) => rankGrado(niv, a) - rankGrado(niv, b));
+      }
+      setNivelesGrados(mapa);
+    })();
+  }, []);
 
   const [nivelesMarcados, setNivelesMarcados] = useState<Record<string, boolean>>({});
   const [gradosMarcados, setGradosMarcados] = useState<Record<string, boolean>>({});
@@ -569,7 +597,7 @@ const EnviarComunicadoAdmin = () => {
       if (nivelesSel.length > 1) {
         const gradosDeNiveles: string[] = [];
         for (const niv of nivelesSel) {
-          for (const g of (NIVELES_GRADOS[niv] || [])) {
+          for (const g of (nivelesGrados[niv] || [])) {
             if (!gradosDeNiveles.includes(g)) gradosDeNiveles.push(g);
           }
         }
@@ -862,7 +890,7 @@ const EnviarComunicadoAdmin = () => {
                   if (!(perfilesMarcados.Estudiantes || perfilesMarcados.Padres || perfilesMarcados.Profesores)) return null;
 
                   const nivelesSel = Object.keys(nivelesMarcados).filter(n => nivelesMarcados[n]);
-                  const gradosDisponibles = nivelesSel.flatMap(n => NIVELES_GRADOS[n] || []);
+                  const gradosDisponibles = nivelesSel.flatMap(n => nivelesGrados[n] || []);
                   const gradosSelCount = Object.keys(gradosMarcados).filter(g => gradosMarcados[g] && gradosDisponibles.includes(g)).length;
                   const salonesSelCount = Object.keys(salonesMarcados).filter(s => salonesMarcados[s]).length;
 
@@ -886,7 +914,7 @@ const EnviarComunicadoAdmin = () => {
                         {dropdownBtn("Nivel", nivelesSel.length, openNivel, () => setOpenNivel(v => !v), false)}
                         {openNivel && (
                           <div className="border rounded p-2 bg-muted/20 flex flex-col gap-2">
-                            {Object.keys(NIVELES_GRADOS).map(n => (
+                            {Object.keys(nivelesGrados).map(n => (
                               <label key={n} className="flex items-center gap-2 cursor-pointer text-sm">
                                 <input
                                   type="checkbox"
@@ -895,7 +923,7 @@ const EnviarComunicadoAdmin = () => {
                                     const nuevo = !nivelesMarcados[n];
                                     setNivelesMarcados({ ...nivelesMarcados, [n]: nuevo });
                                     if (!nuevo) {
-                                      const gradosDeEseNivel = NIVELES_GRADOS[n] || [];
+                                      const gradosDeEseNivel = nivelesGrados[n] || [];
                                       const nuevosGrados = { ...gradosMarcados };
                                       gradosDeEseNivel.forEach(g => { delete nuevosGrados[g]; });
                                       setGradosMarcados(nuevosGrados);
@@ -920,7 +948,7 @@ const EnviarComunicadoAdmin = () => {
                               <div key={niv} className="space-y-1">
                                 <p className="text-xs font-medium text-muted-foreground">{niv}</p>
                                 <div className="flex flex-col gap-2 pl-2">
-                                  {(NIVELES_GRADOS[niv] || []).map(g => (
+                                  {(nivelesGrados[niv] || []).map(g => (
                                     <label key={g} className="flex items-center gap-2 cursor-pointer text-sm">
                                       <input
                                         type="checkbox"

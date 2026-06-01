@@ -24,8 +24,11 @@ interface Comunicado {
   grupo_comunicado_id: number | null;
 }
 
+// Solo se usa para expandir un nivel a sus grados al filtrar comunicados
+// recibidos. Incluye "Párvulo" (Pestalozziano); es inocuo para colegios que no
+// lo tengan, porque ningún profesor de ellos tendrá Párvulo en su asignación.
 const NIVELES_GRADOS: Record<string, string[]> = {
-  Preescolar: ["Prejardín", "Jardín", "Transición"],
+  Preescolar: ["Párvulo", "Prejardín", "Jardín", "Transición"],
   Primaria: ["Primero", "Segundo", "Tercero", "Cuarto", "Quinto"],
   Secundaria: ["Sexto", "Séptimo", "Octavo", "Noveno"],
   Media: ["Décimo", "Undécimo"],
