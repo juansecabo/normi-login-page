@@ -210,6 +210,7 @@ const PanelControl = () => {
   const [filtroGradoEst, setFiltroGradoEst] = useState("todos");
   const [filtroSalonEst, setFiltroSalonEst] = useState("todos");
   const [filtroFotoEst, setFiltroFotoEst] = useState("todos");
+  const [fotoAmpliada, setFotoAmpliada] = useState<string | null>(null);
   const esAdmin = isAdmin();
   const [showEstDialog, setShowEstDialog] = useState(false);
   const [editingEst, setEditingEst] = useState<Estudiante | null>(null);
@@ -1508,16 +1509,32 @@ const PanelControl = () => {
     grado === "todos" ? salonesTodos : (salonesPorGrado[grado] || []);
 
   // Celda de foto de perfil (solo admin). Muestra la foto o las iniciales.
-  const renderFotoCell = (url: string | null | undefined, nombre: string) => (
-    <TableCell>
-      <Avatar className="h-9 w-9">
-        {url ? <AvatarImage src={url} alt={nombre} className="object-cover" /> : null}
-        <AvatarFallback className="text-[10px]">
-          {(nombre || "?").trim().split(/\s+/).slice(0, 2).map((w) => w[0] || "").join("").toUpperCase() || "?"}
-        </AvatarFallback>
-      </Avatar>
-    </TableCell>
-  );
+  // Si hay foto, al hacer click se abre en grande (tamaño real) en un pop up.
+  const renderFotoCell = (url: string | null | undefined, nombre: string) => {
+    const iniciales =
+      (nombre || "?").trim().split(/\s+/).slice(0, 2).map((w) => w[0] || "").join("").toUpperCase() || "?";
+    return (
+      <TableCell>
+        {url ? (
+          <button
+            type="button"
+            onClick={() => setFotoAmpliada(url)}
+            title="Ver foto"
+            className="rounded-full ring-offset-2 transition hover:ring-2 hover:ring-primary/50"
+          >
+            <Avatar className="h-9 w-9">
+              <AvatarImage src={url} alt={nombre} className="object-cover" />
+              <AvatarFallback className="text-[10px]">{iniciales}</AvatarFallback>
+            </Avatar>
+          </button>
+        ) : (
+          <Avatar className="h-9 w-9">
+            <AvatarFallback className="text-[10px]">{iniciales}</AvatarFallback>
+          </Avatar>
+        )}
+      </TableCell>
+    );
+  };
 
   const filteredEst = estudiantes.filter((e) =>
     matchesSearch(
@@ -2057,6 +2074,22 @@ const PanelControl = () => {
       {/* ═══════════════════════════════════════════════════════════════════════
           DIALOGS
           ═══════════════════════════════════════════════════════════════════ */}
+
+      {/* ──── Dialog: Foto de perfil ampliada (tamaño real) ──── */}
+      <Dialog open={!!fotoAmpliada} onOpenChange={(o) => { if (!o) setFotoAmpliada(null); }}>
+        <DialogContent className="max-w-2xl p-3">
+          <DialogHeader>
+            <DialogTitle className="sr-only">Foto de perfil</DialogTitle>
+          </DialogHeader>
+          {fotoAmpliada && (
+            <img
+              src={fotoAmpliada}
+              alt="Foto de perfil"
+              className="w-full h-auto max-h-[80vh] object-contain rounded"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* ──── Dialog: Agregar/Editar Estudiante ──── */}
       <Dialog open={showEstDialog} onOpenChange={setShowEstDialog}>
