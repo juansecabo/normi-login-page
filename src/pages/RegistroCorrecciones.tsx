@@ -96,6 +96,12 @@ export default function RegistroCorrecciones() {
 
   const enviar = async () => {
     const hijosLimpios = hijos.map((h) => h.replace(/\D/g, "")).filter(Boolean);
+    // Una identificación de un solo dígito ("1", "2") es basura: la gente escribía
+    // cuántos hijos en vez de la cédula. Exigir al menos 6 dígitos por estudiante.
+    if (pideHijos && hijosLimpios.some((h) => h.length < 6)) {
+      toast({ title: "Identificación inválida", description: "La identificación de cada estudiante debe tener al menos 6 dígitos.", variant: "destructive" });
+      return;
+    }
     const payload: Record<string, unknown> = { colegio_id: colegioId, tipo, cedula };
 
     if (tipo === "no_registrado") {
@@ -106,6 +112,7 @@ export default function RegistroCorrecciones() {
       }
     } else if (tipo === "perfil_incorrecto") {
       payload.perfil_actual = perfilActual; payload.perfil_solicitado = perfilSolicitado;
+      payload.apellidos = apellidos; payload.nombres = nombres;
       if (perfilSolicitado === "Acudiente") payload.hijos = hijosLimpios;
     } else {
       payload.hijos = hijosLimpios;
@@ -284,6 +291,16 @@ export default function RegistroCorrecciones() {
                         </Button>
                       ))}
                     </div>
+                  </div>
+                  {/* Nombre como respaldo: si la cédula no estaba registrada, sin
+                      esto la solicitud no se puede resolver. */}
+                  <div className="space-y-1.5">
+                    <Label>Tus apellidos</Label>
+                    <Input value={apellidos} onChange={(e) => setApellidos(e.target.value)} placeholder="Apellidos" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Tus nombres</Label>
+                    <Input value={nombres} onChange={(e) => setNombres(e.target.value)} placeholder="Nombres" />
                   </div>
                 </>
               )}
