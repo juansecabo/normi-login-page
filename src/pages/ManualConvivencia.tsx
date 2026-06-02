@@ -13,6 +13,7 @@ const normalize = (text: string): string =>
 const ManualConvivencia = () => {
   const navigate = useNavigate();
   const [html, setHtml] = useState("");
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busqueda, setBusqueda] = useState("");
   const [totalResultados, setTotalResultados] = useState(0);
@@ -36,14 +37,33 @@ const ManualConvivencia = () => {
       return;
     }
 
-    fetch("/manual-convivencia.html")
-      .then((res) => res.text())
-      .then((data) => {
-        setHtml(data);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [navigate, session.id]);
+    // Cada colegio tiene su manual en /manuales/{colegio_id}.pdf. Si todavía no
+    // se subió (p. ej. la Normal), se cae al HTML antiguo. Así el manual es
+    // multi-tenant sin hardcodear colegios.
+    const cargarHtml = () => {
+      fetch("/manual-convivencia.html")
+        .then((res) => res.text())
+        .then((data) => { setHtml(data); setLoading(false); })
+        .catch(() => setLoading(false));
+    };
+
+    const cargar = async () => {
+      if (session.colegio_id) {
+        const url = `/manuales/${session.colegio_id}.pdf`;
+        try {
+          const head = await fetch(url, { method: "HEAD" });
+          const tipo = head.headers.get("content-type") || "";
+          if (head.ok && tipo.includes("pdf")) {
+            setPdfUrl(url);
+            setLoading(false);
+            return;
+          }
+        } catch { /* sin PDF → fallback */ }
+      }
+      cargarHtml();
+    };
+    cargar();
+  }, [navigate, session.id, session.colegio_id]);
 
   const resaltarResultados = useCallback(() => {
     const container = contenidoRef.current;
@@ -174,6 +194,12 @@ const ManualConvivencia = () => {
           </div>
         </div>
 
+        {pdfUrl ? (
+          <div className="bg-card rounded-lg shadow-soft overflow-hidden h-[80vh]">
+            <iframe src={pdfUrl} title="Manual de Convivencia" className="w-full h-full border-0" />
+          </div>
+        ) : (
+        <>
         {/* Search bar */}
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6 sticky top-0 z-10">
           <div className="flex items-center gap-2">
@@ -233,6 +259,8 @@ const ManualConvivencia = () => {
             />
           )}
         </div>
+        </>
+        )}
       </main>
     </div>
   );
