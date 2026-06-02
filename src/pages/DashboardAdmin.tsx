@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, isAdmin } from "@/hooks/useSession";
+import { ClipboardList, MessageCircleQuestion } from "lucide-react";
 import iconNotas from "@/assets/icons/notas.webp";
 import iconEstadisticas from "@/assets/icons/estadisticas.webp";
 import iconEnviarComunicado from "@/assets/icons/enviar-comunicado.webp";
@@ -200,6 +201,22 @@ const DashboardAdmin = () => {
             >
               <img src={iconRegistros} alt="" className="w-16 h-16 object-contain" />
               <span className="font-semibold text-lg text-foreground text-center">Registros de Comportamiento</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/admin/correcciones-registro")}
+              className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-sky-100 transition-all duration-200 hover:shadow-md hover:bg-sky-200"
+            >
+              <ClipboardList className="w-16 h-16 text-sky-700" strokeWidth={1.5} />
+              <span className="font-semibold text-lg text-foreground text-center">Solicitudes de Registro</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/admin/dudas")}
+              className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-violet-100 transition-all duration-200 hover:shadow-md hover:bg-violet-200"
+            >
+              <MessageCircleQuestion className="w-16 h-16 text-violet-700" strokeWidth={1.5} />
+              <span className="font-semibold text-lg text-foreground text-center">Dudas del Personal</span>
             </button>
           </div>
         </div>

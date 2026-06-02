@@ -38,6 +38,7 @@ import TodasActividades from "./pages/admin/TodasActividades";
 import RegistroCorrecciones from "./pages/RegistroCorrecciones";
 import Dudas from "./pages/Dudas";
 import CorreccionesRegistroAdmin from "./pages/admin/CorreccionesRegistroAdmin";
+import DudasAdmin from "./pages/admin/DudasAdmin";
 
 // Rutas para Profesor
 import EstadisticasProfesor from "./pages/profesor/EstadisticasProfesor";
@@ -153,6 +154,7 @@ const App = () => (
           <Route path="/registro" element={<RegistroCorrecciones />} />
           <Route path="/dudas" element={<Dudas />} />
           <Route path="/admin/correcciones-registro" element={<CorreccionesRegistroAdmin />} />
+          <Route path="/admin/dudas" element={<DudasAdmin />} />
 
           {/* Rutas compartidas */}
           <Route path="/enviar-comunicado" element={<EnviarComunicado />} />
