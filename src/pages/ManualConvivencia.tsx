@@ -49,7 +49,9 @@ const ManualConvivencia = () => {
 
     const cargar = async () => {
       if (session.colegio_id) {
-        const url = `/manuales/${session.colegio_id}.pdf`;
+        // El PDF vive en una carpeta por colegio_id, pero con nombre legible
+        // para que al descargarlo salga "Manual de Convivencia.pdf" (no el UUID).
+        const url = `/manuales/${session.colegio_id}/Manual%20de%20Convivencia.pdf`;
         try {
           const head = await fetch(url, { method: "HEAD" });
           const tipo = head.headers.get("content-type") || "";
