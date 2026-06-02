@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useRef, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { MoreVertical, MessageSquare, Trash2, Send } from "lucide-react";
 import {
   DropdownMenu,
@@ -23,6 +24,7 @@ interface NotaCeldaProps {
   onNotificarPadre?: () => void;
   placeholder?: string;
   soloLectura?: boolean;
+  nombreEstudiante?: string;
 }
 
 const NotaCelda = ({
@@ -40,8 +42,34 @@ const NotaCelda = ({
   onNotificarPadre,
   placeholder = "0-5",
   soloLectura = false,
+  nombreEstudiante,
 }: NotaCeldaProps) => {
   const [showMenu, setShowMenu] = useState(false);
+  const localInputRef = useRef<HTMLInputElement | null>(null);
+  const [tip, setTip] = useState<{ top: number; left: number; side: "left" | "right" } | null>(null);
+
+  // En móvil la columna del estudiante no queda fija; al editar una nota mostramos
+  // un bocadillo lateral con el nombre del estudiante de esa fila. Sale al lado de
+  // la celda (hacia el borde con más espacio), centrado en su altura, para no tapar
+  // ni la celda ni las filas de arriba/abajo. En desktop la columna es sticky y no hace falta.
+  useLayoutEffect(() => {
+    if (!estaEditando || !nombreEstudiante) { setTip(null); return; }
+    const calc = () => {
+      const el = localInputRef.current;
+      const esMovil = window.matchMedia("(max-width: 767px)").matches;
+      if (!el || !esMovil) { setTip(null); return; }
+      const r = el.getBoundingClientRect();
+      const side: "left" | "right" = r.left > window.innerWidth / 2 ? "left" : "right";
+      setTip({ top: r.top + r.height / 2, left: side === "right" ? r.right + 8 : r.left - 8, side });
+    };
+    calc();
+    window.addEventListener("scroll", calc, true);
+    window.addEventListener("resize", calc);
+    return () => {
+      window.removeEventListener("scroll", calc, true);
+      window.removeEventListener("resize", calc);
+    };
+  }, [estaEditando, nombreEstudiante]);
 
   if (soloLectura) {
     return (
@@ -63,7 +91,7 @@ const NotaCelda = ({
           <div className="h-8" aria-hidden="true" />
           <div className="absolute inset-0 p-1 flex items-center justify-center">
             <input
-              ref={inputRef}
+              ref={(el) => { inputRef(el); localInputRef.current = el; }}
               type="text"
               className="w-full h-8 text-center border border-primary rounded px-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               value={valorEditando}
@@ -74,6 +102,24 @@ const NotaCelda = ({
               placeholder={placeholder}
             />
           </div>
+          {tip && nombreEstudiante && createPortal(
+            <div
+              className="fixed z-[60] pointer-events-none"
+              style={{ top: tip.top, left: tip.left, transform: `translateY(-50%)${tip.side === "left" ? " translateX(-100%)" : ""}` }}
+            >
+              <div className="relative max-w-[60vw] rounded-lg bg-primary px-3 py-1.5 text-xs font-medium leading-tight text-primary-foreground shadow-lg">
+                {nombreEstudiante}
+                <span
+                  className={`absolute top-1/2 -translate-y-1/2 h-0 w-0 border-y-[5px] border-y-transparent ${
+                    tip.side === "right"
+                      ? "right-full border-r-[6px] border-r-primary"
+                      : "left-full border-l-[6px] border-l-primary"
+                  }`}
+                />
+              </div>
+            </div>,
+            document.body
+          )}
         </>
       ) : (
         <div className="relative flex items-center justify-center h-8">

@@ -4113,6 +4113,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                   key={inputKey}
                                   soloLectura={soloLectura}
                                   placeholder={`${colegioConfig.escala_min}-${colegioConfig.escala_max}`}
+                                  nombreEstudiante={`${estudiante.apellidos}, ${estudiante.nombres}`}
                                   nota={nota}
                                   comentario={comentarios[estudiante.id]?.[periodoActivo]?.[actividad.id] || null}
                                   estaEditando={estaEditando}
