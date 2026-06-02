@@ -161,7 +161,7 @@ export default function Dudas() {
                   inputMode="numeric"
                   value={cedula}
                   onChange={(e) => setCedula(e.target.value)}
-                  placeholder="Con o sin puntos. Ej: 1.102.345.678"
+                  placeholder="Ej: 1102345678"
                 />
               </div>
 
