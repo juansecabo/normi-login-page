@@ -1,53 +1,44 @@
-// Banner "Nueva actualización disponible". Se monta DENTRO de HeaderNormi /
-// HeaderPati para que aparezca como una barra fija justo debajo del header
-// verde, sin parpadear, hasta que el usuario haga click.
+// Banner "Nueva actualización disponible". Se monta DENTRO de HeaderNormi para
+// aparecer como una barra fija justo debajo del header verde.
 //
-// Cada 60s en background el SW chequea si hay versión nueva en el servidor.
-// Si la hay, needRefresh pasa a true y el banner se renderiza. El click
-// activa el SW nuevo y recarga la página.
+// SIN service worker (el SW causaba bucles de recarga; está apagado vía
+// selfDestroying en vite.config). En su lugar, polling simple: cada build
+// genera /version.json con un buildId único, y el bundle lleva ese id en
+// __BUILD_ID__. Cada 60s comparamos: si el server tiene un build más nuevo,
+// mostramos el banner. El click recarga la página (F5), sin loops.
 
-import { useRegisterSW } from "virtual:pwa-register/react";
+import { useEffect, useState } from "react";
 
 export default function UpdateBanner() {
-  const {
-    needRefresh: [needRefresh],
-    updateServiceWorker,
-  } = useRegisterSW({
-    onRegistered(r) {
-      if (r) {
-        // Check inmediato — no esperar el primer intervalo.
-        r.update().catch(() => {});
-        setInterval(() => {
-          r.update().catch(() => {});
-        }, 30 * 1000);
+  const [needRefresh, setNeedRefresh] = useState(false);
+
+  useEffect(() => {
+    let cancelado = false;
+
+    const revisar = async () => {
+      try {
+        const res = await fetch(`/version.json?t=${Date.now()}`, { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as { buildId?: string };
+        if (!cancelado && data?.buildId && data.buildId !== __BUILD_ID__) {
+          setNeedRefresh(true);
+        }
+      } catch {
+        /* sin red o version.json ausente (dev): reintenta luego */
       }
-    },
-    onRegisterError(error) {
-      console.warn("SW register error:", error);
-    },
-  });
+    };
+
+    revisar(); // chequeo inmediato al cargar
+    const id = setInterval(revisar, 60 * 1000);
+    return () => { cancelado = true; clearInterval(id); };
+  }, []);
 
   if (!needRefresh) return null;
-
-  const handleClick = async () => {
-    // En modo 'prompt' (vite-plugin-pwa), updateServiceWorker SOLO envía
-    // SKIP_WAITING al SW nuevo; la recarga la dispara la propia librería UNA
-    // vez, vía su listener interno 'controlling', cuando el SW nuevo toma
-    // control. NO recargamos a mano: hacerlo recargaba ANTES de que el SW
-    // activara, la nueva carga volvía a detectar el SW en "waiting", se
-    // re-armaba el listener 'controlling' y al activar disparaba otro reload
-    // automático → bucle infinito de recargas (favicon parpadeando).
-    try {
-      await updateServiceWorker(true);
-    } catch (e) {
-      console.warn("updateServiceWorker falló:", e);
-    }
-  };
 
   return (
     <button
       type="button"
-      onClick={handleClick}
+      onClick={() => window.location.reload()}
       className="w-full bg-amber-300 hover:bg-amber-200 text-amber-950 px-4 py-2 text-sm font-semibold cursor-pointer border-b border-amber-500 flex items-center justify-center gap-2"
     >
       <span>⚡ Nueva actualización disponible</span>

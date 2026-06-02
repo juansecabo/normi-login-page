@@ -4,15 +4,34 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
+// Identificador único de este build. Cambia en cada `npm run build` (cada
+// deploy). Se inyecta en el bundle (__BUILD_ID__) y se emite como version.json;
+// UpdateBanner compara ambos para avisar "actualiza" SIN service worker.
+const BUILD_ID = String(Date.now());
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
   },
+  define: {
+    __BUILD_ID__: JSON.stringify(BUILD_ID),
+  },
   plugins: [
     react(),
     mode === "development" && componentTagger(),
+    {
+      // Emite /version.json con el id de este build para el polling del banner.
+      name: "emit-version-json",
+      generateBundle() {
+        this.emitFile({
+          type: "asset",
+          fileName: "version.json",
+          source: JSON.stringify({ buildId: BUILD_ID }),
+        });
+      },
+    },
     VitePWA({
       // PWA desactivado. selfDestroying genera un SW que, al activarse,
       // desregistra cualquier SW previo y recarga los clientes hacia una página
