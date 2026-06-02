@@ -177,7 +177,7 @@ export default function Dudas() {
                   <div>
                     <p className="font-semibold text-emerald-900">{interno.nombres} {interno.apellidos}</p>
                     <p className="text-sm text-emerald-800">{interno.cargo}</p>
-                    <p className="text-xs text-emerald-700 mt-0.5">Confirma que eres tú antes de enviar.</p>
+                    <p className="text-xs text-emerald-700 mt-0.5">Revisa que eres tú antes de enviar.</p>
                   </div>
                 </div>
               )}
