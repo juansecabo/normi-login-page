@@ -135,7 +135,17 @@ const descargarWord = async (r: Registro) => {
     const { default: PizZip } = await import("pizzip");
     const { default: Docxtemplater } = await import("docxtemplater");
 
-    const templateBuf = await loadBinary("/registro_comportamiento_template.docx");
+    // Plantilla POR COLEGIO (cada colegio tiene su escudo/encabezado), igual
+    // que el Manual de Convivencia. Vive en /plantillas/{colegio_id}/...
+    const { colegio_id } = getSession();
+    const templateBuf = await loadBinary(`/plantillas/${colegio_id}/registro_comportamiento_template.docx`);
+    // Un .docx es un zip → sus 2 primeros bytes son "PK". Si el SPA devolvió el
+    // index.html (plantilla ausente para este colegio), avisamos claro en vez
+    // de dejar que PizZip explote con "Can't find end of central directory".
+    const sig = new Uint8Array(templateBuf.slice(0, 2));
+    if (sig[0] !== 0x50 || sig[1] !== 0x4B) {
+      throw new Error("Este colegio aún no tiene configurada la plantilla de registro de comportamiento. Avísale al administrador.");
+    }
     let firmaBuf: ArrayBuffer | null = null;
     if (r.firma_url) {
       try { firmaBuf = await loadBinary(r.firma_url); } catch (e) { console.warn("No se pudo cargar firma:", e); }
