@@ -64,7 +64,17 @@ async function request<T = unknown>(
   try { body = text ? JSON.parse(text) : null; } catch {}
 
   if (!res.ok) {
-    if (res.status === 401 && !opts?.useTempToken) setToken(null);
+    if (res.status === 401 && !opts?.useTempToken) {
+      setToken(null);
+      // Sesión vencida en un endpoint autenticado → mandar al inicio con aviso.
+      // Excluimos el flujo de /auth/* (login, select-colegio) para no confundir
+      // credenciales incorrectas con sesión vencida, y no redirigimos si ya
+      // estamos en el login ("/"). El ?redirect= deja volver a donde estaba.
+      if (typeof window !== 'undefined' && !path.includes('/auth/') && window.location.pathname !== '/') {
+        const actual = window.location.pathname + window.location.search;
+        window.location.replace(`/?expired=1&redirect=${encodeURIComponent(actual)}`);
+      }
+    }
     throw new ApiError(res.status, body);
   }
   return body as T;

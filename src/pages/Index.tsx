@@ -9,7 +9,7 @@ import cailicoLogo from "@/assets/cailico-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { saveSession, getSession, AcudidoData } from "@/hooks/useSession";
+import { saveSession, getSession, clearSession, AcudidoData } from "@/hooks/useSession";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import { apiClient, ApiError, isMultiMembership, type AuthUser, type MembershipChoice } from "@/lib/apiClient";
 import EscudoColegio from "@/components/EscudoColegio";
@@ -36,6 +36,25 @@ const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { canInstall, isIOS, installApp } = useInstallPrompt();
+
+  // Si llegamos acá porque la sesión expiró (apiClient redirige con ?expired=1),
+  // limpiamos cualquier resto de sesión y avisamos de forma clara. El ?redirect=
+  // se conserva para volver a donde estaba tras volver a iniciar sesión.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("expired") === "1") {
+      clearSession();
+      toast({
+        title: "Tu sesión expiró",
+        description: "Por seguridad cerramos tu sesión. Vuelve a iniciar sesión para continuar.",
+        variant: "destructive",
+      });
+      params.delete("expired");
+      const qs = params.toString();
+      window.history.replaceState({}, "", "/" + (qs ? "?" + qs : ""));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Una vez tenemos el AuthUser final (con colegio), guarda sesión local y navega.
   // Usamos replace:true en TODAS las navegaciones para que el boton "atras" del
