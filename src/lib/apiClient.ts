@@ -59,6 +59,10 @@ async function request<T = unknown>(
   }
 
   const res = await fetch(url, { ...init, headers });
+  // Sesión deslizante: si el server mandó un token renovado, lo guardamos. Así
+  // la sesión se mantiene viva mientras la persona use la plataforma.
+  const renewed = res.headers.get('X-Renewed-Token');
+  if (renewed && !opts?.useTempToken) setToken(renewed);
   const text = await res.text();
   let body: unknown = text;
   try { body = text ? JSON.parse(text) : null; } catch {}
