@@ -71,7 +71,7 @@ const DashboardAcudiente = () => {
         const [msgRes, ...acudidosResults] = await Promise.all([
           supabase
             .from('Comunicados')
-            .select('id, nivel, grado, salon, id_estudiantil, archivo_url, destinatarios, id_destinatarios')
+            .select('id, nivel, grado, salon, grados, salones, id_estudiantil, archivo_url, destinatarios, id_destinatarios')
             .overlaps('perfil', ['Acudientes'])
             .gt('id', minComLastSeen),
           ...acudidosData.flatMap((acudido, i) => [

@@ -65,7 +65,7 @@ const DashboardEstudiante = () => {
         const [msgResult, actResult, notasResult] = await Promise.all([
           supabase
             .from('Comunicados')
-            .select('id, nivel, grado, salon, id_estudiantil, archivo_url, destinatarios, id_destinatarios')
+            .select('id, nivel, grado, salon, grados, salones, id_estudiantil, archivo_url, destinatarios, id_destinatarios')
             .overlaps('perfil', ['Estudiantes'])
             .gt('id', minComLastSeen),
           supabase
