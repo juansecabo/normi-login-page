@@ -525,7 +525,7 @@ export default function ConsultaPublica() {
         const update: any = {
           consulta_id: consulta.id,
           padre_id: respondenteId,
-          acudiente_nombre: `${session.nombres || ""} ${session.apellidos || ""}`.trim(),
+          padre_nombre: `${session.nombres || ""} ${session.apellidos || ""}`.trim(),
           padre_telefono: null,
           tipo_respondente: r.tipoRespondente,
           estudiante_id: r.estudianteId,

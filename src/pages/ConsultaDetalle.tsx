@@ -471,7 +471,7 @@ export default function ConsultaDetalle() {
     const update: any = {
       consulta_id: consulta.id,
       padre_id: sId,
-      acudiente_nombre: `${session.nombres || ""} ${session.apellidos || ""}`.trim(),
+      padre_nombre: `${session.nombres || ""} ${session.apellidos || ""}`.trim(),
       tipo_respondente: "interno",
       estudiante_id: null,
       opcion_seleccionada: miOpcion,
