@@ -2326,14 +2326,14 @@ const PanelControl = () => {
             )}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Nombres</Label>
-                <Input value={perfPadreNombre} onChange={(e) => setPerfPadreNombre(e.target.value)} placeholder="Nombres"
+                <Label>Apellidos</Label>
+                <Input value={perfPadreApellidos} onChange={(e) => setPerfPadreApellidos(e.target.value)} placeholder="Apellidos"
                   readOnly={perfUsuarioExiste && !esAdmin}
                   className={perfUsuarioExiste && !esAdmin ? "bg-muted" : ""} />
               </div>
               <div className="space-y-2">
-                <Label>Apellidos</Label>
-                <Input value={perfPadreApellidos} onChange={(e) => setPerfPadreApellidos(e.target.value)} placeholder="Apellidos"
+                <Label>Nombres</Label>
+                <Input value={perfPadreNombre} onChange={(e) => setPerfPadreNombre(e.target.value)} placeholder="Nombres"
                   readOnly={perfUsuarioExiste && !esAdmin}
                   className={perfUsuarioExiste && !esAdmin ? "bg-muted" : ""} />
               </div>
