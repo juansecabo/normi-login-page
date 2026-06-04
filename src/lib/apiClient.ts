@@ -369,6 +369,14 @@ export const apiClient = {
       });
     },
 
+    /** SOLO Administrador. Migra la cédula de una persona en todas las tablas. */
+    async cambiarCedula(cedula_vieja: string, cedula_nueva: string): Promise<{ ok: true }> {
+      return request<{ ok: true }>('/auth/cambiar-cedula', {
+        method: 'POST',
+        body: JSON.stringify({ cedula_vieja, cedula_nueva }),
+      });
+    },
+
     /**
      * Borra Usuarios.id=cedula SOLO si la cédula ya no tiene rol en NINGÚN
      * colegio (Internos/Estudiantes/Acudientes). Sin esta verificación

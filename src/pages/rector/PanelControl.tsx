@@ -762,6 +762,18 @@ const PanelControl = () => {
     setSavingEst(true);
     const tel = estTelefono.trim() || null;
 
+    // Admin cambió la cédula → migrarla en TODAS las tablas antes de seguir.
+    const cambioIdEst = !!editingEst && esAdmin && idNorm !== String(editingEst.id);
+    if (cambioIdEst) {
+      try {
+        await apiClient.auth.cambiarCedula(String(editingEst!.id), idNorm);
+      } catch (e: any) {
+        setSavingEst(false);
+        toast({ title: "No se pudo cambiar la cédula", description: e?.body?.detail || e?.message || "Error", variant: "destructive" });
+        return;
+      }
+    }
+
     // ── 1) Usuarios (fuente única de nombres/apellidos/teléfono, cross-colegio).
     //       Editar aquí propaga el cambio a todos los colegios de esa persona.
     const { data: existingUserEst } = await supabase
@@ -798,7 +810,7 @@ const PanelControl = () => {
     const payload = { id: Number(idNorm), nivel, grado: estGrado, salon: estSalon };
     let error: { message: string; code?: string } | null = null;
     if (editingEst) {
-      ({ error } = await supabase.from("Estudiantes").update(payload).eq("id", editingEst.id));
+      ({ error } = await supabase.from("Estudiantes").update(payload).eq("id", cambioIdEst ? Number(idNorm) : editingEst.id));
     } else {
       ({ error } = await supabase.from("Estudiantes").insert(payload));
     }
@@ -1201,6 +1213,19 @@ const PanelControl = () => {
       setSavingPerf(false);
       toast({ title: "Error", description: "No se pudo determinar el colegio del estudiante.", variant: "destructive" });
       return;
+    }
+
+    // Admin cambió la cédula del acudiente → migrarla en TODAS las tablas.
+    const idViejoAcu = soloDigitos(editingPerf?.padre_id || "");
+    const cambioIdPerf = !!editingPerf && esAdmin && idViejoAcu !== "" && cedAcu !== idViejoAcu;
+    if (cambioIdPerf) {
+      try {
+        await apiClient.auth.cambiarCedula(idViejoAcu, cedAcu);
+      } catch (e: any) {
+        setSavingPerf(false);
+        toast({ title: "No se pudo cambiar la cédula", description: e?.body?.detail || e?.message || "Error", variant: "destructive" });
+        return;
+      }
     }
 
     // 1) Usuarios (fuente única). Solo se escribe si el acudiente es NUEVO o si
@@ -1910,9 +1935,12 @@ const PanelControl = () => {
                   }
                 }}
                 placeholder="Ej: 1234567890"
-                readOnly={!!editingEst}
-                className={editingEst ? "bg-muted" : ""}
+                readOnly={!!editingEst && !esAdmin}
+                className={editingEst && !esAdmin ? "bg-muted" : ""}
               />
+              {editingEst && esAdmin && (
+                <p className="text-xs text-amber-600">Cambiar la cédula la migra en todo el sistema (notas, vínculos, comunicados…).</p>
+              )}
             </div>
             {estUsuarioExiste && !esAdmin && (
               <p className="text-xs text-muted-foreground">
@@ -2315,9 +2343,12 @@ const PanelControl = () => {
                   }
                 }}
                 placeholder="Ej: 1234567890"
-                readOnly={!!editingPerf}
-                className={editingPerf ? "bg-muted" : ""}
+                readOnly={!!editingPerf && !esAdmin}
+                className={editingPerf && !esAdmin ? "bg-muted" : ""}
               />
+              {editingPerf && esAdmin && (
+                <p className="text-xs text-amber-600">Cambiar la cédula la migra en todo el sistema (notas, vínculos, comunicados…).</p>
+              )}
             </div>
             {perfUsuarioExiste && !esAdmin && (
               <p className="text-xs text-muted-foreground">
