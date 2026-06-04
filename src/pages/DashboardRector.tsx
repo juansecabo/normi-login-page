@@ -28,7 +28,7 @@ const perfilesDelCargo = (cargo: string | undefined): string[] => {
     case 'Coordinador(a)': return ['Coordinadores'];
     case 'Administrativo(a)': return ['Administrativos'];
     case 'Secretaria General': return ['Secretaria General'];
-    case 'Orientador(a) Escolar': return ['Administrativos'];
+    case 'Orientador(a) Escolar': return ['Orientador(a) Escolar', 'Orientadores'];
     default: return [];
   }
 };
