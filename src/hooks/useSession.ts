@@ -39,6 +39,8 @@ export interface SessionData {
   salon: string | null;
   acudidos: AcudidoData[] | null;
   multi_membership: boolean;
+  /** True si el usuario aún no tiene contraseña (entró con id/id). */
+  sin_contrasena: boolean;
   avatar_url: string | null;
   // Branding y aislamiento del colegio donde el usuario está autenticado.
   // Se usa en PDFs/Excels exportados y en cualquier UI institucional.
@@ -140,7 +142,7 @@ export const getSession = (): SessionData => {
     localStorage.removeItem("colegio_nombre");
     localStorage.removeItem("colegio_logo_url");
     localStorage.removeItem("colegio_slug");
-    return { id: null, nombres: null, apellidos: null, cargo: null, nivel: null, grado: null, salon: null, acudidos: null, multi_membership: false, avatar_url: null, colegio_id: null, colegio_nombre: null, colegio_logo_url: null, colegio_slug: null };
+    return { id: null, nombres: null, apellidos: null, cargo: null, nivel: null, grado: null, salon: null, acudidos: null, multi_membership: false, sin_contrasena: false, avatar_url: null, colegio_id: null, colegio_nombre: null, colegio_logo_url: null, colegio_slug: null };
   }
 
   const id = localStorage.getItem("id") || null;
@@ -151,6 +153,7 @@ export const getSession = (): SessionData => {
   const grado = localStorage.getItem("grado") || null;
   const salon = localStorage.getItem("salon") || null;
   const multi_membership = localStorage.getItem("multi_membership") === "1";
+  const sin_contrasena = localStorage.getItem("sin_contrasena") === "1";
   const avatar_url = localStorage.getItem("avatar_url") || null;
   const colegio_id = localStorage.getItem("colegio_id") || null;
   const colegio_nombre = localStorage.getItem("colegio_nombre") || null;
@@ -165,7 +168,7 @@ export const getSession = (): SessionData => {
     try { acudidos = JSON.parse(acudidosStr); } catch { acudidos = null; }
   }
 
-  return { id, nombres, apellidos, cargo, nivel, grado, salon, acudidos, multi_membership, avatar_url, colegio_id, colegio_nombre, colegio_logo_url, colegio_slug };
+  return { id, nombres, apellidos, cargo, nivel, grado, salon, acudidos, multi_membership, sin_contrasena, avatar_url, colegio_id, colegio_nombre, colegio_logo_url, colegio_slug };
 };
 
 /** Actualiza solo el avatar en la sesion local (sin tocar el resto). */

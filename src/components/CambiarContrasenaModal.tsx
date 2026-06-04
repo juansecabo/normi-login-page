@@ -29,6 +29,11 @@ const CambiarContrasenaModal = ({ open, onOpenChange }: CambiarContrasenaModalPr
   const [success, setSuccess] = useState("");
   const { toast } = useToast();
 
+  // Si el usuario aún no tiene contraseña (entró con id/id), se CREA en vez de
+  // cambiar: no se pide la contraseña actual (se usa la cédula, que el backend
+  // acepta por el fallback id=contraseña).
+  const modoCrear = !!((getSession() as any).sin_contrasena);
+
   const closeModal = () => {
     setContrasenaActual("");
     setNuevaContrasena("");
@@ -49,7 +54,7 @@ const CambiarContrasenaModal = ({ open, onOpenChange }: CambiarContrasenaModalPr
     const session = getSession();
     if (!session.id) return;
 
-    if (!contrasenaActual || !nuevaContrasena || !confirmarContrasena) {
+    if (!nuevaContrasena || !confirmarContrasena || (!modoCrear && !contrasenaActual)) {
       setError("Todos los campos son obligatorios");
       return;
     }
@@ -64,8 +69,11 @@ const CambiarContrasenaModal = ({ open, onOpenChange }: CambiarContrasenaModalPr
 
     setLoading(true);
     try {
-      await apiClient.auth.changePassword(contrasenaActual, nuevaContrasena);
-      setSuccess("Contraseña actualizada correctamente");
+      // En modo crear, la "contraseña actual" es la cédula (fallback del backend).
+      const actual = modoCrear ? String(session.id) : contrasenaActual;
+      await apiClient.auth.changePassword(actual, nuevaContrasena);
+      if (modoCrear) localStorage.setItem("sin_contrasena", "0");
+      setSuccess(modoCrear ? "Contraseña creada correctamente" : "Contraseña actualizada correctamente");
       setContrasenaActual("");
       setNuevaContrasena("");
       setConfirmarContrasena("");
@@ -97,7 +105,7 @@ const CambiarContrasenaModal = ({ open, onOpenChange }: CambiarContrasenaModalPr
       <div className="absolute inset-0 bg-black/50" onClick={closeModal} />
 
       <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Cambiar contraseña</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">{modoCrear ? "Crear contraseña" : "Cambiar contraseña"}</h2>
 
         <form onSubmit={handleGuardar} className="space-y-4">
           {error && (
@@ -112,27 +120,29 @@ const CambiarContrasenaModal = ({ open, onOpenChange }: CambiarContrasenaModalPr
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Contraseña actual
-            </label>
-            <div className="relative">
-              <input
-                type={showActual ? "text" : "password"}
-                value={contrasenaActual}
-                onChange={(e) => setContrasenaActual(e.target.value)}
-                className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                placeholder="Ingresa tu contraseña actual"
-              />
-              <button
-                type="button"
-                onClick={() => setShowActual(!showActual)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showActual ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-              </button>
+          {!modoCrear && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Contraseña actual
+              </label>
+              <div className="relative">
+                <input
+                  type={showActual ? "text" : "password"}
+                  value={contrasenaActual}
+                  onChange={(e) => setContrasenaActual(e.target.value)}
+                  className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                  placeholder="Ingresa tu contraseña actual"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowActual(!showActual)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showActual ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">

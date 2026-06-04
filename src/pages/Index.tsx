@@ -62,6 +62,8 @@ const Index = () => {
   // consumido y volveria a fallar con "Error en el sistema". Con replace, atras
   // sale de la PWA igual que para un usuario de un solo perfil.
   const enterAsUser = (user: AuthUser) => {
+    // Flag para mostrar "Crear contraseña" si el usuario aún no tiene una.
+    localStorage.setItem("sin_contrasena", (user as any).sin_contrasena ? "1" : "0");
     const multi = user.multi_membership === true;
     const avatar = user.avatar_url || null;
     const colegio_id = user.colegio?.id || null;

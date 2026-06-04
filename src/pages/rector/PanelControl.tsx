@@ -221,6 +221,11 @@ const PanelControl = () => {
   const [estApellidos, setEstApellidos] = useState("");
   const [estGrado, setEstGrado] = useState("");
   const [estSalon, setEstSalon] = useState("");
+  const [estTelefono, setEstTelefono] = useState("");
+  // True cuando la cédula escrita ya existe en Usuarios (info autocompletada).
+  const [estUsuarioExiste, setEstUsuarioExiste] = useState(false);
+  // Contraseña del estudiante (solo lectura, visible únicamente para admin).
+  const [estContrasena, setEstContrasena] = useState("");
   // Fase 10.E.17: el acudiente vive en Usuarios + Acudientes. El form pide
   // cédula para poder linkear/crear correctamente en el modelo vivo.
   const [estAcu1Cedula, setEstAcu1Cedula] = useState("");
@@ -298,7 +303,11 @@ const PanelControl = () => {
   const [perfEstGrado, setPerfEstGrado] = useState("");
   const [perfEstSalon, setPerfEstSalon] = useState("");
   const [perfPadreNombre, setPerfPadreNombre] = useState("");
+  const [perfPadreApellidos, setPerfPadreApellidos] = useState("");
   const [perfPadreId, setPerfPadreId] = useState("");
+  // True si la cédula del acudiente ya existe en Usuarios (datos bloqueados
+  // para rector/coordinador; solo el admin puede modificarlos).
+  const [perfUsuarioExiste, setPerfUsuarioExiste] = useState(false);
   const [perfNumEst, setPerfNumEst] = useState("1 (uno)");
   const [perfHijo1Id, setPerfHijo1Id] = useState("");
   const [perfHijo1Nombre, setPerfHijo1Nombre] = useState("");
@@ -345,6 +354,57 @@ const PanelControl = () => {
     } else {
       clear();
     }
+  };
+
+  // Cédula normalizada: solo dígitos (acepta puntos y espacios al escribir/pegar).
+  const soloDigitos = (s: string) => (s || "").replace(/\D/g, "");
+
+  // Teléfono en formato WhatsApp (con indicativo 57). Si escriben los 10 dígitos
+  // del celular colombiano (empieza por 3), se antepone 57 automáticamente.
+  const normalizarTelefono = (s: string): string | null => {
+    const d = soloDigitos(s);
+    if (!d) return null;
+    if (d.length === 10 && d.startsWith("3")) return "57" + d;
+    return d;
+  };
+
+  // Busca la cédula en Usuarios (tabla global, cross-colegio) y autocompleta
+  // nombres/apellidos/teléfono si ya existe. Devuelve true si existía.
+  const autofillDesdeUsuarios = async (
+    cedula: string,
+    setNombres: (v: string) => void,
+    setApellidos: (v: string) => void,
+    setTelefono?: (v: string) => void,
+  ): Promise<boolean> => {
+    const id = soloDigitos(cedula);
+    if (!id) return false;
+    const { data } = await supabase
+      .from("Usuarios")
+      .select("nombres, apellidos, numero_de_telefono")
+      .eq("id", id)
+      .maybeSingle();
+    if (data) {
+      setNombres((data as any).nombres || "");
+      setApellidos((data as any).apellidos || "");
+      if (setTelefono) setTelefono((data as any).numero_de_telefono || "");
+      return true;
+    }
+    return false;
+  };
+
+  // Cuenta cuántos acudientes tiene ya un estudiante en ESTE colegio (máx 3).
+  // El proxy ya filtra Acudientes por el colegio del JWT. Excluye opcionalmente
+  // la cédula de un acudiente (para no contarse a sí mismo al editar).
+  const contarAcudientesDeEstudiante = async (
+    estudianteId: number,
+    excluirCedulaAcudiente?: string,
+  ): Promise<number> => {
+    const { data } = await supabase
+      .from("Acudientes")
+      .select("id")
+      .or(`acudido1_id.eq.${estudianteId},acudido2_id.eq.${estudianteId},acudido3_id.eq.${estudianteId},acudido4_id.eq.${estudianteId}`);
+    const excl = excluirCedulaAcudiente ? soloDigitos(excluirCedulaAcudiente) : "";
+    return (data || []).filter((a: any) => String(a.id) !== excl).length;
   };
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -604,6 +664,7 @@ const PanelControl = () => {
 
   const openEstDialog = async (est?: Estudiante) => {
     // Reset siempre antes de cargar (evita ver datos del estudiante anterior).
+    setEstTelefono(""); setEstUsuarioExiste(false); setEstContrasena("");
     setEstAcu1Cedula(""); setEstAcu1Nombre(""); setEstAcu1Tel("");
     setEstAcu2Cedula(""); setEstAcu2Nombre(""); setEstAcu2Tel("");
     setEstAcu3Cedula(""); setEstAcu3Nombre(""); setEstAcu3Tel("");
@@ -615,7 +676,22 @@ const PanelControl = () => {
       setEstApellidos(est.apellidos || "");
       setEstGrado(est.grado || "");
       setEstSalon(est.salon || "");
+      setEstUsuarioExiste(true);
       setShowEstDialog(true);
+
+      // El teléfono (y la contraseña, solo para admin) viven en Usuarios.
+      try {
+        const cols = esAdmin ? "numero_de_telefono, contrasena" : "numero_de_telefono";
+        const { data: u } = await supabase
+          .from("Usuarios")
+          .select(cols)
+          .eq("id", String(est.id))
+          .maybeSingle();
+        setEstTelefono(((u as any)?.numero_de_telefono as string) || "");
+        if (esAdmin) setEstContrasena(((u as any)?.contrasena as string) || "");
+      } catch (e) {
+        console.error("[openEstDialog] No se pudo cargar el teléfono:", e);
+      }
 
       // Fase 10.E.17: cargar acudientes desde el modelo vivo
       // (Acudientes cuyo acudidoN_id apunta a este estudiante) + Usuarios.
@@ -680,8 +756,9 @@ const PanelControl = () => {
   };
 
   const saveEstudiante = async () => {
-    if (!estId || !estNombre || !estApellidos || !estGrado || !estSalon) {
-      toast({ title: "Campos requeridos", description: "Completa todos los campos", variant: "destructive" });
+    const idNorm = soloDigitos(estId);
+    if (!idNorm || !estNombre.trim() || !estApellidos.trim() || !estGrado || !estSalon) {
+      toast({ title: "Campos requeridos", description: "Completa id, nombres, apellidos, grado y salón", variant: "destructive" });
       return;
     }
     const nivel = getNivelFromGrado(estGrado);
@@ -690,234 +767,64 @@ const PanelControl = () => {
       return;
     }
 
-    // Fase 10.E.17: validar que cada acudiente con datos tenga cédula.
-    // Sin cédula no se puede linkear correctamente en Usuarios + Acudientes.
-    const acuInputs = [
-      { ced: estAcu1Cedula, nom: estAcu1Nombre, tel: estAcu1Tel, label: "Acudiente 1" },
-      { ced: estAcu2Cedula, nom: estAcu2Nombre, tel: estAcu2Tel, label: "Acudiente 2" },
-      { ced: estAcu3Cedula, nom: estAcu3Nombre, tel: estAcu3Tel, label: "Acudiente 3" },
-    ];
-    for (const a of acuInputs) {
-      const tieneAlgunDato = a.nom.trim() || a.tel.trim();
-      if (tieneAlgunDato && !a.ced.trim()) {
-        toast({
-          title: "Falta la cédula del acudiente",
-          description: `Para registrar a ${a.label} necesitas su cédula.`,
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
     setSavingEst(true);
-    const cleanPhone = (s: string) => {
-      const first = s.split(",")[0]?.trim() || "";
-      return first || null;
-    };
-    const splitName = (s: string): { nombres: string; apellidos: string } => {
-      const t = s.trim().replace(/\s+/g, " ");
-      if (!t) return { nombres: "", apellidos: "" };
-      const parts = t.split(" ");
-      if (parts.length <= 2) return { nombres: parts.join(" "), apellidos: "" };
-      const apellidos = parts.slice(-2).join(" ");
-      const nombres = parts.slice(0, -2).join(" ");
-      return { nombres, apellidos };
-    };
+    const tel = normalizarTelefono(estTelefono);
 
-    // Dirty tracking: comparamos contra el snapshot tomado al abrir el modal
-    // para decidir qué tablas tocar. Sin esto, cambiar grado/salón del
-    // estudiante también reescribía Usuarios y Acudientes con los datos del
-    // form (que aunque normalmente coinciden con DB, podían pisar cambios
-    // hechos por el acudiente desde su sesión entre la apertura del modal y
-    // el guardado).
-    const snap = estSnapshot;
-    const curEst = {
-      id: estId,
-      nombres: estNombre.trim(),
-      apellidos: estApellidos.trim(),
-      grado: estGrado,
-      salon: estSalon,
-    };
-    const curAcus: [{ ced: string; nom: string; tel: string }, { ced: string; nom: string; tel: string }, { ced: string; nom: string; tel: string }] = [
-      { ced: estAcu1Cedula.trim(), nom: estAcu1Nombre.trim(), tel: estAcu1Tel.trim() },
-      { ced: estAcu2Cedula.trim(), nom: estAcu2Nombre.trim(), tel: estAcu2Tel.trim() },
-      { ced: estAcu3Cedula.trim(), nom: estAcu3Nombre.trim(), tel: estAcu3Tel.trim() },
-    ];
-    const acuEmpty = (a: { ced: string; nom: string; tel: string }) => !a.ced && !a.nom && !a.tel;
-    const acuEq = (a: { ced: string; nom: string; tel: string }, b: { ced: string; nom: string; tel: string }) =>
-      a.ced === b.ced && a.nom === b.nom && a.tel === b.tel;
-    const estCambio = !editingEst || !snap
-      || snap.id !== curEst.id
-      || snap.nombres !== curEst.nombres
-      || snap.apellidos !== curEst.apellidos
-      || snap.grado !== curEst.grado
-      || snap.salon !== curEst.salon;
+    // ── 1) Usuarios (fuente única de nombres/apellidos/teléfono, cross-colegio).
+    //       Editar aquí propaga el cambio a todos los colegios de esa persona.
+    const { data: existingUserEst } = await supabase
+      .from("Usuarios").select("id").eq("id", idNorm).maybeSingle();
+    const usuarioYaExistia = !!existingUserEst;
 
-    // ── 1) Orden: primero Usuarios (donde viven nombres/apellidos del
-    //       estudiante), después Estudiantes (solo id, nivel, grado, salon
-    //       tras Fase 10.E.19). Si Estudiantes falla por id duplicado y el
-    //       Usuario era nuevo, lo borramos para no dejarlo huérfano.
-    if (estCambio) {
-      const { data: existingUserEst } = await supabase
-        .from("Usuarios").select("id").eq("id", estId).maybeSingle();
-      const usuarioYaExistia = !!existingUserEst;
-
+    // Datos de Usuarios (nombres/apellidos/teléfono) solo se escriben si la
+    // persona es NUEVA, o si es admin. Rector/coordinador no pueden modificar
+    // los datos de un Usuario ya existente (regla de inmutabilidad). Tampoco se
+    // setea contraseña: al crear queda vacía y la persona entra con su id.
+    if (!usuarioYaExistia || esAdmin) {
       const usuariosEstPayload: Record<string, unknown> = {
-        id: estId,
-        nombres: curEst.nombres,
-        apellidos: curEst.apellidos,
+        id: idNorm,
+        nombres: estNombre.trim(),
+        apellidos: estApellidos.trim(),
+        numero_de_telefono: tel,
       };
-      if (!existingUserEst) usuariosEstPayload.contrasena = estId;
       const { error: errUsrEst } = await supabase
         .from("Usuarios")
         .upsert(usuariosEstPayload, { onConflict: "id" });
       if (errUsrEst) {
         setSavingEst(false);
-        toast({
-          title: "Error",
-          description: errUsrEst.message || `No se pudo guardar el usuario (${(errUsrEst as any).code || "sin código"})`,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const payload = {
-        id: Number(estId),
-        nivel: nivel,
-        grado: estGrado,
-        salon: estSalon,
-      };
-      let error: { message: string; code?: string } | null = null;
-      if (editingEst) {
-        ({ error } = await supabase.from("Estudiantes").update(payload).eq("id", editingEst.id));
-      } else {
-        ({ error } = await supabase.from("Estudiantes").insert(payload));
-      }
-      if (error) {
-        if (!editingEst && !usuarioYaExistia) {
-          await supabase.from("Usuarios").delete().eq("id", estId);
-        }
-        setSavingEst(false);
-        if (error.code === "23505") {
-          toast({ title: "Error", description: `Ya existe un estudiante con el id ${estId}`, variant: "destructive" });
-        } else {
-          toast({
-            title: "Error",
-            description: error.message || `No se pudo guardar el estudiante (${error.code || "sin código"})`,
-            variant: "destructive",
-          });
-        }
+        const code = (errUsrEst as any).code;
+        const msg = code === "23505"
+          ? "Ese número de teléfono ya está registrado en otra persona."
+          : (errUsrEst.message || `No se pudo guardar el usuario (${code || "sin código"})`);
+        toast({ title: "Error", description: msg, variant: "destructive" });
         return;
       }
     }
 
-    // ── 2) Para cada acudiente: decidir qué hacer según el diff vs snapshot
-    //       (no escribir nada a Usuarios/Acudientes si no cambió ese slot)
-    const snapAcus: [{ ced: string; nom: string; tel: string }, { ced: string; nom: string; tel: string }, { ced: string; nom: string; tel: string }] =
-      snap?.acudientes ?? [
-        { ced: "", nom: "", tel: "" },
-        { ced: "", nom: "", tel: "" },
-        { ced: "", nom: "", tel: "" },
-      ];
-    const algunAcuCambio = curAcus.some((c, i) => !acuEq(c, snapAcus[i]));
-
-    if (algunAcuCambio) {
-      try {
-        // Fetch colegio_id una sola vez (solo si hay cambios reales en acudientes).
-        const { data: estRow } = await supabase
-          .from("Estudiantes")
-          .select("colegio_id")
-          .eq("id", Number(estId))
-          .single();
-        const colegioId = (estRow as any)?.colegio_id;
-        const estNum = Number(estId);
-
-        const desvincular = async (cedAcu: string) => {
-          const { data: row } = await supabase
-            .from("Acudientes")
-            .select("id, acudido1_id, acudido2_id, acudido3_id, acudido4_id")
-            .eq("id", cedAcu)
-            .maybeSingle();
-          if (!row) return;
-          for (let i = 1; i <= 4; i++) {
-            if ((row as any)[`acudido${i}_id`] === estNum) {
-              await supabase.from("Acudientes").update({ [`acudido${i}_id`]: null }).eq("id", cedAcu);
-              break;
-            }
-          }
-        };
-
-        const vincularYUpsert = async (a: { ced: string; nom: string; tel: string }) => {
-          const { nombres, apellidos } = splitName(a.nom);
-          const tel = cleanPhone(a.tel);
-          const { data: existingUser } = await supabase
-            .from("Usuarios").select("id").eq("id", a.ced).maybeSingle();
-          const usuariosPayload: any = { id: a.ced, nombres, apellidos, numero_de_telefono: tel };
-          if (!existingUser) usuariosPayload.contrasena = a.ced;
-          await supabase.from("Usuarios").upsert(usuariosPayload, { onConflict: "id" });
-
-          if (!colegioId) return;
-          const { data: existingAcud } = await supabase
-            .from("Acudientes")
-            .select("id, acudido1_id, acudido2_id, acudido3_id, acudido4_id")
-            .eq("id", a.ced)
-            .maybeSingle();
-          if (existingAcud) {
-            const slots = [existingAcud.acudido1_id, existingAcud.acudido2_id, existingAcud.acudido3_id, existingAcud.acudido4_id];
-            const yaTiene = slots.some((s: any) => s === estNum);
-            if (!yaTiene) {
-              const idxLibre = slots.findIndex((s: any) => s == null);
-              if (idxLibre >= 0) {
-                await supabase.from("Acudientes").update({ [`acudido${idxLibre + 1}_id`]: estNum }).eq("id", a.ced);
-              } else {
-                console.warn(`[saveEstudiante] El acudiente ${a.ced} ya tiene 4 acudidos, no se puede agregar a ${estNum}.`);
-              }
-            }
-          } else {
-            await supabase.from("Acudientes").upsert({
-              id: a.ced, colegio_id: colegioId,
-              acudido1_id: estNum, acudido2_id: null, acudido3_id: null, acudido4_id: null,
-            }, { onConflict: "id,colegio_id" });
-          }
-        };
-
-        const actualizarUsuario = async (a: { ced: string; nom: string; tel: string }) => {
-          const { nombres, apellidos } = splitName(a.nom);
-          const tel = cleanPhone(a.tel);
-          await supabase.from("Usuarios").update({
-            nombres, apellidos, numero_de_telefono: tel,
-          }).eq("id", a.ced);
-        };
-
-        for (let i = 0; i < 3; i++) {
-          const before = snapAcus[i];
-          const after = curAcus[i];
-          if (acuEq(before, after)) continue;  // nada cambió en este slot
-
-          const beforeVacio = acuEmpty(before);
-          const afterVacio = acuEmpty(after);
-
-          if (beforeVacio && afterVacio) continue;
-
-          if (beforeVacio && !afterVacio) {
-            // Slot nuevo → crear/linkear el acudiente
-            await vincularYUpsert(after);
-          } else if (!beforeVacio && afterVacio) {
-            // Slot quedó vacío → desvincular (no se borra el Usuarios)
-            await desvincular(before.ced);
-          } else if (before.ced === after.ced) {
-            // Misma cédula, cambió nombre o teléfono → solo Usuarios
-            await actualizarUsuario(after);
-          } else {
-            // Cédula cambió → desvincular el viejo y vincular el nuevo
-            await desvincular(before.ced);
-            await vincularYUpsert(after);
-          }
-        }
-      } catch (e) {
-        console.error("[saveEstudiante] Error escribiendo acudientes en modelo vivo:", e);
-        // No bloqueamos el flujo: el estudiante ya quedó guardado.
+    // ── 2) Estudiantes (membresía del colegio). Si falla y el Usuario era
+    //       nuevo, lo borramos para no dejarlo huérfano.
+    const payload = { id: Number(idNorm), nivel, grado: estGrado, salon: estSalon };
+    let error: { message: string; code?: string } | null = null;
+    if (editingEst) {
+      ({ error } = await supabase.from("Estudiantes").update(payload).eq("id", editingEst.id));
+    } else {
+      ({ error } = await supabase.from("Estudiantes").insert(payload));
+    }
+    if (error) {
+      if (!editingEst && !usuarioYaExistia) {
+        await supabase.from("Usuarios").delete().eq("id", idNorm);
       }
+      setSavingEst(false);
+      if (error.code === "23505") {
+        toast({ title: "Error", description: `Ya existe un estudiante con el id ${idNorm}`, variant: "destructive" });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || `No se pudo guardar el estudiante (${error.code || "sin código"})`,
+          variant: "destructive",
+        });
+      }
+      return;
     }
 
     setSavingEst(false);
@@ -1194,18 +1101,16 @@ const PanelControl = () => {
   // PERFILES CRUD
   // ═══════════════════════════════════════════════════════════════════════════
 
-  const openPerfDialog = (p?: Perfil) => {
+  const openPerfDialog = async (p?: Perfil) => {
+    setPerfTipo("Acudiente");
+    setPerfContrasena("");
+    setPerfUsuarioExiste(!!p);
     if (p) {
       setEditingPerf(p);
-      setPerfTipo(p.perfil || "Estudiante");
-      setPerfEstId(p.estudiante_id != null ? String(p.estudiante_id) : "");
-      setPerfEstNombre(p.estudiante_nombre || "");
-      setPerfEstApellidos(p.estudiante_apellidos || "");
-      setPerfEstGrado(p.estudiante_grado || "");
-      setPerfEstSalon(p.estudiante_salon || "");
-      setPerfPadreNombre(p.acudiente_nombre || "");
       setPerfPadreId(p.padre_id || "");
-      setPerfNumEst(p.numero_de_acudidos || "1 (uno)");
+      setPerfPadreNombre(p.acudiente_nombre || "");
+      setPerfPadreApellidos("");
+      setPerfTelefono(p.numero_de_telefono || "");
       setPerfHijo1Id(p.acudido1_id != null ? String(p.acudido1_id) : "");
       setPerfHijo1Nombre(p.acudido1_nombre || "");
       setPerfHijo1Apellidos(p.acudido1_apellidos || "");
@@ -1226,218 +1131,126 @@ const PanelControl = () => {
       setPerfHijo4Apellidos(p.acudido4_apellidos || "");
       setPerfHijo4Grado(p.acudido4_grado || "");
       setPerfHijo4Salon(p.acudido4_salon || "");
-      setPerfContrasena(p.contrasena || "");
-      setPerfTelefono(p.numero_de_telefono || "");
+      setShowPerfDialog(true);
+      // Nombres/apellidos/teléfono (y contraseña, solo admin) viven en Usuarios.
+      if (p.padre_id) {
+        try {
+          const cols = esAdmin
+            ? "nombres, apellidos, numero_de_telefono, contrasena"
+            : "nombres, apellidos, numero_de_telefono";
+          const { data: u } = await supabase.from("Usuarios").select(cols).eq("id", p.padre_id).maybeSingle();
+          if (u) {
+            setPerfPadreNombre((u as any).nombres || "");
+            setPerfPadreApellidos((u as any).apellidos || "");
+            setPerfTelefono((u as any).numero_de_telefono || "");
+            if (esAdmin) setPerfContrasena((u as any).contrasena || "");
+          }
+        } catch (e) {
+          console.error("[openPerfDialog] No se pudo cargar Usuarios:", e);
+        }
+      }
     } else {
       setEditingPerf(null);
-      setPerfTipo("Estudiante");
-      setPerfEstId(""); setPerfEstNombre(""); setPerfEstApellidos("");
-      setPerfEstGrado(""); setPerfEstSalon("");
-      setPerfPadreNombre(""); setPerfPadreId(""); setPerfNumEst("1 (uno)");
-      setPerfHijo1Id(""); setPerfHijo1Nombre(""); setPerfHijo1Apellidos("");
-      setPerfHijo1Grado(""); setPerfHijo1Salon("");
-      setPerfHijo2Id(""); setPerfHijo2Nombre(""); setPerfHijo2Apellidos("");
-      setPerfHijo2Grado(""); setPerfHijo2Salon("");
-      setPerfHijo3Id(""); setPerfHijo3Nombre(""); setPerfHijo3Apellidos("");
-      setPerfHijo3Grado(""); setPerfHijo3Salon("");
-      setPerfHijo4Id(""); setPerfHijo4Nombre(""); setPerfHijo4Apellidos("");
-      setPerfHijo4Grado(""); setPerfHijo4Salon("");
-      setPerfContrasena("");
-      setPerfTelefono("");
+      setPerfPadreId(""); setPerfPadreNombre(""); setPerfPadreApellidos(""); setPerfTelefono("");
+      setPerfHijo1Id(""); setPerfHijo1Nombre(""); setPerfHijo1Apellidos(""); setPerfHijo1Grado(""); setPerfHijo1Salon("");
+      setPerfHijo2Id(""); setPerfHijo2Nombre(""); setPerfHijo2Apellidos(""); setPerfHijo2Grado(""); setPerfHijo2Salon("");
+      setPerfHijo3Id(""); setPerfHijo3Nombre(""); setPerfHijo3Apellidos(""); setPerfHijo3Grado(""); setPerfHijo3Salon("");
+      setPerfHijo4Id(""); setPerfHijo4Nombre(""); setPerfHijo4Apellidos(""); setPerfHijo4Grado(""); setPerfHijo4Salon("");
+      setShowPerfDialog(true);
     }
-    setShowPerfDialog(true);
   };
 
   const savePerfil = async () => {
+    const cedAcu = soloDigitos(perfPadreId);
+    if (!cedAcu) {
+      toast({ title: "Falta la cédula del acudiente", variant: "destructive" });
+      return;
+    }
+    if (!perfPadreNombre.trim() || !perfPadreApellidos.trim()) {
+      toast({ title: "Campos requeridos", description: "Completa nombres y apellidos del acudiente", variant: "destructive" });
+      return;
+    }
+
+    // Acudidos escritos (ids no vacíos), deduplicados, en orden.
+    const acudidoIds = Array.from(new Set(
+      [perfHijo1Id, perfHijo2Id, perfHijo3Id, perfHijo4Id].map(soloDigitos).filter(Boolean),
+    ));
+    if (acudidoIds.length === 0) {
+      toast({ title: "Falta el acudido", description: "Un acudiente debe tener al menos un estudiante a cargo.", variant: "destructive" });
+      return;
+    }
+
+    // Cada acudido debe ser estudiante de ESTE colegio (estudiantes[] = los del colegio).
+    const noEst = acudidoIds.find((id) => !estudiantes.some((e) => e.id === Number(id)));
+    if (noEst) {
+      toast({ title: "Estudiante no encontrado", description: `El id ${noEst} no es un estudiante de este colegio. Créalo primero en la pestaña Estudiantes.`, variant: "destructive" });
+      return;
+    }
+
     setSavingPerf(true);
-    const tel = perfTelefono.trim();
-    if (!tel) {
-      toast({ title: "Campos requeridos", description: "Escribe el número de celular", variant: "destructive" });
+
+    // Límite: un estudiante puede tener máximo 3 acudientes (excluyendo a este mismo).
+    for (const id of acudidoIds) {
+      const n = await contarAcudientesDeEstudiante(Number(id), cedAcu);
+      if (n >= 3) {
+        setSavingPerf(false);
+        const est = estudiantes.find((e) => e.id === Number(id));
+        const nom = est ? `${est.nombres || ""} ${est.apellidos || ""}`.trim() : id;
+        toast({ title: "Límite de acudientes", description: `El estudiante ${nom} ya tiene tres acudientes.`, variant: "destructive" });
+        return;
+      }
+    }
+
+    // colegio_id del acudiente: el del primer acudido.
+    const { data: refEst } = await supabase
+      .from("Estudiantes").select("colegio_id").eq("id", Number(acudidoIds[0])).single();
+    const colegio_id = (refEst as any)?.colegio_id;
+    if (!colegio_id) {
       setSavingPerf(false);
+      toast({ title: "Error", description: "No se pudo determinar el colegio del estudiante.", variant: "destructive" });
       return;
     }
-    const payload: Record<string, unknown> = {
-      perfil: perfTipo,
-      contrasena: perfContrasena || null,
-      numero_de_telefono: tel,
-    };
 
-    if (perfTipo === "Estudiante") {
-      if (!perfEstId || !perfEstNombre || !perfEstApellidos) {
-        toast({ title: "Campos requeridos", description: "Completa id, nombres y apellidos del estudiante", variant: "destructive" });
+    // 1) Usuarios (fuente única). Solo se escribe si el acudiente es NUEVO o si
+    //    es admin (regla de inmutabilidad). Sin contraseña: al crear queda
+    //    vacía y la persona entra con su id; si ya existía, conserva la suya.
+    const tel = normalizarTelefono(perfTelefono);
+    const { data: existingUserAcu } = await supabase
+      .from("Usuarios").select("id").eq("id", cedAcu).maybeSingle();
+    if (!existingUserAcu || esAdmin) {
+      const { error: errUsr } = await supabase.from("Usuarios").upsert({
+        id: cedAcu,
+        nombres: perfPadreNombre.trim(),
+        apellidos: perfPadreApellidos.trim(),
+        numero_de_telefono: tel,
+      }, { onConflict: "id" });
+      if (errUsr) {
         setSavingPerf(false);
+        const code = (errUsr as any).code;
+        const msg = code === "23505"
+          ? "Ese número de teléfono ya está registrado en otra persona."
+          : (errUsr.message || "No se pudo guardar el usuario");
+        toast({ title: "Error", description: msg, variant: "destructive" });
         return;
-      }
-      const nivel = perfEstGrado ? getNivelFromGrado(perfEstGrado) : null;
-      payload.estudiante_id = Number(perfEstId);
-      payload.estudiante_nombre = perfEstNombre.trim();
-      payload.estudiante_apellidos = perfEstApellidos.trim();
-      payload.estudiante_nivel = nivel;
-      payload.estudiante_grado = perfEstGrado || null;
-      payload.estudiante_salon = perfEstSalon || null;
-      // Clear padre fields
-      payload.acudiente_nombre = null;
-      payload.padre_id = null;
-      payload.numero_de_acudidos = null;
-      payload.acudido1_id = null;
-      payload.acudido1_nombre = null;
-      payload.acudido1_apellidos = null;
-      payload.acudido1_nivel = null;
-      payload.acudido1_grado = null;
-      payload.acudido1_salon = null;
-      payload.acudido2_id = null;
-      payload.acudido2_nombre = null;
-      payload.acudido2_apellidos = null;
-      payload.acudido2_nivel = null;
-      payload.acudido2_grado = null;
-      payload.acudido2_salon = null;
-      payload.acudido3_id = null;
-      payload.acudido3_nombre = null;
-      payload.acudido3_apellidos = null;
-      payload.acudido3_nivel = null;
-      payload.acudido3_grado = null;
-      payload.acudido3_salon = null;
-    } else {
-      if (!perfPadreNombre) {
-        toast({ title: "Campos requeridos", description: "Completa el nombre del acudiente", variant: "destructive" });
-        setSavingPerf(false);
-        return;
-      }
-      // Clear estudiante fields
-      payload.estudiante_id = null;
-      payload.estudiante_nombre = null;
-      payload.estudiante_apellidos = null;
-      payload.estudiante_nivel = null;
-      payload.estudiante_grado = null;
-      payload.estudiante_salon = null;
-      payload.acudiente_nombre = perfPadreNombre.trim();
-      payload.padre_id = perfPadreId || null;
-      payload.numero_de_acudidos = perfNumEst;
-      // Hijo 1
-      const n1 = getNivelFromGrado(perfHijo1Grado);
-      payload.acudido1_id = perfHijo1Id ? Number(perfHijo1Id) : null;
-      payload.acudido1_nombre = perfHijo1Nombre || null;
-      payload.acudido1_apellidos = perfHijo1Apellidos || null;
-      payload.acudido1_nivel = n1;
-      payload.acudido1_grado = perfHijo1Grado || null;
-      payload.acudido1_salon = perfHijo1Salon || null;
-      // Hijo 2
-      const numEst = parseInt(perfNumEst);
-      if (numEst >= 2) {
-        const n2 = getNivelFromGrado(perfHijo2Grado);
-        payload.acudido2_id = perfHijo2Id ? Number(perfHijo2Id) : null;
-        payload.acudido2_nombre = perfHijo2Nombre || null;
-        payload.acudido2_apellidos = perfHijo2Apellidos || null;
-        payload.acudido2_nivel = n2;
-        payload.acudido2_grado = perfHijo2Grado || null;
-        payload.acudido2_salon = perfHijo2Salon || null;
-      } else {
-        payload.acudido2_id = null;
-        payload.acudido2_nombre = null;
-        payload.acudido2_apellidos = null;
-        payload.acudido2_nivel = null;
-        payload.acudido2_grado = null;
-        payload.acudido2_salon = null;
-      }
-      // Hijo 3
-      if (numEst >= 3) {
-        const n3 = getNivelFromGrado(perfHijo3Grado);
-        payload.acudido3_id = perfHijo3Id ? Number(perfHijo3Id) : null;
-        payload.acudido3_nombre = perfHijo3Nombre || null;
-        payload.acudido3_apellidos = perfHijo3Apellidos || null;
-        payload.acudido3_nivel = n3;
-        payload.acudido3_grado = perfHijo3Grado || null;
-        payload.acudido3_salon = perfHijo3Salon || null;
-      } else {
-        payload.acudido3_id = null;
-        payload.acudido3_nombre = null;
-        payload.acudido3_apellidos = null;
-        payload.acudido3_nivel = null;
-        payload.acudido3_grado = null;
-        payload.acudido3_salon = null;
-      }
-      // Hijo 4
-      if (numEst >= 4) {
-        const n4 = getNivelFromGrado(perfHijo4Grado);
-        payload.acudido4_id = perfHijo4Id ? Number(perfHijo4Id) : null;
-        payload.acudido4_nombre = perfHijo4Nombre || null;
-        payload.acudido4_apellidos = perfHijo4Apellidos || null;
-        payload.acudido4_nivel = n4;
-        payload.acudido4_grado = perfHijo4Grado || null;
-        payload.acudido4_salon = perfHijo4Salon || null;
-      } else {
-        payload.acudido4_id = null;
-        payload.acudido4_nombre = null;
-        payload.acudido4_apellidos = null;
-        payload.acudido4_nivel = null;
-        payload.acudido4_grado = null;
-        payload.acudido4_salon = null;
       }
     }
 
-    let error: { message: string } | null = null;
-
-    // Escribir directamente al modelo nuevo (Usuarios + Estudiantes/Acudientes).
-    if (!error) {
-      try {
-        if (perfTipo === "Estudiante" && perfEstId) {
-          // Helper: separar nombres y apellidos para Usuarios global
-          const usuariosPayload: any = {
-            id: String(perfEstId),
-            nombres: perfEstNombre.trim(),
-            apellidos: perfEstApellidos.trim(),
-            numero_de_telefono: tel,
-          };
-          if (perfContrasena) usuariosPayload.contrasena = perfContrasena;
-          await supabase.from("Usuarios").upsert(usuariosPayload, { onConflict: "id" });
-          // El teléfono ya quedó en Usuarios (Fase 10.E.15). Estudiantes ya no tiene esa columna.
-        } else if ((perfTipo === "Acudiente") && perfPadreId) {
-          // Separar nombres y apellidos heurísticamente (últimas 2 palabras = apellidos)
-          const words = perfPadreNombre.trim().split(/\s+/);
-          const nombres = words.length <= 2 ? words[0] : words.slice(0, -2).join(" ");
-          const apellidos = words.length <= 1 ? "" : words.length === 2 ? words[1] : words.slice(-2).join(" ");
-          const usuariosPayload: any = {
-            id: perfPadreId,
-            nombres,
-            apellidos,
-            numero_de_telefono: tel,
-          };
-          if (perfContrasena) usuariosPayload.contrasena = perfContrasena;
-          await supabase.from("Usuarios").upsert(usuariosPayload, { onConflict: "id" });
-          // Determinar colegio_id desde el primer acudido
-          const refHijoId = perfHijo1Id ? Number(perfHijo1Id) : null;
-          if (refHijoId) {
-            const { data: refEst } = await supabase.from("Estudiantes")
-              .select("colegio_id")
-              .eq("id", refHijoId)
-              .single();
-            const colegio_id_acud = refEst?.colegio_id;
-            if (colegio_id_acud) {
-              const numH = parseInt(perfNumEst);
-              const acudPayload: any = {
-                id: perfPadreId,
-                colegio_id: colegio_id_acud,
-                acudido1_id: perfHijo1Id ? Number(perfHijo1Id) : null,
-                acudido2_id: numH >= 2 && perfHijo2Id ? Number(perfHijo2Id) : null,
-                acudido3_id: numH >= 3 && perfHijo3Id ? Number(perfHijo3Id) : null,
-                acudido4_id: numH >= 4 && perfHijo4Id ? Number(perfHijo4Id) : null,
-              };
-              await supabase.from("Acudientes").upsert(acudPayload, { onConflict: "id,colegio_id" });
-            }
-          }
-        }
-      } catch (e) {
-        console.error("[savePerfil dual-write] Error escribiendo modelo nuevo:", e);
-        // No bloqueamos: el trigger DB también lo sincroniza
-      }
-    }
-
+    // 2) Acudientes (membresía del colegio). El upsert sobrescribe los 4 slots.
+    const { error: errAcu } = await supabase.from("Acudientes").upsert({
+      id: cedAcu,
+      colegio_id,
+      acudido1_id: acudidoIds[0] ? Number(acudidoIds[0]) : null,
+      acudido2_id: acudidoIds[1] ? Number(acudidoIds[1]) : null,
+      acudido3_id: acudidoIds[2] ? Number(acudidoIds[2]) : null,
+      acudido4_id: acudidoIds[3] ? Number(acudidoIds[3]) : null,
+    }, { onConflict: "id,colegio_id" });
     setSavingPerf(false);
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+    if (errAcu) {
+      toast({ title: "Error", description: errAcu.message || "No se pudo guardar el acudiente", variant: "destructive" });
       return;
     }
-    toast({ title: editingPerf ? "Perfil actualizado" : "Perfil agregado" });
+
+    toast({ title: editingPerf ? "Acudiente actualizado" : "Acudiente agregado" });
     setShowPerfDialog(false);
     fetchPerfiles();
   };
@@ -1582,6 +1395,9 @@ const PanelControl = () => {
   );
 
   // Helper: render acudido fields for Asignacion dialog
+  // Slot de acudido: se escribe el ID; el nombre/grado/salón se autocompletan
+  // SOLO si ese id es un estudiante de este colegio (read-only). Si no matchea,
+  // se muestra el error y el guardado se bloquea (validado en savePerfil).
   const renderHijoFields = (
     num: number,
     id: string, setId: (v: string) => void,
@@ -1589,53 +1405,40 @@ const PanelControl = () => {
     apellidos: string, setApellidos: (v: string) => void,
     grado: string, setGrado: (v: string) => void,
     salon: string, setSalon: (v: string) => void,
-  ) => (
-    <div key={num} className="border rounded-md p-3 space-y-3">
-      <p className="text-sm font-medium">Acudido {num}</p>
-      <div className="grid grid-cols-2 gap-3">
+  ) => {
+    const idLimpio = soloDigitos(id);
+    const noEsEstudiante = idLimpio !== "" && !nombre.trim() && !apellidos.trim();
+    return (
+      <div key={num} className="border rounded-md p-3 space-y-2">
+        <p className="text-sm font-medium">Acudido {num}{num === 1 ? "" : " (opcional)"}</p>
         <div className="space-y-1">
-          <Label className="text-xs">ID</Label>
+          <Label className="text-xs">ID del estudiante</Label>
           <Input
             type="text"
             inputMode="numeric"
             value={id}
             onChange={(e) => {
-              const v = e.target.value.replace(/[^0-9]/g, "");
+              const v = soloDigitos(e.target.value);
               setId(v);
               autofillEstudianteFields(v, setNombre, setApellidos, setGrado, setSalon);
             }}
-            placeholder="ID"
+            placeholder="Escribe el id del estudiante"
           />
         </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Nombre</Label>
-          <Input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre" />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Apellidos</Label>
-          <Input value={apellidos} onChange={(e) => setApellidos(e.target.value)} placeholder="Apellidos" />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Grado</Label>
-          <Select value={grado} onValueChange={setGrado}>
-            <SelectTrigger><SelectValue placeholder="Grado" /></SelectTrigger>
-            <SelectContent>
-              {gradosColegio.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Salón</Label>
-          <Select value={salon} onValueChange={setSalon}>
-            <SelectTrigger><SelectValue placeholder="Salón" /></SelectTrigger>
-            <SelectContent>
-              {SALONES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
+        {idLimpio && !noEsEstudiante && (
+          <div className="rounded-md bg-muted/40 p-2 text-sm">
+            <div className="font-medium">{`${nombre} ${apellidos}`.trim()}</div>
+            <div className="text-xs text-muted-foreground">{[grado, salon].filter(Boolean).join(" ") || "—"}</div>
+          </div>
+        )}
+        {noEsEstudiante && (
+          <p className="text-xs text-destructive">
+            Ese id no es un estudiante de este colegio. Créalo primero en la pestaña Estudiantes.
+          </p>
+        )}
       </div>
-    </div>
-  );
+    );
+  };
 
   // ═══════════════════════════════════════════════════════════════════════════
   // RENDER
@@ -2101,22 +1904,37 @@ const PanelControl = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>ID estudiantil</Label>
+              <Label>Cédula / ID estudiantil</Label>
               <Input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 value={estId}
-                onChange={(e) => setEstId(e.target.value)}
-                placeholder="Ej: 12345"
+                onChange={async (e) => {
+                  const v = soloDigitos(e.target.value);
+                  setEstId(v);
+                  if (!editingEst) {
+                    const existe = await autofillDesdeUsuarios(v, setEstNombre, setEstApellidos, setEstTelefono);
+                    setEstUsuarioExiste(existe);
+                  }
+                }}
+                placeholder="Ej: 1234567890"
                 readOnly={!!editingEst}
                 className={editingEst ? "bg-muted" : ""}
               />
             </div>
+            {estUsuarioExiste && !esAdmin && (
+              <p className="text-xs text-muted-foreground">
+                Esta persona ya está registrada. Solo el administrador puede modificar sus datos personales.
+              </p>
+            )}
             <div className="space-y-2">
               <Label>Apellidos</Label>
               <Input
                 value={estApellidos}
                 onChange={(e) => setEstApellidos(e.target.value)}
                 placeholder="Apellidos del estudiante"
+                readOnly={estUsuarioExiste && !esAdmin}
+                className={estUsuarioExiste && !esAdmin ? "bg-muted" : ""}
               />
             </div>
             <div className="space-y-2">
@@ -2125,6 +1943,18 @@ const PanelControl = () => {
                 value={estNombre}
                 onChange={(e) => setEstNombre(e.target.value)}
                 placeholder="Nombres del estudiante"
+                readOnly={estUsuarioExiste && !esAdmin}
+                className={estUsuarioExiste && !esAdmin ? "bg-muted" : ""}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Teléfono <span className="text-xs text-muted-foreground">(opcional)</span></Label>
+              <Input
+                value={estTelefono}
+                onChange={(e) => setEstTelefono(e.target.value)}
+                placeholder="Ej: 3001234567"
+                readOnly={estUsuarioExiste && !esAdmin}
+                className={estUsuarioExiste && !esAdmin ? "bg-muted" : ""}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -2156,46 +1986,40 @@ const PanelControl = () => {
               </div>
             </div>
 
-            <div className="pt-2 border-t">
-              <h3 className="text-sm font-semibold mb-2">Acudientes</h3>
-              <p className="text-xs text-muted-foreground mb-3">
-                Cédula, nombre y teléfono por acudiente. La cédula es obligatoria
-                para registrarlo en el sistema. Deja los campos vacíos si no aplica.
-              </p>
+            {esAdmin && (
+              <div className="space-y-2">
+                <Label>Contraseña <span className="text-xs text-muted-foreground">(solo lectura)</span></Label>
+                <Input value={estContrasena} readOnly className="bg-muted" />
+              </div>
+            )}
 
-              {[
-                { label: "Acudiente 1", cedula: estAcu1Cedula, setCedula: setEstAcu1Cedula, nombre: estAcu1Nombre, setNombre: setEstAcu1Nombre, tel: estAcu1Tel, setTel: setEstAcu1Tel },
-                { label: "Acudiente 2", cedula: estAcu2Cedula, setCedula: setEstAcu2Cedula, nombre: estAcu2Nombre, setNombre: setEstAcu2Nombre, tel: estAcu2Tel, setTel: setEstAcu2Tel },
-                { label: "Acudiente 3", cedula: estAcu3Cedula, setCedula: setEstAcu3Cedula, nombre: estAcu3Nombre, setNombre: setEstAcu3Nombre, tel: estAcu3Tel, setTel: setEstAcu3Tel },
-              ].map((a) => (
-                <div key={a.label} className="grid grid-cols-3 gap-3 mb-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs">{a.label} · Cédula</Label>
-                    <Input
-                      value={a.cedula}
-                      onChange={(e) => a.setCedula(e.target.value)}
-                      placeholder="Cédula"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">{a.label} · Nombre</Label>
-                    <Input
-                      value={a.nombre}
-                      onChange={(e) => a.setNombre(e.target.value)}
-                      placeholder="Nombre completo"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">{a.label} · Teléfono</Label>
-                    <Input
-                      value={a.tel}
-                      onChange={(e) => a.setTel(e.target.value)}
-                      placeholder="Ej: 3001234567"
-                    />
-                  </div>
+            {editingEst && (() => {
+              const acus = [
+                { ced: estAcu1Cedula, nom: estAcu1Nombre, tel: estAcu1Tel },
+                { ced: estAcu2Cedula, nom: estAcu2Nombre, tel: estAcu2Tel },
+                { ced: estAcu3Cedula, nom: estAcu3Nombre, tel: estAcu3Tel },
+              ].filter((a) => a.ced || a.nom);
+              return (
+                <div className="pt-2 border-t">
+                  <h3 className="text-sm font-semibold mb-1">Acudientes de este estudiante</h3>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Solo lectura. Para crear o editar acudientes usa la pestaña Acudientes.
+                  </p>
+                  {acus.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Este estudiante no tiene acudientes registrados.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {acus.map((a, i) => (
+                        <div key={i} className="rounded-md border bg-muted/30 p-2 text-sm">
+                          <div className="font-medium">{a.nom || "Sin nombre"}</div>
+                          <div className="text-xs text-muted-foreground">CC {a.ced || "—"} · Tel {a.tel || "—"}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
+              );
+            })()}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowEstDialog(false)}>
@@ -2486,135 +2310,97 @@ const PanelControl = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Tipo de perfil</Label>
-              <Select value={perfTipo} onValueChange={setPerfTipo}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Estudiante">Estudiante</SelectItem>
-                  <SelectItem value="Acudiente">Acudiente</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>Cédula del acudiente</Label>
+              <Input
+                type="text"
+                inputMode="numeric"
+                value={perfPadreId}
+                onChange={async (e) => {
+                  const v = soloDigitos(e.target.value);
+                  setPerfPadreId(v);
+                  if (!editingPerf) {
+                    const existe = await autofillDesdeUsuarios(v, setPerfPadreNombre, setPerfPadreApellidos, setPerfTelefono);
+                    setPerfUsuarioExiste(existe);
+                  }
+                }}
+                placeholder="Ej: 1234567890"
+                readOnly={!!editingPerf}
+                className={editingPerf ? "bg-muted" : ""}
+              />
             </div>
-
-            {perfTipo === "Estudiante" ? (
-              <>
-                <div className="space-y-2">
-                  <Label>ID estudiantil</Label>
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    value={perfEstId}
-                    onChange={(e) => {
-                      const v = e.target.value.replace(/[^0-9]/g, "");
-                      setPerfEstId(v);
-                      autofillEstudianteFields(v, setPerfEstNombre, setPerfEstApellidos, setPerfEstGrado, setPerfEstSalon);
-                    }}
-                    placeholder="ID del estudiante"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label>Nombre</Label>
-                    <Input value={perfEstNombre} onChange={(e) => setPerfEstNombre(e.target.value)} placeholder="Nombre" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Apellidos</Label>
-                    <Input value={perfEstApellidos} onChange={(e) => setPerfEstApellidos(e.target.value)} placeholder="Apellidos" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label>Grado</Label>
-                    <Select value={perfEstGrado} onValueChange={setPerfEstGrado}>
-                      <SelectTrigger><SelectValue placeholder="Grado" /></SelectTrigger>
-                      <SelectContent>
-                        {gradosColegio.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Salón</Label>
-                    <Select value={perfEstSalon} onValueChange={setPerfEstSalon}>
-                      <SelectTrigger><SelectValue placeholder="Salón" /></SelectTrigger>
-                      <SelectContent>
-                        {SALONES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label>Nombre del acudiente</Label>
-                    <Input value={perfPadreNombre} onChange={(e) => setPerfPadreNombre(e.target.value)} placeholder="Nombre del acudiente" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>ID padre</Label>
-                    <Input value={perfPadreId} onChange={(e) => setPerfPadreId(e.target.value)} placeholder="ID (opcional)" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Número de estudiantes</Label>
-                  <Select value={perfNumEst} onValueChange={setPerfNumEst}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {NUM_ESTUDIANTES.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {renderHijoFields(1,
-                  perfHijo1Id, setPerfHijo1Id,
-                  perfHijo1Nombre, setPerfHijo1Nombre,
-                  perfHijo1Apellidos, setPerfHijo1Apellidos,
-                  perfHijo1Grado, setPerfHijo1Grado,
-                  perfHijo1Salon, setPerfHijo1Salon,
-                )}
-                {parseInt(perfNumEst) >= 2 && renderHijoFields(2,
-                  perfHijo2Id, setPerfHijo2Id,
-                  perfHijo2Nombre, setPerfHijo2Nombre,
-                  perfHijo2Apellidos, setPerfHijo2Apellidos,
-                  perfHijo2Grado, setPerfHijo2Grado,
-                  perfHijo2Salon, setPerfHijo2Salon,
-                )}
-                {parseInt(perfNumEst) >= 3 && renderHijoFields(3,
-                  perfHijo3Id, setPerfHijo3Id,
-                  perfHijo3Nombre, setPerfHijo3Nombre,
-                  perfHijo3Apellidos, setPerfHijo3Apellidos,
-                  perfHijo3Grado, setPerfHijo3Grado,
-                  perfHijo3Salon, setPerfHijo3Salon,
-                )}
-                {parseInt(perfNumEst) >= 4 && renderHijoFields(4,
-                  perfHijo4Id, setPerfHijo4Id,
-                  perfHijo4Nombre, setPerfHijo4Nombre,
-                  perfHijo4Apellidos, setPerfHijo4Apellidos,
-                  perfHijo4Grado, setPerfHijo4Grado,
-                  perfHijo4Salon, setPerfHijo4Salon,
-                )}
-              </>
+            {perfUsuarioExiste && !esAdmin && (
+              <p className="text-xs text-muted-foreground">
+                Esta persona ya está registrada. Solo el administrador puede modificar sus datos personales.
+              </p>
             )}
-
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Nombres</Label>
+                <Input value={perfPadreNombre} onChange={(e) => setPerfPadreNombre(e.target.value)} placeholder="Nombres"
+                  readOnly={perfUsuarioExiste && !esAdmin}
+                  className={perfUsuarioExiste && !esAdmin ? "bg-muted" : ""} />
+              </div>
+              <div className="space-y-2">
+                <Label>Apellidos</Label>
+                <Input value={perfPadreApellidos} onChange={(e) => setPerfPadreApellidos(e.target.value)} placeholder="Apellidos"
+                  readOnly={perfUsuarioExiste && !esAdmin}
+                  className={perfUsuarioExiste && !esAdmin ? "bg-muted" : ""} />
+              </div>
+            </div>
             <div className="space-y-2">
-              <Label>Celular</Label>
+              <Label>Teléfono <span className="text-xs text-muted-foreground">(opcional)</span></Label>
               <Input
                 value={perfTelefono}
                 onChange={(e) => setPerfTelefono(e.target.value)}
-                placeholder="Número de celular"
+                placeholder="Ej: 3001234567"
+                readOnly={perfUsuarioExiste && !esAdmin}
+                className={perfUsuarioExiste && !esAdmin ? "bg-muted" : ""}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>Contraseña</Label>
-              <Input
-                value={perfContrasena}
-                onChange={(e) => setPerfContrasena(e.target.value.slice(0, 50))}
-                placeholder="Contraseña"
-                maxLength={50}
-              />
+            <div className="pt-2 border-t space-y-3">
+              <div>
+                <h3 className="text-sm font-semibold">Acudidos</h3>
+                <p className="text-xs text-muted-foreground">
+                  Hasta 4 estudiantes de este colegio. Al menos uno es obligatorio.
+                </p>
+              </div>
+              {renderHijoFields(1,
+                perfHijo1Id, setPerfHijo1Id,
+                perfHijo1Nombre, setPerfHijo1Nombre,
+                perfHijo1Apellidos, setPerfHijo1Apellidos,
+                perfHijo1Grado, setPerfHijo1Grado,
+                perfHijo1Salon, setPerfHijo1Salon,
+              )}
+              {renderHijoFields(2,
+                perfHijo2Id, setPerfHijo2Id,
+                perfHijo2Nombre, setPerfHijo2Nombre,
+                perfHijo2Apellidos, setPerfHijo2Apellidos,
+                perfHijo2Grado, setPerfHijo2Grado,
+                perfHijo2Salon, setPerfHijo2Salon,
+              )}
+              {renderHijoFields(3,
+                perfHijo3Id, setPerfHijo3Id,
+                perfHijo3Nombre, setPerfHijo3Nombre,
+                perfHijo3Apellidos, setPerfHijo3Apellidos,
+                perfHijo3Grado, setPerfHijo3Grado,
+                perfHijo3Salon, setPerfHijo3Salon,
+              )}
+              {renderHijoFields(4,
+                perfHijo4Id, setPerfHijo4Id,
+                perfHijo4Nombre, setPerfHijo4Nombre,
+                perfHijo4Apellidos, setPerfHijo4Apellidos,
+                perfHijo4Grado, setPerfHijo4Grado,
+                perfHijo4Salon, setPerfHijo4Salon,
+              )}
             </div>
+
+            {esAdmin && (
+              <div className="space-y-2">
+                <Label>Contraseña <span className="text-xs text-muted-foreground">(solo lectura)</span></Label>
+                <Input value={perfContrasena} readOnly className="bg-muted" />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowPerfDialog(false)}>
