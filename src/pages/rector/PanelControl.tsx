@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, puedeAccederDashboard, isAdmin } from "@/hooks/useSession";
+import PhoneInput from "@/components/PhoneInput";
 import HeaderNormi from "@/components/HeaderNormi";
 import { useGradosColegio } from "@/utils/grados";
 import { useToast } from "@/hooks/use-toast";
@@ -358,15 +359,6 @@ const PanelControl = () => {
 
   // Cédula normalizada: solo dígitos (acepta puntos y espacios al escribir/pegar).
   const soloDigitos = (s: string) => (s || "").replace(/\D/g, "");
-
-  // Teléfono en formato WhatsApp (con indicativo 57). Si escriben los 10 dígitos
-  // del celular colombiano (empieza por 3), se antepone 57 automáticamente.
-  const normalizarTelefono = (s: string): string | null => {
-    const d = soloDigitos(s);
-    if (!d) return null;
-    if (d.length === 10 && d.startsWith("3")) return "57" + d;
-    return d;
-  };
 
   // Busca la cédula en Usuarios (tabla global, cross-colegio) y autocompleta
   // nombres/apellidos/teléfono si ya existe. Devuelve true si existía.
@@ -768,7 +760,7 @@ const PanelControl = () => {
     }
 
     setSavingEst(true);
-    const tel = normalizarTelefono(estTelefono);
+    const tel = estTelefono.trim() || null;
 
     // ── 1) Usuarios (fuente única de nombres/apellidos/teléfono, cross-colegio).
     //       Editar aquí propaga el cambio a todos los colegios de esa persona.
@@ -1214,7 +1206,7 @@ const PanelControl = () => {
     // 1) Usuarios (fuente única). Solo se escribe si el acudiente es NUEVO o si
     //    es admin (regla de inmutabilidad). Sin contraseña: al crear queda
     //    vacía y la persona entra con su id; si ya existía, conserva la suya.
-    const tel = normalizarTelefono(perfTelefono);
+    const tel = perfTelefono.trim() || null;
     const { data: existingUserAcu } = await supabase
       .from("Usuarios").select("id").eq("id", cedAcu).maybeSingle();
     if (!existingUserAcu || esAdmin) {
@@ -1949,12 +1941,11 @@ const PanelControl = () => {
             </div>
             <div className="space-y-2">
               <Label>Teléfono <span className="text-xs text-muted-foreground">(opcional)</span></Label>
-              <Input
+              <PhoneInput
                 value={estTelefono}
-                onChange={(e) => setEstTelefono(e.target.value)}
+                onChange={setEstTelefono}
+                disabled={estUsuarioExiste && !esAdmin}
                 placeholder="Ej: 3001234567"
-                readOnly={estUsuarioExiste && !esAdmin}
-                className={estUsuarioExiste && !esAdmin ? "bg-muted" : ""}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -2349,12 +2340,11 @@ const PanelControl = () => {
             </div>
             <div className="space-y-2">
               <Label>Teléfono <span className="text-xs text-muted-foreground">(opcional)</span></Label>
-              <Input
+              <PhoneInput
                 value={perfTelefono}
-                onChange={(e) => setPerfTelefono(e.target.value)}
+                onChange={setPerfTelefono}
+                disabled={perfUsuarioExiste && !esAdmin}
                 placeholder="Ej: 3001234567"
-                readOnly={perfUsuarioExiste && !esAdmin}
-                className={perfUsuarioExiste && !esAdmin ? "bg-muted" : ""}
               />
             </div>
 
