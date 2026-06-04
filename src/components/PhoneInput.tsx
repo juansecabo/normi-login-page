@@ -42,9 +42,20 @@ const DEFAULT_DIAL = "57";
 
 const soloDigitos = (s: string) => (s || "").replace(/\D/g, "");
 
-// Bandera emoji desde el código ISO (en Windows degrada a las letras, que igual informan).
-const bandera = (iso: string) =>
-  iso.toUpperCase().replace(/./g, (c) => String.fromCodePoint(127397 + c.charCodeAt(0)));
+// Bandera como imagen (los emoji de bandera no se renderizan en Windows). Se
+// usa flagcdn.com, un CDN gratuito de banderas. Si falla, queda solo el indicativo.
+const banderaUrl = (iso: string) => `https://flagcdn.com/24x18/${iso.toLowerCase()}.png`;
+
+const Bandera = ({ iso }: { iso: string }) => (
+  <img
+    src={banderaUrl(iso)}
+    alt={iso}
+    width={20}
+    height={15}
+    className="inline-block rounded-[2px] shrink-0"
+    loading="lazy"
+  />
+);
 
 // Separa el indicativo del número a partir del valor completo. Elige el dial
 // más largo que sea prefijo (para distinguir 57 de 573, etc.).
@@ -83,7 +94,9 @@ const PhoneInput = ({ value, onChange, disabled, placeholder }: PhoneInputProps)
         <SelectContent>
           {PAISES.map((p) => (
             <SelectItem key={p.iso} value={p.dial}>
-              {bandera(p.iso)} +{p.dial}
+              <span className="flex items-center gap-1.5">
+                <Bandera iso={p.iso} /> +{p.dial}
+              </span>
             </SelectItem>
           ))}
         </SelectContent>
