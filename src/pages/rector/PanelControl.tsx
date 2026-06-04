@@ -1368,7 +1368,7 @@ const PanelControl = () => {
 
   const filteredEst = estudiantes.filter((e) =>
     matchesSearch(
-      `${e.apellidos} ${e.nombres} ${e.id} ${e.grado} ${e.salon}`,
+      `${e.apellidos} ${e.nombres} ${e.id} ${e.grado} ${e.salon} ${(e as any).numero_de_telefono || ""}`,
       searchEst
     )
     && (filtroGradoEst === "todos" || e.grado === filtroGradoEst)
@@ -1392,7 +1392,7 @@ const PanelControl = () => {
   };
 
   const filteredInt = internos.filter((i) =>
-    matchesSearch(`${i.apellidos} ${i.nombres} ${i.id} ${i.cargo}`, searchInt)
+    matchesSearch(`${i.apellidos} ${i.nombres} ${i.id} ${i.cargo} ${(i as any).numero_de_telefono || ""}`, searchInt)
   );
 
   const filteredAsig = asignaciones.filter((a) =>
@@ -1404,7 +1404,11 @@ const PanelControl = () => {
 
   const filteredPerf = perfiles.filter((p) =>
     matchesSearch(
-      `${getPerfilDisplayName(p)} ${getPerfilDisplayCode(p)} ${p.perfil} ${p.contrasena || ""} ${p.numero_de_telefono || ""}`,
+      `${getPerfilDisplayName(p)} ${getPerfilDisplayCode(p)} ${p.perfil} ${p.contrasena || ""} ${p.numero_de_telefono || ""} ` +
+      [1, 2, 3, 4].map((i) => {
+        const q = p as any;
+        return `${q[`acudido${i}_id`] || ""} ${q[`acudido${i}_nombre`] || ""} ${q[`acudido${i}_apellidos`] || ""} ${q[`acudido${i}_grado`] || ""} ${q[`acudido${i}_salon`] || ""}`;
+      }).join(" "),
       searchPerf
     )
     && perfAcudidoMatch(p, filtroGradoPerf, filtroSalonPerf)
