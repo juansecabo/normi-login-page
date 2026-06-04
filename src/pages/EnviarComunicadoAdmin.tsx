@@ -1312,7 +1312,7 @@ const EnviarComunicadoAdmin = () => {
               {plantillaMasivo && filasParsed.length > 0 && (
                 <div className="mb-6 space-y-2">
                   <Label className="text-base font-semibold">Vista previa (primer estudiante)</Label>
-                  <div className="bg-muted p-3 rounded-md text-sm whitespace-pre-wrap">
+                  <div className="bg-muted p-3 rounded-md text-sm whitespace-pre-wrap break-words">
                     {resolverPlantilla(plantillaMasivo, filasParsed[0])}
                   </div>
                 </div>
@@ -1390,17 +1390,17 @@ const EnviarComunicadoAdmin = () => {
                         </div>
                       </div>
                       {c.remitente && (
-                        <p className="text-sm">
+                        <p className="text-sm break-words">
                           <span className="font-medium text-foreground">De:</span>{" "}
                           {c.remitente}
                         </p>
                       )}
-                      <p className="text-sm">
+                      <p className="text-sm break-words">
                         <span className="font-medium text-foreground">Para:</span>{" "}
                         {c.destinatarios}
                       </p>
                       {c.mensaje && (
-                        <p className="text-sm whitespace-pre-wrap bg-stone-50 border border-stone-200 p-3 rounded-md leading-relaxed">
+                        <p className="text-sm whitespace-pre-wrap break-words bg-stone-50 border border-stone-200 p-3 rounded-md leading-relaxed">
                           {c.mensaje}
                         </p>
                       )}
@@ -1450,7 +1450,7 @@ const EnviarComunicadoAdmin = () => {
                 <p>
                   <span className="font-medium text-foreground">Mensaje:</span>
                 </p>
-                <p className="whitespace-pre-wrap bg-stone-50 border border-stone-200 p-3 rounded-md leading-relaxed">
+                <p className="whitespace-pre-wrap break-words bg-stone-50 border border-stone-200 p-3 rounded-md leading-relaxed">
                   {mensaje}
                 </p>
                 {archivosSeleccionados.length > 0 && (
@@ -1487,7 +1487,7 @@ const EnviarComunicadoAdmin = () => {
                   <span className="font-medium text-foreground">Ejemplo (primer estudiante):</span>
                 </p>
                 {filasParsed.length > 0 && plantillaMasivo && (
-                  <p className="whitespace-pre-wrap bg-stone-50 border border-stone-200 p-3 rounded-md leading-relaxed">
+                  <p className="whitespace-pre-wrap break-words bg-stone-50 border border-stone-200 p-3 rounded-md leading-relaxed">
                     {resolverPlantilla(plantillaMasivo, filasParsed[0])}
                   </p>
                 )}
@@ -1531,11 +1531,11 @@ const EnviarComunicadoAdmin = () => {
           {selectedHistorial && (
             <>
               <DialogHeader>
-                <DialogTitle className="text-base">
+                <DialogTitle className="text-base break-words">
                   {selectedHistorial.remitente ? `De: ${selectedHistorial.remitente}` : `Para: ${selectedHistorial.destinatarios}`}
                 </DialogTitle>
                 {selectedHistorial.remitente && (
-                  <p className="text-sm text-left">
+                  <p className="text-sm text-left break-words">
                     <span className="font-medium text-foreground">Para:</span>{" "}
                     <span className="text-muted-foreground">{selectedHistorial.destinatarios}</span>
                   </p>
@@ -1546,7 +1546,7 @@ const EnviarComunicadoAdmin = () => {
                 </div>
               </DialogHeader>
               {selectedHistorial.mensaje && (
-                <p className="text-sm whitespace-pre-wrap bg-muted p-4 rounded-md">
+                <p className="text-sm whitespace-pre-wrap break-words bg-muted p-4 rounded-md">
                   {selectedHistorial.mensaje}
                 </p>
               )}

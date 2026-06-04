@@ -141,18 +141,18 @@ const ListaComunicados = ({ comunicados, loading, showDocumentLink = false }: Li
             </div>
             <span className="text-xs font-semibold text-primary">#{numeroById.get(c.id)}</span>
           </div>
-          <p className="text-sm">
+          <p className="text-sm break-words">
             <span className="font-medium text-foreground">De:</span>{" "}
             {c.remitente}
           </p>
           {c.destinatarios && (
-            <p className="text-sm">
+            <p className="text-sm break-words">
               <span className="font-medium text-foreground">Para:</span>{" "}
               <span className="text-muted-foreground">{c.destinatarios}</span>
             </p>
           )}
           {c.mensaje && (
-            <p className="text-sm whitespace-pre-wrap bg-stone-50 border border-stone-200 p-3 rounded-md leading-relaxed">
+            <p className="text-sm whitespace-pre-wrap break-words bg-stone-50 border border-stone-200 p-3 rounded-md leading-relaxed">
               {c.mensaje}
             </p>
           )}
@@ -171,7 +171,7 @@ const ListaComunicados = ({ comunicados, loading, showDocumentLink = false }: Li
           {selectedItem && (
             <>
               <DialogHeader>
-                <DialogTitle className="text-base">
+                <DialogTitle className="text-base break-words">
                   De: {selectedItem.remitente}
                 </DialogTitle>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -180,7 +180,7 @@ const ListaComunicados = ({ comunicados, loading, showDocumentLink = false }: Li
                 </div>
               </DialogHeader>
               {selectedItem.mensaje && (
-                <p className="text-sm whitespace-pre-wrap bg-stone-50 border border-stone-200 p-4 rounded-md leading-relaxed">
+                <p className="text-sm whitespace-pre-wrap break-words bg-stone-50 border border-stone-200 p-4 rounded-md leading-relaxed">
                   {selectedItem.mensaje}
                 </p>
               )}

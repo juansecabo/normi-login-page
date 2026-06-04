@@ -1452,17 +1452,17 @@ const EnviarComunicado = () => {
                         </div>
                       </div>
                       {c.remitente && (
-                        <p className="text-sm">
+                        <p className="text-sm break-words">
                           <span className="font-medium text-foreground">De:</span>{" "}
                           {c.remitente}
                         </p>
                       )}
-                      <p className="text-sm">
+                      <p className="text-sm break-words">
                         <span className="font-medium text-foreground">Para:</span>{" "}
                         {c.destinatarios}
                       </p>
                       {c.mensaje && (
-                        <p className="text-sm whitespace-pre-wrap bg-stone-50 border border-stone-200 p-3 rounded-md leading-relaxed">
+                        <p className="text-sm whitespace-pre-wrap break-words bg-stone-50 border border-stone-200 p-3 rounded-md leading-relaxed">
                           {c.mensaje}
                         </p>
                       )}
@@ -1593,7 +1593,7 @@ const EnviarComunicado = () => {
           {selectedHistorial && (
             <>
               <DialogHeader>
-                <DialogTitle className="text-base">
+                <DialogTitle className="text-base break-words">
                   Para: {selectedHistorial.destinatarios}
                 </DialogTitle>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -1602,7 +1602,7 @@ const EnviarComunicado = () => {
                 </div>
               </DialogHeader>
               {selectedHistorial.mensaje && (
-                <p className="text-sm whitespace-pre-wrap bg-muted p-4 rounded-md">
+                <p className="text-sm whitespace-pre-wrap break-words bg-muted p-4 rounded-md">
                   {selectedHistorial.mensaje}
                 </p>
               )}
