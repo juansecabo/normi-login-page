@@ -232,13 +232,7 @@ const NormiExaminadora = () => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-
-      // Use correct grammatical gender: Evaluación (f) vs Taller/Quiz (m)
-      const esFemenino = tipoActividad === 'evaluacion';
-      toast({
-        title: "¡Éxito!",
-        description: `${getTipoActividadLabel(tipoActividad)} ${esFemenino ? 'generada' : 'generado'} exitosamente`,
-      });
+      // Sin pop-up de éxito: con que se descargue el documento es suficiente.
     } catch (error) {
       console.error("Error enviando al webhook:", error);
       toast({
