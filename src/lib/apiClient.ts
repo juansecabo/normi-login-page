@@ -330,6 +330,40 @@ function qs(params: Record<string, string | number | undefined>): string {
   return s ? `?${s}` : '';
 }
 
+/** Lee un Blob como base64 (sin el prefijo data:). */
+function blobABase64(blob: Blob): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(((r.result as string).split(',')[1]) || '');
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(blob);
+  });
+}
+
+/**
+ * Convierte cualquier imagen a WebP en el navegador y devuelve su base64.
+ * Regla de marca de Cailico: TODOS los logos/escudos se almacenan en WebP.
+ * Si ya viene en webp no se recodifica (evita pérdida). Preserva transparencia.
+ */
+async function imagenAWebpBase64(file: File): Promise<string> {
+  if (file.type === 'image/webp') return blobABase64(file);
+  const bitmap = await createImageBitmap(file);
+  const canvas = document.createElement('canvas');
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('No se pudo crear el contexto de canvas');
+  ctx.drawImage(bitmap, 0, 0);
+  const blob = await new Promise<Blob>((resolve, reject) =>
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error('La conversión a WebP falló'))),
+      'image/webp',
+      0.95,
+    ),
+  );
+  return blobABase64(blob);
+}
+
 export const apiClient = {
   auth: {
     async login(cedula: string, contrasena: string): Promise<LoginResponse> {
@@ -449,18 +483,12 @@ export const apiClient = {
       return request<{ colegios: ColegioPlataforma[] }>('/api/plataforma/colegios');
     },
     async uploadColegioLogo(colegio_id: string, file: File): Promise<{ logo_url: string }> {
-      const contentBase64 = await new Promise<string>((resolve, reject) => {
-        const r = new FileReader();
-        r.onload = () => {
-          const result = r.result as string;
-          resolve(result.split(',')[1] || '');
-        };
-        r.onerror = () => reject(r.error);
-        r.readAsDataURL(file);
-      });
+      // Regla de marca: los escudos se almacenan siempre en WebP, sin importar
+      // el formato que suba el SuperAdmin (jpg/png/webp).
+      const contentBase64 = await imagenAWebpBase64(file);
       return request<{ logo_url: string }>('/api/plataforma/colegio/logo', {
         method: 'POST',
-        body: JSON.stringify({ colegio_id, contentBase64, contentType: file.type }),
+        body: JSON.stringify({ colegio_id, contentBase64, contentType: 'image/webp' }),
       });
     },
     entrarComoAdmin(colegio_id: string): Promise<{ ok: true; token: string; colegio: { id: string; nombre: string; slug: string } }> {
