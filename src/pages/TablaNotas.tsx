@@ -2292,6 +2292,12 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     periodo: number,
     notaFinal: number
   ) => {
+    // En modo grupos NO se notifica la definitiva del periodo si el profe no
+    // marcó "Periodo completo" (sigue provisional).
+    if (modoEfectivo() === 'grupos' && !getPeriodoCompleto(periodo)) {
+      toast({ title: 'Periodo no cerrado', description: 'Marca "Periodo completo" antes de notificar la definitiva del periodo.', variant: 'destructive' });
+      return;
+    }
     const porcentajeUsado = getPorcentajeUsado(periodo);
     const esCompleto = porcentajeUsado === 100;
     const actividadesDelPeriodo = getActividadesPorPeriodo(periodo);
@@ -2478,6 +2484,12 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   // Preparar notificación masiva para período completo
   const handleNotificarPeriodoCompleto = (periodo: number) => {
     if (soloLectura) return;
+    // En modo grupos NO se notifica la definitiva del periodo si el profe no
+    // marcó "Periodo completo" (sigue provisional).
+    if (modoEfectivo() === 'grupos' && !getPeriodoCompleto(periodo)) {
+      toast({ title: 'Periodo no cerrado', description: 'Marca "Periodo completo" antes de notificar la definitiva del periodo.', variant: 'destructive' });
+      return;
+    }
     const porcentajeUsado = getPorcentajeUsado(periodo);
     const esCompleto = porcentajeUsado === 100;
     const actividadesDelPeriodo = getActividadesPorPeriodo(periodo);
@@ -3251,23 +3263,30 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     const gruposPeriodo = gruposNotas.filter(g => g.periodo === periodo);
     const actsPeriodo = actividades.filter(a => a.periodo === periodo);
 
-    // Todos los grupos deben tener porcentaje asignado
-    if (gruposPeriodo.some(g => g.porcentaje === null)) return false;
+    // (1) Solo modo grupos: sin grupos, no aplica el checkbox.
+    if (gruposPeriodo.length === 0) return false;
 
-    // Suma del periodo = % grupos top + % actividades sueltas (sin grupo)
+    // Estructura: todos los grupos con %, y la suma del periodo (% grupos top +
+    // % actividades sueltas) = 100. Sin esto la definitiva no sería válida.
+    if (gruposPeriodo.some(g => g.porcentaje === null)) return false;
     const tops = gruposPeriodo.filter(g => !g.parent_id);
     const sumaTops = tops.reduce((s, g) => s + Number(g.porcentaje || 0), 0);
     const actsSueltas = actsPeriodo.filter(a => !a.grupo_id && a.porcentaje !== null);
     const sumaSueltas = actsSueltas.reduce((s, a) => s + Number(a.porcentaje || 0), 0);
-    const sumaTotal = sumaTops + sumaSueltas;
-    if (Math.abs(sumaTotal - 100) > 0.01) return false;
+    if (Math.abs(sumaTops + sumaSueltas - 100) > 0.01) return false;
 
-    // Si hay grupos, cada hoja debe tener al menos 1 actividad
-    if (gruposPeriodo.length > 0) {
-      const hojas = gruposPeriodo.filter(g => !gruposPeriodo.some(h => h.parent_id === g.id));
-      if (!hojas.every(h => actsPeriodo.some(a => a.grupo_id === h.id))) return false;
-    }
-    return true;
+    // Cada hoja de grupo debe tener al menos 1 actividad definida.
+    const hojas = gruposPeriodo.filter(g => !gruposPeriodo.some(h => h.parent_id === g.id));
+    if (!hojas.every(h => actsPeriodo.some(a => a.grupo_id === h.id))) return false;
+
+    // (2)+(3) CLAVE: el checkbox solo aparece si EXISTE al menos UN estudiante con
+    // nota en TODAS las actividades del periodo (en grupos Y sueltas). Un único
+    // estudiante completo de punta a punta — NO uno por grupo y otro por las
+    // sueltas.
+    if (actsPeriodo.length === 0) return false;
+    return estudiantes.some(est =>
+      actsPeriodo.every(a => notas[est.id]?.[periodo]?.[a.id] !== undefined),
+    );
   };
 
 
@@ -3454,7 +3473,11 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
             )}
           </div>
           {periodoActivo >= 1 && (
-            (getPeriodoCompleto(periodoActivo) || getPorcentajeUsado(periodoActivo) === 100) ? (
+            // Modo grupos: "completo" solo si el profe marcó el checkbox.
+            // Modo plano (Normal, sin checkbox): cuando los % suman 100.
+            (modoEfectivo() === 'grupos'
+              ? getPeriodoCompleto(periodoActivo)
+              : getPorcentajeUsado(periodoActivo) === 100) ? (
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-semibold">
                 ✓ Periodo completo
               </span>
@@ -4154,10 +4177,14 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                             {(() => {
                               const notaFinal = calcularFinalPeriodo(estudiante.id, periodoActivo);
                               const tieneNotas = tieneAlgunaNotaEnPeriodo(estudiante.id, periodoActivo);
-                              const completo = periodoCompletoParaEst(estudiante.id, periodoActivo);
-                              // La definitiva se muestra SIEMPRE (en vivo). Si el periodo no
-                              // está completo se marca "provisional". El checkbox del profe ya
-                              // NO oculta la nota; solo sigue gateando las notificaciones.
+                              // La definitiva se muestra SIEMPRE (en vivo), pero es FINAL solo
+                              // cuando el periodo está "cerrado":
+                              //   - Modo grupos: el profe marcó el checkbox "Periodo completo".
+                              //   - Modo plano (Normal): los % de las actividades suman 100.
+                              // Si no, sale "provisional". (Igual criterio que el agente.)
+                              const completo = modoEfectivo() === 'grupos'
+                                ? getPeriodoCompleto(periodoActivo)
+                                : periodoCompletoParaEst(estudiante.id, periodoActivo);
                               const puedeNotificar = modoEfectivo() === 'plana' || getPeriodoCompleto(periodoActivo);
                               return (
                                 <FinalPeriodoCelda
