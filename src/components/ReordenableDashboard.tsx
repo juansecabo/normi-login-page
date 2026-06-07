@@ -64,7 +64,24 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
   items: ReordItem[];
   gridClassName: string;
 }) {
-  const [orden, setOrden] = useState<string[]>([]);
+  // Clave de caché local por usuario + colegio + dashboard (no se mezcla entre
+  // perfiles ni colegios de la misma persona).
+  const cacheKey = () => {
+    const s = getSession();
+    return `dash_orden:${s.id ?? ''}:${s.colegio_id ?? ''}:${dashboardKey}`;
+  };
+
+  // Estado inicial SINCRÓNICO desde localStorage → el primer pintado ya sale en el
+  // orden del usuario (sin esperar la red), así no se ve el orden por defecto un
+  // instante. La base se consulta igual abajo y manda como fuente de verdad.
+  const [orden, setOrden] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem(`dash_orden:${getSession().id ?? ''}:${getSession().colegio_id ?? ''}:${dashboardKey}`);
+      const parsed = raw ? JSON.parse(raw) : null;
+      if (Array.isArray(parsed)) return parsed as string[];
+    } catch { /* ignore */ }
+    return [];
+  });
   const [jiggling, setJiggling] = useState(false);
 
   useEffect(() => {
@@ -78,8 +95,12 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
           .eq('user_id', String(session.id))
           .eq('dashboard', dashboardKey)
           .maybeSingle();
-        if (data?.orden && Array.isArray(data.orden)) setOrden(data.orden as string[]);
-      } catch { /* ignore */ }
+        // La base es la verdad: reconcilia la caché (cubre cambios hechos en otro
+        // dispositivo). Si no hay fila guardada → orden por defecto ([]).
+        const dbOrden = (data?.orden && Array.isArray(data.orden)) ? (data.orden as string[]) : [];
+        setOrden(dbOrden);
+        try { localStorage.setItem(cacheKey(), JSON.stringify(dbOrden)); } catch { /* ignore */ }
+      } catch { /* ignore — se queda con la caché local */ }
     })();
   }, [dashboardKey]);
 
@@ -110,6 +131,9 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
     const ids = ordenadas.map((c) => c.id);
     const nuevoOrden = arrayMove(ids, ids.indexOf(active.id as string), ids.indexOf(over.id as string));
     setOrden(nuevoOrden);
+    // Actualizar la caché local YA (mismo momento del cambio) → la próxima carga
+    // pinta el orden nuevo al instante, sin parpadeo ni quedarse con el viejo.
+    try { localStorage.setItem(cacheKey(), JSON.stringify(nuevoOrden)); } catch { /* ignore */ }
     // Guardar (el proxy inyecta colegio_id; el frontend manda user_id + dashboard).
     (async () => {
       try {
