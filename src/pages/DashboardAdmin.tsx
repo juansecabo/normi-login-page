@@ -49,12 +49,6 @@ interface CardDef {
   badge?: number;
 }
 
-/** Clave de localStorage del orden del dashboard, por usuario Y por colegio. */
-function ordenKey(): string {
-  const s = getSession();
-  return `normi_dash_orden_admin_${s.id}_${s.colegio_id}`;
-}
-
 /** Una tarjeta arrastrable (long-press en móvil / arrastrar en desktop). */
 function SortableCard({ id, children }: { id: string; children: ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
@@ -99,11 +93,18 @@ const DashboardAdmin = () => {
     setNombres(session.nombres || "");
     setApellidos(session.apellidos || "");
 
-    // Cargar el orden personalizado guardado (por usuario + colegio).
-    try {
-      const saved = localStorage.getItem(ordenKey());
-      if (saved) setOrden(JSON.parse(saved));
-    } catch { /* ignore */ }
+    // Cargar el orden personalizado guardado en la BASE (por usuario + colegio),
+    // así sigue a la persona aunque cambie de dispositivo.
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('Preferencias_Dashboard')
+          .select('orden')
+          .eq('user_id', String(session.id))
+          .maybeSingle();
+        if (data?.orden && Array.isArray(data.orden)) setOrden(data.orden as string[]);
+      } catch { /* ignore */ }
+    })();
 
     const fetchBadges = async () => {
       try {
@@ -166,7 +167,20 @@ const DashboardAdmin = () => {
     const ids = ordenadas.map((c) => c.id);
     const nuevoOrden = arrayMove(ids, ids.indexOf(active.id as string), ids.indexOf(over.id as string));
     setOrden(nuevoOrden);
-    try { localStorage.setItem(ordenKey(), JSON.stringify(nuevoOrden)); } catch { /* ignore */ }
+    // Guardar en la base (el proxy inyecta colegio_id; el frontend manda user_id).
+    (async () => {
+      try {
+        const { error } = await supabase
+          .from('Preferencias_Dashboard')
+          .upsert(
+            { user_id: String(getSession().id), orden: nuevoOrden },
+            { onConflict: 'user_id,colegio_id' },
+          );
+        if (error) console.error('Error guardando el orden del dashboard:', error);
+      } catch (e) {
+        console.error('Error guardando el orden del dashboard:', e);
+      }
+    })();
   };
 
   return (
