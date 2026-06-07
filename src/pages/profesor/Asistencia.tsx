@@ -335,36 +335,37 @@ const Selector = ({ label, value, onChange, options, placeholder, disabled }: {
 /** Tarjeta de un estudiante. `intencion` tiñe el overlay según hacia dónde se arrastra. */
 const CardView = ({ item, intencion, behind }: { item: AsistenciaRosterItem; intencion?: AsistenciaEstado | null; behind?: boolean }) => {
   const iniciales = `${item.nombres?.[0] || ""}${item.apellidos?.[0] || ""}`.toUpperCase();
+  const ringColor = intencion ? ESTADO_UI[intencion].ring : "ring-white/80";
   return (
-    <div className={`absolute inset-0 rounded-2xl bg-card shadow-xl border border-border overflow-hidden flex flex-col items-center justify-center p-6 ${behind ? "scale-95 opacity-60" : ""}`}>
+    <div className={`absolute inset-0 rounded-3xl overflow-hidden flex flex-col items-center justify-center p-6 shadow-2xl border border-slate-700/60 bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 ${behind ? "scale-95 opacity-50" : ""}`}>
       {/* Banner de excusa vigente */}
       {item.tiene_excusa && (
-        <div className="absolute top-0 inset-x-0 bg-amber-400 text-amber-950 text-center text-sm font-bold py-2 shadow">
+        <div className="absolute top-0 inset-x-0 bg-amber-400 text-amber-950 text-center text-sm font-bold py-2 shadow z-10">
           Con Excusa{item.excusa_motivo ? ` · ${item.excusa_motivo}` : ""}
         </div>
       )}
 
-      {/* Foto */}
-      <div className={`mt-6 w-40 h-40 rounded-full overflow-hidden ring-4 ring-border bg-muted flex items-center justify-center ${intencion ? ESTADO_UI[intencion].ring : ""}`}>
+      {/* Foto (la que el estudiante sube en su dashboard) */}
+      <div className={`mt-4 w-44 h-44 rounded-full overflow-hidden ring-4 ${ringColor} bg-slate-700 flex items-center justify-center shadow-xl`}>
         {item.avatar_url
           ? <img src={item.avatar_url} alt="" className="w-full h-full object-cover" draggable={false} />
-          : <span className="text-4xl font-bold text-muted-foreground">{iniciales || "?"}</span>}
+          : <span className="text-5xl font-bold text-slate-300">{iniciales || "?"}</span>}
       </div>
 
-      <p className="mt-5 text-xl font-bold text-foreground text-center leading-tight">{item.nombres} {item.apellidos}</p>
-      <p className="text-sm text-muted-foreground">CC {item.estudiante_id}</p>
+      <p className="mt-6 px-3 text-2xl font-bold text-white text-center leading-tight">{item.nombres} {item.apellidos}</p>
+      <p className="text-sm text-slate-400 mt-1">CC {item.estudiante_id}</p>
 
       {/* Estado ya marcado */}
       {item.estado && !intencion && (
-        <span className={`mt-4 px-3 py-1 rounded-full text-white text-sm font-semibold ${ESTADO_UI[item.estado].color}`}>
+        <span className={`mt-4 px-4 py-1.5 rounded-full text-white text-sm font-semibold shadow ${ESTADO_UI[item.estado].color}`}>
           {ESTADO_UI[item.estado].label}
         </span>
       )}
 
       {/* Overlay de intención al arrastrar */}
       {intencion && (
-        <div className={`absolute inset-0 flex items-center justify-center ${ESTADO_UI[intencion].color} bg-opacity-25`}>
-          <span className="px-6 py-3 rounded-xl border-4 border-white text-white text-2xl font-extrabold rotate-[-8deg] uppercase tracking-wider drop-shadow">
+        <div className={`absolute inset-0 flex items-center justify-center ${ESTADO_UI[intencion].color} bg-opacity-30`}>
+          <span className="px-6 py-3 rounded-xl border-4 border-white text-white text-3xl font-extrabold rotate-[-8deg] uppercase tracking-wider drop-shadow-lg">
             {ESTADO_UI[intencion].label}
           </span>
         </div>
