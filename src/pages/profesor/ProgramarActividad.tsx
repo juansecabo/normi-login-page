@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { subirArchivo } from "@/lib/storage";
 import { apiRequest } from "@/lib/apiClient";
 import { getSession, isProfesor } from "@/hooks/useSession";
+import { rankGrado } from "@/utils/grados";
 import HeaderNormi from "@/components/HeaderNormi";
 import CharCircle from "@/components/CharCircle";
 import {
@@ -240,7 +241,7 @@ const ProgramarActividad = () => {
     if (!asignaturaSeleccionada) { setGrados([]); return; }
     const filtradas = asignaciones.filter(a => ((a['Asignatura(s)'] || []).flat() as string[]).includes(asignaturaSeleccionada));
     const todos = filtradas.flatMap(a => a['Grado(s)'] || []).flat() as string[];
-    setGrados([...new Set(todos)]);
+    setGrados([...new Set(todos)].sort((a, b) => rankGrado(a) - rankGrado(b)));
   }, [asignaturaSeleccionada, asignaciones]);
 
   useEffect(() => {
@@ -251,7 +252,7 @@ const ProgramarActividad = () => {
       return asigs.includes(asignaturaSeleccionada) && grads.includes(gradoSeleccionado);
     });
     const todos = filtradas.flatMap(a => a['Salon(es)'] || []).flat() as string[];
-    setSalones([...new Set(todos)]);
+    setSalones([...new Set(todos)].sort((a, b) => a.localeCompare(b, 'es', { numeric: true })));
   }, [gradoSeleccionado, asignaturaSeleccionada, asignaciones]);
 
   // ===== Actividades tab: cascade grados/salones =====
@@ -259,7 +260,7 @@ const ProgramarActividad = () => {
     if (!actAsignatura) { setActGrados([]); return; }
     const filtradas = asignaciones.filter(a => ((a['Asignatura(s)'] || []).flat() as string[]).includes(actAsignatura));
     const todos = filtradas.flatMap(a => a['Grado(s)'] || []).flat() as string[];
-    setActGrados([...new Set(todos)]);
+    setActGrados([...new Set(todos)].sort((a, b) => rankGrado(a) - rankGrado(b)));
   }, [actAsignatura, asignaciones]);
 
   useEffect(() => {
@@ -270,7 +271,7 @@ const ProgramarActividad = () => {
       return asigs.includes(actAsignatura) && grads.includes(actGrado);
     });
     const todos = filtradas.flatMap(a => a['Salon(es)'] || []).flat() as string[];
-    setActSalones([...new Set(todos)]);
+    setActSalones([...new Set(todos)].sort((a, b) => a.localeCompare(b, 'es', { numeric: true })));
   }, [actGrado, actAsignatura, asignaciones]);
 
   // Load actividades when all 3 selectors are set
