@@ -124,7 +124,6 @@ const Asistencia = () => {
     for (const r of roster) if (r.estado) c[r.estado]++;
     return c;
   }, [roster]);
-  const marcados = roster.filter((r) => r.estado).length;
 
   // Intención de swipe en vivo (para overlay de color).
   const intencion: AsistenciaEstado | null = useMemo(() => {
@@ -254,15 +253,14 @@ const Asistencia = () => {
               </button>
               <span className="text-xs text-muted-foreground capitalize">{fechaLarga(fecha)}</span>
             </div>
-            <div className="mb-4">
-              <p className="font-semibold text-foreground text-center mb-2">{asignatura} · {grado} {salon}</p>
-              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                <span>Estudiante {Math.min(idx + 1, roster.length)} de {roster.length}</span>
-                <span>{marcados} marcados</span>
-              </div>
-              <div className="h-2.5 rounded-full bg-muted overflow-hidden">
-                <div className="h-full bg-primary rounded-full transition-all duration-300" style={{ width: `${roster.length ? (marcados / roster.length) * 100 : 0}%` }} />
-              </div>
+            <div className="text-center mb-3">
+              <p className="font-semibold text-foreground">{asignatura} · {grado} {salon}</p>
+              <p className="text-xs text-muted-foreground">
+                {Math.min(idx, roster.length)} de {roster.length} ·
+                <span className="text-emerald-600"> {conteo.presente} presente</span> ·
+                <span className="text-rose-600"> {conteo.ausente} ausente</span> ·
+                <span className="text-amber-600"> {conteo.excusa} excusa</span>
+              </p>
             </div>
 
             {idx >= roster.length ? (
