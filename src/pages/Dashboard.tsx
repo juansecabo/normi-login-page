@@ -165,12 +165,6 @@ const Dashboard = () => {
   }, [navigate]);
 
   const items: ReordItem[] = [
-    { id: 'asistencia', render: (
-      <button onClick={() => navigate("/profesor/asistencia")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-blue-100 transition-all duration-200 hover:shadow-md hover:bg-blue-200">
-        <ClipboardCheck className="w-12 h-12 text-blue-700" strokeWidth={1.5} />
-        <span className="font-semibold text-foreground text-center">Asistencia</span>
-      </button>
-    ) },
     { id: 'programar-actividad', render: (
       <button onClick={() => navigate("/profesor/programar-actividad")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-cyan-100 transition-all duration-200 hover:shadow-md hover:bg-cyan-200">
         <img src={iconActividades} alt="" className="w-12 h-12 object-contain" />
@@ -238,6 +232,12 @@ const Dashboard = () => {
       <button onClick={() => navigate("/registros-comportamiento")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-amber-100 transition-all duration-200 hover:shadow-md hover:bg-amber-200">
         <img src={iconRegistros} alt="" className="w-12 h-12 object-contain" />
         <span className="font-semibold text-foreground text-center">Registros de Comportamiento</span>
+      </button>
+    ) },
+    { id: 'asistencia', render: (
+      <button onClick={() => navigate("/profesor/asistencia")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-blue-100 transition-all duration-200 hover:shadow-md hover:bg-blue-200">
+        <ClipboardCheck className="w-12 h-12 text-blue-700" strokeWidth={1.5} />
+        <span className="font-semibold text-foreground text-center">Asistencia</span>
       </button>
     ) },
   ];
