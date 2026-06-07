@@ -12,6 +12,7 @@ import HeaderNormi from "@/components/HeaderNormi";
 import EncabezadoColegio from "@/components/EncabezadoColegio";
 import AvatarUploader from "@/components/AvatarUploader";
 import BuzonSugerencias from "@/components/BuzonSugerencias";
+import ReordenableDashboard, { type ReordItem } from "@/components/ReordenableDashboard";
 import { supabase } from "@/integrations/supabase/client";
 import { getAllLastSeen, countNewItems } from "@/utils/notificaciones";
 import { anoEscolarActual } from "@/utils/anoEscolar";
@@ -175,6 +176,55 @@ const DashboardAcudiente = () => {
     fetchBadges();
   }, [navigate]);
 
+  const items: ReordItem[] = [
+    { id: 'notas', render: (
+      <button onClick={() => navigate("/acudiente/notas")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-emerald-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-emerald-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-emerald-200">
+        <Badge count={badges.notas} />
+        <img src={iconNotas} alt="" className="w-12 h-12 object-contain" />
+        <span className="font-semibold text-foreground">Notas</span>
+      </button>
+    ) },
+    { id: 'actividades', render: (
+      <button onClick={() => navigate("/acudiente/actividades")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-green-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-green-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-green-200">
+        <Badge count={badges.actividades} />
+        <img src={iconActividades} alt="" className="w-12 h-12 object-contain" />
+        <span className="font-semibold text-foreground text-center">Actividades</span>
+      </button>
+    ) },
+    { id: 'comunicados', render: (
+      <button onClick={() => navigate("/acudiente/comunicados")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-lime-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-lime-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-lime-200">
+        <Badge count={badges.comunicados} />
+        <img src={iconComunicados} alt="" className="w-12 h-12 object-contain" />
+        <span className="font-semibold text-foreground text-center">Comunicados</span>
+      </button>
+    ) },
+    { id: 'documentos', render: (
+      <button onClick={() => navigate("/acudiente/documentos")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-cyan-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-cyan-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-cyan-200">
+        <Badge count={badges.documentos} />
+        <img src={iconDocumentos} alt="" className="w-12 h-12 object-contain" />
+        <span className="font-semibold text-foreground text-center">Documentos</span>
+      </button>
+    ) },
+    { id: 'permisos-excusas', render: (
+      <button onClick={() => navigate("/permisos-excusas")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-rose-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-rose-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-rose-200">
+        <img src={iconPermisos} alt="" className="w-12 h-12 object-contain" />
+        <span className="font-semibold text-foreground text-center">Permisos y Excusas</span>
+      </button>
+    ) },
+    { id: 'estadisticas', render: (
+      <button onClick={() => navigate("/acudiente/estadisticas")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-teal-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-teal-200">
+        <img src={iconEstadisticas} alt="" className="w-12 h-12 object-contain" />
+        <span className="font-semibold text-foreground text-center">Estadísticas</span>
+      </button>
+    ) },
+    { id: 'consultas', render: (
+      <button onClick={() => navigate("/acudiente/consultas")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-pink-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-pink-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-pink-200">
+        <img src={iconConsultas} alt="" className="w-12 h-12 object-contain" />
+        <span className="font-semibold text-foreground text-center">Consultas</span>
+      </button>
+    ) },
+  ];
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <HeaderNormi backLink="/dashboard-acudiente" />
@@ -209,71 +259,15 @@ const DashboardAcudiente = () => {
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-8 max-w-4xl mx-auto mt-8">
-          <h3 className="text-xl font-bold text-foreground mb-6 text-center">
+          <h3 className="text-xl font-bold text-foreground mb-1 text-center">
             ¿Qué deseas consultar?
           </h3>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 max-w-5xl mx-auto">
-            <button
-              onClick={() => navigate("/acudiente/notas")}
-              className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-emerald-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-emerald-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-emerald-200"
-            >
-              <Badge count={badges.notas} />
-              <img src={iconNotas} alt="" className="w-12 h-12 object-contain" />
-              <span className="font-semibold text-foreground">Notas</span>
-            </button>
-
-            <button
-              onClick={() => navigate("/acudiente/actividades")}
-              className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-green-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-green-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-green-200"
-            >
-              <Badge count={badges.actividades} />
-              <img src={iconActividades} alt="" className="w-12 h-12 object-contain" />
-              <span className="font-semibold text-foreground text-center">Actividades</span>
-            </button>
-
-            <button
-              onClick={() => navigate("/acudiente/comunicados")}
-              className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-lime-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-lime-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-lime-200"
-            >
-              <Badge count={badges.comunicados} />
-              <img src={iconComunicados} alt="" className="w-12 h-12 object-contain" />
-              <span className="font-semibold text-foreground text-center">Comunicados</span>
-            </button>
-
-            <button
-              onClick={() => navigate("/acudiente/documentos")}
-              className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-cyan-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-cyan-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-cyan-200"
-            >
-              <Badge count={badges.documentos} />
-              <img src={iconDocumentos} alt="" className="w-12 h-12 object-contain" />
-              <span className="font-semibold text-foreground text-center">Documentos</span>
-            </button>
-
-            <button
-              onClick={() => navigate("/permisos-excusas")}
-              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-rose-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-rose-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-rose-200"
-            >
-              <img src={iconPermisos} alt="" className="w-12 h-12 object-contain" />
-              <span className="font-semibold text-foreground text-center">Permisos y Excusas</span>
-            </button>
-
-            <button
-              onClick={() => navigate("/acudiente/estadisticas")}
-              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-teal-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-teal-200"
-            >
-              <img src={iconEstadisticas} alt="" className="w-12 h-12 object-contain" />
-              <span className="font-semibold text-foreground text-center">Estadísticas</span>
-            </button>
-
-            <button
-              onClick={() => navigate("/acudiente/consultas")}
-              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-pink-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-pink-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-pink-200"
-            >
-              <img src={iconConsultas} alt="" className="w-12 h-12 object-contain" />
-              <span className="font-semibold text-foreground text-center">Consultas</span>
-            </button>
-          </div>
+          <ReordenableDashboard
+            dashboardKey="acudiente"
+            gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 max-w-5xl mx-auto"
+            items={items}
+          />
         </div>
 
         <div className="flex items-start justify-center gap-8 mt-8">
