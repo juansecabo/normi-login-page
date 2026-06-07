@@ -359,7 +359,7 @@ const CardView = ({ item, intencion, behind }: { item: AsistenciaRosterItem; int
           : <span className="text-5xl font-bold text-emerald-100">{iniciales || "?"}</span>}
       </div>
 
-      <p className="mt-6 px-3 text-2xl font-bold text-white text-center leading-tight">{item.nombres} {item.apellidos}</p>
+      <p className="mt-6 px-3 text-2xl font-bold text-white text-center leading-tight">{item.apellidos} {item.nombres}</p>
       <p className="text-sm text-emerald-100/70 mt-1">CC {item.estudiante_id}</p>
 
       {/* Estado ya marcado */}
