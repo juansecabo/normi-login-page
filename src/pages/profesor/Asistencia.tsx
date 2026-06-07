@@ -107,7 +107,9 @@ const Asistencia = () => {
         return;
       }
       setRoster(res.roster);
-      setIdx(0);
+      // Continuar desde el primer estudiante aún SIN categorizar (no desde el inicio).
+      const primerPendiente = res.roster.findIndex((r) => !r.estado);
+      setIdx(primerPendiente === -1 ? res.roster.length : primerPendiente);
       setStep("deck");
     } catch {
       toast({ title: "Error", description: "No se pudo cargar la lista.", variant: "destructive" });
@@ -341,9 +343,9 @@ const Selector = ({ label, value, onChange, options, placeholder, disabled }: {
 /** Tarjeta de un estudiante. `intencion` tiñe el overlay según hacia dónde se arrastra. */
 const CardView = ({ item, intencion, behind }: { item: AsistenciaRosterItem; intencion?: AsistenciaEstado | null; behind?: boolean }) => {
   const iniciales = `${item.nombres?.[0] || ""}${item.apellidos?.[0] || ""}`.toUpperCase();
-  const ringColor = intencion ? ESTADO_UI[intencion].ring : "ring-white/80";
+  const ringColor = intencion ? ESTADO_UI[intencion].ring : "ring-emerald-300";
   return (
-    <div className={`absolute inset-0 rounded-3xl overflow-hidden flex flex-col items-center justify-center p-6 shadow-2xl border border-emerald-800/50 bg-gradient-to-b from-emerald-600 via-emerald-700 to-emerald-900 ${behind ? "scale-95 opacity-50" : ""}`}>
+    <div className={`absolute inset-0 rounded-3xl overflow-hidden flex flex-col items-center justify-center p-6 shadow-xl border border-emerald-200 bg-emerald-100 ${behind ? "scale-95 opacity-50" : ""}`}>
       {/* Banner de excusa vigente */}
       {item.tiene_excusa && (
         <div className="absolute top-0 inset-x-0 bg-amber-400 text-amber-950 text-center text-sm font-bold py-2 shadow z-10">
@@ -353,14 +355,14 @@ const CardView = ({ item, intencion, behind }: { item: AsistenciaRosterItem; int
 
       {/* Foto (la que el estudiante sube en su dashboard) */}
       {/* Óvalo de carnet (ratio 110/140), igual que el avatar del dashboard. */}
-      <div className={`mt-3 w-40 h-[203px] rounded-[50%] overflow-hidden ring-4 ${ringColor} bg-emerald-900 flex items-center justify-center shadow-xl`}>
+      <div className={`mt-3 w-40 h-[203px] rounded-[50%] overflow-hidden ring-4 ${ringColor} bg-white flex items-center justify-center shadow-lg`}>
         {item.avatar_url
           ? <img src={item.avatar_url} alt="" className="w-full h-full object-cover" draggable={false} />
-          : <span className="text-5xl font-bold text-emerald-100">{iniciales || "?"}</span>}
+          : <span className="text-5xl font-bold text-emerald-600">{iniciales || "?"}</span>}
       </div>
 
-      <p className="mt-6 px-3 text-2xl font-bold text-white text-center leading-tight">{item.apellidos} {item.nombres}</p>
-      <p className="text-sm text-emerald-100/70 mt-1">CC {item.estudiante_id}</p>
+      <p className="mt-6 px-3 text-2xl font-bold text-emerald-950 text-center leading-tight">{item.apellidos} {item.nombres}</p>
+      <p className="text-sm text-emerald-700/70 mt-1">CC {item.estudiante_id}</p>
 
       {/* Estado ya marcado */}
       {item.estado && !intencion && (
