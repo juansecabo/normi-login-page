@@ -231,12 +231,16 @@ const ActividadesCalendario = () => {
     }
   };
 
-  const handleAbrirModalCrear = () => {
+  const limpiarFormulario = () => {
     setDescripcion("");
     setFechaSeleccionada(undefined);
     setActividadEditando(null);
     setArchivosSeleccionados([]);
     setUrlsExistentes([]);
+  };
+
+  const handleAbrirModalCrear = () => {
+    limpiarFormulario();
     setModalOpen(true);
   };
 
@@ -396,7 +400,13 @@ const ActividadesCalendario = () => {
         });
       }
 
-      setModalOpen(false);
+      // Al EDITAR cerramos el modal. Al PROGRAMAR (crear) lo dejamos abierto con
+      // toda la información intacta, para poder programar otra actividad parecida
+      // (p. ej. la misma para otro salón cambiando el selector de arriba). Para
+      // vaciar el formulario está el botón "Limpiar".
+      if (actividadEditando) {
+        setModalOpen(false);
+      }
       await cargarActividades(profesorIdReal, asignaturaSeleccionada, gradoSeleccionado, salonSeleccionado);
     } catch (error) {
       console.error('Error:', error);
@@ -595,6 +605,17 @@ const ActividadesCalendario = () => {
               {actividadEditando ? "Editar Actividad" : "Agregar Actividad"}
             </DialogTitle>
           </DialogHeader>
+          <div className="flex justify-end -mb-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={limpiarFormulario}
+              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+            >
+              Limpiar
+            </Button>
+          </div>
           <div className="space-y-4 py-4 min-w-0">
             <div className="space-y-2">
               <Label htmlFor="descripcion">Descripción de la actividad</Label>
