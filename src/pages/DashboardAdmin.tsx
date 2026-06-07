@@ -49,23 +49,32 @@ interface CardDef {
   badge?: number;
 }
 
-/** Una tarjeta arrastrable (long-press en móvil / arrastrar en desktop). */
-function SortableCard({ id, children }: { id: string; children: ReactNode }) {
+/** Una tarjeta arrastrable. El arrastre se activa con long-press de 3s (modo
+ *  "vibrar"); mientras `jiggling` está activo, TODAS las tarjetas vibran (menos
+ *  la que se está arrastrando). La vibración va en un div interno para NO chocar
+ *  con el transform de dnd-kit (que acomoda/mueve las tarjetas). */
+function SortableCard({ id, jiggling, index, children }: { id: string; jiggling: boolean; index: number; children: ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const vibra = jiggling && !isDragging;
   return (
     <div
       ref={setNodeRef}
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
-        opacity: isDragging ? 0.4 : 1,
+        opacity: isDragging ? 0.5 : 1,
         zIndex: isDragging ? 50 : undefined,
       }}
       className={`touch-manipulation ${isDragging ? "scale-105" : ""}`}
       {...attributes}
       {...listeners}
     >
-      {children}
+      <div
+        className={`h-full ${vibra ? "normi-jiggle" : ""}`}
+        style={vibra ? { animationDelay: index % 2 === 0 ? "0s" : "-0.13s" } : undefined}
+      >
+        {children}
+      </div>
     </div>
   );
 }
@@ -76,6 +85,7 @@ const DashboardAdmin = () => {
   const [apellidos, setApellidos] = useState("");
   const [badges, setBadges] = useState({ retiro: 0, inasistencia: 0, uniforme: 0 });
   const [orden, setOrden] = useState<string[]>([]);
+  const [jiggling, setJiggling] = useState(false);
 
   useEffect(() => {
     const session = getSession();
@@ -154,14 +164,18 @@ const DashboardAdmin = () => {
     ...cards.filter((c) => !orden.includes(c.id)),
   ];
 
+  // Para mover hay que MANTENER PRESIONADA la tarjeta 3 segundos (evita
+  // movimientos accidentales). Al cumplirse entra el "modo vibrar" y ya se puede
+  // arrastrar. Un toque/clic normal (suelta antes de 3s) navega como siempre.
   const sensors = useSensors(
-    // Desktop: arrastrar tras mover 8px (un clic normal navega).
-    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
-    // Móvil: mantener presionado 250ms para arrastrar (un toque normal navega).
-    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
+    useSensor(MouseSensor, { activationConstraint: { delay: 3000, tolerance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 3000, tolerance: 8 } }),
   );
 
+  const handleDragStart = () => setJiggling(true);
+
   const handleDragEnd = (e: DragEndEvent) => {
+    setJiggling(false); // soltar SIEMPRE apaga la vibración (aunque no se mueva)
     const { active, over } = e;
     if (!over || active.id === over.id) return;
     const ids = ordenadas.map((c) => c.id);
@@ -214,14 +228,16 @@ const DashboardAdmin = () => {
             ¿Qué deseas consultar?
           </h3>
           <p className="text-xs text-muted-foreground mb-6 text-center">
-            Mantén presionada una tarjeta para moverla y ordenarlas a tu gusto.
+            Mantén presionada una tarjeta 3 segundos: empezarán a vibrar y podrás arrastrarla a otra posición. Al soltarla se guarda.
           </p>
 
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <style>{`@keyframes normiJiggle{0%{transform:rotate(-1.4deg)}50%{transform:rotate(1.4deg)}100%{transform:rotate(-1.4deg)}}.normi-jiggle{animation:normiJiggle .22s ease-in-out infinite;transform-origin:50% 50%}`}</style>
+
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={() => setJiggling(false)}>
             <SortableContext items={ordenadas.map((c) => c.id)} strategy={rectSortingStrategy}>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 max-w-5xl mx-auto">
-                {ordenadas.map((card) => (
-                  <SortableCard key={card.id} id={card.id}>
+                {ordenadas.map((card, idx) => (
+                  <SortableCard key={card.id} id={card.id} jiggling={jiggling} index={idx}>
                     <button
                       onClick={card.onClick}
                       className={`relative w-full h-full flex flex-col items-center justify-center gap-4 p-8 rounded-lg ${card.bg} transition-all duration-200 hover:shadow-md`}
