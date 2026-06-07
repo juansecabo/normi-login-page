@@ -145,7 +145,7 @@ const ProgramarActividad = () => {
 
   const [asignaturaSeleccionada, setAsignaturaSeleccionada] = useState("");
   const [gradoSeleccionado, setGradoSeleccionado] = useState("");
-  const [salonSeleccionado, setSalonSeleccionado] = useState("");
+  const [salonesSeleccionados, setSalonesSeleccionados] = useState<string[]>([]);
   const [tipoSeleccionado, setTipoSeleccionado] = useState("");
 
   // Programar form fields
@@ -312,7 +312,7 @@ const ProgramarActividad = () => {
   const handleAsignaturaChange = (value: string) => {
     setAsignaturaSeleccionada(value);
     setGradoSeleccionado("");
-    setSalonSeleccionado("");
+    setSalonesSeleccionados([]);
     setTipoSeleccionado("");
     setDescripcion("");
     setFechaSeleccionada(undefined);
@@ -321,16 +321,19 @@ const ProgramarActividad = () => {
 
   const handleGradoChange = (value: string) => {
     setGradoSeleccionado(value);
-    setSalonSeleccionado("");
+    setSalonesSeleccionados([]);
     setTipoSeleccionado("");
     setDescripcion("");
     setFechaSeleccionada(undefined);
     setArchivosSeleccionados([]);
   };
 
-  // Salón change does NOT reset tipo/descripcion/archivos/fecha
-  const handleSalonChange = (value: string) => {
-    setSalonSeleccionado(value);
+  // Marcar/desmarcar un salón (multi-selección). Cambiar los salones NO resetea
+  // tipo/descripcion/archivos/fecha.
+  const toggleSalon = (value: string) => {
+    setSalonesSeleccionados((prev) =>
+      prev.includes(value) ? prev.filter((s) => s !== value) : [...prev, value],
+    );
   };
 
   // ===== Actividades tab: cascade reset handlers =====
@@ -348,7 +351,7 @@ const ProgramarActividad = () => {
   const limpiarFormulario = () => {
     setAsignaturaSeleccionada("");
     setGradoSeleccionado("");
-    setSalonSeleccionado("");
+    setSalonesSeleccionados([]);
     setTipoSeleccionado("");
     setDescripcion("");
     setFechaSeleccionada(undefined);
@@ -356,8 +359,8 @@ const ProgramarActividad = () => {
   };
 
   const handleProgramar = async () => {
-    if (!salonSeleccionado) {
-      toast({ title: "Error", description: "Selecciona un salón", variant: "destructive" });
+    if (salonesSeleccionados.length === 0) {
+      toast({ title: "Error", description: "Selecciona al menos un salón", variant: "destructive" });
       return;
     }
     if (!descripcion.trim()) {
@@ -397,83 +400,103 @@ const ProgramarActividad = () => {
 
       const fechaFormateada = formatearFecha(fechaSeleccionada!);
 
-      const insertData: Record<string, unknown> = {
-        id_profesor: profesorIdReal,
-        Nombres: profesorNombres,
-        Apellidos: profesorApellidos,
-        Asignatura: asignaturaSeleccionada,
-        Grado: gradoSeleccionado,
-        Salon: salonSeleccionado,
-        Descripción: descripcionFinal,
-        fecha_de_presentacion: fechaFormateada,
-      };
-      if (archivoUrlFinal) {
-        insertData.archivo_url = archivoUrlFinal;
-      }
+      // Programar la MISMA actividad en CADA salón seleccionado y notificar a
+      // estudiantes y padres de cada uno (los archivos ya se subieron una vez).
+      const salonesAProgramar = [...salonesSeleccionados];
+      const exitosos: string[] = [];
+      const fallidos: string[] = [];
 
-      const { error } = await supabase
-        .from('Calendario Actividades')
-        .insert(insertData);
-
-      if (error) {
-        console.error('Error creando actividad:', error);
-        toast({ title: "Error", description: "No se pudo programar la actividad", variant: "destructive" });
-        setGuardando(false);
-        return;
-      }
-
-      // Increment persistent activity counter
-      try {
-        const { data: uso } = await supabase
-          .from('Uso_Profesores')
-          .select('actividades_programadas')
-          .eq('profesor_id', profesorIdReal)
-          .maybeSingle();
-
-        if (uso) {
-          await supabase.from('Uso_Profesores')
-            .update({ actividades_programadas: (uso.actividades_programadas || 0) + 1 })
-            .eq('profesor_id', profesorIdReal);
-        } else {
-          await supabase.from('Uso_Profesores')
-            .insert({ profesor_id: profesorIdReal, actividades_programadas: 1 });
+      for (const salon of salonesAProgramar) {
+        const insertData: Record<string, unknown> = {
+          id_profesor: profesorIdReal,
+          Nombres: profesorNombres,
+          Apellidos: profesorApellidos,
+          Asignatura: asignaturaSeleccionada,
+          Grado: gradoSeleccionado,
+          Salon: salon,
+          Descripción: descripcionFinal,
+          fecha_de_presentacion: fechaFormateada,
+        };
+        if (archivoUrlFinal) {
+          insertData.archivo_url = archivoUrlFinal;
         }
-      } catch (e) {
-        console.error('Error incrementando contador:', e);
+
+        const { error } = await supabase
+          .from('Calendario Actividades')
+          .insert(insertData);
+
+        if (error) {
+          console.error(`Error creando actividad (salón ${salon}):`, error);
+          fallidos.push(salon);
+          continue;
+        }
+        exitosos.push(salon);
+
+        // Notificación a estudiantes y padres de ESE salón.
+        try {
+          await apiRequest('/api/notificaciones/actividad-programada', {
+            method: 'POST',
+            body: JSON.stringify({
+              profesor_nombre: `${profesorNombres} ${profesorApellidos}`.trim(),
+              profesor_cargo: profesorCargo,
+              grado: gradoSeleccionado,
+              salon,
+              asignatura: asignaturaSeleccionada,
+              descripcion: descripcionFinal,
+              fecha: mostrarFecha(fechaFormateada),
+              ...(archivoUrlFinal ? { archivo_url: archivoUrlFinal } : {}),
+            }),
+          });
+        } catch (err) {
+          console.error(`Error enviando notificación (salón ${salon}):`, err);
+        }
       }
 
-      // Notificación al server (multi-tenant via JWT). Reemplaza el webhook
-      // viejo n8n /webhook/notificar-actividades.
-      try {
-        await apiRequest('/api/notificaciones/actividad-programada', {
-          method: 'POST',
-          body: JSON.stringify({
-            profesor_nombre: `${profesorNombres} ${profesorApellidos}`.trim(),
-            profesor_cargo: profesorCargo,
-            grado: gradoSeleccionado,
-            salon: salonSeleccionado,
-            asignatura: asignaturaSeleccionada,
-            descripcion: descripcionFinal,
-            fecha: mostrarFecha(fechaFormateada),
-            ...(archivoUrlFinal ? { archivo_url: archivoUrlFinal } : {}),
-          }),
-        });
-      } catch (err) {
-        console.error('Error enviando notificación:', err);
+      // Incrementar el contador por cada actividad creada con éxito.
+      if (exitosos.length > 0) {
+        try {
+          const { data: uso } = await supabase
+            .from('Uso_Profesores')
+            .select('actividades_programadas')
+            .eq('profesor_id', profesorIdReal)
+            .maybeSingle();
+
+          if (uso) {
+            await supabase.from('Uso_Profesores')
+              .update({ actividades_programadas: (uso.actividades_programadas || 0) + exitosos.length })
+              .eq('profesor_id', profesorIdReal);
+          } else {
+            await supabase.from('Uso_Profesores')
+              .insert({ profesor_id: profesorIdReal, actividades_programadas: exitosos.length });
+          }
+        } catch (e) {
+          console.error('Error incrementando contador:', e);
+        }
       }
 
-      // Refrescar la lista de actividades programadas para que la nueva
-      // aparezca de inmediato (antes solo aparecía tras reload de la página).
+      // Refrescar la lista de actividades programadas.
       try {
         await cargarActividades();
       } catch (e) {
         console.warn('No se pudo refrescar la lista de actividades:', e);
       }
 
-      toast({
-        title: "Actividad programada",
-        description: "La actividad se ha programado correctamente y se notificó a estudiantes y padres",
-      });
+      if (exitosos.length === 0) {
+        toast({ title: "Error", description: "No se pudo programar la actividad en ningún salón.", variant: "destructive" });
+      } else if (fallidos.length === 0) {
+        toast({
+          title: "Actividad programada",
+          description: exitosos.length === 1
+            ? "La actividad se programó y se notificó a estudiantes y padres."
+            : `La actividad se programó en ${exitosos.length} salones (${exitosos.join(', ')}) y se notificó a estudiantes y padres.`,
+        });
+      } else {
+        toast({
+          title: "Programada parcialmente",
+          description: `Se programó en: ${exitosos.join(', ')}. Falló en: ${fallidos.join(', ')}. Intenta de nuevo esos.`,
+          variant: "destructive",
+        });
+      }
     } catch (error: any) {
       console.error('Error:', error);
       toast({ title: "Error", description: error.message || "Error de conexión", variant: "destructive" });
@@ -589,7 +612,7 @@ const ProgramarActividad = () => {
       profesorCargo,
       profesorNombre,
       grado: gradoSeleccionado,
-      salon: salonSeleccionado,
+      salon: salonesSeleccionados[0] || "",
       asignatura: asignaturaSeleccionada,
       descripcion: descripcionConTipo,
       fecha: fechaTextoActual,
@@ -600,7 +623,7 @@ const ProgramarActividad = () => {
       profesorCargo,
       profesorNombre,
       grado: gradoSeleccionado,
-      salon: salonSeleccionado,
+      salon: salonesSeleccionados[0] || "",
       asignatura: asignaturaSeleccionada,
       descripcion: "",
       fecha: fechaTextoActual,
@@ -680,15 +703,38 @@ const ProgramarActividad = () => {
                   {/* All remaining fields appear once grado is selected */}
                   {gradoSeleccionado && (
                     <>
-                      {/* 3. Salón */}
+                      {/* 3. Salón(es) — multi-selección con casillas para programar
+                          la misma actividad en varios salones a la vez. */}
                       <div className="space-y-2">
-                        <Label>Salón</Label>
-                        <ResponsiveSelect
-                          value={salonSeleccionado}
-                          onValueChange={handleSalonChange}
-                          placeholder="Seleccionar salón"
-                          options={salones.map((s) => ({ value: s, label: s }))}
-                        />
+                        <Label>Salón(es)</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {salones.map((s) => {
+                            const marcado = salonesSeleccionados.includes(s);
+                            return (
+                              <label
+                                key={s}
+                                className={`flex items-center gap-2 px-3 py-2 rounded-md border cursor-pointer select-none transition-colors ${
+                                  marcado
+                                    ? "border-primary bg-primary/10 text-foreground"
+                                    : "border-border bg-background hover:bg-muted/40 text-muted-foreground"
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={marcado}
+                                  onChange={() => toggleSalon(s)}
+                                  className="w-4 h-4 accent-green-500 cursor-pointer"
+                                />
+                                <span className="text-sm">{s}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                        {salonesSeleccionados.length > 1 && (
+                          <p className="text-xs text-muted-foreground">
+                            Se programará en {salonesSeleccionados.length} salones: {salonesSeleccionados.join(", ")}.
+                          </p>
+                        )}
                       </div>
 
                       {/* 4. Tipo (opcional) */}
@@ -775,7 +821,7 @@ const ProgramarActividad = () => {
                           }
                           handleProgramar();
                         }}
-                        disabled={guardando || !salonSeleccionado || !descripcion.trim() || !fechaSeleccionada}
+                        disabled={guardando || salonesSeleccionados.length === 0 || !descripcion.trim() || !fechaSeleccionada}
                         className={`w-full mt-4 ${bodyOverLimit ? "bg-red-500 hover:bg-red-600 text-white" : ""}`}
                         size="lg"
                       >
