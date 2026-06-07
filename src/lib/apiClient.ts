@@ -321,7 +321,7 @@ export interface ApiMeta {
   asignaciones_expandidas: { asignatura: string; grado: string; salon: string }[];
 }
 
-export type AsistenciaEstado = 'asistio' | 'inasistencia' | 'excusa';
+export type AsistenciaEstado = 'presente' | 'ausente' | 'excusa';
 
 export interface AsistenciaRosterItem {
   estudiante_id: string;

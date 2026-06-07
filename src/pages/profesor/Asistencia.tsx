@@ -24,10 +24,10 @@ const fechaLarga = (iso: string): string => {
   } catch { return iso; }
 };
 
-// Colores por estado: verde=asistió, rojo=inasistencia, amarillo=excusa.
+// Colores por estado: verde=asistió, rojo=ausente, amarillo=excusa.
 const ESTADO_UI: Record<AsistenciaEstado, { label: string; color: string; ring: string; text: string }> = {
-  asistio: { label: "Presente", color: "bg-emerald-500", ring: "ring-emerald-400", text: "text-emerald-600" },
-  inasistencia: { label: "Ausente", color: "bg-rose-500", ring: "ring-rose-400", text: "text-rose-600" },
+  presente: { label: "Presente", color: "bg-emerald-500", ring: "ring-emerald-400", text: "text-emerald-600" },
+  ausente: { label: "Ausente", color: "bg-rose-500", ring: "ring-rose-400", text: "text-rose-600" },
   excusa: { label: "Con excusa", color: "bg-amber-400", ring: "ring-amber-400", text: "text-amber-600" },
 };
 
@@ -118,7 +118,7 @@ const Asistencia = () => {
 
   const actual = roster[idx];
   const conteo = useMemo(() => {
-    const c = { asistio: 0, inasistencia: 0, excusa: 0 };
+    const c = { presente: 0, ausente: 0, excusa: 0 };
     for (const r of roster) if (r.estado) c[r.estado]++;
     return c;
   }, [roster]);
@@ -127,8 +127,8 @@ const Asistencia = () => {
   const intencion: AsistenciaEstado | null = useMemo(() => {
     if (!drag) return null;
     if (drag.y > THRESH && drag.y > Math.abs(drag.x)) return "excusa";
-    if (drag.x > THRESH) return "asistio";
-    if (drag.x < -THRESH) return "inasistencia";
+    if (drag.x > THRESH) return "presente";
+    if (drag.x < -THRESH) return "ausente";
     return null;
   }, [drag]);
 
@@ -181,8 +181,8 @@ const Asistencia = () => {
     startRef.current = null;
     const est = d
       ? d.y > THRESH && d.y > Math.abs(d.x) ? "excusa"
-        : d.x > THRESH ? "asistio"
-        : d.x < -THRESH ? "inasistencia"
+        : d.x > THRESH ? "presente"
+        : d.x < -THRESH ? "ausente"
         : null
       : null;
     if (est) commit(est as AsistenciaEstado);
@@ -204,9 +204,9 @@ const Asistencia = () => {
     if (!leavingGo) {
       return { transform: `translate(${leaving.fromX}px, ${leaving.fromY}px) rotate(${leaving.fromX * 0.04}deg)`, transition: "none" };
     }
-    const x = leaving.dir === "asistio" ? 700 : leaving.dir === "inasistencia" ? -700 : 0;
+    const x = leaving.dir === "presente" ? 700 : leaving.dir === "ausente" ? -700 : 0;
     const y = leaving.dir === "excusa" ? 800 : 0;
-    const rot = leaving.dir === "asistio" ? 25 : leaving.dir === "inasistencia" ? -25 : 0;
+    const rot = leaving.dir === "presente" ? 25 : leaving.dir === "ausente" ? -25 : 0;
     return { transform: `translate(${x}px, ${y}px) rotate(${rot}deg)`, opacity: 0, transition: "transform .26s ease-out, opacity .26s ease-out" };
   };
 
@@ -219,7 +219,7 @@ const Asistencia = () => {
         {step === "select" && (
           <div className="bg-card rounded-lg shadow-soft p-6 md:p-8 max-w-xl mx-auto mt-4">
             <h2 className="text-2xl font-bold text-foreground mb-1 text-center">Tomar asistencia</h2>
-            <p className="text-sm text-muted-foreground mb-6 text-center">Elige la clase y el día. Luego deslizas a la derecha (asistió), izquierda (no asistió) o abajo (con excusa).</p>
+            <p className="text-sm text-muted-foreground mb-6 text-center">Elige la clase y el día. Luego deslizas a la derecha (presente), izquierda (ausente) o abajo (con excusa).</p>
 
             {loading ? (
               <p className="text-center text-muted-foreground">Cargando tus asignaciones…</p>
@@ -255,8 +255,8 @@ const Asistencia = () => {
               <p className="font-semibold text-foreground">{asignatura} · {grado} {salon}</p>
               <p className="text-xs text-muted-foreground">
                 {Math.min(idx, roster.length)} de {roster.length} ·
-                <span className="text-emerald-600"> {conteo.asistio} presente</span> ·
-                <span className="text-rose-600"> {conteo.inasistencia} ausente</span> ·
+                <span className="text-emerald-600"> {conteo.presente} presente</span> ·
+                <span className="text-rose-600"> {conteo.ausente} ausente</span> ·
                 <span className="text-amber-600"> {conteo.excusa} excusa</span>
               </p>
             </div>
@@ -267,8 +267,8 @@ const Asistencia = () => {
                 <p className="text-lg font-bold text-foreground mb-2">¡Asistencia completa!</p>
                 <p className="text-sm text-muted-foreground mb-4">Marcaste {roster.length} estudiantes de {grado} {salon}.</p>
                 <div className="flex justify-center gap-4 text-sm mb-6">
-                  <span className="text-emerald-600 font-semibold">{conteo.asistio} presente</span>
-                  <span className="text-rose-600 font-semibold">{conteo.inasistencia} ausente</span>
+                  <span className="text-emerald-600 font-semibold">{conteo.presente} presente</span>
+                  <span className="text-rose-600 font-semibold">{conteo.ausente} ausente</span>
                   <span className="text-amber-600 font-semibold">{conteo.excusa} con excusa</span>
                 </div>
                 <div className="flex gap-3 justify-center">
@@ -303,7 +303,7 @@ const Asistencia = () => {
 
                 {/* Botones equivalentes */}
                 <div className="flex items-center justify-center gap-6 mt-6">
-                  <button onClick={() => commit("inasistencia")} title="Ausente"
+                  <button onClick={() => commit("ausente")} title="Ausente"
                     className="w-16 h-16 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-lg hover:scale-105 transition">
                     <X className="w-8 h-8" />
                   </button>
@@ -311,7 +311,7 @@ const Asistencia = () => {
                     className="w-14 h-14 rounded-full bg-amber-400 text-white flex items-center justify-center shadow-lg hover:scale-105 transition">
                     <FileText className="w-6 h-6" />
                   </button>
-                  <button onClick={() => commit("asistio")} title="Presente"
+                  <button onClick={() => commit("presente")} title="Presente"
                     className="w-16 h-16 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg hover:scale-105 transition">
                     <Check className="w-8 h-8" />
                   </button>
