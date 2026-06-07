@@ -164,15 +164,19 @@ const DashboardAdmin = () => {
     ...cards.filter((c) => !orden.includes(c.id)),
   ];
 
-  // Para mover hay que MANTENER PRESIONADA la tarjeta 3 segundos (evita
-  // movimientos accidentales). Al cumplirse entra el "modo vibrar" y ya se puede
-  // arrastrar. Un toque/clic normal (suelta antes de 3s) navega como siempre.
+  // Para mover hay que MANTENER PRESIONADA la tarjeta (long-press ~½ segundo, el
+  // mismo punto en que el celular da su vibración nativa). Al cumplirse entra el
+  // "modo vibrar" y ya se puede arrastrar. Un toque/clic normal navega.
   const sensors = useSensors(
-    useSensor(MouseSensor, { activationConstraint: { delay: 3000, tolerance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 3000, tolerance: 8 } }),
+    useSensor(MouseSensor, { activationConstraint: { delay: 500, tolerance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 500, tolerance: 8 } }),
   );
 
-  const handleDragStart = () => setJiggling(true);
+  const handleDragStart = () => {
+    setJiggling(true);
+    // Vibración (haptic) en el momento de entrar al modo edición — Android.
+    try { navigator.vibrate?.(15); } catch { /* ignore */ }
+  };
 
   const handleDragEnd = (e: DragEndEvent) => {
     setJiggling(false); // soltar SIEMPRE apaga la vibración (aunque no se mueva)
@@ -228,10 +232,10 @@ const DashboardAdmin = () => {
             ¿Qué deseas consultar?
           </h3>
           <p className="text-xs text-muted-foreground mb-6 text-center">
-            Mantén presionada una tarjeta 3 segundos: empezarán a vibrar y podrás arrastrarla a otra posición. Al soltarla se guarda.
+            Mantén presionada una tarjeta para cambiar su posición.
           </p>
 
-          <style>{`@keyframes normiJiggle{0%{transform:rotate(-1.4deg)}50%{transform:rotate(1.4deg)}100%{transform:rotate(-1.4deg)}}.normi-jiggle{animation:normiJiggle .22s ease-in-out infinite;transform-origin:50% 50%}`}</style>
+          <style>{`@keyframes normiJiggle{0%{transform:rotate(-1.4deg)}50%{transform:rotate(1.4deg)}100%{transform:rotate(-1.4deg)}}.normi-jiggle{animation:normiJiggle .22s ease-in-out infinite;transform-origin:50% 50%}.normi-card{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}.normi-card img{-webkit-user-drag:none;pointer-events:none}`}</style>
 
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={() => setJiggling(false)}>
             <SortableContext items={ordenadas.map((c) => c.id)} strategy={rectSortingStrategy}>
@@ -240,7 +244,7 @@ const DashboardAdmin = () => {
                   <SortableCard key={card.id} id={card.id} jiggling={jiggling} index={idx}>
                     <button
                       onClick={card.onClick}
-                      className={`relative w-full h-full flex flex-col items-center justify-center gap-4 p-8 rounded-lg ${card.bg} transition-all duration-200 hover:shadow-md`}
+                      className={`normi-card relative w-full h-full flex flex-col items-center justify-center gap-4 p-8 rounded-lg ${card.bg} transition-all duration-200 hover:shadow-md`}
                     >
                       {card.badge ? <Badge count={card.badge} /> : null}
                       {card.icon}
