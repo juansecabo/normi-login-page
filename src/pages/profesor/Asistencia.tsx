@@ -352,7 +352,8 @@ const CardView = ({ item, intencion, behind }: { item: AsistenciaRosterItem; int
       )}
 
       {/* Foto (la que el estudiante sube en su dashboard) */}
-      <div className={`mt-4 w-44 h-44 rounded-full overflow-hidden ring-4 ${ringColor} bg-emerald-900 flex items-center justify-center shadow-xl`}>
+      {/* Óvalo de carnet (ratio 110/140), igual que el avatar del dashboard. */}
+      <div className={`mt-3 w-40 h-[203px] rounded-[50%] overflow-hidden ring-4 ${ringColor} bg-emerald-900 flex items-center justify-center shadow-xl`}>
         {item.avatar_url
           ? <img src={item.avatar_url} alt="" className="w-full h-full object-cover" draggable={false} />
           : <span className="text-5xl font-bold text-emerald-100">{iniciales || "?"}</span>}
