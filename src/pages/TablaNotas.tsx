@@ -3474,6 +3474,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
           </div>
           {periodoActivo >= 1 && (
             // Modo grupos: "completo" solo si el profe marcó el checkbox.
+            // Modo plano (Normal, sin checkbox): cuando los % suman 100.
             (modoEfectivo() === 'grupos'
               ? getPeriodoCompleto(periodoActivo)
               : getPorcentajeUsado(periodoActivo) === 100) ? (
