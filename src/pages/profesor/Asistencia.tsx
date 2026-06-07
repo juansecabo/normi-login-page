@@ -7,7 +7,7 @@ import HeaderNormi from "@/components/HeaderNormi";
 import EncabezadoColegio from "@/components/EncabezadoColegio";
 import { useToast } from "@/hooks/use-toast";
 import { rankGrado } from "@/utils/grados";
-import { Check, X, FileText, ArrowLeft, Undo2 } from "lucide-react";
+import { Check, X, FileText, ArrowLeft } from "lucide-react";
 
 interface AsignacionRow {
   "Asignatura(s)": string[] | string[][];
@@ -26,8 +26,8 @@ const fechaLarga = (iso: string): string => {
 
 // Colores por estado: verde=asistió, rojo=inasistencia, amarillo=excusa.
 const ESTADO_UI: Record<AsistenciaEstado, { label: string; color: string; ring: string; text: string }> = {
-  asistio: { label: "Asistió", color: "bg-emerald-500", ring: "ring-emerald-400", text: "text-emerald-600" },
-  inasistencia: { label: "No asistió", color: "bg-rose-500", ring: "ring-rose-400", text: "text-rose-600" },
+  asistio: { label: "Presente", color: "bg-emerald-500", ring: "ring-emerald-400", text: "text-emerald-600" },
+  inasistencia: { label: "Ausente", color: "bg-rose-500", ring: "ring-rose-400", text: "text-rose-600" },
   excusa: { label: "Con excusa", color: "bg-amber-400", ring: "ring-amber-400", text: "text-amber-600" },
 };
 
@@ -51,10 +51,11 @@ const Asistencia = () => {
   const [roster, setRoster] = useState<AsistenciaRosterItem[]>([]);
   const [idx, setIdx] = useState(0);
 
-  // Drag / animación de salida.
+  // Drag de la tarjeta superior + tarjeta "saliendo" (se va de verdad, no rebota).
   const startRef = useRef<{ x: number; y: number } | null>(null);
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
-  const [flyOut, setFlyOut] = useState<AsistenciaEstado | null>(null);
+  const [leaving, setLeaving] = useState<{ item: AsistenciaRosterItem; dir: AsistenciaEstado; fromX: number; fromY: number } | null>(null);
+  const [leavingGo, setLeavingGo] = useState(false);
 
   useEffect(() => {
     const session = getSession();
@@ -131,12 +132,10 @@ const Asistencia = () => {
     return null;
   }, [drag]);
 
-  const marcar = (estado: AsistenciaEstado) => {
-    if (!actual || flyOut) return;
+  const commit = (estado: AsistenciaEstado) => {
+    if (!actual || leaving) return;
     const est = actual;
-    setFlyOut(estado);
-    // Optimista: guardar estado local (auto-excusa la corrige el server, lo
-    // reflejamos abajo con la respuesta).
+    // Guardar en el server (optimista). La respuesta puede convertirlo en excusa.
     apiClient.asistencia
       .marcar({ asignatura, grado, salon, fecha, estudiante_id: est.estudiante_id, estado })
       .then((r) => {
@@ -149,18 +148,25 @@ const Asistencia = () => {
         toast({ title: "No se guardó", description: `Falló al guardar la marca de ${est.nombres}. Reintenta.`, variant: "destructive" });
         setRoster((prev) => prev.map((x) => (x.estudiante_id === est.estudiante_id ? { ...x, estado: null } : x)));
       });
-    // Avanzar tras la animación.
-    window.setTimeout(() => {
-      setRoster((prev) => prev.map((x) => (x.estudiante_id === est.estudiante_id ? { ...x, estado } : x)));
-      setIdx((i) => i + 1);
-      setFlyOut(null);
-      setDrag(null);
-      startRef.current = null;
-    }, 220);
+    // La tarjeta sale como capa independiente y el mazo avanza al instante (la de
+    // abajo queda mostrándose). NO rebota.
+    setRoster((prev) => prev.map((x) => (x.estudiante_id === est.estudiante_id ? { ...x, estado } : x)));
+    setLeaving({ item: est, dir: estado, fromX: drag?.x ?? 0, fromY: drag?.y ?? 0 });
+    setIdx((i) => i + 1);
+    setDrag(null);
+    startRef.current = null;
   };
 
+  // Anima la tarjeta saliente fuera de pantalla y luego la quita del DOM.
+  useEffect(() => {
+    if (!leaving) { setLeavingGo(false); return; }
+    const raf = requestAnimationFrame(() => setLeavingGo(true));
+    const t = window.setTimeout(() => setLeaving(null), 260);
+    return () => { cancelAnimationFrame(raf); window.clearTimeout(t); };
+  }, [leaving]);
+
   const onPointerDown = (e: React.PointerEvent) => {
-    if (flyOut) return;
+    if (leaving) return;
     startRef.current = { x: e.clientX, y: e.clientY };
     setDrag({ x: 0, y: 0 });
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -179,28 +185,29 @@ const Asistencia = () => {
         : d.x < -THRESH ? "inasistencia"
         : null
       : null;
-    if (est) marcar(est as AsistenciaEstado);
+    if (est) commit(est as AsistenciaEstado);
     else setDrag(null);
   };
 
-  const atras = () => {
-    if (idx === 0 || flyOut) return;
-    setIdx((i) => i - 1);
-    setDrag(null);
-  };
-
-  // Estilo del transform de la tarjeta superior.
+  // Estilo de la tarjeta superior: solo arrastre o regreso al centro si NO se
+  // pasó el umbral. (Cuando sí se pasa, la salida la maneja la capa `leaving`.)
   const cardStyle = (): React.CSSProperties => {
-    if (flyOut) {
-      const x = flyOut === "asistio" ? 600 : flyOut === "inasistencia" ? -600 : 0;
-      const y = flyOut === "excusa" ? 700 : 0;
-      const rot = flyOut === "asistio" ? 22 : flyOut === "inasistencia" ? -22 : 0;
-      return { transform: `translate(${x}px, ${y}px) rotate(${rot}deg)`, opacity: 0, transition: "transform .22s ease-out, opacity .22s ease-out" };
-    }
     if (drag) {
       return { transform: `translate(${drag.x}px, ${drag.y}px) rotate(${drag.x * 0.04}deg)`, transition: startRef.current ? "none" : "transform .2s ease-out" };
     }
     return { transform: "translate(0,0)", transition: "transform .2s ease-out" };
+  };
+
+  // Estilo de la capa que sale: arranca donde quedó el dedo y vuela fuera.
+  const leavingStyle = (): React.CSSProperties => {
+    if (!leaving) return {};
+    if (!leavingGo) {
+      return { transform: `translate(${leaving.fromX}px, ${leaving.fromY}px) rotate(${leaving.fromX * 0.04}deg)`, transition: "none" };
+    }
+    const x = leaving.dir === "asistio" ? 700 : leaving.dir === "inasistencia" ? -700 : 0;
+    const y = leaving.dir === "excusa" ? 800 : 0;
+    const rot = leaving.dir === "asistio" ? 25 : leaving.dir === "inasistencia" ? -25 : 0;
+    return { transform: `translate(${x}px, ${y}px) rotate(${rot}deg)`, opacity: 0, transition: "transform .26s ease-out, opacity .26s ease-out" };
   };
 
   return (
@@ -248,8 +255,8 @@ const Asistencia = () => {
               <p className="font-semibold text-foreground">{asignatura} · {grado} {salon}</p>
               <p className="text-xs text-muted-foreground">
                 {Math.min(idx, roster.length)} de {roster.length} ·
-                <span className="text-emerald-600"> {conteo.asistio} asistió</span> ·
-                <span className="text-rose-600"> {conteo.inasistencia} no</span> ·
+                <span className="text-emerald-600"> {conteo.asistio} presente</span> ·
+                <span className="text-rose-600"> {conteo.inasistencia} ausente</span> ·
                 <span className="text-amber-600"> {conteo.excusa} excusa</span>
               </p>
             </div>
@@ -260,8 +267,8 @@ const Asistencia = () => {
                 <p className="text-lg font-bold text-foreground mb-2">¡Asistencia completa!</p>
                 <p className="text-sm text-muted-foreground mb-4">Marcaste {roster.length} estudiantes de {grado} {salon}.</p>
                 <div className="flex justify-center gap-4 text-sm mb-6">
-                  <span className="text-emerald-600 font-semibold">{conteo.asistio} asistió</span>
-                  <span className="text-rose-600 font-semibold">{conteo.inasistencia} no asistió</span>
+                  <span className="text-emerald-600 font-semibold">{conteo.asistio} presente</span>
+                  <span className="text-rose-600 font-semibold">{conteo.inasistencia} ausente</span>
                   <span className="text-amber-600 font-semibold">{conteo.excusa} con excusa</span>
                 </div>
                 <div className="flex gap-3 justify-center">
@@ -276,7 +283,8 @@ const Asistencia = () => {
                   {roster[idx + 1] && <CardView item={roster[idx + 1]} behind />}
                   {actual && (
                     <div
-                      className="absolute inset-0"
+                      key={actual.estudiante_id}
+                      className="absolute inset-0 z-20"
                       style={cardStyle()}
                       onPointerDown={onPointerDown}
                       onPointerMove={onPointerMove}
@@ -286,30 +294,28 @@ const Asistencia = () => {
                       <CardView item={actual} intencion={intencion} />
                     </div>
                   )}
+                  {leaving && (
+                    <div className="absolute inset-0 z-30 pointer-events-none" style={leavingStyle()}>
+                      <CardView item={leaving.item} intencion={leaving.dir} />
+                    </div>
+                  )}
                 </div>
 
                 {/* Botones equivalentes */}
-                <div className="flex items-center justify-center gap-5 mt-5">
-                  <button onClick={atras} disabled={idx === 0} title="Atrás"
-                    className="w-12 h-12 rounded-full bg-muted text-foreground flex items-center justify-center shadow disabled:opacity-40 hover:scale-105 transition">
-                    <Undo2 className="w-5 h-5" />
-                  </button>
-                  <button onClick={() => marcar("inasistencia")} title="No asistió"
+                <div className="flex items-center justify-center gap-6 mt-6">
+                  <button onClick={() => commit("inasistencia")} title="Ausente"
                     className="w-16 h-16 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-lg hover:scale-105 transition">
                     <X className="w-8 h-8" />
                   </button>
-                  <button onClick={() => marcar("excusa")} title="Con excusa"
+                  <button onClick={() => commit("excusa")} title="Con excusa"
                     className="w-14 h-14 rounded-full bg-amber-400 text-white flex items-center justify-center shadow-lg hover:scale-105 transition">
                     <FileText className="w-6 h-6" />
                   </button>
-                  <button onClick={() => marcar("asistio")} title="Asistió"
+                  <button onClick={() => commit("asistio")} title="Presente"
                     className="w-16 h-16 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg hover:scale-105 transition">
                     <Check className="w-8 h-8" />
                   </button>
                 </div>
-                <p className="text-center text-xs text-muted-foreground mt-3">
-                  Desliza → asistió · ← no asistió · ↓ con excusa
-                </p>
               </>
             )}
           </div>
@@ -337,7 +343,7 @@ const CardView = ({ item, intencion, behind }: { item: AsistenciaRosterItem; int
   const iniciales = `${item.nombres?.[0] || ""}${item.apellidos?.[0] || ""}`.toUpperCase();
   const ringColor = intencion ? ESTADO_UI[intencion].ring : "ring-white/80";
   return (
-    <div className={`absolute inset-0 rounded-3xl overflow-hidden flex flex-col items-center justify-center p-6 shadow-2xl border border-slate-700/60 bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 ${behind ? "scale-95 opacity-50" : ""}`}>
+    <div className={`absolute inset-0 rounded-3xl overflow-hidden flex flex-col items-center justify-center p-6 shadow-2xl border border-emerald-800/50 bg-gradient-to-b from-emerald-600 via-emerald-700 to-emerald-900 ${behind ? "scale-95 opacity-50" : ""}`}>
       {/* Banner de excusa vigente */}
       {item.tiene_excusa && (
         <div className="absolute top-0 inset-x-0 bg-amber-400 text-amber-950 text-center text-sm font-bold py-2 shadow z-10">
@@ -346,14 +352,14 @@ const CardView = ({ item, intencion, behind }: { item: AsistenciaRosterItem; int
       )}
 
       {/* Foto (la que el estudiante sube en su dashboard) */}
-      <div className={`mt-4 w-44 h-44 rounded-full overflow-hidden ring-4 ${ringColor} bg-slate-700 flex items-center justify-center shadow-xl`}>
+      <div className={`mt-4 w-44 h-44 rounded-full overflow-hidden ring-4 ${ringColor} bg-emerald-900 flex items-center justify-center shadow-xl`}>
         {item.avatar_url
           ? <img src={item.avatar_url} alt="" className="w-full h-full object-cover" draggable={false} />
-          : <span className="text-5xl font-bold text-slate-300">{iniciales || "?"}</span>}
+          : <span className="text-5xl font-bold text-emerald-100">{iniciales || "?"}</span>}
       </div>
 
       <p className="mt-6 px-3 text-2xl font-bold text-white text-center leading-tight">{item.nombres} {item.apellidos}</p>
-      <p className="text-sm text-slate-400 mt-1">CC {item.estudiante_id}</p>
+      <p className="text-sm text-emerald-100/70 mt-1">CC {item.estudiante_id}</p>
 
       {/* Estado ya marcado */}
       {item.estado && !intencion && (
