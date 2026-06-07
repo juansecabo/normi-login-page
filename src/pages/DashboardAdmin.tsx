@@ -111,6 +111,7 @@ const DashboardAdmin = () => {
           .from('Preferencias_Dashboard')
           .select('orden')
           .eq('user_id', String(session.id))
+          .eq('dashboard', 'admin')
           .maybeSingle();
         if (data?.orden && Array.isArray(data.orden)) setOrden(data.orden as string[]);
       } catch { /* ignore */ }
@@ -191,8 +192,8 @@ const DashboardAdmin = () => {
         const { error } = await supabase
           .from('Preferencias_Dashboard')
           .upsert(
-            { user_id: String(getSession().id), orden: nuevoOrden },
-            { onConflict: 'user_id,colegio_id' },
+            { user_id: String(getSession().id), dashboard: 'admin', orden: nuevoOrden },
+            { onConflict: 'user_id,colegio_id,dashboard' },
           );
         if (error) console.error('Error guardando el orden del dashboard:', error);
       } catch (e) {
