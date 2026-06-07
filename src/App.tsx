@@ -43,6 +43,7 @@ import DudasAdmin from "./pages/admin/DudasAdmin";
 // Rutas para Profesor
 import EstadisticasProfesor from "./pages/profesor/EstadisticasProfesor";
 import ProgramarActividad from "./pages/profesor/ProgramarActividad";
+import Asistencia from "./pages/profesor/Asistencia";
 import ComunicadosProfesor from "./pages/profesor/ComunicadosProfesor";
 import DocumentosProfesor from "./pages/profesor/DocumentosProfesor";
 
@@ -146,6 +147,7 @@ const App = () => (
           {/* Rutas para Profesor */}
           <Route path="/profesor/estadisticas" element={<EstadisticasProfesor />} />
           <Route path="/profesor/programar-actividad" element={<ProgramarActividad />} />
+          <Route path="/profesor/asistencia" element={<Asistencia />} />
           <Route path="/profesor/comunicados" element={<ComunicadosProfesor />} />
           <Route path="/rector/comunicados-recibidos" element={<ComunicadosRecibidos />} />
           <Route path="/rector/documentos-recibidos" element={<DocumentosRecibidos />} />

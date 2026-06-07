@@ -321,6 +321,18 @@ export interface ApiMeta {
   asignaciones_expandidas: { asignatura: string; grado: string; salon: string }[];
 }
 
+export type AsistenciaEstado = 'asistio' | 'inasistencia' | 'excusa';
+
+export interface AsistenciaRosterItem {
+  estudiante_id: string;
+  nombres: string;
+  apellidos: string;
+  avatar_url: string | null;
+  estado: AsistenciaEstado | null;
+  tiene_excusa: boolean;
+  excusa_motivo: string | null;
+}
+
 function qs(params: Record<string, string | number | undefined>): string {
   const u = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
@@ -508,6 +520,15 @@ export const apiClient = {
     },
     eliminar(id: string): Promise<{ ok: true; eliminados: number }> {
       return request(`/api/grupos-notas/${id}`, { method: 'DELETE' });
+    },
+  },
+
+  asistencia: {
+    roster(asignatura: string, grado: string, salon: string, fecha?: string): Promise<{ fecha: string; roster: AsistenciaRosterItem[] }> {
+      return request(`/api/asistencia/roster${qs({ asignatura, grado, salon, fecha })}`);
+    },
+    marcar(body: { asignatura: string; grado: string; salon: string; fecha: string; estudiante_id: string; estado: AsistenciaEstado }): Promise<{ ok: true; estado: AsistenciaEstado; auto_excusa: boolean }> {
+      return request('/api/asistencia/marcar', { method: 'POST', body: JSON.stringify(body) });
     },
   },
 
