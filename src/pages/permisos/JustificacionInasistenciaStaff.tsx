@@ -186,7 +186,7 @@ const JustificacionInasistenciaStaff = () => {
                           const isExp = expandedIds.has(j.id);
                           const fechaCreacion = new Date(j.created_at).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
                           return (
-                      <div key={j.id} className="border border-border rounded-lg overflow-hidden">
+                      <div key={j.id} className="bg-primary/10 border border-primary/20 rounded-lg p-1.5">
                         {imprimirMode && (
                           <CardSelector
                             isSelected={j.id in seleccion}
@@ -195,6 +195,7 @@ const JustificacionInasistenciaStaff = () => {
                             onCountChange={(n) => setCount(j.id, n)}
                           />
                         )}
+                        <div className="bg-card rounded-md overflow-hidden">
                         <button onClick={() => toggleExpanded(j.id)} className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors cursor-pointer">
                           <div>
                             <span className="inline-block px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-700 rounded-full mb-0.5">{j.estudiante_grado} {j.estudiante_salon}</span>
@@ -205,7 +206,7 @@ const JustificacionInasistenciaStaff = () => {
                           <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${isExp ? "rotate-180" : ""}`} />
                         </button>
                         {isExp && (
-                          <div className="border-t border-border p-4 bg-muted/10 text-sm text-foreground leading-relaxed space-y-3">
+                          <div className="border-t border-border p-4 bg-card text-sm text-foreground leading-relaxed space-y-3">
                             <p className="font-bold text-center">FORMATO DE JUSTIFICACIÓN POR INASISTENCIA</p>
                             <p>{j.ciudad_fecha}</p>
                             <p><span className="font-medium">Estudiante:</span> <span className="text-primary font-medium">{j.estudiante_nombre} {j.estudiante_apellidos}</span> — <span className="text-primary font-medium">{j.estudiante_grado} {j.estudiante_salon}</span></p>
@@ -238,6 +239,7 @@ const JustificacionInasistenciaStaff = () => {
                             )}
                           </div>
                         )}
+                        </div>
                       </div>
                     );
                         })}

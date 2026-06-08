@@ -184,7 +184,7 @@ const JustificacionUniformeStaff = () => {
                           const isExp = expandedIds.has(j.id);
                           const fechaCreacion = new Date(j.created_at).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
                           return (
-                            <div key={j.id} className="border border-border rounded-lg overflow-hidden">
+                            <div key={j.id} className="bg-primary/10 border border-primary/20 rounded-lg p-1.5">
                               {imprimirMode && (
                                 <CardSelector
                                   isSelected={j.id in seleccion}
