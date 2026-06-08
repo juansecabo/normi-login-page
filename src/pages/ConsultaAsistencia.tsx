@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getSession, isEstudiante, isPadreDeFamilia, isProfesor, isAdmin, type AcudidoData } from "@/hooks/useSession";
 import { supabase } from "@/integrations/supabase/client";
 import { apiClient, type AsistenciaEstado, type AsistenciaRegistro } from "@/lib/apiClient";
-import HeaderNormi from "@/components/HeaderNormi";
+import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNormi";
 import EncabezadoColegio from "@/components/EncabezadoColegio";
 import { rankGrado } from "@/utils/grados";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
@@ -113,6 +113,13 @@ const ConsultaAsistencia = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <HeaderNormi />
       <main className="flex-1 container mx-auto p-4 md:p-8">
+        <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
+          <div className="flex items-center gap-2 text-sm">
+            <button onClick={() => navigate(computeBackLinkFromSession())} className="text-primary hover:underline">Inicio</button>
+            <span className="text-muted-foreground">&rarr;</span>
+            <span className="text-foreground font-medium">Asistencia</span>
+          </div>
+        </div>
         <EncabezadoColegio />
         <div className="max-w-5xl mx-auto">
           <h2 className="text-2xl font-bold text-foreground mb-1 text-center">Asistencia</h2>
