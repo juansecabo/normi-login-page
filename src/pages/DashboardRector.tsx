@@ -17,11 +17,9 @@ import iconEntrevista from "@/assets/icons/entrevista.webp";
 import iconPermisos from "@/assets/icons/permisos-y-excusas.webp";
 import iconConsultas from "@/assets/icons/consultas.png";
 import iconRegistros from "@/assets/icons/registros-comportamiento.png";
-import iconAsistencia from "@/assets/icons/asistencia.webp";
 import HeaderNormi from "@/components/HeaderNormi";
 import EncabezadoColegio from "@/components/EncabezadoColegio";
 import AvatarUploader from "@/components/AvatarUploader";
-import ReordenableDashboard, { type ReordItem } from "@/components/ReordenableDashboard";
 import { getAllLastSeen } from "@/utils/notificaciones";
 
 const perfilesDelCargo = (cargo: string | undefined): string[] => {
@@ -123,138 +121,6 @@ const DashboardRector = () => {
     fetchBadges();
   }, [navigate]);
 
-  // Las tarjetas dependen del cargo. Se arman en orden y el componente aplica el
-  // orden personalizado guardado encima.
-  const items: ReordItem[] = [];
-  if (cargo === 'Orientador(a) Escolar') {
-    items.push(
-      { id: 'casos', render: (
-        <button onClick={() => navigate("/orientador/casos")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-amber-100 transition-all duration-200 hover:shadow-md hover:bg-amber-200">
-          <img src={iconCasos} alt="" className="w-12 h-12 object-contain" />
-          <span className="font-semibold text-foreground text-center">Casos de Seguimiento</span>
-        </button>
-      ) },
-      { id: 'citas', render: (
-        <button onClick={() => navigate("/orientador/citas")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-violet-100 transition-all duration-200 hover:shadow-md hover:bg-violet-200">
-          <img src={iconCitas} alt="" className="w-12 h-12 object-contain" />
-          <span className="font-semibold text-foreground text-center">Citas y Atención</span>
-        </button>
-      ) },
-      { id: 'remisiones', render: (
-        <button onClick={() => navigate("/orientador/remisiones")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-yellow-100 transition-all duration-200 hover:shadow-md hover:bg-yellow-200">
-          <Badge count={badges.remisiones} />
-          <img src={iconCasos} alt="" className="w-12 h-12 object-contain" />
-          <span className="font-semibold text-foreground text-center">Remisiones Recibidas</span>
-        </button>
-      ) },
-    );
-  }
-  if (!esAdministrativo) {
-    items.push({ id: 'notas', render: (
-      <button onClick={() => navigate("/rector/seleccionar-grado")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-emerald-100 transition-all duration-200 hover:shadow-md hover:bg-emerald-200">
-        <img src={iconNotas} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground">Notas</span>
-      </button>
-    ) });
-  }
-  items.push(
-    { id: 'enviar-comunicado', render: (
-      <button onClick={() => navigate("/enviar-comunicado")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 transition-all duration-200 hover:shadow-md hover:bg-teal-200">
-        <img src={iconEnviarComunicado} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Enviar Comunicado</span>
-      </button>
-    ) },
-    { id: 'comunicados-recibidos', render: (
-      <button onClick={() => navigate("/rector/comunicados-recibidos")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 transition-all duration-200 hover:shadow-md hover:bg-teal-200">
-        <Badge count={badges.comunicados} />
-        <img src={iconComunicadosRecibidos} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Comunicados Recibidos</span>
-      </button>
-    ) },
-    { id: 'documentos-recibidos', render: (
-      <button onClick={() => navigate("/rector/documentos-recibidos")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-amber-100 transition-all duration-200 hover:shadow-md hover:bg-amber-200">
-        <Badge count={badges.documentos} />
-        <img src={iconDocumentos} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Documentos Recibidos</span>
-      </button>
-    ) },
-    { id: 'permisos-excusas', render: (
-      <button onClick={() => navigate("/permisos-excusas")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-rose-100 transition-all duration-200 hover:shadow-md hover:bg-rose-200">
-        <Badge count={badges.retiro + badges.inasistencia + badges.uniforme} />
-        <img src={iconPermisos} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Permisos y Excusas</span>
-      </button>
-    ) },
-    { id: 'estadisticas', render: (
-      <button onClick={() => navigate("/rector/estadisticas")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-green-100 transition-all duration-200 hover:shadow-md hover:bg-green-200">
-        <img src={iconEstadisticas} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground">Estadísticas</span>
-      </button>
-    ) },
-    { id: 'consultas', render: (
-      <button onClick={() => navigate("/consultas")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-pink-100 transition-all duration-200 hover:shadow-md hover:bg-pink-200">
-        <img src={iconConsultas} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Consultas</span>
-      </button>
-    ) },
-  );
-  if (cargo === 'Coordinador(a)') {
-    items.push({ id: 'conversaciones', render: (
-      <button onClick={() => window.open("https://chat.notasnormi.com", "_blank")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-blue-100 transition-all duration-200 hover:shadow-md hover:bg-blue-200">
-        <img src={iconConversaciones} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Conversaciones</span>
-      </button>
-    ) });
-  }
-  items.push(
-    { id: 'registros-comportamiento', render: (
-      <button onClick={() => navigate("/registros-comportamiento")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-amber-100 transition-all duration-200 hover:shadow-md hover:bg-amber-200">
-        <img src={iconRegistros} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Registros de Comportamiento</span>
-      </button>
-    ) },
-    { id: 'remitir-orientacion', render: (
-      <button onClick={() => navigate("/remitir-orientacion")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-sky-100 transition-all duration-200 hover:shadow-md hover:bg-sky-200">
-        <img src={iconEntrevista} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Remitir a Orientación</span>
-      </button>
-    ) },
-  );
-  if (cargo === 'Rector') {
-    items.push({ id: 'conversaciones', render: (
-      <button onClick={() => window.open("https://chat.notasnormi.com", "_blank")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-blue-100 transition-all duration-200 hover:shadow-md hover:bg-blue-200">
-        <img src={iconConversaciones} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Conversaciones</span>
-      </button>
-    ) });
-  }
-  items.push(
-    { id: 'panel-control', render: (
-      <button onClick={() => navigate("/rector/panel-control")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-purple-100 transition-all duration-200 hover:shadow-md hover:bg-purple-200">
-        <img src={iconPanelControl} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Panel de Control</span>
-      </button>
-    ) },
-    { id: 'uso-normi', render: (
-      <button onClick={() => navigate("/rector/uso-normi")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-orange-100 transition-all duration-200 hover:shadow-md hover:bg-orange-200">
-        <img src={iconUsoAgente} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Uso de Normi</span>
-      </button>
-    ) },
-    { id: 'registro-normi', render: (
-      <button onClick={() => navigate("/registro-normi")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-cyan-100 transition-all duration-200 hover:shadow-md hover:bg-cyan-200">
-        <img src={iconRegistroAgente} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Registro en Normi</span>
-      </button>
-    ) },
-    { id: 'asistencia', render: (
-      <button onClick={() => navigate("/asistencia")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-blue-100 transition-all duration-200 hover:shadow-md hover:bg-blue-200">
-        <img src={iconAsistencia} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Asistencia</span>
-      </button>
-    ) },
-  );
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <HeaderNormi backLink="/dashboard-rector" />
@@ -284,15 +150,161 @@ const DashboardRector = () => {
 
         {/* Botones principales */}
         <div className="bg-card rounded-lg shadow-soft p-8 max-w-4xl mx-auto mt-8">
-          <h3 className="text-xl font-bold text-foreground mb-1 text-center">
+          <h3 className="text-xl font-bold text-foreground mb-6 text-center">
             ¿Qué deseas consultar?
           </h3>
 
-          <ReordenableDashboard
-            dashboardKey="rector"
-            gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 max-w-5xl mx-auto"
-            items={items}
-          />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
+            {cargo === 'Orientador(a) Escolar' && (
+              <>
+                <button
+                  onClick={() => navigate("/orientador/casos")}
+                  className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-amber-100 transition-all duration-200 hover:shadow-md hover:bg-amber-200"
+                >
+                  <img src={iconCasos} alt="" className="w-12 h-12 object-contain" />
+                  <span className="font-semibold text-foreground text-center">Casos de Seguimiento</span>
+                </button>
+
+                <button
+                  onClick={() => navigate("/orientador/citas")}
+                  className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-violet-100 transition-all duration-200 hover:shadow-md hover:bg-violet-200"
+                >
+                  <img src={iconCitas} alt="" className="w-12 h-12 object-contain" />
+                  <span className="font-semibold text-foreground text-center">Citas y Atención</span>
+                </button>
+
+                <button
+                  onClick={() => navigate("/orientador/remisiones")}
+                  className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-yellow-100 transition-all duration-200 hover:shadow-md hover:bg-yellow-200"
+                >
+                  <Badge count={badges.remisiones} />
+                  <img src={iconCasos} alt="" className="w-12 h-12 object-contain" />
+                  <span className="font-semibold text-foreground text-center">Remisiones Recibidas</span>
+                </button>
+              </>
+            )}
+
+            {!esAdministrativo && (
+              <button
+                onClick={() => navigate("/rector/seleccionar-grado")}
+                className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-emerald-100 transition-all duration-200 hover:shadow-md hover:bg-emerald-200"
+              >
+                <img src={iconNotas} alt="" className="w-12 h-12 object-contain" />
+                <span className="font-semibold text-foreground">Notas</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => navigate("/enviar-comunicado")}
+              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 transition-all duration-200 hover:shadow-md hover:bg-teal-200"
+            >
+              <img src={iconEnviarComunicado} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground text-center">Enviar Comunicado</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/rector/comunicados-recibidos")}
+              className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 transition-all duration-200 hover:shadow-md hover:bg-teal-200"
+            >
+              <Badge count={badges.comunicados} />
+              <img src={iconComunicadosRecibidos} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground text-center">Comunicados Recibidos</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/rector/documentos-recibidos")}
+              className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-amber-100 transition-all duration-200 hover:shadow-md hover:bg-amber-200"
+            >
+              <Badge count={badges.documentos} />
+              <img src={iconDocumentos} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground text-center">Documentos Recibidos</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/permisos-excusas")}
+              className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-rose-100 transition-all duration-200 hover:shadow-md hover:bg-rose-200"
+            >
+              <Badge count={badges.retiro + badges.inasistencia + badges.uniforme} />
+              <img src={iconPermisos} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground text-center">Permisos y Excusas</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/rector/estadisticas")}
+              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-green-100 transition-all duration-200 hover:shadow-md hover:bg-green-200"
+            >
+              <img src={iconEstadisticas} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground">Estadísticas</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/consultas")}
+              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-pink-100 transition-all duration-200 hover:shadow-md hover:bg-pink-200"
+            >
+              <img src={iconConsultas} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground text-center">Consultas</span>
+            </button>
+
+            {cargo === 'Coordinador(a)' && (
+              <button
+                onClick={() => window.open("https://chat.notasnormi.com", "_blank")}
+                className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-blue-100 transition-all duration-200 hover:shadow-md hover:bg-blue-200"
+              >
+                <img src={iconConversaciones} alt="" className="w-12 h-12 object-contain" />
+                <span className="font-semibold text-foreground text-center">Conversaciones</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => navigate("/registros-comportamiento")}
+              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-amber-100 transition-all duration-200 hover:shadow-md hover:bg-amber-200"
+            >
+              <img src={iconRegistros} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground text-center">Registros de Comportamiento</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/remitir-orientacion")}
+              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-sky-100 transition-all duration-200 hover:shadow-md hover:bg-sky-200"
+            >
+              <img src={iconEntrevista} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground text-center">Remitir a Orientación</span>
+            </button>
+
+            {cargo === 'Rector' && (
+              <button
+                onClick={() => window.open("https://chat.notasnormi.com", "_blank")}
+                className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-blue-100 transition-all duration-200 hover:shadow-md hover:bg-blue-200"
+              >
+                <img src={iconConversaciones} alt="" className="w-12 h-12 object-contain" />
+                <span className="font-semibold text-foreground text-center">Conversaciones</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => navigate("/rector/panel-control")}
+              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-purple-100 transition-all duration-200 hover:shadow-md hover:bg-purple-200"
+            >
+              <img src={iconPanelControl} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground text-center">Panel de Control</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/rector/uso-normi")}
+              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-orange-100 transition-all duration-200 hover:shadow-md hover:bg-orange-200"
+            >
+              <img src={iconUsoAgente} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground text-center">Uso de Normi</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/registro-normi")}
+              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-cyan-100 transition-all duration-200 hover:shadow-md hover:bg-cyan-200"
+            >
+              <img src={iconRegistroAgente} alt="" className="w-12 h-12 object-contain" />
+              <span className="font-semibold text-foreground text-center">Registro en Normi</span>
+            </button>
+          </div>
         </div>
 
         <div className="flex items-start justify-center gap-8 mt-8">
