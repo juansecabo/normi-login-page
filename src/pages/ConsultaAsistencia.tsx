@@ -42,8 +42,9 @@ const ConsultaAsistencia = () => {
   const [asignatura, setAsignatura] = useState("");
   const [grado, setGrado] = useState("");
   const [salon, setSalon] = useState("");
+  const [modoTiempo, setModoTiempo] = useState<"mes" | "dia" | "rango">("mes");
   const [mes, setMes] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
-  const [modoRango, setModoRango] = useState(false);
+  const [diaSel, setDiaSel] = useState(hoyBogota());
   const [desdeLibre, setDesdeLibre] = useState("");
   const [hastaLibre, setHastaLibre] = useState(hoyBogota());
 
@@ -56,9 +57,15 @@ const ConsultaAsistencia = () => {
   const grados = useMemo(() => [...new Set(clases.filter((c) => c.asignatura === asignatura).map((c) => c.grado))].sort((a, b) => rankGrado(a) - rankGrado(b)), [clases, asignatura]);
   const salones = useMemo(() => [...new Set(clases.filter((c) => c.asignatura === asignatura && c.grado === grado).map((c) => c.salon))].sort((a, b) => a.localeCompare(b, "es", { numeric: true })), [clases, asignatura, grado]);
 
-  const { desde, hasta } = modoRango ? { desde: desdeLibre, hasta: hastaLibre } : rangoMes(mes);
-  const rangoLabel = modoRango ? `${desdeLibre || "…"} a ${hastaLibre}` : `${MESES[mes.getMonth()]} ${mes.getFullYear()}`;
-  const claseLista = asignatura && grado && salon && (!modoRango || desdeLibre);
+  const { desde, hasta } =
+    modoTiempo === "mes" ? rangoMes(mes)
+    : modoTiempo === "dia" ? { desde: diaSel, hasta: diaSel }
+    : { desde: desdeLibre, hasta: hastaLibre };
+  const rangoLabel =
+    modoTiempo === "mes" ? `${MESES[mes.getMonth()]} ${mes.getFullYear()}`
+    : modoTiempo === "dia" ? diaSel
+    : `${desdeLibre || "…"} a ${hastaLibre}`;
+  const claseLista = !!(asignatura && grado && salon && (modoTiempo !== "rango" || desdeLibre) && (modoTiempo !== "dia" || diaSel));
 
   // ─────────────────────── ESTUDIANTE / ACUDIENTE ───────────────────────
   const acudidos = (getSession().acudidos || []) as AcudidoData[];
@@ -122,24 +129,34 @@ const ConsultaAsistencia = () => {
                   <Selector label="Grado" value={grado} options={grados} disabled={!asignatura} onChange={(v) => { setGrado(v); setSalon(""); }} />
                   <Selector label="Salón" value={salon} options={salones} disabled={!grado} onChange={setSalon} />
                 </div>
-                {/* Mes / rango */}
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  {!modoRango ? (
+                {/* Modo de tiempo: Mes / Día / Rango */}
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <div className="inline-flex rounded-lg border border-border overflow-hidden text-sm">
+                    {([["mes", "Mes"], ["dia", "Día"], ["rango", "Rango"]] as const).map(([k, lbl]) => (
+                      <button key={k} onClick={() => setModoTiempo(k)}
+                        className={`px-3 py-1.5 font-medium ${modoTiempo === k ? "bg-primary text-primary-foreground" : "bg-background text-foreground hover:bg-muted"}`}>
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+
+                  {modoTiempo === "mes" && (
                     <div className="flex items-center gap-2">
                       <button onClick={() => setMes(new Date(mes.getFullYear(), mes.getMonth() - 1, 1))} className="p-1.5 rounded-full hover:bg-muted"><ChevronLeft className="w-5 h-5" /></button>
                       <span className="font-semibold text-foreground min-w-[140px] text-center">{MESES[mes.getMonth()]} {mes.getFullYear()}</span>
                       <button onClick={() => setMes(new Date(mes.getFullYear(), mes.getMonth() + 1, 1))} className="p-1.5 rounded-full hover:bg-muted"><ChevronRight className="w-5 h-5" /></button>
                     </div>
-                  ) : (
+                  )}
+                  {modoTiempo === "dia" && (
+                    <input type="date" value={diaSel} max={hoyBogota()} onChange={(e) => setDiaSel(e.target.value)} className="px-2 py-1.5 rounded-lg border border-border bg-background text-sm" />
+                  )}
+                  {modoTiempo === "rango" && (
                     <div className="flex items-center gap-2 text-sm">
                       <input type="date" value={desdeLibre} max={hastaLibre} onChange={(e) => setDesdeLibre(e.target.value)} className="px-2 py-1.5 rounded-lg border border-border bg-background" />
                       <span className="text-muted-foreground">a</span>
                       <input type="date" value={hastaLibre} max={hoyBogota()} onChange={(e) => setHastaLibre(e.target.value)} className="px-2 py-1.5 rounded-lg border border-border bg-background" />
                     </div>
                   )}
-                  <button onClick={() => setModoRango((v) => !v)} className="text-xs text-primary hover:underline">
-                    {modoRango ? "Usar mes" : "Rango personalizado"}
-                  </button>
                 </div>
               </div>
 

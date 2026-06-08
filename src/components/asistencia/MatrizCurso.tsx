@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Download, X } from "lucide-react";
+import { Download, X, Search } from "lucide-react";
 import { apiClient, type AsistenciaEstado, type AsistenciaHistorial, type AsistenciaHistorialEstudiante } from "@/lib/apiClient";
 import { useToast } from "@/hooks/use-toast";
 import { ESTADO_UI, ESTADOS_LISTA, resumen } from "./estados";
@@ -24,6 +24,7 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
   const [editando, setEditando] = useState<{ id: string; nombre: string; fecha: string } | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [descargando, setDescargando] = useState(false);
+  const [filtro, setFiltro] = useState("");
 
   useEffect(() => {
     let cancel = false;
@@ -49,6 +50,13 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
     }
     return m;
   }, [data.registros]);
+
+  // Filtro "ver solo un estudiante" (por nombre/apellido).
+  const estudiantesVisibles = useMemo(() => {
+    const f = filtro.trim().toLowerCase();
+    if (!f) return data.estudiantes;
+    return data.estudiantes.filter((e) => `${e.apellidos} ${e.nombres}`.toLowerCase().includes(f));
+  }, [data.estudiantes, filtro]);
 
   const setEstado = async (estado: AsistenciaEstado) => {
     if (!editando || guardando) return;
@@ -134,12 +142,19 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-xs text-muted-foreground">{data.estudiantes.length} estudiantes · {fechas.length} días tomados</p>
-        <button onClick={descargarExcel} disabled={descargando}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:opacity-90 disabled:opacity-50">
-          <Download className="w-4 h-4" /> {descargando ? "…" : "Excel"}
-        </button>
+      <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+        <div className="relative">
+          <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input value={filtro} onChange={(e) => setFiltro(e.target.value)} placeholder="Buscar estudiante…"
+            className="pl-8 pr-3 py-1.5 rounded-lg border border-border bg-background text-sm w-52" />
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground">{estudiantesVisibles.length}/{data.estudiantes.length} · {fechas.length} días</span>
+          <button onClick={descargarExcel} disabled={descargando}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:opacity-90 disabled:opacity-50">
+            <Download className="w-4 h-4" /> {descargando ? "…" : "Excel"}
+          </button>
+        </div>
       </div>
 
       {/* Matriz con scroll horizontal + primera columna sticky */}
@@ -153,7 +168,7 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
             </tr>
           </thead>
           <tbody>
-            {data.estudiantes.map((e) => {
+            {estudiantesVisibles.map((e) => {
               const fila = mapa.get(e.estudiante_id) || new Map<string, AsistenciaEstado>();
               const r = resumen([...fila.values()].map((estado) => ({ estado })));
               return (
