@@ -12,7 +12,7 @@ import iconDocumentos from "@/assets/icons/documentos.webp";
 import iconPermisos from "@/assets/icons/permisos-y-excusas.webp";
 import iconConsultas from "@/assets/icons/consultas.png";
 import iconRegistros from "@/assets/icons/registros-comportamiento.png";
-import { ClipboardCheck } from "lucide-react";
+import iconAsistencia from "@/assets/icons/asistencia.webp";
 import { getSession, isProfesor, isAdmin, isRectorOrCoordinador, isEstudiante, isPadreDeFamilia } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import EncabezadoColegio from "@/components/EncabezadoColegio";
@@ -236,7 +236,7 @@ const Dashboard = () => {
     ) },
     { id: 'asistencia', render: (
       <button onClick={() => navigate("/profesor/asistencia")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-blue-100 transition-all duration-200 hover:shadow-md hover:bg-blue-200">
-        <ClipboardCheck className="w-12 h-12 text-blue-700" strokeWidth={1.5} />
+        <img src={iconAsistencia} alt="" className="w-12 h-12 object-contain" />
         <span className="font-semibold text-foreground text-center">Asistencia</span>
       </button>
     ) },
