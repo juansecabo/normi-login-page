@@ -60,6 +60,9 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
     return data.estudiantes.filter((e) => `${e.apellidos} ${e.nombres}`.toLowerCase().includes(f));
   }, [data.estudiantes, filtro]);
 
+  // Un solo día → el % no aporta (siempre 0 o 100%): se oculta.
+  const unDia = desde === hasta;
+
   const setEstado = async (estado: AsistenciaEstado) => {
     if (!editando || guardando) return;
     setGuardando(true);
@@ -86,7 +89,7 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
       const wb = new ExcelJS.Workbook();
       const ws = wb.addWorksheet("Asistencia");
 
-      const headers = ["Apellidos", "Nombres", ...fechas.map(fechaCorta), "% Asistencia"];
+      const headers = ["Apellidos", "Nombres", ...fechas.map(fechaCorta), ...(unDia ? [] : ["% Asistencia"])];
       const hr = ws.addRow(headers);
       hr.eachCell((cell) => {
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF16A34A" } };
@@ -99,7 +102,7 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
         const row = ws.addRow([
           e.apellidos, e.nombres,
           ...fechas.map((f) => { const s = fila.get(f); return s ? ESTADO_UI[s].label : ""; }),
-          `${resumen([...fila.values()].map((estado) => ({ estado }))).pct}%`,
+          ...(unDia ? [] : [`${resumen([...fila.values()].map((estado) => ({ estado }))).pct}%`]),
         ]);
         row.eachCell((cell, col) => {
           cell.alignment = { horizontal: col <= 2 ? "left" : "center", vertical: "middle" };
