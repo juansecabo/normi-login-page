@@ -111,7 +111,7 @@ const ConsultaAsistencia = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormi backLink="/" />
+      <HeaderNormi />
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <EncabezadoColegio />
         <div className="max-w-5xl mx-auto">
