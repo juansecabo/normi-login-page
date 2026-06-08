@@ -1,40 +1,29 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getSession, isEstudiante, isPadreDeFamilia } from "@/hooks/useSession";
+import { getSession, isEstudiante, isPadreDeFamilia, isProfesor, isAdmin, type AcudidoData } from "@/hooks/useSession";
 import { supabase } from "@/integrations/supabase/client";
+import { apiClient, type AsistenciaEstado, type AsistenciaRegistro } from "@/lib/apiClient";
 import HeaderNormi from "@/components/HeaderNormi";
 import EncabezadoColegio from "@/components/EncabezadoColegio";
 import { rankGrado } from "@/utils/grados";
+import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
+import MatrizCurso from "@/components/asistencia/MatrizCurso";
+import CalendarioEstudiante from "@/components/asistencia/CalendarioEstudiante";
+import { resumen, rangoMes, MESES, hoyBogota } from "@/components/asistencia/estados";
 
-type Estado = "presente" | "ausente" | "excusa";
+type Clase = { asignatura: string; grado: string; salon: string };
 
-const ESTADO: Record<Estado, { label: string; cls: string; dot: string }> = {
-  presente: { label: "Presente", cls: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-500" },
-  ausente: { label: "Ausente", cls: "bg-rose-100 text-rose-700", dot: "bg-rose-500" },
-  excusa: { label: "Con excusa", cls: "bg-amber-100 text-amber-700", dot: "bg-amber-500" },
-};
-
-const hoyBogota = (): string =>
-  new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
-
-const fechaLarga = (iso: string): string => {
-  try {
-    return new Date(`${iso}T12:00:00`).toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-  } catch { return iso; }
-};
-
-interface Registro {
-  estudiante_id: string;
-  asignatura: string;
-  estado: Estado;
-  fecha: string;
-  nombre?: string;
-}
-
-const Chip = ({ estado }: { estado: Estado }) => (
-  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${ESTADO[estado].cls}`}>
-    <span className={`w-2 h-2 rounded-full ${ESTADO[estado].dot}`} /> {ESTADO[estado].label}
-  </span>
+const Selector = ({ label, value, onChange, options, disabled }: {
+  label: string; value: string; onChange: (v: string) => void; options: string[]; disabled?: boolean;
+}) => (
+  <div>
+    <label className="block text-xs font-medium text-muted-foreground mb-1">{label}</label>
+    <select value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled}
+      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground disabled:opacity-50">
+      <option value="">{label}</option>
+      {options.map((o) => <option key={o} value={o}>{o}</option>)}
+    </select>
+  </div>
 );
 
 const ConsultaAsistencia = () => {
@@ -42,183 +31,197 @@ const ConsultaAsistencia = () => {
   const rolEstudiante = isEstudiante();
   const rolAcudiente = isPadreDeFamilia();
   const esInterno = !rolEstudiante && !rolAcudiente;
-
-  const [loading, setLoading] = useState(false);
-  const [registros, setRegistros] = useState<Registro[]>([]);
-
-  // ── Filtros para internos ────────────────────────────────────────────────
-  const [aulas, setAulas] = useState<{ grado: string; salon: string }[]>([]);
-  const [grado, setGrado] = useState("");
-  const [salon, setSalon] = useState("");
-  const [fecha, setFecha] = useState(hoyBogota());
-  const [consultado, setConsultado] = useState(false);
+  const puedeEditar = isProfesor() || isAdmin(); // el backend valida que el profe solo edite sus clases
 
   useEffect(() => {
-    const session = getSession();
-    if (!session.id) { navigate("/"); return; }
+    if (!getSession().id) navigate("/");
   }, [navigate]);
 
-  // Internos: cargar aulas (grado/salón) del colegio.
+  // ─────────────────────────── INTERNOS ───────────────────────────
+  const [clases, setClases] = useState<Clase[]>([]);
+  const [asignatura, setAsignatura] = useState("");
+  const [grado, setGrado] = useState("");
+  const [salon, setSalon] = useState("");
+  const [mes, setMes] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
+  const [modoRango, setModoRango] = useState(false);
+  const [desdeLibre, setDesdeLibre] = useState("");
+  const [hastaLibre, setHastaLibre] = useState(hoyBogota());
+
   useEffect(() => {
     if (!esInterno) return;
-    (async () => {
-      try {
-        const { data } = await supabase.from("Estudiantes").select("grado, salon");
-        const pares = new Map<string, { grado: string; salon: string }>();
-        for (const r of (data || []) as { grado: string; salon: string }[]) {
-          if (r.grado && r.salon) pares.set(`${r.grado}|${r.salon}`, { grado: r.grado, salon: r.salon });
-        }
-        setAulas([...pares.values()]);
-      } catch { /* ignore */ }
-    })();
+    apiClient.asistencia.clases().then((r) => setClases(r.clases)).catch(() => setClases([]));
   }, [esInterno]);
 
-  // Estudiante / Acudiente: cargar su historial al entrar (el blindaje del
-  // proxy limita a lo propio / a los acudidos).
+  const asignaturas = useMemo(() => [...new Set(clases.map((c) => c.asignatura))].sort((a, b) => a.localeCompare(b, "es")), [clases]);
+  const grados = useMemo(() => [...new Set(clases.filter((c) => c.asignatura === asignatura).map((c) => c.grado))].sort((a, b) => rankGrado(a) - rankGrado(b)), [clases, asignatura]);
+  const salones = useMemo(() => [...new Set(clases.filter((c) => c.asignatura === asignatura && c.grado === grado).map((c) => c.salon))].sort((a, b) => a.localeCompare(b, "es", { numeric: true })), [clases, asignatura, grado]);
+
+  const { desde, hasta } = modoRango ? { desde: desdeLibre, hasta: hastaLibre } : rangoMes(mes);
+  const rangoLabel = modoRango ? `${desdeLibre || "…"} a ${hastaLibre}` : `${MESES[mes.getMonth()]} ${mes.getFullYear()}`;
+  const claseLista = asignatura && grado && salon && (!modoRango || desdeLibre);
+
+  // ─────────────────────── ESTUDIANTE / ACUDIENTE ───────────────────────
+  const acudidos = (getSession().acudidos || []) as AcudidoData[];
+  const [acudidoSel, setAcudidoSel] = useState<AcudidoData | null>(acudidos.length === 1 ? acudidos[0] : null);
+  const sujeto = rolAcudiente
+    ? (acudidoSel ? { id: acudidoSel.id, nombres: acudidoSel.nombre, apellidos: acudidoSel.apellidos, grado: acudidoSel.grado, salon: acudidoSel.salon, avatar_url: null as string | null } : null)
+    : { id: getSession().id || "", nombres: getSession().nombres || "", apellidos: getSession().apellidos || "", grado: getSession().grado || "", salon: getSession().salon || "", avatar_url: getSession().avatar_url || null };
+
+  const [misRegistros, setMisRegistros] = useState<{ asignatura: string; estado: AsistenciaEstado }[]>([]);
+  const [cargandoMios, setCargandoMios] = useState(false);
+
   useEffect(() => {
-    if (esInterno) return;
-    (async () => {
-      setLoading(true);
-      try {
-        const { data } = await supabase
-          .from("Asistencia")
-          .select("estudiante_id, asignatura, estado, fecha")
-          .order("fecha", { ascending: false });
-        const regs = (data || []) as Registro[];
-        // Para acudiente con varios acudidos, anexar el nombre desde la sesión.
-        const acudidos = getSession().acudidos || [];
-        const nombreById = new Map(acudidos.map((h) => [String(h.id), `${h.nombre} ${h.apellidos}`.trim()]));
-        setRegistros(regs.map((r) => ({ ...r, nombre: nombreById.get(String(r.estudiante_id)) })));
-      } catch { /* ignore */ }
-      finally { setLoading(false); }
-    })();
-  }, [esInterno]);
+    if (esInterno || !sujeto?.id) return;
+    setCargandoMios(true);
+    supabase.from("Asistencia").select("asignatura, estado").eq("estudiante_id", sujeto.id)
+      .then(({ data }) => setMisRegistros((data || []) as { asignatura: string; estado: AsistenciaEstado }[]))
+      .then(() => setCargandoMios(false), () => setCargandoMios(false));
+  }, [esInterno, sujeto?.id]);
 
-  const grados = useMemo(
-    () => [...new Set(aulas.map((a) => a.grado))].sort((a, b) => rankGrado(a) - rankGrado(b)),
-    [aulas],
-  );
-  const salones = useMemo(
-    () => [...new Set(aulas.filter((a) => a.grado === grado).map((a) => a.salon))].sort((a, b) => a.localeCompare(b, "es", { numeric: true })),
-    [aulas, grado],
-  );
+  const resumenPorAsignatura = useMemo(() => {
+    const m = new Map<string, { asignatura: string; estado: AsistenciaEstado }[]>();
+    for (const r of misRegistros) { if (!m.has(r.asignatura)) m.set(r.asignatura, []); m.get(r.asignatura)!.push(r); }
+    return [...m.entries()].map(([asig, regs]) => ({ asignatura: asig, ...resumen(regs) })).sort((a, b) => a.asignatura.localeCompare(b.asignatura, "es"));
+  }, [misRegistros]);
 
-  const verClase = async () => {
-    if (!grado || !salon) return;
-    setLoading(true);
-    setConsultado(true);
-    try {
-      const { data } = await supabase
-        .from("Asistencia")
-        .select("estudiante_id, asignatura, estado, fecha")
-        .eq("grado", grado).eq("salon", salon).eq("fecha", fecha);
-      const regs = (data || []) as Registro[];
-      const ids = [...new Set(regs.map((r) => String(r.estudiante_id)))];
-      let nombreById = new Map<string, string>();
-      if (ids.length) {
-        const { data: usrs } = await supabase.from("Usuarios").select("id, nombres, apellidos").in("id", ids);
-        nombreById = new Map((usrs || []).map((u: any) => [String(u.id), `${u.apellidos || ""} ${u.nombres || ""}`.trim()]));
-      }
-      const conNombre = regs
-        .map((r) => ({ ...r, nombre: nombreById.get(String(r.estudiante_id)) || `CC ${r.estudiante_id}` }))
-        .sort((a, b) => (a.nombre || "").localeCompare(b.nombre || "", "es") || a.asignatura.localeCompare(b.asignatura, "es"));
-      setRegistros(conNombre);
-    } catch { /* ignore */ }
-    finally { setLoading(false); }
-  };
+  // ─────────────────────────── Modal calendario ───────────────────────────
+  const [cal, setCal] = useState<null | {
+    estudiante: { estudiante_id: string; nombres: string; apellidos: string; avatar_url: string | null };
+    asignatura: string; grado: string; salon: string;
+  }>(null);
 
-  // Agrupar el historial (estudiante/acudiente) por fecha.
-  const porFecha = useMemo(() => {
-    const m = new Map<string, Registro[]>();
-    for (const r of registros) {
-      if (!m.has(r.fecha)) m.set(r.fecha, []);
-      m.get(r.fecha)!.push(r);
-    }
-    return [...m.entries()];
-  }, [registros]);
+  const loadMonthInterno = (asig: string, gr: string, sa: string) =>
+    (id: string, d: string, h: string) => apiClient.asistencia.historial(asig, gr, sa, d, h, id).then((r) => r.registros);
+  const loadMonthSujeto = (asig: string, estId: string) =>
+    async (_id: string, d: string, h: string): Promise<AsistenciaRegistro[]> => {
+      const { data } = await supabase.from("Asistencia").select("estudiante_id, fecha, estado")
+        .eq("asignatura", asig).eq("estudiante_id", estId).gte("fecha", d).lte("fecha", h);
+      return (data || []) as AsistenciaRegistro[];
+    };
+  const onMarcarCal = (asig: string, gr: string, sa: string) =>
+    async (estudiante_id: string, fecha: string, estado: AsistenciaEstado) =>
+      (await apiClient.asistencia.marcar({ asignatura: asig, grado: gr, salon: sa, fecha, estudiante_id, estado })).estado;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <HeaderNormi backLink="/" />
-      <main className="flex-1 container mx-auto p-6 md:p-8">
+      <main className="flex-1 container mx-auto p-4 md:p-8">
         <EncabezadoColegio />
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <h2 className="text-2xl font-bold text-foreground mb-1 text-center">Asistencia</h2>
-          <p className="text-sm text-muted-foreground mb-6 text-center">
-            {esInterno ? "Consulta la asistencia por grado, salón y día." : "Historial de asistencia."}
-          </p>
 
-          {/* ── Vista internos: filtros + lista de la clase ── */}
+          {/* ═══════════ INTERNOS ═══════════ */}
           {esInterno && (
             <>
-              <div className="bg-card rounded-lg shadow-soft p-5 mb-6 grid grid-cols-1 sm:grid-cols-4 gap-3">
-                <select value={grado} onChange={(e) => { setGrado(e.target.value); setSalon(""); }}
-                  className="px-3 py-2 rounded-lg border border-border bg-background text-foreground">
-                  <option value="">Grado</option>
-                  {grados.map((g) => <option key={g} value={g}>{g}</option>)}
-                </select>
-                <select value={salon} onChange={(e) => setSalon(e.target.value)} disabled={!grado}
-                  className="px-3 py-2 rounded-lg border border-border bg-background text-foreground disabled:opacity-50">
-                  <option value="">Salón</option>
-                  {salones.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-                <input type="date" value={fecha} max={hoyBogota()} onChange={(e) => setFecha(e.target.value)}
-                  className="px-3 py-2 rounded-lg border border-border bg-background text-foreground" />
-                <button onClick={verClase} disabled={!grado || !salon || loading}
-                  className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-semibold disabled:opacity-50 hover:opacity-90">
-                  {loading ? "…" : "Ver"}
-                </button>
+              <p className="text-sm text-muted-foreground mb-5 text-center">
+                {puedeEditar ? "Consulta y corrige la asistencia por clase y día." : "Consulta la asistencia por clase y día."}
+              </p>
+              <div className="bg-card rounded-lg shadow-soft p-4 md:p-5 mb-5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                  <Selector label="Asignatura" value={asignatura} options={asignaturas} onChange={(v) => { setAsignatura(v); setGrado(""); setSalon(""); }} />
+                  <Selector label="Grado" value={grado} options={grados} disabled={!asignatura} onChange={(v) => { setGrado(v); setSalon(""); }} />
+                  <Selector label="Salón" value={salon} options={salones} disabled={!grado} onChange={setSalon} />
+                </div>
+                {/* Mes / rango */}
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  {!modoRango ? (
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setMes(new Date(mes.getFullYear(), mes.getMonth() - 1, 1))} className="p-1.5 rounded-full hover:bg-muted"><ChevronLeft className="w-5 h-5" /></button>
+                      <span className="font-semibold text-foreground min-w-[140px] text-center">{MESES[mes.getMonth()]} {mes.getFullYear()}</span>
+                      <button onClick={() => setMes(new Date(mes.getFullYear(), mes.getMonth() + 1, 1))} className="p-1.5 rounded-full hover:bg-muted"><ChevronRight className="w-5 h-5" /></button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-sm">
+                      <input type="date" value={desdeLibre} max={hastaLibre} onChange={(e) => setDesdeLibre(e.target.value)} className="px-2 py-1.5 rounded-lg border border-border bg-background" />
+                      <span className="text-muted-foreground">a</span>
+                      <input type="date" value={hastaLibre} max={hoyBogota()} onChange={(e) => setHastaLibre(e.target.value)} className="px-2 py-1.5 rounded-lg border border-border bg-background" />
+                    </div>
+                  )}
+                  <button onClick={() => setModoRango((v) => !v)} className="text-xs text-primary hover:underline">
+                    {modoRango ? "Usar mes" : "Rango personalizado"}
+                  </button>
+                </div>
               </div>
 
-              {consultado && !loading && registros.length === 0 && (
-                <p className="text-center text-muted-foreground">No hay registros de asistencia para ese día.</p>
-              )}
-              {registros.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground mb-1 capitalize">{fechaLarga(fecha)} · {grado} {salon}</p>
-                  {registros.map((r, i) => (
-                    <div key={i} className="bg-card rounded-lg shadow-sm border border-border px-4 py-3 flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-semibold text-foreground truncate">{r.nombre}</p>
-                        <p className="text-xs text-muted-foreground truncate">{r.asignatura}</p>
-                      </div>
-                      <Chip estado={r.estado} />
-                    </div>
-                  ))}
-                </div>
+              {!claseLista ? (
+                <p className="text-center text-muted-foreground py-8 flex flex-col items-center gap-2">
+                  <CalendarDays className="w-8 h-8 opacity-40" />
+                  Elige asignatura, grado y salón para ver la asistencia.
+                </p>
+              ) : (
+                <MatrizCurso
+                  asignatura={asignatura} grado={grado} salon={salon}
+                  desde={desde} hasta={hasta} rangoLabel={rangoLabel}
+                  puedeEditar={puedeEditar}
+                  onAbrirCalendario={(e) => setCal({ estudiante: e, asignatura, grado, salon })}
+                />
               )}
             </>
           )}
 
-          {/* ── Vista estudiante / acudiente: historial por fecha ── */}
+          {/* ═══════════ ESTUDIANTE / ACUDIENTE ═══════════ */}
           {!esInterno && (
-            loading ? (
-              <p className="text-center text-muted-foreground">Cargando…</p>
-            ) : registros.length === 0 ? (
-              <p className="text-center text-muted-foreground">Aún no tienes registros de asistencia.</p>
-            ) : (
-              <div className="space-y-5">
-                {porFecha.map(([f, regs]) => (
-                  <div key={f}>
-                    <p className="text-sm font-semibold text-foreground mb-2 capitalize">{fechaLarga(f)}</p>
-                    <div className="space-y-2">
-                      {regs.map((r, i) => (
-                        <div key={i} className="bg-card rounded-lg shadow-sm border border-border px-4 py-3 flex items-center justify-between gap-3">
+            <>
+              {/* Acudiente con varios acudidos: selector */}
+              {rolAcudiente && acudidos.length > 1 && (
+                <div className="flex flex-wrap gap-2 justify-center mb-4">
+                  {acudidos.map((h) => (
+                    <button key={h.id} onClick={() => setAcudidoSel(h)}
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium border ${acudidoSel?.id === h.id ? "bg-primary text-primary-foreground border-primary" : "border-border text-foreground hover:bg-muted"}`}>
+                      {h.nombre} {h.apellidos}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {!sujeto?.id ? (
+                <p className="text-center text-muted-foreground py-8">Selecciona un estudiante.</p>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground mb-5 text-center">
+                    Asistencia de {sujeto.nombres} {sujeto.apellidos} — toca una asignatura para ver el calendario.
+                  </p>
+                  {cargandoMios ? (
+                    <p className="text-center text-muted-foreground py-8">Cargando…</p>
+                  ) : resumenPorAsignatura.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">Aún no hay registros de asistencia.</p>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {resumenPorAsignatura.map((a) => (
+                        <button key={a.asignatura}
+                          onClick={() => setCal({ estudiante: { estudiante_id: sujeto.id, nombres: sujeto.nombres, apellidos: sujeto.apellidos, avatar_url: sujeto.avatar_url }, asignatura: a.asignatura, grado: sujeto.grado, salon: sujeto.salon })}
+                          className="bg-card rounded-lg shadow-sm border border-border px-4 py-3 flex items-center justify-between hover:shadow-md transition text-left">
                           <div className="min-w-0">
-                            <p className="font-semibold text-foreground truncate">{r.asignatura}</p>
-                            {rolAcudiente && r.nombre && <p className="text-xs text-muted-foreground truncate">{r.nombre}</p>}
+                            <p className="font-semibold text-foreground truncate">{a.asignatura}</p>
+                            <p className="text-xs text-muted-foreground">
+                              <span className="text-emerald-600">{a.p} P</span> · <span className="text-rose-600">{a.a} A</span> · <span className="text-amber-600">{a.e} E</span>
+                            </p>
                           </div>
-                          <Chip estado={r.estado} />
-                        </div>
+                          <span className={`text-lg font-bold ${a.pct >= 80 ? "text-emerald-600" : a.pct >= 60 ? "text-amber-600" : "text-rose-600"}`}>{a.pct}%</span>
+                        </button>
                       ))}
                     </div>
-                  </div>
-                ))}
-              </div>
-            )
+                  )}
+                </>
+              )}
+            </>
           )}
         </div>
       </main>
+
+      {/* Modal calendario por estudiante */}
+      {cal && (
+        <CalendarioEstudiante
+          estudiante={cal.estudiante}
+          contextoLabel={`${cal.asignatura} · ${cal.grado} ${cal.salon}`.trim()}
+          puedeEditar={esInterno && puedeEditar}
+          loadMonth={esInterno ? loadMonthInterno(cal.asignatura, cal.grado, cal.salon) : loadMonthSujeto(cal.asignatura, cal.estudiante.estudiante_id)}
+          onMarcar={esInterno && puedeEditar
+            ? (fecha, estado) => onMarcarCal(cal.asignatura, cal.grado, cal.salon)(cal.estudiante.estudiante_id, fecha, estado)
+            : undefined}
+          onClose={() => setCal(null)}
+        />
+      )}
     </div>
   );
 };

@@ -333,6 +333,22 @@ export interface AsistenciaRosterItem {
   excusa_motivo: string | null;
 }
 
+export interface AsistenciaHistorialEstudiante {
+  estudiante_id: string;
+  nombres: string;
+  apellidos: string;
+  avatar_url: string | null;
+}
+export interface AsistenciaRegistro {
+  estudiante_id: string;
+  fecha: string; // YYYY-MM-DD
+  estado: AsistenciaEstado;
+}
+export interface AsistenciaHistorial {
+  estudiantes: AsistenciaHistorialEstudiante[];
+  registros: AsistenciaRegistro[];
+}
+
 function qs(params: Record<string, string | number | undefined>): string {
   const u = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
@@ -529,6 +545,12 @@ export const apiClient = {
     },
     marcar(body: { asignatura: string; grado: string; salon: string; fecha: string; estudiante_id: string; estado: AsistenciaEstado }): Promise<{ ok: true; estado: AsistenciaEstado; auto_excusa: boolean }> {
       return request('/api/asistencia/marcar', { method: 'POST', body: JSON.stringify(body) });
+    },
+    historial(asignatura: string, grado: string, salon: string, desde: string, hasta: string, estudiante_id?: string): Promise<AsistenciaHistorial> {
+      return request(`/api/asistencia/historial${qs({ asignatura, grado, salon, desde, hasta, estudiante_id })}`);
+    },
+    clases(): Promise<{ clases: { asignatura: string; grado: string; salon: string }[] }> {
+      return request('/api/asistencia/clases');
     },
   },
 
