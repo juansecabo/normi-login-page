@@ -15,6 +15,7 @@ import iconActividades from "@/assets/icons/actividades.webp";
 import iconPermisos from "@/assets/icons/permisos-y-excusas.webp";
 import iconConsultas from "@/assets/icons/consultas.png";
 import iconRegistros from "@/assets/icons/registros-comportamiento.png";
+import iconAsistencia from "@/assets/icons/asistencia.webp";
 import HeaderNormi from "@/components/HeaderNormi";
 import EncabezadoColegio from "@/components/EncabezadoColegio";
 import AvatarUploader from "@/components/AvatarUploader";
@@ -101,6 +102,7 @@ const DashboardAdmin = () => {
     { id: 'registros-comportamiento', render: <Card bg="bg-amber-100 hover:bg-amber-200" icon={<img src={iconRegistros} alt="" className="w-16 h-16 object-contain" />} label="Registros de Comportamiento" onClick={() => navigate("/registros-comportamiento")} /> },
     { id: 'solicitudes-registro', render: <Card bg="bg-sky-100 hover:bg-sky-200" icon={<ClipboardList className="w-16 h-16 text-sky-700" strokeWidth={1.5} />} label="Solicitudes de Registro" onClick={() => navigate("/admin/correcciones-registro")} /> },
     { id: 'dudas-personal', render: <Card bg="bg-violet-100 hover:bg-violet-200" icon={<MessageCircleQuestion className="w-16 h-16 text-violet-700" strokeWidth={1.5} />} label="Dudas del Personal" onClick={() => navigate("/admin/dudas")} /> },
+    { id: 'asistencia', render: <Card bg="bg-blue-100 hover:bg-blue-200" icon={<img src={iconAsistencia} alt="" className="w-16 h-16 object-contain" />} label="Asistencia" onClick={() => navigate("/asistencia")} /> },
   ];
 
   return (
