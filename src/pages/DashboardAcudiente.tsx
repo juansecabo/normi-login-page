@@ -8,7 +8,6 @@ import iconConsultas from "@/assets/icons/consultas.png";
 import iconEstadisticas from "@/assets/icons/estadisticas.webp";
 import iconComunicados from "@/assets/icons/comunicados.webp";
 import iconDocumentos from "@/assets/icons/documentos.webp";
-import iconAsistencia from "@/assets/icons/asistencia.webp";
 import HeaderNormi from "@/components/HeaderNormi";
 import EncabezadoColegio from "@/components/EncabezadoColegio";
 import AvatarUploader from "@/components/AvatarUploader";
@@ -222,12 +221,6 @@ const DashboardAcudiente = () => {
       <button onClick={() => navigate("/acudiente/consultas")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-pink-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-pink-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-pink-200">
         <img src={iconConsultas} alt="" className="w-12 h-12 object-contain" />
         <span className="font-semibold text-foreground text-center">Consultas</span>
-      </button>
-    ) },
-    { id: 'asistencia', render: (
-      <button onClick={() => navigate("/asistencia")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-blue-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-blue-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-blue-200">
-        <img src={iconAsistencia} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Asistencia</span>
       </button>
     ) },
   ];

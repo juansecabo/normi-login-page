@@ -17,7 +17,6 @@ import iconEntrevista from "@/assets/icons/entrevista.webp";
 import iconPermisos from "@/assets/icons/permisos-y-excusas.webp";
 import iconConsultas from "@/assets/icons/consultas.png";
 import iconRegistros from "@/assets/icons/registros-comportamiento.png";
-import iconAsistencia from "@/assets/icons/asistencia.webp";
 import HeaderNormi from "@/components/HeaderNormi";
 import EncabezadoColegio from "@/components/EncabezadoColegio";
 import AvatarUploader from "@/components/AvatarUploader";
@@ -245,12 +244,6 @@ const DashboardRector = () => {
       <button onClick={() => navigate("/registro-normi")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-cyan-100 transition-all duration-200 hover:shadow-md hover:bg-cyan-200">
         <img src={iconRegistroAgente} alt="" className="w-12 h-12 object-contain" />
         <span className="font-semibold text-foreground text-center">Registro en Normi</span>
-      </button>
-    ) },
-    { id: 'asistencia', render: (
-      <button onClick={() => navigate("/asistencia")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-blue-100 transition-all duration-200 hover:shadow-md hover:bg-blue-200">
-        <img src={iconAsistencia} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Asistencia</span>
       </button>
     ) },
   );
