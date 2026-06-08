@@ -70,13 +70,13 @@ const CalendarioEstudiante = ({ estudiante, contextoLabel, puedeEditar, loadMont
         {/* Encabezado */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-12 h-14 rounded-[40%] overflow-hidden bg-emerald-100 ring-2 ring-emerald-200 flex items-center justify-center flex-shrink-0">
+            <div className="w-20 h-24 rounded-xl overflow-hidden bg-emerald-100 ring-2 ring-emerald-200 flex items-center justify-center flex-shrink-0 shadow-sm">
               {estudiante.avatar_url
                 ? <img src={estudiante.avatar_url} alt="" className="w-full h-full object-cover" />
-                : <span className="text-emerald-700 font-bold">{iniciales || "?"}</span>}
+                : <span className="text-3xl text-emerald-700 font-bold">{iniciales || "?"}</span>}
             </div>
             <div className="min-w-0">
-              <p className="font-bold text-foreground leading-tight truncate">{estudiante.apellidos} {estudiante.nombres}</p>
+              <p className="font-bold text-foreground leading-tight">{estudiante.apellidos} {estudiante.nombres}</p>
               <p className="text-xs text-muted-foreground truncate">{contextoLabel}</p>
             </div>
           </div>
