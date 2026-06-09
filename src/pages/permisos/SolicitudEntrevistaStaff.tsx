@@ -7,9 +7,10 @@ import { useToast } from "@/hooks/use-toast";
 import SignatureCanvas from "react-signature-canvas";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Check, ChevronDown, UserRound } from "lucide-react";
+import { CalendarIcon, Check, ChevronDown, UserRound, Plus, X } from "lucide-react";
 import FirmaImage from "@/components/FirmaImage";
 import { apiRequest } from "@/lib/apiClient";
+import { joinEntrevistadores, entrevistadoresDeSolicitud } from "@/lib/entrevistadores";
 import { es } from "date-fns/locale";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -30,6 +31,7 @@ const cargoDisplay = (cargo: string, nombres: string) => {
   if (cargo === "Profesor(a)") return `Profesor(a) ${nombres}`;
   return `${cargo} ${nombres}`;
 };
+
 
 type Tab = "crear" | "historial";
 
@@ -53,7 +55,8 @@ const SolicitudEntrevistaStaff = () => {
   const [horaAP, setHoraAP] = useState("");
   const [calOpen, setCalOpen] = useState(false);
   const [cargoEntrevista, setCargoEntrevista] = useState("");
-  const [internoEntrevista, setInternoEntrevista] = useState<Interno | null>(null);
+  const [internoPick, setInternoPick] = useState<Interno | null>(null);
+  const [entrevistadores, setEntrevistadores] = useState<Interno[]>([]);
   const [firma, setFirma] = useState<string | null>(null);
 
   // UI
@@ -108,10 +111,17 @@ const SolicitudEntrevistaStaff = () => {
   const horaEntrevista = `${horaH}:${horaM} ${horaAP}`;
   const cargosUnicos = [...new Set(internos.map(i => i.cargo))].sort();
   const internosFiltrados = internos.filter(i => !cargoEntrevista || i.cargo === cargoEntrevista);
-  const camposCompletos = estudianteSeleccionado && fechaEntrevista && horaH && horaM && horaAP && internoEntrevista && firma;
+  const camposCompletos = estudianteSeleccionado && fechaEntrevista && horaH && horaM && horaAP && entrevistadores.length > 0 && firma;
+
+  const agregarEntrevistador = () => {
+    if (!internoPick || entrevistadores.some(e => e.id === internoPick.id)) return;
+    setEntrevistadores(prev => [...prev, internoPick]);
+    setCargoEntrevista(""); setInternoPick(null);
+  };
+  const quitarEntrevistador = (id: number) => setEntrevistadores(prev => prev.filter(e => e.id !== id));
 
   const handleCrear = async () => {
-    if (!camposCompletos || !estudianteSeleccionado || !fechaEntrevista || !firma || !internoEntrevista) return;
+    if (!camposCompletos || !estudianteSeleccionado || !fechaEntrevista || !firma || entrevistadores.length === 0) return;
     setSaving(true);
 
     let firmaUrl: string | null = null;
@@ -139,9 +149,10 @@ const SolicitudEntrevistaStaff = () => {
       estudiante_apellidos: estudianteSeleccionado.apellidos,
       estudiante_grado: estudianteSeleccionado.grado,
       estudiante_salon: estudianteSeleccionado.salon,
-      solicitante_nombre: [internoEntrevista.nombres, internoEntrevista.apellidos].filter(Boolean).join(" "),
-      solicitante_cargo: internoEntrevista.cargo,
-      solicitante_id: internoEntrevista.id,
+      solicitante_nombre: [entrevistadores[0].nombres, entrevistadores[0].apellidos].filter(Boolean).join(" "),
+      solicitante_cargo: entrevistadores[0].cargo,
+      solicitante_id: entrevistadores[0].id,
+      entrevistadores: entrevistadores.map(e => ({ id: e.id, cargo: e.cargo, nombres: e.nombres, apellidos: e.apellidos })),
       creado_por: Number(session.id),
       creado_por_nombre: [session.cargo, session.nombres, session.apellidos].filter(Boolean).join(" "),
       firma_url: firmaUrl,
@@ -153,7 +164,7 @@ const SolicitudEntrevistaStaff = () => {
       // Notificar al acudiente del estudiante vía server (multi-tenant via JWT).
       // El remitente lo arma el server según el rol del usuario logueado.
       const fechaEntrevistaTexto = fechaEntrevista.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-      const entrevistaConNombre = [internoEntrevista.cargo, internoEntrevista.nombres, internoEntrevista.apellidos].filter(Boolean).join(" ");
+      const entrevistaConNombre = joinEntrevistadores(entrevistadores);
       const mensaje = `Se le informa que se ha solicitado una entrevista para el acudiente del estudiante ${estudianteSeleccionado.nombres} ${estudianteSeleccionado.apellidos} de ${estudianteSeleccionado.grado} ${estudianteSeleccionado.salon}.\n\nFecha: ${fechaEntrevistaTexto}\nHora: ${horaEntrevista}\nCon: ${entrevistaConNombre}\n\nPor favor ingrese a notasnormi.com → Permisos y Excusas → Solicitud de Entrevista, busque el día indicado, haga click sobre la citación y confirme su asistencia.`;
       apiRequest('/api/comunicados/enviar', {
         method: 'POST',
@@ -166,7 +177,7 @@ const SolicitudEntrevistaStaff = () => {
 
       toast({ title: "Solicitud creada", description: "La solicitud de entrevista fue registrada y se notificó al acudiente." });
       setGrado(""); setSalon(""); setEstudianteSeleccionado(null); setFechaEntrevista(undefined);
-      setHoraH(""); setHoraM(""); setHoraAP(""); setCargoEntrevista(""); setInternoEntrevista(null);
+      setHoraH(""); setHoraM(""); setHoraAP(""); setCargoEntrevista(""); setInternoPick(null); setEntrevistadores([]);
       setFirma(null); sigCanvas.current?.clear(); setAceptoTerminos(false);
     }
     setSaving(false); setShowConfirm(false);
@@ -258,21 +269,42 @@ const SolicitudEntrevistaStaff = () => {
                   <option value="AM">AM</option>
                   <option value="PM">PM</option>
                 </select>
-                {" "} para una entrevista con el/la {" "}
+                {" "} para una entrevista con {" "}
+                <span className="text-primary font-medium">
+                  {entrevistadores.length > 0 ? joinEntrevistadores(entrevistadores, "el/la ") : "el/la…"}
+                </span>
               </p>
 
-              {/* Selector de cargo e interno para la entrevista */}
-              <div className="flex flex-wrap gap-3 ml-4">
-                <select value={cargoEntrevista} onChange={e => { setCargoEntrevista(e.target.value); setInternoEntrevista(null); }}
-                  className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
-                  <option value="">Cargo</option>
-                  {cargosUnicos.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-                <select value={internoEntrevista ? String(internoEntrevista.id) : ""} onChange={e => setInternoEntrevista(internosFiltrados.find(i => String(i.id) === e.target.value) || null)}
-                  className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer min-w-[200px]">
-                  <option value="">Seleccionar</option>
-                  {internosFiltrados.map(i => <option key={i.id} value={String(i.id)}>{i.apellidos} {i.nombres}</option>)}
-                </select>
+              {/* Entrevistadores: chips elegidos + selector con botón + para agregar varios */}
+              <div className="ml-4 space-y-2">
+                {entrevistadores.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {entrevistadores.map(e => (
+                      <span key={e.id} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
+                        {e.cargo} {e.nombres} {e.apellidos}
+                        <button type="button" onClick={() => quitarEntrevistador(e.id)} className="text-primary/70 hover:text-primary cursor-pointer" title="Quitar">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-3 items-center">
+                  <select value={cargoEntrevista} onChange={e => { setCargoEntrevista(e.target.value); setInternoPick(null); }}
+                    className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                    <option value="">Cargo</option>
+                    {cargosUnicos.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <select value={internoPick ? String(internoPick.id) : ""} onChange={e => setInternoPick(internosFiltrados.find(i => String(i.id) === e.target.value) || null)}
+                    className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer min-w-[200px]">
+                    <option value="">Seleccionar</option>
+                    {internosFiltrados.map(i => <option key={i.id} value={String(i.id)}>{i.apellidos} {i.nombres}</option>)}
+                  </select>
+                  <button type="button" onClick={agregarEntrevistador} disabled={!internoPick}
+                    className="inline-flex items-center gap-1 px-3 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+                    <Plus className="w-4 h-4" /> Agregar
+                  </button>
+                </div>
               </div>
               <p>Agradecemos su atención y cumplimiento.</p>
               <p>Atentamente,</p>
@@ -325,7 +357,7 @@ const SolicitudEntrevistaStaff = () => {
                           <p>Fecha de solicitud: <span className="text-primary font-medium">{fmtFecha(s.fecha_solicitud)}</span></p>
                           <p>Estudiante: <span className="text-primary font-medium">{s.estudiante_nombre} {s.estudiante_apellidos}</span> — {s.estudiante_grado} {s.estudiante_salon}</p>
                           <p>Entrevista el día: <span className="text-primary font-medium">{fmtFecha(s.fecha_entrevista)}</span> a las <span className="text-primary font-medium">{s.hora_entrevista}</span></p>
-                          <p>Entrevista con: <span className="text-primary font-medium">{s.solicitante_cargo} {s.solicitante_nombre}</span></p>
+                          <p>Entrevista con: <span className="text-primary font-medium">{entrevistadoresDeSolicitud(s, "el/la ")}</span></p>
                           {s.creado_por_nombre && <p>Creado por: <span className="text-primary font-medium">{s.creado_por_nombre}</span></p>}
                           {s.firma_url && <div><p className="font-medium mb-1">Firma:</p><FirmaImage url={s.firma_url} /></div>}
                           {s.observaciones_padre && <p>Observaciones del acudiente: <span className="text-primary font-medium">{s.observaciones_padre}</span></p>}

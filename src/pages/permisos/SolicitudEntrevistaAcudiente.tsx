@@ -7,6 +7,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { es } from "date-fns/locale";
 import { UserRound, X, ChevronDown, Check, XCircle } from "lucide-react";
 import FirmaImage from "@/components/FirmaImage";
+import { entrevistadoresDeSolicitud } from "@/lib/entrevistadores";
 
 const GRADO_ORDEN: Record<string, number> = {
   "Párvulo":0,"Prejardín":1,"Jardín":2,"Transición":3,"Primero":4,"Segundo":5,"Tercero":6,
@@ -110,7 +111,7 @@ const SolicitudEntrevistaAcudiente = () => {
                             <button onClick={() => setExpandedId(isExp ? null : s.id)} className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors cursor-pointer">
                               <div>
                                 <p className="font-semibold text-foreground text-sm">{s.estudiante_nombre} {s.estudiante_apellidos}</p>
-                                <p className="text-xs text-muted-foreground">Hora: {s.hora_entrevista} — Con: {s.solicitante_cargo} {s.solicitante_nombre}</p>
+                                <p className="text-xs text-muted-foreground">Hora: {s.hora_entrevista} — Con: {entrevistadoresDeSolicitud(s)}</p>
                               </div>
                               <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${isExp ? "rotate-180" : ""}`} />
                             </button>
@@ -128,10 +129,10 @@ const SolicitudEntrevistaAcudiente = () => {
                                 <p>Grado: <span className="text-primary font-medium">{s.estudiante_grado} {s.estudiante_salon}</span></p>
                                 <p>ACUDIENTE DEL ESTUDIANTE: <span className="text-primary font-medium">{s.estudiante_nombre} {s.estudiante_apellidos}</span></p>
                                 <p>Cordial Saludo,</p>
-                                <p>Por este medio nos permitimos solicitar su presencia en el colegio el día <span className="text-primary font-medium">{fmtFecha(s.fecha_entrevista)}</span> Hora: <span className="text-primary font-medium">{s.hora_entrevista}</span> para una entrevista con el/la <span className="text-primary font-medium">{s.solicitante_cargo} {s.solicitante_nombre}</span></p>
+                                <p>Por este medio nos permitimos solicitar su presencia en el colegio el día <span className="text-primary font-medium">{fmtFecha(s.fecha_entrevista)}</span> Hora: <span className="text-primary font-medium">{s.hora_entrevista}</span> para una entrevista con <span className="text-primary font-medium">{entrevistadoresDeSolicitud(s, "el/la ")}</span></p>
                                 <p>Agradecemos su atención y cumplimiento.</p>
                                 <p>Atentamente,</p>
-                                <p className="text-primary font-medium">{s.solicitante_cargo} {s.solicitante_nombre}</p>
+                                <p className="text-primary font-medium">{s.creado_por_nombre || `${s.solicitante_cargo} ${s.solicitante_nombre}`}</p>
                                 {s.firma_url && <div><p className="font-medium mb-1">Firma del solicitante:</p><FirmaImage url={s.firma_url} /></div>}
 
                                 {/* Confirmar asistencia */}
