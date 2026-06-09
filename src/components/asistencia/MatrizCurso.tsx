@@ -89,12 +89,30 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
       const wb = new ExcelJS.Workbook();
       const ws = wb.addWorksheet("Asistencia");
 
+      const thin = { style: "thin" as const, color: { argb: "FFCBD5E1" } };
+      const bordes = { top: thin, left: thin, bottom: thin, right: thin };
+
       const headers = ["Apellidos", "Nombres", ...fechas.map(fechaCorta), ...(unDia ? [] : ["% Asistencia"])];
+      const nCols = headers.length;
+
+      // Título con la clase y el rango (para que se identifique e imprima bien).
+      const t1 = ws.addRow([`Asistencia · ${asignatura}`]);
+      ws.mergeCells(1, 1, 1, nCols);
+      t1.getCell(1).font = { bold: true, size: 14, color: { argb: "FF166534" } };
+      t1.getCell(1).alignment = { horizontal: "left", vertical: "middle" };
+      const t2 = ws.addRow([`${grado} ${salon}  ·  ${rangoLabel}`]);
+      ws.mergeCells(2, 1, 2, nCols);
+      t2.getCell(1).font = { size: 11, color: { argb: "FF6B7280" } };
+      t2.getCell(1).alignment = { horizontal: "left", vertical: "middle" };
+      ws.addRow([]); // separador
+
       const hr = ws.addRow(headers);
       hr.eachCell((cell) => {
-        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF16A34A" } };
+        // Verde OSCURO en el encabezado, distinto del verde claro de "Presente".
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF166534" } };
         cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
         cell.alignment = { horizontal: "center", vertical: "middle" };
+        cell.border = bordes;
       });
 
       data.estudiantes.forEach((e) => {
@@ -104,19 +122,27 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
           ...fechas.map((f) => { const s = fila.get(f); return s ? ESTADO_UI[s].label : ""; }),
           ...(unDia ? [] : [`${resumen([...fila.values()].map((estado) => ({ estado }))).pct}%`]),
         ]);
-        row.eachCell((cell, col) => {
+        row.eachCell({ includeEmpty: true }, (cell, col) => {
           cell.alignment = { horizontal: col <= 2 ? "left" : "center", vertical: "middle" };
+          cell.border = bordes;
           if (col >= 3 && col <= 2 + fechas.length) {
             const s = fila.get(fechas[col - 3]);
-            if (s) {
+            if (s === "presente") {
+              // Presente: verde CLARO con texto oscuro → se diferencia del encabezado.
+              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFBBF7D0" } };
+              cell.font = { color: { argb: "FF166534" }, bold: true };
+            } else if (s) {
               cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ESTADO_UI[s].excel } };
               cell.font = { color: { argb: "FFFFFFFF" }, bold: true };
             }
           }
         });
       });
-      ws.getColumn(1).width = 22; ws.getColumn(2).width = 18;
-      for (let c = 3; c <= headers.length; c++) ws.getColumn(c).width = 8;
+
+      ws.getColumn(1).width = 24; ws.getColumn(2).width = 18;
+      for (let c = 3; c <= nCols; c++) ws.getColumn(c).width = 9;
+      if (!unDia) ws.getColumn(nCols).width = 14; // "% Asistencia" no se corta
+      ws.views = [{ state: "frozen", xSplit: 2, ySplit: 4 }]; // fija nombres + encabezado
 
       const buffer = await wb.xlsx.writeBuffer();
       saveAs(new Blob([buffer]), `Asistencia - ${asignatura} - ${grado} ${salon} - ${rangoLabel}.xlsx`);
