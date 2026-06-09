@@ -44,6 +44,7 @@ import DudasAdmin from "./pages/admin/DudasAdmin";
 import EstadisticasProfesor from "./pages/profesor/EstadisticasProfesor";
 import ProgramarActividad from "./pages/profesor/ProgramarActividad";
 import Asistencia from "./pages/profesor/Asistencia";
+import AsistenciaMenu from "./pages/profesor/AsistenciaMenu";
 import ConsultaAsistencia from "./pages/ConsultaAsistencia";
 import ComunicadosProfesor from "./pages/profesor/ComunicadosProfesor";
 import DocumentosProfesor from "./pages/profesor/DocumentosProfesor";
@@ -148,7 +149,8 @@ const App = () => (
           {/* Rutas para Profesor */}
           <Route path="/profesor/estadisticas" element={<EstadisticasProfesor />} />
           <Route path="/profesor/programar-actividad" element={<ProgramarActividad />} />
-          <Route path="/profesor/asistencia" element={<Asistencia />} />
+          <Route path="/profesor/asistencia" element={<AsistenciaMenu />} />
+          <Route path="/profesor/asistencia/tomar" element={<Asistencia />} />
           <Route path="/asistencia" element={<ConsultaAsistencia />} />
           <Route path="/profesor/comunicados" element={<ComunicadosProfesor />} />
           <Route path="/rector/comunicados-recibidos" element={<ComunicadosRecibidos />} />
