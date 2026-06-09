@@ -11,11 +11,13 @@ import { supabase } from "@/integrations/supabase/client";
 export interface NombresUsuario {
   nombres: string;
   apellidos: string;
+  // Vive en Usuarios (antes en Estudiantes). Null para quien no la tenga.
+  fecha_de_nacimiento: string | null;
 }
 
 /**
  * Batch lookup de nombres en `Usuarios` por una lista de ids.
- * Devuelve un Map<string-id, {nombres, apellidos}>.
+ * Devuelve un Map<string-id, {nombres, apellidos, fecha_de_nacimiento}>.
  */
 export async function fetchNombresPorIds(ids: Array<string | number>): Promise<Map<string, NombresUsuario>> {
   const map = new Map<string, NombresUsuario>();
@@ -28,12 +30,13 @@ export async function fetchNombresPorIds(ids: Array<string | number>): Promise<M
     const slice = unique.slice(i, i + CHUNK);
     const { data } = await supabase
       .from("Usuarios")
-      .select("id, nombres, apellidos")
+      .select("id, nombres, apellidos, fecha_de_nacimiento")
       .in("id", slice);
-    for (const u of (data || []) as Array<{ id: string | number; nombres: string | null; apellidos: string | null }>) {
+    for (const u of (data || []) as Array<{ id: string | number; nombres: string | null; apellidos: string | null; fecha_de_nacimiento: string | null }>) {
       map.set(String(u.id), {
         nombres: u.nombres || "",
         apellidos: u.apellidos || "",
+        fecha_de_nacimiento: u.fecha_de_nacimiento ?? null,
       });
     }
   }
@@ -52,7 +55,7 @@ export async function enrichWithNombres<T extends { id: number | string }>(
   const map = await fetchNombresPorIds(rows.map((r) => r.id));
   return rows.map((r) => {
     const u = map.get(String(r.id));
-    return { ...r, nombres: u?.nombres || "", apellidos: u?.apellidos || "" };
+    return { ...r, nombres: u?.nombres || "", apellidos: u?.apellidos || "", fecha_de_nacimiento: u?.fecha_de_nacimiento ?? null };
   });
 }
 

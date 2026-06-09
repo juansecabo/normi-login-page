@@ -285,7 +285,7 @@ const RegistrosComportamiento = () => {
     const cargar = async () => {
       const [regsR, estsR, asigR, internoR] = await Promise.all([
         supabase.from("Registros_Comportamiento").select("*").order("fecha", { ascending: false }).order("created_at", { ascending: false }),
-        supabase.from("Estudiantes").select("id, grado, salon, fecha_de_nacimiento"),
+        supabase.from("Estudiantes").select("id, grado, salon"),
         isProfesor()
           ? supabase.from("Asignación Profesores").select('"Asignatura(s)", "Grado(s)", "Salon(es)"').eq("id", parseInt(session.id!))
           : Promise.resolve({ data: [] as any[] }),
