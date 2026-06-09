@@ -320,7 +320,10 @@ const Asistencia = () => {
                   <span className="text-rose-600 font-semibold">{conteo.ausente} ausente</span>
                   <span className="text-amber-600 font-semibold">{conteo.excusa} con excusa</span>
                 </div>
-                <div className="flex gap-3 justify-center">
+                <div className="flex flex-wrap gap-3 justify-center">
+                  <button onClick={volverAnterior} className="px-4 py-2 rounded-lg border border-border text-foreground hover:bg-muted flex items-center gap-1.5">
+                    <RotateCcw className="w-4 h-4" /> Volver al anterior
+                  </button>
                   <button onClick={() => setIdx(0)} className="px-4 py-2 rounded-lg border border-border text-foreground hover:bg-muted">Revisar de nuevo</button>
                   <button onClick={() => navigate("/dashboard")} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90">Terminar</button>
                 </div>
