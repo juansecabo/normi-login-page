@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getSession, isProfesor, isAdmin } from "@/hooks/useSession";
 import { supabase } from "@/integrations/supabase/client";
 import { apiClient, type AsistenciaRosterItem, type AsistenciaEstado } from "@/lib/apiClient";
-import HeaderNormi from "@/components/HeaderNormi";
+import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNormi";
 import EncabezadoColegio from "@/components/EncabezadoColegio";
 import { useToast } from "@/hooks/use-toast";
 import { rankGrado } from "@/utils/grados";
@@ -217,6 +217,15 @@ const Asistencia = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <HeaderNormi backLink="/dashboard" />
       <main className="flex-1 container mx-auto p-6 md:p-8">
+        <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
+          <div className="flex items-center gap-2 text-sm">
+            <button onClick={() => navigate(computeBackLinkFromSession())} className="text-primary hover:underline">Inicio</button>
+            <span className="text-muted-foreground">&rarr;</span>
+            <button onClick={() => navigate("/profesor/asistencia")} className="text-primary hover:underline">Asistencia</button>
+            <span className="text-muted-foreground">&rarr;</span>
+            <span className="text-foreground font-medium">Tomar asistencia</span>
+          </div>
+        </div>
         <EncabezadoColegio />
 
         {step === "select" && (

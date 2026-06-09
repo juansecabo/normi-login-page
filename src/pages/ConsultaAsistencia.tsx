@@ -117,12 +117,20 @@ const ConsultaAsistencia = () => {
           <div className="flex items-center gap-2 text-sm">
             <button onClick={() => navigate(computeBackLinkFromSession())} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
-            <span className="text-foreground font-medium">Asistencia</span>
+            {isProfesor() ? (
+              <>
+                <button onClick={() => navigate("/profesor/asistencia")} className="text-primary hover:underline">Asistencia</button>
+                <span className="text-muted-foreground">&rarr;</span>
+                <span className="text-foreground font-medium">Registro de asistencia</span>
+              </>
+            ) : (
+              <span className="text-foreground font-medium">Asistencia</span>
+            )}
           </div>
         </div>
         <EncabezadoColegio />
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-2xl font-bold text-foreground mb-1 text-center">Asistencia</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-1 text-center">{isProfesor() ? "Registro de asistencia" : "Asistencia"}</h2>
 
           {/* ═══════════ INTERNOS ═══════════ */}
           {esInterno && (
