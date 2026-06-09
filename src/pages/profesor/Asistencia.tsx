@@ -7,7 +7,7 @@ import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNorm
 import EncabezadoColegio from "@/components/EncabezadoColegio";
 import { useToast } from "@/hooks/use-toast";
 import { rankGrado } from "@/utils/grados";
-import { Check, X, FileText, ArrowLeft } from "lucide-react";
+import { Check, X, FileText, ArrowLeft, RotateCcw } from "lucide-react";
 
 interface AsignacionRow {
   "Asignatura(s)": string[] | string[][];
@@ -212,6 +212,18 @@ const Asistencia = () => {
     else setDrag(null);
   };
 
+  // Volver al estudiante anterior para corregir su marca (re-deslizar lo
+  // sobrescribe). Si ya se envió notificación de inasistencia, esa ya salió;
+  // esto deja al menos el REGISTRO correcto.
+  const volverAnterior = () => {
+    if (idx <= 0 || leaving) return;
+    if (rafRef.current != null) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+    startRef.current = null;
+    pendingRef.current = null;
+    setDrag(null);
+    setIdx((i) => Math.max(0, i - 1));
+  };
+
   // Estilo de la tarjeta superior: solo arrastre o regreso al centro si NO se
   // pasó el umbral. (Cuando sí se pasa, la salida la maneja la capa `leaving`.)
   const cardStyle = (): React.CSSProperties => {
@@ -340,7 +352,11 @@ const Asistencia = () => {
                 </div>
 
                 {/* Botones equivalentes */}
-                <div className="flex items-center justify-center gap-6 mt-6">
+                <div className="flex items-center justify-center gap-5 mt-6">
+                  <button onClick={volverAnterior} disabled={idx === 0} title="Volver al anterior"
+                    className="w-12 h-12 rounded-full bg-muted text-foreground flex items-center justify-center shadow hover:scale-105 transition disabled:opacity-40 disabled:hover:scale-100">
+                    <RotateCcw className="w-5 h-5" />
+                  </button>
                   <button onClick={() => commit("ausente")} title="Ausente"
                     className="w-16 h-16 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-lg hover:scale-105 transition">
                     <X className="w-8 h-8" />
