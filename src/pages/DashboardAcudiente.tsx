@@ -4,6 +4,7 @@ import { getSession, isPadreDeFamilia, AcudidoData } from "@/hooks/useSession";
 import iconNotas from "@/assets/icons/notas.webp";
 import iconActividades from "@/assets/icons/actividades.webp";
 import iconPermisos from "@/assets/icons/permisos-y-excusas.webp";
+import iconEntrevista from "@/assets/icons/entrevista.webp";
 import iconConsultas from "@/assets/icons/consultas.png";
 import iconEstadisticas from "@/assets/icons/estadisticas.webp";
 import iconComunicados from "@/assets/icons/comunicados.webp";
@@ -210,6 +211,12 @@ const DashboardAcudiente = () => {
       <button onClick={() => navigate("/permisos-excusas")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-rose-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-rose-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-rose-200">
         <img src={iconPermisos} alt="" className="w-12 h-12 object-contain" />
         <span className="font-semibold text-foreground text-center">Permisos y Excusas</span>
+      </button>
+    ) },
+    { id: 'solicitud-entrevista', render: (
+      <button onClick={() => navigate("/solicitud-entrevista")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-indigo-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-indigo-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-indigo-200">
+        <img src={iconEntrevista} alt="" className="w-12 h-12 object-contain" />
+        <span className="font-semibold text-foreground text-center">Solicitud de Entrevista</span>
       </button>
     ) },
     { id: 'estadisticas', render: (

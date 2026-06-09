@@ -182,6 +182,10 @@ const App = () => (
           <Route path="/permisos-excusas/inasistencia-staff" element={<JustificacionInasistenciaStaff />} />
           <Route path="/permisos-excusas/uniforme" element={<JustificacionUniforme />} />
           <Route path="/permisos-excusas/uniforme-staff" element={<JustificacionUniformeStaff />} />
+          {/* Solicitud de Entrevista — ficha propia del dashboard. Las rutas
+              /permisos-excusas/entrevista* se conservan como alias (links viejos). */}
+          <Route path="/solicitud-entrevista" element={<SolicitudEntrevistaAcudiente />} />
+          <Route path="/solicitud-entrevista-staff" element={<SolicitudEntrevistaStaff />} />
           <Route path="/permisos-excusas/entrevista" element={<SolicitudEntrevistaAcudiente />} />
           <Route path="/permisos-excusas/entrevista-staff" element={<SolicitudEntrevistaStaff />} />
 

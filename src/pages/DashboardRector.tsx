@@ -185,6 +185,12 @@ const DashboardRector = () => {
         <span className="font-semibold text-foreground text-center">Permisos y Excusas</span>
       </button>
     ) },
+    { id: 'solicitud-entrevista', render: (
+      <button onClick={() => navigate("/solicitud-entrevista-staff")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-indigo-100 transition-all duration-200 hover:shadow-md hover:bg-indigo-200">
+        <img src={iconEntrevista} alt="" className="w-12 h-12 object-contain" />
+        <span className="font-semibold text-foreground text-center">Solicitud de Entrevista</span>
+      </button>
+    ) },
     { id: 'estadisticas', render: (
       <button onClick={() => navigate("/rector/estadisticas")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-green-100 transition-all duration-200 hover:shadow-md hover:bg-green-200">
         <img src={iconEstadisticas} alt="" className="w-12 h-12 object-contain" />

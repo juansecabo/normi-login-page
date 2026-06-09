@@ -74,8 +74,6 @@ const SolicitudEntrevistaAcudiente = () => {
           <div className="flex items-center gap-2 text-sm flex-wrap">
             <button onClick={() => navigate("/dashboard-acudiente")} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
-            <button onClick={() => navigate("/permisos-excusas")} className="text-primary hover:underline">Permisos y Excusas</button>
-            <span className="text-muted-foreground">&rarr;</span>
             <span className="text-foreground font-medium">Solicitudes de Entrevista</span>
           </div>
         </div>

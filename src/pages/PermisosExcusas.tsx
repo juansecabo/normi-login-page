@@ -6,7 +6,6 @@ import HeaderNormi from "@/components/HeaderNormi";
 import iconRetiro from "@/assets/icons/retiro-estudiantes.webp";
 import iconInasistencia from "@/assets/icons/inasistencia.webp";
 import iconUniforme from "@/assets/icons/uniforme.webp";
-import iconEntrevista from "@/assets/icons/entrevista.webp";
 import { getAllLastSeen } from "@/utils/notificaciones";
 
 const Badge = ({ count }: { count: number }) => {
@@ -88,7 +87,7 @@ const PermisosExcusas = () => {
             Selecciona el tipo de solicitud
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <button
               onClick={() => navigate(isPadreDeFamilia() ? "/permisos-excusas/retiro" : "/permisos-excusas/retiro-staff")}
               className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-red-50 border-2 border-red-200 transition-all duration-200 hover:shadow-md hover:bg-red-100 hover:scale-[1.02] cursor-pointer"
@@ -122,15 +121,6 @@ const PermisosExcusas = () => {
               </span>
             </button>
 
-            <button
-              onClick={() => navigate(isPadreDeFamilia() ? "/permisos-excusas/entrevista" : "/permisos-excusas/entrevista-staff")}
-              className="flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-blue-50 border-2 border-blue-200 transition-all duration-200 hover:shadow-md hover:bg-blue-100 hover:scale-[1.02] cursor-pointer"
-            >
-              <img src={iconEntrevista} alt="" className="w-16 h-16 object-contain" />
-              <span className="font-semibold text-foreground text-center">
-                Solicitud de Entrevista
-              </span>
-            </button>
           </div>
         </div>
       </main>

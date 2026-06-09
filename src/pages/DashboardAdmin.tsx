@@ -13,6 +13,7 @@ import iconSugerencias from "@/assets/icons/sugerencias.webp";
 import iconConversaciones from "@/assets/icons/conversaciones.webp";
 import iconActividades from "@/assets/icons/actividades.webp";
 import iconPermisos from "@/assets/icons/permisos-y-excusas.webp";
+import iconEntrevista from "@/assets/icons/entrevista.webp";
 import iconConsultas from "@/assets/icons/consultas.png";
 import iconRegistros from "@/assets/icons/registros-comportamiento.png";
 import iconAsistencia from "@/assets/icons/asistencia.webp";
@@ -98,6 +99,7 @@ const DashboardAdmin = () => {
     { id: 'registro-normi', render: <Card bg="bg-cyan-100 hover:bg-cyan-200" icon={<img src={iconRegistroAgente} alt="" className="w-16 h-16 object-contain" />} label="Registro en Normi" onClick={() => navigate("/registro-normi")} /> },
     { id: 'conversaciones', render: <Card bg="bg-blue-100 hover:bg-blue-200" icon={<img src={iconConversaciones} alt="" className="w-16 h-16 object-contain" />} label="Conversaciones" onClick={() => window.open("https://chat.notasnormi.com", "_blank")} /> },
     { id: 'permisos-excusas', render: <Card bg="bg-rose-100 hover:bg-rose-200" badge={permisosTotal} icon={<img src={iconPermisos} alt="" className="w-16 h-16 object-contain" />} label="Permisos y Excusas" onClick={() => navigate("/permisos-excusas")} /> },
+    { id: 'solicitud-entrevista', render: <Card bg="bg-indigo-100 hover:bg-indigo-200" icon={<img src={iconEntrevista} alt="" className="w-16 h-16 object-contain" />} label="Solicitud de Entrevista" onClick={() => navigate("/solicitud-entrevista-staff")} /> },
     { id: 'consultas', render: <Card bg="bg-pink-100 hover:bg-pink-200" icon={<img src={iconConsultas} alt="" className="w-16 h-16 object-contain" />} label="Consultas" onClick={() => navigate("/consultas")} /> },
     { id: 'registros-comportamiento', render: <Card bg="bg-amber-100 hover:bg-amber-200" icon={<img src={iconRegistros} alt="" className="w-16 h-16 object-contain" />} label="Registros de Comportamiento" onClick={() => navigate("/registros-comportamiento")} /> },
     { id: 'solicitudes-registro', render: <Card bg="bg-sky-100 hover:bg-sky-200" icon={<ClipboardList className="w-16 h-16 text-sky-700" strokeWidth={1.5} />} label="Solicitudes de Registro" onClick={() => navigate("/admin/correcciones-registro")} /> },
