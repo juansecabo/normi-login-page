@@ -132,6 +132,8 @@ const Asistencia = () => {
     return c;
   }, [roster]);
   const marcados = roster.filter((r) => r.estado).length;
+  // Concuerda el sustantivo: singular SOLO si es exactamente 1; plural para 0 o más de 1.
+  const pl = (n: number, singular: string, plural: string) => `${n} ${n === 1 ? singular : plural}`;
 
   // Intención de swipe en vivo (para overlay de color).
   const intencion: AsistenciaEstado | null = useMemo(() => {
@@ -314,11 +316,11 @@ const Asistencia = () => {
               // Resumen final
               <div className="bg-card rounded-2xl shadow-soft p-8 text-center">
                 <p className="text-lg font-bold text-foreground mb-2">¡Asistencia completa!</p>
-                <p className="text-sm text-muted-foreground mb-4">Marcaste {roster.length} estudiantes de {grado} {salon}.</p>
+                <p className="text-sm text-muted-foreground mb-4">Marcaste {pl(roster.length, "estudiante", "estudiantes")} de {grado} {salon}.</p>
                 <div className="flex justify-center gap-4 text-sm mb-6">
-                  <span className="text-emerald-600 font-semibold">{conteo.presente} presente</span>
-                  <span className="text-rose-600 font-semibold">{conteo.ausente} ausente</span>
-                  <span className="text-amber-600 font-semibold">{conteo.excusa} con excusa</span>
+                  <span className="text-emerald-600 font-semibold">{pl(conteo.presente, "presente", "presentes")}</span>
+                  <span className="text-rose-600 font-semibold">{pl(conteo.ausente, "ausente", "ausentes")}</span>
+                  <span className="text-amber-600 font-semibold">{pl(conteo.excusa, "con excusa", "con excusas")}</span>
                 </div>
                 <div className="flex flex-wrap gap-3 justify-center">
                   <button onClick={volverAnterior} className="px-4 py-2 rounded-lg border border-border text-foreground hover:bg-muted flex items-center gap-1.5">
