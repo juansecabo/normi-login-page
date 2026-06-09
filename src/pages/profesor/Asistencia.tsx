@@ -54,6 +54,13 @@ const Asistencia = () => {
   // Drag de la tarjeta superior + tarjeta "saliendo" (se va de verdad, no rebota).
   const startRef = useRef<{ x: number; y: number } | null>(null);
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
+  // Throttle del arrastre: en el celular llegan muchos eventos por frame; si
+  // hacemos setState en cada uno, se satura y la tarjeta se ve "retrasada".
+  // Guardamos el último delta en un ref y solo hacemos setDrag una vez por frame.
+  const pendingRef = useRef<{ x: number; y: number } | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const cardElRef = useRef<HTMLDivElement>(null);
+  const transformFor = (d: { x: number; y: number }) => `translate(${d.x}px, ${d.y}px) rotate(${d.x * 0.04}deg)`;
   const [leaving, setLeaving] = useState<{ item: AsistenciaRosterItem; dir: AsistenciaEstado; fromX: number; fromY: number } | null>(null);
   const [leavingGo, setLeavingGo] = useState(false);
 
@@ -135,7 +142,7 @@ const Asistencia = () => {
     return null;
   }, [drag]);
 
-  const commit = (estado: AsistenciaEstado) => {
+  const commit = (estado: AsistenciaEstado, from?: { x: number; y: number } | null) => {
     if (!actual || leaving) return;
     const est = actual;
     // Guardar en el server (optimista). La respuesta puede convertirlo en excusa.
@@ -154,7 +161,8 @@ const Asistencia = () => {
     // La tarjeta sale como capa independiente y el mazo avanza al instante (la de
     // abajo queda mostrándose). NO rebota.
     setRoster((prev) => prev.map((x) => (x.estudiante_id === est.estudiante_id ? { ...x, estado } : x)));
-    setLeaving({ item: est, dir: estado, fromX: drag?.x ?? 0, fromY: drag?.y ?? 0 });
+    const f = from ?? drag;
+    setLeaving({ item: est, dir: estado, fromX: f?.x ?? 0, fromY: f?.y ?? 0 });
     setIdx((i) => i + 1);
     setDrag(null);
     startRef.current = null;
@@ -171,33 +179,49 @@ const Asistencia = () => {
   const onPointerDown = (e: React.PointerEvent) => {
     if (leaving) return;
     startRef.current = { x: e.clientX, y: e.clientY };
+    pendingRef.current = { x: 0, y: 0 };
     setDrag({ x: 0, y: 0 });
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   };
   const onPointerMove = (e: React.PointerEvent) => {
     if (!startRef.current) return;
-    setDrag({ x: e.clientX - startRef.current.x, y: e.clientY - startRef.current.y });
+    pendingRef.current = { x: e.clientX - startRef.current.x, y: e.clientY - startRef.current.y };
+    // Mover la tarjeta YA, imperativamente (sigue el dedo 1:1, sin re-render).
+    if (cardElRef.current) cardElRef.current.style.transform = transformFor(pendingRef.current);
+    // Y refrescar el estado UNA vez por frame, solo para el tinte de intención.
+    if (rafRef.current == null) {
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null;
+        if (startRef.current && pendingRef.current) setDrag(pendingRef.current);
+      });
+    }
   };
   const onPointerUp = () => {
     if (!startRef.current) return;
-    const d = drag;
+    if (rafRef.current != null) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+    const d = pendingRef.current; // el delta más reciente, sin depender del último render
     startRef.current = null;
+    pendingRef.current = null;
     const est = d
       ? d.y > THRESH && d.y > Math.abs(d.x) ? "excusa"
         : d.x > THRESH ? "presente"
         : d.x < -THRESH ? "ausente"
         : null
       : null;
-    if (est) commit(est as AsistenciaEstado);
+    if (est) commit(est as AsistenciaEstado, d);
     else setDrag(null);
   };
 
   // Estilo de la tarjeta superior: solo arrastre o regreso al centro si NO se
   // pasó el umbral. (Cuando sí se pasa, la salida la maneja la capa `leaving`.)
   const cardStyle = (): React.CSSProperties => {
-    if (drag) {
-      return { transform: `translate(${drag.x}px, ${drag.y}px) rotate(${drag.x * 0.04}deg)`, transition: startRef.current ? "none" : "transform .2s ease-out" };
+    // Durante el arrastre activo la posición la manda el ref (último delta) y se
+    // actualiza imperativamente en cada move → la tarjeta sigue el dedo 1:1 sin
+    // depender de los re-renders de React. Sin transición para que no "arrastre".
+    if (startRef.current && pendingRef.current) {
+      return { transform: transformFor(pendingRef.current), transition: "none" };
     }
+    // Soltó sin pasar el umbral → vuelve al centro suavemente.
     return { transform: "translate(0,0)", transition: "transform .2s ease-out" };
   };
 
@@ -297,6 +321,7 @@ const Asistencia = () => {
                   {actual && (
                     <div
                       key={actual.estudiante_id}
+                      ref={cardElRef}
                       className="absolute inset-0 z-20"
                       style={cardStyle()}
                       onPointerDown={onPointerDown}
