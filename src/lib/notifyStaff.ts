@@ -63,6 +63,7 @@ interface NotifyOptions {
   perfiles: string[];             // ej ["Rector","Coordinadores"]
   aula?: Aula;
   destinatariosLabel: string;     // ej "Rector y Coordinadores" o "Rector, Coordinadores y profesores de 7 2"
+  ids?: string[];                 // cédulas exactas — limita el envío a esas personas dentro de los perfiles
 }
 
 async function postComunicadoSistema(opts: NotifyOptions): Promise<void> {
@@ -76,6 +77,9 @@ async function postComunicadoSistema(opts: NotifyOptions): Promise<void> {
   if (opts.aula) {
     segmento.grados = [opts.aula.grado];
     segmento.salones = [opts.aula.salon];
+  }
+  if (opts.ids && opts.ids.length > 0) {
+    segmento.id_destinatarios = opts.ids;
   }
 
   const body = {
@@ -150,6 +154,34 @@ export async function notifyOrientadora(
     });
   } catch (e) {
     console.warn('notifyOrientadora falló:', e);
+  }
+}
+
+// Todos los perfiles staff que acepta el modo as_system. Se usan en conjunto
+// cuando el destinatario es UNA persona puntual (por cédula) cuyo cargo no se
+// conoce de antemano: el resolver solo entrega al que coincide con la cédula.
+const PERFILES_STAFF_TODOS = [
+  "Rector", "Coordinadores", "Profesores", "Administrativos",
+  "Secretaria General", "Orientadores", "Administradores",
+];
+
+// Notifica a UN miembro del staff específico por su cédula, sin importar su cargo.
+export async function notifyInternoPorCedula(
+  mensaje: string,
+  remitenteTag: string,
+  cedula: string | number,
+  destinatariosLabel: string,
+): Promise<void> {
+  try {
+    await postComunicadoSistema({
+      mensaje,
+      remitenteTag,
+      perfiles: PERFILES_STAFF_TODOS,
+      destinatariosLabel,
+      ids: [String(cedula)],
+    });
+  } catch (e) {
+    console.warn('notifyInternoPorCedula falló:', e);
   }
 }
 
