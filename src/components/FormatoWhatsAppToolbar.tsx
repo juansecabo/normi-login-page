@@ -1,101 +1,166 @@
-import { RefObject } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, RefObject } from "react";
 import { Bold, Italic } from "lucide-react";
 
 /**
- * Botonera B / I para textareas cuyo contenido se envía por WhatsApp.
- * WhatsApp formatea *negrilla* y _cursiva_, así que los botones envuelven
- * la selección con esos marcadores, estilo Word: seleccionar y pulsar
- * aplica; volver a pulsar sobre lo ya formateado lo quita (toggle).
- * También soporta Ctrl+B / Ctrl+I vía handleFormatoKeyDown.
+ * Editor WYSIWYG para comunicados que viajan por WhatsApp.
+ * En pantalla el texto se VE en negrilla/cursiva (como Word); por dentro el
+ * valor que se emite usa el formato de WhatsApp (*negrilla*, _cursiva_), que
+ * es lo que de verdad se envía y lo que cuenta caracteres.
  */
 
-export function aplicarFormatoWhatsApp(
-  textarea: HTMLTextAreaElement | null,
-  marcador: "*" | "_",
-  valor: string,
-  setValor: (v: string) => void,
-): void {
-  if (!textarea) return;
-  const start = textarea.selectionStart ?? 0;
-  const end = textarea.selectionEnd ?? 0;
-  if (start === end) { textarea.focus(); return; } // sin selección no hay qué formatear
+// ── HTML del editor → texto WhatsApp ───────────────────────────────────────
+function htmlToWhatsApp(root: HTMLElement | null): string {
+  if (!root) return "";
+  type Seg = { t: string; b: boolean; i: boolean };
+  const segs: Seg[] = [];
 
-  const antes = valor.slice(0, start);
-  const sel = valor.slice(start, end);
-  const despues = valor.slice(end);
+  const walk = (node: Node, b: boolean, i: boolean) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      segs.push({ t: node.textContent || "", b, i });
+      return;
+    }
+    if (!(node instanceof HTMLElement)) return;
+    const tag = node.tagName;
+    if (tag === "BR") { segs.push({ t: "\n", b: false, i: false }); return; }
+    const fw = node.style.fontWeight;
+    const nb = b || tag === "B" || tag === "STRONG" || fw === "bold" || (parseInt(fw, 10) || 0) >= 600;
+    const ni = i || tag === "I" || tag === "EM" || node.style.fontStyle === "italic";
+    // Cada bloque (línea del editor) inicia en línea nueva.
+    if ((tag === "DIV" || tag === "P") && segs.length > 0 && segs[segs.length - 1].t !== "\n") {
+      segs.push({ t: "\n", b: false, i: false });
+    }
+    node.childNodes.forEach((c) => walk(c, nb, ni));
+  };
+  root.childNodes.forEach((c) => walk(c, false, false));
 
-  let nuevo: string;
-  let selStart: number;
-  let selEnd: number;
-
-  if (sel.length >= 2 && sel.startsWith(marcador) && sel.endsWith(marcador)) {
-    // La selección incluye los marcadores → quitarlos
-    nuevo = antes + sel.slice(1, -1) + despues;
-    selStart = start;
-    selEnd = end - 2;
-  } else if (antes.endsWith(marcador) && despues.startsWith(marcador)) {
-    // Los marcadores están justo afuera de la selección → quitarlos
-    nuevo = antes.slice(0, -1) + sel + despues.slice(1);
-    selStart = start - 1;
-    selEnd = end - 1;
-  } else {
-    // Aplicar: los espacios de los bordes quedan FUERA de los marcadores
-    // (WhatsApp no formatea "* texto *").
-    const lead = (sel.match(/^\s*/) as RegExpMatchArray)[0];
-    const trail = (sel.match(/\s*$/) as RegExpMatchArray)[0];
-    const core = sel.slice(lead.length, sel.length - trail.length);
-    if (!core) { textarea.focus(); return; }
-    nuevo = antes + lead + marcador + core + marcador + trail + despues;
-    selStart = start;
-    selEnd = end + 2;
+  // Unir tramos contiguos con el mismo formato
+  const merged: Seg[] = [];
+  for (const s of segs) {
+    const last = merged[merged.length - 1];
+    if (last && last.b === s.b && last.i === s.i) last.t += s.t;
+    else merged.push({ ...s });
   }
 
-  setValor(nuevo);
-  // Restaurar foco y selección después de que React re-renderice.
-  requestAnimationFrame(() => {
-    textarea.focus();
-    textarea.setSelectionRange(selStart, selEnd);
-  });
+  let out = "";
+  for (const s of merged) {
+    if (!s.b && !s.i) { out += s.t; continue; }
+    // Espacios de borde FUERA de los marcadores (WhatsApp no formatea "* x *")
+    const lead = (s.t.match(/^\s*/) as RegExpMatchArray)[0];
+    const trail = s.t.length > lead.length ? (s.t.match(/\s*$/) as RegExpMatchArray)[0] : "";
+    const core = s.t.slice(lead.length, s.t.length - trail.length);
+    if (!core) { out += s.t; continue; }
+    let w = core;
+    if (s.i) w = `_${w}_`;
+    if (s.b) w = `*${w}*`;
+    out += lead + w + trail;
+  }
+  return /^\s*$/.test(out) ? "" : out;
 }
 
-/** Ctrl+B / Ctrl+I dentro del textarea (pasar como onKeyDown). */
-export function handleFormatoKeyDown(
-  e: React.KeyboardEvent<HTMLTextAreaElement>,
-  valor: string,
-  setValor: (v: string) => void,
-): void {
-  if (!(e.ctrlKey || e.metaKey)) return;
-  const k = e.key.toLowerCase();
-  if (k !== "b" && k !== "i") return;
-  e.preventDefault();
-  aplicarFormatoWhatsApp(e.currentTarget, k === "b" ? "*" : "_", valor, setValor);
+// ── texto WhatsApp → HTML (para restaurar valor externo, ej. al limpiar) ───
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function whatsappToHtml(v: string): string {
+  if (!v) return "";
+  let h = escapeHtml(v);
+  h = h.replace(/\*([^*\n]+)\*/g, "<b>$1</b>");
+  h = h.replace(/_([^_\n]+)_/g, "<i>$1</i>");
+  return h.replace(/\n/g, "<br>");
 }
 
-export default function FormatoWhatsAppToolbar({ textareaRef, valor, setValor }: {
-  textareaRef: RefObject<HTMLTextAreaElement>;
+function ejecutar(cmd: "bold" | "italic") {
+  document.execCommand("styleWithCSS", false, "false");
+  document.execCommand(cmd);
+}
+
+export interface EditorComunicadoHandle { exec: (cmd: "bold" | "italic") => void; }
+
+export const EditorComunicado = forwardRef<EditorComunicadoHandle, {
   valor: string;
   setValor: (v: string) => void;
+  placeholder?: string;
+}>(({ valor, setValor, placeholder }, ref) => {
+  const divRef = useRef<HTMLDivElement>(null);
+  const lastEmitted = useRef<string>("");
+
+  const serialize = () => {
+    const el = divRef.current;
+    if (!el) return;
+    const v = htmlToWhatsApp(el);
+    // Editor "vacío" suele quedar con un <br> residual: limpiarlo para que
+    // vuelva el placeholder (CSS :empty).
+    if (v === "" && el.innerHTML !== "") el.innerHTML = "";
+    lastEmitted.current = v;
+    setValor(v);
+  };
+
+  useImperativeHandle(ref, () => ({
+    exec: (cmd) => {
+      divRef.current?.focus();
+      ejecutar(cmd);
+      serialize();
+    },
+  }));
+
+  // Cambios de valor desde afuera (limpiar formulario, prefill de reenvío...)
+  useEffect(() => {
+    if (valor !== lastEmitted.current && divRef.current) {
+      divRef.current.innerHTML = whatsappToHtml(valor);
+      lastEmitted.current = valor;
+    }
+  }, [valor]);
+
+  return (
+    <div
+      ref={divRef}
+      contentEditable
+      suppressContentEditableWarning
+      role="textbox"
+      aria-multiline="true"
+      data-placeholder={placeholder || ""}
+      onInput={serialize}
+      onKeyDown={(e) => {
+        if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === "b" || e.key.toLowerCase() === "i")) {
+          e.preventDefault();
+          ejecutar(e.key.toLowerCase() === "b" ? "bold" : "italic");
+          serialize();
+        }
+      }}
+      onPaste={(e) => {
+        // Pegar SIEMPRE como texto plano (sin estilos de Word/web ajenos)
+        e.preventDefault();
+        document.execCommand("insertText", false, e.clipboardData.getData("text/plain"));
+      }}
+      className="min-h-[150px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm whitespace-pre-wrap break-words focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground empty:before:pointer-events-none"
+    />
+  );
+});
+EditorComunicado.displayName = "EditorComunicado";
+
+export default function FormatoWhatsAppToolbar({ editorRef }: {
+  editorRef: RefObject<EditorComunicadoHandle>;
 }) {
   const btn = "p-1.5 rounded border bg-background hover:bg-muted/60 cursor-pointer text-foreground";
   return (
     <div className="flex items-center gap-1.5">
       <button
         type="button"
-        title="Negrilla (Ctrl+B) — selecciona el texto primero"
+        title="Negrilla (Ctrl+B)"
         aria-label="Negrilla"
         className={btn}
         onMouseDown={(e) => e.preventDefault() /* no robar el foco ni la selección */}
-        onClick={() => aplicarFormatoWhatsApp(textareaRef.current, "*", valor, setValor)}
+        onClick={() => editorRef.current?.exec("bold")}
       >
         <Bold className="h-4 w-4" />
       </button>
       <button
         type="button"
-        title="Cursiva (Ctrl+I) — selecciona el texto primero"
+        title="Cursiva (Ctrl+I)"
         aria-label="Cursiva"
         className={btn}
         onMouseDown={(e) => e.preventDefault()}
-        onClick={() => aplicarFormatoWhatsApp(textareaRef.current, "_", valor, setValor)}
+        onClick={() => editorRef.current?.exec("italic")}
       >
         <Italic className="h-4 w-4" />
       </button>
