@@ -14,6 +14,7 @@ import ComunicadoEnviadoDialog from "@/components/ComunicadoEnviadoDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { apiRequest } from "@/lib/apiClient";
 import { filtrarPorNombre } from "@/lib/nombresUsuarios";
+import FormatoWhatsAppToolbar, { handleFormatoKeyDown } from "@/components/FormatoWhatsAppToolbar";
 import CharCircle from "@/components/CharCircle";
 import { buildTemplateBodyPreview, MAX_WA_TEMPLATE_BODY, WA_TEMPLATE_OVERHEAD } from "@/lib/wapBody";
 
@@ -178,6 +179,7 @@ const EnviarComunicado = () => {
 
   // Mensaje y archivos
   const [mensaje, setMensaje] = useState("");
+  const mensajeRef = useRef<HTMLTextAreaElement>(null);
   const [archivosSeleccionados, setArchivosSeleccionados] = useState<File[]>([]);
   // Dialog para archivos que exceden el límite. Si está activo, contiene la
   // lista de archivos rechazados con su tamaño en MB.
@@ -1214,11 +1216,16 @@ const EnviarComunicado = () => {
               <div className="space-y-2 mb-6">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-foreground">Mensaje</h3>
-                  <CharCircle value={usedChars} max={personalMax} />
+                  <div className="flex items-center gap-3">
+                    <FormatoWhatsAppToolbar textareaRef={mensajeRef} valor={mensaje} setValor={setMensaje} />
+                    <CharCircle value={usedChars} max={personalMax} />
+                  </div>
                 </div>
                 <Textarea
+                  ref={mensajeRef}
                   value={mensaje}
                   onChange={(e) => setMensaje(e.target.value)}
+                  onKeyDown={(e) => handleFormatoKeyDown(e, mensaje, setMensaje)}
                   placeholder="Escribe el comunicado..."
                   rows={6}
                 />
