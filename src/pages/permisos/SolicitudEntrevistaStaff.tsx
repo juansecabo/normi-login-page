@@ -11,6 +11,7 @@ import { CalendarIcon, Check, ChevronDown, UserRound, Plus, X } from "lucide-rea
 import FirmaImage from "@/components/FirmaImage";
 import { apiRequest } from "@/lib/apiClient";
 import { joinEntrevistadores, entrevistadoresDeSolicitud } from "@/lib/entrevistadores";
+import { useGradosColegio } from "@/utils/grados";
 import { es } from "date-fns/locale";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -20,8 +21,6 @@ import {
 interface Estudiante { id: string; nombres: string; apellidos: string; grado: string; salon: string; }
 interface Interno { id: number; nombres: string; apellidos: string; cargo: string; }
 
-const GRADOS = ["Párvulo","Prejardín","Jardín","Transición","Primero","Segundo","Tercero","Cuarto","Quinto","Sexto","Séptimo","Octavo","Noveno","Décimo","Undécimo"];
-const SALONES = ["1","2","3"];
 
 const cargoDisplay = (cargo: string, nombres: string) => {
   const nombre = nombres.split(" ")[0];
@@ -44,8 +43,11 @@ const SolicitudEntrevistaStaff = () => {
   const [aceptoTerminos, setAceptoTerminos] = useState(false);
 
   // Form
+  const { grados: gradosColegio } = useGradosColegio();
   const [grado, setGrado] = useState("");
   const [salon, setSalon] = useState("");
+  // Salones reales del grado elegido (cada colegio tiene distinta cantidad).
+  const [salonesDelGrado, setSalonesDelGrado] = useState<string[]>([]);
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
   const [estudianteSeleccionado, setEstudianteSeleccionado] = useState<Estudiante | null>(null);
   const [internos, setInternos] = useState<Interno[]>([]);
@@ -79,6 +81,17 @@ const SolicitudEntrevistaStaff = () => {
       setInternos(sortByApellidosNombres(await enrichWithNombres((data || []) as any)) as any);
     })();
   }, [navigate]);
+
+  // Salones que existen de verdad para el grado elegido (de Estudiantes del colegio)
+  useEffect(() => {
+    if (!grado) { setSalonesDelGrado([]); return; }
+    (async () => {
+      const { data } = await supabase.from("Estudiantes").select("salon").eq("grado", grado);
+      const set = new Set<string>();
+      for (const r of (data || []) as { salon: string | null }[]) if (r.salon) set.add(String(r.salon));
+      setSalonesDelGrado([...set].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })));
+    })();
+  }, [grado]);
 
   // Fetch students when grado/salon changes
   useEffect(() => {
@@ -213,14 +226,14 @@ const SolicitudEntrevistaStaff = () => {
                   <label className="text-sm font-medium">Grado:</label>
                   <select value={grado} onChange={(e) => { setGrado(e.target.value); setSalon(""); }} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                     <option value="">Seleccionar</option>
-                    {GRADOS.map(g => <option key={g} value={g}>{g}</option>)}
+                    {gradosColegio.map(g => <option key={g} value={g}>{g}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm font-medium">Salón:</label>
                   <select value={salon} onChange={(e) => setSalon(e.target.value)} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                     <option value="">Seleccionar</option>
-                    {SALONES.map(s => <option key={s} value={s}>{s}</option>)}
+                    {salonesDelGrado.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
               </div>
