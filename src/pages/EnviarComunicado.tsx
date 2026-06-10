@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import ComunicadoEnviadoDialog from "@/components/ComunicadoEnviadoDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { apiRequest } from "@/lib/apiClient";
+import { filtrarPorNombre } from "@/lib/nombresUsuarios";
 import CharCircle from "@/components/CharCircle";
 import { buildTemplateBodyPreview, MAX_WA_TEMPLATE_BODY, WA_TEMPLATE_OVERHEAD } from "@/lib/wapBody";
 
@@ -50,7 +51,6 @@ const NIVELES_GRADOS_REF: Record<string, string[]> = {
   Media: ["Décimo", "Undécimo"],
 };
 
-const SALONES = ["1", "2", "3", "4", "5", "6"];
 
 interface ComunicadoEnviado {
   id: number;
@@ -165,6 +165,10 @@ const EnviarComunicado = () => {
   const [estudiantesSeleccionados, setEstudiantesSeleccionados] = useState<string[]>([]);
   const [loadingListaEstudiantes, setLoadingListaEstudiantes] = useState(false);
   const [mostrarEstudiantes, setMostrarEstudiantes] = useState(false);
+  const [filtroEstudiantes, setFiltroEstudiantes] = useState("");
+  // Salones REALES de los grados seleccionados (derivados de Estudiantes del
+  // colegio) — cada colegio tiene distinta cantidad de salones por grado.
+  const [salonesDisponibles, setSalonesDisponibles] = useState<string[]>([]);
 
   // Profesores específicos (filtrados por grados/salones marcados)
   const [listaProfesoresFiltrada, setListaProfesoresFiltrada] = useState<{ id: string; nombre: string; grados: string[]; salones: string[] }[]>([]);
@@ -271,6 +275,25 @@ const EnviarComunicado = () => {
     };
     fetchLista();
   }, [gradosMarcados, salonesMarcados, perfilesMarcados.Estudiantes, perfilesMarcados.Padres]);
+
+  // Salones disponibles = los que de verdad existen en los grados marcados.
+  useEffect(() => {
+    const gradosSel = Object.keys(gradosMarcados).filter(g => gradosMarcados[g]);
+    if (gradosSel.length === 0) { setSalonesDisponibles([]); return; }
+    (async () => {
+      const { data } = await supabase.from("Estudiantes").select("salon").in("grado", gradosSel as any);
+      const set = new Set<string>();
+      for (const r of (data || []) as { salon: string | null }[]) if (r.salon) set.add(String(r.salon));
+      const lista = [...set].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+      setSalonesDisponibles(lista);
+      // Desmarcar salones que ya no existen para los grados elegidos.
+      setSalonesMarcados(prev => {
+        const next: Record<string, boolean> = {};
+        for (const s of Object.keys(prev)) if (prev[s] && lista.includes(s)) next[s] = true;
+        return next;
+      });
+    })();
+  }, [gradosMarcados]);
 
   // Cargar profesores según grados/salones marcados (solo si Profesores está marcado)
   useEffect(() => {
@@ -1022,7 +1045,9 @@ const EnviarComunicado = () => {
                         {dropdownBtn("Salón", salonesSelCount, openSalon, () => setOpenSalon(v => !v), false)}
                         {openSalon && (
                           <div className="border rounded p-2 bg-muted/20 flex flex-col gap-2">
-                            {SALONES.map(s => (
+                            {salonesDisponibles.length === 0 ? (
+                              <span className="text-xs text-muted-foreground">Cargando salones...</span>
+                            ) : salonesDisponibles.map(s => (
                               <label key={s} className="flex items-center gap-2 cursor-pointer text-sm">
                                 <input
                                   type="checkbox"
@@ -1063,18 +1088,33 @@ const EnviarComunicado = () => {
                       ) : listaEstudiantesFiltrada.length === 0 ? (
                         <div className="border rounded p-2 bg-muted/20 text-xs text-muted-foreground">No hay estudiantes en esos grados/salones</div>
                       ) : (
-                        <div className="border rounded p-2 bg-muted/20 flex flex-col gap-2 max-h-52 overflow-y-auto">
-                          {listaEstudiantesFiltrada.map((e) => (
-                            <label key={e.id} className="flex items-center gap-2 cursor-pointer text-sm">
-                              <input
-                                type="checkbox"
-                                checked={estudiantesSeleccionados.includes(e.id)}
-                                onChange={() => toggleInterno(estudiantesSeleccionados, e.id, setEstudiantesSeleccionados)}
-                                className="w-4 h-4 accent-primary cursor-pointer shrink-0"
-                              />
-                              <span>{e.nombre} <span className="text-xs text-muted-foreground">({e.grado} {e.salon})</span></span>
-                            </label>
-                          ))}
+                        <div className="border rounded p-2 bg-muted/20 flex flex-col gap-2">
+                          <input
+                            type="text"
+                            value={filtroEstudiantes}
+                            onChange={(ev) => setFiltroEstudiantes(ev.target.value)}
+                            placeholder="Buscar por nombres o apellidos..."
+                            className="w-full px-2 py-1.5 text-sm border rounded bg-background"
+                          />
+                          <div className="flex flex-col gap-2 max-h-52 overflow-y-auto">
+                            {(() => {
+                              const filtrados = filtrarPorNombre(listaEstudiantesFiltrada, filtroEstudiantes);
+                              if (filtrados.length === 0) {
+                                return <span className="text-xs text-muted-foreground">Ningún estudiante coincide con "{filtroEstudiantes}"</span>;
+                              }
+                              return filtrados.map((e) => (
+                                <label key={e.id} className="flex items-center gap-2 cursor-pointer text-sm">
+                                  <input
+                                    type="checkbox"
+                                    checked={estudiantesSeleccionados.includes(e.id)}
+                                    onChange={() => toggleInterno(estudiantesSeleccionados, e.id, setEstudiantesSeleccionados)}
+                                    className="w-4 h-4 accent-primary cursor-pointer shrink-0"
+                                  />
+                                  <span>{e.nombre} <span className="text-xs text-muted-foreground">({e.grado} {e.salon})</span></span>
+                                </label>
+                              ));
+                            })()}
+                          </div>
                         </div>
                       )
                     )}

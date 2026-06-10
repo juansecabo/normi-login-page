@@ -18,7 +18,6 @@ const GRADOS_ORDEN = [
   "Primero", "Segundo", "Tercero", "Cuarto", "Quinto",
   "Sexto", "Séptimo", "Octavo", "Noveno", "Décimo", "Undécimo",
 ];
-const SALONES_DISPONIBLES = ["1", "2", "3", "4", "5", "6"];
 const NIVELES_GRADOS: Record<string, string[]> = {
   Preescolar: ["Párvulo", "Prejardín", "Jardín", "Transición"],
   Primaria: ["Primero", "Segundo", "Tercero", "Cuarto", "Quinto"],
@@ -552,7 +551,7 @@ export default function DestinatariosSelector({ initial, onChange }: Destinatari
               </button>
               {mostrarSalones && (
                 <div className="flex flex-wrap gap-3 mt-2 pl-6">
-                  {(salonesPorGrado.length > 0 ? salonesPorGrado : SALONES_DISPONIBLES).map((s) => (
+                  {salonesPorGrado.map((s) => (
                     <label key={s} className="flex items-center gap-2 text-sm cursor-pointer">
                       <input
                         type="checkbox"

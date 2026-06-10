@@ -74,6 +74,25 @@ export function sortByApellidosNombres<T extends { nombres?: string | null; apel
   });
 }
 
+/** Normaliza para búsqueda: minúsculas y sin tildes/diacríticos. */
+export function normalizarTexto(s: string): string {
+  return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
+/**
+ * Filtro flexible por nombre para listas client-side: cada palabra escrita
+ * debe aparecer en `nombre` — sin importar el orden (nombre o apellido
+ * primero), tildes ni mayúsculas. Query vacío devuelve todo.
+ */
+export function filtrarPorNombre<T extends { nombre: string }>(rows: T[], query: string): T[] {
+  const words = normalizarTexto(query).split(/\s+/).filter(Boolean);
+  if (words.length === 0) return rows;
+  return rows.filter((r) => {
+    const n = normalizarTexto(r.nombre);
+    return words.every((w) => n.includes(w));
+  });
+}
+
 /**
  * Búsqueda de candidate ids en Usuarios cuando el usuario filtra por nombre.
  * Devuelve los ids que matchean cada palabra del query en `nombres` o
