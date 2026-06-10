@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, RefObject } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState, RefObject } from "react";
 import { Bold, Italic } from "lucide-react";
 
 /**
@@ -72,6 +72,8 @@ function whatsappToHtml(v: string): string {
 function ejecutar(cmd: "bold" | "italic") {
   document.execCommand("styleWithCSS", false, "false");
   document.execCommand(cmd);
+  // La toolbar escucha esto para pintar el boton como activo/inactivo
+  window.dispatchEvent(new Event("formato-wa-estado"));
 }
 
 export interface EditorComunicadoHandle { exec: (cmd: "bold" | "italic") => void; }
@@ -88,11 +90,16 @@ export const EditorComunicado = forwardRef<EditorComunicadoHandle, {
     const el = divRef.current;
     if (!el) return;
     const v = htmlToWhatsApp(el);
-    // Editor "vacío" suele quedar con un <br> residual: limpiarlo para que
-    // vuelva el placeholder (CSS :empty).
-    if (v === "" && el.innerHTML !== "") el.innerHTML = "";
     lastEmitted.current = v;
     setValor(v);
+  };
+
+  // Editor "vacío" suele quedar con un <br> residual: limpiarlo al salir para
+  // que vuelva el placeholder (CSS :empty). No se hace durante la escritura
+  // porque resetear innerHTML cancela el formato activado con el cursor.
+  const limpiarSiVacio = () => {
+    const el = divRef.current;
+    if (el && htmlToWhatsApp(el) === "" && el.innerHTML !== "") el.innerHTML = "";
   };
 
   useImperativeHandle(ref, () => ({
@@ -120,6 +127,7 @@ export const EditorComunicado = forwardRef<EditorComunicadoHandle, {
       aria-multiline="true"
       data-placeholder={placeholder || ""}
       onInput={serialize}
+      onBlur={limpiarSiVacio}
       onKeyDown={(e) => {
         if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === "b" || e.key.toLowerCase() === "i")) {
           e.preventDefault();
@@ -141,14 +149,40 @@ EditorComunicado.displayName = "EditorComunicado";
 export default function FormatoWhatsAppToolbar({ editorRef }: {
   editorRef: RefObject<EditorComunicadoHandle>;
 }) {
-  const btn = "p-1.5 rounded border bg-background hover:bg-muted/60 cursor-pointer text-foreground";
+  const [activo, setActivo] = useState({ b: false, i: false });
+
+  useEffect(() => {
+    const update = () => {
+      try {
+        setActivo({
+          b: document.queryCommandState("bold"),
+          i: document.queryCommandState("italic"),
+        });
+      } catch { /* queryCommandState puede fallar fuera de un editable */ }
+    };
+    document.addEventListener("selectionchange", update);
+    window.addEventListener("formato-wa-estado", update);
+    return () => {
+      document.removeEventListener("selectionchange", update);
+      window.removeEventListener("formato-wa-estado", update);
+    };
+  }, []);
+
+  const btn = (on: boolean) =>
+    `p-1.5 rounded border cursor-pointer transition-colors ${
+      on
+        ? "bg-primary text-primary-foreground border-primary"
+        : "bg-background hover:bg-muted/60 text-foreground"
+    }`;
+
   return (
     <div className="flex items-center gap-1.5">
       <button
         type="button"
         title="Negrilla (Ctrl+B)"
         aria-label="Negrilla"
-        className={btn}
+        aria-pressed={activo.b}
+        className={btn(activo.b)}
         onMouseDown={(e) => e.preventDefault() /* no robar el foco ni la selección */}
         onClick={() => editorRef.current?.exec("bold")}
       >
@@ -158,7 +192,8 @@ export default function FormatoWhatsAppToolbar({ editorRef }: {
         type="button"
         title="Cursiva (Ctrl+I)"
         aria-label="Cursiva"
-        className={btn}
+        aria-pressed={activo.i}
+        className={btn(activo.i)}
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => editorRef.current?.exec("italic")}
       >
