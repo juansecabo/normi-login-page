@@ -265,7 +265,7 @@ const RegistrosComportamiento = () => {
   const [filtroSalon, setFiltroSalon] = useState("");
   const [histBusqueda, setHistBusqueda] = useState("");
   const [estVistaId, setEstVistaId] = useState<number | null>(null);
-  const [ordenarPor, setOrdenarPor] = useState<"fecha" | "tipo" | "asignatura">("fecha");
+  const [ordenarPor, setOrdenarPor] = useState<"fecha" | "tipo" | "profesor">("fecha");
 
   const backLink = isAdmin() ? "/dashboard-admin" : isRectorOrCoordinador() ? "/dashboard-rector" : "/dashboard";
 
@@ -426,14 +426,16 @@ const RegistrosComportamiento = () => {
 
   const estVista = useMemo(() => estudiantesConRegistros.find(e => e.id === estVistaId) || null, [estudiantesConRegistros, estVistaId]);
 
-  // Nivel 2: registros del estudiante elegido, ordenables por fecha/tipo/asignatura
+  // Nivel 2: registros del estudiante elegido, ordenables por fecha/tipo/profesor.
+  // No se ordena por asignatura: un registro puede tener varias (el profesor
+  // dicta más de una), así que el agrupador natural es el profesor que lo creó.
   const registrosDelEstudiante = useMemo(() => {
     if (estVistaId == null) return [] as Registro[];
     const lista = registrosVisibles.filter(r => r.estudiante_id === estVistaId);
     const porFecha = (a: Registro, b: Registro) =>
       b.fecha.localeCompare(a.fecha) || (b.created_at || "").localeCompare(a.created_at || "");
     if (ordenarPor === "tipo") lista.sort((a, b) => (TIPO_LABEL[a.tipo] || "").localeCompare(TIPO_LABEL[b.tipo] || "", "es") || porFecha(a, b));
-    else if (ordenarPor === "asignatura") lista.sort((a, b) => (a.asignatura || "").localeCompare(b.asignatura || "", "es") || porFecha(a, b));
+    else if (ordenarPor === "profesor") lista.sort((a, b) => stripCargo(a.autor_nombre || "").localeCompare(stripCargo(b.autor_nombre || ""), "es") || porFecha(a, b));
     else lista.sort(porFecha);
     return lista;
   }, [registrosVisibles, estVistaId, ordenarPor]);
@@ -895,10 +897,10 @@ const RegistrosComportamiento = () => {
                     <p className="text-xs text-muted-foreground">{estVista?.grado} {estVista?.salon}</p>
                   </div>
                 </div>
-                <select value={ordenarPor} onChange={e => setOrdenarPor(e.target.value as "fecha" | "tipo" | "asignatura")} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                <select value={ordenarPor} onChange={e => setOrdenarPor(e.target.value as "fecha" | "tipo" | "profesor")} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                   <option value="fecha">Ordenar por fecha (recientes primero)</option>
                   <option value="tipo">Ordenar por tipo</option>
-                  <option value="asignatura">Ordenar por asignatura</option>
+                  <option value="profesor">Ordenar por profesor</option>
                 </select>
               </div>
 
