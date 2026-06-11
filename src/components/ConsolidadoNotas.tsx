@@ -27,6 +27,7 @@ interface GrupoLocal extends GrupoCalc {
   asignatura: string;
   periodo: number;
   nombre: string;
+  orden: number | null;
 }
 
 type NotasEstudiante = {
@@ -204,6 +205,7 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
             periodo: g.periodo,
             porcentaje: Number(g.porcentaje),
             parent_id: g.parent_id,
+            orden: g.orden ?? null,
           })));
         }
 
@@ -455,7 +457,7 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
                 // Detectar si el período usa jerarquía (algún grupo definido)
                 const gruposPeriodo = grupos
                   .filter(g => g.asignatura === asignatura && g.periodo === periodoActivo)
-                  .sort((a, b) => (a as any).parent_id ? 1 : -1);
+                  .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
                 const top = gruposPeriodo.filter(g => g.parent_id === null);
 
                 if (top.length === 0) {
@@ -540,8 +542,9 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
                       <tr>
                         {runs(c => c.topId).map(rn => {
                           const g = gById.get(rn.key);
+                          const tieneSubs = cols.some(c => c.topId === rn.key && c.subId !== null);
                           return (
-                            <th key={`t-${rn.key || 'libre'}-${rn.start}`} colSpan={rn.len} className={`p-2 text-center text-xs font-semibold border-r border-b border-border/30 ${g ? 'bg-emerald-800 text-white' : 'bg-primary/90 text-white'}`}>
+                            <th key={`t-${rn.key || 'libre'}-${rn.start}`} colSpan={rn.len} rowSpan={haySubs && !tieneSubs ? 2 : 1} className={`p-2 text-center text-xs font-semibold border-r border-b border-border/30 align-middle ${g ? 'bg-emerald-800 text-white' : 'bg-primary/90 text-white'}`}>
                               {g ? (
                                 <div className="flex flex-col items-center">
                                   <span>{(g as any).nombre}</span>
@@ -559,7 +562,9 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
                       {haySubs && (
                         <tr>
                           {runs(c => `${c.topId}|${c.subId ?? ''}`).map(rn => {
-                            const subId = rn.key.split('|')[1];
+                            const [topIdRun, subId] = rn.key.split('|');
+                            // Grupos sin subgrupos ya ocuparon esta fila con rowSpan.
+                            if (!cols.some(c => c.topId === topIdRun && c.subId !== null)) return null;
                             const sg = subId ? gById.get(subId) : undefined;
                             return (
                               <th key={`s-${rn.key || 'libre'}-${rn.start}`} colSpan={rn.len} className={`p-1.5 text-center text-[11px] font-semibold border-r border-b border-border/30 ${sg ? 'bg-emerald-600 text-white' : 'bg-emerald-800/0'}`}>
