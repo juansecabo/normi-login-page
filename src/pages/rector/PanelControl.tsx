@@ -74,6 +74,8 @@ interface Interno {
   apellidos: string;
   cargo: string;
   contrasena: string;
+  /** Solo coordinadores: niveles que coordina. NULL/vacío = todos. */
+  niveles_coordina?: string[] | null;
   // numero_de_telefono ahora vive en Usuarios (Fase 10.E.15)
   numero_de_telefono?: string | null;
 }
@@ -268,6 +270,7 @@ const PanelControl = () => {
   const [intApellidos, setIntApellidos] = useState("");
   const [intCargo, setIntCargo] = useState("");
   const [intContrasena, setIntContrasena] = useState("");
+  const [intNiveles, setIntNiveles] = useState<string[]>([]);
 
   // Asignaciones
   const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
@@ -464,7 +467,7 @@ const PanelControl = () => {
     setLoadingInt(true);
     // Fase 10.E.19: nombres/apellidos/teléfono viven en Usuarios — chunks manuales.
     const internosRaw = await fetchAllPages<any>((from, to) =>
-      supabase.from("Internos").select("id, cargo").range(from, to)
+      supabase.from("Internos").select("id, cargo, niveles_coordina").range(from, to)
     );
     const usrMap = await fetchUsuariosBatch(internosRaw.map((i: any) => String(i.id)));
     const data: Interno[] = internosRaw.map((i: any) => {
@@ -866,6 +869,7 @@ const PanelControl = () => {
       setIntApellidos(int.apellidos || "");
       setIntCargo(int.cargo || "");
       setIntContrasena(int.contrasena || "");
+      setIntNiveles(int.niveles_coordina || []);
     } else {
       setEditingInt(null);
       setIntId("");
@@ -873,6 +877,7 @@ const PanelControl = () => {
       setIntApellidos("");
       setIntCargo("");
       setIntContrasena("");
+      setIntNiveles([]);
     }
     setShowIntDialog(true);
   };
@@ -922,6 +927,8 @@ const PanelControl = () => {
     const payload: Record<string, unknown> = {
       id: Number(intId),
       cargo: intCargo,
+      // Solo aplica a coordinadores; vacío = NULL = coordina todos los niveles.
+      niveles_coordina: intCargo === "Coordinador(a)" && intNiveles.length > 0 ? intNiveles : null,
     };
     let error: any;
     if (editingInt) {
@@ -2133,6 +2140,30 @@ const PanelControl = () => {
                 </SelectContent>
               </Select>
             </div>
+            {intCargo === "Coordinador(a)" && (
+              <div className="space-y-2">
+                <Label>Niveles que coordina</Label>
+                <div className="flex flex-wrap gap-2">
+                  {Object.keys(NIVELES_GRADOS).map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setIntNiveles(prev => prev.includes(n) ? prev.filter(x => x !== n) : [...prev, n])}
+                      className={`px-3 py-1.5 rounded-full border text-sm transition-colors cursor-pointer ${
+                        intNiveles.includes(n)
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background text-foreground border-border hover:bg-muted/50"
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Las notificaciones de aula (permisos, excusas, etc.) solo le llegan en estos niveles. Sin selección = todos los niveles.
+                </p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Contraseña {editingInt && "(dejar vacío para no cambiar)"}</Label>
               <Input
