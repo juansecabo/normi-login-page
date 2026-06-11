@@ -253,12 +253,30 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
   };
 
   const getPorcentajeUsado = (asignatura: string, periodo: number) => {
+    // Modo grupos: el % del periodo lo aportan los grupos top, no las actividades.
+    const tops = grupos.filter(g => g.asignatura === asignatura && g.periodo === periodo && g.parent_id === null);
+    if (tops.length > 0) return tops.reduce((sum, g) => sum + (g.porcentaje || 0), 0);
     return (actividadesPorAsignatura[asignatura] || [])
       .filter(a => a.periodo === periodo && a.porcentaje !== null)
       .reduce((sum, a) => sum + (a.porcentaje || 0), 0);
   };
 
   const getPorcentajeCalificado = (asignatura: string, periodo: number) => {
+    // Modo grupos: % calificado = suma de pesos de los grupos top que ya tienen
+    // nota (lo calcula promedioGeneral, igual que la definitiva provisional).
+    const gruposPeriodo: GrupoCalc[] = grupos
+      .filter(g => g.asignatura === asignatura && g.periodo === periodo)
+      .map(g => ({ id: g.id, porcentaje: g.porcentaje, parent_id: g.parent_id }));
+    if (gruposPeriodo.some(g => g.parent_id === null)) {
+      const notasCalc: NotaCalc[] = getActividadesPorPeriodo(asignatura, periodo)
+        .filter(a => notas[asignatura]?.[periodo]?.[a.id] !== undefined)
+        .map(a => ({
+          porcentaje: a.porcentaje,
+          nota: notas[asignatura][periodo][a.id] as number,
+          grupo_id: a.grupo_id ?? actividadGrupo.get(`${asignatura}|${a.id}`) ?? null,
+        }));
+      return promedioGeneral(notasCalc, gruposPeriodo).sumaPorcentajes;
+    }
     return (actividadesPorAsignatura[asignatura] || [])
       .filter(a => a.periodo === periodo && a.porcentaje !== null && a.porcentaje > 0)
       .filter(a => notas[asignatura]?.[periodo]?.[a.id] !== undefined)
