@@ -446,7 +446,11 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
                 const gruposPeriodo = grupos
                   .filter(g => g.asignatura === asignatura && g.periodo === periodoActivo)
                   .sort((a, b) => (a as any).parent_id ? 1 : -1);
-                const top = gruposPeriodo.filter(g => g.parent_id === null);
+                // 2026-06-11: estudiantes/acudientes SIEMPRE ven la tabla plana
+                // clasica (decision de Juan al destaparse el 403 de Grupos_Notas:
+                // los grupos quedaron solo para CALCULAR la definitiva y los %,
+                // no para cambiar el layout). El render agrupado queda apagado.
+                const top = [] as typeof gruposPeriodo;
 
                 if (top.length === 0) {
                   // Modo plano clásico (sin cambios)
