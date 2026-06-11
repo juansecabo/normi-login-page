@@ -271,6 +271,7 @@ const PanelControl = () => {
   const [intCargo, setIntCargo] = useState("");
   const [intContrasena, setIntContrasena] = useState("");
   const [intNiveles, setIntNiveles] = useState<string[]>([]);
+  const [intTelefono, setIntTelefono] = useState("");
 
   // Asignaciones
   const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
@@ -870,6 +871,7 @@ const PanelControl = () => {
       setIntCargo(int.cargo || "");
       setIntContrasena(int.contrasena || "");
       setIntNiveles(int.niveles_coordina || []);
+      setIntTelefono(int.numero_de_telefono || "");
     } else {
       setEditingInt(null);
       setIntId("");
@@ -878,6 +880,7 @@ const PanelControl = () => {
       setIntCargo("");
       setIntContrasena("");
       setIntNiveles([]);
+      setIntTelefono("");
     }
     setShowIntDialog(true);
   };
@@ -898,6 +901,7 @@ const PanelControl = () => {
       id: intId,
       nombres: intNombres.trim(),
       apellidos: intApellidos.trim(),
+      numero_de_telefono: intTelefono.trim() || null,
     };
     if (intContrasena) {
       usuariosPayload.contrasena = intContrasena;
@@ -915,9 +919,12 @@ const PanelControl = () => {
       .upsert(usuariosPayload, { onConflict: "id" });
     if (errUsr) {
       setSavingInt(false);
+      const esTelDuplicado = (errUsr as any).code === "23505" && /telefono/i.test(errUsr.message || "");
       toast({
         title: "Error",
-        description: errUsr.message || `No se pudo guardar el usuario (${(errUsr as any).code || "sin código"})`,
+        description: esTelDuplicado
+          ? "Ese número de teléfono ya está registrado a otra persona."
+          : errUsr.message || `No se pudo guardar el usuario (${(errUsr as any).code || "sin código"})`,
         variant: "destructive",
       });
       return;
@@ -2125,6 +2132,14 @@ const PanelControl = () => {
                 value={intNombres}
                 onChange={(e) => setIntNombres(e.target.value)}
                 placeholder="Nombres"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Teléfono <span className="text-xs text-muted-foreground">(opcional)</span></Label>
+              <PhoneInput
+                value={intTelefono}
+                onChange={setIntTelefono}
+                placeholder="Ej: 3001234567"
               />
             </div>
             <div className="space-y-2">
