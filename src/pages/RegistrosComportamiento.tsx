@@ -260,10 +260,12 @@ const RegistrosComportamiento = () => {
     });
   };
 
-  // Filtros
-  const [filtroTipo, setFiltroTipo] = useState("");
+  // Historial: nivel 1 = lista de estudiantes (filtros + búsqueda), nivel 2 = registros del elegido
   const [filtroGrado, setFiltroGrado] = useState("");
   const [filtroSalon, setFiltroSalon] = useState("");
+  const [histBusqueda, setHistBusqueda] = useState("");
+  const [estVistaId, setEstVistaId] = useState<number | null>(null);
+  const [ordenarPor, setOrdenarPor] = useState<"fecha" | "tipo" | "asignatura">("fecha");
 
   const backLink = isAdmin() ? "/dashboard-admin" : isRectorOrCoordinador() ? "/dashboard-rector" : "/dashboard";
 
@@ -387,17 +389,54 @@ const RegistrosComportamiento = () => {
     return registros;
   }, [registros, autor.id]);
 
-  const gradosUnicos = useMemo(() => [...new Set(registrosVisibles.map(r => r.estudiante_grado))].sort(), [registrosVisibles]);
-  const salonesUnicos = useMemo(() => [...new Set(
-    registrosVisibles.filter(r => !filtroGrado || r.estudiante_grado === filtroGrado).map(r => r.estudiante_salon)
-  )].sort(), [registrosVisibles, filtroGrado]);
+  // Estudiantes con registros (deduplicados), en orden alfabético
+  const estudiantesConRegistros = useMemo(() => {
+    const map = new Map<number, { id: number; nombres: string; apellidos: string; grado: string; salon: string; total: number }>();
+    for (const r of registrosVisibles) {
+      const ex = map.get(r.estudiante_id);
+      if (ex) ex.total++;
+      else map.set(r.estudiante_id, { id: r.estudiante_id, nombres: r.estudiante_nombre, apellidos: r.estudiante_apellidos, grado: r.estudiante_grado, salon: r.estudiante_salon, total: 1 });
+    }
+    return [...map.values()].sort((a, b) =>
+      a.apellidos.localeCompare(b.apellidos, "es") ||
+      a.nombres.localeCompare(b.nombres, "es")
+    );
+  }, [registrosVisibles]);
 
-  const registrosFiltrados = useMemo(() => registrosVisibles.filter(r => {
-    if (filtroTipo && r.tipo !== filtroTipo) return false;
-    if (filtroGrado && r.estudiante_grado !== filtroGrado) return false;
-    if (filtroSalon && r.estudiante_salon !== filtroSalon) return false;
-    return true;
-  }), [registrosVisibles, filtroTipo, filtroGrado, filtroSalon]);
+  const gradosUnicos = useMemo(() => [...new Set(estudiantesConRegistros.map(e => e.grado))]
+    .sort((a, b) => (GRADO_ORDEN[a] ?? 99) - (GRADO_ORDEN[b] ?? 99) || a.localeCompare(b, "es")), [estudiantesConRegistros]);
+  const salonesUnicos = useMemo(() => [...new Set(
+    estudiantesConRegistros.filter(e => !filtroGrado || e.grado === filtroGrado).map(e => e.salon).filter(Boolean)
+  )].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })), [estudiantesConRegistros, filtroGrado]);
+
+  // Lista del nivel 1 con filtros y búsqueda flexible (orden libre, sin tildes)
+  const estudiantesHistorial = useMemo(() => {
+    const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+    const tokens = norm(histBusqueda.trim()).split(/\s+/).filter(Boolean);
+    return estudiantesConRegistros.filter(e => {
+      if (filtroGrado && e.grado !== filtroGrado) return false;
+      if (filtroSalon && e.salon !== filtroSalon) return false;
+      if (tokens.length) {
+        const full = norm(`${e.nombres} ${e.apellidos}`);
+        if (!tokens.every(t => full.includes(t))) return false;
+      }
+      return true;
+    });
+  }, [estudiantesConRegistros, filtroGrado, filtroSalon, histBusqueda]);
+
+  const estVista = useMemo(() => estudiantesConRegistros.find(e => e.id === estVistaId) || null, [estudiantesConRegistros, estVistaId]);
+
+  // Nivel 2: registros del estudiante elegido, ordenables por fecha/tipo/asignatura
+  const registrosDelEstudiante = useMemo(() => {
+    if (estVistaId == null) return [] as Registro[];
+    const lista = registrosVisibles.filter(r => r.estudiante_id === estVistaId);
+    const porFecha = (a: Registro, b: Registro) =>
+      b.fecha.localeCompare(a.fecha) || (b.created_at || "").localeCompare(a.created_at || "");
+    if (ordenarPor === "tipo") lista.sort((a, b) => (TIPO_LABEL[a.tipo] || "").localeCompare(TIPO_LABEL[b.tipo] || "", "es") || porFecha(a, b));
+    else if (ordenarPor === "asignatura") lista.sort((a, b) => (a.asignatura || "").localeCompare(b.asignatura || "", "es") || porFecha(a, b));
+    else lista.sort(porFecha);
+    return lista;
+  }, [registrosVisibles, estVistaId, ordenarPor]);
 
   // Asignaturas que el profesor le dicta al estudiante seleccionado (intersección por aula)
   const asignaturasParaEstudiante = useMemo(() => {
@@ -796,13 +835,18 @@ const RegistrosComportamiento = () => {
 
           {tab === "historial" && (loading ? (
             <div className="text-center py-8 text-muted-foreground">Cargando...</div>
-          ) : (
+          ) : estVistaId == null ? (
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
-                  <option value="">Todos los tipos</option>
-                  {TIPOS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </select>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    value={histBusqueda}
+                    onChange={e => setHistBusqueda(e.target.value)}
+                    placeholder="Buscar estudiante por nombre..."
+                    className="w-full pl-9 pr-3 py-2 border border-input rounded-md text-sm bg-background"
+                  />
+                </div>
                 <select value={filtroGrado} onChange={e => { setFiltroGrado(e.target.value); setFiltroSalon(""); }} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                   <option value="">Todos los grados</option>
                   {gradosUnicos.map(g => <option key={g} value={g}>{g}</option>)}
@@ -813,14 +857,59 @@ const RegistrosComportamiento = () => {
                 </select>
               </div>
 
-              {registrosFiltrados.length === 0 ? (
+              {estudiantesHistorial.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <ClipboardList className="w-10 h-10 mx-auto mb-3 opacity-40" />
-                  <p>No hay registros con estos filtros.</p>
+                  <p>No hay estudiantes con registros para estos filtros.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {estudiantesHistorial.map(e => (
+                    <button
+                      key={e.id}
+                      onClick={() => { setEstVistaId(e.id); setOrdenarPor("fecha"); setExpandedIds(new Set()); }}
+                      className="w-full flex items-center justify-between border border-border rounded-lg p-4 text-left hover:bg-muted/30 transition-colors cursor-pointer"
+                    >
+                      <div>
+                        <p className="font-semibold text-foreground text-sm">{e.apellidos} {e.nombres}</p>
+                        <p className="text-xs text-muted-foreground">{e.grado} {e.salon}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="inline-block px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+                          {e.total} {e.total === 1 ? "registro" : "registros"}
+                        </span>
+                        <ChevronDown className="w-5 h-5 -rotate-90 text-muted-foreground" />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-4">
+                  <button onClick={() => setEstVistaId(null)} className="text-sm text-primary hover:underline">&larr; Volver</button>
+                  <div>
+                    <p className="font-semibold text-foreground">{estVista?.apellidos} {estVista?.nombres}</p>
+                    <p className="text-xs text-muted-foreground">{estVista?.grado} {estVista?.salon}</p>
+                  </div>
+                </div>
+                <select value={ordenarPor} onChange={e => setOrdenarPor(e.target.value as "fecha" | "tipo" | "asignatura")} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                  <option value="fecha">Ordenar por fecha (recientes primero)</option>
+                  <option value="tipo">Ordenar por tipo</option>
+                  <option value="asignatura">Ordenar por asignatura</option>
+                </select>
+              </div>
+
+              {registrosDelEstudiante.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <ClipboardList className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                  <p>Este estudiante ya no tiene registros.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {registrosFiltrados.map(r => {
+                  {registrosDelEstudiante.map(r => {
                     const isExp = expandedIds.has(r.id);
                     return (
                       <div key={r.id} className="border border-border rounded-lg overflow-hidden">
