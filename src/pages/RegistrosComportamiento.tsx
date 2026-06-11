@@ -872,15 +872,15 @@ const RegistrosComportamiento = () => {
                       onClick={() => { setEstVistaId(e.id); setOrdenarPor("fecha"); setExpandedIds(new Set()); }}
                       className="w-full flex items-center justify-between border border-border rounded-lg p-4 text-left hover:bg-muted/30 transition-colors cursor-pointer"
                     >
-                      <div>
+                      <div className="min-w-0 pr-2">
                         <p className="font-semibold text-foreground text-sm">{e.apellidos} {e.nombres}</p>
                         <p className="text-xs text-muted-foreground">{e.grado} {e.salon}</p>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="inline-block px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="inline-block px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 rounded-full whitespace-nowrap">
                           {e.total} {e.total === 1 ? "registro" : "registros"}
                         </span>
-                        <ChevronDown className="w-5 h-5 -rotate-90 text-muted-foreground" />
+                        <ChevronDown className="w-5 h-5 -rotate-90 text-muted-foreground shrink-0" />
                       </div>
                     </button>
                   ))}
