@@ -313,6 +313,13 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
   // Promedio (visual) de un grupo/subgrupo para este estudiante.
   // ¿El periodo está objetivamente completo? (si no, la definitiva es provisional)
   const periodoCompletoParaAsig = (asignatura: string, periodo: number): boolean => {
+    // El checkbox "Periodo completo" del profesor (Periodos_Completos) manda.
+    if (periodosCompletos[`${asignatura}|${periodo}`]) return true;
+    // Modo grupos: SOLO el checkbox cierra el periodo (alineado con el agente).
+    // Sin checkbox la definitiva queda provisional, haya o no notas en todos los grupos.
+    const hayGrupos = grupos.some(g => g.asignatura === asignatura && g.periodo === periodo && g.parent_id === null);
+    if (hayGrupos) return false;
+    // Modo plano (Normal): cálculo clásico por actividades calificadas.
     const acts = getActividadesPorPeriodo(asignatura, periodo);
     if (acts.length === 0) return false;
     const notasCalc: NotaCalc[] = acts.map(a => ({
@@ -400,7 +407,7 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
                   </p>
                 )}
               </div>
-              {(periodosCompletos[`${asignatura}|${periodoActivo}`] || getPorcentajeUsado(asignatura, periodoActivo) === 100) ? (
+              {periodoCompletoParaAsig(asignatura, periodoActivo) ? (
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-semibold whitespace-nowrap">
                   ✓ Periodo completo
                 </span>
@@ -493,73 +500,100 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
                   );
                 }
 
-                // Modo jerárquico: bloques por grupo
+                // Modo jerárquico: tabla estilo profesor — bandas de grupo
+                // (y subgrupo) sobre las columnas de actividades + Definitiva.
+                const gid = (a: Actividad) => a.grupo_id ?? actividadGrupo.get(`${asignatura}|${a.id}`) ?? null;
+                const gById = new Map(gruposPeriodo.map(g => [g.id, g]));
+                type ColDef = { act: Actividad | null; topId: string; subId: string | null; key: string };
+                const cols: ColDef[] = [];
+                for (const g of top) {
+                  const subs = gruposPeriodo.filter(sg => sg.parent_id === g.id);
+                  const actsTop = actividadesDelPeriodo.filter(a => gid(a) === g.id);
+                  for (const a of actsTop) cols.push({ act: a, topId: g.id, subId: null, key: a.id });
+                  for (const sg of subs) {
+                    const actsSub = actividadesDelPeriodo.filter(a => gid(a) === sg.id);
+                    if (actsSub.length === 0) cols.push({ act: null, topId: g.id, subId: sg.id, key: `ph-${sg.id}` });
+                    else for (const a of actsSub) cols.push({ act: a, topId: g.id, subId: sg.id, key: a.id });
+                  }
+                  if (subs.length === 0 && actsTop.length === 0) cols.push({ act: null, topId: g.id, subId: null, key: `ph-${g.id}` });
+                }
+                for (const a of actividadesDelPeriodo.filter(a => gid(a) === null)) {
+                  cols.push({ act: a, topId: '', subId: null, key: a.id });
+                }
+                const haySubs = cols.some(c => c.subId !== null);
+                const runs = (keyFn: (c: ColDef) => string) => {
+                  const out: { key: string; start: number; len: number }[] = [];
+                  cols.forEach((c, idx) => {
+                    const k = keyFn(c);
+                    const last = out[out.length - 1];
+                    if (last && last.key === k && idx === last.start + last.len) last.len++;
+                    else out.push({ key: k, start: idx, len: 1 });
+                  });
+                  return out;
+                };
                 return (
-                  <div className="p-4 space-y-3">
-                    {top.map((g) => {
-                      const subgrupos = gruposPeriodo.filter((sg) => sg.parent_id === g.id);
-                      const actsDirectas = actividadesDelPeriodo.filter(a => a.grupo_id === g.id || (a.grupo_id == null && subgrupos.length === 0));
-                      const renderActFila = (act: Actividad) => {
-                        const nota = notas[asignatura]?.[periodoActivo]?.[act.id];
-                        const comentario = comentarios[asignatura]?.[periodoActivo]?.[act.id];
-                        return (
-                          <div key={act.id} className="flex items-center justify-between py-1 text-sm border-b border-border/30 last:border-b-0">
-                            <span className="truncate flex-1">{act.nombre}{act.porcentaje !== null ? ` (${act.porcentaje}%)` : ''}</span>
-                            <div className="flex items-center gap-1">
-                              <span className="font-medium">{nota !== undefined ? nota.toFixed(2) : '—'}</span>
-                              {comentario && (
-                                <button type="button" onClick={() => setComentarioAbierto({ nombreActividad: act.nombre, comentario })} className="text-primary hover:text-primary/80" aria-label="Ver comentario">
-                                  <MessageSquareText className="w-4 h-4" />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      };
-                      return (
-                        <div key={g.id} className="border border-border rounded bg-muted/20">
-                          <div className="px-3 py-1.5 bg-primary/10 font-semibold text-sm flex items-center justify-between">
-                            <span>{(g as any).nombre || ''} <span className="text-muted-foreground font-normal">({g.porcentaje}%)</span></span>
-                          </div>
-                          <div className="px-3 py-1">
-                            {actsDirectas.map(renderActFila)}
-                            {subgrupos.map((sg) => {
-                              const actsSub = actividadesDelPeriodo.filter(a => a.grupo_id === sg.id);
-                              if (actsSub.length === 0) return null;
-                              return (
-                                <div key={sg.id} className="ml-3 mt-1.5 border-l-2 border-primary/30 pl-3">
-                                  <div className="text-xs font-medium text-muted-foreground py-1 flex items-center justify-between">
-                                    <span>{(sg as any).nombre || ''} ({sg.porcentaje}% del grupo padre)</span>
-                                  </div>
-                                  {actsSub.map(renderActFila)}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {/* Notas sueltas sin grupo */}
-                    {actividadesDelPeriodo.filter(a => !a.grupo_id).length > 0 && (
-                      <div className="border border-dashed border-border rounded p-3">
-                        <div className="text-xs font-medium text-muted-foreground mb-1">Otras actividades</div>
-                        {actividadesDelPeriodo.filter(a => !a.grupo_id).map((act) => {
-                          const nota = notas[asignatura]?.[periodoActivo]?.[act.id];
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-primary/15">
+                        {runs(c => c.topId).map(rn => {
+                          const g = gById.get(rn.key);
                           return (
-                            <div key={act.id} className="flex items-center justify-between py-1 text-sm">
-                              <span>{act.nombre}{act.porcentaje !== null ? ` (${act.porcentaje}%)` : ''}</span>
-                              <span className="font-medium">{nota !== undefined ? nota.toFixed(2) : '—'}</span>
-                            </div>
+                            <th key={`t-${rn.key || 'libre'}-${rn.start}`} colSpan={rn.len} className="p-2 text-center text-xs font-semibold border-r border-b border-border">
+                              {g ? <>{(g as any).nombre} <span className="text-muted-foreground font-normal">({g.porcentaje}%)</span></> : ''}
+                            </th>
                           );
                         })}
-                      </div>
-                    )}
-                    {/* Definitiva */}
-                    <div className="bg-primary/10 px-3 py-2 rounded flex items-center justify-between">
-                      <span className="font-bold text-sm">Definitiva Periodo</span>
-                      {renderDefinitivaPeriodo(asignatura, periodoActivo, "font-bold text-lg")}
-                    </div>
-                  </div>
+                        <th rowSpan={haySubs ? 3 : 2} className="p-2 text-center text-xs font-semibold border-b border-border min-w-[100px] bg-primary/10 align-middle">
+                          <div>Definitiva Periodo</div>
+                          <div className="text-muted-foreground text-xs font-normal">({getPorcentajeCalificado(asignatura, periodoActivo)}%)</div>
+                        </th>
+                      </tr>
+                      {haySubs && (
+                        <tr className="bg-primary/5">
+                          {runs(c => `${c.topId}|${c.subId ?? ''}`).map(rn => {
+                            const subId = rn.key.split('|')[1];
+                            const sg = subId ? gById.get(subId) : undefined;
+                            return (
+                              <th key={`s-${rn.key || 'libre'}-${rn.start}`} colSpan={rn.len} className="p-1.5 text-center text-[11px] font-medium border-r border-b border-border">
+                                {sg ? <>{(sg as any).nombre} <span className="text-muted-foreground font-normal">({sg.porcentaje}%)</span></> : ''}
+                              </th>
+                            );
+                          })}
+                        </tr>
+                      )}
+                      <tr className="bg-muted/50">
+                        {cols.map(c => (
+                          <th key={`a-${c.key}`} className="p-2 text-center text-xs font-medium border-r border-b border-border min-w-[100px]">
+                            <div className="truncate" title={c.act?.nombre || ''}>{c.act ? c.act.nombre : '—'}</div>
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        {cols.map(c => {
+                          if (!c.act) return <td key={`v-${c.key}`} className="p-2 text-center text-sm border-r border-b border-border text-muted-foreground">—</td>;
+                          const nota = notas[asignatura]?.[periodoActivo]?.[c.act.id];
+                          const comentario = comentarios[asignatura]?.[periodoActivo]?.[c.act.id];
+                          return (
+                            <td key={`v-${c.key}`} className="p-2 text-center text-sm border-r border-b border-border">
+                              <div className="inline-flex items-center justify-center gap-1">
+                                <span>{nota !== undefined ? nota.toFixed(2) : '—'}</span>
+                                {comentario && (
+                                  <button type="button" onClick={() => setComentarioAbierto({ nombreActividad: c.act!.nombre, comentario })} className="text-primary hover:text-primary/80" title="Ver comentario del profesor" aria-label="Ver comentario del profesor">
+                                    <MessageSquareText className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          );
+                        })}
+                        <td className="p-2 text-center border-b border-border bg-primary/5">
+                          {renderDefinitivaPeriodo(asignatura, periodoActivo, "font-bold")}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 );
               })()}
             </div>
