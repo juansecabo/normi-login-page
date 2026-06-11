@@ -342,7 +342,10 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
     if (!prov) return <span className={claseValor}>{nf.toFixed(1)}</span>;
     return (
       <span className={claseValor} title="Provisional — el periodo aún no está completo">
-        {nf.toFixed(1)} <span className="text-[10px] font-normal text-muted-foreground">prov.</span>
+        <span className="inline-flex flex-col items-center leading-tight">
+          <span>{nf.toFixed(1)}</span>
+          <span className="text-[10px] font-normal text-muted-foreground">provisional</span>
+        </span>
       </span>
     );
   };
@@ -534,12 +537,17 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
                 return (
                   <table className="w-full">
                     <thead>
-                      <tr className="bg-primary/15">
+                      <tr>
                         {runs(c => c.topId).map(rn => {
                           const g = gById.get(rn.key);
                           return (
-                            <th key={`t-${rn.key || 'libre'}-${rn.start}`} colSpan={rn.len} className="p-2 text-center text-xs font-semibold border-r border-b border-border">
-                              {g ? <>{(g as any).nombre} <span className="text-muted-foreground font-normal">({g.porcentaje}%)</span></> : ''}
+                            <th key={`t-${rn.key || 'libre'}-${rn.start}`} colSpan={rn.len} className={`p-2 text-center text-xs font-semibold border-r border-b border-border/30 ${g ? 'bg-emerald-800 text-white' : 'bg-primary/90 text-white'}`}>
+                              {g ? (
+                                <div className="flex flex-col items-center">
+                                  <span>{(g as any).nombre}</span>
+                                  {g.porcentaje !== null && <span className="text-white/70 text-[10px]">({g.porcentaje}%)</span>}
+                                </div>
+                              ) : ''}
                             </th>
                           );
                         })}
@@ -549,21 +557,26 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
                         </th>
                       </tr>
                       {haySubs && (
-                        <tr className="bg-primary/5">
+                        <tr>
                           {runs(c => `${c.topId}|${c.subId ?? ''}`).map(rn => {
                             const subId = rn.key.split('|')[1];
                             const sg = subId ? gById.get(subId) : undefined;
                             return (
-                              <th key={`s-${rn.key || 'libre'}-${rn.start}`} colSpan={rn.len} className="p-1.5 text-center text-[11px] font-medium border-r border-b border-border">
-                                {sg ? <>{(sg as any).nombre} <span className="text-muted-foreground font-normal">({sg.porcentaje}%)</span></> : ''}
+                              <th key={`s-${rn.key || 'libre'}-${rn.start}`} colSpan={rn.len} className={`p-1.5 text-center text-[11px] font-semibold border-r border-b border-border/30 ${sg ? 'bg-emerald-600 text-white' : 'bg-emerald-800/0'}`}>
+                                {sg ? (
+                                  <div className="flex flex-col items-center">
+                                    <span>{(sg as any).nombre}</span>
+                                    {sg.porcentaje !== null && <span className="text-white/70 text-[10px]">({sg.porcentaje}%)</span>}
+                                  </div>
+                                ) : ''}
                               </th>
                             );
                           })}
                         </tr>
                       )}
-                      <tr className="bg-muted/50">
+                      <tr>
                         {cols.map(c => (
-                          <th key={`a-${c.key}`} className="p-2 text-center text-xs font-medium border-r border-b border-border min-w-[100px]">
+                          <th key={`a-${c.key}`} className="p-2 text-center text-xs font-medium border-r border-b border-border/30 min-w-[100px] bg-emerald-300 text-emerald-950">
                             <div className="truncate" title={c.act?.nombre || ''}>{c.act ? c.act.nombre : '—'}</div>
                           </th>
                         ))}
