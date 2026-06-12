@@ -199,17 +199,17 @@ const Perfil = () => {
 
           {vista === "menu" && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <button onClick={() => setVista("datos")} className="flex flex-col items-center gap-3 p-8 rounded-lg bg-sky-100 hover:bg-sky-200 transition-colors cursor-pointer">
-                <UserRound className="w-10 h-10 text-sky-700" />
-                <span className="font-semibold text-foreground">Cambiar datos</span>
-                <span className="text-xs text-muted-foreground text-center">
+              <button onClick={() => setVista("datos")} className="flex flex-col items-center gap-3 p-10 rounded-xl bg-sky-100 hover:bg-sky-200 transition-colors cursor-pointer">
+                <UserRound className="w-12 h-12 text-sky-700" />
+                <span className="text-lg font-semibold text-foreground">Cambiar datos</span>
+                <span className="text-sm text-muted-foreground text-center">
                   {esEstudiante ? "Tu número de celular y tu contraseña" : "Tu nombre, celular, fecha de nacimiento y contraseña"}
                 </span>
               </button>
-              <button onClick={() => { setVista("recuperacion"); setVerificada(false); setPwdVerif(""); }} className="flex flex-col items-center gap-3 p-8 rounded-lg bg-amber-100 hover:bg-amber-200 transition-colors cursor-pointer">
-                <KeyRound className="w-10 h-10 text-amber-700" />
-                <span className="font-semibold text-foreground">Recuperación de contraseña</span>
-                <span className="text-xs text-muted-foreground text-center">Configura cómo recuperarla cuando se te olvide</span>
+              <button onClick={() => { setVista("recuperacion"); setVerificada(false); setPwdVerif(""); }} className="flex flex-col items-center gap-3 p-10 rounded-xl bg-amber-100 hover:bg-amber-200 transition-colors cursor-pointer">
+                <KeyRound className="w-12 h-12 text-amber-700" />
+                <span className="text-lg font-semibold text-foreground">Recuperación de contraseña</span>
+                <span className="text-sm text-muted-foreground text-center">Configura cómo recuperarla cuando se te olvide</span>
               </button>
             </div>
           )}
@@ -295,16 +295,16 @@ const Perfil = () => {
               ) : (
                 <div className="space-y-5">
                   <h3 className="font-semibold text-foreground">¿Cómo desea recuperar su contraseña cuando se olvide?</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button onClick={() => setMetodo("whatsapp")} className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-colors cursor-pointer ${metodo === "whatsapp" ? "border-green-500 bg-green-50" : "border-border hover:border-green-300"}`}>
-                      <MessageCircle className="w-7 h-7 text-green-600" />
-                      <span className="text-sm font-medium">Por WhatsApp</span>
-                      <span className="text-[11px] text-muted-foreground text-center">Normi te hará una pregunta secreta</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button onClick={() => setMetodo("whatsapp")} className={`flex flex-col items-center gap-3 p-8 rounded-xl border-2 bg-green-100 hover:bg-green-200 transition-colors cursor-pointer ${metodo === "whatsapp" ? "border-green-600 shadow-md" : "border-transparent"}`}>
+                      <MessageCircle className="w-12 h-12 text-green-600" />
+                      <span className="text-lg font-semibold text-foreground">Por WhatsApp</span>
+                      <span className="text-sm text-muted-foreground text-center">Normi te hará una pregunta secreta</span>
                     </button>
-                    <button onClick={() => setMetodo("correo")} className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-colors cursor-pointer ${metodo === "correo" ? "border-blue-500 bg-blue-50" : "border-border hover:border-blue-300"}`}>
-                      <Mail className="w-7 h-7 text-blue-600" />
-                      <span className="text-sm font-medium">Por correo</span>
-                      <span className="text-[11px] text-muted-foreground text-center">Te llega al correo desde la página de inicio</span>
+                    <button onClick={() => setMetodo("correo")} className={`flex flex-col items-center gap-3 p-8 rounded-xl border-2 bg-blue-100 hover:bg-blue-200 transition-colors cursor-pointer ${metodo === "correo" ? "border-blue-600 shadow-md" : "border-transparent"}`}>
+                      <Mail className="w-12 h-12 text-blue-600" />
+                      <span className="text-lg font-semibold text-foreground">Por correo</span>
+                      <span className="text-sm text-muted-foreground text-center">Te llega al correo desde la página de inicio</span>
                     </button>
                   </div>
 
