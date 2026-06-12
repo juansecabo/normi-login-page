@@ -40,6 +40,8 @@ const SolicitudEntrevistaStaff = () => {
   const sigCanvas = useRef<SignatureCanvas>(null);
 
   const [tab, setTab] = useState<Tab>("crear");
+  // Respuestas de acudientes aún no vistas (numerito sobre "Solicitudes creadas")
+  const [respuestasNuevas, setRespuestasNuevas] = useState(0);
   const [aceptoTerminos, setAceptoTerminos] = useState(false);
 
   // Form
@@ -70,6 +72,16 @@ const SolicitudEntrevistaStaff = () => {
 
   const backLink = isAdmin() ? "/dashboard-admin" : puedeAccederDashboard() ? "/dashboard-rector" : "/dashboard";
   const session = getSession();
+
+  // Contador para el numerito del tab "Solicitudes creadas"
+  useEffect(() => {
+    if (!session.id) return;
+    supabase.from("Solicitudes_Entrevista")
+      .select("*", { count: "exact", head: true })
+      .eq("creado_por", session.id)
+      .eq("respuesta_vista", false)
+      .then(({ count }) => setRespuestasNuevas(count ?? 0));
+  }, []);
 
   useEffect(() => {
     if (!session.id || (!isProfesor() && !puedeAccederDashboard() && !isAdmin())) { navigate("/"); return; }
@@ -216,7 +228,14 @@ const SolicitudEntrevistaStaff = () => {
 
         <div className="flex gap-2 mb-6">
           <button onClick={() => setTab("crear")} className={`px-4 py-2 rounded-lg font-medium transition-colors cursor-pointer ${tab === "crear" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"}`}>Crear solicitud</button>
-          <button onClick={() => setTab("historial")} className={`px-4 py-2 rounded-lg font-medium transition-colors cursor-pointer ${tab === "historial" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"}`}>Solicitudes creadas</button>
+          <button onClick={() => { setTab("historial"); setRespuestasNuevas(0); }} className={`relative px-4 py-2 rounded-lg font-medium transition-colors cursor-pointer ${tab === "historial" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"}`}>
+            Solicitudes creadas
+            {respuestasNuevas > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 shadow-sm z-10">
+                {respuestasNuevas}
+              </span>
+            )}
+          </button>
         </div>
 
         {tab === "crear" && (
