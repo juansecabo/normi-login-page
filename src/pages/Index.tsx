@@ -374,6 +374,7 @@ const Index = () => {
                     type="text"
                     inputMode="numeric"
                     placeholder="Tu número de identidad"
+                    autoComplete="off"
                     value={olvidoId}
                     onChange={(e) => setOlvidoId(e.target.value)}
                   />

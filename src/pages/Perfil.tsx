@@ -251,13 +251,13 @@ const Perfil = () => {
                   <div className="border-t border-border pt-5 space-y-3">
                     <h3 className="font-semibold text-foreground">Cambiar contraseña</h3>
                     <div className="relative">
-                      <input type={showPwd ? "text" : "password"} value={pwdActual} onChange={(e) => setPwdActual(e.target.value)} placeholder="Contraseña actual" className={inputCls} />
+                      <input type={showPwd ? "text" : "password"} autoComplete="new-password" value={pwdActual} onChange={(e) => setPwdActual(e.target.value)} placeholder="Contraseña actual" className={inputCls} />
                       <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" tabIndex={-1}>
                         {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
-                    <input type={showPwd ? "text" : "password"} value={pwdNueva} onChange={(e) => setPwdNueva(e.target.value)} placeholder="Nueva contraseña (mínimo 6 caracteres)" className={inputCls} />
-                    <input type={showPwd ? "text" : "password"} value={pwdConfirma} onChange={(e) => setPwdConfirma(e.target.value)} placeholder="Repite la nueva contraseña" className={inputCls} />
+                    <input type={showPwd ? "text" : "password"} autoComplete="new-password" value={pwdNueva} onChange={(e) => setPwdNueva(e.target.value)} placeholder="Nueva contraseña (mínimo 6 caracteres)" className={inputCls} />
+                    <input type={showPwd ? "text" : "password"} autoComplete="new-password" value={pwdConfirma} onChange={(e) => setPwdConfirma(e.target.value)} placeholder="Repite la nueva contraseña" className={inputCls} />
                     <button onClick={guardarContrasena} disabled={guardandoPwd} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
                       {guardandoPwd && <Loader2 className="w-4 h-4 animate-spin" />} Cambiar contraseña
                     </button>
@@ -277,6 +277,7 @@ const Perfil = () => {
                   <div className="relative">
                     <input
                       type={showPwdVerif ? "text" : "password"}
+                      autoComplete="new-password"
                       value={pwdVerif}
                       onChange={(e) => setPwdVerif(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && verificarContrasena()}
@@ -327,11 +328,11 @@ const Perfil = () => {
                     <div className="space-y-3">
                       <div>
                         <label className="text-sm font-medium block mb-1">Correo de recuperación</label>
-                        <input type="email" value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder="tucorreo@ejemplo.com" className={inputCls} />
+                        <input type="email" autoComplete="off" value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder="tucorreo@ejemplo.com" className={inputCls} />
                       </div>
                       <div>
                         <label className="text-sm font-medium block mb-1">Repite el correo</label>
-                        <input type="email" value={correo2} onChange={(e) => setCorreo2(e.target.value)} placeholder="tucorreo@ejemplo.com" className={inputCls} />
+                        <input type="email" autoComplete="off" value={correo2} onChange={(e) => setCorreo2(e.target.value)} placeholder="tucorreo@ejemplo.com" className={inputCls} />
                       </div>
                       <p className="text-xs text-muted-foreground">
                         Cuando olvides tu contraseña, en la página de inicio podrás pedir que te la enviemos a este correo.
