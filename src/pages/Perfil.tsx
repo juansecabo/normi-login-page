@@ -129,10 +129,10 @@ const Perfil = () => {
       const cfg = await apiClient.perfil.recuperacionVer(pwdVerif);
       setPregunta(cfg.recuperacion_pregunta || "");
       setRespuesta(cfg.recuperacion_respuesta || "");
-      setCorreo(cfg.recuperacion_correo || "");
-      setCorreo2(cfg.recuperacion_correo || "");
+      setCorreo(cfg.correo || "");
+      setCorreo2(cfg.correo || "");
       if (cfg.recuperacion_pregunta) setMetodo("whatsapp");
-      else if (cfg.recuperacion_correo) setMetodo("correo");
+      else if (cfg.correo) setMetodo("correo");
       setVerificada(true);
     } catch {
       toast({ title: "Contraseña incorrecta", description: "Verifica tu contraseña e intenta de nuevo.", variant: "destructive" });

@@ -516,13 +516,13 @@ export const apiClient = {
 
   /** Ficha Perfil: lee/escribe la tabla global Usuarios (aplica a todos los perfiles). */
   perfil: {
-    datos(): Promise<{ nombres: string | null; apellidos: string | null; numero_de_telefono: string | null; fecha_de_nacimiento: string | null; recuperacion_correo: string | null; recuperacion_pregunta: string | null }> {
+    datos(): Promise<{ nombres: string | null; apellidos: string | null; numero_de_telefono: string | null; fecha_de_nacimiento: string | null; correo: string | null; recuperacion_pregunta: string | null }> {
       return request('/api/perfil/datos');
     },
     actualizarDatos(body: Record<string, unknown>): Promise<{ ok: true }> {
       return request('/api/perfil/datos', { method: 'POST', body: JSON.stringify(body) });
     },
-    recuperacionVer(contrasena: string): Promise<{ recuperacion_pregunta: string | null; recuperacion_respuesta: string | null; recuperacion_correo: string | null }> {
+    recuperacionVer(contrasena: string): Promise<{ recuperacion_pregunta: string | null; recuperacion_respuesta: string | null; correo: string | null }> {
       return request('/api/perfil/recuperacion/ver', { method: 'POST', body: JSON.stringify({ contrasena }) });
     },
     recuperacionGuardar(body: { contrasena: string; metodo: 'whatsapp' | 'correo'; pregunta?: string; respuesta?: string; correo?: string }): Promise<{ ok: true }> {
