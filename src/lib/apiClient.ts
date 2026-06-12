@@ -504,6 +504,30 @@ export const apiClient = {
     isAuthenticated(): boolean {
       return getToken() !== null;
     },
+
+    /** PÚBLICO (página de inicio): envía la contraseña al correo de recuperación asociado al id. */
+    async olvidoContrasena(id: string): Promise<{ ok: true }> {
+      return request<{ ok: true }>('/auth/olvido-contrasena', {
+        method: 'POST',
+        body: JSON.stringify({ id }),
+      });
+    },
+  },
+
+  /** Ficha Perfil: lee/escribe la tabla global Usuarios (aplica a todos los perfiles). */
+  perfil: {
+    datos(): Promise<{ nombres: string | null; apellidos: string | null; numero_de_telefono: string | null; fecha_de_nacimiento: string | null; recuperacion_correo: string | null; recuperacion_pregunta: string | null }> {
+      return request('/api/perfil/datos');
+    },
+    actualizarDatos(body: Record<string, unknown>): Promise<{ ok: true }> {
+      return request('/api/perfil/datos', { method: 'POST', body: JSON.stringify(body) });
+    },
+    recuperacionVer(contrasena: string): Promise<{ recuperacion_pregunta: string | null; recuperacion_respuesta: string | null; recuperacion_correo: string | null }> {
+      return request('/api/perfil/recuperacion/ver', { method: 'POST', body: JSON.stringify({ contrasena }) });
+    },
+    recuperacionGuardar(body: { contrasena: string; metodo: 'whatsapp' | 'correo'; pregunta?: string; respuesta?: string; correo?: string }): Promise<{ ok: true }> {
+      return request('/api/perfil/recuperacion', { method: 'POST', body: JSON.stringify(body) });
+    },
   },
 
   plataforma: {

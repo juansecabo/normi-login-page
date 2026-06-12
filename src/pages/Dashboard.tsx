@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import normiExaminadoraImg from "@/assets/normi-examinadora.webp";
 import iconActividades from "@/assets/icons/actividades.webp";
+import iconPerfil from "@/assets/icons/perfil.png";
 import iconEnviarComunicado from "@/assets/icons/enviar-comunicado.webp";
 import iconComunicadosRecibidos from "@/assets/icons/comunicados-recibidos.webp";
 import iconEstadisticas from "@/assets/icons/estadisticas.webp";
@@ -247,6 +248,12 @@ const Dashboard = () => {
       <button onClick={() => navigate("/profesor/asistencia")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-blue-100 transition-all duration-200 hover:shadow-md hover:bg-blue-200">
         <img src={iconAsistencia} alt="" className="w-12 h-12 object-contain" />
         <span className="font-semibold text-foreground text-center">Asistencia</span>
+      </button>
+    ) },
+    { id: 'perfil', render: (
+      <button onClick={() => navigate("/perfil")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-sky-100 transition-all duration-200 hover:shadow-md hover:bg-sky-200">
+        <img src={iconPerfil} alt="" className="w-12 h-12 object-contain rounded-full border-2 border-black" />
+        <span className="font-semibold text-foreground text-center">Perfil</span>
       </button>
     ) },
   ];

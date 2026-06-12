@@ -33,6 +33,24 @@ const Index = () => {
   const initialMemberships = (location.state as { memberships?: MembershipChoice[] } | null)?.memberships ?? null;
   const [memberships, setMemberships] = useState<MembershipChoice[] | null>(initialMemberships);
   const [userError, setUserError] = useState<{ title: string; description: string } | null>(null);
+  // ¿Olvidó su contraseña?
+  const [olvidoOpen, setOlvidoOpen] = useState(false);
+  const [olvidoId, setOlvidoId] = useState("");
+  const [olvidoLoading, setOlvidoLoading] = useState(false);
+  const [olvidoMsg, setOlvidoMsg] = useState<{ ok: boolean; texto: string } | null>(null);
+
+  const enviarOlvido = async () => {
+    setOlvidoLoading(true);
+    setOlvidoMsg(null);
+    try {
+      await apiClient.auth.olvidoContrasena(olvidoId);
+      setOlvidoMsg({ ok: true, texto: "Listo: te enviamos tu contraseña al correo de recuperación asociado. Revisa también el spam." });
+    } catch (e: any) {
+      const detail = e?.body?.detail;
+      setOlvidoMsg({ ok: false, texto: detail || "No se pudo enviar el correo. Intenta de nuevo en un momento." });
+    }
+    setOlvidoLoading(false);
+  };
   const navigate = useNavigate();
   const { toast } = useToast();
   const { canInstall, isIOS, installApp } = useInstallPrompt();
@@ -342,6 +360,37 @@ const Index = () => {
             >
               {loading ? "Verificando..." : "Ingresar"}
             </Button>
+
+            {/* ¿Olvidó su contraseña? — envía la contraseña al correo de recuperación */}
+            <div className="text-center pt-1">
+              {!olvidoOpen ? (
+                <button type="button" onClick={() => { setOlvidoOpen(true); setOlvidoMsg(null); }} className="text-sm text-primary hover:underline">
+                  ¿Olvidó su contraseña?
+                </button>
+              ) : (
+                <div className="text-left space-y-2 border border-border rounded-lg p-3 bg-muted/20">
+                  <p className="text-sm text-muted-foreground">Escribe tu número de identidad y te enviaremos tu contraseña al correo de recuperación asociado.</p>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="Tu número de identidad"
+                    value={olvidoId}
+                    onChange={(e) => setOlvidoId(e.target.value)}
+                  />
+                  {olvidoMsg && (
+                    <p className={`text-sm ${olvidoMsg.ok ? "text-green-700" : "text-destructive"}`}>{olvidoMsg.texto}</p>
+                  )}
+                  <div className="flex gap-2">
+                    <Button type="button" disabled={olvidoLoading || !olvidoId.trim()} onClick={enviarOlvido} className="flex-1">
+                      {olvidoLoading ? "Enviando..." : "Enviar al correo"}
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => { setOlvidoOpen(false); setOlvidoMsg(null); }}>
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           </form>
           )}
 

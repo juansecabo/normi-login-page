@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, isAdmin, puedeAccederDashboard, isAdministrativo } from "@/hooks/useSession";
 import iconNotas from "@/assets/icons/notas.webp";
+import iconPerfil from "@/assets/icons/perfil.png";
 import iconEstadisticas from "@/assets/icons/estadisticas.webp";
 import iconEnviarComunicado from "@/assets/icons/enviar-comunicado.webp";
 import iconComunicadosRecibidos from "@/assets/icons/comunicados-recibidos.webp";
@@ -260,6 +261,12 @@ const DashboardRector = () => {
       <button onClick={() => navigate("/asistencia")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-blue-100 transition-all duration-200 hover:shadow-md hover:bg-blue-200">
         <img src={iconAsistencia} alt="" className="w-12 h-12 object-contain" />
         <span className="font-semibold text-foreground text-center">Asistencia</span>
+      </button>
+    ) },
+    { id: 'perfil', render: (
+      <button onClick={() => navigate("/perfil")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-sky-100 transition-all duration-200 hover:shadow-md hover:bg-sky-200">
+        <img src={iconPerfil} alt="" className="w-12 h-12 object-contain rounded-full border-2 border-black" />
+        <span className="font-semibold text-foreground text-center">Perfil</span>
       </button>
     ) },
   );
