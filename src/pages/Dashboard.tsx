@@ -35,7 +35,7 @@ const Dashboard = () => {
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [asignaturas, setAsignaturas] = useState<string[]>([]);
-  const [badges, setBadges] = useState({ comunicados: 0, documentos: 0, retiro: 0, inasistencia: 0, uniforme: 0 });
+  const [badges, setBadges] = useState({ comunicados: 0, documentos: 0, retiro: 0, inasistencia: 0, uniforme: 0, entrevista: 0 });
   const [selectedAsignatura, setSelectedAsignatura] = useState<string | null>(null);
   const [loadingAsignaturas, setLoadingAsignaturas] = useState(true);
 
@@ -67,7 +67,7 @@ const Dashboard = () => {
       try {
         const lastSeen = await getAllLastSeen(session.id!);
         const minComLastSeen = Math.min(lastSeen['comunicados'] ?? 0, lastSeen['documentos'] ?? 0);
-        const [asignacionesRes, msgRes, retiroRes, inasistenciaRes, uniformeRes] = await Promise.all([
+        const [asignacionesRes, msgRes, retiroRes, inasistenciaRes, uniformeRes, entrevistaRes] = await Promise.all([
           supabase.from('Asignación Profesores').select('"Grado(s)", "Salon(es)"').eq('id', parseInt(session.id!)),
           supabase.from('Comunicados')
             .select('id, nivel, grado, salon, grados, salones, id_destinatarios, archivo_url')
@@ -76,6 +76,7 @@ const Dashboard = () => {
           supabase.from('Autorizaciones_Retiro').select('*', { count: 'exact', head: true }).gt('id', lastSeen['retiro'] ?? 0),
           supabase.from('Justificaciones_Inasistencia').select('*', { count: 'exact', head: true }).gt('id', lastSeen['inasistencia'] ?? 0),
           supabase.from('Justificaciones_Uniforme').select('*', { count: 'exact', head: true }).gt('id', lastSeen['uniforme'] ?? 0),
+          supabase.from('Solicitudes_Entrevista').select('*', { count: 'exact', head: true }).eq('creado_por', parseInt(session.id!)).eq('respuesta_vista', false),
         ]);
 
         const NIVELES_GRADOS: Record<string, string[]> = {
@@ -89,7 +90,7 @@ const Dashboard = () => {
           salones: ((row["Salon(es)"] as string[] | null) || []),
         }));
 
-        const b = { comunicados: 0, documentos: 0, retiro: 0, inasistencia: 0, uniforme: 0 };
+        const b = { comunicados: 0, documentos: 0, retiro: 0, inasistencia: 0, uniforme: 0, entrevista: 0 };
         if (msgRes.data) {
           const filtrados = msgRes.data.filter((c: any) => {
             if (c.id_destinatarios && c.id_destinatarios.length > 0) {
@@ -126,6 +127,7 @@ const Dashboard = () => {
         b.retiro = retiroRes.count ?? 0;
         b.inasistencia = inasistenciaRes.count ?? 0;
         b.uniforme = uniformeRes.count ?? 0;
+        b.entrevista = entrevistaRes.count ?? 0;
 
         setBadges(b);
       } catch {}
@@ -223,7 +225,8 @@ const Dashboard = () => {
       </button>
     ) },
     { id: 'solicitud-entrevista', render: (
-      <button onClick={() => navigate("/solicitud-entrevista-staff")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-indigo-100 transition-all duration-200 hover:shadow-md hover:bg-indigo-200">
+      <button onClick={() => navigate("/solicitud-entrevista-staff")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-indigo-100 transition-all duration-200 hover:shadow-md hover:bg-indigo-200">
+        <Badge count={badges.entrevista} />
         <img src={iconEntrevista} alt="" className="w-12 h-12 object-contain" />
         <span className="font-semibold text-foreground text-center">Solicitud de Entrevista</span>
       </button>

@@ -49,7 +49,7 @@ const DashboardRector = () => {
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [cargo, setCargo] = useState("");
-  const [badges, setBadges] = useState({ comunicados: 0, documentos: 0, remisiones: 0, retiro: 0, inasistencia: 0, uniforme: 0 });
+  const [badges, setBadges] = useState({ comunicados: 0, documentos: 0, remisiones: 0, retiro: 0, inasistencia: 0, uniforme: 0, entrevista: 0 });
   const esAdministrativo = isAdministrativo();
 
   useEffect(() => {
@@ -91,13 +91,14 @@ const DashboardRector = () => {
           .gt('id', minComLastSeen);
 
         const esOrientador = session.cargo === 'Orientador(a) Escolar';
-        const [remisionesRes, retiroRes, inasistenciaRes, uniformeRes] = await Promise.all([
+        const [remisionesRes, retiroRes, inasistenciaRes, uniformeRes, entrevistaRes] = await Promise.all([
           esOrientador
             ? supabase.from('Remisiones_Orientacion').select('*', { count: 'exact', head: true }).gt('id', lastSeen['remisiones'] ?? 0)
             : Promise.resolve({ count: 0 } as any),
           supabase.from('Autorizaciones_Retiro').select('*', { count: 'exact', head: true }).gt('id', lastSeen['retiro'] ?? 0),
           supabase.from('Justificaciones_Inasistencia').select('*', { count: 'exact', head: true }).gt('id', lastSeen['inasistencia'] ?? 0),
           supabase.from('Justificaciones_Uniforme').select('*', { count: 'exact', head: true }).gt('id', lastSeen['uniforme'] ?? 0),
+          supabase.from('Solicitudes_Entrevista').select('*', { count: 'exact', head: true }).eq('creado_por', parseInt(session.id!)).eq('respuesta_vista', false),
         ]);
 
         if (msgData) {
@@ -114,6 +115,7 @@ const DashboardRector = () => {
             retiro: (retiroRes as any).count ?? 0,
             inasistencia: (inasistenciaRes as any).count ?? 0,
             uniforme: (uniformeRes as any).count ?? 0,
+            entrevista: (entrevistaRes as any).count ?? 0,
           });
         }
       } catch (err) {
@@ -186,7 +188,8 @@ const DashboardRector = () => {
       </button>
     ) },
     { id: 'solicitud-entrevista', render: (
-      <button onClick={() => navigate("/solicitud-entrevista-staff")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-indigo-100 transition-all duration-200 hover:shadow-md hover:bg-indigo-200">
+      <button onClick={() => navigate("/solicitud-entrevista-staff")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-indigo-100 transition-all duration-200 hover:shadow-md hover:bg-indigo-200">
+        <Badge count={badges.entrevista} />
         <img src={iconEntrevista} alt="" className="w-12 h-12 object-contain" />
         <span className="font-semibold text-foreground text-center">Solicitud de Entrevista</span>
       </button>

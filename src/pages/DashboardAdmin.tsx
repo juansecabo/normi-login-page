@@ -48,7 +48,7 @@ const DashboardAdmin = () => {
   const navigate = useNavigate();
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
-  const [badges, setBadges] = useState({ retiro: 0, inasistencia: 0, uniforme: 0 });
+  const [badges, setBadges] = useState({ retiro: 0, inasistencia: 0, uniforme: 0, entrevista: 0 });
 
   useEffect(() => {
     const session = getSession();
@@ -69,15 +69,17 @@ const DashboardAdmin = () => {
     const fetchBadges = async () => {
       try {
         const lastSeen = await getAllLastSeen(session.id!);
-        const [retiroRes, inasistenciaRes, uniformeRes] = await Promise.all([
+        const [retiroRes, inasistenciaRes, uniformeRes, entrevistaRes] = await Promise.all([
           supabase.from('Autorizaciones_Retiro').select('*', { count: 'exact', head: true }).gt('id', lastSeen['retiro'] ?? 0),
           supabase.from('Justificaciones_Inasistencia').select('*', { count: 'exact', head: true }).gt('id', lastSeen['inasistencia'] ?? 0),
           supabase.from('Justificaciones_Uniforme').select('*', { count: 'exact', head: true }).gt('id', lastSeen['uniforme'] ?? 0),
+          supabase.from('Solicitudes_Entrevista').select('*', { count: 'exact', head: true }).eq('creado_por', parseInt(session.id!)).eq('respuesta_vista', false),
         ]);
         setBadges({
           retiro: retiroRes.count ?? 0,
           inasistencia: inasistenciaRes.count ?? 0,
           uniforme: uniformeRes.count ?? 0,
+          entrevista: entrevistaRes.count ?? 0,
         });
       } catch (err) {
         console.error('Error fetching badges:', err);
@@ -99,7 +101,7 @@ const DashboardAdmin = () => {
     { id: 'registro-normi', render: <Card bg="bg-cyan-100 hover:bg-cyan-200" icon={<img src={iconRegistroAgente} alt="" className="w-16 h-16 object-contain" />} label="Registro en Normi" onClick={() => navigate("/registro-normi")} /> },
     { id: 'conversaciones', render: <Card bg="bg-blue-100 hover:bg-blue-200" icon={<img src={iconConversaciones} alt="" className="w-16 h-16 object-contain" />} label="Conversaciones" onClick={() => window.open("https://chat.notasnormi.com", "_blank")} /> },
     { id: 'permisos-excusas', render: <Card bg="bg-rose-100 hover:bg-rose-200" badge={permisosTotal} icon={<img src={iconPermisos} alt="" className="w-16 h-16 object-contain" />} label="Permisos y Excusas" onClick={() => navigate("/permisos-excusas")} /> },
-    { id: 'solicitud-entrevista', render: <Card bg="bg-indigo-100 hover:bg-indigo-200" icon={<img src={iconEntrevista} alt="" className="w-16 h-16 object-contain" />} label="Solicitud de Entrevista" onClick={() => navigate("/solicitud-entrevista-staff")} /> },
+    { id: 'solicitud-entrevista', render: <Card bg="bg-indigo-100 hover:bg-indigo-200" badge={badges.entrevista} icon={<img src={iconEntrevista} alt="" className="w-16 h-16 object-contain" />} label="Solicitud de Entrevista" onClick={() => navigate("/solicitud-entrevista-staff")} /> },
     { id: 'consultas', render: <Card bg="bg-pink-100 hover:bg-pink-200" icon={<img src={iconConsultas} alt="" className="w-16 h-16 object-contain" />} label="Consultas" onClick={() => navigate("/consultas")} /> },
     { id: 'registros-comportamiento', render: <Card bg="bg-amber-100 hover:bg-amber-200" icon={<img src={iconRegistros} alt="" className="w-16 h-16 object-contain" />} label="Registros de Comportamiento" onClick={() => navigate("/registros-comportamiento")} /> },
     { id: 'solicitudes-registro', render: <Card bg="bg-sky-100 hover:bg-sky-200" icon={<ClipboardList className="w-16 h-16 text-sky-700" strokeWidth={1.5} />} label="Solicitudes de Registro" onClick={() => navigate("/admin/correcciones-registro")} /> },

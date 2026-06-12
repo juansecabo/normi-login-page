@@ -113,6 +113,10 @@ const SolicitudEntrevistaStaff = () => {
       .eq("creado_por", session.id).order("created_at", { ascending: false });
     setHistorial(data || []);
     setLoadingHistorial(false);
+    // Ver el historial apaga el numerito del dashboard (respuestas ya vistas).
+    supabase.from("Solicitudes_Entrevista").update({ respuesta_vista: true })
+      .eq("creado_por", session.id).eq("respuesta_vista", false)
+      .then(() => {}, () => {});
   };
 
   const handleFirmaEnd = () => { if (sigCanvas.current && !sigCanvas.current.isEmpty()) setFirma(sigCanvas.current.toDataURL("image/png")); };

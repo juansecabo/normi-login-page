@@ -8,7 +8,6 @@ import { es } from "date-fns/locale";
 import { UserRound, X, ChevronDown, Check, XCircle } from "lucide-react";
 import FirmaImage from "@/components/FirmaImage";
 import { entrevistadoresDeSolicitud } from "@/lib/entrevistadores";
-import { notifyInternoPorCedula } from "@/lib/notifyStaff";
 
 const GRADO_ORDEN: Record<string, number> = {
   "Párvulo":0,"Prejardín":1,"Jardín":2,"Transición":3,"Primero":4,"Segundo":5,"Tercero":6,
@@ -61,25 +60,20 @@ const SolicitudEntrevistaAcudiente = () => {
   const solDelDia = diaSeleccionado ? (porFecha[fechaKey(diaSeleccionado)] || []) : [];
 
   const toggleConfirmacion = async (solicitudId: number, valor: boolean | null) => {
-    const sol = solicitudes.find(s => s.id === solicitudId);
-    const actual = sol?.confirmado;
+    const actual = solicitudes.find(s => s.id === solicitudId)?.confirmado;
     const nuevoValor = actual === valor ? null : valor;
-    await supabase.from("Solicitudes_Entrevista").update({ confirmado: nuevoValor }).eq("id", solicitudId);
-    setSolicitudes(prev => prev.map(s => s.id === solicitudId ? { ...s, confirmado: nuevoValor } : s));
-
-    // Avisar al creador de la solicitud con la respuesta del acudiente
-    // (solo respuestas reales, no la des-selección que vuelve a null).
-    if (sol && sol.creado_por && nuevoValor !== null) {
-      const session = getSession();
-      const acudiente = [session.nombres, session.apellidos].filter(Boolean).join(" ") || "El acudiente";
-      const respuesta = nuevoValor ? "✅ *SÍ asistirá*" : "❌ *NO asistirá*";
-      const mensaje =
-        `*RESPUESTA A SOLICITUD DE ENTREVISTA*\n\n` +
-        `${acudiente}, acudiente de ${sol.estudiante_nombre} ${sol.estudiante_apellidos} (${sol.estudiante_grado} ${sol.estudiante_salon}), ` +
-        `respondió a su solicitud de entrevista programada para el ${fmtFecha(sol.fecha_entrevista)} a las ${sol.hora_entrevista}:\n\n${respuesta}`;
-      notifyInternoPorCedula(mensaje, "Entrevista", sol.creado_por, sol.creado_por_nombre || "Creador de la solicitud")
-        .catch(() => {});
+    // Sin notificación de WhatsApp (decisión 11-06): la respuesta solo cambia
+    // el estado en la plataforma. respuesta_vista=false enciende el numerito
+    // en el dashboard del creador hasta que abra "Solicitudes creadas".
+    const { error } = await supabase
+      .from("Solicitudes_Entrevista")
+      .update({ confirmado: nuevoValor, respuesta_vista: false })
+      .eq("id", solicitudId);
+    if (error) {
+      alert("No se pudo guardar tu respuesta. Por favor intenta de nuevo.");
+      return;
     }
+    setSolicitudes(prev => prev.map(s => s.id === solicitudId ? { ...s, confirmado: nuevoValor } : s));
   };
 
   return (
