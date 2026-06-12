@@ -252,7 +252,7 @@ const Dashboard = () => {
     ) },
     { id: 'perfil', render: (
       <button onClick={() => navigate("/perfil")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-sky-100 transition-all duration-200 hover:shadow-md hover:bg-sky-200">
-        <img src={iconPerfil} alt="" className="w-12 h-12 object-contain rounded-full border-2 border-black" />
+        <img src={iconPerfil} alt="" className="w-12 h-12 object-contain" />
         <span className="font-semibold text-foreground text-center">Perfil</span>
       </button>
     ) },

@@ -194,7 +194,7 @@ const Perfil = () => {
 
         <div className="bg-card rounded-lg shadow-soft p-6">
           <h2 className="text-xl font-bold text-foreground flex items-center gap-3 mb-6">
-            <img src={iconPerfil} alt="" className="h-8 w-8 object-contain rounded-full border-2 border-black" /> Perfil
+            <img src={iconPerfil} alt="" className="h-8 w-8 object-contain" /> Perfil
           </h2>
 
           {vista === "menu" && (

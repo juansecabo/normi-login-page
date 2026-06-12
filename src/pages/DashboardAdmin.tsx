@@ -108,7 +108,7 @@ const DashboardAdmin = () => {
     { id: 'solicitudes-registro', render: <Card bg="bg-sky-100 hover:bg-sky-200" icon={<ClipboardList className="w-16 h-16 text-sky-700" strokeWidth={1.5} />} label="Solicitudes de Registro" onClick={() => navigate("/admin/correcciones-registro")} /> },
     { id: 'dudas-personal', render: <Card bg="bg-violet-100 hover:bg-violet-200" icon={<MessageCircleQuestion className="w-16 h-16 text-violet-700" strokeWidth={1.5} />} label="Dudas del Personal" onClick={() => navigate("/admin/dudas")} /> },
     { id: 'asistencia', render: <Card bg="bg-blue-100 hover:bg-blue-200" icon={<img src={iconAsistencia} alt="" className="w-16 h-16 object-contain" />} label="Asistencia" onClick={() => navigate("/asistencia")} /> },
-    { id: 'perfil', render: <Card bg="bg-sky-100 hover:bg-sky-200" icon={<img src={iconPerfil} alt="" className="w-16 h-16 object-contain rounded-full border-2 border-black" />} label="Perfil" onClick={() => navigate("/perfil")} /> },
+    { id: 'perfil', render: <Card bg="bg-sky-100 hover:bg-sky-200" icon={<img src={iconPerfil} alt="" className="w-16 h-16 object-contain" />} label="Perfil" onClick={() => navigate("/perfil")} /> },
   ];
 
   return (
