@@ -215,7 +215,7 @@ const Perfil = () => {
           )}
 
           {vista === "datos" && (
-            <div className="space-y-6 max-w-md">
+            <div className="space-y-6 max-w-md mx-auto">
               <button onClick={() => setVista("menu")} className="inline-flex items-center gap-1 text-sm text-primary hover:underline"><ArrowLeft className="w-4 h-4" /> Volver</button>
               {cargandoDatos ? <p className="text-muted-foreground text-sm">Cargando...</p> : (
                 <>
@@ -268,7 +268,7 @@ const Perfil = () => {
           )}
 
           {vista === "recuperacion" && (
-            <div className="space-y-5 max-w-md">
+            <div className="space-y-5 max-w-md mx-auto">
               <button onClick={() => setVista("menu")} className="inline-flex items-center gap-1 text-sm text-primary hover:underline"><ArrowLeft className="w-4 h-4" /> Volver</button>
 
               {!verificada ? (
