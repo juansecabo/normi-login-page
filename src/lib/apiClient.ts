@@ -374,19 +374,30 @@ function blobABase64(blob: Blob): Promise<string> {
  * Si ya viene en webp no se recodifica (evita pérdida). Preserva transparencia.
  */
 async function imagenAWebpBase64(file: File): Promise<string> {
-  if (file.type === 'image/webp') return blobABase64(file);
+  // Un escudo se muestra a lo sumo ~64px en pantalla, así que no tiene sentido
+  // almacenar miles de px (el del Pestalozziano entraba en 1195x896 = 380KB).
+  // SIEMPRE redimensionamos a máx 512px de lado mayor y convertimos a WebP,
+  // incluso si el archivo ya viene en webp (antes el webp se subía tal cual,
+  // sin tocar dimensiones — esa era la fuga).
+  const MAX = 512;
   const bitmap = await createImageBitmap(file);
+  let { width, height } = bitmap;
+  if (width > MAX || height > MAX) {
+    const escala = MAX / Math.max(width, height);
+    width = Math.round(width * escala);
+    height = Math.round(height * escala);
+  }
   const canvas = document.createElement('canvas');
-  canvas.width = bitmap.width;
-  canvas.height = bitmap.height;
+  canvas.width = width;
+  canvas.height = height;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('No se pudo crear el contexto de canvas');
-  ctx.drawImage(bitmap, 0, 0);
+  ctx.drawImage(bitmap, 0, 0, width, height);
   const blob = await new Promise<Blob>((resolve, reject) =>
     canvas.toBlob(
       (b) => (b ? resolve(b) : reject(new Error('La conversión a WebP falló'))),
       'image/webp',
-      0.95,
+      0.9,
     ),
   );
   return blobABase64(blob);
