@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Building2 } from "lucide-react";
 
 interface EscudoColegioProps {
@@ -38,10 +39,15 @@ const EscudoColegio = ({
   className = "",
 }: EscudoColegioProps) => {
   const dimension = { width: size, height: size };
+  const [imgFallo, setImgFallo] = useState(false);
+  // Si cambia la URL, reintentar (limpia el fallo anterior).
+  useEffect(() => { setImgFallo(false); }, [logoUrl]);
 
-  // CON escudo: mostramos la imagen tal cual la subio el colegio,
-  // sin recortar a circulo. object-contain preserva el aspect original.
-  if (logoUrl) {
+  // CON escudo Y que cargue bien: mostramos la imagen tal cual la subio el
+  // colegio, sin recortar a circulo. object-contain preserva el aspect original.
+  // Si la imagen NO carga (red lenta, URL caida...), caemos al placeholder de
+  // abajo en vez de dejar el feo icono de imagen rota del navegador.
+  if (logoUrl && !imgFallo) {
     return (
       <div
         className={`flex items-center justify-center flex-shrink-0 ${className}`}
@@ -51,6 +57,7 @@ const EscudoColegio = ({
           src={logoUrl}
           alt={nombre ? `Escudo de ${nombre}` : "Escudo"}
           className="w-full h-full object-contain"
+          onError={() => setImgFallo(true)}
         />
       </div>
     );
