@@ -245,6 +245,12 @@ const DashboardRector = () => {
         <span className="font-semibold text-foreground text-center">Panel de Control</span>
       </button>
     ) },
+    ...(cargo === "Rector" || cargo === "Administrador" ? [{ id: 'construye-institucion', render: (
+      <button onClick={() => navigate("/construye-institucion")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 transition-all duration-200 hover:shadow-md hover:bg-teal-200">
+        <Building2 className="w-12 h-12 text-teal-700" strokeWidth={1.5} />
+        <span className="font-semibold text-foreground text-center">Construye tu Institución</span>
+      </button>
+    ) }] : []),
     { id: 'uso-normi', render: (
       <button onClick={() => navigate("/rector/uso-normi")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-orange-100 transition-all duration-200 hover:shadow-md hover:bg-orange-200">
         <img src={iconUsoAgente} alt="" className="w-12 h-12 object-contain" />

@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, isAdmin } from "@/hooks/useSession";
-import { ClipboardList, MessageCircleQuestion } from "lucide-react";
+import { ClipboardList, MessageCircleQuestion, Building2 } from "lucide-react";
 import iconNotas from "@/assets/icons/notas.webp";
 import iconPerfil from "@/assets/icons/perfil.png";
 import iconEstadisticas from "@/assets/icons/estadisticas.webp";
@@ -97,6 +97,7 @@ const DashboardAdmin = () => {
     { id: 'enviar-comunicado', render: <Card bg="bg-teal-100 hover:bg-teal-200" icon={<img src={iconEnviarComunicado} alt="" className="w-16 h-16 object-contain" />} label="Enviar Comunicado" onClick={() => navigate("/enviar-comunicado-admin")} /> },
     { id: 'todas-actividades', render: <Card bg="bg-emerald-100 hover:bg-emerald-200" icon={<img src={iconActividades} alt="" className="w-16 h-16 object-contain" />} label="Todas las Actividades" onClick={() => navigate("/admin/todas-actividades")} /> },
     { id: 'panel-control', render: <Card bg="bg-purple-100 hover:bg-purple-200" icon={<img src={iconPanelControl} alt="" className="w-16 h-16 object-contain" />} label="Panel de Control" onClick={() => navigate("/rector/panel-control")} /> },
+    { id: 'construye-institucion', render: <Card bg="bg-teal-100 hover:bg-teal-200" icon={<Building2 className="w-16 h-16 text-teal-700" strokeWidth={1.5} />} label="Construye tu Institución" onClick={() => navigate("/construye-institucion")} /> },
     { id: 'sugerencias', render: <Card bg="bg-amber-100 hover:bg-amber-200" icon={<img src={iconSugerencias} alt="" className="w-16 h-16 object-contain" />} label="Sugerencias" onClick={() => navigate("/admin/sugerencias")} /> },
     { id: 'uso-normi', render: <Card bg="bg-orange-100 hover:bg-orange-200" icon={<img src={iconUsoAgente} alt="" className="w-16 h-16 object-contain" />} label="Uso de Normi" onClick={() => navigate("/rector/uso-normi")} /> },
     { id: 'registro-normi', render: <Card bg="bg-cyan-100 hover:bg-cyan-200" icon={<img src={iconRegistroAgente} alt="" className="w-16 h-16 object-contain" />} label="Registro en Normi" onClick={() => navigate("/registro-normi")} /> },
