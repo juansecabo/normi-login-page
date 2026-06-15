@@ -13,7 +13,7 @@ import { apiRequest, ApiError, apiClient } from "@/lib/apiClient";
 import { getSession } from "@/hooks/useSession";
 import { ORDEN_GRADOS, rankGrado } from "@/utils/grados";
 import EscudoColegio from "@/components/EscudoColegio";
-import { Building, Image as ImageIcon } from "lucide-react";
+import { Building, Image as ImageIcon, ArrowLeft } from "lucide-react";
 
 /**
  * "Construye tu Institución" — el Rector (o Administrador) declara la estructura
@@ -36,6 +36,7 @@ const ConstruyeInstitucion = () => {
   const puedeEditar = cargo === "Rector" || cargo === "Administrador";
 
   const [loading, setLoading] = useState(true);
+  const [vista, setVista] = useState<'menu' | 'info' | 'escudo' | 'estructura' | 'personas'>('menu');
   const [jornadas, setJornadas] = useState<Jornada[]>([]);
   const [grados, setGrados] = useState<Grado[]>([]);
   const [salones, setSalones] = useState<Salon[]>([]);
@@ -222,7 +223,8 @@ const ConstruyeInstitucion = () => {
           <div className="flex items-center gap-2 text-sm flex-wrap">
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
-            <span className="text-foreground font-medium">Configurar Institución</span>
+            <button onClick={() => setVista("menu")} className={vista === "menu" ? "text-foreground font-medium" : "text-primary hover:underline"}>Configurar Institución</button>
+            {vista !== "menu" && (<><span className="text-muted-foreground">&rarr;</span><span className="text-foreground font-medium">{({ info: "Información del colegio", escudo: "Escudo", estructura: "Jornadas y salones", personas: "Personas y puestos" } as Record<string, string>)[vista]}</span></>)}
           </div>
         </div>
 
@@ -232,8 +234,25 @@ const ConstruyeInstitucion = () => {
 
         {loading ? (
           <div className="text-center py-10 text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
+        ) : vista === "menu" ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {[
+              { id: "info", label: "Información del colegio", desc: "Nombre, NIT, ciudad y datos legales", Icon: Building },
+              { id: "escudo", label: "Escudo", desc: "Sube o cambia el escudo del colegio", Icon: ImageIcon },
+              { id: "estructura", label: "Jornadas y salones", desc: "Jornadas, grados y salones", Icon: Clock },
+              { id: "personas", label: "Personas y puestos", desc: "Próximamente", Icon: GraduationCap },
+            ].map((f) => (
+              <button key={f.id} onClick={() => f.id !== "personas" && setVista(f.id as typeof vista)} disabled={f.id === "personas"}
+                className={`flex items-start gap-4 p-6 rounded-lg border text-left transition-colors ${f.id === "personas" ? "opacity-50 cursor-not-allowed bg-muted/30" : "bg-card hover:bg-muted/40 cursor-pointer"}`}>
+                <f.Icon className="h-8 w-8 text-primary shrink-0" />
+                <div><p className="font-semibold text-foreground">{f.label}</p><p className="text-sm text-muted-foreground">{f.desc}</p></div>
+              </button>
+            ))}
+          </div>
         ) : (
           <div className="space-y-6">
+            <button onClick={() => setVista("menu")} className="inline-flex items-center gap-1 text-sm text-primary hover:underline"><ArrowLeft className="w-4 h-4" /> Volver</button>
+            {vista === "info" && (<>
             {/* ── DATOS DEL COLEGIO ── */}
             <Card>
               <CardHeader>
@@ -258,7 +277,8 @@ const ConstruyeInstitucion = () => {
                 <Button onClick={guardarDatos} disabled={guardandoDatos}>{guardandoDatos && <Loader2 className="w-4 h-4 mr-1 animate-spin" />} Guardar datos</Button>
               </CardContent>
             </Card>
-
+            </>)}
+            {vista === "escudo" && (<>
             {/* ── ESCUDO ── */}
             <Card>
               <CardHeader>
@@ -276,7 +296,8 @@ const ConstruyeInstitucion = () => {
                 </div>
               </CardContent>
             </Card>
-
+            </>)}
+            {vista === "estructura" && (<>
             {/* ── JORNADAS ── */}
             <Card>
               <CardHeader>
@@ -421,6 +442,10 @@ const ConstruyeInstitucion = () => {
                 )}
               </CardContent>
             </Card>
+            </>)}
+            {vista === "personas" && (
+              <Card><CardContent className="py-10 text-center text-muted-foreground">Gestión de personas y puestos — próximamente.</CardContent></Card>
+            )}
           </div>
         )}
       </main>
