@@ -192,6 +192,18 @@ const VolverBtn = ({ onClick }: { onClick: () => void }) => (
 );
 
 // ───────────────────────── FICHA: DATOS ─────────────────────────
+/**
+ * Campo de texto. DEBE estar a nivel de módulo (no anidado dentro de FichaDatos):
+ * si se define dentro del render, React lo remonta en cada tecla y el input
+ * pierde el foco tras cada letra.
+ */
+const Campo = ({ label, value, set, ph }: { label: string; value: string; set: (s: string) => void; ph?: string }) => (
+  <div>
+    <Label className="text-sm">{label}</Label>
+    <Input value={value} onChange={(e) => set(e.target.value)} placeholder={ph} className="mt-1" />
+  </div>
+);
+
 const FichaDatos = ({ colegio, cfg, onSaved, volver }: { colegio: ColegioDetalle; cfg: Record<string, any>; onSaved: () => Promise<void>; volver: () => void }) => {
   const { toast } = useToast();
   const dl = (cfg.datos_legales || {}) as Record<string, any>;
@@ -225,13 +237,6 @@ const FichaDatos = ({ colegio, cfg, onSaved, volver }: { colegio: ColegioDetalle
       setGuardando(false);
     }
   };
-
-  const Campo = ({ label, value, set, ph }: { label: string; value: string; set: (s: string) => void; ph?: string }) => (
-    <div>
-      <Label className="text-sm">{label}</Label>
-      <Input value={value} onChange={(e) => set(e.target.value)} placeholder={ph} className="mt-1" />
-    </div>
-  );
 
   return (
     <div>
