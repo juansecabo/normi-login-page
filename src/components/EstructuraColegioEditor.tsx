@@ -24,6 +24,58 @@ interface Jornada { id: number; nombre: string; hora_aviso: string | null; orden
 interface Grado { id: number; grado: string; orden: number | null; activo: boolean; }
 interface Salon { id: number; grado: string; salon: string; jornada_id: number | null; activo: boolean; }
 
+/** Jornadas estándar que se ofrecen de un tap (sin que el usuario las escriba). */
+const JORNADAS_ESTANDAR = ["Matutina", "Vespertina", "Nocturna"];
+
+// ── Conversión 24h ⇄ 12h (AM/PM) para el selector de hora ──
+const a24 = (h12: number, min: number, ampm: "AM" | "PM"): string => {
+  let h = h12 % 12;
+  if (ampm === "PM") h += 12;
+  return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+};
+const de24 = (str?: string | null): { h12: number; min: number; ampm: "AM" | "PM" } | null => {
+  if (!str) return null;
+  const [hh, mm] = str.slice(0, 5).split(":").map(Number);
+  if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
+  const ampm: "AM" | "PM" = hh >= 12 ? "PM" : "AM";
+  const h12 = hh % 12 === 0 ? 12 : hh % 12;
+  return { h12, min: mm, ampm };
+};
+
+/**
+ * Selector de hora amable: hora (1-12) + minutos (cada 5) + AM/PM.
+ * `value`/`onChange` trabajan en formato 24h "HH:MM" (lo que guarda la BD).
+ */
+function SelectorHora({ value, onChange }: { value?: string | null; onChange: (v: string) => void }) {
+  const parsed = de24(value);
+  const h12 = parsed?.h12 ?? null;
+  const min = parsed?.min ?? null;
+  const ampm = parsed?.ampm ?? "AM";
+
+  const emitir = (nh: number | null, nm: number | null, na: "AM" | "PM") => {
+    if (nh === null || nm === null) return;
+    onChange(a24(nh, nm, na));
+  };
+
+  return (
+    <div className="flex items-center gap-1">
+      <Select value={h12 != null ? String(h12) : ""} onValueChange={(v) => emitir(Number(v), min ?? 0, ampm)}>
+        <SelectTrigger className="w-[68px]"><SelectValue placeholder="Hora" /></SelectTrigger>
+        <SelectContent>{Array.from({ length: 12 }, (_, i) => i + 1).map((n) => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent>
+      </Select>
+      <span className="text-muted-foreground">:</span>
+      <Select value={min != null ? String(min) : ""} onValueChange={(v) => emitir(h12, Number(v), ampm)}>
+        <SelectTrigger className="w-[72px]"><SelectValue placeholder="Min" /></SelectTrigger>
+        <SelectContent>{Array.from({ length: 12 }, (_, i) => i * 5).map((m) => <SelectItem key={m} value={String(m)}>{String(m).padStart(2, "0")}</SelectItem>)}</SelectContent>
+      </Select>
+      <Select value={ampm} onValueChange={(v) => emitir(h12, min, v as "AM" | "PM")}>
+        <SelectTrigger className="w-[68px]"><SelectValue /></SelectTrigger>
+        <SelectContent><SelectItem value="AM">AM</SelectItem><SelectItem value="PM">PM</SelectItem></SelectContent>
+      </Select>
+    </div>
+  );
+}
+
 interface Props {
   /** Si se pasa, opera sobre ese colegio (modo SuperAdmin). Si no, sobre el del JWT. */
   colegioId?: string;
@@ -75,16 +127,18 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
   };
 
   // ── Jornadas ──
-  const crearJornada = async () => {
-    const nombre = jorNombre.trim();
-    if (!nombre) { toast({ title: "Falta el nombre", description: "Ej: Matutina, Vespertina, Nocturna.", variant: "destructive" }); return; }
+  const crearJornadaNombre = async (nombre: string, hora_aviso: string | null) => {
+    if (!nombre.trim()) { toast({ title: "Falta el nombre", description: "Ej: Matutina, Vespertina, Nocturna.", variant: "destructive" }); return; }
     setGuardando(true);
     try {
-      await apiRequest("/api/institucion/jornadas", { method: "POST", body: JSON.stringify(withCid({ nombre, hora_aviso: jorHora || null, orden: jornadas.length })) });
-      setJorNombre(""); setJorHora("");
+      await apiRequest("/api/institucion/jornadas", { method: "POST", body: JSON.stringify(withCid({ nombre: nombre.trim(), hora_aviso: hora_aviso || null, orden: jornadas.length })) });
       await cargar();
     } catch (e) { err(e, "No se pudo crear la jornada."); }
     setGuardando(false);
+  };
+  const crearJornada = async () => {
+    await crearJornadaNombre(jorNombre, jorHora || null);
+    setJorNombre(""); setJorHora("");
   };
   const editarHoraJornada = async (id: number, hora_aviso: string) => {
     try { await apiRequest(`/api/institucion/jornadas/${id}`, { method: "PATCH", body: JSON.stringify(withCid({ hora_aviso: hora_aviso || null })) }); await cargar(); }
@@ -165,20 +219,38 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
           <p className="text-sm text-muted-foreground">Define las jornadas del colegio y la hora a la que se envían los avisos de actividades a los salones de cada jornada.</p>
         </CardHeader>
         <CardContent className="space-y-3">
-          {jornadas.length === 0 && <p className="text-sm text-muted-foreground italic">Aún no hay jornadas. Agrega la primera abajo.</p>}
           {jornadas.map((j) => (
-            <div key={j.id} className="flex items-center gap-3 border border-border rounded-md p-3">
-              <span className="font-medium flex-1">{j.nombre}</span>
+            <div key={j.id} className="flex items-center gap-3 border border-border rounded-md p-3 flex-wrap">
+              <span className="font-medium flex-1 min-w-[90px]">{j.nombre}</span>
               <label className="text-xs text-muted-foreground">Aviso a las</label>
-              <Input type="time" defaultValue={j.hora_aviso ? j.hora_aviso.slice(0, 5) : ""} onBlur={(e) => editarHoraJornada(j.id, e.target.value)} className="w-32" />
+              <SelectorHora value={j.hora_aviso} onChange={(v) => editarHoraJornada(j.id, v)} />
               <button onClick={() => borrarJornada(j.id)} className="text-muted-foreground hover:text-destructive" title="Eliminar jornada"><Trash2 className="w-4 h-4" /></button>
             </div>
           ))}
-          <div className="flex items-center gap-2 pt-2 border-t border-border">
-            <Input value={jorNombre} onChange={(e) => setJorNombre(e.target.value)} placeholder="Nombre (ej: Matutina)" className="flex-1" />
-            <Input type="time" value={jorHora} onChange={(e) => setJorHora(e.target.value)} className="w-32" title="Hora de aviso" />
-            <Button onClick={crearJornada} disabled={guardando}><Plus className="w-4 h-4 mr-1" /> Agregar</Button>
-          </div>
+
+          {/* Jornadas estándar de un tap (no hay que escribirlas). */}
+          {JORNADAS_ESTANDAR.some((n) => !jornadas.some((j) => j.nombre.toLowerCase() === n.toLowerCase())) && (
+            <div className="pt-2 border-t border-border">
+              <p className="text-xs text-muted-foreground mb-2">Agrega una jornada (luego le pones la hora de aviso):</p>
+              <div className="flex flex-wrap gap-2">
+                {JORNADAS_ESTANDAR.filter((n) => !jornadas.some((j) => j.nombre.toLowerCase() === n.toLowerCase())).map((n) => (
+                  <Button key={n} variant="outline" size="sm" disabled={guardando} onClick={() => crearJornadaNombre(n, null)}>
+                    <Plus className="w-4 h-4 mr-1" /> {n}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Otra jornada con nombre personalizado. */}
+          <details className="pt-1">
+            <summary className="text-xs text-primary cursor-pointer">Otra jornada (nombre personalizado)</summary>
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              <Input value={jorNombre} onChange={(e) => setJorNombre(e.target.value)} placeholder="Nombre de la jornada" className="flex-1 min-w-[160px]" />
+              <SelectorHora value={jorHora} onChange={setJorHora} />
+              <Button onClick={crearJornada} disabled={guardando}><Plus className="w-4 h-4 mr-1" /> Agregar</Button>
+            </div>
+          </details>
         </CardContent>
       </Card>
 
