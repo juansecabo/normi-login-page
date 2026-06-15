@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Building2, Image as ImageIcon, GraduationCap, Users, ArrowLeft,
-  Loader2, Pencil, Check, Rocket,
+  Loader2, Pencil, Check, Rocket, Clock,
 } from "lucide-react";
 import HeaderNormi from "@/components/HeaderNormi";
 import EscudoColegio from "@/components/EscudoColegio";
+import EstructuraColegioEditor from "@/components/EstructuraColegioEditor";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -19,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
  * sub-fichas (datos, escudo, escala, administradores) para no abrumar en una
  * sola pantalla. Todo se va guardando en el borrador; "Publicar" lo activa.
  */
-type Vista = "menu" | "datos" | "escudo" | "escala" | "admins";
+type Vista = "menu" | "datos" | "escudo" | "escala" | "estructura" | "admins";
 
 const CrearInstitucion = () => {
   const { id = "" } = useParams();
@@ -28,6 +29,7 @@ const CrearInstitucion = () => {
 
   const [colegio, setColegio] = useState<ColegioDetalle | null>(null);
   const [admins, setAdmins] = useState<ColegioAdmin[]>([]);
+  const [estructura, setEstructura] = useState<{ jornadas: number; grados: number; salones: number }>({ jornadas: 0, grados: 0, salones: 0 });
   const [loading, setLoading] = useState(true);
   const [vista, setVista] = useState<Vista>("menu");
   const [publicando, setPublicando] = useState(false);
@@ -45,9 +47,10 @@ const CrearInstitucion = () => {
 
   const cargar = async () => {
     try {
-      const { colegio, admins } = await apiClient.plataforma.getColegio(id);
+      const { colegio, admins, estructura } = await apiClient.plataforma.getColegio(id);
       setColegio(colegio);
       setAdmins(admins);
+      setEstructura(estructura);
     } catch (err: any) {
       toast({ title: "No se pudo cargar", description: err?.message || "Intenta de nuevo.", variant: "destructive" });
       navigate("/dashboard-plataforma", { replace: true });
@@ -109,6 +112,7 @@ const CrearInstitucion = () => {
               colegio={colegio!}
               admins={admins}
               cfg={cfg}
+              estructura={estructura}
               ir={setVista}
               puedePublicar={puedePublicar}
               publicar={publicar}
@@ -121,6 +125,14 @@ const CrearInstitucion = () => {
           {vista === "datos" && <FichaDatos colegio={colegio!} cfg={cfg} onSaved={cargar} volver={() => setVista("menu")} />}
           {vista === "escudo" && <FichaEscudo colegio={colegio!} onSaved={cargar} volver={() => setVista("menu")} />}
           {vista === "escala" && <FichaEscala colegio={colegio!} cfg={cfg} onSaved={cargar} volver={() => setVista("menu")} />}
+          {vista === "estructura" && (
+            <div>
+              <VolverBtn onClick={() => { setVista("menu"); cargar(); }} />
+              <h2 className="text-xl font-semibold mb-1">Jornadas, grados y salones</h2>
+              <p className="text-sm text-muted-foreground mb-4">Define la estructura del colegio. Es opcional para publicar, pero deja la institución lista para registrar estudiantes.</p>
+              <EstructuraColegioEditor colegioId={id} />
+            </div>
+          )}
           {vista === "admins" && <FichaAdmins id={id} admins={admins} onChanged={cargar} volver={() => setVista("menu")} />}
         </div>
       </main>
@@ -130,9 +142,10 @@ const CrearInstitucion = () => {
 
 // ───────────────────────── MENÚ DE FICHAS ─────────────────────────
 const MenuFichas = ({
-  admins, cfg, ir, puedePublicar, publicar, publicando, tieneNombre, tieneAdmin, yaActivo,
+  admins, cfg, estructura, ir, puedePublicar, publicar, publicando, tieneNombre, tieneAdmin, yaActivo,
 }: {
   colegio: ColegioDetalle; admins: ColegioAdmin[]; cfg: Record<string, any>;
+  estructura: { jornadas: number; grados: number; salones: number };
   ir: (v: Vista) => void; puedePublicar: boolean; publicar: () => void;
   publicando: boolean; tieneNombre: boolean; tieneAdmin: boolean; yaActivo: boolean;
 }) => {
@@ -150,6 +163,7 @@ const MenuFichas = ({
         <Card icon={<Building2 className="w-8 h-8 text-primary" />} label="Datos del colegio" sub="Nombre, ciudad y datos legales" onClick={() => ir("datos")} ok={tieneNombre} />
         <Card icon={<ImageIcon className="w-8 h-8 text-primary" />} label="Escudo" sub="Imagen institucional (500×500)" onClick={() => ir("escudo")} />
         <Card icon={<GraduationCap className="w-8 h-8 text-primary" />} label="Escala de calificación" sub={`${cfg.escala_min ?? 0} a ${cfg.escala_max ?? 5} · aprueba con ${cfg.nota_aprobatoria ?? 3}`} onClick={() => ir("escala")} ok />
+        <Card icon={<Clock className="w-8 h-8 text-primary" />} label="Jornadas, grados y salones" sub={estructura.grados ? `${estructura.grados} grado(s) · ${estructura.salones} salón(es)` : "Define la estructura (opcional)"} onClick={() => ir("estructura")} ok={estructura.grados > 0} />
         <Card icon={<Users className="w-8 h-8 text-primary" />} label="Administradores" sub={admins.length ? `${admins.length} asignado(s)` : "Asigna al menos uno"} onClick={() => ir("admins")} ok={tieneAdmin} />
       </div>
 
