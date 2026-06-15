@@ -106,6 +106,26 @@ export interface ColegioPlataforma {
   counts: { internos: number; estudiantes: number; acudientes: number };
 }
 
+/** Fila completa de un colegio (para el wizard de Crear/Configurar Institución). */
+export interface ColegioDetalle {
+  id: string;
+  slug: string;
+  nombre: string;
+  logo_url: string | null;
+  color_primario: string;
+  plan: string;
+  estado: string;
+  publico: boolean;
+  configuracion: Record<string, any>;
+}
+
+export interface ColegioAdmin {
+  id: string;
+  nombres: string;
+  apellidos: string;
+  numero_de_telefono: string | null;
+}
+
 export interface AcudidoData {
   id: string;
   nombre: string;
@@ -553,6 +573,32 @@ export const apiClient = {
     },
     entrarComoAdmin(colegio_id: string): Promise<{ ok: true; token: string; colegio: { id: string; nombre: string; slug: string } }> {
       return request(`/api/plataforma/entrar-como-admin/${colegio_id}`, { method: 'POST' });
+    },
+
+    // ─── Crear Institución (wizard SuperAdmin) ───
+    /** Crea un borrador (estado oculto). Devuelve el colegio creado. */
+    crearColegio(nombre?: string): Promise<{ colegio: ColegioDetalle }> {
+      return request('/api/plataforma/colegios', { method: 'POST', body: JSON.stringify({ nombre }) });
+    },
+    /** Detalle de un colegio para retomar/editar: fila + admins + estructura. */
+    getColegio(id: string): Promise<{ colegio: ColegioDetalle; admins: ColegioAdmin[]; estructura: { jornadas: number; grados: number; salones: number } }> {
+      return request(`/api/plataforma/colegios/${id}`);
+    },
+    /** Guarda el borrador (merge de configuracion). */
+    patchColegio(id: string, patch: { nombre?: string; slug?: string; color_primario?: string; plan?: string; configuracion?: Record<string, unknown> }): Promise<{ colegio: ColegioDetalle }> {
+      return request(`/api/plataforma/colegios/${id}`, { method: 'PATCH', body: JSON.stringify(patch) });
+    },
+    /** Asegura un Administrador del colegio (persona global + membresía). */
+    crearAdmin(id: string, body: { cedula: string; nombres: string; apellidos: string; telefono?: string }): Promise<{ ok: true }> {
+      return request(`/api/plataforma/colegios/${id}/admin`, { method: 'POST', body: JSON.stringify(body) });
+    },
+    /** Publica el borrador → estado activo. */
+    publicarColegio(id: string): Promise<{ ok: true; ya_activo?: boolean }> {
+      return request(`/api/plataforma/colegios/${id}/publicar`, { method: 'POST' });
+    },
+    /** Descarta un borrador. */
+    descartarColegio(id: string): Promise<{ ok: true }> {
+      return request(`/api/plataforma/colegios/${id}`, { method: 'DELETE' });
     },
   },
 

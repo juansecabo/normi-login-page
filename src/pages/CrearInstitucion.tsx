@@ -1,0 +1,403 @@
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  Building2, Image as ImageIcon, GraduationCap, Users, ArrowLeft,
+  Loader2, Pencil, Check, Rocket,
+} from "lucide-react";
+import HeaderNormi from "@/components/HeaderNormi";
+import EscudoColegio from "@/components/EscudoColegio";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { getSession } from "@/hooks/useSession";
+import { apiClient, type ColegioDetalle, type ColegioAdmin } from "@/lib/apiClient";
+import { useToast } from "@/hooks/use-toast";
+
+/**
+ * Wizard de Crear/Configurar Institución para el SuperAdmin. Opera sobre un
+ * colegio en estado 'borrador' identificado por la ruta (:id). Está dividido en
+ * sub-fichas (datos, escudo, escala, administradores) para no abrumar en una
+ * sola pantalla. Todo se va guardando en el borrador; "Publicar" lo activa.
+ */
+type Vista = "menu" | "datos" | "escudo" | "escala" | "admins";
+
+const CrearInstitucion = () => {
+  const { id = "" } = useParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const [colegio, setColegio] = useState<ColegioDetalle | null>(null);
+  const [admins, setAdmins] = useState<ColegioAdmin[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [vista, setVista] = useState<Vista>("menu");
+  const [publicando, setPublicando] = useState(false);
+
+  // Guard de sesión: solo SuperAdmin.
+  useEffect(() => {
+    const s = getSession();
+    if (!s.id || s.cargo !== "SuperAdmin") {
+      navigate("/", { replace: true });
+      return;
+    }
+    cargar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  const cargar = async () => {
+    try {
+      const { colegio, admins } = await apiClient.plataforma.getColegio(id);
+      setColegio(colegio);
+      setAdmins(admins);
+    } catch (err: any) {
+      toast({ title: "No se pudo cargar", description: err?.message || "Intenta de nuevo.", variant: "destructive" });
+      navigate("/dashboard-plataforma", { replace: true });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const yaActivo = colegio?.estado === "activo";
+  const cfg = (colegio?.configuracion || {}) as Record<string, any>;
+  const tieneNombre = !!(colegio?.nombre && colegio.nombre.trim() && colegio.nombre !== "Institución sin nombre");
+  const tieneAdmin = admins.length > 0;
+  const puedePublicar = tieneNombre && tieneAdmin;
+
+  const publicar = async () => {
+    if (!puedePublicar || publicando) return;
+    setPublicando(true);
+    try {
+      await apiClient.plataforma.publicarColegio(id);
+      toast({ title: "¡Institución creada!", description: `${colegio?.nombre} ya está activa.` });
+      navigate("/dashboard-plataforma", { replace: true });
+    } catch (err: any) {
+      toast({ title: "No se pudo publicar", description: err?.message || "Revisa los datos.", variant: "destructive" });
+      setPublicando(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <HeaderNormi backLink="/dashboard-plataforma" />
+        <div className="flex-1 flex items-center justify-center text-muted-foreground">
+          <Loader2 className="w-6 h-6 animate-spin mr-2" /> Cargando…
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <HeaderNormi backLink="/dashboard-plataforma" />
+      <main className="flex-1 container mx-auto p-6 md:p-8">
+        <div className="max-w-3xl mx-auto">
+          {/* Encabezado */}
+          <div className="mb-6 flex items-center gap-4">
+            <EscudoColegio logoUrl={colegio?.logo_url} nombre={colegio?.nombre} colorFondo={colegio?.color_primario} size={56} />
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold text-foreground truncate">
+                {tieneNombre ? colegio?.nombre : "Nueva institución"}
+              </h1>
+              <span className={`text-xs px-2 py-0.5 rounded-full ${yaActivo ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
+                {yaActivo ? "Activa" : "Borrador"}
+              </span>
+            </div>
+          </div>
+
+          {vista === "menu" && (
+            <MenuFichas
+              colegio={colegio!}
+              admins={admins}
+              cfg={cfg}
+              ir={setVista}
+              puedePublicar={puedePublicar}
+              publicar={publicar}
+              publicando={publicando}
+              tieneNombre={tieneNombre}
+              tieneAdmin={tieneAdmin}
+              yaActivo={yaActivo}
+            />
+          )}
+          {vista === "datos" && <FichaDatos colegio={colegio!} cfg={cfg} onSaved={cargar} volver={() => setVista("menu")} />}
+          {vista === "escudo" && <FichaEscudo colegio={colegio!} onSaved={cargar} volver={() => setVista("menu")} />}
+          {vista === "escala" && <FichaEscala colegio={colegio!} cfg={cfg} onSaved={cargar} volver={() => setVista("menu")} />}
+          {vista === "admins" && <FichaAdmins id={id} admins={admins} onChanged={cargar} volver={() => setVista("menu")} />}
+        </div>
+      </main>
+    </div>
+  );
+};
+
+// ───────────────────────── MENÚ DE FICHAS ─────────────────────────
+const MenuFichas = ({
+  admins, cfg, ir, puedePublicar, publicar, publicando, tieneNombre, tieneAdmin, yaActivo,
+}: {
+  colegio: ColegioDetalle; admins: ColegioAdmin[]; cfg: Record<string, any>;
+  ir: (v: Vista) => void; puedePublicar: boolean; publicar: () => void;
+  publicando: boolean; tieneNombre: boolean; tieneAdmin: boolean; yaActivo: boolean;
+}) => {
+  const Card = ({ icon, label, sub, onClick, ok }: { icon: React.ReactNode; label: string; sub: string; onClick: () => void; ok?: boolean }) => (
+    <button onClick={onClick} className="relative text-left border border-border rounded-lg p-5 hover:border-primary/60 hover:bg-secondary/40 transition-colors">
+      {ok && <Check className="absolute top-3 right-3 w-5 h-5 text-green-600" />}
+      <div className="mb-3">{icon}</div>
+      <h3 className="font-semibold text-foreground">{label}</h3>
+      <p className="text-sm text-muted-foreground mt-0.5">{sub}</p>
+    </button>
+  );
+  return (
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Card icon={<Building2 className="w-8 h-8 text-primary" />} label="Datos del colegio" sub="Nombre, ciudad y datos legales" onClick={() => ir("datos")} ok={tieneNombre} />
+        <Card icon={<ImageIcon className="w-8 h-8 text-primary" />} label="Escudo" sub="Imagen institucional (500×500)" onClick={() => ir("escudo")} />
+        <Card icon={<GraduationCap className="w-8 h-8 text-primary" />} label="Escala de calificación" sub={`${cfg.escala_min ?? 0} a ${cfg.escala_max ?? 5} · aprueba con ${cfg.nota_aprobatoria ?? 3}`} onClick={() => ir("escala")} ok />
+        <Card icon={<Users className="w-8 h-8 text-primary" />} label="Administradores" sub={admins.length ? `${admins.length} asignado(s)` : "Asigna al menos uno"} onClick={() => ir("admins")} ok={tieneAdmin} />
+      </div>
+
+      {!yaActivo && (
+        <div className="mt-8 border-t border-border pt-6">
+          <p className="text-sm text-muted-foreground mb-3">
+            Para crear la institución necesitas: {" "}
+            <span className={tieneNombre ? "text-green-600" : "text-yellow-600"}>nombre</span> y {" "}
+            <span className={tieneAdmin ? "text-green-600" : "text-yellow-600"}>al menos un administrador</span>.
+            La estructura (jornadas, grados y salones) se configura después desde el panel del colegio.
+          </p>
+          <Button onClick={publicar} disabled={!puedePublicar || publicando} className="gap-2">
+            {publicando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
+            Crear institución
+          </Button>
+        </div>
+      )}
+    </>
+  );
+};
+
+const VolverBtn = ({ onClick }: { onClick: () => void }) => (
+  <button onClick={onClick} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4">
+    <ArrowLeft className="w-4 h-4" /> Volver
+  </button>
+);
+
+// ───────────────────────── FICHA: DATOS ─────────────────────────
+const FichaDatos = ({ colegio, cfg, onSaved, volver }: { colegio: ColegioDetalle; cfg: Record<string, any>; onSaved: () => Promise<void>; volver: () => void }) => {
+  const { toast } = useToast();
+  const dl = (cfg.datos_legales || {}) as Record<string, any>;
+  const [nombre, setNombre] = useState(colegio.nombre === "Institución sin nombre" ? "" : colegio.nombre);
+  const [ciudad, setCiudad] = useState(cfg.ciudad || "");
+  const [nit, setNit] = useState(dl.nit || "");
+  const [dane, setDane] = useState(dl.dane || "");
+  const [resolucion, setResolucion] = useState(dl.resolucion || "");
+  const [direccion, setDireccion] = useState(dl.direccion || "");
+  const [telefono, setTelefono] = useState(dl.telefono || "");
+  const [rectorNombre, setRectorNombre] = useState(dl.rector_nombre || "");
+  const [guardando, setGuardando] = useState(false);
+
+  const guardar = async () => {
+    if (!nombre.trim()) { toast({ title: "Falta el nombre", variant: "destructive" }); return; }
+    setGuardando(true);
+    try {
+      await apiClient.plataforma.patchColegio(colegio.id, {
+        nombre: nombre.trim(),
+        configuracion: {
+          ciudad: ciudad.trim(),
+          datos_legales: { nit, dane, resolucion, direccion, telefono, rector_nombre: rectorNombre },
+        },
+      });
+      await onSaved();
+      toast({ title: "Datos guardados" });
+      volver();
+    } catch (err: any) {
+      toast({ title: "No se pudo guardar", description: err?.message, variant: "destructive" });
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const Campo = ({ label, value, set, ph }: { label: string; value: string; set: (s: string) => void; ph?: string }) => (
+    <div>
+      <Label className="text-sm">{label}</Label>
+      <Input value={value} onChange={(e) => set(e.target.value)} placeholder={ph} className="mt-1" />
+    </div>
+  );
+
+  return (
+    <div>
+      <VolverBtn onClick={volver} />
+      <h2 className="text-xl font-semibold mb-4">Datos del colegio</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="sm:col-span-2">
+          <Label className="text-sm">Nombre de la institución *</Label>
+          <Input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej: Colegio San José" className="mt-1" />
+        </div>
+        <Campo label="Ciudad" value={ciudad} set={setCiudad} ph="Ej: Corozal" />
+        <Campo label="NIT" value={nit} set={setNit} />
+        <Campo label="Código DANE" value={dane} set={setDane} />
+        <Campo label="Resolución" value={resolucion} set={setResolucion} />
+        <Campo label="Dirección" value={direccion} set={setDireccion} />
+        <Campo label="Teléfono" value={telefono} set={setTelefono} />
+        <div className="sm:col-span-2">
+          <Campo label="Nombre del rector(a)" value={rectorNombre} set={setRectorNombre} />
+        </div>
+      </div>
+      <Button onClick={guardar} disabled={guardando} className="mt-6 gap-2">
+        {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Guardar
+      </Button>
+    </div>
+  );
+};
+
+// ───────────────────────── FICHA: ESCUDO ─────────────────────────
+const FichaEscudo = ({ colegio, onSaved, volver }: { colegio: ColegioDetalle; onSaved: () => Promise<void>; volver: () => void }) => {
+  const { toast } = useToast();
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [subiendo, setSubiendo] = useState(false);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      toast({ title: "Formato no soportado", description: "Usa JPG, PNG o WEBP.", variant: "destructive" }); return;
+    }
+    if (file.size > 5 * 1024 * 1024) { toast({ title: "Archivo grande", description: "Máximo 5 MB.", variant: "destructive" }); return; }
+    setSubiendo(true);
+    try {
+      await apiClient.plataforma.uploadColegioLogo(colegio.id, file);
+      await onSaved();
+      toast({ title: "Escudo actualizado" });
+    } catch (err: any) {
+      toast({ title: "No se pudo subir", description: err?.message, variant: "destructive" });
+    } finally {
+      setSubiendo(false);
+    }
+  };
+
+  return (
+    <div>
+      <VolverBtn onClick={volver} />
+      <h2 className="text-xl font-semibold mb-4">Escudo institucional</h2>
+      <div className="flex flex-col items-center gap-4 py-4">
+        <EscudoColegio logoUrl={colegio.logo_url} nombre={colegio.nombre} colorFondo={colegio.color_primario} size={160} />
+        <Button onClick={() => fileRef.current?.click()} disabled={subiendo} variant="outline" className="gap-2">
+          {subiendo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Pencil className="w-4 h-4" />}
+          {colegio.logo_url ? "Cambiar escudo" : "Subir escudo"}
+        </Button>
+        <p className="text-xs text-muted-foreground text-center max-w-sm">
+          Se almacena en WebP de 500×500 px. Recomendado: imagen cuadrada con fondo transparente.
+        </p>
+      </div>
+      <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFile} className="hidden" />
+    </div>
+  );
+};
+
+// ───────────────────────── FICHA: ESCALA ─────────────────────────
+const FichaEscala = ({ colegio, cfg, onSaved, volver }: { colegio: ColegioDetalle; cfg: Record<string, any>; onSaved: () => Promise<void>; volver: () => void }) => {
+  const { toast } = useToast();
+  const [min, setMin] = useState(String(cfg.escala_min ?? 0));
+  const [max, setMax] = useState(String(cfg.escala_max ?? 5));
+  const [aprob, setAprob] = useState(String(cfg.nota_aprobatoria ?? 3));
+  const [dec, setDec] = useState(String(cfg.decimales ?? 1));
+  const [guardando, setGuardando] = useState(false);
+
+  const guardar = async () => {
+    const nMin = Number(min), nMax = Number(max), nAprob = Number(aprob), nDec = Number(dec);
+    if (![nMin, nMax, nAprob, nDec].every((n) => Number.isFinite(n))) { toast({ title: "Valores inválidos", variant: "destructive" }); return; }
+    if (nMax <= nMin) { toast({ title: "El máximo debe ser mayor al mínimo", variant: "destructive" }); return; }
+    if (nAprob < nMin || nAprob > nMax) { toast({ title: "La nota aprobatoria debe estar dentro de la escala", variant: "destructive" }); return; }
+    setGuardando(true);
+    try {
+      await apiClient.plataforma.patchColegio(colegio.id, {
+        configuracion: { escala_min: nMin, escala_max: nMax, nota_aprobatoria: nAprob, decimales: nDec, escala: `${nMin}-${nMax}` },
+      });
+      await onSaved();
+      toast({ title: "Escala guardada" });
+      volver();
+    } catch (err: any) {
+      toast({ title: "No se pudo guardar", description: err?.message, variant: "destructive" });
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  return (
+    <div>
+      <VolverBtn onClick={volver} />
+      <h2 className="text-xl font-semibold mb-1">Escala de calificación</h2>
+      <p className="text-sm text-muted-foreground mb-4">Los rangos de desempeño (Excelente, Aceptable…) se afinan luego desde el panel del colegio.</p>
+      <div className="grid grid-cols-2 gap-4 max-w-md">
+        <div><Label className="text-sm">Nota mínima</Label><Input type="number" step="0.1" value={min} onChange={(e) => setMin(e.target.value)} className="mt-1" /></div>
+        <div><Label className="text-sm">Nota máxima</Label><Input type="number" step="0.1" value={max} onChange={(e) => setMax(e.target.value)} className="mt-1" /></div>
+        <div><Label className="text-sm">Nota aprobatoria</Label><Input type="number" step="0.1" value={aprob} onChange={(e) => setAprob(e.target.value)} className="mt-1" /></div>
+        <div><Label className="text-sm">Decimales</Label><Input type="number" step="1" min="0" max="2" value={dec} onChange={(e) => setDec(e.target.value)} className="mt-1" /></div>
+      </div>
+      <Button onClick={guardar} disabled={guardando} className="mt-6 gap-2">
+        {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Guardar
+      </Button>
+    </div>
+  );
+};
+
+// ───────────────────────── FICHA: ADMINISTRADORES ─────────────────────────
+const FichaAdmins = ({ id, admins, onChanged, volver }: { id: string; admins: ColegioAdmin[]; onChanged: () => Promise<void>; volver: () => void }) => {
+  const { toast } = useToast();
+  const [cedula, setCedula] = useState("");
+  const [nombres, setNombres] = useState("");
+  const [apellidos, setApellidos] = useState("");
+  const [telefono, setTelefono] = useState("");
+  const [guardando, setGuardando] = useState(false);
+
+  const agregar = async () => {
+    if (!/^\d{3,15}$/.test(cedula.trim())) { toast({ title: "Cédula inválida", description: "Solo números.", variant: "destructive" }); return; }
+    if (!nombres.trim() || !apellidos.trim()) { toast({ title: "Faltan nombres o apellidos", variant: "destructive" }); return; }
+    setGuardando(true);
+    try {
+      await apiClient.plataforma.crearAdmin(id, { cedula: cedula.trim(), nombres: nombres.trim(), apellidos: apellidos.trim(), telefono: telefono.trim() || undefined });
+      setCedula(""); setNombres(""); setApellidos(""); setTelefono("");
+      await onChanged();
+      toast({ title: "Administrador agregado", description: "Entra por primera vez con su cédula como contraseña." });
+    } catch (err: any) {
+      toast({ title: "No se pudo agregar", description: err?.message, variant: "destructive" });
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  return (
+    <div>
+      <VolverBtn onClick={volver} />
+      <h2 className="text-xl font-semibold mb-1">Administradores</h2>
+      <p className="text-sm text-muted-foreground mb-4">El administrador podrá entrar a la plataforma y configurar el resto del colegio.</p>
+
+      {admins.length > 0 && (
+        <div className="space-y-2 mb-6">
+          {admins.map((a) => (
+            <div key={a.id} className="flex items-center gap-3 border border-border rounded-lg p-3">
+              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
+                {(a.nombres || "?").charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <p className="font-medium truncate">{a.nombres} {a.apellidos}</p>
+                <p className="text-xs text-muted-foreground">Cédula: {a.id}{a.numero_de_telefono ? ` · ${a.numero_de_telefono}` : ""}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="border border-border rounded-lg p-4 space-y-3">
+        <h3 className="font-medium text-sm">Agregar administrador</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div><Label className="text-sm">Cédula *</Label><Input value={cedula} onChange={(e) => setCedula(e.target.value)} placeholder="Solo números" className="mt-1" /></div>
+          <div><Label className="text-sm">Teléfono</Label><Input value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="57300…" className="mt-1" /></div>
+          <div><Label className="text-sm">Nombres *</Label><Input value={nombres} onChange={(e) => setNombres(e.target.value)} className="mt-1" /></div>
+          <div><Label className="text-sm">Apellidos *</Label><Input value={apellidos} onChange={(e) => setApellidos(e.target.value)} className="mt-1" /></div>
+        </div>
+        <Button onClick={agregar} disabled={guardando} className="gap-2">
+          {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Agregar
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default CrearInstitucion;

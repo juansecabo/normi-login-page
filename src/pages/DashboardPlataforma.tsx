@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, Users, GraduationCap, UserCheck, Loader2, Pencil, LogIn, Search } from "lucide-react";
+import { Building2, Users, GraduationCap, UserCheck, Loader2, Pencil, LogIn, Search, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 /** Normaliza texto para búsqueda flexible: minúsculas y sin tildes. */
@@ -25,8 +26,31 @@ const DashboardPlataforma = () => {
   const [loading, setLoading] = useState(true);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [entrandoId, setEntrandoId] = useState<string | null>(null);
+  const [creando, setCreando] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const pendingColegioId = useRef<string | null>(null);
+
+  // Crear una institución nueva: nace como borrador y abre el wizard.
+  const crearInstitucion = async () => {
+    if (creando) return;
+    setCreando(true);
+    try {
+      const { colegio } = await apiClient.plataforma.crearColegio();
+      navigate(`/crear-institucion/${colegio.id}`);
+    } catch (err: any) {
+      toast({ title: "No se pudo crear", description: err?.message || "Intenta de nuevo.", variant: "destructive" });
+      setCreando(false);
+    }
+  };
+
+  // Abrir una fila: si es borrador, continúa el wizard; si está activa, entra como admin.
+  const abrirColegio = (c: ColegioPlataforma) => {
+    if (c.estado === "borrador") {
+      navigate(`/crear-institucion/${c.id}`);
+    } else {
+      entrarComoAdmin(c);
+    }
+  };
 
   const entrarComoAdmin = async (c: ColegioPlataforma) => {
     if (entrandoId || uploadingId) return;
@@ -149,11 +173,17 @@ const DashboardPlataforma = () => {
           </div>
 
           <section className="bg-card rounded-lg shadow-soft p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-foreground">Colegios</h2>
-              <span className="text-sm text-muted-foreground">
-                {colegios ? `${colegios.length} total` : ""}
-              </span>
+            <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+              <div className="flex items-center gap-3">
+                <h2 className="text-xl font-semibold text-foreground">Colegios</h2>
+                <span className="text-sm text-muted-foreground">
+                  {colegios ? `${colegios.length} total` : ""}
+                </span>
+              </div>
+              <Button onClick={crearInstitucion} disabled={creando} size="sm" className="gap-2">
+                {creando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                Crear Institución
+              </Button>
             </div>
 
             {!loading && colegios && colegios.length > 0 && (
@@ -192,10 +222,10 @@ const DashboardPlataforma = () => {
                 {colegiosFiltrados.map((c) => (
                   <div
                     key={c.id}
-                    onClick={() => entrarComoAdmin(c)}
+                    onClick={() => abrirColegio(c)}
                     role="button"
                     tabIndex={0}
-                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); entrarComoAdmin(c); } }}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); abrirColegio(c); } }}
                     className={`border border-border rounded-lg p-4 flex items-center gap-4 hover:border-primary/60 hover:bg-secondary/40 transition-colors cursor-pointer ${entrandoId === c.id ? "opacity-50 pointer-events-none" : ""}`}
                   >
                     <button
@@ -226,10 +256,12 @@ const DashboardPlataforma = () => {
                           className={`text-xs px-2 py-0.5 rounded-full ${
                             c.estado === "activo"
                               ? "bg-green-100 text-green-700"
+                              : c.estado === "borrador"
+                              ? "bg-orange-100 text-orange-700"
                               : "bg-yellow-100 text-yellow-700"
                           }`}
                         >
-                          {c.estado}
+                          {c.estado === "borrador" ? "Borrador" : c.estado}
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">slug: {c.slug}</p>
@@ -245,8 +277,8 @@ const DashboardPlataforma = () => {
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center text-primary shrink-0" title="Entrar al colegio">
-                      {entrandoId === c.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <LogIn className="w-5 h-5" />}
+                    <div className="flex items-center text-primary shrink-0" title={c.estado === "borrador" ? "Continuar configuración" : "Entrar al colegio"}>
+                      {entrandoId === c.id ? <Loader2 className="w-5 h-5 animate-spin" /> : c.estado === "borrador" ? <Pencil className="w-5 h-5" /> : <LogIn className="w-5 h-5" />}
                     </div>
                   </div>
                 ))}
@@ -256,7 +288,7 @@ const DashboardPlataforma = () => {
 
           <p className="text-xs text-muted-foreground text-center mt-6">
             Click sobre el escudo para subir/cambiar. Recomendado: imagen cuadrada de 512×512 px.<br />
-            Funciones avanzadas (crear colegio, gestionar admins, métricas, entrar como Rector) llegan en próximas fases.
+            Los borradores no son visibles para los usuarios hasta que los publiques.
           </p>
 
           <input
