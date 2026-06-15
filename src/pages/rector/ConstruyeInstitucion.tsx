@@ -190,6 +190,17 @@ const ConstruyeInstitucion = () => {
 
   const nombreJornada = (id: number | null) => jornadas.find((j) => j.id === id)?.nombre || null;
 
+  const [importando, setImportando] = useState(false);
+  const importarEstructura = async () => {
+    setImportando(true);
+    try {
+      const r = await apiClient.institucion.importarEstructura();
+      await cargar();
+      toast({ title: "Estructura importada", description: `${r.grados} grado(s) y ${r.salones} salón(es) traídos de tus estudiantes actuales.` });
+    } catch (e) { err(e, "No se pudo importar la estructura."); }
+    setImportando(false);
+  };
+
   const toggleBulkGrado = (g: string) => setBulkGrados((prev) => prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]);
   const aplicarBulk = async () => {
     if (bulkGrados.length === 0) { toast({ title: "Elige grados", description: "Selecciona al menos un grado.", variant: "destructive" }); return; }
@@ -252,7 +263,7 @@ const ConstruyeInstitucion = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg"><ImageIcon className="h-5 w-5 text-primary" /> Escudo</CardTitle>
-                <p className="text-sm text-muted-foreground">Súbelo en PNG sin fondo (también acepta JPG/WEBP). Se optimiza automáticamente.</p>
+                <p className="text-sm text-muted-foreground">Súbelo en PNG sin fondo (también acepta JPG/WEBP). Tamaño recomendado <strong>500×500 px</strong> (cuadrado); el sistema lo reescala y centra automáticamente a 500×500.</p>
               </CardHeader>
               <CardContent className="flex items-center gap-5">
                 <EscudoColegio logoUrl={logoUrl} nombre={nombreColegio} size={72} />
@@ -294,9 +305,14 @@ const ConstruyeInstitucion = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg"><GraduationCap className="h-5 w-5 text-primary" /> Grados</CardTitle>
-                <p className="text-sm text-muted-foreground">Marca los grados que ofrece el colegio.</p>
+                <p className="text-sm text-muted-foreground">Marca los grados que ofrece el colegio. Si el colegio ya tiene estudiantes, puedes traer su estructura actual con un clic.</p>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-3">
+                <div>
+                  <Button variant="outline" size="sm" onClick={importarEstructura} disabled={importando}>
+                    {importando && <Loader2 className="w-4 h-4 mr-1 animate-spin" />} Importar estructura actual (según mis estudiantes)
+                  </Button>
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {ORDEN_GRADOS.map((g) => {
                     const on = gradosDeclarados.has(g);

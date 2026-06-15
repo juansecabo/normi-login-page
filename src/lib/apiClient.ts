@@ -374,25 +374,22 @@ function blobABase64(blob: Blob): Promise<string> {
  * Si ya viene en webp no se recodifica (evita pérdida). Preserva transparencia.
  */
 async function imagenAWebpBase64(file: File): Promise<string> {
-  // Un escudo se muestra a lo sumo ~64px en pantalla, así que no tiene sentido
-  // almacenar miles de px (el del Pestalozziano entraba en 1195x896 = 380KB).
-  // SIEMPRE redimensionamos a máx 512px de lado mayor y convertimos a WebP,
-  // incluso si el archivo ya viene en webp (antes el webp se subía tal cual,
-  // sin tocar dimensiones — esa era la fuga).
-  const MAX = 512;
+  // Escudo SIEMPRE a un lienzo cuadrado fijo de 500×500 px (WebP). La imagen se
+  // reescala MANTENIENDO su proporción (contain) y se centra sobre fondo
+  // transparente, así todos los escudos quedan del mismo tamaño y livianos sin
+  // distorsionarse. Se reconvierte incluso si ya viene en webp.
+  const LADO = 500;
   const bitmap = await createImageBitmap(file);
-  let { width, height } = bitmap;
-  if (width > MAX || height > MAX) {
-    const escala = MAX / Math.max(width, height);
-    width = Math.round(width * escala);
-    height = Math.round(height * escala);
-  }
+  const escala = Math.min(LADO / bitmap.width, LADO / bitmap.height);
+  const w = Math.round(bitmap.width * escala);
+  const h = Math.round(bitmap.height * escala);
   const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
+  canvas.width = LADO;
+  canvas.height = LADO;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('No se pudo crear el contexto de canvas');
-  ctx.drawImage(bitmap, 0, 0, width, height);
+  ctx.clearRect(0, 0, LADO, LADO);
+  ctx.drawImage(bitmap, Math.round((LADO - w) / 2), Math.round((LADO - h) / 2), w, h);
   const blob = await new Promise<Blob>((resolve, reject) =>
     canvas.toBlob(
       (b) => (b ? resolve(b) : reject(new Error('La conversión a WebP falló'))),
@@ -577,6 +574,9 @@ export const apiClient = {
   institucion: {
     salonesBulk(grados: string[], cantidad: number, jornada_id: number | null): Promise<{ ok: true }> {
       return request('/api/institucion/salones/bulk', { method: 'POST', body: JSON.stringify({ grados, cantidad, jornada_id }) });
+    },
+    importarEstructura(): Promise<{ ok: true; grados: number; salones: number }> {
+      return request('/api/institucion/importar-estructura', { method: 'POST' });
     },
   },
 
