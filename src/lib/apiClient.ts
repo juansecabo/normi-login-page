@@ -559,6 +559,21 @@ export const apiClient = {
     },
   },
 
+  // Configuración del colegio del JWT (Rector/Admin). Para "Construye tu Institución".
+  colegio: {
+    getConfig(): Promise<{ nombre: string; logo_url: string | null; config: Record<string, unknown> }> {
+      return request('/api/colegio/config');
+    },
+    patchConfig(patch: Record<string, unknown>): Promise<{ colegio_id: string; config: Record<string, unknown> }> {
+      return request('/api/colegio/config', { method: 'PATCH', body: JSON.stringify(patch) });
+    },
+    /** Sube el escudo del colegio propio (PNG/JPG/WEBP → WebP 512px). */
+    async subirEscudo(file: File): Promise<{ logo_url: string }> {
+      const contentBase64 = await imagenAWebpBase64(file);
+      return request('/api/colegio/logo', { method: 'POST', body: JSON.stringify({ contentBase64, contentType: 'image/webp' }) });
+    },
+  },
+
   gruposNotas: {
     list(qs: string): Promise<{ grupos: any[] }> {
       return request(`/api/grupos-notas?${qs}`);

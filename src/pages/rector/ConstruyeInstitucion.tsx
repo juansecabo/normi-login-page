@@ -9,9 +9,11 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Building2, Clock, Plus, Trash2, GraduationCap, DoorOpen, Loader2 } from "lucide-react";
-import { apiRequest, ApiError } from "@/lib/apiClient";
+import { apiRequest, ApiError, apiClient } from "@/lib/apiClient";
 import { getSession } from "@/hooks/useSession";
 import { ORDEN_GRADOS, rankGrado } from "@/utils/grados";
+import EscudoColegio from "@/components/EscudoColegio";
+import { Building, Image as ImageIcon } from "lucide-react";
 
 /**
  * "Construye tu Institución" — el Rector (o Administrador) declara la estructura
@@ -43,6 +45,13 @@ const ConstruyeInstitucion = () => {
   const [jorHora, setJorHora] = useState("");
   const [guardando, setGuardando] = useState(false);
 
+  // Datos del colegio + escudo
+  const [nombreColegio, setNombreColegio] = useState("");
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [datos, setDatos] = useState({ nit: "", ciudad: "", direccion: "", telefono: "", resolucion: "", dane: "", rector_nombre: "" });
+  const [guardandoDatos, setGuardandoDatos] = useState(false);
+  const [subiendoEscudo, setSubiendoEscudo] = useState(false);
+
   const backLink = cargo === "Administrador" ? "/dashboard-admin" : "/dashboard-rector";
 
   useEffect(() => {
@@ -55,15 +64,53 @@ const ConstruyeInstitucion = () => {
 
   const cargar = async () => {
     try {
-      const r = await apiRequest<{ jornadas: Jornada[]; grados: Grado[]; salones: Salon[] }>("/api/institucion/estructura");
+      const [r, cfg] = await Promise.all([
+        apiRequest<{ jornadas: Jornada[]; grados: Grado[]; salones: Salon[] }>("/api/institucion/estructura"),
+        apiClient.colegio.getConfig(),
+      ]);
       setJornadas(r.jornadas || []);
       setGrados(r.grados || []);
       setSalones(r.salones || []);
+      setNombreColegio(cfg.nombre || "");
+      setLogoUrl(cfg.logo_url || null);
+      const c = (cfg.config || {}) as Record<string, string>;
+      setDatos({
+        nit: c.nit || "", ciudad: c.ciudad || "", direccion: c.direccion || "",
+        telefono: c.telefono || "", resolucion: c.resolucion || "", dane: c.dane || "",
+        rector_nombre: c.rector_nombre || "",
+      });
     } catch {
-      toast({ title: "Error", description: "No se pudo cargar la estructura.", variant: "destructive" });
+      toast({ title: "Error", description: "No se pudo cargar la información del colegio.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
+  };
+
+  const guardarDatos = async () => {
+    setGuardandoDatos(true);
+    try {
+      await apiClient.colegio.patchConfig({
+        nit: datos.nit.trim() || null, ciudad: datos.ciudad.trim() || null,
+        direccion: datos.direccion.trim() || null, telefono: datos.telefono.trim() || null,
+        resolucion: datos.resolucion.trim() || null, dane: datos.dane.trim() || null,
+        rector_nombre: datos.rector_nombre.trim() || null,
+      });
+      toast({ title: "Datos guardados", description: "Aparecerán en boletines, exámenes y documentos del colegio." });
+    } catch (e) { err(e, "No se pudieron guardar los datos."); }
+    setGuardandoDatos(false);
+  };
+
+  const subirEscudo = async (file: File) => {
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+      toast({ title: "Formato no soportado", description: "Usa PNG, JPG o WEBP (preferible PNG sin fondo).", variant: "destructive" }); return;
+    }
+    setSubiendoEscudo(true);
+    try {
+      const { logo_url } = await apiClient.colegio.subirEscudo(file);
+      setLogoUrl(logo_url);
+      toast({ title: "Escudo actualizado" });
+    } catch (e) { err(e, "No se pudo subir el escudo."); }
+    setSubiendoEscudo(false);
   };
 
   const err = (e: unknown, fallback: string) => {
@@ -153,6 +200,49 @@ const ConstruyeInstitucion = () => {
           <div className="text-center py-10 text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
         ) : (
           <div className="space-y-6">
+            {/* ── DATOS DEL COLEGIO ── */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg"><Building className="h-5 w-5 text-primary" /> Datos del colegio</CardTitle>
+                <p className="text-sm text-muted-foreground">Estos datos aparecen en boletines, exámenes (Normi Examinadora) y documentos oficiales.</p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium block mb-1">Nombre del colegio</label>
+                  <Input value={nombreColegio} disabled className="bg-muted" />
+                  <p className="text-[11px] text-muted-foreground mt-1">El nombre lo administra la plataforma (SuperAdmin).</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div><label className="text-sm font-medium block mb-1">NIT</label><Input value={datos.nit} onChange={(e) => setDatos({ ...datos, nit: e.target.value })} placeholder="Ej: 800.123.456-7" /></div>
+                  <div><label className="text-sm font-medium block mb-1">Ciudad</label><Input value={datos.ciudad} onChange={(e) => setDatos({ ...datos, ciudad: e.target.value })} placeholder="Ej: Corozal" /></div>
+                  <div><label className="text-sm font-medium block mb-1">Código DANE</label><Input value={datos.dane} onChange={(e) => setDatos({ ...datos, dane: e.target.value })} /></div>
+                  <div><label className="text-sm font-medium block mb-1">Resolución</label><Input value={datos.resolucion} onChange={(e) => setDatos({ ...datos, resolucion: e.target.value })} placeholder="Resolución de aprobación" /></div>
+                  <div><label className="text-sm font-medium block mb-1">Dirección</label><Input value={datos.direccion} onChange={(e) => setDatos({ ...datos, direccion: e.target.value })} /></div>
+                  <div><label className="text-sm font-medium block mb-1">Teléfono</label><Input value={datos.telefono} onChange={(e) => setDatos({ ...datos, telefono: e.target.value })} /></div>
+                  <div className="sm:col-span-2"><label className="text-sm font-medium block mb-1">Nombre del rector(a)</label><Input value={datos.rector_nombre} onChange={(e) => setDatos({ ...datos, rector_nombre: e.target.value })} /></div>
+                </div>
+                <Button onClick={guardarDatos} disabled={guardandoDatos}>{guardandoDatos && <Loader2 className="w-4 h-4 mr-1 animate-spin" />} Guardar datos</Button>
+              </CardContent>
+            </Card>
+
+            {/* ── ESCUDO ── */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg"><ImageIcon className="h-5 w-5 text-primary" /> Escudo</CardTitle>
+                <p className="text-sm text-muted-foreground">Súbelo en PNG sin fondo (también acepta JPG/WEBP). Se optimiza automáticamente.</p>
+              </CardHeader>
+              <CardContent className="flex items-center gap-5">
+                <EscudoColegio logoUrl={logoUrl} nombre={nombreColegio} size={72} />
+                <div>
+                  <input id="escudo-input" type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
+                    onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) subirEscudo(f); }} />
+                  <Button variant="outline" disabled={subiendoEscudo} onClick={() => document.getElementById("escudo-input")?.click()}>
+                    {subiendoEscudo ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Subiendo...</> : <><ImageIcon className="w-4 h-4 mr-1" /> {logoUrl ? "Cambiar escudo" : "Subir escudo"}</>}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* ── JORNADAS ── */}
             <Card>
               <CardHeader>
