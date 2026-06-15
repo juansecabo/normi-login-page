@@ -21,6 +21,24 @@ const initial = (nombre?: string | null): string => {
 };
 
 /**
+ * `color_primario` guarda nombres en español ("verde", "azul"…) que NO son
+ * colores CSS válidos. Si se pasan crudos a `backgroundColor`, el navegador los
+ * ignora y el fondo queda transparente → la inicial blanca se vuelve invisible.
+ * Aquí los resolvemos a hex; aceptamos también hex directo; default = verde marca.
+ */
+const COLORES_ES: Record<string, string> = {
+  verde: "#16a34a", azul: "#2563eb", rojo: "#dc2626", morado: "#7c3aed",
+  violeta: "#7c3aed", naranja: "#ea580c", amarillo: "#ca8a04", rosa: "#db2777",
+  turquesa: "#0d9488", gris: "#475569", negro: "#1f2937", cafe: "#92400e",
+  café: "#92400e", celeste: "#0284c7", vinotinto: "#9f1239",
+};
+const resolverColor = (c?: string | null): string => {
+  const v = (c || "").trim();
+  if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v)) return v;
+  return COLORES_ES[v.toLowerCase()] || "#16a34a";
+};
+
+/**
  * Escudo institucional reusable. Reemplaza el `escudo.webp` hardcoded que
  * mostraba el de la Normal en TODOS los colegios.
  *
@@ -74,7 +92,7 @@ const EscudoColegio = ({
       className={baseClass}
       style={{
         ...dimension,
-        backgroundColor: colorFondo || "#6E59A5",
+        backgroundColor: resolverColor(colorFondo),
       }}
     >
       {ini ? (
