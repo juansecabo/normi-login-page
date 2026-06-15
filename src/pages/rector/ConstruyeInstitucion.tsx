@@ -52,6 +52,12 @@ const ConstruyeInstitucion = () => {
   const [guardandoDatos, setGuardandoDatos] = useState(false);
   const [subiendoEscudo, setSubiendoEscudo] = useState(false);
 
+  // Asignación rápida de salones (masiva)
+  const [bulkGrados, setBulkGrados] = useState<string[]>([]);
+  const [bulkCantidad, setBulkCantidad] = useState(1);
+  const [bulkJornada, setBulkJornada] = useState<string>("none");
+  const [aplicandoBulk, setAplicandoBulk] = useState(false);
+
   const backLink = cargo === "Administrador" ? "/dashboard-admin" : "/dashboard-rector";
 
   useEffect(() => {
@@ -87,14 +93,18 @@ const ConstruyeInstitucion = () => {
   };
 
   const guardarDatos = async () => {
+    if (!nombreColegio.trim()) { toast({ title: "Falta el nombre", description: "El colegio debe tener un nombre.", variant: "destructive" }); return; }
     setGuardandoDatos(true);
     try {
       await apiClient.colegio.patchConfig({
+        nombre: nombreColegio.trim(),
         nit: datos.nit.trim() || null, ciudad: datos.ciudad.trim() || null,
         direccion: datos.direccion.trim() || null, telefono: datos.telefono.trim() || null,
         resolucion: datos.resolucion.trim() || null, dane: datos.dane.trim() || null,
         rector_nombre: datos.rector_nombre.trim() || null,
       });
+      // Reflejar el nombre nuevo en la sesión local (header, boletines)
+      try { localStorage.setItem("colegio_nombre", nombreColegio.trim()); } catch { /* noop */ }
       toast({ title: "Datos guardados", description: "Aparecerán en boletines, exámenes y documentos del colegio." });
     } catch (e) { err(e, "No se pudieron guardar los datos."); }
     setGuardandoDatos(false);
@@ -180,6 +190,19 @@ const ConstruyeInstitucion = () => {
 
   const nombreJornada = (id: number | null) => jornadas.find((j) => j.id === id)?.nombre || null;
 
+  const toggleBulkGrado = (g: string) => setBulkGrados((prev) => prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]);
+  const aplicarBulk = async () => {
+    if (bulkGrados.length === 0) { toast({ title: "Elige grados", description: "Selecciona al menos un grado.", variant: "destructive" }); return; }
+    setAplicandoBulk(true);
+    try {
+      await apiClient.institucion.salonesBulk(bulkGrados, bulkCantidad, bulkJornada === "none" ? null : Number(bulkJornada));
+      setBulkGrados([]);
+      await cargar();
+      toast({ title: "Salones aplicados", description: `${bulkCantidad} salón(es) en ${bulkGrados.length} grado(s).` });
+    } catch (e) { err(e, "No se pudo aplicar."); }
+    setAplicandoBulk(false);
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <HeaderNormi backLink={backLink} />
@@ -188,12 +211,12 @@ const ConstruyeInstitucion = () => {
           <div className="flex items-center gap-2 text-sm flex-wrap">
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
-            <span className="text-foreground font-medium">Construye tu Institución</span>
+            <span className="text-foreground font-medium">Configurar Institución</span>
           </div>
         </div>
 
         <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6">
-          <Building2 className="h-6 w-6 text-primary" /> Construye tu Institución
+          <Building2 className="h-6 w-6 text-primary" /> Configurar Institución
         </h2>
 
         {loading ? (
@@ -209,8 +232,8 @@ const ConstruyeInstitucion = () => {
               <CardContent className="space-y-3">
                 <div>
                   <label className="text-sm font-medium block mb-1">Nombre del colegio</label>
-                  <Input value={nombreColegio} disabled className="bg-muted" />
-                  <p className="text-[11px] text-muted-foreground mt-1">El nombre lo administra la plataforma (SuperAdmin).</p>
+                  <Input value={nombreColegio} onChange={(e) => setNombreColegio(e.target.value)} placeholder="Nombre de la institución" />
+                  <p className="text-[11px] text-muted-foreground mt-1">Cambiarlo renombra el colegio en toda la plataforma (mismo colegio, no se pierde ni se mueve nada).</p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div><label className="text-sm font-medium block mb-1">NIT</label><Input value={datos.nit} onChange={(e) => setDatos({ ...datos, nit: e.target.value })} placeholder="Ej: 800.123.456-7" /></div>
@@ -292,10 +315,61 @@ const ConstruyeInstitucion = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg"><DoorOpen className="h-5 w-5 text-primary" /> Salones</CardTitle>
-                <p className="text-sm text-muted-foreground">Para cada grado, agrega sus salones (hasta 10) y asígnale a cada uno su jornada.</p>
+                <p className="text-sm text-muted-foreground">Asigna salones a varios grados de un golpe, o ajusta cada grado abajo.</p>
               </CardHeader>
               <CardContent className="space-y-4">
-                {gradosOrdenados.length === 0 && <p className="text-sm text-muted-foreground italic">Primero marca los grados arriba.</p>}
+                {gradosOrdenados.length === 0 ? (
+                  <p className="text-sm text-muted-foreground italic">Primero marca los grados arriba.</p>
+                ) : (
+                  <>
+                  {/* Asignación rápida (masiva) */}
+                  <div className="border border-primary/30 bg-primary/5 rounded-md p-3 space-y-3">
+                    <p className="text-sm font-medium">Asignación rápida</p>
+                    <div>
+                      <label className="text-xs text-muted-foreground block mb-1">1. Elige los grados</label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {gradosOrdenados.map((g) => {
+                          const on = bulkGrados.includes(g.grado);
+                          return (
+                            <button key={g.id} type="button" onClick={() => toggleBulkGrado(g.grado)}
+                              className={`px-2.5 py-1 rounded-full border text-xs transition-colors cursor-pointer ${on ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted/50"}`}>
+                              {g.grado}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {gradosOrdenados.length > 1 && (
+                        <button type="button" onClick={() => setBulkGrados(bulkGrados.length === gradosOrdenados.length ? [] : gradosOrdenados.map((g) => g.grado))}
+                          className="text-xs text-primary hover:underline mt-1">
+                          {bulkGrados.length === gradosOrdenados.length ? "Quitar todos" : "Seleccionar todos"}
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-end gap-3">
+                      <div>
+                        <label className="text-xs text-muted-foreground block mb-1">2. Nº de salones</label>
+                        <Select value={String(bulkCantidad)} onValueChange={(v) => setBulkCantidad(Number(v))}>
+                          <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                          <SelectContent>{Array.from({ length: 10 }, (_, i) => i + 1).map((n) => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground block mb-1">3. Jornada</label>
+                        <Select value={bulkJornada} onValueChange={setBulkJornada}>
+                          <SelectTrigger className="w-48"><SelectValue placeholder="Sin jornada" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Sin jornada</SelectItem>
+                            {jornadas.map((j) => <SelectItem key={j.id} value={String(j.id)}>{j.nombre}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button onClick={aplicarBulk} disabled={aplicandoBulk || bulkGrados.length === 0}>
+                        {aplicandoBulk && <Loader2 className="w-4 h-4 mr-1 animate-spin" />} Aplicar a {bulkGrados.length || 0} grado(s)
+                      </Button>
+                    </div>
+                  </div>
+                  </>
+                )}
                 {gradosOrdenados.map((g) => {
                   const sals = salonesDeGrado(g.grado);
                   return (

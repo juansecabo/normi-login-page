@@ -574,6 +574,12 @@ export const apiClient = {
     },
   },
 
+  institucion: {
+    salonesBulk(grados: string[], cantidad: number, jornada_id: number | null): Promise<{ ok: true }> {
+      return request('/api/institucion/salones/bulk', { method: 'POST', body: JSON.stringify({ grados, cantidad, jornada_id }) });
+    },
+  },
+
   gruposNotas: {
     list(qs: string): Promise<{ grupos: any[] }> {
       return request(`/api/grupos-notas?${qs}`);

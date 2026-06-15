@@ -248,7 +248,7 @@ const DashboardRector = () => {
     ...(cargo === "Rector" || cargo === "Administrador" ? [{ id: 'construye-institucion', render: (
       <button onClick={() => navigate("/construye-institucion")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 transition-all duration-200 hover:shadow-md hover:bg-teal-200">
         <Building2 className="w-12 h-12 text-teal-700" strokeWidth={1.5} />
-        <span className="font-semibold text-foreground text-center">Construye tu Institución</span>
+        <span className="font-semibold text-foreground text-center">Configurar Institución</span>
       </button>
     ) }] : []),
     { id: 'uso-normi', render: (
