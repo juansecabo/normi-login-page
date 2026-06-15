@@ -9,10 +9,17 @@
 
 import { useEffect, useState } from "react";
 
+// DESACTIVADA temporalmente (a pedido de Juan, 2026-06-15): la barra aparecía a
+// TODOS los perfiles en cada deploy. Para reactivarla, pon BANNER_ACTIVO = true.
+// Pendiente al reactivar: mostrarla solo a la audiencia afectada por el cambio
+// (ver version.json + rol de la sesión).
+const BANNER_ACTIVO = false;
+
 export default function UpdateBanner() {
   const [needRefresh, setNeedRefresh] = useState(false);
 
   useEffect(() => {
+    if (!BANNER_ACTIVO) return; // desactivada: ni siquiera hace polling
     let cancelado = false;
 
     const revisar = async () => {
