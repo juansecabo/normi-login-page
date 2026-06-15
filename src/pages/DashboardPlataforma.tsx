@@ -23,6 +23,7 @@ const DashboardPlataforma = () => {
   const { toast } = useToast();
   const [colegios, setColegios] = useState<ColegioPlataforma[] | null>(null);
   const [query, setQuery] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState<"todos" | "activo" | "borrador">("todos");
   const [loading, setLoading] = useState(true);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [entrandoId, setEntrandoId] = useState<string | null>(null);
@@ -151,10 +152,18 @@ const DashboardPlataforma = () => {
   // orden) en el nombre o slug del colegio, ignorando mayúsculas y tildes.
   const tokensBusqueda = normalizarBusqueda(query).split(/\s+/).filter(Boolean);
   const colegiosFiltrados = (colegios || []).filter((c) => {
+    // Filtro por estado: "activo" agrupa todo lo que NO es borrador (activo/suspendido/etc.).
+    if (filtroEstado === "borrador" && c.estado !== "borrador") return false;
+    if (filtroEstado === "activo" && c.estado === "borrador") return false;
     if (tokensBusqueda.length === 0) return true;
     const heno = normalizarBusqueda(`${c.nombre} ${c.slug || ""}`);
     return tokensBusqueda.every((t) => heno.includes(t));
   });
+  const conteoEstado = {
+    todos: (colegios || []).length,
+    activo: (colegios || []).filter((c) => c.estado !== "borrador").length,
+    borrador: (colegios || []).filter((c) => c.estado === "borrador").length,
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -187,14 +196,35 @@ const DashboardPlataforma = () => {
             </div>
 
             {!loading && colegios && colegios.length > 0 && (
-              <div className="relative mb-4">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                <Input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Buscar colegio…"
-                  className="pl-9"
-                />
+              <div className="mb-4 space-y-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                  <Input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Buscar colegio…"
+                    className="pl-9"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  {([
+                    { id: "todos", label: "Todos" },
+                    { id: "activo", label: "Activos" },
+                    { id: "borrador", label: "Borradores" },
+                  ] as const).map((f) => (
+                    <button
+                      key={f.id}
+                      onClick={() => setFiltroEstado(f.id)}
+                      className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                        filtroEstado === f.id
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background text-foreground border-border hover:bg-muted/50"
+                      }`}
+                    >
+                      {f.label} ({conteoEstado[f.id]})
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
