@@ -150,7 +150,7 @@ const MenuFichas = ({
   publicando: boolean; tieneNombre: boolean; tieneAdmin: boolean; yaActivo: boolean;
 }) => {
   const Card = ({ icon, label, sub, onClick, ok }: { icon: React.ReactNode; label: string; sub: string; onClick: () => void; ok?: boolean }) => (
-    <button onClick={onClick} className="relative text-left border border-border rounded-lg p-5 hover:border-primary/60 hover:bg-secondary/40 transition-colors">
+    <button onClick={onClick} className="relative text-left bg-card border border-border rounded-lg p-5 shadow-sm hover:border-primary/60 hover:bg-secondary/40 transition-colors">
       {ok && <Check className="absolute top-3 right-3 w-5 h-5 text-green-600" />}
       <div className="mb-3">{icon}</div>
       <h3 className="font-semibold text-foreground">{label}</h3>
