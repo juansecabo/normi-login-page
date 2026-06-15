@@ -314,6 +314,13 @@ interface RangoDesempeno { label: string; min: string; max: string; color: strin
 
 const COLOR_POR_DEFECTO = "#22c55e";
 
+/** Muestra un número limpio (quita el épsilon interno 5.0001 → "5", deja 4.5 → "4.5"). */
+const fmtNum = (n: unknown): string => {
+  const x = Number(n);
+  if (!Number.isFinite(x)) return "";
+  return String(Math.round(x * 100) / 100);
+};
+
 const FichaEscala = ({ colegio, cfg, onSaved, volver }: { colegio: ColegioDetalle; cfg: Record<string, any>; onSaved: () => Promise<void>; volver: () => void }) => {
   const { toast } = useToast();
   const [min, setMin] = useState(String(cfg.escala_min ?? 0));
@@ -322,7 +329,7 @@ const FichaEscala = ({ colegio, cfg, onSaved, volver }: { colegio: ColegioDetall
   const [dec, setDec] = useState(String(cfg.decimales ?? 1));
   const [rangos, setRangos] = useState<RangoDesempeno[]>(
     Array.isArray(cfg.rangos_desempeno) && cfg.rangos_desempeno.length > 0
-      ? cfg.rangos_desempeno.map((r: any) => ({ label: r.label ?? "", min: String(r.min ?? ""), max: String(r.max ?? ""), color: r.color ?? COLOR_POR_DEFECTO }))
+      ? cfg.rangos_desempeno.map((r: any) => ({ label: r.label ?? "", min: fmtNum(r.min), max: fmtNum(r.max), color: r.color ?? COLOR_POR_DEFECTO }))
       : [],
   );
   const [guardando, setGuardando] = useState(false);
@@ -347,7 +354,15 @@ const FichaEscala = ({ colegio, cfg, onSaved, volver }: { colegio: ColegioDetall
       if (!label) { toast({ title: "Falta el nombre de un rango", variant: "destructive" }); return; }
       if (!Number.isFinite(rMin) || !Number.isFinite(rMax)) { toast({ title: `Rango "${label}": desde/hasta inválidos`, variant: "destructive" }); return; }
       if (rMax <= rMin) { toast({ title: `Rango "${label}": el hasta debe ser mayor al desde`, variant: "destructive" }); return; }
-      rangosLimpios.push({ label, min: rMin, max: rMax, color: r.color || COLOR_POR_DEFECTO });
+      // Los rangos NO pueden salirse de la escala (mínima…máxima).
+      if (rMin < nMin - 1e-6 || rMax > nMax + 1e-6) {
+        toast({ title: `Rango "${label}" fuera de la escala`, description: `Debe estar entre ${nMin} y ${nMax}.`, variant: "destructive" });
+        return;
+      }
+      // El rango que llega al tope se ajusta a "máxima + épsilon" para que la nota
+      // máxima exacta (ej: 5.0) quede incluida (la banda usa nota ≥ desde y nota < hasta).
+      const maxFinal = Math.abs(rMax - nMax) < 0.005 ? nMax + 0.0001 : rMax;
+      rangosLimpios.push({ label, min: rMin, max: maxFinal, color: r.color || COLOR_POR_DEFECTO });
     }
 
     setGuardando(true);
@@ -383,7 +398,7 @@ const FichaEscala = ({ colegio, cfg, onSaved, volver }: { colegio: ColegioDetall
       <div className="mt-8">
         <h3 className="text-base font-semibold">Rangos de desempeño</h3>
         <p className="text-sm text-muted-foreground mb-3">
-          Nombre que el colegio le da a cada tramo de notas (ej: «Sobresaliente» de 4.0 a 4.5). Cada nota mostrará el color y la etiqueta del rango en el que cae.
+          Nombre que el colegio le da a cada tramo de notas (ej: «Sobresaliente» de 4.0 a 4.5). Cada nota debe estar entre {min} y {max} (la escala de arriba). Los colores se usan en <strong>Estadísticas</strong> para pintar cada nota según su rango.
         </p>
         {rangos.length === 0 && (
           <p className="text-sm text-muted-foreground italic mb-3">Aún no hay rangos. Agrega el primero abajo (opcional).</p>
@@ -397,11 +412,11 @@ const FichaEscala = ({ colegio, cfg, onSaved, volver }: { colegio: ColegioDetall
               </div>
               <div className="w-20">
                 {i === 0 && <Label className="text-xs text-muted-foreground">Desde</Label>}
-                <Input type="number" step="0.1" value={r.min} onChange={(e) => actualizar(i, "min", e.target.value)} className="mt-1" />
+                <Input type="number" step="0.1" min={min} max={max} value={r.min} onChange={(e) => actualizar(i, "min", e.target.value)} className="mt-1" />
               </div>
               <div className="w-20">
                 {i === 0 && <Label className="text-xs text-muted-foreground">Hasta</Label>}
-                <Input type="number" step="0.1" value={r.max} onChange={(e) => actualizar(i, "max", e.target.value)} className="mt-1" />
+                <Input type="number" step="0.1" min={min} max={max} value={r.max} onChange={(e) => actualizar(i, "max", e.target.value)} className="mt-1" />
               </div>
               <div>
                 {i === 0 && <Label className="text-xs text-muted-foreground">Color</Label>}
