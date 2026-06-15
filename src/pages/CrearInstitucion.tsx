@@ -63,7 +63,7 @@ const CrearInstitucion = () => {
   const cfg = (colegio?.configuracion || {}) as Record<string, any>;
   const tieneNombre = !!(colegio?.nombre && colegio.nombre.trim() && colegio.nombre !== "Institución sin nombre");
   const tieneAdmin = admins.length > 0;
-  const puedePublicar = tieneNombre && tieneAdmin;
+  const puedePublicar = tieneNombre; // El admin es opcional (el SuperAdmin administra cualquier colegio).
 
   const publicar = async () => {
     if (!puedePublicar || publicando) return;
@@ -94,6 +94,9 @@ const CrearInstitucion = () => {
       <HeaderNormi backLink="/dashboard-plataforma" />
       <main className="flex-1 container mx-auto p-6 md:p-8">
         <div className="max-w-3xl mx-auto">
+          <Button variant="outline" size="sm" onClick={() => navigate("/dashboard-plataforma")} className="gap-1 mb-4">
+            <ArrowLeft className="w-4 h-4" /> Volver al panel
+          </Button>
           {/* Encabezado */}
           <div className="mb-6 flex items-center gap-4">
             <EscudoColegio logoUrl={colegio?.logo_url} nombre={colegio?.nombre} colorFondo={colegio?.color_primario} size={56} />
@@ -164,16 +167,16 @@ const MenuFichas = ({
         <Card icon={<ImageIcon className="w-8 h-8 text-primary" />} label="Escudo" sub="Imagen institucional (500×500)" onClick={() => ir("escudo")} />
         <Card icon={<GraduationCap className="w-8 h-8 text-primary" />} label="Escala de calificación" sub={`${cfg.escala_min ?? 0} a ${cfg.escala_max ?? 5} · aprueba con ${cfg.nota_aprobatoria ?? 3}`} onClick={() => ir("escala")} />
         <Card icon={<Clock className="w-8 h-8 text-primary" />} label="Jornadas, grados y salones" sub={estructura.grados ? `${estructura.grados} grado(s) · ${estructura.salones} salón(es)` : "Define la estructura (opcional)"} onClick={() => ir("estructura")} ok={estructura.grados > 0} />
-        <Card icon={<Users className="w-8 h-8 text-primary" />} label="Administradores" sub={admins.length ? `${admins.length} asignado(s)` : "Asigna al menos uno"} onClick={() => ir("admins")} ok={tieneAdmin} />
+        <Card icon={<Users className="w-8 h-8 text-primary" />} label="Administradores" sub={admins.length ? `${admins.length} asignado(s)` : "Opcional — puede agregarse después"} onClick={() => ir("admins")} ok={tieneAdmin} />
       </div>
 
       {!yaActivo && (
         <div className="mt-8 border-t border-border pt-6">
           <p className="text-sm text-muted-foreground mb-3">
-            Para crear la institución necesitas: {" "}
-            <span className={tieneNombre ? "text-green-600" : "text-yellow-600"}>nombre</span> y {" "}
-            <span className={tieneAdmin ? "text-green-600" : "text-yellow-600"}>al menos un administrador</span>.
-            La estructura (jornadas, grados y salones) se configura después desde el panel del colegio.
+            Para crear la institución solo necesitas el {" "}
+            <span className={tieneNombre ? "text-green-600" : "text-yellow-600"}>nombre</span>.
+            El administrador es opcional (tú como SuperAdmin puedes administrar cualquier colegio) y la estructura
+            (jornadas, grados y salones) se configura después desde el panel del colegio.
           </p>
           <Button onClick={publicar} disabled={!puedePublicar || publicando} className="gap-2">
             {publicando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
