@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, Users, GraduationCap, UserCheck, Loader2, Pencil, LogIn, Search, Plus } from "lucide-react";
+import { Building2, Users, GraduationCap, UserCheck, Loader2, Pencil, LogIn, Search, Plus, Sigma } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -274,6 +274,9 @@ const DashboardPlataforma = () => {
                         </span>
                         <span className="flex items-center gap-1">
                           <Users className="w-3.5 h-3.5" /> {c.counts.internos} Internos
+                        </span>
+                        <span className="flex items-center gap-1 font-semibold text-foreground">
+                          <Sigma className="w-3.5 h-3.5" /> {c.counts.estudiantes + c.counts.acudientes + c.counts.internos} Total
                         </span>
                       </div>
                     </div>
