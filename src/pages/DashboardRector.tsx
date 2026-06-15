@@ -11,6 +11,7 @@ import iconDocumentos from "@/assets/icons/documentos.webp";
 import iconPanelControl from "@/assets/icons/panel-de-control.webp";
 import iconRegistroAgente from "@/assets/icons/registro-agente.webp";
 import iconUsoAgente from "@/assets/icons/uso-agente.webp";
+import iconConfigurarInstitucion from "@/assets/icons/configurar-institucion.webp";
 import iconConversaciones from "@/assets/icons/conversaciones.webp";
 import iconCasos from "@/assets/icons/casos.png";
 import iconCitas from "@/assets/icons/citas.png";
@@ -247,7 +248,7 @@ const DashboardRector = () => {
     ) },
     ...(cargo === "Rector" || cargo === "Administrador" ? [{ id: 'construye-institucion', render: (
       <button onClick={() => navigate("/construye-institucion")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 transition-all duration-200 hover:shadow-md hover:bg-teal-200">
-        <Building2 className="w-12 h-12 text-teal-700" strokeWidth={1.5} />
+        <img src={iconConfigurarInstitucion} alt="" className="w-12 h-12 object-contain" />
         <span className="font-semibold text-foreground text-center">Configurar Institución</span>
       </button>
     ) }] : []),
