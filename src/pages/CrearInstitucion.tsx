@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Building2, Image as ImageIcon, GraduationCap, Users, ArrowLeft,
   Loader2, Pencil, Check, Rocket, Clock, Plus, Trash2,
@@ -31,8 +31,17 @@ const CrearInstitucion = () => {
   const [admins, setAdmins] = useState<ColegioAdmin[]>([]);
   const [estructura, setEstructura] = useState<{ jornadas: number; grados: number; salones: number }>({ jornadas: 0, grados: 0, salones: 0 });
   const [loading, setLoading] = useState(true);
-  const [vista, setVista] = useState<Vista>("menu");
   const [publicando, setPublicando] = useState(false);
+
+  // La ficha activa vive en la URL (?ficha=datos) para que un F5 no saque al
+  // usuario al menú: al recargar se restaura la sub-ficha donde estaba.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const FICHAS: Vista[] = ["menu", "datos", "escudo", "escala", "estructura", "admins"];
+  const fichaUrl = searchParams.get("ficha") as Vista | null;
+  const vista: Vista = fichaUrl && FICHAS.includes(fichaUrl) ? fichaUrl : "menu";
+  const setVista = (v: Vista) => {
+    setSearchParams(v === "menu" ? {} : { ficha: v }, { replace: true });
+  };
 
   // Guard de sesión: solo SuperAdmin.
   useEffect(() => {
