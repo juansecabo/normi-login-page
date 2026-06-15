@@ -186,9 +186,9 @@ const MenuFichas = ({
 };
 
 const VolverBtn = ({ onClick }: { onClick: () => void }) => (
-  <button onClick={onClick} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4">
+  <Button variant="outline" size="sm" onClick={onClick} className="gap-1 mb-4">
     <ArrowLeft className="w-4 h-4" /> Volver
-  </button>
+  </Button>
 );
 
 // ───────────────────────── FICHA: DATOS ─────────────────────────
