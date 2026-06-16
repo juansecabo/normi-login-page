@@ -103,9 +103,11 @@ const CrearInstitucion = () => {
       <HeaderNormi backLink="/dashboard-plataforma" />
       <main className="flex-1 container mx-auto p-6 md:p-8">
         <div className="max-w-3xl mx-auto">
-          <Button variant="outline" size="sm" onClick={() => navigate("/dashboard-plataforma")} className="gap-1 mb-4">
-            <ArrowLeft className="w-4 h-4" /> Volver al panel
-          </Button>
+          {vista === "menu" && (
+            <Button variant="outline" size="sm" onClick={() => navigate("/dashboard-plataforma")} className="gap-1 mb-4">
+              <ArrowLeft className="w-4 h-4" /> Volver al panel
+            </Button>
+          )}
           {/* Encabezado */}
           <div className="mb-6 flex items-center gap-4">
             <EscudoColegio logoUrl={colegio?.logo_url} nombre={colegio?.nombre} colorFondo={colegio?.color_primario} size={56} />
