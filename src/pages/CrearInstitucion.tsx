@@ -161,7 +161,7 @@ const CrearInstitucion = () => {
 
 // ───────────────────────── MENÚ DE FICHAS ─────────────────────────
 const MenuFichas = ({
-  admins, cfg, estructura, ir, puedePublicar, publicar, publicando, tieneNombre, tieneAdmin, yaActivo,
+  colegio, admins, cfg, estructura, ir, puedePublicar, publicar, publicando, tieneNombre, tieneAdmin, yaActivo,
 }: {
   colegio: ColegioDetalle; admins: ColegioAdmin[]; cfg: Record<string, any>;
   estructura: { jornadas: number; grados: number; salones: number };
@@ -180,7 +180,7 @@ const MenuFichas = ({
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Card icon={<Building2 className="w-8 h-8 text-primary" />} label="Datos del colegio" sub="Nombre, ciudad y datos legales" onClick={() => ir("datos")} ok={tieneNombre} />
-        <Card icon={<ImageIcon className="w-8 h-8 text-primary" />} label="Escudo" sub="Imagen institucional (500×500)" onClick={() => ir("escudo")} />
+        <Card icon={<ImageIcon className="w-8 h-8 text-primary" />} label="Escudo" sub={colegio.logo_url ? "Escudo cargado" : "Imagen institucional (500×500)"} onClick={() => ir("escudo")} ok={!!colegio.logo_url} />
         <Card icon={<GraduationCap className="w-8 h-8 text-primary" />} label="Escala de calificación" sub={`${cfg.escala_min ?? 0} a ${cfg.escala_max ?? 5} · aprueba con ${cfg.nota_aprobatoria ?? 3}`} onClick={() => ir("escala")} />
         <Card icon={<Clock className="w-8 h-8 text-primary" />} label="Jornadas, grados y salones" sub={estructura.grados ? `${estructura.grados} grado(s) · ${estructura.salones} salón(es)` : "Define la estructura (opcional)"} onClick={() => ir("estructura")} ok={estructura.grados > 0} />
         <Card icon={<FileText className="w-8 h-8 text-primary" />} label="Manual de Convivencia" sub={cfg.manual_url ? "PDF cargado" : "Sube el PDF (opcional)"} onClick={() => ir("manual")} ok={!!cfg.manual_url} />
