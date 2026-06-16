@@ -564,10 +564,10 @@ export const apiClient = {
     actualizarDatos(body: Record<string, unknown>): Promise<{ ok: true }> {
       return request('/api/perfil/datos', { method: 'POST', body: JSON.stringify(body) });
     },
-    recuperacionVer(contrasena: string): Promise<{ recuperacion_pregunta: string | null; recuperacion_respuesta: string | null; correo: string | null }> {
-      return request('/api/perfil/recuperacion/ver', { method: 'POST', body: JSON.stringify({ contrasena }) });
+    recuperacionVer(): Promise<{ recuperacion_pregunta: string | null; recuperacion_respuesta: string | null; correo: string | null }> {
+      return request('/api/perfil/recuperacion/ver', { method: 'POST' });
     },
-    recuperacionGuardar(body: { contrasena: string; metodo: 'whatsapp' | 'correo'; pregunta?: string; respuesta?: string; correo?: string }): Promise<{ ok: true }> {
+    recuperacionGuardar(body: { metodo: 'whatsapp' | 'correo'; pregunta?: string; respuesta?: string; correo?: string }): Promise<{ ok: true }> {
       return request('/api/perfil/recuperacion', { method: 'POST', body: JSON.stringify(body) });
     },
   },

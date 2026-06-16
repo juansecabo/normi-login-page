@@ -49,8 +49,6 @@ const Perfil = () => {
 
   // ── Recuperación ──
   const [verificada, setVerificada] = useState(false);
-  const [pwdVerif, setPwdVerif] = useState("");
-  const [showPwdVerif, setShowPwdVerif] = useState(false);
   const [verificando, setVerificando] = useState(false);
   const [metodo, setMetodo] = useState<"whatsapp" | "correo" | null>(null);
   const [pregunta, setPregunta] = useState("");
@@ -122,11 +120,11 @@ const Perfil = () => {
     setGuardandoPwd(false);
   };
 
-  const verificarContrasena = async () => {
-    if (!pwdVerif) return;
+  // Carga la config de recuperación al entrar (ya NO se pide la contraseña).
+  const cargarRecuperacion = async () => {
     setVerificando(true);
     try {
-      const cfg = await apiClient.perfil.recuperacionVer(pwdVerif);
+      const cfg = await apiClient.perfil.recuperacionVer();
       setPregunta(cfg.recuperacion_pregunta || "");
       setRespuesta(cfg.recuperacion_respuesta || "");
       setCorreo(cfg.correo || "");
@@ -135,7 +133,7 @@ const Perfil = () => {
       else if (cfg.correo) setMetodo("correo");
       setVerificada(true);
     } catch {
-      toast({ title: "Contraseña incorrecta", description: "Verifica tu contraseña e intenta de nuevo.", variant: "destructive" });
+      toast({ title: "No se pudo cargar", description: "Intenta de nuevo.", variant: "destructive" });
     }
     setVerificando(false);
   };
@@ -158,7 +156,6 @@ const Perfil = () => {
     setGuardandoRec(true);
     try {
       await apiClient.perfil.recuperacionGuardar({
-        contrasena: pwdVerif,
         metodo: metodo!,
         pregunta: pregunta.trim(),
         respuesta: respuesta.trim(),
@@ -206,7 +203,7 @@ const Perfil = () => {
                   {esEstudiante ? "Tu número de celular y tu contraseña" : "Tu nombre, celular, fecha de nacimiento y contraseña"}
                 </span>
               </button>
-              <button onClick={() => { setVista("recuperacion"); setVerificada(false); setPwdVerif(""); }} className="flex flex-col items-center gap-3 p-10 rounded-xl bg-amber-100 hover:bg-amber-200 transition-colors cursor-pointer">
+              <button onClick={() => { setVista("recuperacion"); setVerificada(false); cargarRecuperacion(); }} className="flex flex-col items-center gap-3 p-10 rounded-xl bg-amber-100 hover:bg-amber-200 transition-colors cursor-pointer">
                 <KeyRound className="w-12 h-12 text-amber-700" />
                 <span className="text-lg font-semibold text-foreground">Recuperación de contraseña</span>
                 <span className="text-sm text-muted-foreground text-center">Configura cómo recuperarla cuando se te olvide</span>
@@ -272,25 +269,8 @@ const Perfil = () => {
               <button onClick={() => setVista("menu")} className="inline-flex items-center gap-1 text-sm text-primary hover:underline"><ArrowLeft className="w-4 h-4" /> Volver</button>
 
               {!verificada ? (
-                <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground">Por tu seguridad, primero verifica tu contraseña.</p>
-                  <div className="relative">
-                    <input
-                      type={showPwdVerif ? "text" : "password"}
-                      autoComplete="new-password"
-                      value={pwdVerif}
-                      onChange={(e) => setPwdVerif(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && verificarContrasena()}
-                      placeholder="Tu contraseña"
-                      className={inputCls}
-                    />
-                    <button type="button" onClick={() => setShowPwdVerif(!showPwdVerif)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" tabIndex={-1}>
-                      {showPwdVerif ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                  <button onClick={verificarContrasena} disabled={verificando || !pwdVerif} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
-                    {verificando && <Loader2 className="w-4 h-4 animate-spin" />} Verificar
-                  </button>
+                <div className="flex items-center gap-2 text-muted-foreground text-sm py-4">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Cargando…
                 </div>
               ) : (
                 <div className="space-y-5">
