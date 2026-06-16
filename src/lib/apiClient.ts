@@ -388,6 +388,20 @@ function blobABase64(blob: Blob): Promise<string> {
   });
 }
 
+/** Lee un archivo (PDF, etc.) y devuelve su contenido en base64 (sin el prefijo data:). */
+function archivoABase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const res = String(reader.result || "");
+      const coma = res.indexOf(",");
+      resolve(coma >= 0 ? res.slice(coma + 1) : res);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
 /**
  * Convierte cualquier imagen a WebP en el navegador y devuelve su base64.
  * Regla de marca de Cailico: TODOS los logos/escudos se almacenan en WebP.
@@ -623,6 +637,16 @@ export const apiClient = {
     },
     importarEstructura(): Promise<{ ok: true; grados: number; salones: number }> {
       return request('/api/institucion/importar-estructura', { method: 'POST' });
+    },
+    /** Sube el Manual de Convivencia (PDF). Si se pasa colegioId, opera sobre ese colegio (SuperAdmin). */
+    async subirManual(file: File, colegioId?: string): Promise<{ manual_url: string }> {
+      const contentBase64 = await archivoABase64(file);
+      const q = colegioId ? `?colegio_id=${encodeURIComponent(colegioId)}` : '';
+      return request(`/api/institucion/manual${q}`, { method: 'POST', body: JSON.stringify({ contentBase64, contentType: 'application/pdf' }) });
+    },
+    quitarManual(colegioId?: string): Promise<{ ok: true }> {
+      const q = colegioId ? `?colegio_id=${encodeURIComponent(colegioId)}` : '';
+      return request(`/api/institucion/manual${q}`, { method: 'DELETE' });
     },
   },
 

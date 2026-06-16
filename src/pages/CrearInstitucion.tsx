@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Building2, Image as ImageIcon, GraduationCap, Users, ArrowLeft,
-  Loader2, Pencil, Check, Rocket, Clock, Plus, Trash2,
+  Loader2, Pencil, Check, Rocket, Clock, Plus, Trash2, FileText, ExternalLink,
 } from "lucide-react";
 import HeaderNormi from "@/components/HeaderNormi";
 import EscudoColegio from "@/components/EscudoColegio";
@@ -20,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
  * sub-fichas (datos, escudo, escala, administradores) para no abrumar en una
  * sola pantalla. Todo se va guardando en el borrador; "Publicar" lo activa.
  */
-type Vista = "menu" | "datos" | "escudo" | "escala" | "estructura" | "admins";
+type Vista = "menu" | "datos" | "escudo" | "escala" | "estructura" | "manual" | "admins";
 
 const CrearInstitucion = () => {
   const { id = "" } = useParams();
@@ -151,6 +151,7 @@ const CrearInstitucion = () => {
               <EstructuraColegioEditor colegioId={id} />
             </div>
           )}
+          {vista === "manual" && <FichaManual id={id} manualUrl={cfg.manual_url || null} onChanged={cargar} />}
           {vista === "admins" && <FichaAdmins id={id} admins={admins} onChanged={cargar} volver={() => setVista("menu")} />}
         </div>
       </main>
@@ -182,6 +183,7 @@ const MenuFichas = ({
         <Card icon={<ImageIcon className="w-8 h-8 text-primary" />} label="Escudo" sub="Imagen institucional (500×500)" onClick={() => ir("escudo")} />
         <Card icon={<GraduationCap className="w-8 h-8 text-primary" />} label="Escala de calificación" sub={`${cfg.escala_min ?? 0} a ${cfg.escala_max ?? 5} · aprueba con ${cfg.nota_aprobatoria ?? 3}`} onClick={() => ir("escala")} />
         <Card icon={<Clock className="w-8 h-8 text-primary" />} label="Jornadas, grados y salones" sub={estructura.grados ? `${estructura.grados} grado(s) · ${estructura.salones} salón(es)` : "Define la estructura (opcional)"} onClick={() => ir("estructura")} ok={estructura.grados > 0} />
+        <Card icon={<FileText className="w-8 h-8 text-primary" />} label="Manual de Convivencia" sub={cfg.manual_url ? "PDF cargado" : "Sube el PDF (opcional)"} onClick={() => ir("manual")} ok={!!cfg.manual_url} />
         <Card icon={<Users className="w-8 h-8 text-primary" />} label="Administradores" sub={admins.length ? `${admins.length} asignado(s)` : "Opcional — puede agregarse después"} onClick={() => ir("admins")} ok={tieneAdmin} />
       </div>
 
@@ -504,6 +506,73 @@ const FichaAdmins = ({ id, admins, onChanged, volver }: { id: string; admins: Co
           {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Agregar
         </Button>
       </div>
+    </div>
+  );
+};
+
+// ───────────────────────── FICHA: MANUAL DE CONVIVENCIA ─────────────────────────
+const FichaManual = ({ id, manualUrl, onChanged }: { id: string; manualUrl: string | null; onChanged: () => Promise<void> }) => {
+  const { toast } = useToast();
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [subiendo, setSubiendo] = useState(false);
+  const [quitando, setQuitando] = useState(false);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.type !== "application/pdf") { toast({ title: "Debe ser PDF", description: "El Manual de Convivencia solo acepta archivos PDF.", variant: "destructive" }); return; }
+    if (file.size > 20 * 1024 * 1024) { toast({ title: "Archivo grande", description: "Máximo 20 MB.", variant: "destructive" }); return; }
+    setSubiendo(true);
+    try {
+      await apiClient.institucion.subirManual(file, id);
+      await onChanged();
+    } catch (err: any) {
+      toast({ title: "No se pudo subir", description: err?.message, variant: "destructive" });
+    } finally {
+      setSubiendo(false);
+    }
+  };
+
+  const quitar = async () => {
+    setQuitando(true);
+    try {
+      await apiClient.institucion.quitarManual(id);
+      await onChanged();
+    } catch (err: any) {
+      toast({ title: "No se pudo quitar", description: err?.message, variant: "destructive" });
+    } finally {
+      setQuitando(false);
+    }
+  };
+
+  return (
+    <div>
+      <h2 className="text-xl font-semibold mb-1">Manual de Convivencia</h2>
+      <p className="text-sm text-muted-foreground mb-4">
+        Sube el manual en <strong>PDF</strong>. Aparecerá en el botón «Manual de Convivencia» del tablero de estudiantes, acudientes y personal.
+      </p>
+
+      {manualUrl ? (
+        <div className="flex flex-col gap-3">
+          <a href={manualUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-primary hover:underline w-fit">
+            <FileText className="w-5 h-5" /> Ver PDF actual <ExternalLink className="w-4 h-4" />
+          </a>
+          <div className="flex gap-2">
+            <Button onClick={() => fileRef.current?.click()} disabled={subiendo} variant="outline" className="gap-2">
+              {subiendo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Pencil className="w-4 h-4" />} Cambiar PDF
+            </Button>
+            <Button onClick={quitar} disabled={quitando} variant="outline" className="gap-2 text-destructive hover:text-destructive">
+              {quitando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Quitar
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button onClick={() => fileRef.current?.click()} disabled={subiendo} className="gap-2">
+          {subiendo ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />} Subir PDF
+        </Button>
+      )}
+      <input ref={fileRef} type="file" accept="application/pdf" onChange={handleFile} className="hidden" />
     </div>
   );
 };

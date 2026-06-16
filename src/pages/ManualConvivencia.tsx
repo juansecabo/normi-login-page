@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, X, ChevronUp } from "lucide-react";
 import { getSession } from "@/hooks/useSession";
+import { apiClient } from "@/lib/apiClient";
 import HeaderNormi from "@/components/HeaderNormi";
 
 const normalize = (text: string): string =>
@@ -48,9 +49,15 @@ const ManualConvivencia = () => {
     };
 
     const cargar = async () => {
+      // 1) PDF subido por UI → guardado en Colegios.configuracion.manual_url (Storage).
+      try {
+        const { config } = await apiClient.colegio.getConfig();
+        const url = (config as any)?.manual_url;
+        if (url) { setPdfUrl(url); setLoading(false); return; }
+      } catch { /* sin config → seguir */ }
+
+      // 2) PDF estático por colegio_id (Normal/Pestalozziano cargados a mano en public/manuales).
       if (session.colegio_id) {
-        // El PDF vive en una carpeta por colegio_id, pero con nombre legible
-        // para que al descargarlo salga "Manual de Convivencia.pdf" (no el UUID).
         const url = `/manuales/${session.colegio_id}/Manual%20de%20Convivencia.pdf`;
         try {
           const head = await fetch(url, { method: "HEAD" });
@@ -62,6 +69,8 @@ const ManualConvivencia = () => {
           }
         } catch { /* sin PDF → fallback */ }
       }
+
+      // 3) Respaldo HTML antiguo.
       cargarHtml();
     };
     cargar();
