@@ -65,7 +65,12 @@ const Perfil = () => {
 
   useEffect(() => {
     const session = getSession();
-    if (!session.id) { navigate("/"); return; }
+    if (!session.id) {
+      // Preservar el destino (ej. ?seccion=recuperacion) para volver aquí tras el login.
+      const destino = `${window.location.pathname}${window.location.search}`;
+      navigate(`/?redirect=${encodeURIComponent(destino)}`, { replace: true });
+      return;
+    }
     apiClient.perfil.datos()
       .then((d) => {
         setNombres(d.nombres || "");
