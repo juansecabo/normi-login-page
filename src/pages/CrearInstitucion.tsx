@@ -103,11 +103,16 @@ const CrearInstitucion = () => {
       <HeaderNormi backLink="/dashboard-plataforma" />
       <main className="flex-1 container mx-auto p-6 md:p-8">
         <div className="max-w-3xl mx-auto">
-          {vista === "menu" && (
-            <Button variant="outline" size="sm" onClick={() => navigate("/dashboard-plataforma")} className="gap-1 mb-4">
-              <ArrowLeft className="w-4 h-4" /> Volver al panel
-            </Button>
-          )}
+          {/* Botón de retroceso ÚNICO arriba: en el menú vuelve al panel; dentro
+              de una ficha vuelve al menú (y refresca conteos). */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={vista === "menu" ? () => navigate("/dashboard-plataforma") : () => { setVista("menu"); cargar(); }}
+            className="gap-1 mb-4"
+          >
+            <ArrowLeft className="w-4 h-4" /> {vista === "menu" ? "Volver al panel" : "Volver"}
+          </Button>
           {/* Encabezado */}
           <div className="mb-6 flex items-center gap-4">
             <EscudoColegio logoUrl={colegio?.logo_url} nombre={colegio?.nombre} colorFondo={colegio?.color_primario} size={56} />
@@ -141,7 +146,6 @@ const CrearInstitucion = () => {
           {vista === "escala" && <FichaEscala colegio={colegio!} cfg={cfg} onSaved={cargar} volver={() => setVista("menu")} />}
           {vista === "estructura" && (
             <div>
-              <VolverBtn onClick={() => { setVista("menu"); cargar(); }} />
               <h2 className="text-xl font-semibold mb-1">Jornadas, grados y salones</h2>
               <p className="text-sm text-muted-foreground mb-4">Define la estructura del colegio. Es opcional para publicar, pero deja la institución lista para registrar estudiantes.</p>
               <EstructuraColegioEditor colegioId={id} />
@@ -199,11 +203,6 @@ const MenuFichas = ({
   );
 };
 
-const VolverBtn = ({ onClick }: { onClick: () => void }) => (
-  <Button variant="outline" size="sm" onClick={onClick} className="gap-1 mb-4">
-    <ArrowLeft className="w-4 h-4" /> Volver
-  </Button>
-);
 
 // ───────────────────────── FICHA: DATOS ─────────────────────────
 /**
@@ -254,7 +253,6 @@ const FichaDatos = ({ colegio, cfg, onSaved, volver }: { colegio: ColegioDetalle
 
   return (
     <div>
-      <VolverBtn onClick={volver} />
       <h2 className="text-xl font-semibold mb-4">Datos del colegio</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="sm:col-span-2">
@@ -306,7 +304,6 @@ const FichaEscudo = ({ colegio, onSaved, volver }: { colegio: ColegioDetalle; on
 
   return (
     <div>
-      <VolverBtn onClick={volver} />
       <h2 className="text-xl font-semibold mb-4">Escudo institucional</h2>
       <div className="flex flex-col items-center gap-4 py-4">
         <EscudoColegio logoUrl={colegio.logo_url} nombre={colegio.nombre} colorFondo={colegio.color_primario} size={160} />
@@ -399,7 +396,6 @@ const FichaEscala = ({ colegio, cfg, onSaved, volver }: { colegio: ColegioDetall
 
   return (
     <div>
-      <VolverBtn onClick={volver} />
       <h2 className="text-xl font-semibold mb-4">Escala de calificación</h2>
       <div className="grid grid-cols-2 gap-4 max-w-md">
         <div><Label className="text-sm">Nota mínima</Label><Input type="number" step="0.1" value={min} onChange={(e) => setMin(e.target.value)} className="mt-1" /></div>
@@ -477,7 +473,6 @@ const FichaAdmins = ({ id, admins, onChanged, volver }: { id: string; admins: Co
 
   return (
     <div>
-      <VolverBtn onClick={volver} />
       <h2 className="text-xl font-semibold mb-1">Administradores</h2>
       <p className="text-sm text-muted-foreground mb-4">El administrador podrá entrar a la plataforma y configurar el resto del colegio.</p>
 
