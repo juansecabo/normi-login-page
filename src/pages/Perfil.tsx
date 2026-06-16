@@ -83,8 +83,10 @@ const Perfil = () => {
   }, [navigate]);
 
   // Si entramos (o recargamos) en la sección de recuperación, cargar su config.
+  // Solo si hay sesión: sin JWT el guard ya redirige al login y NO debemos
+  // disparar la llamada (fallaría con 401 y mostraría un pop-up de error).
   useEffect(() => {
-    if (vista === "recuperacion" && !verificada) cargarRecuperacion();
+    if (vista === "recuperacion" && !verificada && getSession().id) cargarRecuperacion();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vista]);
 
