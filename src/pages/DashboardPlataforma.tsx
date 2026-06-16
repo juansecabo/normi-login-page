@@ -291,7 +291,7 @@ const DashboardPlataforma = () => {
                               : "bg-yellow-100 text-yellow-700"
                           }`}
                         >
-                          {c.estado === "borrador" ? "Borrador" : c.estado}
+                          {c.estado ? c.estado.charAt(0).toUpperCase() + c.estado.slice(1) : c.estado}
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">slug: {c.slug}</p>
