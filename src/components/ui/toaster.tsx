@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import {
-  ToastProvider, ToastViewport, Toast, ToastTitle, ToastDescription, ToastClose,
-} from "@/components/ui/toast";
+import { ToastProvider, ToastViewport } from "@/components/ui/toast";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
@@ -10,13 +8,14 @@ import { AlertTriangle } from "lucide-react";
 /**
  * Toaster con interceptor por tipo de mensaje:
  *
- *  - ERRORES (variant "destructive"): SIEMPRE como Dialog centrado y bloqueante
- *    (hay que verlos). Si el detalle es genérico → Dialog rojo "Error en el
- *    sistema" con el WhatsApp del admin; si es específico (validación) → Dialog
- *    rojo con el mensaje real.
- *  - ÉXITO / INFO (resto): toast pequeño en la esquina que se cierra solo (~2.5s),
- *    sin botón ni bloqueo. Antes eran Dialogs "Entendido" y molestaban en cada
- *    acción rutinaria (guardar datos, aplicar salones, etc.).
+ *  - ERRORES y VALIDACIONES (variant "destructive"): SIEMPRE como Dialog centrado
+ *    y bloqueante (hay que verlos). Si el detalle es genérico → Dialog rojo
+ *    "Error en el sistema" con el WhatsApp del admin; si es específico
+ *    (validación) → Dialog rojo con el mensaje real.
+ *  - ÉXITO / INFO (resto, ej. "Datos guardados", "Salones aplicados"): se
+ *    DESCARTAN en silencio. Juan NO quiere confirmaciones de acciones rutinarias
+ *    ni como pop up ni como toast esquina. (La barra de progreso de comunicados
+ *    es otro componente, no pasa por aquí.)
  */
 export function Toaster() {
   const { toasts, dismiss } = useToast();
@@ -27,7 +26,7 @@ export function Toaster() {
     for (const t of toasts) {
       if (t.open === false) continue;
       const isDestructive = (t as any).variant === "destructive";
-      if (!isDestructive) continue; // éxito/info → se renderiza como toast esquina (abajo), no se intercepta
+      if (!isDestructive) { dismiss(t.id); continue; } // éxito/info → silencio
 
       const title = typeof t.title === "string" ? t.title : "";
       const description = typeof t.description === "string" ? t.description : "";
@@ -47,20 +46,9 @@ export function Toaster() {
     }
   }, [toasts, dismiss]);
 
-  const toastsInfo = toasts.filter((t) => (t as any).variant !== "destructive");
-
   return (
-    <ToastProvider duration={2500}>
-      {/* Éxito / info: toasts en la esquina, auto-cierre. */}
-      {toastsInfo.map((t) => (
-        <Toast key={t.id} open={t.open} onOpenChange={(o) => !o && dismiss(t.id)}>
-          <div className="grid gap-0.5">
-            {typeof t.title === "string" && t.title && <ToastTitle>{t.title}</ToastTitle>}
-            {typeof t.description === "string" && t.description && <ToastDescription>{t.description}</ToastDescription>}
-          </div>
-          <ToastClose />
-        </Toast>
-      ))}
+    <ToastProvider>
+      {/* No se renderizan toasts: los éxitos van en silencio, los errores por Dialog. */}
       <ToastViewport />
 
       {/* Dialog de error del sistema */}
