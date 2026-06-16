@@ -36,7 +36,7 @@ const CrearInstitucion = () => {
   // La ficha activa vive en la URL (?ficha=datos) para que un F5 no saque al
   // usuario al menú: al recargar se restaura la sub-ficha donde estaba.
   const [searchParams, setSearchParams] = useSearchParams();
-  const FICHAS: Vista[] = ["menu", "datos", "escudo", "escala", "estructura", "admins"];
+  const FICHAS: Vista[] = ["menu", "datos", "escudo", "escala", "estructura", "manual", "admins"];
   const fichaUrl = searchParams.get("ficha") as Vista | null;
   const vista: Vista = fichaUrl && FICHAS.includes(fichaUrl) ? fichaUrl : "menu";
   const setVista = (v: Vista) => {
