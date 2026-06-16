@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { getSession, isEstudiante, isAdmin, isRectorOrCoordinador, isPadreDeFamilia } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import PhoneInput from "@/components/PhoneInput";
@@ -23,7 +23,13 @@ type Vista = "menu" | "datos" | "recuperacion";
 const Perfil = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [vista, setVista] = useState<Vista>("menu");
+  // La sección vive en la URL (?seccion=recuperacion) para que un F5 no devuelva
+  // al menú: al recargar se restaura la sección donde estaba.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const SECCIONES: Vista[] = ["menu", "datos", "recuperacion"];
+  const sUrl = searchParams.get("seccion") as Vista | null;
+  const vista: Vista = sUrl && SECCIONES.includes(sUrl) ? sUrl : "menu";
+  const setVista = (v: Vista) => setSearchParams(v === "menu" ? {} : { seccion: v }, { replace: true });
   const esEstudiante = isEstudiante();
 
   const backLink = isAdmin() ? "/dashboard-admin"
@@ -70,6 +76,12 @@ const Perfil = () => {
       })
       .catch(() => setCargandoDatos(false));
   }, [navigate]);
+
+  // Si entramos (o recargamos) en la sección de recuperación, cargar su config.
+  useEffect(() => {
+    if (vista === "recuperacion" && !verificada) cargarRecuperacion();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vista]);
 
   const guardarDatos = async () => {
     setGuardandoDatos(true);
@@ -203,7 +215,7 @@ const Perfil = () => {
                   {esEstudiante ? "Tu número de celular y tu contraseña" : "Tu nombre, celular, fecha de nacimiento y contraseña"}
                 </span>
               </button>
-              <button onClick={() => { setVista("recuperacion"); setVerificada(false); cargarRecuperacion(); }} className="flex flex-col items-center gap-3 p-10 rounded-xl bg-amber-100 hover:bg-amber-200 transition-colors cursor-pointer">
+              <button onClick={() => setVista("recuperacion")} className="flex flex-col items-center gap-3 p-10 rounded-xl bg-amber-100 hover:bg-amber-200 transition-colors cursor-pointer">
                 <KeyRound className="w-12 h-12 text-amber-700" />
                 <span className="text-lg font-semibold text-foreground">Recuperación de contraseña</span>
                 <span className="text-sm text-muted-foreground text-center">Configura cómo recuperarla cuando se te olvide</span>
