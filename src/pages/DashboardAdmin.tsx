@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, isAdmin } from "@/hooks/useSession";
+import { usePendientesFirma } from "@/hooks/usePendientesFirma";
 import { ClipboardList, MessageCircleQuestion } from "lucide-react";
 import iconNotas from "@/assets/icons/notas.webp";
 import iconPerfil from "@/assets/icons/perfil.png";
@@ -51,6 +52,7 @@ const DashboardAdmin = () => {
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [badges, setBadges] = useState({ retiro: 0, inasistencia: 0, uniforme: 0, entrevista: 0 });
+  const pendFirma = usePendientesFirma();
 
   useEffect(() => {
     const session = getSession();
@@ -96,6 +98,7 @@ const DashboardAdmin = () => {
     { id: 'notas', render: <Card bg="bg-emerald-100 hover:bg-emerald-200" icon={<img src={iconNotas} alt="" className="w-16 h-16 object-contain" />} label="Notas" onClick={() => navigate("/rector/seleccionar-grado")} /> },
     { id: 'estadisticas', render: <Card bg="bg-green-100 hover:bg-green-200" icon={<img src={iconEstadisticas} alt="" className="w-16 h-16 object-contain" />} label="Estadísticas" onClick={() => navigate("/rector/estadisticas")} /> },
     { id: 'enviar-comunicado', render: <Card bg="bg-teal-100 hover:bg-teal-200" icon={<img src={iconEnviarComunicado} alt="" className="w-16 h-16 object-contain" />} label="Enviar Comunicado" onClick={() => navigate("/enviar-comunicado-admin")} /> },
+    { id: 'comunicados-firma', render: <Card bg="bg-violet-100 hover:bg-violet-200" badge={pendFirma} icon={<img src={iconEnviarComunicado} alt="" className="w-16 h-16 object-contain" />} label="Comunicados con firma" onClick={() => navigate("/comunicados-firma")} /> },
     { id: 'todas-actividades', render: <Card bg="bg-emerald-100 hover:bg-emerald-200" icon={<img src={iconActividades} alt="" className="w-16 h-16 object-contain" />} label="Todas las Actividades" onClick={() => navigate("/admin/todas-actividades")} /> },
     { id: 'panel-control', render: <Card bg="bg-purple-100 hover:bg-purple-200" icon={<img src={iconPanelControl} alt="" className="w-16 h-16 object-contain" />} label="Panel de Control" onClick={() => navigate("/rector/panel-control")} /> },
     { id: 'construye-institucion', render: <Card bg="bg-teal-100 hover:bg-teal-200" icon={<img src={iconConfigurarInstitucion} alt="" className="w-16 h-16 object-contain" />} label="Configurar Institución" onClick={() => navigate("/construye-institucion")} /> },

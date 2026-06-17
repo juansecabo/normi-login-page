@@ -15,6 +15,7 @@ import iconConsultas from "@/assets/icons/consultas.png";
 import iconRegistros from "@/assets/icons/registros-comportamiento.png";
 import iconAsistencia from "@/assets/icons/asistencia.webp";
 import { getSession, isProfesor, isAdmin, isRectorOrCoordinador, isEstudiante, isPadreDeFamilia } from "@/hooks/useSession";
+import { usePendientesFirma } from "@/hooks/usePendientesFirma";
 import HeaderNormi from "@/components/HeaderNormi";
 import EncabezadoColegio from "@/components/EncabezadoColegio";
 import AvatarUploader from "@/components/AvatarUploader";
@@ -37,6 +38,7 @@ const Dashboard = () => {
   const [apellidos, setApellidos] = useState("");
   const [asignaturas, setAsignaturas] = useState<string[]>([]);
   const [badges, setBadges] = useState({ comunicados: 0, documentos: 0, retiro: 0, inasistencia: 0, uniforme: 0, entrevista: 0 });
+  const pendFirma = usePendientesFirma();
   const [selectedAsignatura, setSelectedAsignatura] = useState<string | null>(null);
   const [loadingAsignaturas, setLoadingAsignaturas] = useState(true);
 
@@ -178,6 +180,13 @@ const Dashboard = () => {
       <button onClick={() => navigate("/enviar-comunicado")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 transition-all duration-200 hover:shadow-md hover:bg-teal-200">
         <img src={iconEnviarComunicado} alt="" className="w-12 h-12 object-contain" />
         <span className="font-semibold text-foreground text-center">Enviar Comunicado</span>
+      </button>
+    ) },
+    { id: 'comunicados-firma', render: (
+      <button onClick={() => navigate("/comunicados-firma")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-violet-100 transition-all duration-200 hover:shadow-md hover:bg-violet-200">
+        <Badge count={pendFirma} />
+        <img src={iconEnviarComunicado} alt="" className="w-12 h-12 object-contain" />
+        <span className="font-semibold text-foreground text-center">Comunicados con firma</span>
       </button>
     ) },
     { id: 'comunicados-recibidos', render: (

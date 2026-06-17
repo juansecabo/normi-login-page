@@ -88,6 +88,7 @@ import ConsultaDetalle from "./pages/ConsultaDetalle";
 import ConsultaPublica from "./pages/ConsultaPublica";
 import MisConsultas from "./pages/acudiente/MisConsultas";
 import MisConsultasEstudiante from "./pages/estudiante/MisConsultasEstudiante";
+import ComunicadosFirma from "./pages/ComunicadosFirma";
 import RegistrosComportamiento from "./pages/RegistrosComportamiento";
 import Perfil from "./pages/Perfil";
 import TablaNotasRouter from "./pages/TablaNotasRouter";
@@ -201,6 +202,9 @@ const App = () => (
           <Route path="/acudiente/consultas" element={<MisConsultas />} />
           <Route path="/padre/consultas" element={<Navigate to="/acudiente/consultas" replace />} />
           <Route path="/estudiante/consultas" element={<MisConsultasEstudiante />} />
+
+          {/* Comunicados con firma (envío staff + firma de cualquier rol) */}
+          <Route path="/comunicados-firma" element={<ComunicadosFirma />} />
 
           {/* Registros de Comportamiento */}
           <Route path="/registros-comportamiento" element={<RegistrosComportamiento />} />

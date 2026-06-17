@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getSession, isEstudiante } from "@/hooks/useSession";
+import { usePendientesFirma } from "@/hooks/usePendientesFirma";
 import iconNotas from "@/assets/icons/notas.webp";
 import iconPerfil from "@/assets/icons/perfil.png";
 import iconActividades from "@/assets/icons/actividades.webp";
@@ -34,6 +35,7 @@ const DashboardEstudiante = () => {
   const [grado, setGrado] = useState("");
   const [salon, setSalon] = useState("");
   const [badges, setBadges] = useState({ notas: 0, actividades: 0, comunicados: 0, documentos: 0 });
+  const pendFirma = usePendientesFirma();
 
   useEffect(() => {
     const session = getSession();
@@ -193,6 +195,13 @@ const DashboardEstudiante = () => {
       <button onClick={() => navigate("/estudiante/consultas")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-pink-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-pink-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-pink-200">
         <img src={iconConsultas} alt="" className="w-12 h-12 object-contain" />
         <span className="font-semibold text-foreground text-center">Consultas</span>
+      </button>
+    ) },
+    { id: 'comunicados-firma', render: (
+      <button onClick={() => navigate("/comunicados-firma")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-violet-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-violet-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-violet-200">
+        <Badge count={pendFirma} />
+        <img src={iconConsultas} alt="" className="w-12 h-12 object-contain" />
+        <span className="font-semibold text-foreground text-center">Comunicados con firma</span>
       </button>
     ) },
     { id: 'asistencia', render: (

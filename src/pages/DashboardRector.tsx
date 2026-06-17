@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, isAdmin, puedeAccederDashboard, isAdministrativo } from "@/hooks/useSession";
+import { usePendientesFirma } from "@/hooks/usePendientesFirma";
 import iconNotas from "@/assets/icons/notas.webp";
 import iconPerfil from "@/assets/icons/perfil.png";
 import iconEstadisticas from "@/assets/icons/estadisticas.webp";
@@ -53,6 +54,7 @@ const DashboardRector = () => {
   const [cargo, setCargo] = useState("");
   const [badges, setBadges] = useState({ comunicados: 0, documentos: 0, remisiones: 0, retiro: 0, inasistencia: 0, uniforme: 0, entrevista: 0 });
   const esAdministrativo = isAdministrativo();
+  const pendFirma = usePendientesFirma();
 
   useEffect(() => {
     const session = getSession();
@@ -166,6 +168,13 @@ const DashboardRector = () => {
       <button onClick={() => navigate("/enviar-comunicado")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 transition-all duration-200 hover:shadow-md hover:bg-teal-200">
         <img src={iconEnviarComunicado} alt="" className="w-12 h-12 object-contain" />
         <span className="font-semibold text-foreground text-center">Enviar Comunicado</span>
+      </button>
+    ) },
+    { id: 'comunicados-firma', render: (
+      <button onClick={() => navigate("/comunicados-firma")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-violet-100 transition-all duration-200 hover:shadow-md hover:bg-violet-200">
+        <Badge count={pendFirma} />
+        <img src={iconEnviarComunicado} alt="" className="w-12 h-12 object-contain" />
+        <span className="font-semibold text-foreground text-center">Comunicados con firma</span>
       </button>
     ) },
     { id: 'comunicados-recibidos', render: (
