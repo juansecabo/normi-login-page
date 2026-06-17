@@ -39,8 +39,10 @@ const CrearInstitucion = () => {
   const FICHAS: Vista[] = ["menu", "datos", "escudo", "escala", "estructura", "manual", "admins"];
   const fichaUrl = searchParams.get("ficha") as Vista | null;
   const vista: Vista = fichaUrl && FICHAS.includes(fichaUrl) ? fichaUrl : "menu";
+  // PUSH (no replace) para que el botón "atrás" del navegador vaya ficha → menú
+  // → panel, en vez de saltarse el menú.
   const setVista = (v: Vista) => {
-    setSearchParams(v === "menu" ? {} : { ficha: v }, { replace: true });
+    setSearchParams(v === "menu" ? {} : { ficha: v });
   };
 
   // Guard de sesión: solo SuperAdmin.

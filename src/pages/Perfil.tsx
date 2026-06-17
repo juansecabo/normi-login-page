@@ -29,7 +29,8 @@ const Perfil = () => {
   const SECCIONES: Vista[] = ["menu", "datos", "recuperacion"];
   const sUrl = searchParams.get("seccion") as Vista | null;
   const vista: Vista = sUrl && SECCIONES.includes(sUrl) ? sUrl : "menu";
-  const setVista = (v: Vista) => setSearchParams(v === "menu" ? {} : { seccion: v }, { replace: true });
+  // PUSH (no replace): el botón "atrás" del navegador vuelve sección → menú.
+  const setVista = (v: Vista) => setSearchParams(v === "menu" ? {} : { seccion: v });
   const esEstudiante = isEstudiante();
 
   const backLink = isAdmin() ? "/dashboard-admin"
