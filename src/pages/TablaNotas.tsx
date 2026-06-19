@@ -3484,22 +3484,25 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               <span className="text-foreground font-medium">{salonSeleccionado}</span>
             </div>
           </div>
-          {nombresProfesores && (
-            <p className="text-sm text-muted-foreground mb-4">
-              <span className="font-semibold">{nombresProfesores.includes(',') ? 'Profesores(as): ' : 'Profesor(a): '}</span>{nombresProfesores}
-            </p>
-          )}
+          <div className="bg-card rounded-lg shadow-soft px-4 py-2.5 mb-4 text-sm text-foreground">
+            {nombresProfesores ? (
+              <span><span className="font-semibold">{nombresProfesores.includes(',') ? 'Profesores(as): ' : 'Profesor(a): '}</span>{nombresProfesores}</span>
+            ) : (
+              <span className="text-muted-foreground">Sin profesor asignado</span>
+            )}
+          </div>
           <h2 className="text-xl font-bold text-foreground mb-1">Elige el periodo</h2>
           <p className="text-sm text-muted-foreground mb-6">Entra a un periodo para ver y editar sus notas.</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl">
-            {periodos.map((p) => {
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {periodos.map((p, i) => {
               const pct = getPorcentajeUsado(p.numero);
               const completo = getPeriodoCompleto(p.numero);
+              const tintas = ['bg-primary/5', 'bg-primary/10', 'bg-primary/[0.15]', 'bg-primary/20'];
               return (
                 <button
                   key={p.numero}
                   onClick={() => irAPeriodo(p.numero)}
-                  className="text-left bg-card rounded-lg shadow-soft p-5 border-2 border-transparent hover:border-primary hover:shadow-md transition-all"
+                  className={`text-left ${tintas[i % tintas.length]} rounded-lg shadow-soft p-5 border-2 border-transparent hover:border-primary hover:shadow-md transition-all`}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-lg font-bold text-foreground">{p.nombre}</span>
@@ -3519,7 +3522,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               return (
                 <button
                   onClick={() => irAPeriodo(0)}
-                  className="text-left bg-card rounded-lg shadow-soft p-5 border-2 border-transparent hover:border-primary hover:shadow-md transition-all"
+                  className="text-left bg-primary/[0.13] rounded-lg shadow-soft p-5 border-2 border-transparent hover:border-primary hover:shadow-md transition-all"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-lg font-bold text-foreground">Definitiva Anual</span>
