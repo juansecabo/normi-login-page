@@ -237,10 +237,35 @@ const TablaNotasReadOnly = () => {
     return actividades.filter(a => a.periodo === periodo);
   };
 
+  // ¿La actividad tiene al menos UNA nota puesta (de cualquier estudiante) en el periodo?
+  const actividadTieneNota = (actId: string | number, periodo: number): boolean =>
+    Object.values(notas).some((porPeriodo: any) => porPeriodo?.[periodo]?.[actId] !== undefined);
+
+  // Cobertura del periodo (ver TablaNotas para la regla completa):
+  //  - Sin grupos (plano/Normal): suma % de actividades sueltas definidas.
+  //  - Con grupos: solo aportan los grupos-hoja con ≥1 actividad CON NOTA (suman
+  //    su %) y las actividades sueltas con ≥1 nota. El % de grupos es solo tope.
   const getPorcentajeUsado = (periodo: number) => {
-    return actividades
-      .filter(a => a.periodo === periodo && a.porcentaje !== null)
-      .reduce((sum, a) => sum + (a.porcentaje || 0), 0);
+    const gruposPeriodo = gruposAula.filter(g => g.periodo === periodo);
+    const acts = actividades.filter(a => a.periodo === periodo);
+    if (gruposPeriodo.length === 0) {
+      return acts
+        .filter(a => a.porcentaje !== null)
+        .reduce((sum, a) => sum + (a.porcentaje || 0), 0);
+    }
+    let total = 0;
+    for (const a of acts) {
+      if ((a.grupo_id ?? null) === null && a.porcentaje !== null && actividadTieneNota(a.id, periodo)) {
+        total += a.porcentaje;
+      }
+    }
+    for (const g of gruposPeriodo) {
+      const esHoja = !gruposPeriodo.some(s => s.parent_id === g.id);
+      if (!esHoja) continue;
+      const tieneCalificada = acts.some(a => (a.grupo_id ?? null) === g.id && actividadTieneNota(a.id, periodo));
+      if (tieneCalificada) total += Number(g.porcentaje || 0);
+    }
+    return Math.round(total * 100) / 100;
   };
 
   const getPorcentajePromedioAnual = () => {

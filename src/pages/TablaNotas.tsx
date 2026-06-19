@@ -679,10 +679,41 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     return out;
   };
 
+  // ¿La actividad tiene al menos UNA nota puesta (de cualquier estudiante) en el periodo?
+  const actividadTieneNota = (actId: string | number, periodo: number): boolean =>
+    Object.values(notas).some((porPeriodo: any) => porPeriodo?.[periodo]?.[actId] !== undefined);
+
+  // Porcentaje "usado"/cobertura del periodo.
+  //  - Modo plano (Normal, sin grupos): suma el % de las actividades sueltas
+  //    definidas (comportamiento histórico — NO se toca).
+  //  - Modo grupos (Pestalozziano): el peso lo aportan SOLO los portadores que
+  //    tengan ≥1 actividad CON NOTA. Cada grupo-hoja con al menos una actividad
+  //    calificada suma su %, y las actividades sueltas con ≥1 nota suman su %.
+  //    El % de grupos/subgrupos es solo el TOPE; una actividad dentro de grupo
+  //    no lleva % propio y un grupo sin notas no aporta nada.
   const getPorcentajeUsado = (periodo: number) => {
-    return actividades
-      .filter(a => a.periodo === periodo && a.porcentaje !== null)
-      .reduce((sum, a) => sum + (a.porcentaje || 0), 0);
+    const gruposPeriodo = gruposNotas.filter(g => g.periodo === periodo);
+    const acts = actividades.filter(a => a.periodo === periodo);
+    if (gruposPeriodo.length === 0) {
+      return acts
+        .filter(a => a.porcentaje !== null)
+        .reduce((sum, a) => sum + (a.porcentaje || 0), 0);
+    }
+    let total = 0;
+    // Actividades sueltas (fuera de grupos) con al menos una nota.
+    for (const a of acts) {
+      if ((a.grupo_id ?? null) === null && a.porcentaje !== null && actividadTieneNota(a.id, periodo)) {
+        total += a.porcentaje;
+      }
+    }
+    // Grupos-hoja (sin subgrupos) con al menos una actividad calificada.
+    for (const g of gruposPeriodo) {
+      const esHoja = !gruposPeriodo.some(s => s.parent_id === g.id);
+      if (!esHoja) continue;
+      const tieneCalificada = acts.some(a => (a.grupo_id ?? null) === g.id && actividadTieneNota(a.id, periodo));
+      if (tieneCalificada) total += Number(g.porcentaje || 0);
+    }
+    return Math.round(total * 100) / 100;
   };
 
   // Calcular porcentaje promedio anual (promedio de los 4 períodos)
