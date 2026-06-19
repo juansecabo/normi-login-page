@@ -2357,7 +2357,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
       const motivo = enGrupos
         ? `El período aún no se ha cerrado (no se ha marcado como "Periodo completo").`
         : `El período está INCOMPLETO (${porcentajeUsado}/100%).`;
-      descripcion = `${motivo} Se enviará REPORTE PARCIAL con las notas individuales al/los padre(s) de ${nombreCompleto} sobre:\nFinal ${nombrePeriodo}`;
+      descripcion = `${motivo} Se enviará REPORTE PARCIAL con las notas individuales al/los padre(s) de ${nombreCompleto} sobre:\nlo que va del ${nombrePeriodo}`;
     }
     
     // Obtener detalle de actividades si es parcial
@@ -2616,7 +2616,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
       const motivo = enGrupos
         ? `El período aún no se ha cerrado (no se ha marcado como "Periodo completo").`
         : `El período está INCOMPLETO (${porcentajeUsado.toFixed(2)}/100%).`;
-      descripcion = `${motivo}\n\nSe enviará REPORTE PARCIAL a los acudientes de ${estudiantesElegibles.length} estudiante(s) sobre:\nFinal ${nombrePeriodo}`;
+      descripcion = `${motivo}\n\nSe enviará REPORTE PARCIAL a los acudientes de ${estudiantesElegibles.length} estudiante(s) sobre:\nlo que va del ${nombrePeriodo}`;
 
       // Agregar info de excluidos si hay
       if (estudiantesExcluidos > 0) {
