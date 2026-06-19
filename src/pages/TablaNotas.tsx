@@ -3258,25 +3258,70 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
 
   const getPeriodoCompleto = (periodo: number): boolean => periodosCompletos[periodo] === true;
 
+  // Fila base para upsert de un periodo.
+  const filaPeriodoCompleto = (p: number, completo: boolean) => ({
+    asignatura: asignaturaSeleccionada,
+    grado: gradoSeleccionado,
+    salon: salonSeleccionado,
+    periodo: p,
+    ano_escolar: anoEscolarActual(),
+    completo,
+    fecha_marcado: new Date().toISOString(),
+  });
+
+  // Cascada de "Periodo completo":
+  //  - MARCAR un periodo marca automáticamente TODOS los anteriores (no se
+  //    puede cerrar el 3ro sin que el 1ro y 2do estén cerrados).
+  //  - DESMARCAR se BLOQUEA si hay un periodo POSTERIOR marcado completo; primero
+  //    hay que desmarcar los posteriores (pop-up explicativo).
   const setPeriodoCompleto = async (periodo: number, valor: boolean) => {
     if (soloLectura) return;
-    setPeriodosCompletos(prev => ({ ...prev, [periodo]: valor }));
+
+    if (valor) {
+      const aMarcar: number[] = [];
+      for (let p = 1; p <= periodo; p++) if (!getPeriodoCompleto(p)) aMarcar.push(p);
+      if (aMarcar.length === 0) return;
+      setPeriodosCompletos(prev => {
+        const next = { ...prev };
+        for (const p of aMarcar) next[p] = true;
+        return next;
+      });
+      setModoIntentTick(t => t + 1);
+      const { error } = await supabase
+        .from('Periodos_Completos')
+        .upsert(aMarcar.map(p => filaPeriodoCompleto(p, true)), { onConflict: 'colegio_id,asignatura,grado,salon,periodo,ano_escolar' });
+      if (error) {
+        setPeriodosCompletos(prev => {
+          const next = { ...prev };
+          for (const p of aMarcar) next[p] = false;
+          return next;
+        });
+        toast({ title: 'No se pudo guardar', description: 'No se pudo marcar el periodo como completo.', variant: 'destructive' });
+      }
+      return;
+    }
+
+    // Desmarcar: bloquear si hay un periodo POSTERIOR marcado completo.
+    const posteriorCompleto: number | null =
+      [periodo + 1, periodo + 2, periodo + 3, periodo + 4].find(p => p <= 4 && getPeriodoCompleto(p)) ?? null;
+    if (posteriorCompleto !== null) {
+      toast({
+        title: 'Hay un periodo posterior completo',
+        description: `El ${posteriorCompleto}° periodo está marcado como completo, por lo que este también debe estarlo. Para desmarcar este periodo, primero desmarca los periodos posteriores.`,
+        variant: 'destructive',
+      });
+      // Forzar re-render para que el checkbox (controlado) vuelva a verse marcado.
+      setModoIntentTick(t => t + 1);
+      return;
+    }
+    setPeriodosCompletos(prev => ({ ...prev, [periodo]: false }));
     setModoIntentTick(t => t + 1);
     const { error } = await supabase
       .from('Periodos_Completos')
-      .upsert({
-        asignatura: asignaturaSeleccionada,
-        grado: gradoSeleccionado,
-        salon: salonSeleccionado,
-        periodo,
-        ano_escolar: anoEscolarActual(),
-        completo: valor,
-        fecha_marcado: new Date().toISOString(),
-      }, { onConflict: 'colegio_id,asignatura,grado,salon,periodo,ano_escolar' });
+      .upsert(filaPeriodoCompleto(periodo, false), { onConflict: 'colegio_id,asignatura,grado,salon,periodo,ano_escolar' });
     if (error) {
-      // revertir el estado local si falló el guardado
-      setPeriodosCompletos(prev => ({ ...prev, [periodo]: !valor }));
-      toast({ title: 'No se pudo guardar', description: 'No se pudo marcar el periodo como completo.', variant: 'destructive' });
+      setPeriodosCompletos(prev => ({ ...prev, [periodo]: true }));
+      toast({ title: 'No se pudo guardar', description: 'No se pudo desmarcar el periodo.', variant: 'destructive' });
     }
   };
   /**
