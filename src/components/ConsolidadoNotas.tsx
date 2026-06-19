@@ -4,7 +4,7 @@ import { getPeriodoActual } from "@/utils/periodoActual";
 import { anoEscolarActual } from "@/utils/anoEscolar";
 import ComentarioModalReadOnly from "@/components/notas/ComentarioModalReadOnly";
 import { MessageSquareText } from "lucide-react";
-import { promedioGeneral, esPeriodoCompleto, promedioDeGrupo, type NotaCalc, type GrupoCalc } from "@/lib/gradeCalculator";
+import { promedioGeneral, promedioDeGrupo, type NotaCalc, type GrupoCalc } from "@/lib/gradeCalculator";
 
 interface ConsolidadoNotasProps {
   idEstudiante: string;
@@ -330,35 +330,11 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
   //  2) Este estudiante tiene TODAS las notas. Si le falta una, queda "pendiente"
   //     aunque el profesor haya marcado el periodo como completo.
   const periodoCompletoParaAsig = (asignatura: string, periodo: number): boolean => {
-    // (1) Cierre del profesor
-    let cerradoPorProfe: boolean;
-    if (periodosCompletos[`${asignatura}|${periodo}`]) {
-      cerradoPorProfe = true;
-    } else {
-      const hayGrupos = grupos.some(g => g.asignatura === asignatura && g.periodo === periodo && g.parent_id === null);
-      if (hayGrupos) {
-        // Modo grupos: SOLO el checkbox cierra el periodo.
-        cerradoPorProfe = false;
-      } else {
-        // Modo plano (Normal): cálculo clásico por actividades calificadas.
-        const acts = getActividadesPorPeriodo(asignatura, periodo);
-        if (acts.length === 0) {
-          cerradoPorProfe = false;
-        } else {
-          const notasCalc: NotaCalc[] = acts.map(a => ({
-            porcentaje: a.porcentaje,
-            nota: notas[asignatura]?.[periodo]?.[a.id] !== undefined ? (notas[asignatura][periodo][a.id] as number) : null,
-            grupo_id: a.grupo_id ?? actividadGrupo.get(`${asignatura}|${a.id}`) ?? null,
-          }));
-          const gruposPeriodo: GrupoCalc[] = grupos
-            .filter(g => g.asignatura === asignatura && g.periodo === periodo)
-            .map(g => ({ id: g.id, porcentaje: g.porcentaje, parent_id: g.parent_id }));
-          cerradoPorProfe = esPeriodoCompleto(notasCalc, gruposPeriodo);
-        }
-      }
-    }
-    if (!cerradoPorProfe) return false;
-    // (2) Este estudiante debe tener todas las notas.
+    // (1) El profesor debe haber marcado la casilla "Periodo completo" — en
+    //     AMBOS modos (plano y grupos). El modo plano ya no se cierra solo por
+    //     %-suma: el profe marca la casilla al llegar al 100%.
+    if (!periodosCompletos[`${asignatura}|${periodo}`]) return false;
+    // (2) Y este estudiante debe tener TODAS sus notas.
     return estudianteTieneTodasNotas(asignatura, periodo);
   };
 

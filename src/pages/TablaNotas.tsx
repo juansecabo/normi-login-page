@@ -2325,9 +2325,8 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   ) => {
     // "Completo" (REPORTE FINAL): en grupos lo decide el checkbox "Periodo
     // completo"; en plano, la cobertura 100%. Si no, NO se bloquea: va PARCIAL.
-    const enGrupos = modoEfectivo() === 'grupos';
-    const porcentajeUsado = getPorcentajeUsado(periodo);
-    const esCompleto = enGrupos ? getPeriodoCompleto(periodo) : porcentajeUsado === 100;
+    // Cierre = casilla "Periodo completo" en AMBOS modos (plano ya no cierra solo).
+    const esCompleto = getPeriodoCompleto(periodo);
     const actividadesDelPeriodo = getActividadesPorPeriodo(periodo);
     const actividadesConPorcentaje = actividadesDelPeriodo.filter(a => a.porcentaje !== null && a.porcentaje > 0);
     
@@ -2354,9 +2353,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     } else {
       tipoReporte = "parcial";
       razonParcial = "periodo_incompleto";
-      const motivo = enGrupos
-        ? `El período aún no se ha cerrado (no se ha marcado como "Periodo completo").`
-        : `El período está INCOMPLETO (${porcentajeUsado}/100%).`;
+      const motivo = `El período aún no se ha cerrado (el profesor no ha marcado "Periodo completo").`;
       descripcion = `${motivo} Se enviará REPORTE PARCIAL con las notas individuales al/los padre(s) de ${nombreCompleto} sobre:\nlo que va del ${nombrePeriodo}`;
     }
     
@@ -2519,9 +2516,8 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     // completo"; en modo plano, que la cobertura llegue al 100%. Si NO está
     // completo ya NO se bloquea: se envía REPORTE PARCIAL (provisional), igual
     // que en plano cuando las actividades no suman 100%.
-    const enGrupos = modoEfectivo() === 'grupos';
-    const porcentajeUsado = getPorcentajeUsado(periodo);
-    const esCompleto = enGrupos ? getPeriodoCompleto(periodo) : porcentajeUsado === 100;
+    // Cierre = casilla "Periodo completo" en AMBOS modos (plano ya no cierra solo).
+    const esCompleto = getPeriodoCompleto(periodo);
     const actividadesDelPeriodo = getActividadesPorPeriodo(periodo);
     const actividadesConPorcentaje = actividadesDelPeriodo.filter(a => a.porcentaje !== null && a.porcentaje > 0);
 
@@ -2613,9 +2609,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     } else {
       // No "completo": en grupos = checkbox "Periodo completo" sin marcar;
       // en plano = cobertura < 100%. En ambos casos va REPORTE PARCIAL.
-      const motivo = enGrupos
-        ? `El período aún no se ha cerrado (no se ha marcado como "Periodo completo").`
-        : `El período está INCOMPLETO (${porcentajeUsado.toFixed(2)}/100%).`;
+      const motivo = `El período aún no se ha cerrado (el profesor no ha marcado "Periodo completo").`;
       descripcion = `${motivo}\n\nSe enviará REPORTE PARCIAL a los acudientes de ${estudiantesElegibles.length} estudiante(s) sobre:\nlo que va del ${nombrePeriodo}`;
 
       // Agregar info de excluidos si hay
@@ -3296,31 +3290,26 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   const periodoEsCalificable = (periodo: number): boolean => {
     const gruposPeriodo = gruposNotas.filter(g => g.periodo === periodo);
     const actsPeriodo = actividades.filter(a => a.periodo === periodo);
+    if (actsPeriodo.length === 0) return false;
+    const actsSueltas = actsPeriodo.filter(a => !a.grupo_id && a.porcentaje !== null);
+    const sumaSueltas = actsSueltas.reduce((s, a) => s + Number(a.porcentaje || 0), 0);
 
-    // (1) Solo modo grupos: sin grupos, no aplica el checkbox.
-    if (gruposPeriodo.length === 0) return false;
+    // Modo plano puro (sin grupos): las actividades sueltas con % deben sumar 100.
+    // El checkbox aparece apenas la ESTRUCTURA llega a 100% — NO se exige que el
+    // profe haya puesto notas (los reportes salen parciales si faltan).
+    if (gruposPeriodo.length === 0) {
+      return Math.abs(sumaSueltas - 100) <= 0.01;
+    }
 
-    // Estructura: todos los grupos con %, y la suma del periodo (% grupos top +
-    // % actividades sueltas) = 100. Sin esto la definitiva no sería válida.
+    // Modo grupos / mixto: todos los grupos con %, y la suma (% grupos top +
+    // % actividades sueltas) = 100, y cada hoja con al menos 1 actividad definida.
     if (gruposPeriodo.some(g => g.porcentaje === null)) return false;
     const tops = gruposPeriodo.filter(g => !g.parent_id);
     const sumaTops = tops.reduce((s, g) => s + Number(g.porcentaje || 0), 0);
-    const actsSueltas = actsPeriodo.filter(a => !a.grupo_id && a.porcentaje !== null);
-    const sumaSueltas = actsSueltas.reduce((s, a) => s + Number(a.porcentaje || 0), 0);
     if (Math.abs(sumaTops + sumaSueltas - 100) > 0.01) return false;
-
-    // Cada hoja de grupo debe tener al menos 1 actividad definida.
     const hojas = gruposPeriodo.filter(g => !gruposPeriodo.some(h => h.parent_id === g.id));
     if (!hojas.every(h => actsPeriodo.some(a => a.grupo_id === h.id))) return false;
-
-    // (2)+(3) CLAVE: el checkbox solo aparece si EXISTE al menos UN estudiante con
-    // nota en TODAS las actividades del periodo (en grupos Y sueltas). Un único
-    // estudiante completo de punta a punta — NO uno por grupo y otro por las
-    // sueltas.
-    if (actsPeriodo.length === 0) return false;
-    return estudiantes.some(est =>
-      actsPeriodo.every(a => notas[est.id]?.[periodo]?.[a.id] !== undefined),
-    );
+    return true;
   };
 
 
@@ -3507,11 +3496,9 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
             )}
           </div>
           {periodoActivo >= 1 && (
-            // Modo grupos: "completo" solo si el profe marcó el checkbox.
-            // Modo plano (Normal, sin checkbox): cuando los % suman 100.
-            (modoEfectivo() === 'grupos'
-              ? getPeriodoCompleto(periodoActivo)
-              : getPorcentajeUsado(periodoActivo) === 100) ? (
+            // Ambos modos: "completo" solo si el profe marcó la casilla
+            // "Periodo completo" (ya no se cierra solo por %-suma en plano).
+            (getPeriodoCompleto(periodoActivo)) ? (
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-semibold">
                 ✓ Periodo completo
               </span>
@@ -3860,14 +3847,30 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                               {(() => {
                                 const porcentajeUsado = getPorcentajeUsado(periodoActivo);
                                 const isComplete = porcentajeUsado === 100;
+                                // Plano: al llegar a 100% aparece la casilla "Periodo completo"
+                                // y el profesor la marca (no se cierra solo). Igual que en grupos.
+                                const calificable = periodoEsCalificable(periodoActivo);
+                                const marcado = getPeriodoCompleto(periodoActivo);
                                 return (
                                   <th className="border-r border-b border-border/30 p-2 text-center text-xs font-medium min-w-[130px] bg-primary">
-                                    <div className="flex flex-col items-center">
+                                    <div className="flex flex-col items-center gap-1">
                                       <span>Definitiva Periodo</span>
-                                      <span className={`text-xs ${isComplete ? 'text-green-300' : 'text-primary-foreground/70'}`}>
-                                        ({porcentajeUsado}/100%)
-                                        {isComplete && ' ✓'}
-                                      </span>
+                                      {!soloLectura && calificable ? (
+                                        <label className="flex items-center gap-1 cursor-pointer text-xs text-primary-foreground/90 hover:text-primary-foreground">
+                                          <span>(¿Periodo completo?)</span>
+                                          <input
+                                            type="checkbox"
+                                            checked={marcado}
+                                            onChange={(e) => setPeriodoCompleto(periodoActivo, e.target.checked)}
+                                            className="w-4 h-4 rounded border-white/50 accent-green-400 cursor-pointer"
+                                          />
+                                        </label>
+                                      ) : (
+                                        <span className={`text-xs ${isComplete ? 'text-green-300' : 'text-primary-foreground/70'}`}>
+                                          ({porcentajeUsado}/100%)
+                                          {isComplete && ' ✓'}
+                                        </span>
+                                      )}
                                     </div>
                                   </th>
                                 );
@@ -4216,9 +4219,10 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                               //   - Modo grupos: el profe marcó el checkbox "Periodo completo".
                               //   - Modo plano (Normal): los % de las actividades suman 100.
                               // Si no, sale "provisional". (Igual criterio que el agente.)
-                              const completo = modoEfectivo() === 'grupos'
-                                ? getPeriodoCompleto(periodoActivo)
-                                : periodoCompletoParaEst(estudiante.id, periodoActivo);
+                              // Completo PARA ESTE estudiante = el profe cerró el periodo
+                              // (casilla) Y este estudiante tiene todas sus notas.
+                              const completo = getPeriodoCompleto(periodoActivo)
+                                && periodoCompletoParaEst(estudiante.id, periodoActivo);
                               // Siempre se puede notificar si hay notas: si el periodo no
                               // está cerrado, el handler envía REPORTE PARCIAL (provisional).
                               const puedeNotificar = true;
