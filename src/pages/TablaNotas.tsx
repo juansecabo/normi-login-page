@@ -3514,7 +3514,10 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-lg font-bold text-foreground">{p.nombre}</span>
                     {/* La casilla aparece solo si el periodo es calificable (igual que en la tabla). */}
-                    {calificable ? (
+                    {/* Casilla si el periodo es calificable (100%) O si ya está
+                        marcado completo por cascada (aunque no sea calificable,
+                        ej. el 1er periodo sin notas que se cerró al cerrar el 2do). */}
+                    {(calificable || completo) ? (
                       <label
                         onClick={(e) => e.stopPropagation()}
                         title="Marcar/desmarcar periodo completo"
@@ -3939,7 +3942,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                   <th rowSpan={filasThead} className="border-r border-b border-border/30 p-2 text-center text-xs font-semibold min-w-[150px] bg-primary">
                                     <div className="flex flex-col items-center gap-1">
                                       <span>Definitiva Periodo</span>
-                                      {!soloLectura && (calificable ? (
+                                      {!soloLectura && ((calificable || marcado) ? (
                                         <label className="flex items-center gap-1 cursor-pointer text-xs text-primary-foreground/90 hover:text-primary-foreground">
                                           <span>(¿Periodo completo?)</span>
                                           <input
@@ -4021,7 +4024,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                   <th className="border-r border-b border-border/30 p-2 text-center text-xs font-medium min-w-[130px] bg-primary">
                                     <div className="flex flex-col items-center gap-1">
                                       <span>Definitiva Periodo</span>
-                                      {!soloLectura && calificable ? (
+                                      {!soloLectura && (calificable || marcado) ? (
                                         <label className="flex items-center gap-1 cursor-pointer text-xs text-primary-foreground/90 hover:text-primary-foreground">
                                           <span>(¿Periodo completo?)</span>
                                           <input
