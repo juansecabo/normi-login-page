@@ -335,21 +335,24 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
     return esPeriodoCompleto(notasCalc, gruposPeriodo);
   };
 
-  // Render de la definitiva del periodo: muestra el valor en vivo y lo marca
-  // "provisional" si el periodo aún no está completo.
+  // Render de la definitiva del periodo para estudiante/acudiente.
+  // El profesor debe CERRAR el periodo ("Periodo completo") para que se muestre
+  // la nota definitiva. Mientras no esté cerrado NO se revela el valor (ni
+  // siquiera provisional): solo un indicador "pendiente".
   const renderDefinitivaPeriodo = (asignatura: string, periodo: number, claseValor: string) => {
+    if (!periodoCompletoParaAsig(asignatura, periodo)) {
+      return (
+        <span className={claseValor} title="La nota definitiva se mostrará cuando el profesor cierre el periodo">
+          <span className="inline-flex flex-col items-center leading-tight">
+            <span>—</span>
+            <span className="text-[10px] font-normal text-muted-foreground">pendiente</span>
+          </span>
+        </span>
+      );
+    }
     const nf = calcularFinalPeriodo(asignatura, periodo);
     if (nf === null) return <span className={claseValor}>—</span>;
-    const prov = !periodoCompletoParaAsig(asignatura, periodo);
-    if (!prov) return <span className={claseValor}>{nf.toFixed(1)}</span>;
-    return (
-      <span className={claseValor} title="Provisional — el periodo aún no está completo">
-        <span className="inline-flex flex-col items-center leading-tight">
-          <span>{nf.toFixed(1)}</span>
-          <span className="text-[10px] font-normal text-muted-foreground">provisional</span>
-        </span>
-      </span>
-    );
+    return <span className={claseValor}>{nf.toFixed(1)}</span>;
   };
 
   const calcularFinalDefinitiva = (asignatura: string): number | null => {
