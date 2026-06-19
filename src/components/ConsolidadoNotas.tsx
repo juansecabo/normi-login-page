@@ -312,27 +312,54 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
     return res.promedio;
   };
 
-  // Promedio (visual) de un grupo/subgrupo para este estudiante.
-  // ¿El periodo está objetivamente completo? (si no, la definitiva es provisional)
+  // ¿ESTE estudiante tiene TODAS las notas del periodo? Cuentan las actividades
+  // que aportan peso: las que están en un grupo (el peso lo da el grupo) o las
+  // sueltas con % > 0. Si le falta alguna, el periodo NO está completo PARA ÉL.
+  const estudianteTieneTodasNotas = (asignatura: string, periodo: number): boolean => {
+    const cuentan = getActividadesPorPeriodo(asignatura, periodo).filter(a => {
+      const gid = a.grupo_id ?? actividadGrupo.get(`${asignatura}|${a.id}`) ?? null;
+      return gid !== null || (a.porcentaje !== null && a.porcentaje > 0);
+    });
+    if (cuentan.length === 0) return false;
+    return cuentan.every(a => notas[asignatura]?.[periodo]?.[a.id] !== undefined);
+  };
+
+  // ¿El periodo está completo PARA ESTE ESTUDIANTE? Dos condiciones:
+  //  1) El profesor cerró el periodo (checkbox "Periodo completo"; en plano,
+  //     además, las actividades suman 100% calificado).
+  //  2) Este estudiante tiene TODAS las notas. Si le falta una, queda "pendiente"
+  //     aunque el profesor haya marcado el periodo como completo.
   const periodoCompletoParaAsig = (asignatura: string, periodo: number): boolean => {
-    // El checkbox "Periodo completo" del profesor (Periodos_Completos) manda.
-    if (periodosCompletos[`${asignatura}|${periodo}`]) return true;
-    // Modo grupos: SOLO el checkbox cierra el periodo (alineado con el agente).
-    // Sin checkbox la definitiva queda provisional, haya o no notas en todos los grupos.
-    const hayGrupos = grupos.some(g => g.asignatura === asignatura && g.periodo === periodo && g.parent_id === null);
-    if (hayGrupos) return false;
-    // Modo plano (Normal): cálculo clásico por actividades calificadas.
-    const acts = getActividadesPorPeriodo(asignatura, periodo);
-    if (acts.length === 0) return false;
-    const notasCalc: NotaCalc[] = acts.map(a => ({
-      porcentaje: a.porcentaje,
-      nota: notas[asignatura]?.[periodo]?.[a.id] !== undefined ? (notas[asignatura][periodo][a.id] as number) : null,
-      grupo_id: a.grupo_id ?? actividadGrupo.get(`${asignatura}|${a.id}`) ?? null,
-    }));
-    const gruposPeriodo: GrupoCalc[] = grupos
-      .filter(g => g.asignatura === asignatura && g.periodo === periodo)
-      .map(g => ({ id: g.id, porcentaje: g.porcentaje, parent_id: g.parent_id }));
-    return esPeriodoCompleto(notasCalc, gruposPeriodo);
+    // (1) Cierre del profesor
+    let cerradoPorProfe: boolean;
+    if (periodosCompletos[`${asignatura}|${periodo}`]) {
+      cerradoPorProfe = true;
+    } else {
+      const hayGrupos = grupos.some(g => g.asignatura === asignatura && g.periodo === periodo && g.parent_id === null);
+      if (hayGrupos) {
+        // Modo grupos: SOLO el checkbox cierra el periodo.
+        cerradoPorProfe = false;
+      } else {
+        // Modo plano (Normal): cálculo clásico por actividades calificadas.
+        const acts = getActividadesPorPeriodo(asignatura, periodo);
+        if (acts.length === 0) {
+          cerradoPorProfe = false;
+        } else {
+          const notasCalc: NotaCalc[] = acts.map(a => ({
+            porcentaje: a.porcentaje,
+            nota: notas[asignatura]?.[periodo]?.[a.id] !== undefined ? (notas[asignatura][periodo][a.id] as number) : null,
+            grupo_id: a.grupo_id ?? actividadGrupo.get(`${asignatura}|${a.id}`) ?? null,
+          }));
+          const gruposPeriodo: GrupoCalc[] = grupos
+            .filter(g => g.asignatura === asignatura && g.periodo === periodo)
+            .map(g => ({ id: g.id, porcentaje: g.porcentaje, parent_id: g.parent_id }));
+          cerradoPorProfe = esPeriodoCompleto(notasCalc, gruposPeriodo);
+        }
+      }
+    }
+    if (!cerradoPorProfe) return false;
+    // (2) Este estudiante debe tener todas las notas.
+    return estudianteTieneTodasNotas(asignatura, periodo);
   };
 
   // Render de la definitiva del periodo para estudiante/acudiente.
