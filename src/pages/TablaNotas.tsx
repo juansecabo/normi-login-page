@@ -3490,26 +3490,17 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               <span className="text-foreground font-medium">{salonSeleccionado}</span>
             </div>
           </div>
-          <div className="bg-card rounded-lg shadow-soft px-4 py-2.5 mb-4 text-sm text-foreground">
-            {nombresProfesores ? (
-              <span><span className="font-semibold">{nombresProfesores.includes(',') ? 'Profesores(as): ' : 'Profesor(a): '}</span>{nombresProfesores}</span>
-            ) : (
-              <span className="text-muted-foreground">Sin profesor asignado</span>
-            )}
-          </div>
-          <h2 className="text-xl font-bold text-foreground mb-1">Elige el periodo</h2>
-          <p className="text-sm text-muted-foreground mb-6">Entra a un periodo para ver y editar sus notas.</p>
+          <h2 className="text-xl font-bold text-foreground mb-6 text-center">Elige tu periodo:</h2>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            {periodos.map((p, i) => {
+            {periodos.map((p) => {
               const pct = getPorcentajeUsado(p.numero);
               const completo = getPeriodoCompleto(p.numero);
               const calificable = periodoEsCalificable(p.numero);
-              const tintas = ['bg-emerald-100', 'bg-emerald-200', 'bg-green-200', 'bg-teal-200'];
               return (
                 <div
                   key={p.numero}
                   onClick={() => irAPeriodo(p.numero)}
-                  className={`text-left ${tintas[i % tintas.length]} rounded-lg shadow-soft p-5 border-2 border-transparent hover:border-primary hover:shadow-md transition-all cursor-pointer`}
+                  className="text-left bg-background rounded-lg p-5 border-2 border-border hover:border-primary hover:bg-primary/10 hover:shadow-md transition-all cursor-pointer"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-lg font-bold text-foreground">{p.nombre}</span>
@@ -3521,7 +3512,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                       <label
                         onClick={(e) => e.stopPropagation()}
                         title="Marcar/desmarcar periodo completo"
-                        className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold cursor-pointer whitespace-nowrap ${completo ? 'bg-green-600 text-white' : 'bg-white/70 text-foreground'}`}
+                        className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold cursor-pointer whitespace-nowrap ${completo ? 'bg-green-600 text-white' : 'bg-muted text-foreground'}`}
                       >
                         <input
                           type="checkbox"
@@ -3535,7 +3526,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                       <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 whitespace-nowrap">{pct}%</span>
                     )}
                   </div>
-                  <span className="text-sm text-foreground/70">Ver notas →</span>
+                  <span className="text-sm text-muted-foreground">Ver notas →</span>
                 </div>
               );
             })}
@@ -3545,13 +3536,13 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               return (
                 <div
                   onClick={() => irAPeriodo(0)}
-                  className="text-left bg-emerald-300 rounded-lg shadow-soft p-5 border-2 border-transparent hover:border-primary hover:shadow-md transition-all cursor-pointer"
+                  className="text-left bg-background rounded-lg p-5 border-2 border-border hover:border-primary hover:bg-primary/10 hover:shadow-md transition-all cursor-pointer"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-lg font-bold text-foreground">Definitiva Anual</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${completo ? 'bg-green-600 text-white font-semibold' : 'bg-white/70 text-foreground'}`}>{pct}/100%</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${completo ? 'bg-green-600 text-white font-semibold' : 'bg-muted text-foreground'}`}>{pct}/100%</span>
                   </div>
-                  <span className="text-sm text-foreground/70">Ver consolidado →</span>
+                  <span className="text-sm text-muted-foreground">Ver consolidado →</span>
                 </div>
               );
             })()}
