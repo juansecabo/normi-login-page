@@ -2323,14 +2323,11 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     periodo: number,
     notaFinal: number
   ) => {
-    // En modo grupos NO se notifica la definitiva del periodo si el profe no
-    // marcó "Periodo completo" (sigue provisional).
-    if (modoEfectivo() === 'grupos' && !getPeriodoCompleto(periodo)) {
-      toast({ title: 'Periodo no cerrado', description: 'Marca "Periodo completo" antes de notificar la definitiva del periodo.', variant: 'destructive' });
-      return;
-    }
+    // "Completo" (REPORTE FINAL): en grupos lo decide el checkbox "Periodo
+    // completo"; en plano, la cobertura 100%. Si no, NO se bloquea: va PARCIAL.
+    const enGrupos = modoEfectivo() === 'grupos';
     const porcentajeUsado = getPorcentajeUsado(periodo);
-    const esCompleto = porcentajeUsado === 100;
+    const esCompleto = enGrupos ? getPeriodoCompleto(periodo) : porcentajeUsado === 100;
     const actividadesDelPeriodo = getActividadesPorPeriodo(periodo);
     const actividadesConPorcentaje = actividadesDelPeriodo.filter(a => a.porcentaje !== null && a.porcentaje > 0);
     
@@ -2357,7 +2354,10 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     } else {
       tipoReporte = "parcial";
       razonParcial = "periodo_incompleto";
-      descripcion = `El período está INCOMPLETO (${porcentajeUsado}/100%). Se enviará REPORTE PARCIAL con las notas individuales al/los padre(s) de ${nombreCompleto} sobre:\nFinal ${nombrePeriodo}`;
+      const motivo = enGrupos
+        ? `El período aún no se ha cerrado (no se ha marcado como "Periodo completo").`
+        : `El período está INCOMPLETO (${porcentajeUsado}/100%).`;
+      descripcion = `${motivo} Se enviará REPORTE PARCIAL con las notas individuales al/los padre(s) de ${nombreCompleto} sobre:\nFinal ${nombrePeriodo}`;
     }
     
     // Obtener detalle de actividades si es parcial
@@ -2515,17 +2515,16 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   // Preparar notificación masiva para período completo
   const handleNotificarPeriodoCompleto = (periodo: number) => {
     if (soloLectura) return;
-    // En modo grupos NO se notifica la definitiva del periodo si el profe no
-    // marcó "Periodo completo" (sigue provisional).
-    if (modoEfectivo() === 'grupos' && !getPeriodoCompleto(periodo)) {
-      toast({ title: 'Periodo no cerrado', description: 'Marca "Periodo completo" antes de notificar la definitiva del periodo.', variant: 'destructive' });
-      return;
-    }
+    // "Completo" (REPORTE FINAL) en modo grupos lo decide el checkbox "Periodo
+    // completo"; en modo plano, que la cobertura llegue al 100%. Si NO está
+    // completo ya NO se bloquea: se envía REPORTE PARCIAL (provisional), igual
+    // que en plano cuando las actividades no suman 100%.
+    const enGrupos = modoEfectivo() === 'grupos';
     const porcentajeUsado = getPorcentajeUsado(periodo);
-    const esCompleto = porcentajeUsado === 100;
+    const esCompleto = enGrupos ? getPeriodoCompleto(periodo) : porcentajeUsado === 100;
     const actividadesDelPeriodo = getActividadesPorPeriodo(periodo);
     const actividadesConPorcentaje = actividadesDelPeriodo.filter(a => a.porcentaje !== null && a.porcentaje > 0);
-    
+
     // Para Definitiva Periodo, SOLO verificar que tenga Definitiva Periodo calculado
     // NO importa si tiene todas las notas o no (unos tendrán reporte completo, otros parcial)
     const estudiantesElegibles = estudiantes.filter(est => {
@@ -2591,30 +2590,34 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     if (esCompleto) {
       if (estudiantesCompletos.length === estudiantesElegibles.length) {
         // Todos tienen todas las notas
-        descripcion = `El período está COMPLETO (100%).\n\nSe enviará REPORTE FINAL a ${estudiantesElegibles.length} estudiante(s) sobre:\nFinal ${nombrePeriodo} Periodo`;
+        descripcion = `El período está COMPLETO (100%).\n\nSe enviará REPORTE FINAL a los acudientes de ${estudiantesElegibles.length} estudiante(s) sobre:\nFinal ${nombrePeriodo}`;
       } else if (estudiantesParciales === estudiantesElegibles.length) {
         // Todos tienen notas parciales
-        descripcion = `El período está completo (100%).\n\nSe enviará REPORTE PARCIAL a ${estudiantesParciales} estudiante(s) sobre:\nFinal ${nombrePeriodo} Periodo (tienen notas pendientes)`;
+        descripcion = `El período está completo (100%).\n\nSe enviará REPORTE PARCIAL a los acudientes de ${estudiantesParciales} estudiante(s) sobre:\nFinal ${nombrePeriodo} (tienen notas pendientes)`;
       } else {
         // Mezcla de completos y parciales
-        descripcion = `El período está completo (100%).\n\nSe enviará notificación a ${estudiantesElegibles.length} estudiante(s):\n• ${estudiantesCompletos.length} recibirá REPORTE FINAL (todas las notas registradas)\n• ${estudiantesParciales} recibirá REPORTE PARCIAL (notas pendientes)`;
+        descripcion = `El período está completo (100%).\n\nSe enviará notificación a los acudientes de ${estudiantesElegibles.length} estudiante(s):\n• ${estudiantesCompletos.length} recibirá REPORTE FINAL (todas las notas registradas)\n• ${estudiantesParciales} recibirá REPORTE PARCIAL (notas pendientes)`;
       }
-      
+
       // Agregar info de excluidos si hay
       if (estudiantesExcluidos > 0) {
         descripcion += `\n\n⚠️ Se excluirá ${estudiantesExcluidos} estudiante(s) sin ninguna nota registrada.`;
       }
-      
+
       // Agregar sobre qué es la notificación (solo si no es mezcla, porque ya lo tiene)
       if (estudiantesCompletos.length === estudiantesElegibles.length || estudiantesParciales === estudiantesElegibles.length) {
         // Ya tiene el "sobre" incluido en el mensaje
       } else {
-        descripcion += `\n\nSobre: Final ${nombrePeriodo} Periodo`;
+        descripcion += `\n\nSobre: Final ${nombrePeriodo}`;
       }
     } else {
-      // Período incompleto
-      descripcion = `El período está INCOMPLETO (${porcentajeUsado.toFixed(2)}/100%).\n\nSe enviará REPORTE PARCIAL a ${estudiantesElegibles.length} estudiante(s) sobre:\nFinal ${nombrePeriodo} Periodo`;
-      
+      // No "completo": en grupos = checkbox "Periodo completo" sin marcar;
+      // en plano = cobertura < 100%. En ambos casos va REPORTE PARCIAL.
+      const motivo = enGrupos
+        ? `El período aún no se ha cerrado (no se ha marcado como "Periodo completo").`
+        : `El período está INCOMPLETO (${porcentajeUsado.toFixed(2)}/100%).`;
+      descripcion = `${motivo}\n\nSe enviará REPORTE PARCIAL a los acudientes de ${estudiantesElegibles.length} estudiante(s) sobre:\nFinal ${nombrePeriodo}`;
+
       // Agregar info de excluidos si hay
       if (estudiantesExcluidos > 0) {
         descripcion += `\n\n⚠️ Se excluirá ${estudiantesExcluidos} estudiante(s) sin ninguna nota registrada.`;
@@ -4216,7 +4219,9 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                               const completo = modoEfectivo() === 'grupos'
                                 ? getPeriodoCompleto(periodoActivo)
                                 : periodoCompletoParaEst(estudiante.id, periodoActivo);
-                              const puedeNotificar = modoEfectivo() === 'plana' || getPeriodoCompleto(periodoActivo);
+                              // Siempre se puede notificar si hay notas: si el periodo no
+                              // está cerrado, el handler envía REPORTE PARCIAL (provisional).
+                              const puedeNotificar = true;
                               return (
                                 <FinalPeriodoCelda
                                   notaFinal={notaFinal}
