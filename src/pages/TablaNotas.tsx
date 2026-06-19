@@ -3300,20 +3300,12 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     if (soloLectura) return;
 
     if (valor) {
-      // No se puede cerrar un periodo si un periodo ANTERIOR aún no está al 100%
-      // (no es "calificable" → ni siquiera tendría casilla). Hay que completar
-      // primero ese periodo anterior.
-      for (let p = 1; p < periodo; p++) {
-        if (!getPeriodoCompleto(p) && !periodoEsCalificable(p)) {
-          toast({
-            title: 'Falta completar un periodo anterior',
-            description: `No puedes marcar este periodo como completo: el ${p}° periodo aún no está al 100%. Complétalo primero.`,
-            variant: 'destructive',
-          });
-          setModoIntentTick(t => t + 1);
-          return;
-        }
-      }
+      // La casilla solo aparece en periodos calificables (al 100%), así que un
+      // periodo sin 100% NUNCA se marca directamente. PERO al cerrar un periodo
+      // posterior que sí está al 100%, la cascada marca también TODOS los
+      // anteriores (estén o no al 100%). Caso real: el Pestalozziano empezó a
+      // usar Normi en el 2do periodo; el 1ro nunca se subirá → se da por
+      // cerrado al cerrar el 2do, sin pedir el 100% del 1ro.
       const aMarcar: number[] = [];
       for (let p = 1; p <= periodo; p++) if (!getPeriodoCompleto(p)) aMarcar.push(p);
       if (aMarcar.length === 0) return;
