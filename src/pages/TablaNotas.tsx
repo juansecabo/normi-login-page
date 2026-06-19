@@ -3497,39 +3497,53 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
             {periodos.map((p, i) => {
               const pct = getPorcentajeUsado(p.numero);
               const completo = getPeriodoCompleto(p.numero);
-              const tintas = ['bg-primary/5', 'bg-primary/10', 'bg-primary/[0.15]', 'bg-primary/20'];
+              const calificable = periodoEsCalificable(p.numero);
+              const tintas = ['bg-primary/15', 'bg-primary/25', 'bg-primary/35', 'bg-primary/45'];
               return (
-                <button
+                <div
                   key={p.numero}
                   onClick={() => irAPeriodo(p.numero)}
-                  className={`text-left ${tintas[i % tintas.length]} rounded-lg shadow-soft p-5 border-2 border-transparent hover:border-primary hover:shadow-md transition-all`}
+                  className={`text-left ${tintas[i % tintas.length]} rounded-lg shadow-soft p-5 border-2 border-transparent hover:border-primary hover:shadow-md transition-all cursor-pointer`}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-lg font-bold text-foreground">{p.nombre}</span>
-                    {completo ? (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-semibold whitespace-nowrap">✓ Completo</span>
+                    {/* La casilla aparece solo si el periodo es calificable (igual que en la tabla). */}
+                    {calificable ? (
+                      <label
+                        onClick={(e) => e.stopPropagation()}
+                        title="Marcar/desmarcar periodo completo"
+                        className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold cursor-pointer whitespace-nowrap ${completo ? 'bg-green-600 text-white' : 'bg-white/70 text-foreground'}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={completo}
+                          onChange={(e) => setPeriodoCompleto(p.numero, e.target.checked)}
+                          className="w-3.5 h-3.5 accent-green-600 cursor-pointer"
+                        />
+                        <span>Completo</span>
+                      </label>
                     ) : (
                       <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 whitespace-nowrap">{pct}%</span>
                     )}
                   </div>
-                  <span className="text-sm text-muted-foreground">Ver notas →</span>
-                </button>
+                  <span className="text-sm text-foreground/70">Ver notas →</span>
+                </div>
               );
             })}
             {(() => {
               const pct = getPorcentajePromedioAnual();
               const completo = pct === 100;
               return (
-                <button
+                <div
                   onClick={() => irAPeriodo(0)}
-                  className="text-left bg-primary/[0.13] rounded-lg shadow-soft p-5 border-2 border-transparent hover:border-primary hover:shadow-md transition-all"
+                  className="text-left bg-primary/30 rounded-lg shadow-soft p-5 border-2 border-transparent hover:border-primary hover:shadow-md transition-all cursor-pointer"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-lg font-bold text-foreground">Definitiva Anual</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${completo ? 'bg-green-100 text-green-800 font-semibold' : 'bg-muted text-muted-foreground'}`}>{pct}/100%</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${completo ? 'bg-green-600 text-white font-semibold' : 'bg-white/70 text-foreground'}`}>{pct}/100%</span>
                   </div>
-                  <span className="text-sm text-muted-foreground">Ver consolidado →</span>
-                </button>
+                  <span className="text-sm text-foreground/70">Ver consolidado →</span>
+                </div>
               );
             })()}
           </div>
