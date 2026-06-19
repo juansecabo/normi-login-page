@@ -1,7 +1,7 @@
 import { getPeriodoActual } from "@/utils/periodoActual";
 import { anoEscolarActual } from "@/utils/anoEscolar";
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, MoreVertical, Pencil, Trash2, Send, Calendar, Download, FileSpreadsheet, Loader2 } from "lucide-react";
@@ -211,6 +211,28 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   
   // Estado para período activo (pestañas)
   const [periodoActivo, setPeriodoActivo] = useState<number>(getPeriodoActual());
+  // Flujo nuevo: tras elegir el salón, el usuario escoge un periodo (?periodo=N
+  // en la URL). Si no hay `periodo` en la URL → se muestra el SELECTOR de
+  // periodos. El periodo elegido se refleja en el breadcrumb. Las pestañas
+  // siguen disponibles para saltar rápido entre periodos (cambian el ?periodo).
+  const [searchParams, setSearchParams] = useSearchParams();
+  const periodoParam = searchParams.get('periodo');
+  const hayPeriodoElegido = periodoParam !== null && periodoParam !== '';
+  useEffect(() => {
+    if (!hayPeriodoElegido) return;
+    const n = Number(periodoParam);
+    if (!Number.isNaN(n) && n >= 0 && n <= 4) setPeriodoActivo(n);
+  }, [periodoParam, hayPeriodoElegido]);
+  const irAPeriodo = (n: number) => {
+    const sp = new URLSearchParams(searchParams);
+    sp.set('periodo', String(n));
+    setSearchParams(sp);
+  };
+  const volverASelectorPeriodo = () => {
+    const sp = new URLSearchParams(searchParams);
+    sp.delete('periodo');
+    setSearchParams(sp);
+  };
   
   // Modal state para crear/editar actividad
   const [modalOpen, setModalOpen] = useState(false);
@@ -3443,6 +3465,76 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     }
   };
 
+  // SELECTOR DE PERIODO: tras elegir el salón, si aún no se eligió periodo
+  // (no hay ?periodo= en la URL), se muestran los 4 periodos + Definitiva Anual.
+  // Al entrar a uno se ve su tabla (con las pestañas para saltar entre periodos).
+  if (!soloLectura && !hayPeriodoElegido) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <HeaderNormi backLink="/dashboard" />
+        <main className="flex-1 container mx-auto p-4 md:p-8">
+          <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Asignaturas</button>
+              <span className="text-muted-foreground">→</span>
+              <button onClick={() => navigate("/seleccionar-grado")} className="text-primary hover:underline">{asignaturaSeleccionada}</button>
+              <span className="text-muted-foreground">→</span>
+              <button onClick={() => navigate("/seleccionar-salon")} className="text-primary hover:underline">{gradoSeleccionado}</button>
+              <span className="text-muted-foreground">→</span>
+              <span className="text-foreground font-medium">{salonSeleccionado}</span>
+            </div>
+          </div>
+          {nombresProfesores && (
+            <p className="text-sm text-muted-foreground mb-4">
+              <span className="font-semibold">{nombresProfesores.includes(',') ? 'Profesores(as): ' : 'Profesor(a): '}</span>{nombresProfesores}
+            </p>
+          )}
+          <h2 className="text-xl font-bold text-foreground mb-1">Elige el periodo</h2>
+          <p className="text-sm text-muted-foreground mb-6">Entra a un periodo para ver y editar sus notas.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl">
+            {periodos.map((p) => {
+              const pct = getPorcentajeUsado(p.numero);
+              const completo = getPeriodoCompleto(p.numero);
+              return (
+                <button
+                  key={p.numero}
+                  onClick={() => irAPeriodo(p.numero)}
+                  className="text-left bg-card rounded-lg shadow-soft p-5 border-2 border-transparent hover:border-primary hover:shadow-md transition-all"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-lg font-bold text-foreground">{p.nombre}</span>
+                    {completo ? (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-semibold whitespace-nowrap">✓ Completo</span>
+                    ) : (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 whitespace-nowrap">{pct}%</span>
+                    )}
+                  </div>
+                  <span className="text-sm text-muted-foreground">Ver notas →</span>
+                </button>
+              );
+            })}
+            {(() => {
+              const pct = getPorcentajePromedioAnual();
+              const completo = pct === 100;
+              return (
+                <button
+                  onClick={() => irAPeriodo(0)}
+                  className="text-left bg-card rounded-lg shadow-soft p-5 border-2 border-transparent hover:border-primary hover:shadow-md transition-all"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-lg font-bold text-foreground">Definitiva Anual</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${completo ? 'bg-green-100 text-green-800 font-semibold' : 'bg-muted text-muted-foreground'}`}>{pct}/100%</span>
+                  </div>
+                  <span className="text-sm text-muted-foreground">Ver consolidado →</span>
+                </button>
+              );
+            })()}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen md:h-screen bg-background flex flex-col">
       <HeaderNormi backLink={soloLectura ? (isAdmin() ? "/dashboard-admin" : "/dashboard-rector") : "/dashboard"} />
@@ -3491,7 +3583,13 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                 {gradoSeleccionado}
               </button>
               <span className="text-muted-foreground">→</span>
-              <span className="text-foreground font-medium">{salonSeleccionado}</span>
+              <button onClick={volverASelectorPeriodo} className="text-primary hover:underline">
+                {salonSeleccionado}
+              </button>
+              <span className="text-muted-foreground">→</span>
+              <span className="text-foreground font-medium">
+                {periodoActivo === 0 ? 'Definitiva Anual' : (periodos[periodoActivo - 1]?.nombre || `Periodo ${periodoActivo}`)}
+              </span>
             </div>
             )}
             <div className="flex flex-wrap gap-2">
@@ -3565,7 +3663,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               return (
                 <button
                   key={periodo.numero}
-                  onClick={() => setPeriodoActivo(periodo.numero)}
+                  onClick={() => irAPeriodo(periodo.numero)}
                   className={`flex-1 px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm font-medium transition-colors relative
                     ${isActive 
                       ? 'bg-primary text-primary-foreground' 
@@ -3595,7 +3693,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               const estaCompleto = porcentajePromedio === 100;
               return (
                 <button
-                  onClick={() => setPeriodoActivo(0)}
+                  onClick={() => irAPeriodo(0)}
                   className={`flex-1 px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm font-medium transition-colors relative
                     ${esFinalDefinitiva 
                       ? 'bg-primary text-primary-foreground' 
