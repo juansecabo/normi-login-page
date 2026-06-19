@@ -3300,6 +3300,20 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     if (soloLectura) return;
 
     if (valor) {
+      // No se puede cerrar un periodo si un periodo ANTERIOR aún no está al 100%
+      // (no es "calificable" → ni siquiera tendría casilla). Hay que completar
+      // primero ese periodo anterior.
+      for (let p = 1; p < periodo; p++) {
+        if (!getPeriodoCompleto(p) && !periodoEsCalificable(p)) {
+          toast({
+            title: 'Falta completar un periodo anterior',
+            description: `No puedes marcar este periodo como completo: el ${p}° periodo aún no está al 100%. Complétalo primero.`,
+            variant: 'destructive',
+          });
+          setModoIntentTick(t => t + 1);
+          return;
+        }
+      }
       const aMarcar: number[] = [];
       for (let p = 1; p <= periodo; p++) if (!getPeriodoCompleto(p)) aMarcar.push(p);
       if (aMarcar.length === 0) return;
@@ -3498,7 +3512,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               const pct = getPorcentajeUsado(p.numero);
               const completo = getPeriodoCompleto(p.numero);
               const calificable = periodoEsCalificable(p.numero);
-              const tintas = ['bg-primary/15', 'bg-primary/25', 'bg-primary/35', 'bg-primary/45'];
+              const tintas = ['bg-emerald-100', 'bg-emerald-200', 'bg-green-200', 'bg-teal-200'];
               return (
                 <div
                   key={p.numero}
@@ -3536,7 +3550,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               return (
                 <div
                   onClick={() => irAPeriodo(0)}
-                  className="text-left bg-primary/30 rounded-lg shadow-soft p-5 border-2 border-transparent hover:border-primary hover:shadow-md transition-all cursor-pointer"
+                  className="text-left bg-emerald-300 rounded-lg shadow-soft p-5 border-2 border-transparent hover:border-primary hover:shadow-md transition-all cursor-pointer"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-lg font-bold text-foreground">Definitiva Anual</span>
