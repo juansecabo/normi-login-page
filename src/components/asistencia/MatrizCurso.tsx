@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Download, X, Search } from "lucide-react";
 import { apiClient, type AsistenciaEstado, type AsistenciaHistorial, type AsistenciaHistorialEstudiante } from "@/lib/apiClient";
 import { useToast } from "@/hooks/use-toast";
@@ -23,8 +24,12 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
   const { toast } = useToast();
   const [data, setData] = useState<AsistenciaHistorial>({ estudiantes: [], registros: [] });
   const [loading, setLoading] = useState(false);
-  const [editando, setEditando] = useState<{ id: string; nombre: string; fecha: string } | null>(null);
+  const [editando, setEditando] = useState<{ id: string; nombre: string; fecha: string; rect: DOMRect } | null>(null);
   const [guardando, setGuardando] = useState(false);
+  // Popover anclado a la celda (posición + animación de entrada/salida).
+  const popRef = useRef<HTMLDivElement | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; place: "top" | "bottom"; caret: number } | null>(null);
+  const [abierto, setAbierto] = useState(false);
   const [descargando, setDescargando] = useState(false);
   const [filtro, setFiltro] = useState("");
 
@@ -63,6 +68,51 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
   // Un solo día → el % no aporta (siempre 0 o 100%): se oculta.
   const unDia = desde === hasta;
 
+  // Abre el popover anclado a la celda tocada (resetea la animación de entrada).
+  const abrir = (id: string, nombre: string, fecha: string, el: HTMLElement) => {
+    setAbierto(false);
+    setPos(null);
+    setEditando({ id, nombre, fecha, rect: el.getBoundingClientRect() });
+  };
+
+  // Cierra con animación de salida.
+  const cerrar = () => {
+    setAbierto(false);
+    window.setTimeout(() => { setEditando(null); setPos(null); }, 150);
+  };
+
+  // Posiciona el globo respecto a la celda (preferir abajo; si no cabe, arriba).
+  useLayoutEffect(() => {
+    if (!editando || !popRef.current) return;
+    const cell = editando.rect;
+    const w = popRef.current.offsetWidth;
+    const h = popRef.current.offsetHeight;
+    const GAP = 10, M = 8;
+    const cx = cell.left + cell.width / 2;
+    let left = cx - w / 2;
+    left = Math.max(M, Math.min(left, window.innerWidth - w - M));
+    const cabeAbajo = cell.bottom + GAP + h <= window.innerHeight - M;
+    const place: "top" | "bottom" = cabeAbajo ? "bottom" : "top";
+    const top = place === "bottom" ? cell.bottom + GAP : cell.top - GAP - h;
+    const caret = Math.max(16, Math.min(cx - left, w - 16));
+    setPos({ left, top, place, caret });
+  }, [editando]);
+
+  // Dispara la animación de entrada una vez posicionado.
+  useEffect(() => {
+    if (!pos) return;
+    const r = requestAnimationFrame(() => setAbierto(true));
+    return () => cancelAnimationFrame(r);
+  }, [pos]);
+
+  // Cerrar con tecla Escape.
+  useEffect(() => {
+    if (!editando) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") cerrar(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [editando]);
+
   const setEstado = async (estado: AsistenciaEstado) => {
     if (!editando || guardando) return;
     setGuardando(true);
@@ -73,7 +123,7 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
         return { ...prev, registros: [...otros, { estudiante_id: editando.id, fecha: editando.fecha, estado: res.estado }] };
       });
       if (res.auto_excusa) toast({ title: "Excusa vigente", description: "El estudiante ya tenía excusa ese día — se marcó como excusa." });
-      setEditando(null);
+      cerrar();
     } catch {
       toast({ title: "No se guardó", description: "Reintenta.", variant: "destructive" });
     } finally {
@@ -90,7 +140,7 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
         ...prev,
         registros: prev.registros.filter((x) => !(x.estudiante_id === editando.id && x.fecha === editando.fecha)),
       }));
-      setEditando(null);
+      cerrar();
     } catch {
       toast({ title: "No se quitó", description: "Reintenta.", variant: "destructive" });
     } finally {
@@ -176,26 +226,6 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
 
   return (
     <div>
-      {/* Barra de edición */}
-      {editando && (
-        <div className="mb-3 flex items-center gap-2 flex-wrap bg-muted/40 rounded-lg px-3 py-2 text-sm">
-          <span className="text-muted-foreground">{editando.nombre} · {fechaCorta(editando.fecha)}:</span>
-          {ESTADOS_LISTA.map((e) => (
-            <button key={e} onClick={() => setEstado(e)} disabled={guardando}
-              className={`px-2.5 py-1 rounded-full text-xs font-semibold text-white ${ESTADO_UI[e].cell} hover:opacity-90 disabled:opacity-50`}>
-              {ESTADO_UI[e].label}
-            </button>
-          ))}
-          {mapa.get(editando.id)?.get(editando.fecha) && (
-            <button onClick={quitar} disabled={guardando}
-              className="px-2.5 py-1 rounded-full text-xs font-semibold border border-rose-300 text-rose-600 hover:bg-rose-50 disabled:opacity-50">
-              Quitar
-            </button>
-          )}
-          <button onClick={() => setEditando(null)} className="ml-1 text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
-        </div>
-      )}
-
       <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
         <div className="relative">
           <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -238,7 +268,7 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
                       <td key={f} className="px-1 py-1 text-center">
                         <button
                           disabled={!puedeEditar}
-                          onClick={() => puedeEditar && setEditando({ id: e.estudiante_id, nombre: `${e.apellidos} ${e.nombres}`, fecha: f })}
+                          onClick={(ev) => puedeEditar && abrir(e.estudiante_id, `${e.apellidos} ${e.nombres}`, f, ev.currentTarget)}
                           title={s ? ESTADO_UI[s].label : "Sin marca"}
                           className={`w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold mx-auto
                             ${s ? `${ESTADO_UI[s].cell} text-white` : "bg-muted/40 text-muted-foreground"}
@@ -255,6 +285,49 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
           </tbody>
         </table>
       </div>
+
+      {/* Popover anclado a la celda (globo flotante con animación). */}
+      {editando && createPortal(
+        <div className="fixed inset-0 z-[60]" onClick={cerrar}>
+          <div
+            ref={popRef}
+            onClick={(e) => e.stopPropagation()}
+            style={pos ? { left: pos.left, top: pos.top } : { left: -9999, top: -9999 }}
+            className={`fixed bg-card rounded-xl shadow-lg border border-border px-3 py-2.5
+              transition-[opacity,transform] duration-150 ease-out
+              ${abierto ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
+          >
+            {/* Caret del globo */}
+            {pos && (
+              <span
+                style={{ left: pos.caret }}
+                className={`absolute w-3 h-3 bg-card border-border rotate-45 -translate-x-1/2
+                  ${pos.place === "bottom" ? "-top-1.5 border-l border-t" : "-bottom-1.5 border-r border-b"}`}
+              />
+            )}
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs font-medium text-foreground truncate max-w-[180px]">{editando.nombre}</span>
+              <span className="text-xs text-muted-foreground">· {fechaCorta(editando.fecha)}</span>
+              <button onClick={cerrar} className="ml-auto text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {ESTADOS_LISTA.map((e) => (
+                <button key={e} onClick={() => setEstado(e)} disabled={guardando}
+                  className={`px-2.5 py-1 rounded-full text-xs font-semibold text-white ${ESTADO_UI[e].cell} hover:opacity-90 disabled:opacity-50`}>
+                  {ESTADO_UI[e].label}
+                </button>
+              ))}
+              {mapa.get(editando.id)?.get(editando.fecha) && (
+                <button onClick={quitar} disabled={guardando}
+                  className="px-2.5 py-1 rounded-full text-xs font-semibold border border-rose-300 text-rose-600 hover:bg-rose-50 disabled:opacity-50">
+                  Quitar
+                </button>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
     </div>
   );
 };
