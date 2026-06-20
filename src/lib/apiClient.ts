@@ -675,6 +675,9 @@ export const apiClient = {
     historial(asignatura: string, grado: string, salon: string, desde: string, hasta: string, estudiante_id?: string): Promise<AsistenciaHistorial> {
       return request(`/api/asistencia/historial${qs({ asignatura, grado, salon, desde, hasta, estudiante_id })}`);
     },
+    quitar(body: { asignatura: string; grado: string; salon: string; fecha: string; estudiante_id: string }): Promise<{ ok: true }> {
+      return request('/api/asistencia/quitar', { method: 'POST', body: JSON.stringify(body) });
+    },
     clases(): Promise<{ clases: { asignatura: string; grado: string; salon: string }[] }> {
       return request('/api/asistencia/clases');
     },

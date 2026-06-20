@@ -11,12 +11,14 @@ interface Props {
   loadMonth: (estudianteId: string, desde: string, hasta: string) => Promise<AsistenciaRegistro[]>;
   /** Guarda una marca y devuelve el estado realmente guardado (auto-excusa puede cambiarlo). */
   onMarcar?: (fecha: string, estado: AsistenciaEstado) => Promise<AsistenciaEstado>;
+  /** Elimina por completo la marca de ese día (la celda vuelve a "sin marca"). */
+  onQuitar?: (fecha: string) => Promise<void>;
   onClose: () => void;
 }
 
 const DIAS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
-const CalendarioEstudiante = ({ estudiante, contextoLabel, puedeEditar, loadMonth, onMarcar, onClose }: Props) => {
+const CalendarioEstudiante = ({ estudiante, contextoLabel, puedeEditar, loadMonth, onMarcar, onQuitar, onClose }: Props) => {
   const [mes, setMes] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [registros, setRegistros] = useState<AsistenciaRegistro[]>([]);
   const [loading, setLoading] = useState(false);
@@ -58,6 +60,18 @@ const CalendarioEstudiante = ({ estudiante, contextoLabel, puedeEditar, loadMont
         const otros = prev.filter((x) => x.fecha !== diaSel);
         return [...otros, { estudiante_id: estudiante.estudiante_id, fecha: diaSel, estado: real }];
       });
+      setDiaSel(null);
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const quitarDia = async () => {
+    if (!diaSel || !onQuitar || guardando) return;
+    setGuardando(true);
+    try {
+      await onQuitar(diaSel);
+      setRegistros((prev) => prev.filter((x) => x.fecha !== diaSel));
       setDiaSel(null);
     } finally {
       setGuardando(false);
@@ -129,6 +143,12 @@ const CalendarioEstudiante = ({ estudiante, contextoLabel, puedeEditar, loadMont
                 {ESTADO_UI[e].label}
               </button>
             ))}
+            {onQuitar && estadoByFecha.get(diaSel) && (
+              <button onClick={quitarDia} disabled={guardando}
+                className="px-2.5 py-1 rounded-full text-xs font-semibold border border-rose-300 text-rose-600 hover:bg-rose-50 disabled:opacity-50">
+                Quitar
+              </button>
+            )}
           </div>
         )}
 

@@ -81,6 +81,23 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
     }
   };
 
+  const quitar = async () => {
+    if (!editando || guardando) return;
+    setGuardando(true);
+    try {
+      await apiClient.asistencia.quitar({ asignatura, grado, salon, fecha: editando.fecha, estudiante_id: editando.id });
+      setData((prev) => ({
+        ...prev,
+        registros: prev.registros.filter((x) => !(x.estudiante_id === editando.id && x.fecha === editando.fecha)),
+      }));
+      setEditando(null);
+    } catch {
+      toast({ title: "No se quitó", description: "Reintenta.", variant: "destructive" });
+    } finally {
+      setGuardando(false);
+    }
+  };
+
   const descargarExcel = async () => {
     setDescargando(true);
     try {
@@ -169,6 +186,12 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
               {ESTADO_UI[e].label}
             </button>
           ))}
+          {mapa.get(editando.id)?.get(editando.fecha) && (
+            <button onClick={quitar} disabled={guardando}
+              className="px-2.5 py-1 rounded-full text-xs font-semibold border border-rose-300 text-rose-600 hover:bg-rose-50 disabled:opacity-50">
+              Quitar
+            </button>
+          )}
           <button onClick={() => setEditando(null)} className="ml-1 text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
         </div>
       )}

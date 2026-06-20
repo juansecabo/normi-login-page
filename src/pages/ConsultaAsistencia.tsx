@@ -108,6 +108,10 @@ const ConsultaAsistencia = () => {
   const onMarcarCal = (asig: string, gr: string, sa: string) =>
     async (estudiante_id: string, fecha: string, estado: AsistenciaEstado) =>
       (await apiClient.asistencia.marcar({ asignatura: asig, grado: gr, salon: sa, fecha, estudiante_id, estado })).estado;
+  const onQuitarCal = (asig: string, gr: string, sa: string) =>
+    async (estudiante_id: string, fecha: string) => {
+      await apiClient.asistencia.quitar({ asignatura: asig, grado: gr, salon: sa, fecha, estudiante_id });
+    };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -250,6 +254,9 @@ const ConsultaAsistencia = () => {
           loadMonth={esInterno ? loadMonthInterno(cal.asignatura, cal.grado, cal.salon) : loadMonthSujeto(cal.asignatura, cal.estudiante.estudiante_id)}
           onMarcar={esInterno && puedeEditar
             ? (fecha, estado) => onMarcarCal(cal.asignatura, cal.grado, cal.salon)(cal.estudiante.estudiante_id, fecha, estado)
+            : undefined}
+          onQuitar={esInterno && puedeEditar
+            ? (fecha) => onQuitarCal(cal.asignatura, cal.grado, cal.salon)(cal.estudiante.estudiante_id, fecha)
             : undefined}
           onClose={() => setCal(null)}
         />
