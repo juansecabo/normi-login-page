@@ -3490,24 +3490,22 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               <span className="text-foreground font-medium">{salonSeleccionado}</span>
             </div>
           </div>
-          <h2 className="text-xl font-bold text-foreground mb-6 text-center">Elige tu periodo:</h2>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            {periodos.map((p) => {
-              const pct = getPorcentajeUsado(p.numero);
-              const completo = getPeriodoCompleto(p.numero);
-              const calificable = periodoEsCalificable(p.numero);
-              return (
-                <div
-                  key={p.numero}
-                  onClick={() => irAPeriodo(p.numero)}
-                  className="text-left bg-background rounded-lg p-5 border-2 border-border hover:border-primary hover:bg-primary/10 hover:shadow-md transition-all cursor-pointer"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-lg font-bold text-foreground">{p.nombre}</span>
-                    {/* La casilla aparece solo si el periodo es calificable (igual que en la tabla). */}
-                    {/* Casilla si el periodo es calificable (100%) O si ya está
-                        marcado completo por cascada (aunque no sea calificable,
-                        ej. el 1er periodo sin notas que se cerró al cerrar el 2do). */}
+          <div className="bg-card rounded-lg shadow-soft p-6 md:p-8">
+            <h2 className="text-xl font-bold text-foreground mb-6 text-center">Elige tu periodo:</h2>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {periodos.map((p) => {
+                const pct = getPorcentajeUsado(p.numero);
+                const completo = getPeriodoCompleto(p.numero);
+                const calificable = periodoEsCalificable(p.numero);
+                return (
+                  <div
+                    key={p.numero}
+                    onClick={() => irAPeriodo(p.numero)}
+                    className="p-6 rounded-lg border-2 border-border bg-background text-center transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/10 cursor-pointer flex flex-col items-center gap-3"
+                  >
+                    <span className="font-medium text-foreground">{p.nombre}</span>
+                    {/* Casilla si el periodo es calificable (100%) O si ya está marcado
+                        completo por cascada (ej. 1er periodo sin notas cerrado al cerrar el 2do). */}
                     {(calificable || completo) ? (
                       <label
                         onClick={(e) => e.stopPropagation()}
@@ -3526,26 +3524,22 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                       <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 whitespace-nowrap">{pct}%</span>
                     )}
                   </div>
-                  <span className="text-sm text-muted-foreground">Ver notas →</span>
-                </div>
-              );
-            })}
-            {(() => {
-              const pct = getPorcentajePromedioAnual();
-              const completo = pct === 100;
-              return (
-                <div
-                  onClick={() => irAPeriodo(0)}
-                  className="text-left bg-background rounded-lg p-5 border-2 border-border hover:border-primary hover:bg-primary/10 hover:shadow-md transition-all cursor-pointer"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-lg font-bold text-foreground">Definitiva Anual</span>
+                );
+              })}
+              {(() => {
+                const pct = getPorcentajePromedioAnual();
+                const completo = pct === 100;
+                return (
+                  <div
+                    onClick={() => irAPeriodo(0)}
+                    className="p-6 rounded-lg border-2 border-border bg-background text-center transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/10 cursor-pointer flex flex-col items-center gap-3"
+                  >
+                    <span className="font-medium text-foreground">Definitiva Anual</span>
                     <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${completo ? 'bg-green-600 text-white font-semibold' : 'bg-muted text-foreground'}`}>{pct}/100%</span>
                   </div>
-                  <span className="text-sm text-muted-foreground">Ver consolidado →</span>
-                </div>
-              );
-            })()}
+                );
+              })()}
+            </div>
           </div>
         </main>
       </div>
