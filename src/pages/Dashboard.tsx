@@ -14,6 +14,7 @@ import iconPermisos from "@/assets/icons/permisos-y-excusas.webp";
 import iconConsultas from "@/assets/icons/consultas.png";
 import iconRegistros from "@/assets/icons/registros-comportamiento.png";
 import iconAsistencia from "@/assets/icons/asistencia.webp";
+import iconFotosGrupo from "@/assets/icons/fotos-grupo.webp";
 import { getSession, isProfesor, isAdmin, isRectorOrCoordinador, isEstudiante, isPadreDeFamilia } from "@/hooks/useSession";
 import { usePendientesFirma } from "@/hooks/usePendientesFirma";
 import HeaderNormi from "@/components/HeaderNormi";
@@ -267,7 +268,7 @@ const Dashboard = () => {
     ) },
     ...(esDirectorGrupo ? [{ id: 'mi-grupo', render: (
       <button onClick={() => navigate("/mi-grupo")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-lime-100 transition-all duration-200 hover:shadow-md hover:bg-lime-200">
-        <img src={iconPerfil} alt="" className="w-12 h-12 object-contain" />
+        <img src={iconFotosGrupo} alt="" className="w-12 h-12 object-contain" />
         <span className="font-semibold text-foreground text-center">Fotos de mi grupo</span>
       </button>
     ) }] : []),
