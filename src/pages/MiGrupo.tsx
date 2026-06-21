@@ -95,6 +95,9 @@ const MiGrupo = () => {
 
         <div className="max-w-5xl mx-auto">
           <h2 className="text-2xl font-bold text-foreground mb-1 text-center">Fotos de mi grupo</h2>
+          <p className="text-sm text-muted-foreground mb-5 text-center">
+            Toca a cada estudiante para subir o cambiar su foto.
+          </p>
 
           {loading ? (
             <p className="text-center text-muted-foreground py-10">Cargando…</p>
