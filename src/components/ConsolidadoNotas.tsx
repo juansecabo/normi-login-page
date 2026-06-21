@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getPeriodoActual } from "@/utils/periodoActual";
 import { anoEscolarActual } from "@/utils/anoEscolar";
 import ComentarioModalReadOnly from "@/components/notas/ComentarioModalReadOnly";
+import SistemaEvaluacion from "@/components/notas/SistemaEvaluacion";
 import { MessageSquareText } from "lucide-react";
 import { promedioGeneral, promedioDeGrupo, type NotaCalc, type GrupoCalc } from "@/lib/gradeCalculator";
 
@@ -396,6 +397,9 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
           <p className="text-muted-foreground">
             ID: {idEstudiante} | {grado} - {salon}
           </p>
+          <div className="mt-3 flex justify-center">
+            <SistemaEvaluacion />
+          </div>
         </div>
       </div>
 
