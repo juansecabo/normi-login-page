@@ -41,6 +41,7 @@ const Dashboard = () => {
   const pendFirma = usePendientesFirma();
   const [selectedAsignatura, setSelectedAsignatura] = useState<string | null>(null);
   const [loadingAsignaturas, setLoadingAsignaturas] = useState(true);
+  const [esDirectorGrupo, setEsDirectorGrupo] = useState(false);
 
   useEffect(() => {
     const session = getSession();
@@ -62,6 +63,11 @@ const Dashboard = () => {
 
     setNombres(session.nombres || "");
     setApellidos(session.apellidos || "");
+
+    // ¿Es director de grupo? (para mostrar la ficha "Fotos de mi grupo")
+    supabase.from("Internos").select("direccion_de_grupo").eq("id", parseInt(session.id!)).maybeSingle()
+      .then(({ data }) => setEsDirectorGrupo(!!((data as { direccion_de_grupo?: string } | null)?.direccion_de_grupo || "").trim()))
+      .catch(() => { /* no crítico */ });
 
     // Fetch badges — los Comunicados deben usar la MISMA logica de filtro que
     // ComunicadosProfesor / DocumentosProfesor (que considera asignaciones del
@@ -259,6 +265,12 @@ const Dashboard = () => {
         <span className="font-semibold text-foreground text-center">Asistencia</span>
       </button>
     ) },
+    ...(esDirectorGrupo ? [{ id: 'mi-grupo', render: (
+      <button onClick={() => navigate("/mi-grupo")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-lime-100 transition-all duration-200 hover:shadow-md hover:bg-lime-200">
+        <img src={iconPerfil} alt="" className="w-12 h-12 object-contain" />
+        <span className="font-semibold text-foreground text-center">Fotos de mi grupo</span>
+      </button>
+    ) }] : []),
     { id: 'perfil', render: (
       <button onClick={() => navigate("/perfil")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-sky-100 transition-all duration-200 hover:shadow-md hover:bg-sky-200">
         <img src={iconPerfil} alt="" className="w-12 h-12 object-contain" />

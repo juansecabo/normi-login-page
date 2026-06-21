@@ -11,6 +11,18 @@ import { Slider } from "@/components/ui/slider";
 interface AvatarUploaderProps {
   width?: number;
   height?: number;
+  /**
+   * Modo "editar la foto de otra persona" (ej. director de grupo → estudiante).
+   * Si se pasa, el componente edita esa foto en vez de la del usuario logueado.
+   */
+  target?: {
+    avatarUrl: string | null;
+    nombres: string;
+    apellidos: string;
+    onUpload: (file: File) => Promise<string>; // devuelve la nueva URL
+    onDelete: () => Promise<void>;
+    onChange?: (url: string | null) => void;
+  };
 }
 
 const ACCEPT = "image/jpeg,image/png,image/webp";
@@ -66,11 +78,15 @@ const cameraSupported =
   !!navigator.mediaDevices?.getUserMedia &&
   (window.isSecureContext || window.location.hostname === "localhost");
 
-const AvatarUploader = ({ width = 110, height = 140 }: AvatarUploaderProps) => {
+const AvatarUploader = ({ width = 110, height = 140, target }: AvatarUploaderProps) => {
   const session = getSession();
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(session.avatar_url);
+  const targetMode = !!target;
+  const dispNombres = targetMode ? target!.nombres : session.nombres;
+  const dispApellidos = targetMode ? target!.apellidos : session.apellidos;
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(targetMode ? target!.avatarUrl : session.avatar_url);
 
   useEffect(() => {
+    if (targetMode) return; // en modo target la foto la controla el padre
     let cancelled = false;
     apiClient.auth.me()
       .then(({ user }) => {
@@ -85,6 +101,12 @@ const AvatarUploader = ({ width = 110, height = 140 }: AvatarUploaderProps) => {
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // En modo target, sincronizar si el padre cambia la URL externamente.
+  useEffect(() => {
+    if (targetMode) setAvatarUrl(target!.avatarUrl);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target?.avatarUrl]);
 
   const [stage, setStage] = useState<Stage>("closed");
   const [pickedSrc, setPickedSrc] = useState<string | null>(null);
@@ -167,9 +189,11 @@ const AvatarUploader = ({ width = 110, height = 140 }: AvatarUploaderProps) => {
   const handleDelete = async () => {
     setUploading(true);
     try {
-      await apiClient.auth.deleteAvatar();
+      if (targetMode) await target!.onDelete();
+      else await apiClient.auth.deleteAvatar();
       setAvatarUrl(null);
-      updateSessionAvatar(null);
+      if (targetMode) target!.onChange?.(null);
+      else updateSessionAvatar(null);
       toast({ title: "Foto eliminada" });
       closeDialog();
     } catch (err: any) {
@@ -238,9 +262,12 @@ const AvatarUploader = ({ width = 110, height = 140 }: AvatarUploaderProps) => {
       const blob = await cropToBlob(pickedSrc, croppedArea);
       const ext = blob.type === "image/webp" ? "webp" : "jpg";
       const file = new File([blob], `avatar.${ext}`, { type: blob.type });
-      const { avatar_url } = await apiClient.auth.uploadAvatar(file);
+      const avatar_url = targetMode
+        ? await target!.onUpload(file)
+        : (await apiClient.auth.uploadAvatar(file)).avatar_url;
       setAvatarUrl(avatar_url);
-      updateSessionAvatar(avatar_url);
+      if (targetMode) target!.onChange?.(avatar_url);
+      else updateSessionAvatar(avatar_url);
       toast({ title: "Foto actualizada" });
       closeDialog();
     } catch (err: any) {
@@ -264,7 +291,7 @@ const AvatarUploader = ({ width = 110, height = 140 }: AvatarUploaderProps) => {
           <img src={avatarUrl} alt="Foto de perfil" className="w-full h-full object-cover" />
         ) : (
           <span className="text-primary font-bold" style={{ fontSize }}>
-            {initials(session.nombres, session.apellidos)}
+            {initials(dispNombres, dispApellidos)}
           </span>
         )}
         <div
@@ -299,7 +326,9 @@ const AvatarUploader = ({ width = 110, height = 140 }: AvatarUploaderProps) => {
               <DialogTitle>Foto de perfil</DialogTitle>
               {!avatarUrl && (
                 <DialogDescription>
-                  Sube una foto formal donde se vea tu cara claramente, o tómate una en el momento. Después podrás ajustarla dentro del marco.
+                  {targetMode
+                    ? "Sube una foto donde se vea claramente la cara del estudiante, o tómale una en el momento. Después podrás ajustarla dentro del marco."
+                    : "Sube una foto formal donde se vea tu cara claramente, o tómate una en el momento. Después podrás ajustarla dentro del marco."}
                 </DialogDescription>
               )}
             </DialogHeader>

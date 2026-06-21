@@ -90,6 +90,7 @@ import MisConsultas from "./pages/acudiente/MisConsultas";
 import MisConsultasEstudiante from "./pages/estudiante/MisConsultasEstudiante";
 import ComunicadosFirma from "./pages/ComunicadosFirma";
 import RegistrosComportamiento from "./pages/RegistrosComportamiento";
+import MiGrupo from "./pages/MiGrupo";
 import Perfil from "./pages/Perfil";
 import TablaNotasRouter from "./pages/TablaNotasRouter";
 import TablaNotasReadOnlyRouter from "./pages/TablaNotasReadOnlyRouter";
@@ -208,6 +209,7 @@ const App = () => (
 
           {/* Registros de Comportamiento */}
           <Route path="/registros-comportamiento" element={<RegistrosComportamiento />} />
+          <Route path="/mi-grupo" element={<MiGrupo />} />
           <Route path="/perfil" element={<Perfil />} />
 
 

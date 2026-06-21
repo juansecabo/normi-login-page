@@ -530,6 +530,27 @@ export const apiClient = {
       });
     },
 
+    /**
+     * Sube/cambia la foto de OTRO estudiante (director de grupo o directivo).
+     * El server valida el permiso contra Internos.direccion_de_grupo.
+     */
+    async uploadAvatarEstudiante(estudianteId: string, file: File): Promise<{ avatar_url: string }> {
+      const contentBase64 = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(((r.result as string).split(',')[1]) || '');
+        r.onerror = () => reject(r.error);
+        r.readAsDataURL(file);
+      });
+      return request<{ avatar_url: string }>('/api/avatar/estudiante/upload', {
+        method: 'POST',
+        body: JSON.stringify({ estudiante_id: estudianteId, contentBase64, contentType: file.type }),
+      });
+    },
+
+    async deleteAvatarEstudiante(estudianteId: string): Promise<{ ok: true }> {
+      return request<{ ok: true }>(`/api/avatar/estudiante?estudiante_id=${encodeURIComponent(estudianteId)}`, { method: 'DELETE' });
+    },
+
     async cleanupUsuarioOrphan(cedula: string): Promise<{ deleted: boolean; remaining: number }> {
       return request<{ deleted: boolean; remaining: number }>('/auth/cleanup-usuario', {
         method: 'POST',
