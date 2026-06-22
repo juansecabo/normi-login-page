@@ -1,6 +1,6 @@
 import { useState, useRef, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
-import { MoreVertical, MessageSquare, Trash2, Send } from "lucide-react";
+import { MoreVertical, MessageSquare, Trash2, Send, ChevronsDown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +22,7 @@ interface NotaCeldaProps {
   onAbrirComentario: () => void;
   onEliminarComentario: () => void;
   onNotificarPadre?: () => void;
+  onCompletarAbajo?: () => void;
   placeholder?: string;
   soloLectura?: boolean;
   nombreEstudiante?: string;
@@ -40,6 +41,7 @@ const NotaCelda = ({
   onAbrirComentario,
   onEliminarComentario,
   onNotificarPadre,
+  onCompletarAbajo,
   placeholder = "0-5",
   soloLectura = false,
   nombreEstudiante,
@@ -163,6 +165,12 @@ const NotaCelda = ({
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
                       Eliminar comentario
+                    </DropdownMenuItem>
+                  )}
+                  {onCompletarAbajo && (
+                    <DropdownMenuItem onClick={onCompletarAbajo}>
+                      <ChevronsDown className="w-4 h-4 mr-2" />
+                      Completar hacia abajo
                     </DropdownMenuItem>
                   )}
                   {onNotificarPadre && (

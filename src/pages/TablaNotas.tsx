@@ -3230,6 +3230,67 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     }
   };
 
+  // "Completar hacia abajo" (estilo Excel): copia el valor de una celda a todas
+  // las casillas VACÍAS de abajo en esa misma actividad, deteniéndose en la
+  // primera que YA tenga nota (esa nota es el tope). Nunca sobreescribe.
+  const handleCompletarAbajo = async (actividad: Actividad, periodo: number, studentIndex: number, valor: number) => {
+    if (soloLectura) return;
+    const objetivos: string[] = [];
+    for (let i = studentIndex + 1; i < estudiantes.length; i++) {
+      const est = estudiantes[i];
+      if (notas[est.id]?.[periodo]?.[actividad.id] !== undefined) break; // tope: una nota detiene el llenado
+      objetivos.push(est.id);
+    }
+    if (objetivos.length === 0) {
+      toast({ title: "Nada que completar", description: "La casilla de abajo ya tiene nota (o es la última)." });
+      return;
+    }
+    try {
+      const filas = objetivos.map((id) => ({
+        id_estudiantil: id,
+        ano_escolar: anoEscolarActual(),
+        asignatura: asignaturaSeleccionada,
+        grado: gradoSeleccionado,
+        salon: salonSeleccionado,
+        periodo,
+        nombre_actividad: actividad.nombre,
+        porcentaje: actividad.porcentaje,
+        nota: valor,
+        comentario: null,
+        notificado: false,
+      }));
+      const { error } = await supabase
+        .from('Notas')
+        .upsert(filas, { onConflict: 'id_estudiantil,ano_escolar,asignatura,grado,salon,periodo,nombre_actividad' });
+      if (error) {
+        toast({ title: "Error", description: "No se pudo completar hacia abajo.", variant: "destructive" });
+        return;
+      }
+      // Estado local + recálculo de definitivas con las notas nuevas.
+      const nuevasNotas: NotasEstudiantes = { ...notas };
+      for (const id of objetivos) {
+        nuevasNotas[id] = {
+          ...nuevasNotas[id],
+          [periodo]: { ...(nuevasNotas[id]?.[periodo] || {}), [actividad.id]: valor },
+        };
+      }
+      setNotas(nuevasNotas);
+      for (const id of objetivos) {
+        const nf = calcularFinalPeriodoConNotas(nuevasNotas, id, periodo);
+        await guardarFinalPeriodo(id, periodo, nf);
+        let suma = 0, tieneAlguna = false;
+        for (let p = 1; p <= 4; p++) {
+          const fp = calcularFinalPeriodoConNotas(nuevasNotas, id, p);
+          if (fp !== null) { suma += fp; tieneAlguna = true; }
+        }
+        await guardarFinalDefinitiva(id, tieneAlguna ? Math.round((suma / 4) * 10) / 10 : null);
+      }
+      toast({ title: "Listo", description: `Se completaron ${objetivos.length} casilla(s) con ${valor}.` });
+    } catch {
+      toast({ title: "Error", description: "Error de conexión al completar.", variant: "destructive" });
+    }
+  };
+
   // Handler para cuando se presiona Enter (navegar a celda de abajo)
   const handleKeyDownNota = async (e: React.KeyboardEvent<HTMLInputElement>, studentIndex: number, actividadId: string, periodo: number) => {
     if (soloLectura) return;
@@ -4410,6 +4471,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                     periodoActivo
                                   )}
                                   onNotificarPadre={nota !== undefined ? () => handleNotificarNotaIndividual(estudiante, actividad, nota, periodoActivo) : undefined}
+                                  onCompletarAbajo={nota !== undefined ? () => handleCompletarAbajo(actividad, periodoActivo, studentIndex, nota) : undefined}
                                 />
                               );
                             })}
