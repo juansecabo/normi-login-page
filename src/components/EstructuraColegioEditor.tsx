@@ -20,7 +20,7 @@ import { ORDEN_GRADOS, rankGrado } from "@/utils/grados";
  * query en DELETE) cuando se pasa `colegioId`; si no, el backend usa el del JWT.
  */
 
-interface Jornada { id: number; nombre: string; hora_aviso: string | null; orden: number | null; activa: boolean; }
+interface Jornada { id: number; nombre: string; hora_aviso: string | null; hora_salida: string | null; orden: number | null; activa: boolean; }
 interface Grado { id: number; grado: string; orden: number | null; activo: boolean; }
 interface Salon { id: number; grado: string; salon: string; jornada_id: number | null; activo: boolean; }
 
@@ -144,6 +144,10 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
     try { await apiRequest(`/api/institucion/jornadas/${id}`, { method: "PATCH", body: JSON.stringify(withCid({ hora_aviso: hora_aviso || null })) }); await cargar(); }
     catch (e) { err(e, "No se pudo guardar la hora."); }
   };
+  const editarHoraSalida = async (id: number, hora_salida: string) => {
+    try { await apiRequest(`/api/institucion/jornadas/${id}`, { method: "PATCH", body: JSON.stringify(withCid({ hora_salida: hora_salida || null })) }); await cargar(); }
+    catch (e) { err(e, "No se pudo guardar la hora de salida."); }
+  };
   const borrarJornada = async (id: number) => {
     try { await apiRequest(`/api/institucion/jornadas/${id}${qCid}`, { method: "DELETE" }); await cargar(); }
     catch (e) { err(e, "No se pudo eliminar la jornada."); }
@@ -216,7 +220,7 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg"><Clock className="h-5 w-5 text-primary" /> Jornadas</CardTitle>
-          <p className="text-sm text-muted-foreground">Define las jornadas del colegio y la hora a la que se envían los avisos de actividades a los salones de cada jornada.</p>
+          <p className="text-sm text-muted-foreground">Define las jornadas del colegio, la hora del aviso de actividades y la hora de salida de cada jornada (la salida se usa para saber cuándo una actividad del día ya pasó).</p>
         </CardHeader>
         <CardContent className="space-y-3">
           {jornadas.map((j) => (
@@ -224,6 +228,8 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
               <span className="font-medium flex-1 min-w-[90px]">{j.nombre}</span>
               <label className="text-xs text-muted-foreground">Aviso a las</label>
               <SelectorHora value={j.hora_aviso} onChange={(v) => editarHoraJornada(j.id, v)} />
+              <label className="text-xs text-muted-foreground">Salida a las</label>
+              <SelectorHora value={j.hora_salida} onChange={(v) => editarHoraSalida(j.id, v)} />
               <button onClick={() => borrarJornada(j.id)} className="text-muted-foreground hover:text-destructive" title="Eliminar jornada"><Trash2 className="w-4 h-4" /></button>
             </div>
           ))}

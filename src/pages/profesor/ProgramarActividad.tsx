@@ -42,7 +42,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Calendar, Paperclip, FileText, X, Loader2, Pencil, Trash2, Eye, Download, RotateCcw } from "lucide-react";
+import { Calendar, Paperclip, FileText, X, Loader2, Pencil, Trash2, Eye, Download, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
 import { es } from "date-fns/locale";
 
 const diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
@@ -164,6 +164,12 @@ const ProgramarActividad = () => {
   const [actividades, setActividades] = useState<ActividadCalendario[]>([]);
   const [loadingActividades, setLoadingActividades] = useState(false);
 
+  // Calendario: TODAS las actividades que ha dejado este profesor (pendientes + pasadas)
+  const [misActividades, setMisActividades] = useState<ActividadCalendario[]>([]);
+  const [loadingMias, setLoadingMias] = useState(false);
+  const [mesCal, setMesCal] = useState<Date>(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
+  const [diaSelCal, setDiaSelCal] = useState<string | null>(null);
+
   // Edit modal state
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editActividad, setEditActividad] = useState<ActividadCalendario | null>(null);
@@ -235,6 +241,29 @@ const ProgramarActividad = () => {
 
     inicializar();
   }, [navigate]);
+
+  // Carga TODAS las actividades que ha dejado este profesor (para el calendario).
+  const cargarMisActividades = async () => {
+    if (!profesorIdReal) return;
+    setLoadingMias(true);
+    try {
+      const { data } = await supabase
+        .from('Calendario Actividades')
+        .select('*')
+        .eq('id_profesor', profesorIdReal)
+        .order('fecha_de_presentacion', { ascending: true });
+      setMisActividades((data || []) as ActividadCalendario[]);
+    } catch (e) {
+      console.error('Error cargando mis actividades:', e);
+    } finally {
+      setLoadingMias(false);
+    }
+  };
+
+  useEffect(() => {
+    if (profesorIdReal) cargarMisActividades();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profesorIdReal]);
 
   // ===== Programar tab: cascade grados/salones =====
   useEffect(() => {
@@ -477,6 +506,7 @@ const ProgramarActividad = () => {
       // Refrescar la lista de actividades programadas.
       try {
         await cargarActividades();
+      await cargarMisActividades();
       } catch (e) {
         console.warn('No se pudo refrescar la lista de actividades:', e);
       }
@@ -557,6 +587,7 @@ const ProgramarActividad = () => {
       toast({ title: "Actividad actualizada", description: "La actividad se ha actualizado correctamente" });
       setEditModalOpen(false);
       await cargarActividades();
+      await cargarMisActividades();
     } catch (error: any) {
       console.error('Error:', error);
       toast({ title: "Error", description: error.message || "Error de conexión", variant: "destructive" });
@@ -590,6 +621,7 @@ const ProgramarActividad = () => {
       setDeleteDialogOpen(false);
       setActividadAEliminar(null);
       await cargarActividades();
+      await cargarMisActividades();
     } catch (error) {
       console.error('Error:', error);
       toast({ title: "Error", description: "Error de conexión", variant: "destructive" });
@@ -845,91 +877,113 @@ const ProgramarActividad = () => {
                 <div className="text-center text-muted-foreground py-8">Cargando...</div>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>Asignatura</Label>
-                      <ResponsiveSelect
-                        value={actAsignatura}
-                        onValueChange={handleActAsignaturaChange}
-                        placeholder="Seleccionar"
-                        options={asignaturas.map((a) => ({ value: a, label: a }))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Grado</Label>
-                      <ResponsiveSelect
-                        value={actGrado}
-                        onValueChange={handleActGradoChange}
-                        placeholder="Seleccionar"
-                        options={actGrados.map((g) => ({ value: g, label: g }))}
-                        disabled={!actAsignatura}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Salón</Label>
-                      <ResponsiveSelect
-                        value={actSalon}
-                        onValueChange={setActSalon}
-                        placeholder="Seleccionar"
-                        options={actSalones.map((s) => ({ value: s, label: s }))}
-                        disabled={!actGrado}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Activity list */}
-                  {actAsignatura && actGrado && actSalon && (
-                    <div className="mt-4">
-                      {loadingActividades ? (
-                        <div className="text-center py-8 text-muted-foreground">Cargando actividades...</div>
-                      ) : actividades.length === 0 ? (
-                        <div className="text-center py-8">
-                          <Calendar className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-                          <p className="text-muted-foreground">No hay actividades programadas</p>
+                  <p className="text-sm text-muted-foreground mb-4">Tu calendario de actividades: toca un día para ver lo que dejaste. Incluye las pendientes y el historial de las que ya pasaron.</p>
+                  {(() => {
+                    const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+                    const DIAS = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+                    const pad = (n: number) => String(n).padStart(2, "0");
+                    const isoDe = (a: ActividadCalendario) => {
+                      const d = parsearFecha(a.fecha_de_presentacion);
+                      return d ? `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` : null;
+                    };
+                    const porDia = new Map<string, ActividadCalendario[]>();
+                    for (const a of misActividades) {
+                      const k = isoDe(a);
+                      if (!k) continue;
+                      if (!porDia.has(k)) porDia.set(k, []);
+                      porDia.get(k)!.push(a);
+                    }
+                    const hoy = new Date();
+                    const hoyISO = `${hoy.getFullYear()}-${pad(hoy.getMonth() + 1)}-${pad(hoy.getDate())}`;
+                    const y = mesCal.getFullYear(), m = mesCal.getMonth();
+                    const diasEnMes = new Date(y, m + 1, 0).getDate();
+                    const offset = (new Date(y, m, 1).getDay() + 6) % 7; // Lun=0
+                    const delDia = diaSelCal ? (porDia.get(diaSelCal) || []) : [];
+                    return (
+                      <>
+                        <div className="flex items-center justify-between mb-3">
+                          <button onClick={() => { setMesCal(new Date(y, m - 1, 1)); setDiaSelCal(null); }} className="p-2 rounded-full hover:bg-muted"><ChevronLeft className="w-5 h-5" /></button>
+                          <span className="font-semibold text-lg text-foreground">{MESES[m]} {y}</span>
+                          <button onClick={() => { setMesCal(new Date(y, m + 1, 1)); setDiaSelCal(null); }} className="p-2 rounded-full hover:bg-muted"><ChevronRight className="w-5 h-5" /></button>
                         </div>
-                      ) : (
-                        <div className="space-y-3">
-                          {actividades.map((actividad) => (
-                            <div key={actividad.column_id} className="border border-border rounded-lg p-4 hover:border-primary/50 transition-colors">
-                              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-                                <div className="flex-1">
-                                  <p className="text-foreground font-medium">{actividad.Descripción}</p>
-                                  <p className="text-sm text-primary mt-1 flex items-center gap-1">
-                                    <Calendar className="h-4 w-4" />
-                                    {mostrarFecha(actividad.fecha_de_presentacion)}
-                                  </p>
-                                  {actividad.archivo_url && actividad.archivo_url.split('\n').filter(Boolean).map((url, i) => (
-                                    <div key={i} className="mt-2 space-y-1">
-                                      <div className="flex items-center gap-1.5">
-                                        <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
-                                        <span className="text-sm text-foreground truncate">{getCleanFilename(url)}</span>
+                        <div className="grid grid-cols-7 gap-1 mb-1">
+                          {DIAS.map((d) => <div key={d} className="text-center text-[11px] font-medium text-muted-foreground">{d}</div>)}
+                        </div>
+                        <div className={`grid grid-cols-7 gap-1 ${loadingMias ? "opacity-40" : ""}`}>
+                          {Array.from({ length: offset }).map((_, i) => <div key={`b${i}`} />)}
+                          {Array.from({ length: diasEnMes }).map((_, i) => {
+                            const dia = i + 1;
+                            const iso = `${y}-${pad(m + 1)}-${pad(dia)}`;
+                            const items = porDia.get(iso) || [];
+                            const sel = diaSelCal === iso;
+                            const esHoy = iso === hoyISO;
+                            const pasado = iso < hoyISO;
+                            return (
+                              <button
+                                key={iso}
+                                onClick={() => setDiaSelCal(sel ? null : iso)}
+                                className={`aspect-square rounded-lg flex flex-col items-center justify-center text-sm transition
+                                  ${items.length > 0 ? (pasado ? "bg-muted text-foreground" : "bg-primary/10 text-foreground font-semibold") : "text-muted-foreground hover:bg-muted/50"}
+                                  ${esHoy ? "ring-2 ring-primary" : ""} ${sel ? "ring-2 ring-primary bg-primary/20" : ""}`}
+                              >
+                                <span>{dia}</span>
+                                {items.length > 0 && (
+                                  <span className={`mt-0.5 text-[9px] leading-none px-1 rounded-full ${pasado ? "bg-muted-foreground/30 text-foreground" : "bg-primary text-primary-foreground"}`}>{items.length}</span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {misActividades.length === 0 && !loadingMias && (
+                          <p className="text-center text-muted-foreground py-6 text-sm">Aún no has programado actividades.</p>
+                        )}
+
+                        {diaSelCal && (
+                          <div className="mt-5 border-t border-border pt-4">
+                            <p className="font-semibold text-foreground mb-3 flex items-center gap-2 flex-wrap">
+                              {(() => { const d = parsearFecha(diaSelCal); return d ? d.toLocaleDateString("es-CO", { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : diaSelCal; })()}
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${diaSelCal < hoyISO ? "bg-muted text-muted-foreground" : "bg-emerald-100 text-emerald-700"}`}>
+                                {diaSelCal < hoyISO ? "Ya pasó" : "Pendiente"}
+                              </span>
+                            </p>
+                            {delDia.length === 0 ? (
+                              <p className="text-sm text-muted-foreground">No dejaste actividades este día.</p>
+                            ) : (
+                              <div className="space-y-3">
+                                {delDia.map((actividad) => (
+                                  <div key={actividad.column_id} className="border border-border rounded-lg p-4">
+                                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                                      <div className="flex-1">
+                                        <p className="text-xs text-muted-foreground mb-0.5">{actividad.Asignatura} · {actividad.Grado} {actividad.Salon}</p>
+                                        <p className="text-foreground font-medium">{actividad.Descripción}</p>
+                                        {actividad.archivo_url && actividad.archivo_url.split('\n').filter(Boolean).map((url, i) => (
+                                          <div key={i} className="mt-2 space-y-1">
+                                            <div className="flex items-center gap-1.5">
+                                              <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
+                                              <span className="text-sm text-foreground truncate">{getCleanFilename(url)}</span>
+                                            </div>
+                                            <div className="flex gap-2">
+                                              <button onClick={() => handleVerArchivo(url)} className="px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 flex items-center gap-1.5"><Eye className="h-4 w-4" /> Ver</button>
+                                              <button onClick={() => handleDescargarArchivo(url)} className="px-3 py-1.5 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 flex items-center gap-1.5"><Download className="h-4 w-4" /> Descargar</button>
+                                            </div>
+                                          </div>
+                                        ))}
                                       </div>
                                       <div className="flex gap-2">
-                                        <button onClick={() => handleVerArchivo(url)} className="px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 flex items-center gap-1.5">
-                                          <Eye className="h-4 w-4" /> Ver
-                                        </button>
-                                        <button onClick={() => handleDescargarArchivo(url)} className="px-3 py-1.5 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 flex items-center gap-1.5">
-                                          <Download className="h-4 w-4" /> Descargar
-                                        </button>
+                                        <Button variant="outline" size="sm" onClick={() => handleAbrirEditar(actividad)} className="gap-1"><Pencil className="h-4 w-4" /> Editar</Button>
+                                        <Button variant="destructive" size="sm" onClick={() => handleConfirmarEliminar(actividad)} className="gap-1"><Trash2 className="h-4 w-4" /> Eliminar</Button>
                                       </div>
                                     </div>
-                                  ))}
-                                </div>
-                                <div className="flex gap-2">
-                                  <Button variant="outline" size="sm" onClick={() => handleAbrirEditar(actividad)} className="gap-1">
-                                    <Pencil className="h-4 w-4" /> Editar
-                                  </Button>
-                                  <Button variant="destructive" size="sm" onClick={() => handleConfirmarEliminar(actividad)} className="gap-1">
-                                    <Trash2 className="h-4 w-4" /> Eliminar
-                                  </Button>
-                                </div>
+                                  </div>
+                                ))}
                               </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                            )}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </>
               )}
             </div>
