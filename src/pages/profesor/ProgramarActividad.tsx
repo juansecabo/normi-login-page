@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { subirArchivo } from "@/lib/storage";
 import { apiRequest } from "@/lib/apiClient";
@@ -169,8 +169,13 @@ const ProgramarActividad = () => {
   const [loadingMias, setLoadingMias] = useState(false);
   const [mesCal, setMesCal] = useState<Date>(new Date());
   const [diaSelCal, setDiaSelCal] = useState<Date | undefined>(new Date());
-  // Vista actual: menú de 2 botones, el formulario, o el calendario.
-  const [vista, setVista] = useState<"menu" | "programar" | "actividades">("menu");
+  // Vista actual en la URL (?v=programar|actividades) para que sobreviva al refrescar.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const vista: "menu" | "programar" | "actividades" =
+    searchParams.get("v") === "programar" ? "programar"
+    : searchParams.get("v") === "actividades" ? "actividades"
+    : "menu";
+  const irA = (v: "menu" | "programar" | "actividades") => setSearchParams(v === "menu" ? {} : { v });
   // Filtros del calendario de actividades del profesor.
   const [filtroAsig, setFiltroAsig] = useState("todas");
   const [filtroGrado, setFiltroGrado] = useState("todos");
@@ -684,17 +689,25 @@ const ProgramarActividad = () => {
               Inicio
             </button>
             <span className="text-muted-foreground">→</span>
-            <span className="text-foreground font-medium">Programar Actividad</span>
+            {vista === "menu" ? (
+              <span className="text-foreground font-medium">Programar Actividad</span>
+            ) : (
+              <>
+                <button onClick={() => irA("menu")} className="text-primary hover:underline">Programar Actividad</button>
+                <span className="text-muted-foreground">→</span>
+                <span className="text-foreground font-medium">{vista === "programar" ? "Nueva actividad" : "Actividades Programadas"}</span>
+              </>
+            )}
           </div>
         </div>
         <p className="text-sm text-muted-foreground max-w-3xl mx-auto mb-6 text-center">Programa las tareas, evaluaciones, exposiciones y demás actividades académicas de tus estudiantes.</p>
 
         <div className="max-w-5xl mx-auto">
           {/* Menú de entrada: dos botones grandes (los profes no veían la pestaña). */}
-          {vista === "menu" ? (
+          {vista === "menu" && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
               <button
-                onClick={() => setVista("programar")}
+                onClick={() => irA("programar")}
                 className="bg-card rounded-lg shadow-soft p-8 flex flex-col items-center justify-center gap-3 text-center transition-all hover:shadow-md hover:bg-cyan-50 border-2 border-transparent hover:border-cyan-200"
               >
                 <Pencil className="h-10 w-10 text-cyan-600" />
@@ -702,7 +715,7 @@ const ProgramarActividad = () => {
                 <span className="text-sm text-muted-foreground">Crea una nueva tarea, evaluación, taller…</span>
               </button>
               <button
-                onClick={() => { setVista("actividades"); cargarMisActividades(); }}
+                onClick={() => irA("actividades")}
                 className="bg-card rounded-lg shadow-soft p-8 flex flex-col items-center justify-center gap-3 text-center transition-all hover:shadow-md hover:bg-emerald-50 border-2 border-transparent hover:border-emerald-200"
               >
                 <Calendar className="h-10 w-10 text-emerald-600" />
@@ -710,10 +723,6 @@ const ProgramarActividad = () => {
                 <span className="text-sm text-muted-foreground">Mira el calendario de lo que ya dejaste</span>
               </button>
             </div>
-          ) : (
-            <button onClick={() => setVista("menu")} className="mb-4 inline-flex items-center gap-1 text-sm text-primary hover:underline">
-              ← Volver
-            </button>
           )}
 
           {/* ===== Programar Actividad ===== */}
