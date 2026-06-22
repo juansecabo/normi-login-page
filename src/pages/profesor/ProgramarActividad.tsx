@@ -683,15 +683,15 @@ const ProgramarActividad = () => {
         </div>
         <p className="text-sm text-muted-foreground max-w-3xl mx-auto mb-6 text-center">Programa las tareas, evaluaciones, exposiciones y demás actividades académicas de tus estudiantes.</p>
 
-        <Tabs defaultValue="programar" className="max-w-3xl mx-auto">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="programar" className="max-w-5xl mx-auto">
+          <TabsList className="grid w-full grid-cols-2 max-w-3xl mx-auto">
             <TabsTrigger value="programar">Programar Actividad</TabsTrigger>
             <TabsTrigger value="actividades">Actividades Programadas</TabsTrigger>
           </TabsList>
 
           {/* ===== TAB: Programar Actividad ===== */}
           <TabsContent value="programar">
-            <div className="bg-card rounded-lg shadow-soft p-6 md:p-8 space-y-5">
+            <div className="bg-card rounded-lg shadow-soft p-6 md:p-8 space-y-5 max-w-3xl mx-auto">
               {loadingAsignaciones ? (
                 <div className="text-center text-muted-foreground py-8">Cargando asignaturas...</div>
               ) : asignaturas.length === 0 ? (
