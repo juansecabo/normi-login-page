@@ -262,6 +262,9 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   const aulaActual = aulaSalon ? { ...aulaSalon, periodo: periodoActual } : null;
   // Grupos del periodo activo (para mostrar en el editor y en el contador del botón)
   const gruposPeriodoActual = gruposNotas.filter(g => g.periodo === periodoActual);
+  // Modo "ver promedios": agrega una columna "Prom" por cada grupo/subgrupo con el
+  // promedio simple de sus actividades, por estudiante (para transcribir a otra plataforma).
+  const [verPromedios, setVerPromedios] = useState(false);
   // Grupo asignado a la actividad que se está creando/editando (null = modo plano).
   const [grupoActividadId, setGrupoActividadId] = useState<string | null>(null);
   // true cuando la actividad se crea desde el "+ Actividad" de un grupo
@@ -641,13 +644,13 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         // Grupo hoja: colSpan = max(1, actividades). Si está vacío reservamos
         // 1 columna placeholder para que el grupo se vea en la cabecera.
         const aDirectas = acts.filter(a => a.grupo_id === top.id);
-        const colSpan = Math.max(1, aDirectas.length);
+        const colSpan = Math.max(1, aDirectas.length) + (verPromedios ? 1 : 0);
         secciones.push({ tipo: 'grupo-hoja', grupo: top, actividades: aDirectas, colSpan });
       } else {
         necesitaFila2 = true;
         const subgrupos: Sub[] = hijos.map(h => {
           const aH = acts.filter(a => a.grupo_id === h.id);
-          return { grupo: h, actividades: aH, colSpan: Math.max(1, aH.length) };
+          return { grupo: h, actividades: aH, colSpan: Math.max(1, aH.length) + (verPromedios ? 1 : 0) };
         });
         // Caso mixto: el padre también tiene actividades directas → se
         // agregan como un "sub virtual" al inicio para que sigan visibles.
@@ -669,7 +672,8 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
    */
   type CeldaFila =
     | { tipo: 'actividad'; actividad: Actividad }
-    | { tipo: 'placeholder'; grupoId: string };
+    | { tipo: 'placeholder'; grupoId: string }
+    | { tipo: 'promedio'; grupoId: string };
 
   const getCeldasFila = (periodo: number): CeldaFila[] => {
     const estructura = getEstructuraThead(periodo);
@@ -686,6 +690,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         } else {
           for (const a of sec.actividades) out.push({ tipo: 'actividad', actividad: a });
         }
+        if (verPromedios) out.push({ tipo: 'promedio', grupoId: sec.grupo.id });
       } else {
         for (const sub of sec.subgrupos) {
           if (sub.actividades.length === 0) {
@@ -695,6 +700,8 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
           } else {
             for (const a of sub.actividades) out.push({ tipo: 'actividad', actividad: a });
           }
+          // Columna Prom por subgrupo real (el sub virtual no lleva promedio).
+          if (verPromedios && sub.grupo) out.push({ tipo: 'promedio', grupoId: sub.grupo.id });
         }
       }
     }
@@ -1530,6 +1537,20 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     const res = promedioGeneral(notasCalc, gruposDelPeriodo);
     return res.promedio;
   }, [actividades, gruposNotas]);
+
+  // Promedio (recursivo) de UN grupo/subgrupo para un estudiante en un periodo.
+  // Grupo hoja = promedio simple de sus actividades calificadas; grupo con
+  // subgrupos = combinación por % (igual que la definitiva). Solo visual.
+  const promedioGrupoEstudiante = useCallback((grupoId: string, idEstudiantil: string, periodo: number): number | null => {
+    const notasEst = notas[idEstudiantil]?.[periodo] || {};
+    const notasCalc: NotaCalc[] = getActividadesPorPeriodo(periodo)
+      .filter(a => notasEst[a.id] !== undefined)
+      .map(a => ({ porcentaje: a.porcentaje, nota: notasEst[a.id] as number, grupo_id: a.grupo_id ?? null }));
+    const gruposDelPeriodo: GrupoCalc[] = gruposNotas
+      .filter(g => g.periodo === periodo)
+      .map(g => ({ id: g.id, porcentaje: g.porcentaje, parent_id: g.parent_id }));
+    return promedioDeGrupo(grupoId, notasCalc, gruposDelPeriodo);
+  }, [actividades, gruposNotas, notas]);
 
   // Versión que usa el estado actual
   const calcularFinalPeriodo = useCallback((idEstudiantil: string, periodo: number): number | null => {
@@ -3742,6 +3763,20 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               No hay estudiantes en este salón
             </div>
           ) : (
+            <>
+            {!soloLectura && !esFinalDefinitiva && getEstructuraThead(periodoActivo).hayJerarquia && (
+              <div className="flex items-center justify-end px-3 py-2 border-l border-t border-border bg-muted/20">
+                <label className="flex items-center gap-2 text-sm font-medium text-foreground cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={verPromedios}
+                    onChange={(e) => setVerPromedios(e.target.checked)}
+                    className="w-4 h-4 accent-primary cursor-pointer"
+                  />
+                  Ver promedios por grupo
+                </label>
+              </div>
+            )}
             <div ref={tableContainerRef} className="overflow-x-auto md:overflow-auto md:flex-1 md:min-h-0 border-l border-t border-border">
               {soloLectura && (
                 <style>{`.ro-notas thead button{display:none!important;}`}</style>
@@ -4120,7 +4155,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                             {estructura.secciones.flatMap((sec, secIdx) => {
                               if (sec.tipo === 'sin-grupo') return []; // ya consumidas con rowSpan
                               // Construye lista de items en orden (actividades o placeholders)
-                              type Item = { tipo: 'act'; act: Actividad } | { tipo: 'ph'; key: string };
+                              type Item = { tipo: 'act'; act: Actividad } | { tipo: 'ph'; key: string } | { tipo: 'prom'; grupoId: string };
                               let items: Item[] = [];
                               if (sec.tipo === 'grupo-hoja') {
                                 if (sec.actividades.length === 0) {
@@ -4128,6 +4163,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                 } else {
                                   items.push(...sec.actividades.map(a => ({ tipo: 'act' as const, act: a })));
                                 }
+                                if (verPromedios) items.push({ tipo: 'prom', grupoId: sec.grupo.id });
                               } else {
                                 for (const sub of sec.subgrupos) {
                                   // Sub virtual ya se pintó con rowSpan=2 en fila 2 → no
@@ -4138,9 +4174,17 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                   } else {
                                     items.push(...sub.actividades.map(a => ({ tipo: 'act' as const, act: a })));
                                   }
+                                  if (verPromedios) items.push({ tipo: 'prom', grupoId: sub.grupo.id });
                                 }
                               }
                               return items.map((it) => {
+                                if (it.tipo === 'prom') {
+                                  return (
+                                    <th key={`th-prom-${it.grupoId}`} className="border-r border-b border-border/30 p-2 text-center text-xs font-bold bg-emerald-500 text-white min-w-[80px]">
+                                      Prom
+                                    </th>
+                                  );
+                                }
                                 if (it.tipo === 'ph') {
                                   return (
                                     <th key={it.key} className="border-r border-b border-border/30 p-2 text-center text-xs font-medium bg-emerald-200 text-emerald-700 min-w-[120px]">
@@ -4316,6 +4360,17 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                   </td>
                                 );
                               }
+                              if (celda.tipo === 'promedio') {
+                                const prom = promedioGrupoEstudiante(celda.grupoId, estudiante.id, periodoActivo);
+                                return (
+                                  <td
+                                    key={`prom-${celda.grupoId}-${idx}`}
+                                    className="border-r border-b border-border p-3 text-center text-sm font-bold min-w-[80px] bg-emerald-50 text-emerald-900"
+                                  >
+                                    {prom !== null ? prom.toFixed(colegioConfig.decimales) : '—'}
+                                  </td>
+                                );
+                              }
                               const actividad = celda.actividad;
                               const nota = notas[estudiante.id]?.[periodoActivo]?.[actividad.id];
                               const estaEditando = celdaEditando?.idEstudiantil === estudiante.id
@@ -4455,6 +4510,9 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                           if (celda.tipo === 'placeholder') {
                             return <td key={`pf-${celda.grupoId}-${idx}`} className="border-r border-b border-border p-1 min-w-[120px]"></td>;
                           }
+                          if (celda.tipo === 'promedio') {
+                            return <td key={`pf-prom-${celda.grupoId}-${idx}`} className="border-r border-b border-border p-1 min-w-[80px]"></td>;
+                          }
                           const actividad = celda.actividad;
                           return (
                             <td key={actividad.id} className="border-r border-b border-border p-1 text-center">
@@ -4492,6 +4550,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                 )}
               </table>
             </div>
+            </>
           )}
         </div>
       </main>
