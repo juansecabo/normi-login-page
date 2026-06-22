@@ -271,6 +271,11 @@ const Dashboard = () => {
         <img src={iconFotosGrupo} alt="" className="w-12 h-12 object-contain" />
         <span className="font-semibold text-foreground text-center">Fotos de mi grupo</span>
       </button>
+    ) }, { id: 'consolidado-grupo', render: (
+      <button onClick={() => navigate("/consolidado-grupo")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-orange-100 transition-all duration-200 hover:shadow-md hover:bg-orange-200">
+        <img src={iconEstadisticas} alt="" className="w-12 h-12 object-contain" />
+        <span className="font-semibold text-foreground text-center">Consolidado de mi grupo</span>
+      </button>
     ) }] : []),
     { id: 'perfil', render: (
       <button onClick={() => navigate("/perfil")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-sky-100 transition-all duration-200 hover:shadow-md hover:bg-sky-200">
