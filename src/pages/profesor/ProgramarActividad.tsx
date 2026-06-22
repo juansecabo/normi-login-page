@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import ResponsiveSelect from "@/components/ResponsiveSelect";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { es } from "date-fns/locale";
 import {
@@ -170,6 +171,11 @@ const ProgramarActividad = () => {
   const [loadingMias, setLoadingMias] = useState(false);
   const [mesCal, setMesCal] = useState<Date>(new Date());
   const [diaSelCal, setDiaSelCal] = useState<Date | undefined>(new Date());
+  // Filtros del calendario de actividades del profesor.
+  const [filtroAsig, setFiltroAsig] = useState("todas");
+  const [filtroGrado, setFiltroGrado] = useState("todos");
+  const [filtroSalon, setFiltroSalon] = useState("todos");
+  const [busquedaAct, setBusquedaAct] = useState("");
 
   // Edit modal state
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -880,9 +886,31 @@ const ProgramarActividad = () => {
                 <>
                   <p className="text-sm text-muted-foreground mb-4">Tu calendario de actividades: toca un día para ver lo que dejaste. Incluye las pendientes y el historial de las que ya pasaron.</p>
                   {(() => {
+                    // Opciones de filtro derivadas de TODAS las actividades del profe.
+                    const opcAsig = [...new Set(misActividades.map((a) => a.Asignatura).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es"));
+                    const opcGrado = [...new Set(misActividades.map((a) => a.Grado).filter(Boolean))].sort((a, b) => rankGrado(a) - rankGrado(b));
+                    const opcSalon = [...new Set(misActividades.map((a) => a.Salon).filter(Boolean))].sort((a, b) => Number(a) - Number(b));
+                    return (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+                        <ResponsiveSelect value={filtroAsig} onValueChange={setFiltroAsig} placeholder="Asignatura" options={[{ value: "todas", label: "Todas las asignaturas" }, ...opcAsig.map((a) => ({ value: a, label: a }))]} />
+                        <ResponsiveSelect value={filtroGrado} onValueChange={setFiltroGrado} placeholder="Grado" options={[{ value: "todos", label: "Todos los grados" }, ...opcGrado.map((g) => ({ value: g, label: g }))]} />
+                        <ResponsiveSelect value={filtroSalon} onValueChange={setFiltroSalon} placeholder="Salón" options={[{ value: "todos", label: "Todos los salones" }, ...opcSalon.map((s) => ({ value: s, label: `Salón ${s}` }))]} />
+                        <Input value={busquedaAct} onChange={(e) => setBusquedaAct(e.target.value)} placeholder="Buscar por descripción…" />
+                      </div>
+                    );
+                  })()}
+                  {(() => {
                     const fechaKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+                    const norm = (s: string) => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+                    const q = norm(busquedaAct.trim());
+                    const actividadesFiltradas = misActividades.filter((a) =>
+                      (filtroAsig === "todas" || a.Asignatura === filtroAsig) &&
+                      (filtroGrado === "todos" || a.Grado === filtroGrado) &&
+                      (filtroSalon === "todos" || a.Salon === filtroSalon) &&
+                      (!q || norm(a.Descripción).includes(q))
+                    );
                     const porFecha: Record<string, ActividadCalendario[]> = {};
-                    for (const a of misActividades) {
+                    for (const a of actividadesFiltradas) {
                       const f = parsearFecha(a.fecha_de_presentacion);
                       if (!f) continue;
                       const k = fechaKey(f);
