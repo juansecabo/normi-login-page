@@ -3316,7 +3316,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
       return;
     }
     const descripcion = actividad
-      ? `Se notificará a ${estudiantesAfectados} estudiante(s) y a sus acudientes que les falta presentar:\n${actividad.nombre}`
+      ? `Se notificará a ${estudiantesAfectados} estudiante(s) y a sus acudientes que les falta presentar «${actividad.nombre}».`
       : `Se notificará a ${estudiantesAfectados} estudiante(s) y a sus acudientes sobre ${totalCasillas} actividad(es) sin presentar de este periodo.`;
     setPendientesModal({ actividad: actividad ? actividad.nombre : null, periodo, descripcion });
   };
