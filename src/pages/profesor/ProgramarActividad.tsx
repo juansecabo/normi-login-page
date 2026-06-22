@@ -711,7 +711,7 @@ const ProgramarActividad = () => {
                 className="bg-card rounded-lg shadow-soft p-8 flex flex-col items-center justify-center gap-3 text-center transition-all hover:shadow-md hover:bg-cyan-50 border-2 border-transparent hover:border-cyan-200"
               >
                 <Pencil className="h-10 w-10 text-cyan-600" />
-                <span className="text-lg font-bold text-foreground">Programar Actividad</span>
+                <span className="text-lg font-bold text-foreground">Nueva actividad</span>
                 <span className="text-sm text-muted-foreground">Crea una nueva tarea, evaluación, taller…</span>
               </button>
               <button
