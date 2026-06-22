@@ -888,13 +888,19 @@ const ProgramarActividad = () => {
                       const k = fechaKey(f);
                       (porFecha[k] ||= []).push(a);
                     }
-                    const diasConActividades = Object.keys(porFecha).map((k) => { const [yy, mm, dd] = k.split("-").map(Number); return new Date(yy, mm - 1, dd); });
                     const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+                    const diasPasados: Date[] = [];
+                    const diasProximos: Date[] = [];
+                    for (const k of Object.keys(porFecha)) {
+                      const [yy, mm, dd] = k.split("-").map(Number);
+                      const d = new Date(yy, mm - 1, dd);
+                      (d < hoy ? diasPasados : diasProximos).push(d);
+                    }
                     const delDia = diaSelCal ? (porFecha[fechaKey(diaSelCal)] || []).slice().sort((a, b) => a.Asignatura.localeCompare(b.Asignatura)) : [];
                     const pasado = diaSelCal ? new Date(diaSelCal.getFullYear(), diaSelCal.getMonth(), diaSelCal.getDate()) < hoy : false;
                     return (
                       <div className="flex flex-col lg:flex-row lg:items-start gap-6">
-                        <div className="flex justify-center lg:sticky lg:top-4 shrink-0">
+                        <div className="flex flex-col items-center lg:sticky lg:top-4 shrink-0">
                           <CalendarComponent
                             mode="single"
                             selected={diaSelCal}
@@ -902,10 +908,17 @@ const ProgramarActividad = () => {
                             month={mesCal}
                             onMonthChange={setMesCal}
                             locale={es}
-                            modifiers={{ conActividad: diasConActividades }}
-                            modifiersClassNames={{ conActividad: "bg-orange-400 text-white hover:bg-orange-500 !h-8 !w-8" }}
+                            modifiers={{ pasada: diasPasados, proxima: diasProximos }}
+                            modifiersClassNames={{
+                              pasada: "bg-slate-300 text-slate-700 hover:bg-slate-400 !h-8 !w-8",
+                              proxima: "bg-emerald-500 text-white hover:bg-emerald-600 !h-8 !w-8",
+                            }}
                             className="rounded-md border shadow-sm"
                           />
+                          <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-emerald-500 inline-block" /> Próximas</span>
+                            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-slate-300 inline-block" /> Ya pasaron</span>
+                          </div>
                         </div>
                         <div className="flex-1 min-w-0 lg:max-h-[420px] lg:overflow-y-auto">
                           {diaSelCal && delDia.length > 0 ? (
