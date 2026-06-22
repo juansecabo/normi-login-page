@@ -976,15 +976,19 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         return;
       }
 
-      // Calcular porcentaje usado excluyendo la actividad que se está editando
-      const porcentajeUsado = actividades
-        .filter(a => a.periodo === periodoActual && a.porcentaje !== null && a.id !== actividadEditando?.id)
-        .reduce((sum, a) => sum + (a.porcentaje || 0), 0);
-      
+      // Porcentaje usado del periodo = grupos top + actividades sueltas
+      // (excluyendo la que se edita). Misma cuenta que muestra el modal en
+      // "Disponible", para que la validación al guardar sea coherente: una
+      // actividad suelta NO puede sumar por encima de lo que ya aportan los
+      // grupos. (Antes solo contaba sueltas e ignoraba los grupos → permitía
+      // pasar de 100%, p.ej. 100% en grupos + 10% suelta = 110%.)
+      const porcentajeUsado = getPorcentajeUsadoParaModal();
+
       if (porcentajeUsado + porcentaje > 100) {
+        const disponible = Math.max(0, 100 - porcentajeUsado);
         toast({
           title: "Error",
-          description: `El porcentaje total del período no puede superar 100%. Actualmente usado: ${porcentajeUsado}%`,
+          description: `El porcentaje total del período no puede superar 100%. Disponible: ${disponible}%`,
           variant: "destructive",
         });
         return;
@@ -1132,10 +1136,27 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
             return;
           }
 
-          // Calcular porcentaje usado por salón
+          // Calcular porcentaje usado por salón = actividades sueltas + grupos top
           const porcentajePorSalon: { [salon: string]: number } = {};
           (actividadesOtros || []).forEach(a => {
             porcentajePorSalon[a.salon] = (porcentajePorSalon[a.salon] || 0) + (a.porcentaje || 0);
+          });
+
+          // Sumar también el % de los grupos de primer nivel de cada salón
+          // (sin esto, replicar una actividad suelta podía pasar de 100% en un
+          // salón que ya tuviera la jerarquía completa en grupos).
+          const { data: gruposOtros } = await supabase
+            .from('Grupos_Notas')
+            .select('salon, porcentaje')
+            .eq('ano_escolar', anoEscolarActual())
+            .eq('asignatura', asignaturaSeleccionada)
+            .eq('grado', gradoSeleccionado)
+            .in('salon', otrosSalones)
+            .eq('periodo', periodoActual)
+            .is('parent_id', null)
+            .not('porcentaje', 'is', null);
+          (gruposOtros || []).forEach(g => {
+            porcentajePorSalon[g.salon] = (porcentajePorSalon[g.salon] || 0) + Number(g.porcentaje || 0);
           });
 
           const salonesExcedidos = otrosSalones.filter(s => {
