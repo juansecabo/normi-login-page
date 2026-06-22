@@ -10,13 +10,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
-export type TipoNotificacion = 
-  | "actividad_individual" 
+export type TipoNotificacion =
+  | "actividad_individual"
   | "periodo_completo_definitivo"
   | "periodo_parcial"
   | "definitiva_completa"
   | "definitiva_parcial"
-  | "nota_individual";
+  | "nota_individual"
+  | "pendientes";
 
 interface NotificacionModalProps {
   open: boolean;
@@ -61,6 +62,8 @@ const NotificacionModal = ({
         return "Notificar REPORTE PARCIAL ANUAL";
       case "nota_individual":
         return "Notificar a padre(s)";
+      case "pendientes":
+        return "Notificar actividades pendientes";
       default:
         return "Confirmar notificación";
     }

@@ -265,6 +265,8 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   // Modo "ver promedios": agrega una columna "Prom" por cada grupo/subgrupo con el
   // promedio simple de sus actividades, por estudiante (para transcribir a otra plataforma).
   const [verPromedios, setVerPromedios] = useState(false);
+  // Modal de "notificar actividades pendientes" (sin nota). actividad=null → todas.
+  const [pendientesModal, setPendientesModal] = useState<null | { actividad: string | null; periodo: number; descripcion: string }>(null);
   // Grupo asignado a la actividad que se está creando/editando (null = modo plano).
   const [grupoActividadId, setGrupoActividadId] = useState<string | null>(null);
   // true cuando la actividad se crea desde el "+ Actividad" de un grupo
@@ -3291,6 +3293,54 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     }
   };
 
+  // Resumen de actividades pendientes (sin nota) en un periodo. Solo cuenta
+  // actividades YA aplicadas (con ≥1 nota en el aula). Si se pasa actividadId,
+  // restringe a esa actividad.
+  const resumenPendientes = (periodo: number, actividadId?: string) => {
+    const aplicadas = getActividadesPorPeriodo(periodo).filter((a) => actividadTieneNota(a.id, periodo));
+    const objetivo = actividadId ? aplicadas.filter((a) => String(a.id) === actividadId) : aplicadas;
+    let estudiantesAfectados = 0;
+    let totalCasillas = 0;
+    for (const est of estudiantes) {
+      const faltan = objetivo.filter((a) => notas[est.id]?.[periodo]?.[a.id] === undefined).length;
+      if (faltan > 0) { estudiantesAfectados++; totalCasillas += faltan; }
+    }
+    return { estudiantesAfectados, totalCasillas };
+  };
+
+  // Abre el modal de confirmación de "notificar pendientes" (global o por actividad).
+  const abrirPendientes = (periodo: number, actividad: Actividad | null) => {
+    const { estudiantesAfectados, totalCasillas } = resumenPendientes(periodo, actividad ? String(actividad.id) : undefined);
+    if (totalCasillas === 0) {
+      toast({ title: "Sin pendientes", description: actividad ? `Todos tienen nota en «${actividad.nombre}».` : "No hay actividades aplicadas sin nota en este periodo." });
+      return;
+    }
+    const descripcion = actividad
+      ? `Se notificará a ${estudiantesAfectados} estudiante(s) y a sus acudientes que les falta presentar:\n${actividad.nombre}`
+      : `Se notificará a ${estudiantesAfectados} estudiante(s) y a sus acudientes sobre ${totalCasillas} actividad(es) sin presentar de este periodo.`;
+    setPendientesModal({ actividad: actividad ? actividad.nombre : null, periodo, descripcion });
+  };
+
+  // Envía la notificación de pendientes al confirmar el modal.
+  const handleEnviarPendientes = async () => {
+    if (!pendientesModal) return;
+    try {
+      const res = await apiRequest('/api/notificaciones/actividades-pendientes', {
+        method: 'POST',
+        body: JSON.stringify({
+          asignatura: asignaturaSeleccionada,
+          grado: gradoSeleccionado,
+          salon: salonSeleccionado,
+          periodo: pendientesModal.periodo,
+          actividad: pendientesModal.actividad,
+        }),
+      }) as { estudiantes_procesados?: number };
+      toast({ title: "Notificación enviada", description: `Se notificó a ${res?.estudiantes_procesados ?? 0} estudiante(s) y sus acudientes.` });
+    } catch {
+      toast({ title: "Error", description: "No se pudo enviar la notificación.", variant: "destructive" });
+    }
+  };
+
   // Handler para cuando se presiona Enter (navegar a celda de abajo)
   const handleKeyDownNota = async (e: React.KeyboardEvent<HTMLInputElement>, studentIndex: number, actividadId: string, periodo: number) => {
     if (soloLectura) return;
@@ -3825,17 +3875,26 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
             </div>
           ) : (
             <>
-            {!soloLectura && !esFinalDefinitiva && getEstructuraThead(periodoActivo).hayJerarquia && (
-              <div className="flex items-center justify-end px-3 py-2 border-l border-t border-border bg-muted/20">
-                <label className="flex items-center gap-2 text-sm font-medium text-foreground cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={verPromedios}
-                    onChange={(e) => setVerPromedios(e.target.checked)}
-                    className="w-4 h-4 accent-primary cursor-pointer"
-                  />
-                  Ver promedios por grupo
-                </label>
+            {!soloLectura && !esFinalDefinitiva && getActividadesPorPeriodo(periodoActivo).length > 0 && (
+              <div className="flex items-center justify-end gap-4 px-3 py-2 border-l border-t border-border bg-muted/20 flex-wrap">
+                <button
+                  onClick={() => abrirPendientes(periodoActivo, null)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 text-sm font-semibold transition-colors"
+                  title="Avisar a estudiantes y acudientes las actividades sin nota"
+                >
+                  📭 Notificar pendientes
+                </button>
+                {getEstructuraThead(periodoActivo).hayJerarquia && (
+                  <label className="flex items-center gap-2 text-sm font-medium text-foreground cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={verPromedios}
+                      onChange={(e) => setVerPromedios(e.target.checked)}
+                      className="w-4 h-4 accent-primary cursor-pointer"
+                    />
+                    Ver promedios por grupo
+                  </label>
+                )}
               </div>
             )}
             <div ref={tableContainerRef} className="overflow-x-auto md:overflow-auto md:flex-1 md:min-h-0 border-l border-t border-border">
@@ -4576,8 +4635,9 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                             return <td key={`pf-prom-${celda.grupoId}-${idx}`} className="border-r border-b border-border p-1 min-w-[80px]"></td>;
                           }
                           const actividad = celda.actividad;
+                          const pendActividad = resumenPendientes(periodoActivo, String(actividad.id)).estudiantesAfectados;
                           return (
-                            <td key={actividad.id} className="border-r border-b border-border p-1 text-center">
+                            <td key={actividad.id} className="border-r border-b border-border p-1 text-center align-top">
                               {actividadTieneNotas(actividad) && (
                                 <button
                                   onClick={() => handleNotificarActividad(actividad)}
@@ -4586,6 +4646,16 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                 >
                                   <span className="text-[10px]">📱 Notificar</span>
                                   <span className="font-semibold text-[10px] leading-tight truncate max-w-full">{actividad.nombre}</span>
+                                </button>
+                              )}
+                              {pendActividad > 0 && (
+                                <button
+                                  onClick={() => abrirPendientes(periodoActivo, actividad)}
+                                  className="w-full mt-1 px-1 py-1 text-xs rounded-md bg-amber-100 hover:bg-amber-200 text-amber-800 transition-colors flex flex-col items-center justify-center"
+                                  title="Notificar a quienes no han presentado esta actividad"
+                                >
+                                  <span className="text-[10px]">📭 Pendientes</span>
+                                  <span className="font-semibold text-[10px] leading-tight">{pendActividad} sin nota</span>
                                 </button>
                               )}
                             </td>
@@ -5057,6 +5127,16 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         nombreEstudiante={notificacionPendiente?.nombreEstudiante}
         onConfirmar={handleEnviarNotificacion}
       />
+
+      {pendientesModal && (
+        <NotificacionModal
+          open={!!pendientesModal}
+          onOpenChange={(o) => { if (!o) setPendientesModal(null); }}
+          tipoNotificacion="pendientes"
+          descripcion={pendientesModal.descripcion}
+          onConfirmar={handleEnviarPendientes}
+        />
+      )}
 
     </div>
   );
