@@ -594,9 +594,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
       gruposPeriodo.filter(g => g.parent_id === parentId).sort((a, b) => a.orden - b.orden);
 
     const ordenadas: Actividad[] = [];
-    // 1. Sin grupo primero
-    ordenadas.push(...acts.filter(a => !a.grupo_id));
-    // 2. Recorrido jerárquico
+    // 1. Recorrido jerárquico (los grupos van primero, en su orden)
     for (const top of tops) {
       const hijos = subs(top.id);
       if (hijos.length === 0) {
@@ -607,6 +605,8 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         }
       }
     }
+    // 2. Actividades sueltas al final (a la derecha de todos los grupos)
+    ordenadas.push(...acts.filter(a => !a.grupo_id));
     return ordenadas;
   };
 
@@ -635,10 +635,6 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
       | { tipo: 'grupo-con-sub'; grupo: typeof gruposPeriodo[number]; subgrupos: Sub[]; colSpan: number };
 
     const secciones: Seccion[] = [];
-    const sinGrupo = acts.filter(a => !a.grupo_id);
-    if (sinGrupo.length > 0) {
-      secciones.push({ tipo: 'sin-grupo', actividades: sinGrupo, colSpan: sinGrupo.length });
-    }
     let necesitaFila2 = false;
     for (const top of tops) {
       const hijos = subs(top.id);
@@ -663,6 +659,11 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         const total = subgrupos.reduce((s, x) => s + x.colSpan, 0);
         secciones.push({ tipo: 'grupo-con-sub', grupo: top, subgrupos, colSpan: total });
       }
+    }
+    // Actividades sueltas al final (a la derecha de todos los grupos)
+    const sinGrupo = acts.filter(a => !a.grupo_id);
+    if (sinGrupo.length > 0) {
+      secciones.push({ tipo: 'sin-grupo', actividades: sinGrupo, colSpan: sinGrupo.length });
     }
     return { hayJerarquia: secciones.some(s => s.tipo !== 'sin-grupo'), secciones, necesitaFila2 };
   };
