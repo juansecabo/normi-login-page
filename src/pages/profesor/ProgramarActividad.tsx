@@ -41,7 +41,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Calendar, Paperclip, FileText, X, Loader2, Pencil, Trash2, Eye, Download, RotateCcw } from "lucide-react";
@@ -170,6 +169,8 @@ const ProgramarActividad = () => {
   const [loadingMias, setLoadingMias] = useState(false);
   const [mesCal, setMesCal] = useState<Date>(new Date());
   const [diaSelCal, setDiaSelCal] = useState<Date | undefined>(new Date());
+  // Vista actual: menú de 2 botones, el formulario, o el calendario.
+  const [vista, setVista] = useState<"menu" | "programar" | "actividades">("menu");
   // Filtros del calendario de actividades del profesor.
   const [filtroAsig, setFiltroAsig] = useState("todas");
   const [filtroGrado, setFiltroGrado] = useState("todos");
@@ -688,14 +689,35 @@ const ProgramarActividad = () => {
         </div>
         <p className="text-sm text-muted-foreground max-w-3xl mx-auto mb-6 text-center">Programa las tareas, evaluaciones, exposiciones y demás actividades académicas de tus estudiantes.</p>
 
-        <Tabs defaultValue="programar" className="max-w-5xl mx-auto">
-          <TabsList className="grid w-full grid-cols-2 max-w-3xl mx-auto">
-            <TabsTrigger value="programar">Programar Actividad</TabsTrigger>
-            <TabsTrigger value="actividades">Actividades Programadas</TabsTrigger>
-          </TabsList>
+        <div className="max-w-5xl mx-auto">
+          {/* Menú de entrada: dos botones grandes (los profes no veían la pestaña). */}
+          {vista === "menu" ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
+              <button
+                onClick={() => setVista("programar")}
+                className="bg-card rounded-lg shadow-soft p-8 flex flex-col items-center justify-center gap-3 text-center transition-all hover:shadow-md hover:bg-cyan-50 border-2 border-transparent hover:border-cyan-200"
+              >
+                <Pencil className="h-10 w-10 text-cyan-600" />
+                <span className="text-lg font-bold text-foreground">Programar Actividad</span>
+                <span className="text-sm text-muted-foreground">Crea una nueva tarea, evaluación, taller…</span>
+              </button>
+              <button
+                onClick={() => { setVista("actividades"); cargarMisActividades(); }}
+                className="bg-card rounded-lg shadow-soft p-8 flex flex-col items-center justify-center gap-3 text-center transition-all hover:shadow-md hover:bg-emerald-50 border-2 border-transparent hover:border-emerald-200"
+              >
+                <Calendar className="h-10 w-10 text-emerald-600" />
+                <span className="text-lg font-bold text-foreground">Actividades Programadas</span>
+                <span className="text-sm text-muted-foreground">Mira el calendario de lo que ya dejaste</span>
+              </button>
+            </div>
+          ) : (
+            <button onClick={() => setVista("menu")} className="mb-4 inline-flex items-center gap-1 text-sm text-primary hover:underline">
+              ← Volver
+            </button>
+          )}
 
-          {/* ===== TAB: Programar Actividad ===== */}
-          <TabsContent value="programar">
+          {/* ===== Programar Actividad ===== */}
+          {vista === "programar" && (
             <div className="bg-card rounded-lg shadow-soft p-6 md:p-8 space-y-5 max-w-3xl mx-auto">
               {loadingAsignaciones ? (
                 <div className="text-center text-muted-foreground py-8">Cargando asignaturas...</div>
@@ -874,10 +896,10 @@ const ProgramarActividad = () => {
                 </>
               )}
             </div>
-          </TabsContent>
+          )}
 
-          {/* ===== TAB: Actividades Programadas ===== */}
-          <TabsContent value="actividades">
+          {/* ===== Actividades Programadas ===== */}
+          {vista === "actividades" && (
             <div className="bg-card rounded-lg shadow-soft p-6 md:p-8 space-y-5">
               {loadingAsignaciones ? (
                 <div className="text-center text-muted-foreground py-8">Cargando...</div>
@@ -995,8 +1017,8 @@ const ProgramarActividad = () => {
                 </>
               )}
             </div>
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       </main>
 
       {/* Edit activity modal */}
