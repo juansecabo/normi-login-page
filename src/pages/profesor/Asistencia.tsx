@@ -4,7 +4,6 @@ import { getSession, isProfesor, isAdmin } from "@/hooks/useSession";
 import { supabase } from "@/integrations/supabase/client";
 import { apiClient, type AsistenciaRosterItem, type AsistenciaEstado } from "@/lib/apiClient";
 import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNormi";
-import EncabezadoColegio from "@/components/EncabezadoColegio";
 import { useToast } from "@/hooks/use-toast";
 import { rankGrado } from "@/utils/grados";
 import { Check, X, FileText, ArrowLeft, RotateCcw } from "lucide-react";
@@ -264,7 +263,6 @@ const Asistencia = () => {
             <span className="text-foreground font-medium">Tomar asistencia</span>
           </div>
         </div>
-        <EncabezadoColegio />
 
         {step === "select" && (
           <div className="bg-card rounded-lg shadow-soft p-6 md:p-8 max-w-xl mx-auto mt-4">

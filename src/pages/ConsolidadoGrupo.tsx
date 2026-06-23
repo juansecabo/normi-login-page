@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession } from "@/hooks/useSession";
 import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNormi";
-import EncabezadoColegio from "@/components/EncabezadoColegio";
 import ConsolidadoNotas from "@/components/ConsolidadoNotas";
 import ConsolidadoNotasPreescolar from "@/components/ConsolidadoNotasPreescolar";
 import { Search, Users, ChevronLeft } from "lucide-react";
@@ -80,6 +79,8 @@ const ConsolidadoGrupo = () => {
           <div className="flex items-center gap-2 text-sm">
             <button onClick={() => navigate(computeBackLinkFromSession())} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
+            <button onClick={() => navigate("/direccion-grupo")} className="text-primary hover:underline">Dirección de grupo</button>
+            <span className="text-muted-foreground">&rarr;</span>
             {sel ? (
               <>
                 <button onClick={() => setSel(null)} className="text-primary hover:underline">Consolidado de mi grupo</button>
@@ -91,7 +92,6 @@ const ConsolidadoGrupo = () => {
             )}
           </div>
         </div>
-        <EncabezadoColegio />
 
         <div className="max-w-5xl mx-auto">
           {loading ? (

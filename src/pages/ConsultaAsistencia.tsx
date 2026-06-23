@@ -4,7 +4,6 @@ import { getSession, isEstudiante, isPadreDeFamilia, isProfesor, isAdmin, type A
 import { supabase } from "@/integrations/supabase/client";
 import { apiClient, type AsistenciaEstado, type AsistenciaRegistro } from "@/lib/apiClient";
 import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNormi";
-import EncabezadoColegio from "@/components/EncabezadoColegio";
 import { rankGrado } from "@/utils/grados";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import MatrizCurso from "@/components/asistencia/MatrizCurso";
@@ -132,7 +131,6 @@ const ConsultaAsistencia = () => {
             )}
           </div>
         </div>
-        <EncabezadoColegio />
         <div className="max-w-5xl mx-auto">
           <h2 className="text-2xl font-bold text-foreground mb-1 text-center">{isProfesor() ? "Registro de asistencia" : "Asistencia"}</h2>
 

@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { getSession } from "@/hooks/useSession";
 import { apiClient } from "@/lib/apiClient";
 import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNormi";
-import EncabezadoColegio from "@/components/EncabezadoColegio";
 import AvatarUploader from "@/components/AvatarUploader";
 import { Search, Users } from "lucide-react";
 
@@ -88,10 +87,11 @@ const MiGrupo = () => {
           <div className="flex items-center gap-2 text-sm">
             <button onClick={() => navigate(computeBackLinkFromSession())} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
+            <button onClick={() => navigate("/direccion-grupo")} className="text-primary hover:underline">Dirección de grupo</button>
+            <span className="text-muted-foreground">&rarr;</span>
             <span className="text-foreground font-medium">Fotos de mi grupo</span>
           </div>
         </div>
-        <EncabezadoColegio />
 
         <div className="max-w-5xl mx-auto">
           <h2 className="text-2xl font-bold text-foreground mb-1 text-center">Fotos de mi grupo</h2>

@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNormi";
-import EncabezadoColegio from "@/components/EncabezadoColegio";
 import { Camera, BarChart3 } from "lucide-react";
 
 /**
@@ -14,7 +13,6 @@ const DireccionGrupo = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <HeaderNormi backLink={computeBackLinkFromSession()} />
       <main className="flex-1 container mx-auto p-4 md:p-8">
-        <EncabezadoColegio />
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>

@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getSession } from "@/hooks/useSession";
 import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNormi";
-import EncabezadoColegio from "@/components/EncabezadoColegio";
 import { ClipboardCheck, ClipboardList, ChevronRight } from "lucide-react";
 
 /**
@@ -28,7 +27,6 @@ const AsistenciaMenu = () => {
             <span className="text-foreground font-medium">Asistencia</span>
           </div>
         </div>
-        <EncabezadoColegio />
         <div className="max-w-xl mx-auto">
           <h2 className="text-2xl font-bold text-foreground mb-1 text-center">Asistencia</h2>
           <p className="text-center text-muted-foreground mb-6">¿Qué deseas hacer?</p>
