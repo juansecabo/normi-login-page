@@ -123,21 +123,6 @@ const GrupoDropZone = ({ gid, activo }: { gid: string; activo: boolean }) => {
   );
 };
 
-/** Chip flotante para soltar la actividad FUERA de todo grupo (queda suelta). */
-const SoltarAfueraDropZone = () => {
-  const { setNodeRef, isOver } = useDroppable({ id: "loose" });
-  return (
-    <div
-      ref={setNodeRef}
-      className={`mb-2 px-4 py-2 rounded-lg border-2 border-dashed text-sm font-semibold text-center transition-colors ${
-        isOver ? "border-amber-500 bg-amber-100 text-amber-900" : "border-emerald-400 bg-emerald-50 text-emerald-800"
-      }`}
-    >
-      ⬇️ Suéltala aquí para sacarla del grupo (queda suelta, sin porcentaje)
-    </div>
-  );
-};
-
 // Notificación de notas migrada al server (multi-tenant via JWT).
 // Antes apuntaba a https://n8n.notasnormi.com/webhook/notificar-notas.
 
@@ -4191,11 +4176,6 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                 onDragEnd={handleDragEnd}
                 onDragCancel={() => { setDragAct(null); setDropTarget(null); }}
               >
-              {dragAct && (
-                <div className="sticky left-0 z-30 w-fit pt-2 pl-2">
-                  <SoltarAfueraDropZone />
-                </div>
-              )}
               <table className={`w-full border-separate border-spacing-0${soloLectura ? ' ro-notas' : ''}`}>
                 <thead>
                   {(() => {
