@@ -1419,6 +1419,9 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         nombre: nombreTrimmed,
         porcentaje,
         grupo_id: grupoActividadId,
+        // fecha local = ahora, para que aparezca al instante a la DERECHA de todo
+        // (igual que la fecha_creacion=now() que pondrá la BD). Evita el "salto".
+        fecha_creacion: new Date().toISOString(),
       };
 
       // Reflejar la columna en la tabla del salón actual solo si de verdad se
