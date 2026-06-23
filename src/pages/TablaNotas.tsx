@@ -3798,9 +3798,14 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                     className="p-6 rounded-lg border-2 border-border bg-background text-center transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/10 cursor-pointer flex flex-col items-center gap-3"
                   >
                     <span className="font-medium text-foreground">{p.nombre}</span>
+                    {/* Mientras cargan notas/grupos/actividades, el % real aún no
+                        se puede calcular: mostramos un spinner en vez de "0%" para
+                        no hacer creer que el periodo está vacío. */}
                     {/* Casilla si el periodo es calificable (100%) O si ya está marcado
                         completo por cascada (ej. 1er periodo sin notas cerrado al cerrar el 2do). */}
-                    {(calificable || completo) ? (
+                    {loading ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                    ) : (calificable || completo) ? (
                       <label
                         onClick={(e) => e.stopPropagation()}
                         title="Marcar/desmarcar periodo completo"
@@ -3829,7 +3834,11 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                     className="p-6 rounded-lg border-2 border-border bg-background text-center transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/10 cursor-pointer flex flex-col items-center gap-3"
                   >
                     <span className="font-medium text-foreground">Definitiva Anual</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${completo ? 'bg-green-600 text-white font-semibold' : 'bg-muted text-foreground'}`}>{pct}/100%</span>
+                    {loading ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                    ) : (
+                      <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${completo ? 'bg-green-600 text-white font-semibold' : 'bg-muted text-foreground'}`}>{pct}/100%</span>
+                    )}
                   </div>
                 );
               })()}
