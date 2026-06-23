@@ -81,15 +81,11 @@ const pegarFantasmaAlDedo = ({ activatorEvent, draggingNodeRect, transform }: an
 // --- Drag & drop de columnas de actividad (reubicar entre grupos / sacar afuera) ---
 // La columna se arrastra por su NOMBRE (handle), para no chocar con el botón ⋮.
 // Activación por long-press (delay) configurada en los sensores del componente.
-const ColumnaActividadDnD = ({ id, disabled, children }: { id: string; disabled?: boolean; children: ReactNode }) => {
+const ColumnaActividadDnD = ({ id, disabled, silueta, children }: { id: string; disabled?: boolean; silueta?: 'left' | 'right' | null; children: ReactNode }) => {
   const drag = useDraggable({ id: `act:${id}`, disabled });
   const drop = useDroppable({ id: `col:${id}`, disabled });
   // Un solo nodo es a la vez "lo que se agarra" y "zona donde se puede soltar".
   const setRef = (el: HTMLElement | null) => { drag.setNodeRef(el); drop.setNodeRef(el); };
-  const hayArrastre = !!drop.active;
-  const soyElArrastrado = drop.active?.id === `act:${id}`;
-  // Silueta (línea) en el borde izquierdo cuando vas a soltar al lado de esta columna.
-  const marcarSilueta = hayArrastre && drop.isOver && !soyElArrastrado;
   return (
     <div
       ref={setRef}
@@ -98,12 +94,14 @@ const ColumnaActividadDnD = ({ id, disabled, children }: { id: string; disabled?
       style={{ touchAction: disabled ? undefined : "none" }}
       className={`flex-1 min-w-0 ${disabled ? "" : "cursor-grab active:cursor-grabbing"} ${drag.isDragging ? "opacity-30" : ""}`}
     >
-      {/* Franja vertical centrada EN la línea divisoria de la columna, rectángulo
-          recto del alto completo de la casilla del título. Se posiciona respecto
-          al <th> (que es relative): left-0 = borde izquierdo de la casilla,
-          -translate-x-1/2 la centra sobre esa línea. */}
-      {marcarSilueta && (
+      {/* Franja vertical centrada EN la línea divisoria (rectángulo recto, alto
+          de la casilla). Izquierda = cae antes; derecha = cae después. Se
+          posiciona respecto al <th> (relative). */}
+      {silueta === 'left' && (
         <div className="absolute top-0 bottom-0 left-0 -translate-x-1/2 w-2 bg-amber-500 z-30 pointer-events-none" />
+      )}
+      {silueta === 'right' && (
+        <div className="absolute top-0 bottom-0 right-0 translate-x-1/2 w-2 bg-amber-500 z-30 pointer-events-none" />
       )}
       {children}
     </div>
@@ -3421,6 +3419,9 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   // null: dentro de un grupo manda el % del grupo; suelta, el profe puede
   // ponerle uno después con el lápiz. Actualiza Nombre de Actividades + Notas.
   const [dragAct, setDragAct] = useState<Actividad | null>(null);
+  // Columna destino + lado (izq = cae antes, der = cae después) según en qué
+  // mitad de la columna esté el dedo. Permite dejar una actividad de última.
+  const [dropTarget, setDropTarget] = useState<{ id: string; side: 'left' | 'right' } | null>(null);
   const dndSensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { delay: 350, tolerance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 350, tolerance: 8 } }),
@@ -3512,10 +3513,24 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     const id = String(e.active.id).replace(/^act:/, "");
     const act = actividades.find(a => a.id === id && a.periodo === periodoActivo) || actividades.find(a => a.id === id) || null;
     setDragAct(act);
+    setDropTarget(null);
+  };
+  // Mientras arrastra: si está sobre una columna, decide lado (izq/der) según en
+  // qué mitad de la columna esté el dedo, para mostrar la franja del lado correcto.
+  const handleDragMove = (e: any) => {
+    const over = e.over;
+    if (!over || !String(over.id).startsWith("col:") || !over.rect) { setDropTarget(null); return; }
+    const coords = getEventCoordinates(e.activatorEvent);
+    if (!coords) { setDropTarget(null); return; }
+    const pointerX = coords.x + (e.delta?.x || 0);
+    const centro = over.rect.left + over.rect.width / 2;
+    setDropTarget({ id: String(over.id).slice(4), side: pointerX < centro ? "left" : "right" });
   };
   const handleDragEnd = (e: DragEndEvent) => {
     const act = dragAct;
+    const target = dropTarget;
     setDragAct(null);
+    setDropTarget(null);
     if (!act || !e.over) return;
     const overId = String(e.over.id);
     if (overId === "loose") {
@@ -3523,13 +3538,24 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     } else if (overId.startsWith("grp:")) {
       reubicarActividad(act, overId.slice(4), null); // al final del grupo
     } else if (overId.startsWith("col:")) {
-      // Soltada AL LADO de otra actividad: queda en el grupo de esa actividad,
-      // JUSTO ANTES de ella (la franja marca ese punto). Reordena dentro del grupo.
       const targetId = overId.slice(4);
-      const target =
+      const tAct =
         actividades.find(a => a.id === targetId && a.periodo === periodoActivo) ||
         actividades.find(a => a.id === targetId);
-      if (target) reubicarActividad(act, (target as any).grupo_id ?? null, target.id);
+      if (!tAct) return;
+      const grupo = (tAct as any).grupo_id ?? null;
+      const lado = target?.id === targetId ? target.side : "left";
+      if (lado === "left") {
+        reubicarActividad(act, grupo, targetId); // cae ANTES de la columna
+      } else {
+        // Cae DESPUÉS: justo antes de la siguiente del grupo (o al final).
+        const enGrupo = actividades
+          .filter(a => a.periodo === act.periodo && ((a.grupo_id ?? null) === grupo) && a.id !== act.id)
+          .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0) || a.nombre.localeCompare(b.nombre));
+        const tIdx = enGrupo.findIndex(a => a.id === targetId);
+        const siguiente = tIdx >= 0 ? (enGrupo[tIdx + 1]?.id ?? null) : null;
+        reubicarActividad(act, grupo, siguiente);
+      }
     }
   };
 
@@ -4155,8 +4181,9 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                 collisionDetection={pointerWithin}
                 modifiers={[pegarFantasmaAlDedo]}
                 onDragStart={handleDragStart}
+                onDragMove={handleDragMove}
                 onDragEnd={handleDragEnd}
-                onDragCancel={() => setDragAct(null)}
+                onDragCancel={() => { setDragAct(null); setDropTarget(null); }}
               >
               {dragAct && (
                 <div className="sticky left-0 z-30 w-fit pt-2 pl-2">
@@ -4211,7 +4238,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                       className="relative border-r border-b border-emerald-600/50 p-2 text-center text-xs font-medium min-w-[120px] bg-emerald-300 text-emerald-950"
                                     >
                                       <div className="flex items-center justify-center gap-1">
-                                        <ColumnaActividadDnD id={actividad.id} disabled={soloLectura}>
+                                        <ColumnaActividadDnD id={actividad.id} disabled={soloLectura} silueta={dropTarget?.id === actividad.id ? dropTarget.side : null}>
                                           <div className="whitespace-nowrap" title={actividad.nombre}>
                                             {actividad.nombre}
                                           </div>
@@ -4469,7 +4496,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                       className="relative border-r border-b border-emerald-600/50 p-2 text-center text-xs font-medium min-w-[120px] bg-emerald-300 text-emerald-950"
                                     >
                                       <div className="flex items-center justify-center gap-1">
-                                        <ColumnaActividadDnD id={actividad.id} disabled={soloLectura}>
+                                        <ColumnaActividadDnD id={actividad.id} disabled={soloLectura} silueta={dropTarget?.id === actividad.id ? dropTarget.side : null}>
                                           <div className="whitespace-nowrap" title={actividad.nombre}>
                                             {actividad.nombre}
                                           </div>
@@ -4583,7 +4610,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                   className="relative border-r border-b border-emerald-600/50 p-2 text-center text-xs font-medium min-w-[120px] bg-emerald-300 text-emerald-950"
                                 >
                                   <div className="flex items-center justify-center gap-1">
-                                    <ColumnaActividadDnD id={actividad.id} disabled={soloLectura}>
+                                    <ColumnaActividadDnD id={actividad.id} disabled={soloLectura} silueta={dropTarget?.id === actividad.id ? dropTarget.side : null}>
                                       <div className="whitespace-nowrap" title={actividad.nombre}>
                                         {actividad.nombre}
                                       </div>
