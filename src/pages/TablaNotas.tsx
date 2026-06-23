@@ -4905,7 +4905,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               </table>
               <DragOverlay dropAnimation={null}>
                 {dragAct ? (
-                  <div className="min-w-[120px] px-2 py-3 bg-emerald-300 text-emerald-950 text-xs font-medium text-center shadow-2xl ring-2 ring-emerald-600 whitespace-nowrap">
+                  <div className="w-[130px] px-2 py-3 bg-emerald-300 text-emerald-950 text-xs font-medium text-center shadow-2xl ring-2 ring-emerald-600 truncate" title={dragAct.nombre}>
                     {dragAct.nombre}
                   </div>
                 ) : null}
