@@ -96,12 +96,14 @@ const ColumnaActividadDnD = ({ id, disabled, children }: { id: string; disabled?
       {...(disabled ? {} : drag.attributes)}
       {...(disabled ? {} : drag.listeners)}
       style={{ touchAction: disabled ? undefined : "none" }}
-      className={`relative flex-1 min-w-0 ${disabled ? "" : "cursor-grab active:cursor-grabbing"} ${drag.isDragging ? "opacity-30" : ""}`}
+      className={`flex-1 min-w-0 ${disabled ? "" : "cursor-grab active:cursor-grabbing"} ${drag.isDragging ? "opacity-30" : ""}`}
     >
-      {/* Franja vertical AL LADO de la casilla del nombre: rectángulo recto que
-          marca dónde va a caer, solo del alto de la casilla (no baja por la columna). */}
+      {/* Franja vertical centrada EN la línea divisoria de la columna, rectángulo
+          recto del alto completo de la casilla del título. Se posiciona respecto
+          al <th> (que es relative): left-0 = borde izquierdo de la casilla,
+          -translate-x-1/2 la centra sobre esa línea. */}
       {marcarSilueta && (
-        <div className="absolute -left-2 top-0 bottom-0 w-2.5 bg-amber-500 z-30 pointer-events-none" />
+        <div className="absolute top-0 bottom-0 left-0 -translate-x-1/2 w-2 bg-amber-500 z-30 pointer-events-none" />
       )}
       {children}
     </div>
@@ -4133,13 +4135,13 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                       <>
                         {/* Fila 1: cabecera principal (IDs + grupos top + Definitiva) */}
                         <tr className="bg-primary text-primary-foreground">
-                          <th rowSpan={filasThead} className="md:sticky md:left-0 z-20 bg-primary border-r border-b border-border/30 w-[80px] md:w-[100px] min-w-[80px] md:min-w-[100px] p-2 md:p-3 text-left font-semibold text-xs md:text-sm">
+                          <th rowSpan={filasThead} className="md:sticky md:left-0 z-20 bg-primary border-r border-b border-border/30 w-[80px] md:w-[100px] min-w-[80px] md:min-w-[100px] p-2 md:p-3 text-center font-semibold text-xs md:text-sm">
                             ID
                           </th>
-                          <th rowSpan={filasThead} className="md:sticky md:left-[100px] z-20 bg-primary border-r border-b border-border/30 w-[120px] md:w-[180px] min-w-[120px] md:min-w-[180px] p-2 md:p-3 text-left font-semibold text-xs md:text-sm">
+                          <th rowSpan={filasThead} className="md:sticky md:left-[100px] z-20 bg-primary border-r border-b border-border/30 w-[120px] md:w-[180px] min-w-[120px] md:min-w-[180px] p-2 md:p-3 text-center font-semibold text-xs md:text-sm">
                             Apellidos
                           </th>
-                          <th rowSpan={filasThead} className="md:sticky md:left-[280px] z-20 bg-primary border-r border-b border-border/30 w-[100px] md:w-[150px] min-w-[100px] md:min-w-[150px] p-2 md:p-3 text-left font-semibold text-xs md:text-sm">
+                          <th rowSpan={filasThead} className="md:sticky md:left-[280px] z-20 bg-primary border-r border-b border-border/30 w-[100px] md:w-[150px] min-w-[100px] md:min-w-[150px] p-2 md:p-3 text-center font-semibold text-xs md:text-sm">
                             Nombre
                           </th>
 
@@ -4168,7 +4170,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                     <th
                                       key={`th-sg-${actividad.id}`}
                                       rowSpan={filasThead}
-                                      className="border-r border-b border-border/30 p-2 text-center text-xs font-medium min-w-[120px] bg-emerald-300 text-emerald-950"
+                                      className="relative border-r border-b border-emerald-600/50 p-2 text-center text-xs font-medium min-w-[120px] bg-emerald-300 text-emerald-950"
                                     >
                                       <div className="flex items-center justify-center gap-1">
                                         <ColumnaActividadDnD id={actividad.id} disabled={soloLectura}>
@@ -4426,7 +4428,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                     <th
                                       key={`th-act-virt-${actividad.id}`}
                                       rowSpan={2}
-                                      className="border-r border-b border-border/30 p-2 text-center text-xs font-medium min-w-[120px] bg-emerald-300 text-emerald-950"
+                                      className="relative border-r border-b border-emerald-600/50 p-2 text-center text-xs font-medium min-w-[120px] bg-emerald-300 text-emerald-950"
                                     >
                                       <div className="flex items-center justify-center gap-1">
                                         <ColumnaActividadDnD id={actividad.id} disabled={soloLectura}>
@@ -4540,7 +4542,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                 return (
                                 <th
                                   key={`th-act-${actividad.id}`}
-                                  className="border-r border-b border-border/30 p-2 text-center text-xs font-medium min-w-[120px] bg-emerald-300 text-emerald-950"
+                                  className="relative border-r border-b border-emerald-600/50 p-2 text-center text-xs font-medium min-w-[120px] bg-emerald-300 text-emerald-950"
                                 >
                                   <div className="flex items-center justify-center gap-1">
                                     <ColumnaActividadDnD id={actividad.id} disabled={soloLectura}>
@@ -4589,13 +4591,13 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                         className={rowBg}
                       >
                         {/* Fixed columns on desktop, normal on mobile - with solid background */}
-                        <td className={`md:sticky md:left-0 z-10 border-r border-b border-border p-2 md:p-3 text-xs md:text-sm ${studentIndex % 2 === 0 ? 'bg-background' : 'bg-muted'}`}>
+                        <td className={`md:sticky md:left-0 z-10 border-r border-b border-border p-2 md:p-3 text-center text-xs md:text-sm ${studentIndex % 2 === 0 ? 'bg-background' : 'bg-muted'}`}>
                           {estudiante.id}
                         </td>
-                        <td className={`md:sticky md:left-[100px] z-10 border-r border-b border-border p-2 md:p-3 text-xs md:text-sm font-medium ${studentIndex % 2 === 0 ? 'bg-background' : 'bg-muted'}`}>
+                        <td className={`md:sticky md:left-[100px] z-10 border-r border-b border-border p-2 md:p-3 text-center text-xs md:text-sm font-medium ${studentIndex % 2 === 0 ? 'bg-background' : 'bg-muted'}`}>
                           {estudiante.apellidos}
                         </td>
-                        <td className={`md:sticky md:left-[280px] z-10 border-r border-b border-border p-2 md:p-3 text-xs md:text-sm ${studentIndex % 2 === 0 ? 'bg-background' : 'bg-muted'}`}>
+                        <td className={`md:sticky md:left-[280px] z-10 border-r border-b border-border p-2 md:p-3 text-center text-xs md:text-sm ${studentIndex % 2 === 0 ? 'bg-background' : 'bg-muted'}`}>
                           {estudiante.nombres}
                         </td>
                         
