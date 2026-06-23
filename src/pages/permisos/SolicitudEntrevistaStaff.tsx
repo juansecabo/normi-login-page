@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import SignatureCanvas from "react-signature-canvas";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Check, ChevronDown, UserRound, Plus, X, XCircle } from "lucide-react";
+import { CalendarIcon, Check, ChevronDown, UserRound, Plus, X, XCircle, RefreshCw } from "lucide-react";
 import FirmaImage from "@/components/FirmaImage";
 import { apiRequest } from "@/lib/apiClient";
 import { joinEntrevistadores, entrevistadoresDeSolicitud } from "@/lib/entrevistadores";
@@ -144,6 +144,39 @@ const SolicitudEntrevistaStaff = () => {
     setHistorial(prev => prev.map(s => s.id === solicitudId ? { ...s, confirmado: nuevoValor } : s));
   };
 
+  // Reenviar la citación al acudiente (pedido coordinadora Diana: cuando el
+  // acudiente no asiste, volver a citarlo). Reusa el mismo mensaje/envío que la
+  // creación. Vuelve el estado a "Pendiente" para que el acudiente responda de nuevo.
+  const [reenviando, setReenviando] = useState<number | null>(null);
+  const reenviarCitacion = async (s: any) => {
+    if (!s.estudiante_id) {
+      toast({ title: "No se pudo reenviar", description: "Esta solicitud no tiene estudiante asociado; vuelve a crearla.", variant: "destructive" });
+      return;
+    }
+    setReenviando(s.id);
+    try {
+      const fechaTexto = new Date(s.fecha_entrevista + "T12:00:00").toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+      const conNombre = entrevistadoresDeSolicitud(s, "el/la ");
+      const mensaje = `Se le recuerda que se ha solicitado una entrevista para el acudiente del estudiante ${s.estudiante_nombre} ${s.estudiante_apellidos} de ${s.estudiante_grado} ${s.estudiante_salon}.\n\nFecha: ${fechaTexto}\nHora: ${s.hora_entrevista}\nCon: ${conNombre}\n\nPor favor ingrese a notasnormi.com y en el inicio haga click en la ficha "Solicitud de Entrevista", busque el día indicado, haga click sobre la citación y confirme su asistencia.`;
+      await apiRequest('/api/comunicados/enviar', {
+        method: 'POST',
+        body: JSON.stringify({
+          destinatarios_label: `Acudiente del estudiante con id ${s.estudiante_id}`,
+          mensaje,
+          segmentos: [{ perfil: ["Acudientes"], id_destinatarios: [String(s.estudiante_id)] }],
+        }),
+      });
+      // Reabrir la confirmación: vuelve a "Pendiente".
+      await supabase.from("Solicitudes_Entrevista").update({ confirmado: null, respuesta_vista: true }).eq("id", s.id);
+      setHistorial(prev => prev.map(x => x.id === s.id ? { ...x, confirmado: null } : x));
+      toast({ title: "Citación reenviada", description: "Se notificó nuevamente al acudiente." });
+    } catch (e: any) {
+      toast({ title: "Error al reenviar", description: e?.message || "Intenta de nuevo.", variant: "destructive" });
+    } finally {
+      setReenviando(null);
+    }
+  };
+
   const handleFirmaEnd = () => { if (sigCanvas.current && !sigCanvas.current.isEmpty()) setFirma(sigCanvas.current.toDataURL("image/png")); };
   const limpiarFirma = () => { sigCanvas.current?.clear(); setFirma(null); };
 
@@ -191,6 +224,7 @@ const SolicitudEntrevistaStaff = () => {
       estudiante_apellidos: estudianteSeleccionado.apellidos,
       estudiante_grado: estudianteSeleccionado.grado,
       estudiante_salon: estudianteSeleccionado.salon,
+      estudiante_id: Number(estudianteSeleccionado.id),
       solicitante_nombre: [entrevistadores[0].nombres, entrevistadores[0].apellidos].filter(Boolean).join(" "),
       solicitante_cargo: entrevistadores[0].cargo,
       solicitante_id: entrevistadores[0].id,
@@ -428,6 +462,21 @@ const SolicitudEntrevistaStaff = () => {
                             </div>
                             <p className="text-xs text-muted-foreground mt-2">Toca de nuevo para volver a "Pendiente".</p>
                           </div>
+
+                          {/* Reenviar la citación cuando el acudiente no asistió */}
+                          {s.confirmado === false && (
+                            <div className="border-t border-border pt-3 mt-1">
+                              <button
+                                onClick={() => reenviarCitacion(s)}
+                                disabled={reenviando === s.id}
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 disabled:opacity-60 cursor-pointer"
+                              >
+                                <RefreshCw className={`w-4 h-4 ${reenviando === s.id ? "animate-spin" : ""}`} />
+                                {reenviando === s.id ? "Reenviando…" : "Reenviar citación"}
+                              </button>
+                              <p className="text-xs text-muted-foreground mt-2">El acudiente recibe de nuevo la citación y vuelve a quedar "Pendiente".</p>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
