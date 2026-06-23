@@ -136,15 +136,15 @@ const ConsolidadoGrupo = () => {
             ) : data.asignaturas.length === 0 ? (
               <p className="text-center text-muted-foreground py-10">No hay notas registradas en este periodo.</p>
             ) : (
-              <div className="overflow-x-auto rounded-lg border border-border shadow-soft">
+              <div className="max-h-[72vh] overflow-auto rounded-lg border border-border shadow-soft">
                 <table className="border-collapse text-sm">
                   <thead>
-                    <tr className="bg-muted/60">
-                      <th className="sticky left-0 z-10 bg-muted/60 border-r border-b border-border px-3 py-2 text-left font-semibold text-foreground min-w-[200px]">
+                    <tr>
+                      <th className="sticky left-0 top-0 z-30 bg-muted border-r border-b border-border px-3 py-2 text-left font-semibold text-foreground min-w-[200px]">
                         Estudiante
                       </th>
                       {data.asignaturas.map((a) => (
-                        <th key={a.nombre} className="border-r border-b border-border px-2 py-2 text-center font-semibold text-foreground align-bottom min-w-[90px] max-w-[120px]">
+                        <th key={a.nombre} className="sticky top-0 z-20 bg-muted border-r border-b border-border px-2 py-2 text-center font-semibold text-foreground align-bottom min-w-[90px] max-w-[120px]">
                           <div className="leading-tight break-words">{a.nombre}</div>
                           {!a.completo && (
                             <div className="text-[10px] font-normal italic text-amber-600 mt-0.5">(provisional)</div>
@@ -154,24 +154,27 @@ const ConsolidadoGrupo = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {data.estudiantes.map((e, i) => (
-                      <tr key={e.id} className={i % 2 ? "bg-background" : "bg-muted/20"}>
-                        <td className={`sticky left-0 z-10 border-r border-b border-border px-3 py-2 font-medium text-foreground whitespace-nowrap ${i % 2 ? "bg-background" : "bg-muted/20"}`}>
-                          {e.nombre}
-                        </td>
-                        {data.asignaturas.map((a) => {
-                          const n = e.notas[a.nombre];
-                          return (
-                            <td key={a.nombre}
-                              className={`border-r border-b border-border px-2 py-2 text-center tabular-nums font-semibold ${
-                                n == null ? "text-muted-foreground" : aprobada(n) ? "text-emerald-700" : "text-red-600"
-                              }`}>
-                              {fmt(n)}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
+                    {data.estudiantes.map((e, i) => {
+                      const rowBg = i % 2 ? "bg-card" : "bg-muted/40";
+                      return (
+                        <tr key={e.id} className={rowBg}>
+                          <td className="sticky left-0 z-10 bg-card border-r border-b border-border px-3 py-2 font-medium text-foreground whitespace-nowrap">
+                            {e.nombre}
+                          </td>
+                          {data.asignaturas.map((a) => {
+                            const n = e.notas[a.nombre];
+                            return (
+                              <td key={a.nombre}
+                                className={`border-r border-b border-border px-2 py-2 text-center tabular-nums font-semibold ${
+                                  n == null ? "text-muted-foreground" : aprobada(n) ? "text-emerald-700" : "text-red-600"
+                                }`}>
+                                {fmt(n)}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
