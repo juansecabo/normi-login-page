@@ -81,17 +81,27 @@ const pegarFantasmaAlDedo = ({ activatorEvent, draggingNodeRect, transform }: an
 // Nivel superior de la tabla = grupos de primer nivel + actividades sueltas,
 // INTERCALADOS por fecha de creación (lo más nuevo a la derecha). Reordenar el
 // nivel superior = cambiar la fecha_creacion (que actúa como "posición").
+// Parsea una fecha_creacion SIEMPRE como UTC, venga como "2026-06-23 06:34:52.65"
+// (sin zona, formato Postgres) o como ISO "...Z". Sin esto, Date.parse del
+// formato con espacio se interpreta como hora LOCAL y, al reescribir en UTC, la
+// fecha se corre +5h (offset Colombia) → el ítem reordenado salta al final.
+const parseFechaUTC = (f?: string): number => {
+  if (!f) return 0;
+  let s = String(f).trim().replace(' ', 'T');
+  if (!/[zZ]$|[+-]\d{2}:?\d{2}$/.test(s)) s += 'Z';
+  const t = Date.parse(s);
+  return isNaN(t) ? 0 : t;
+};
+
 type NivelSupItem<G, A> = { kind: 'grupo'; g: G } | { kind: 'suelta'; a: A };
 function nivelSuperiorOrdenado<G extends { fecha_creacion?: string }, A extends { fecha_creacion?: string }>(grupos: G[], sueltas: A[]): NivelSupItem<G, A>[] {
   const items: NivelSupItem<G, A>[] = [
     ...grupos.map(g => ({ kind: 'grupo' as const, g })),
     ...sueltas.map(a => ({ kind: 'suelta' as const, a })),
   ];
-  return items.sort((x, y) => {
-    const fx = (x.kind === 'grupo' ? x.g.fecha_creacion : x.a.fecha_creacion) || '';
-    const fy = (y.kind === 'grupo' ? y.g.fecha_creacion : y.a.fecha_creacion) || '';
-    return fx < fy ? -1 : fx > fy ? 1 : 0;
-  });
+  return items.sort((x, y) =>
+    parseFechaUTC(x.kind === 'grupo' ? x.g.fecha_creacion : x.a.fecha_creacion) -
+    parseFechaUTC(y.kind === 'grupo' ? y.g.fecha_creacion : y.a.fecha_creacion));
 }
 
 // --- Drag & drop de columnas de actividad (reubicar entre grupos / sacar afuera) ---
@@ -3510,7 +3520,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         ? items.findIndex(it => (it.kind === 'suelta' && it.a.id === anchor.id) || (it.kind === 'grupo' && it.g.id === anchor.id))
         : -1;
       const insertAt = idxAncla < 0 ? items.length : (anchor!.side === 'left' ? idxAncla : idxAncla + 1);
-      const ms = (f: string) => { const t = Date.parse(f); return isNaN(t) ? Date.now() : t; };
+      const ms = (f: string) => parseFechaUTC(f) || Date.now();
       const prevF = insertAt > 0 ? fechaDe(items[insertAt - 1]) : '';
       const nextF = insertAt < items.length ? fechaDe(items[insertAt]) : '';
       let nuevaMs: number;
@@ -3708,7 +3718,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         (target.tipo === 'suelta' && it.kind === 'suelta' && it.a.id === target.id));
       if (idxDestino < 0) return;
       const insertAt = lado === 'left' ? idxDestino : idxDestino + 1;
-      const ms = (f: string) => { const t = Date.parse(f); return isNaN(t) ? Date.now() : t; };
+      const ms = (f: string) => parseFechaUTC(f) || Date.now();
       const prevF = insertAt > 0 ? fechaDe(items[insertAt - 1]) : '';
       const nextF = insertAt < items.length ? fechaDe(items[insertAt]) : '';
       let nuevaMs: number;
