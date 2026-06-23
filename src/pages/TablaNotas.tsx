@@ -3519,12 +3519,18 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   // qué mitad de la columna esté el dedo, para mostrar la franja del lado correcto.
   const handleDragMove = (e: any) => {
     const over = e.over;
-    if (!over || !String(over.id).startsWith("col:") || !over.rect) { setDropTarget(null); return; }
+    if (!over || !String(over.id).startsWith("col:")) { setDropTarget(null); return; }
     const coords = getEventCoordinates(e.activatorEvent);
     if (!coords) { setDropTarget(null); return; }
     const pointerX = coords.x + (e.delta?.x || 0);
-    const centro = over.rect.left + over.rect.width / 2;
-    setDropTarget({ id: String(over.id).slice(4), side: pointerX < centro ? "left" : "right" });
+    const colId = String(over.id).slice(4);
+    // Medir la CELDA completa (el <th>), no el div del nombre, para que el lado
+    // (izq/der) cambie justo en el centro real de la columna.
+    const th = document.querySelector(`th[data-col="${(window as any).CSS?.escape ? CSS.escape(colId) : colId}"]`) as HTMLElement | null;
+    const rect = th ? th.getBoundingClientRect() : over.rect;
+    if (!rect) { setDropTarget(null); return; }
+    const centro = rect.left + rect.width / 2;
+    setDropTarget({ id: colId, side: pointerX < centro ? "left" : "right" });
   };
   const handleDragEnd = (e: DragEndEvent) => {
     const act = dragAct;
@@ -4234,6 +4240,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                   return sec.actividades.map((actividad) => (
                                     <th
                                       key={`th-sg-${actividad.id}`}
+                                      data-col={actividad.id}
                                       rowSpan={filasThead}
                                       className="relative border-r border-b border-emerald-600/50 p-2 text-center text-xs font-medium min-w-[120px] bg-emerald-300 text-emerald-950"
                                     >
@@ -4492,6 +4499,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                   return sub.actividades.map((actividad) => (
                                     <th
                                       key={`th-act-virt-${actividad.id}`}
+                                      data-col={actividad.id}
                                       rowSpan={2}
                                       className="relative border-r border-b border-emerald-600/50 p-2 text-center text-xs font-medium min-w-[120px] bg-emerald-300 text-emerald-950"
                                     >
@@ -4607,6 +4615,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                 return (
                                 <th
                                   key={`th-act-${actividad.id}`}
+                                  data-col={actividad.id}
                                   className="relative border-r border-b border-emerald-600/50 p-2 text-center text-xs font-medium min-w-[120px] bg-emerald-300 text-emerald-950"
                                 >
                                   <div className="flex items-center justify-center gap-1">
