@@ -4437,7 +4437,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                       className="relative border-r border-b border-emerald-600/50 p-2 text-center text-xs font-medium min-w-[120px] bg-emerald-300 text-emerald-950"
                                     >
                                       <div className="flex items-center justify-center gap-1">
-                                        <ColumnaActividadDnD id={actividad.id} disabled={soloLectura} silueta={dropTarget?.id === actividad.id ? dropTarget.side : null}>
+                                        <ColumnaActividadDnD id={actividad.id} disabled={soloLectura} silueta={dropTarget?.id === actividad.id ? dropTarget.side : (dropGroupTarget?.id === actividad.id ? dropGroupTarget.side : null)}>
                                           <div className="whitespace-nowrap" title={actividad.nombre}>
                                             {actividad.nombre}
                                           </div>
@@ -4703,7 +4703,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                       className="relative border-r border-b border-emerald-600/50 p-2 text-center text-xs font-medium min-w-[120px] bg-emerald-300 text-emerald-950"
                                     >
                                       <div className="flex items-center justify-center gap-1">
-                                        <ColumnaActividadDnD id={actividad.id} disabled={soloLectura} silueta={dropTarget?.id === actividad.id ? dropTarget.side : null}>
+                                        <ColumnaActividadDnD id={actividad.id} disabled={soloLectura} silueta={dropTarget?.id === actividad.id ? dropTarget.side : (dropGroupTarget?.id === actividad.id ? dropGroupTarget.side : null)}>
                                           <div className="whitespace-nowrap" title={actividad.nombre}>
                                             {actividad.nombre}
                                           </div>
@@ -4822,7 +4822,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                   className="relative border-r border-b border-emerald-600/50 p-2 text-center text-xs font-medium min-w-[120px] bg-emerald-300 text-emerald-950"
                                 >
                                   <div className="flex items-center justify-center gap-1">
-                                    <ColumnaActividadDnD id={actividad.id} disabled={soloLectura} silueta={dropTarget?.id === actividad.id ? dropTarget.side : null}>
+                                    <ColumnaActividadDnD id={actividad.id} disabled={soloLectura} silueta={dropTarget?.id === actividad.id ? dropTarget.side : (dropGroupTarget?.id === actividad.id ? dropGroupTarget.side : null)}>
                                       <div className="whitespace-nowrap" title={actividad.nombre}>
                                         {actividad.nombre}
                                       </div>
