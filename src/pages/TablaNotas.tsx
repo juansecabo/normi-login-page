@@ -1167,7 +1167,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         ? [salonSeleccionado, ...salonesOtros]
         : [salonSeleccionado];
       try {
-        // Aula compartida: cualquier profesor del aula puede editar la actividad.
+        // El salón ACTUAL conserva su propio grupo.
         const { error } = await supabase
           .from('Nombre de Actividades')
           .update({
@@ -1178,7 +1178,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
           .eq('ano_escolar', anoEscolarActual())
           .eq('asignatura', asignaturaSeleccionada)
           .eq('grado', gradoSeleccionado)
-          .in('salon', salonesAEditar)
+          .eq('salon', salonSeleccionado)
           .eq('periodo', actividadEditando.periodo)
           .eq('nombre_actividad', nombreAntiguo);
 
@@ -1190,6 +1190,52 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
             variant: "destructive",
           });
           return;
+        }
+
+        // Otros salones: mapear el grupo al EQUIVALENTE de cada salón (mismo
+        // nombre/padre). Sin esto se copiaría el grupo de ESTE salón a los otros
+        // y la actividad quedaría colgada de un grupo ajeno (no se vería).
+        const otrosSal = salonesAEditar.filter(s => String(s) !== String(salonSeleccionado));
+        if (otrosSal.length > 0) {
+          const grupoIdPorSalonEd: Record<string, string | null> = {};
+          if (grupoActividadId) {
+            const gOrigen = gruposNotas.find(g => g.id === grupoActividadId);
+            const nombreGrupo = gOrigen?.nombre;
+            const nombrePadre = gOrigen?.parent_id
+              ? (gruposNotas.find(g => g.id === gOrigen.parent_id)?.nombre ?? null)
+              : null;
+            const { data: gd } = await supabase
+              .from('Grupos_Notas')
+              .select('id, nombre, salon, parent_id')
+              .eq('ano_escolar', anoEscolarActual())
+              .eq('asignatura', asignaturaSeleccionada)
+              .eq('grado', gradoSeleccionado)
+              .eq('periodo', actividadEditando.periodo)
+              .in('salon', otrosSal);
+            const gruposDestino = (gd as any[]) || [];
+            for (const s of otrosSal) {
+              const delSalon = gruposDestino.filter(g => String(g.salon) === String(s));
+              const match = nombrePadre
+                ? delSalon.find(g => g.nombre === nombreGrupo && g.parent_id && delSalon.some(p => p.id === g.parent_id && p.nombre === nombrePadre))
+                : delSalon.find(g => g.nombre === nombreGrupo && !g.parent_id);
+              grupoIdPorSalonEd[s] = match ? match.id : null;
+            }
+          }
+          for (const s of otrosSal) {
+            await supabase
+              .from('Nombre de Actividades')
+              .update({
+                nombre_actividad: nombreNuevo,
+                porcentaje: porcentaje,
+                grupo_id: grupoActividadId ? (grupoIdPorSalonEd[s] ?? null) : null,
+              })
+              .eq('ano_escolar', anoEscolarActual())
+              .eq('asignatura', asignaturaSeleccionada)
+              .eq('grado', gradoSeleccionado)
+              .eq('salon', s)
+              .eq('periodo', actividadEditando.periodo)
+              .eq('nombre_actividad', nombreAntiguo);
+          }
         }
         console.log('✅ Actividad actualizada en Nombre de Actividades');
       } catch (error) {
