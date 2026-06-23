@@ -145,35 +145,56 @@ const SolicitudEntrevistaStaff = () => {
   };
 
   // Reenviar la citación al acudiente (pedido coordinadora Diana: cuando el
-  // acudiente no asiste, volver a citarlo). Reusa el mismo mensaje/envío que la
-  // creación. Vuelve el estado a "Pendiente" para que el acudiente responda de nuevo.
-  const [reenviando, setReenviando] = useState<number | null>(null);
-  const reenviarCitacion = async (s: any) => {
+  // acudiente no asiste, volver a citarlo con NUEVA fecha y hora). Abre un
+  // diálogo para reprogramar; al confirmar actualiza la solicitud, reenvía el
+  // comunicado y vuelve el estado a "Pendiente".
+  const [reSol, setReSol] = useState<any | null>(null);
+  const [reFecha, setReFecha] = useState<Date | undefined>(undefined);
+  const [reCalOpen, setReCalOpen] = useState(false);
+  const [reH, setReH] = useState(""); const [reM, setReM] = useState(""); const [reAP, setReAP] = useState("");
+  const [reenviando, setReenviando] = useState(false);
+
+  const abrirReenvio = (s: any) => {
     if (!s.estudiante_id) {
       toast({ title: "No se pudo reenviar", description: "Esta solicitud no tiene estudiante asociado; vuelve a crearla.", variant: "destructive" });
       return;
     }
-    setReenviando(s.id);
+    // Prefill con la fecha/hora actual de la solicitud.
+    setReFecha(s.fecha_entrevista ? new Date(s.fecha_entrevista + "T12:00:00") : undefined);
+    const m = String(s.hora_entrevista || "").match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+    setReH(m?.[1] || ""); setReM(m?.[2] || ""); setReAP((m?.[3] || "").toUpperCase());
+    setReSol(s);
+  };
+
+  const confirmarReenvio = async () => {
+    if (!reSol || !reFecha || !reH || !reM || !reAP) return;
+    setReenviando(true);
     try {
-      const fechaTexto = new Date(s.fecha_entrevista + "T12:00:00").toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-      const conNombre = entrevistadoresDeSolicitud(s, "el/la ");
-      const mensaje = `Se le recuerda que se ha solicitado una entrevista para el acudiente del estudiante ${s.estudiante_nombre} ${s.estudiante_apellidos} de ${s.estudiante_grado} ${s.estudiante_salon}.\n\nFecha: ${fechaTexto}\nHora: ${s.hora_entrevista}\nCon: ${conNombre}\n\nPor favor ingrese a notasnormi.com y en el inicio haga click en la ficha "Solicitud de Entrevista", busque el día indicado, haga click sobre la citación y confirme su asistencia.`;
+      const fmtLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const nuevaFechaISO = fmtLocal(reFecha);
+      const nuevaHora = `${reH}:${reM} ${reAP}`;
+      const fechaTexto = reFecha.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+      const conNombre = entrevistadoresDeSolicitud(reSol, "el/la ");
+      const mensaje = `Se le informa que se ha REPROGRAMADO la entrevista para el acudiente del estudiante ${reSol.estudiante_nombre} ${reSol.estudiante_apellidos} de ${reSol.estudiante_grado} ${reSol.estudiante_salon}.\n\nNueva fecha: ${fechaTexto}\nNueva hora: ${nuevaHora}\nCon: ${conNombre}\n\nPor favor ingrese a notasnormi.com y en el inicio haga click en la ficha "Solicitud de Entrevista", busque el día indicado, haga click sobre la citación y confirme su asistencia.`;
       await apiRequest('/api/comunicados/enviar', {
         method: 'POST',
         body: JSON.stringify({
-          destinatarios_label: `Acudiente del estudiante con id ${s.estudiante_id}`,
+          destinatarios_label: `Acudiente del estudiante con id ${reSol.estudiante_id}`,
           mensaje,
-          segmentos: [{ perfil: ["Acudientes"], id_destinatarios: [String(s.estudiante_id)] }],
+          segmentos: [{ perfil: ["Acudientes"], id_destinatarios: [String(reSol.estudiante_id)] }],
         }),
       });
-      // Reabrir la confirmación: vuelve a "Pendiente".
-      await supabase.from("Solicitudes_Entrevista").update({ confirmado: null, respuesta_vista: true }).eq("id", s.id);
-      setHistorial(prev => prev.map(x => x.id === s.id ? { ...x, confirmado: null } : x));
-      toast({ title: "Citación reenviada", description: "Se notificó nuevamente al acudiente." });
+      // Actualiza fecha/hora y reabre la confirmación (vuelve a "Pendiente").
+      await supabase.from("Solicitudes_Entrevista")
+        .update({ fecha_entrevista: nuevaFechaISO, hora_entrevista: nuevaHora, confirmado: null, respuesta_vista: true })
+        .eq("id", reSol.id);
+      setHistorial(prev => prev.map(x => x.id === reSol.id ? { ...x, fecha_entrevista: nuevaFechaISO, hora_entrevista: nuevaHora, confirmado: null } : x));
+      toast({ title: "Citación reenviada", description: "Se reprogramó y se notificó nuevamente al acudiente." });
+      setReSol(null);
     } catch (e: any) {
       toast({ title: "Error al reenviar", description: e?.message || "Intenta de nuevo.", variant: "destructive" });
     } finally {
-      setReenviando(null);
+      setReenviando(false);
     }
   };
 
@@ -467,14 +488,13 @@ const SolicitudEntrevistaStaff = () => {
                           {s.confirmado === false && (
                             <div className="border-t border-border pt-3 mt-1">
                               <button
-                                onClick={() => reenviarCitacion(s)}
-                                disabled={reenviando === s.id}
-                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 disabled:opacity-60 cursor-pointer"
+                                onClick={() => abrirReenvio(s)}
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 cursor-pointer"
                               >
-                                <RefreshCw className={`w-4 h-4 ${reenviando === s.id ? "animate-spin" : ""}`} />
-                                {reenviando === s.id ? "Reenviando…" : "Reenviar citación"}
+                                <RefreshCw className="w-4 h-4" />
+                                Reenviar citación
                               </button>
-                              <p className="text-xs text-muted-foreground mt-2">El acudiente recibe de nuevo la citación y vuelve a quedar "Pendiente".</p>
+                              <p className="text-xs text-muted-foreground mt-2">Eliges una nueva fecha y hora; el acudiente recibe de nuevo la citación y vuelve a quedar "Pendiente".</p>
                             </div>
                           )}
                         </div>
@@ -497,6 +517,61 @@ const SolicitudEntrevistaStaff = () => {
           <AlertDialogFooter>
             <AlertDialogCancel className="cursor-pointer">Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleCrear} className="cursor-pointer">{saving ? "Creando..." : "Sí, solicitar"}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reenviar citación con nueva fecha y hora */}
+      <AlertDialog open={!!reSol} onOpenChange={(o) => { if (!o) setReSol(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reenviar citación</AlertDialogTitle>
+            <AlertDialogDescription>
+              {reSol && <>Elige la nueva fecha y hora para la entrevista del acudiente de <span className="font-medium text-foreground">{reSol.estudiante_nombre} {reSol.estudiante_apellidos}</span>.</>}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="space-y-4 py-1">
+            <div>
+              <p className="text-sm font-medium mb-1">Nueva fecha:</p>
+              <Popover open={reCalOpen} onOpenChange={setReCalOpen}>
+                <PopoverTrigger asChild>
+                  <button className="inline-flex items-center gap-1 px-3 py-1.5 border-b-2 border-primary/40 text-primary font-medium bg-transparent hover:bg-accent rounded cursor-pointer min-w-[200px]">
+                    {reFecha ? reFecha.toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" }) : "Seleccionar fecha"}
+                    <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={reFecha} onSelect={(d) => { setReFecha(d); setReCalOpen(false); }} locale={es} disabled={(d) => d < new Date()} />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div>
+              <p className="text-sm font-medium mb-1">Nueva hora:</p>
+              <div className="flex items-center gap-1">
+                <select value={reH} onChange={e => setReH(e.target.value)} className="px-1 py-1 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm cursor-pointer outline-none">
+                  <option value="">--</option>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map(h => <option key={h} value={String(h)}>{h}</option>)}
+                </select>
+                <span>:</span>
+                <select value={reM} onChange={e => setReM(e.target.value)} className="px-1 py-1 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm cursor-pointer outline-none">
+                  <option value="">--</option>
+                  {["00","05","10","15","20","25","30","35","40","45","50","55"].map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+                <select value={reAP} onChange={e => setReAP(e.target.value)} className="px-1 py-1 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm cursor-pointer outline-none">
+                  <option value="">--</option>
+                  <option value="AM">AM</option>
+                  <option value="PM">PM</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel className="cursor-pointer" disabled={reenviando}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); confirmarReenvio(); }} disabled={reenviando || !reFecha || !reH || !reM || !reAP} className="cursor-pointer">
+              {reenviando ? "Reenviando…" : "Reenviar citación"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
