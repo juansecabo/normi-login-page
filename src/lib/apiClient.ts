@@ -341,6 +341,14 @@ export interface ApiMeta {
   asignaciones_expandidas: { asignatura: string; grado: string; salon: string }[];
 }
 
+export interface ApiConsolidadoGrupo {
+  grado: string;
+  salon: string;
+  periodo: number;
+  asignaturas: { nombre: string; completo: boolean }[];
+  estudiantes: { id: string; nombre: string; notas: Record<string, number> }[];
+}
+
 export type AsistenciaEstado = 'presente' | 'ausente' | 'excusa';
 
 export interface AsistenciaRosterItem {
@@ -725,6 +733,9 @@ export const apiClient = {
     },
     riesgo(periodo: number | 'anual', umbral?: number, grado?: string, salon?: string, asignatura?: string): Promise<ApiRiesgo> {
       return request<ApiRiesgo>(`/api/estadisticas/riesgo${qs({ periodo, umbral, grado, salon, asignatura })}`);
+    },
+    consolidadoGrupo(grado: string, salon: string, periodo: number): Promise<ApiConsolidadoGrupo> {
+      return request<ApiConsolidadoGrupo>(`/api/consolidado-grupo${qs({ grado, salon, periodo })}`);
     },
   },
 };

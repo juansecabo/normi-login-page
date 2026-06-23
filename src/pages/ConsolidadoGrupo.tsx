@@ -1,147 +1,183 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession } from "@/hooks/useSession";
+import { apiClient, type ApiConsolidadoGrupo } from "@/lib/apiClient";
+import { useColegioConfig } from "@/hooks/useColegioConfig";
 import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNormi";
-import ConsolidadoNotas from "@/components/ConsolidadoNotas";
-import ConsolidadoNotasPreescolar from "@/components/ConsolidadoNotasPreescolar";
-import { Search, Users, ChevronLeft } from "lucide-react";
+import { Users, ChevronLeft } from "lucide-react";
 
-type Est = { id: string; grado: string; salon: string | null; nombres: string; apellidos: string };
-
-const GRADOS_PREESCOLAR = new Set(["Párvulo", "Prejardín", "Jardín", "Transición"]);
+const PERIODOS = [1, 2, 3, 4] as const;
+const ORDINAL: Record<number, string> = { 1: "Primer", 2: "Segundo", 3: "Tercer", 4: "Cuarto" };
 
 /**
- * "Consolidado de mi grupo": el director de grupo ve, en solo lectura, las notas
- * de todos los estudiantes de su grupo (todas las asignaturas). Reusa el mismo
- * consolidado que ven estudiantes/acudientes. Los alumnos se cargan por
- * Internos.direccion_de_grupo (no por asignación de clase).
+ * "Consolidado de mi grupo": el director de grupo elige un periodo y ve UNA sola
+ * rejilla (tipo Excel) — filas = estudiantes (orden alfabético), columnas =
+ * asignaturas (orden alfabético), celda = definitiva del periodo. Si el periodo
+ * de una asignatura no está cerrado, debajo del nombre dice "(provisional)".
+ * El cálculo lo hace el server (/api/consolidado-grupo) reusando el mismo motor
+ * de notas; el grupo se resuelve por Internos.direccion_de_grupo.
  */
 const ConsolidadoGrupo = () => {
   const navigate = useNavigate();
+  const { config } = useColegioConfig();
   const [dirGrupo, setDirGrupo] = useState<string | null>(null);
-  const [ests, setEsts] = useState<Est[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filtro, setFiltro] = useState("");
-  const [sel, setSel] = useState<Est | null>(null);
+  const [grado, setGrado] = useState<string | null>(null);
+  const [salon, setSalon] = useState<string | null>(null);
+  const [loadingDg, setLoadingDg] = useState(true);
+
+  const [periodo, setPeriodo] = useState<number | null>(null);
+  const [data, setData] = useState<ApiConsolidadoGrupo | null>(null);
+  const [loadingData, setLoadingData] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const session = getSession();
     if (!session.id) { navigate("/"); return; }
-
-    const cargar = async () => {
-      setLoading(true);
+    (async () => {
+      setLoadingDg(true);
       const { data: interno } = await supabase
-        .from("Internos")
-        .select("direccion_de_grupo")
-        .eq("id", parseInt(session.id!))
-        .maybeSingle();
+        .from("Internos").select("direccion_de_grupo")
+        .eq("id", parseInt(session.id!)).maybeSingle();
       const dg = ((interno as { direccion_de_grupo?: string } | null)?.direccion_de_grupo || "").trim() || null;
       setDirGrupo(dg);
-      if (!dg) { setEsts([]); setLoading(false); return; }
-
-      const parts = dg.split(/\s+/);
-      const last = parts[parts.length - 1];
-      let grado = dg;
-      let salon: string | null = null;
-      if (parts.length > 1 && /^\d+$/.test(last)) { grado = parts.slice(0, -1).join(" "); salon = last; }
-
-      let q = supabase.from("Estudiantes").select("id, grado, salon").eq("grado", grado);
-      if (salon) q = q.eq("salon", salon);
-      const { data } = await q;
-      const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
-      const enriched = sortByApellidosNombres(await enrichWithNombres((data || []) as Array<{ id: string | number }>));
-      setEsts(enriched.map((e: any) => ({
-        id: String(e.id),
-        grado: e.grado,
-        salon: e.salon ?? null,
-        nombres: e.nombres || "",
-        apellidos: e.apellidos || "",
-      })));
-      setLoading(false);
-    };
-    cargar();
+      if (dg) {
+        const parts = dg.split(/\s+/);
+        const last = parts[parts.length - 1];
+        if (parts.length > 1 && /^\d+$/.test(last)) {
+          setGrado(parts.slice(0, -1).join(" ")); setSalon(last);
+        } else { setGrado(dg); setSalon(null); }
+      }
+      setLoadingDg(false);
+    })();
   }, [navigate]);
 
-  const visibles = useMemo(() => {
-    const f = filtro.trim().toLowerCase();
-    if (!f) return ests;
-    return ests.filter((e) => `${e.apellidos} ${e.nombres}`.toLowerCase().includes(f));
-  }, [ests, filtro]);
+  useEffect(() => {
+    if (periodo == null || !grado || !salon) return;
+    let cancel = false;
+    setLoadingData(true); setError(null); setData(null);
+    apiClient.estadisticas.consolidadoGrupo(grado, salon, periodo)
+      .then((d) => { if (!cancel) setData(d); })
+      .catch((e) => { if (!cancel) setError(e?.message || "No se pudo cargar el consolidado."); })
+      .finally(() => { if (!cancel) setLoadingData(false); });
+    return () => { cancel = true; };
+  }, [periodo, grado, salon]);
 
-  const esPreescolar = sel ? GRADOS_PREESCOLAR.has(sel.grado) : false;
+  const fmt = (n: number | undefined) =>
+    n == null ? "—" : n.toFixed(config.decimales);
+  const aprobada = (n: number | undefined) =>
+    n != null && n >= config.nota_aprobatoria;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <HeaderNormi />
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm">
+          <div className="flex flex-wrap items-center gap-2 text-sm">
             <button onClick={() => navigate(computeBackLinkFromSession())} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             <button onClick={() => navigate("/direccion-grupo")} className="text-primary hover:underline">Dirección de grupo</button>
             <span className="text-muted-foreground">&rarr;</span>
-            {sel ? (
-              <>
-                <button onClick={() => setSel(null)} className="text-primary hover:underline">Consolidado de mi grupo</button>
-                <span className="text-muted-foreground">&rarr;</span>
-                <span className="text-foreground font-medium">{sel.apellidos} {sel.nombres}</span>
-              </>
-            ) : (
+            {periodo == null ? (
               <span className="text-foreground font-medium">Consolidado de mi grupo</span>
+            ) : (
+              <>
+                <button onClick={() => setPeriodo(null)} className="text-primary hover:underline">Consolidado de mi grupo</button>
+                <span className="text-muted-foreground">&rarr;</span>
+                <span className="text-foreground font-medium">{ORDINAL[periodo]} periodo</span>
+              </>
             )}
           </div>
         </div>
 
-        <div className="max-w-5xl mx-auto">
-          {loading ? (
-            <p className="text-center text-muted-foreground py-10">Cargando…</p>
-          ) : !dirGrupo ? (
-            <div className="text-center text-muted-foreground py-10 flex flex-col items-center gap-2">
-              <Users className="w-8 h-8 opacity-40" />
-              No eres director de grupo de ningún salón.
+        {loadingDg ? (
+          <p className="text-center text-muted-foreground py-10">Cargando…</p>
+        ) : !dirGrupo ? (
+          <div className="text-center text-muted-foreground py-10 flex flex-col items-center gap-2">
+            <Users className="w-8 h-8 opacity-40" />
+            No eres director de grupo de ningún salón.
+          </div>
+        ) : periodo == null ? (
+          /* ── Selector de periodo ─────────────────────────────── */
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-2xl font-bold text-foreground mb-1 text-center">Consolidado de mi grupo</h2>
+            <p className="text-sm text-muted-foreground mb-1 text-center">
+              <span className="inline-flex items-center gap-1.5 font-semibold text-primary">
+                <Users className="w-4 h-4" /> {dirGrupo}
+              </span>
+            </p>
+            <p className="text-sm text-muted-foreground mb-6 text-center">Elige un periodo para ver las definitivas de tus estudiantes.</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {PERIODOS.map((p) => (
+                <button key={p} onClick={() => setPeriodo(p)}
+                  className="flex flex-col items-center justify-center gap-2 p-6 rounded-lg border-2 border-border bg-card transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/5">
+                  <span className="text-3xl font-bold text-primary">{p}º</span>
+                  <span className="text-sm font-medium text-foreground">{ORDINAL[p]} periodo</span>
+                </button>
+              ))}
             </div>
-          ) : sel ? (
-            <div>
-              <button onClick={() => setSel(null)} className="mb-4 inline-flex items-center gap-1 text-sm text-primary hover:underline">
-                <ChevronLeft className="w-4 h-4" /> Volver al grupo
-              </button>
-              {esPreescolar ? (
-                <ConsolidadoNotasPreescolar idEstudiante={sel.id} nombreEstudiante={sel.nombres} apellidosEstudiante={sel.apellidos} grado={sel.grado} salon={sel.salon || ""} />
-              ) : (
-                <ConsolidadoNotas idEstudiante={sel.id} nombreEstudiante={sel.nombres} apellidosEstudiante={sel.apellidos} grado={sel.grado} salon={sel.salon || ""} />
-              )}
-            </div>
-          ) : (
-            <>
-              <h2 className="text-2xl font-bold text-foreground mb-1 text-center">Consolidado de mi grupo</h2>
-              <p className="text-sm text-muted-foreground mb-5 text-center">Toca un estudiante para ver sus notas de todas las asignaturas.</p>
-              <div className="flex items-center justify-between gap-2 flex-wrap mb-4">
-                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-semibold">
-                  <Users className="w-4 h-4" /> {dirGrupo}
-                </span>
-                <div className="relative">
-                  <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <input value={filtro} onChange={(e) => setFiltro(e.target.value)} placeholder="Buscar estudiante…"
-                    className="pl-8 pr-3 py-1.5 rounded-lg border border-border bg-background text-sm w-52" />
-                </div>
+          </div>
+        ) : (
+          /* ── Rejilla del periodo ─────────────────────────────── */
+          <div>
+            <button onClick={() => setPeriodo(null)} className="mb-4 inline-flex items-center gap-1 text-sm text-primary hover:underline">
+              <ChevronLeft className="w-4 h-4" /> Elegir otro periodo
+            </button>
+            <h2 className="text-xl font-bold text-foreground mb-4 text-center">
+              {ORDINAL[periodo]} periodo · {dirGrupo}
+            </h2>
+
+            {loadingData ? (
+              <p className="text-center text-muted-foreground py-10">Cargando notas…</p>
+            ) : error ? (
+              <p className="text-center text-destructive py-10">{error}</p>
+            ) : !data || data.estudiantes.length === 0 ? (
+              <p className="text-center text-muted-foreground py-10">No hay estudiantes en este grupo.</p>
+            ) : data.asignaturas.length === 0 ? (
+              <p className="text-center text-muted-foreground py-10">No hay notas registradas en este periodo.</p>
+            ) : (
+              <div className="overflow-x-auto rounded-lg border border-border shadow-soft">
+                <table className="border-collapse text-sm">
+                  <thead>
+                    <tr className="bg-muted/60">
+                      <th className="sticky left-0 z-10 bg-muted/60 border-r border-b border-border px-3 py-2 text-left font-semibold text-foreground min-w-[200px]">
+                        Estudiante
+                      </th>
+                      {data.asignaturas.map((a) => (
+                        <th key={a.nombre} className="border-r border-b border-border px-2 py-2 text-center font-semibold text-foreground align-bottom min-w-[90px] max-w-[120px]">
+                          <div className="leading-tight break-words">{a.nombre}</div>
+                          {!a.completo && (
+                            <div className="text-[10px] font-normal italic text-amber-600 mt-0.5">(provisional)</div>
+                          )}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.estudiantes.map((e, i) => (
+                      <tr key={e.id} className={i % 2 ? "bg-background" : "bg-muted/20"}>
+                        <td className={`sticky left-0 z-10 border-r border-b border-border px-3 py-2 font-medium text-foreground whitespace-nowrap ${i % 2 ? "bg-background" : "bg-muted/20"}`}>
+                          {e.nombre}
+                        </td>
+                        {data.asignaturas.map((a) => {
+                          const n = e.notas[a.nombre];
+                          return (
+                            <td key={a.nombre}
+                              className={`border-r border-b border-border px-2 py-2 text-center tabular-nums font-semibold ${
+                                n == null ? "text-muted-foreground" : aprobada(n) ? "text-emerald-700" : "text-red-600"
+                              }`}>
+                              {fmt(n)}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              {visibles.length === 0 ? (
-                <p className="text-center text-muted-foreground py-10">No hay estudiantes en este grupo.</p>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {visibles.map((e) => (
-                    <button key={e.id} onClick={() => setSel(e)}
-                      className="bg-card rounded-lg shadow-sm border border-border px-4 py-3 text-left hover:shadow-md hover:border-primary transition">
-                      <p className="font-semibold text-foreground">{e.apellidos} {e.nombres}</p>
-                      <p className="text-xs text-muted-foreground">{e.grado} {e.salon || ""}</p>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </main>
     </div>
   );
