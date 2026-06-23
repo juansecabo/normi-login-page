@@ -155,6 +155,7 @@ interface Actividad {
   nombre: string;
   porcentaje: number | null;
   grupo_id?: string | null;
+  orden?: number;
 }
 
 // Estructura: { [id_estudiantil]: { [periodo]: { [actividad_id]: nota } } }
@@ -498,6 +499,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
             nombre: act.nombre_actividad,
             porcentaje: act.porcentaje,
             grupo_id: act.grupo_id ?? null,
+            orden: act.orden ?? 0,
           }));
           setActividades(actividadesCargadas);
           console.log("Actividades cargadas:", actividadesCargadas);
@@ -678,7 +680,11 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
    *        - Si no tiene subgrupos: actividades del grupo directamente
    */
   const getActividadesPorPeriodo = (periodo: number) => {
-    const acts = actividades.filter(a => a.periodo === periodo);
+    // Orden de columnas dentro de cada grupo/sueltas = campo `orden` (lo que el
+    // profe define arrastrando). Tiebreak estable por nombre.
+    const acts = actividades
+      .filter(a => a.periodo === periodo)
+      .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0) || a.nombre.localeCompare(b.nombre));
     const gruposPeriodo = gruposNotas.filter(g => g.periodo === periodo);
     if (gruposPeriodo.length === 0) return acts;
 
@@ -709,7 +715,9 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
    * El componente decide colSpan / rowSpan según haya o no subgrupos.
    */
   const getEstructuraThead = (periodo: number) => {
-    const acts = actividades.filter(a => a.periodo === periodo);
+    const acts = actividades
+      .filter(a => a.periodo === periodo)
+      .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0) || a.nombre.localeCompare(b.nombre));
     const gruposPeriodo = gruposNotas.filter(g => g.periodo === periodo);
     const hayJerarquia = gruposPeriodo.length > 0;
     if (!hayJerarquia) return { hayJerarquia: false as const, secciones: [] as any[], necesitaFila2: false };
@@ -3418,53 +3426,83 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     useSensor(TouchSensor, { activationConstraint: { delay: 350, tolerance: 8 } }),
   );
 
-  const moverActividad = async (actividad: Actividad, destinoGrupoId: string | null) => {
+  /**
+   * Reubica/reordena una actividad arrastrando (solo el salón abierto):
+   *  - destinoGrupoId: grupo/subgrupo destino (null = suelta).
+   *  - antesDeActId: la deja JUSTO ANTES de esa actividad; null = al final del grupo.
+   * Si cambia de grupo, hereda el grupo (y pierde % individual) en Nombre de
+   * Actividades + Notas. Recalcula y guarda `orden` de todas las del grupo destino.
+   */
+  const reubicarActividad = async (actividad: Actividad, destinoGrupoId: string | null, antesDeActId: string | null) => {
     if (soloLectura) return;
-    const actual = (actividad as any).grupo_id ?? null;
-    if (actual === destinoGrupoId) return; // ya está ahí
-    // No permitir soltar en un grupo que tiene subgrupos (debe ir en un subgrupo-hoja).
+    // No soltar en un grupo que tiene subgrupos (debe ir en un subgrupo-hoja).
     if (destinoGrupoId && gruposNotas.some(g => g.parent_id === destinoGrupoId)) {
       toast({ title: "No se puede soltar ahí", description: "Ese grupo tiene subgrupos. Suelta la actividad dentro de un subgrupo.", variant: "destructive" });
       return;
     }
+    if (antesDeActId === actividad.id) return; // soltada sobre sí misma
+
+    const cambioGrupo = ((actividad as any).grupo_id ?? null) !== destinoGrupoId;
+
+    // Lista del grupo destino (sin la actividad arrastrada), ordenada, e insertamos.
+    const enDestino = actividades
+      .filter(a => a.periodo === actividad.periodo && ((a.grupo_id ?? null) === destinoGrupoId) && a.id !== actividad.id)
+      .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0) || a.nombre.localeCompare(b.nombre));
+    const idxAntes = antesDeActId ? enDestino.findIndex(a => a.id === antesDeActId) : -1;
+    const insertAt = idxAntes >= 0 ? idxAntes : enDestino.length;
+    const nuevoOrdenIds = [
+      ...enDestino.slice(0, insertAt).map(a => a.id),
+      actividad.id,
+      ...enDestino.slice(insertAt).map(a => a.id),
+    ];
+
+    // Si no cambió grupo y la posición es la misma, no hacemos nada.
+    if (!cambioGrupo) {
+      const actualIds = [actividad, ...enDestino]
+        .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0) || a.nombre.localeCompare(b.nombre))
+        .map(a => a.id);
+      if (JSON.stringify(actualIds) === JSON.stringify(nuevoOrdenIds)) return;
+    }
+
     try {
-      const baseMatch = {
+      const matchDe = (nombre: string) => ({
         ano_escolar: anoEscolarActual(),
         asignatura: asignaturaSeleccionada,
         grado: gradoSeleccionado,
         salon: salonSeleccionado,
         periodo: actividad.periodo,
-        nombre_actividad: actividad.nombre,
-      };
-      const { error: e1 } = await supabase
-        .from('Nombre de Actividades')
-        .update({ grupo_id: destinoGrupoId, porcentaje: null })
-        .match(baseMatch);
-      if (e1) {
-        toast({ title: "Error", description: "No se pudo mover la actividad.", variant: "destructive" });
-        return;
-      }
-      // Las notas ya puestas heredan el grupo (y pierden el % individual).
-      await supabase
-        .from('Notas')
-        .update({ grupo_id: destinoGrupoId, porcentaje: null })
-        .match(baseMatch);
-
-      // Estado local: refleja el cambio al instante (las columnas se reorganizan).
-      setActividades(prev => prev.map(a =>
-        a.id === actividad.id && a.periodo === actividad.periodo
-          ? { ...a, grupo_id: destinoGrupoId, porcentaje: null }
-          : a
-      ));
-      const destinoNombre = destinoGrupoId
-        ? (gruposNotas.find(g => g.id === destinoGrupoId)?.nombre || "el grupo")
-        : null;
-      toast({
-        title: "Actividad movida",
-        description: destinoNombre
-          ? `"${actividad.nombre}" ahora está en "${destinoNombre}" (sin porcentaje propio).`
-          : `"${actividad.nombre}" quedó suelta (sin porcentaje).`,
+        nombre_actividad: nombre,
       });
+      if (cambioGrupo) {
+        const { error: e1 } = await supabase
+          .from('Nombre de Actividades')
+          .update({ grupo_id: destinoGrupoId, porcentaje: null })
+          .match(matchDe(actividad.nombre));
+        if (e1) {
+          toast({ title: "Error", description: "No se pudo mover la actividad.", variant: "destructive" });
+          return;
+        }
+        await supabase.from('Notas').update({ grupo_id: destinoGrupoId, porcentaje: null }).match(matchDe(actividad.nombre));
+      }
+      // Guardar el nuevo orden de todas las del grupo destino.
+      const nombrePorId = new Map(actividades.map(a => [a.id, a.nombre]));
+      for (let i = 0; i < nuevoOrdenIds.length; i++) {
+        const nombre = nombrePorId.get(nuevoOrdenIds[i]) || (nuevoOrdenIds[i] === actividad.id ? actividad.nombre : null);
+        if (!nombre) continue;
+        await supabase.from('Nombre de Actividades').update({ orden: i }).match(matchDe(nombre));
+      }
+
+      // Estado local: aplica grupo + nuevo orden al instante.
+      const ordenPorId = new Map(nuevoOrdenIds.map((id, i) => [id, i]));
+      setActividades(prev => prev.map(a => {
+        const cambios: Partial<Actividad> = {};
+        if (ordenPorId.has(a.id)) cambios.orden = ordenPorId.get(a.id);
+        if (a.id === actividad.id) {
+          cambios.grupo_id = destinoGrupoId;
+          if (cambioGrupo) cambios.porcentaje = null;
+        }
+        return Object.keys(cambios).length ? { ...a, ...cambios } : a;
+      }));
     } catch {
       toast({ title: "Error", description: "Error de conexión al mover la actividad.", variant: "destructive" });
     }
@@ -3481,17 +3519,17 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     if (!act || !e.over) return;
     const overId = String(e.over.id);
     if (overId === "loose") {
-      moverActividad(act, null);
+      reubicarActividad(act, null, null); // al final de las sueltas
     } else if (overId.startsWith("grp:")) {
-      moverActividad(act, overId.slice(4));
+      reubicarActividad(act, overId.slice(4), null); // al final del grupo
     } else if (overId.startsWith("col:")) {
-      // Soltada AL LADO de otra actividad: adopta el grupo de esa actividad
-      // (o queda suelta si esa otra también es suelta).
+      // Soltada AL LADO de otra actividad: queda en el grupo de esa actividad,
+      // JUSTO ANTES de ella (la franja marca ese punto). Reordena dentro del grupo.
       const targetId = overId.slice(4);
       const target =
         actividades.find(a => a.id === targetId && a.periodo === periodoActivo) ||
         actividades.find(a => a.id === targetId);
-      if (target) moverActividad(act, (target as any).grupo_id ?? null);
+      if (target) reubicarActividad(act, (target as any).grupo_id ?? null, target.id);
     }
   };
 
