@@ -96,10 +96,11 @@ const ColumnaActividadDnD = ({ id, disabled, children }: { id: string; disabled?
       {...(disabled ? {} : drag.attributes)}
       {...(disabled ? {} : drag.listeners)}
       style={{ touchAction: disabled ? undefined : "none" }}
-      className={`relative flex-1 min-w-0 ${disabled ? "" : "cursor-grab active:cursor-grabbing"} ${drag.isDragging ? "opacity-30" : ""}`}
+      className={`relative flex-1 min-w-0 rounded transition-colors ${disabled ? "" : "cursor-grab active:cursor-grabbing"} ${drag.isDragging ? "opacity-30" : ""} ${marcarSilueta ? "ring-4 ring-amber-400 bg-amber-200/60" : ""}`}
     >
+      {/* Indicador grande de dónde va a caer: barra gruesa + tinte de la columna. */}
       {marcarSilueta && (
-        <div className="absolute -left-2 top-0 bottom-0 w-1.5 bg-amber-500 rounded z-10 pointer-events-none" />
+        <div className="absolute -left-2.5 -top-2 -bottom-2 w-3 bg-amber-500 rounded z-20 pointer-events-none shadow-lg" />
       )}
       {children}
     </div>
@@ -4905,9 +4906,9 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               </table>
               <DragOverlay dropAnimation={null}>
                 {dragAct ? (
-                  <div className="w-[130px] px-2 py-3 bg-emerald-300 text-emerald-950 text-xs font-medium text-center shadow-2xl ring-2 ring-emerald-600 truncate" title={dragAct.nombre}>
-                    {dragAct.nombre}
-                  </div>
+                  // Fantasma translúcido SIN texto: deja ver la tabla debajo para
+                  // ubicar bien dónde va a caer la columna.
+                  <div className="w-[130px] h-16 rounded-md bg-emerald-400/30 border-2 border-dashed border-emerald-700 shadow-2xl" />
                 ) : null}
               </DragOverlay>
               </DndContext>
