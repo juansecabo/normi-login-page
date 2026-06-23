@@ -3477,14 +3477,14 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
    * Si cambia de grupo, hereda el grupo (y pierde % individual) en Nombre de
    * Actividades + Notas. Recalcula y guarda `orden` de todas las del grupo destino.
    */
-  const reubicarActividad = async (actividad: Actividad, destinoGrupoId: string | null, anchor: { id: string; side: 'left' | 'right' } | null) => {
+  const reubicarActividad = async (actividad: Actividad, destinoGrupoId: string | null, antesDeActId: string | null) => {
     if (soloLectura) return;
     // No soltar en un grupo que tiene subgrupos (debe ir en un subgrupo-hoja).
     if (destinoGrupoId && gruposNotas.some(g => g.parent_id === destinoGrupoId)) {
       toast({ title: "No se puede soltar ahí", description: "Ese grupo tiene subgrupos. Suelta la actividad dentro de un subgrupo.", variant: "destructive" });
       return;
     }
-    if (anchor?.id === actividad.id) return; // soltada sobre sí misma
+    if (antesDeActId === actividad.id) return; // soltada sobre sí misma
 
     const matchDe = (nombre: string) => ({
       ano_escolar: anoEscolarActual(),
@@ -3504,12 +3504,8 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
       const topLoose = actividades.filter(a => a.periodo === periodo && !a.grupo_id && a.id !== actividad.id);
       const items = nivelSuperiorOrdenado(topGroups, topLoose);
       const fechaDe = (it: typeof items[number]) => (it.kind === 'grupo' ? (it.g as any).fecha_creacion : it.a.fecha_creacion) || '';
-      // El ancla puede ser una suelta O un grupo (la franja apunta a cualquiera
-      // del nivel superior). Posicionamos antes (left) o después (right) de él.
-      const idxAncla = anchor
-        ? items.findIndex(it => (it.kind === 'suelta' && it.a.id === anchor.id) || (it.kind === 'grupo' && it.g.id === anchor.id))
-        : -1;
-      const insertAt = idxAncla < 0 ? items.length : (anchor!.side === 'left' ? idxAncla : idxAncla + 1);
+      const idxAntes = antesDeActId ? items.findIndex(it => it.kind === 'suelta' && it.a.id === antesDeActId) : -1;
+      const insertAt = idxAntes >= 0 ? idxAntes : items.length;
       const ms = (f: string) => { const t = Date.parse(f); return isNaN(t) ? Date.now() : t; };
       const prevF = insertAt > 0 ? fechaDe(items[insertAt - 1]) : '';
       const nextF = insertAt < items.length ? fechaDe(items[insertAt]) : '';
@@ -3541,8 +3537,8 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     const enDestino = actividades
       .filter(a => a.periodo === actividad.periodo && ((a.grupo_id ?? null) === destinoGrupoId) && a.id !== actividad.id)
       .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0) || a.nombre.localeCompare(b.nombre));
-    const idxAncla = anchor ? enDestino.findIndex(a => a.id === anchor.id) : -1;
-    const insertAt = idxAncla < 0 ? enDestino.length : (anchor!.side === 'left' ? idxAncla : idxAncla + 1);
+    const idxAntes = antesDeActId ? enDestino.findIndex(a => a.id === antesDeActId) : -1;
+    const insertAt = idxAntes >= 0 ? idxAntes : enDestino.length;
     const nuevoOrdenIds = [
       ...enDestino.slice(0, insertAt).map(a => a.id),
       actividad.id,
@@ -3678,9 +3674,16 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
       if (!tAct) return;
       const grupo = (tAct as any).grupo_id ?? null;
       const lado = target?.id === targetId ? target.side : "left";
-      // Cae en el grupo de la actividad destino (o suelta), justo antes (left) o
-      // después (right) de ella. reubicarActividad calcula la posición exacta.
-      reubicarActividad(act, grupo, { id: targetId, side: lado });
+      if (lado === "left") {
+        reubicarActividad(act, grupo, targetId);
+      } else {
+        const enGrupo = actividades
+          .filter(a => a.periodo === act.periodo && ((a.grupo_id ?? null) === grupo) && a.id !== act.id)
+          .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0) || a.nombre.localeCompare(b.nombre));
+        const tIdx = enGrupo.findIndex(a => a.id === targetId);
+        const siguiente = tIdx >= 0 ? (enGrupo[tIdx + 1]?.id ?? null) : null;
+        reubicarActividad(act, grupo, siguiente);
+      }
     }
   };
 
