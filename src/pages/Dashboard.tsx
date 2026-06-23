@@ -15,6 +15,7 @@ import iconConsultas from "@/assets/icons/consultas.png";
 import iconRegistros from "@/assets/icons/registros-comportamiento.png";
 import iconAsistencia from "@/assets/icons/asistencia.webp";
 import iconFotosGrupo from "@/assets/icons/fotos-grupo.webp";
+import { Users } from "lucide-react";
 import { getSession, isProfesor, isAdmin, isRectorOrCoordinador, isEstudiante, isPadreDeFamilia } from "@/hooks/useSession";
 import { usePendientesFirma } from "@/hooks/usePendientesFirma";
 import HeaderNormi from "@/components/HeaderNormi";
@@ -266,15 +267,10 @@ const Dashboard = () => {
         <span className="font-semibold text-foreground text-center">Asistencia</span>
       </button>
     ) },
-    ...(esDirectorGrupo ? [{ id: 'mi-grupo', render: (
-      <button onClick={() => navigate("/mi-grupo")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-lime-100 transition-all duration-200 hover:shadow-md hover:bg-lime-200">
-        <img src={iconFotosGrupo} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Fotos de mi grupo</span>
-      </button>
-    ) }, { id: 'consolidado-grupo', render: (
-      <button onClick={() => navigate("/consolidado-grupo")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-orange-100 transition-all duration-200 hover:shadow-md hover:bg-orange-200">
-        <img src={iconEstadisticas} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Consolidado de mi grupo</span>
+    ...(esDirectorGrupo ? [{ id: 'direccion-grupo', render: (
+      <button onClick={() => navigate("/direccion-grupo")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-lime-100 transition-all duration-200 hover:shadow-md hover:bg-lime-200">
+        <Users className="w-12 h-12 text-lime-700" />
+        <span className="font-semibold text-foreground text-center">Dirección de grupo</span>
       </button>
     ) }] : []),
     { id: 'perfil', render: (

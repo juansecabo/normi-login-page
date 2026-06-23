@@ -92,6 +92,7 @@ import ComunicadosFirma from "./pages/ComunicadosFirma";
 import RegistrosComportamiento from "./pages/RegistrosComportamiento";
 import MiGrupo from "./pages/MiGrupo";
 import ConsolidadoGrupo from "./pages/ConsolidadoGrupo";
+import DireccionGrupo from "./pages/DireccionGrupo";
 import Perfil from "./pages/Perfil";
 import TablaNotasRouter from "./pages/TablaNotasRouter";
 import TablaNotasReadOnlyRouter from "./pages/TablaNotasReadOnlyRouter";
@@ -210,6 +211,7 @@ const App = () => (
 
           {/* Registros de Comportamiento */}
           <Route path="/registros-comportamiento" element={<RegistrosComportamiento />} />
+          <Route path="/direccion-grupo" element={<DireccionGrupo />} />
           <Route path="/mi-grupo" element={<MiGrupo />} />
           <Route path="/consolidado-grupo" element={<ConsolidadoGrupo />} />
           <Route path="/perfil" element={<Perfil />} />
