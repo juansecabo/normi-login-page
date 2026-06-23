@@ -494,6 +494,7 @@ const SolicitudEntrevistaStaff = () => {
                                 <RefreshCw className="w-4 h-4" />
                                 Reprogramar cita
                               </button>
+                              <p className="text-xs text-muted-foreground mt-2">Eliges una nueva fecha y hora; el acudiente recibe de nuevo la citación y vuelve a quedar "Pendiente".</p>
                             </div>
                           )}
                         </div>
