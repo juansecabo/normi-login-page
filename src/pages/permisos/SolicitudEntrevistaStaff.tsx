@@ -131,11 +131,11 @@ const SolicitudEntrevistaStaff = () => {
       .then(() => {}, () => {});
   };
 
-  // El solicitante marca la asistencia (mismo campo `confirmado` que responde el
-  // acudiente). Sirve para cuando el acudiente llega a la entrevista pero olvidó
-  // marcar en su lado. Re-clic en el mismo valor lo vuelve a "Pendiente".
-  // respuesta_vista=true: lo marca el creador, así no enciende su propio numerito.
-  const marcarAsistencia = async (solicitudId: number, valor: boolean) => {
+  // El solicitante puede fijar el estado del acudiente (mismo campo `confirmado`,
+  // mismas etiquetas "Asistirá/No asistirá"). Sirve por si el acudiente asistió o
+  // avisó pero olvidó marcar. Re-clic en el mismo valor lo vuelve a "Pendiente".
+  // respuesta_vista=true: lo marca el creador, no enciende su propio numerito.
+  const marcarEstado = async (solicitudId: number, valor: boolean) => {
     const actual = historial.find(s => s.id === solicitudId)?.confirmado;
     const nuevoValor = actual === valor ? null : valor;
     const { error } = await supabase.from("Solicitudes_Entrevista")
@@ -449,7 +449,7 @@ const SolicitudEntrevistaStaff = () => {
                         <div>
                           <p className="font-semibold text-foreground text-base">{s.estudiante_apellidos} {s.estudiante_nombre}</p>
                           <p className="text-sm text-muted-foreground">{s.estudiante_grado} {s.estudiante_salon} — Entrevista: {fmtFecha(s.fecha_entrevista)} a las {s.hora_entrevista}</p>
-                          <p className="text-lg font-bold mt-1">{s.confirmado === true ? <span className="text-green-600">✓ Asiste</span> : s.confirmado === false ? <span className="text-red-600">✗ No asiste</span> : <span className="text-amber-600">Pendiente</span>}</p>
+                          <p className="text-lg font-bold mt-1">{s.confirmado === true ? <span className="text-green-600">✓ Asistirá</span> : s.confirmado === false ? <span className="text-red-600">✗ No asistirá</span> : <span className="text-amber-600">Pendiente</span>}</p>
                         </div>
                         <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${isExp ? "rotate-180" : ""}`} />
                       </button>
@@ -464,35 +464,35 @@ const SolicitudEntrevistaStaff = () => {
                           {s.firma_url && <div><p className="font-medium mb-1">Firma:</p><FirmaImage url={s.firma_url} /></div>}
                           {s.observaciones_padre && <p>Observaciones del acudiente: <span className="text-primary font-medium">{s.observaciones_padre}</span></p>}
 
-                          {/* Marcar asistencia (por si el acudiente llegó sin marcar en su lado) */}
+                          {/* El solicitante puede fijar el estado (por si el acudiente fue/avisó y olvidó marcar) */}
                           <div className="border-t border-border pt-3 mt-1">
-                            <p className="font-medium mb-2">Marcar asistencia:</p>
+                            <p className="font-medium mb-2">Confirmar asistencia:</p>
                             <div className="flex gap-3">
                               <button
-                                onClick={() => marcarAsistencia(s.id, true)}
+                                onClick={() => marcarEstado(s.id, true)}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 font-medium text-sm transition-all cursor-pointer ${s.confirmado === true ? "border-green-500 bg-green-50 text-green-700" : "border-border text-muted-foreground hover:border-green-300"}`}
                               >
-                                <Check className="w-4 h-4" /> Asistió
+                                <Check className="w-4 h-4" /> Asistirá
                               </button>
                               <button
-                                onClick={() => marcarAsistencia(s.id, false)}
+                                onClick={() => marcarEstado(s.id, false)}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 font-medium text-sm transition-all cursor-pointer ${s.confirmado === false ? "border-red-500 bg-red-50 text-red-700" : "border-border text-muted-foreground hover:border-red-300"}`}
                               >
-                                <XCircle className="w-4 h-4" /> No asistió
+                                <XCircle className="w-4 h-4" /> No asistirá
                               </button>
                             </div>
                             <p className="text-xs text-muted-foreground mt-2">Toca de nuevo para volver a "Pendiente".</p>
                           </div>
 
-                          {/* Reenviar la citación cuando el acudiente no asistió */}
-                          {s.confirmado === false && (
+                          {/* Reprogramar: solo si el acudiente respondió "No asistiré" o no marcó nada */}
+                          {s.confirmado !== true && (
                             <div className="border-t border-border pt-3 mt-1">
                               <button
                                 onClick={() => abrirReenvio(s)}
                                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 cursor-pointer"
                               >
                                 <RefreshCw className="w-4 h-4" />
-                                Reenviar citación
+                                Reprogramar cita
                               </button>
                               <p className="text-xs text-muted-foreground mt-2">Eliges una nueva fecha y hora; el acudiente recibe de nuevo la citación y vuelve a quedar "Pendiente".</p>
                             </div>
