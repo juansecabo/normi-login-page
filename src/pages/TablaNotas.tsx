@@ -98,10 +98,10 @@ const ColumnaActividadDnD = ({ id, disabled, children }: { id: string; disabled?
       style={{ touchAction: disabled ? undefined : "none" }}
       className={`relative flex-1 min-w-0 ${disabled ? "" : "cursor-grab active:cursor-grabbing"} ${drag.isDragging ? "opacity-30" : ""}`}
     >
-      {/* Franja vertical AL LADO de la columna (no resalta la casilla): marca el
-          punto exacto donde va a caer, ocupando todo el alto de la columna. */}
+      {/* Franja vertical AL LADO de la casilla del nombre: rectángulo recto que
+          marca dónde va a caer, solo del alto de la casilla (no baja por la columna). */}
       {marcarSilueta && (
-        <div className="absolute -left-2 top-0 w-2.5 h-screen bg-amber-500 rounded-full z-30 pointer-events-none shadow-lg" />
+        <div className="absolute -left-2 top-0 bottom-0 w-2.5 bg-amber-500 z-30 pointer-events-none" />
       )}
       {children}
     </div>
