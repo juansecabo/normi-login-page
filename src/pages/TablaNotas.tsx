@@ -96,11 +96,12 @@ const ColumnaActividadDnD = ({ id, disabled, children }: { id: string; disabled?
       {...(disabled ? {} : drag.attributes)}
       {...(disabled ? {} : drag.listeners)}
       style={{ touchAction: disabled ? undefined : "none" }}
-      className={`relative flex-1 min-w-0 rounded transition-colors ${disabled ? "" : "cursor-grab active:cursor-grabbing"} ${drag.isDragging ? "opacity-30" : ""} ${marcarSilueta ? "ring-4 ring-amber-400 bg-amber-200/60" : ""}`}
+      className={`relative flex-1 min-w-0 ${disabled ? "" : "cursor-grab active:cursor-grabbing"} ${drag.isDragging ? "opacity-30" : ""}`}
     >
-      {/* Indicador grande de dónde va a caer: barra gruesa + tinte de la columna. */}
+      {/* Franja vertical AL LADO de la columna (no resalta la casilla): marca el
+          punto exacto donde va a caer, ocupando todo el alto de la columna. */}
       {marcarSilueta && (
-        <div className="absolute -left-2.5 -top-2 -bottom-2 w-3 bg-amber-500 rounded z-20 pointer-events-none shadow-lg" />
+        <div className="absolute -left-2 top-0 w-2.5 h-screen bg-amber-500 rounded-full z-30 pointer-events-none shadow-lg" />
       )}
       {children}
     </div>
