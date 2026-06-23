@@ -124,6 +124,40 @@ const ColumnaActividadDnD = ({ id, disabled, silueta, children }: { id: string; 
   );
 };
 
+/** Asa de arrastre del TÍTULO de una banda (grupo/subgrupo). Long-press para
+ *  agarrar la banda y reordenarla. */
+const BandaTitulo = ({ gid, disabled, children }: { gid: string; disabled?: boolean; children: ReactNode }) => {
+  const drag = useDraggable({ id: `g:${gid}`, disabled });
+  return (
+    <div
+      ref={drag.setNodeRef}
+      {...(disabled ? {} : drag.attributes)}
+      {...(disabled ? {} : drag.listeners)}
+      style={{ touchAction: disabled ? undefined : "none" }}
+      className={`${disabled ? "" : "cursor-grab active:cursor-grabbing"} ${drag.isDragging ? "opacity-40" : ""}`}
+    >
+      {children}
+    </div>
+  );
+};
+
+/** Zona para SOLTAR otra banda al lado (reordenar). Solo activa cuando se está
+ *  arrastrando una banda; muestra la franja del lado donde caería. */
+const BandaReordenDropZone = ({ gid, activo, lado }: { gid: string; activo: boolean; lado: 'left' | 'right' | null }) => {
+  const { setNodeRef } = useDroppable({ id: `gd:${gid}` });
+  return (
+    <div
+      ref={setNodeRef}
+      data-band={gid}
+      style={{ pointerEvents: activo ? "auto" : "none" }}
+      className="absolute inset-0 z-[4]"
+    >
+      {lado === 'left' && <div className="absolute top-0 bottom-0 left-0 -translate-x-1/2 w-2 bg-amber-500 pointer-events-none" />}
+      {lado === 'right' && <div className="absolute top-0 bottom-0 right-0 translate-x-1/2 w-2 bg-amber-500 pointer-events-none" />}
+    </div>
+  );
+};
+
 /** Overlay invisible que cubre la banda de un grupo-hoja/subgrupo. Solo captura
  *  el drop cuando hay un arrastre activo (si no, deja pasar los clics al ⋮). */
 const GrupoDropZone = ({ gid, activo }: { gid: string; activo: boolean }) => {
@@ -3428,6 +3462,9 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   // Columna destino + lado (izq = cae antes, der = cae después) según en qué
   // mitad de la columna esté el dedo. Permite dejar una actividad de última.
   const [dropTarget, setDropTarget] = useState<{ id: string; side: 'left' | 'right' } | null>(null);
+  // Arrastre de BANDAS de grupo/subgrupo (reordenar).
+  const [dragGroup, setDragGroup] = useState<GrupoNotas | null>(null);
+  const [dropGroupTarget, setDropGroupTarget] = useState<{ id: string; side: 'left' | 'right' } | null>(null);
   const dndSensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { delay: 350, tolerance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 350, tolerance: 8 } }),
@@ -3544,39 +3581,70 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   };
 
   const handleDragStart = (e: DragStartEvent) => {
-    const id = String(e.active.id).replace(/^act:/, "");
+    const raw = String(e.active.id);
+    if (raw.startsWith("g:")) {
+      const gid = raw.slice(2);
+      setDragGroup(gruposNotas.find(g => g.id === gid) || null);
+      setDragAct(null); setDropTarget(null); setDropGroupTarget(null);
+      return;
+    }
+    const id = raw.replace(/^act:/, "");
     const act = actividades.find(a => a.id === id && a.periodo === periodoActivo) || actividades.find(a => a.id === id) || null;
     setDragAct(act);
-    setDropTarget(null);
+    setDropTarget(null); setDropGroupTarget(null);
   };
-  // Mientras arrastra: si está sobre una columna, decide lado (izq/der) según en
-  // qué mitad de la columna esté el dedo, para mostrar la franja del lado correcto.
+  // Mientras arrastra: decide lado (izq/der) según en qué mitad de la celda/banda
+  // esté el dedo, para mostrar la franja del lado correcto.
+  const ladoPorMitad = (selector: string, overRect: any, e: any): 'left' | 'right' | null => {
+    const coords = getEventCoordinates(e.activatorEvent);
+    if (!coords) return null;
+    const pointerX = coords.x + (e.delta?.x || 0);
+    const el = document.querySelector(selector) as HTMLElement | null;
+    const rect = el ? el.getBoundingClientRect() : overRect;
+    if (!rect) return null;
+    return pointerX < rect.left + rect.width / 2 ? "left" : "right";
+  };
   const handleDragMove = (e: any) => {
     const over = e.over;
-    if (!over || !String(over.id).startsWith("col:")) { setDropTarget(null); return; }
-    const coords = getEventCoordinates(e.activatorEvent);
-    if (!coords) { setDropTarget(null); return; }
-    const pointerX = coords.x + (e.delta?.x || 0);
-    const colId = String(over.id).slice(4);
-    // Medir la CELDA completa (el <th>), no el div del nombre, para que el lado
-    // (izq/der) cambie justo en el centro real de la columna.
-    const th = document.querySelector(`th[data-col="${(window as any).CSS?.escape ? CSS.escape(colId) : colId}"]`) as HTMLElement | null;
-    const rect = th ? th.getBoundingClientRect() : over.rect;
-    if (!rect) { setDropTarget(null); return; }
-    const centro = rect.left + rect.width / 2;
-    setDropTarget({ id: colId, side: pointerX < centro ? "left" : "right" });
+    const overId = over ? String(over.id) : "";
+    if (dragGroup) {
+      // Arrastrando una banda: destino válido = otra banda (gd:).
+      if (!overId.startsWith("gd:")) { setDropGroupTarget(null); return; }
+      const gid = overId.slice(3);
+      const lado = ladoPorMitad(`[data-band="${(window as any).CSS?.escape ? CSS.escape(gid) : gid}"]`, over.rect, e);
+      setDropGroupTarget(lado ? { id: gid, side: lado } : null);
+      return;
+    }
+    if (!overId.startsWith("col:")) { setDropTarget(null); return; }
+    const colId = overId.slice(4);
+    const lado = ladoPorMitad(`th[data-col="${(window as any).CSS?.escape ? CSS.escape(colId) : colId}"]`, over.rect, e);
+    setDropTarget(lado ? { id: colId, side: lado } : null);
   };
   const handleDragEnd = (e: DragEndEvent) => {
     const act = dragAct;
     const target = dropTarget;
-    setDragAct(null);
-    setDropTarget(null);
-    if (!act || !e.over) return;
+    const grpDrag = dragGroup;
+    const grpTarget = dropGroupTarget;
+    setDragAct(null); setDropTarget(null); setDragGroup(null); setDropGroupTarget(null);
+    if (!e.over) return;
     const overId = String(e.over.id);
+
+    // ── Soltó una BANDA (reordenar grupo/subgrupo) ───────────────────────────
+    if (grpDrag) {
+      if (!overId.startsWith("gd:")) return;
+      const destinoId = overId.slice(3);
+      if (destinoId === grpDrag.id) return;
+      const lado = grpTarget?.id === destinoId ? grpTarget.side : "left";
+      reubicarGrupo(grpDrag, destinoId, lado);
+      return;
+    }
+
+    // ── Soltó una ACTIVIDAD ──────────────────────────────────────────────────
+    if (!act) return;
     if (overId === "loose") {
-      reubicarActividad(act, null, null); // al final de las sueltas
+      reubicarActividad(act, null, null);
     } else if (overId.startsWith("grp:")) {
-      reubicarActividad(act, overId.slice(4), null); // al final del grupo
+      reubicarActividad(act, overId.slice(4), null);
     } else if (overId.startsWith("col:")) {
       const targetId = overId.slice(4);
       const tAct =
@@ -3586,9 +3654,8 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
       const grupo = (tAct as any).grupo_id ?? null;
       const lado = target?.id === targetId ? target.side : "left";
       if (lado === "left") {
-        reubicarActividad(act, grupo, targetId); // cae ANTES de la columna
+        reubicarActividad(act, grupo, targetId);
       } else {
-        // Cae DESPUÉS: justo antes de la siguiente del grupo (o al final).
         const enGrupo = actividades
           .filter(a => a.periodo === act.periodo && ((a.grupo_id ?? null) === grupo) && a.id !== act.id)
           .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0) || a.nombre.localeCompare(b.nombre));
@@ -3597,6 +3664,75 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         reubicarActividad(act, grupo, siguiente);
       }
     }
+  };
+
+  /**
+   * Reordena una BANDA arrastrada hasta otra:
+   *  - Grupo top sobre grupo top → reordena el NIVEL SUPERIOR (cambia su fecha
+   *    de creación = posición), intercalando con las sueltas.
+   *  - Subgrupo sobre subgrupo hermano (mismo padre) → reordena por `orden`.
+   *  - Cualquier otra combinación → no permitido (el subgrupo no sale de su grupo).
+   */
+  const reubicarGrupo = async (grupo: GrupoNotas, destinoId: string, lado: 'left' | 'right') => {
+    if (soloLectura) return;
+    const destino = gruposNotas.find(g => g.id === destinoId);
+    if (!destino) return;
+    const esTopArrastrado = !grupo.parent_id;
+    const esTopDestino = !destino.parent_id;
+
+    // ── NIVEL SUPERIOR: grupo top reordenado entre grupos top + sueltas ──────
+    if (esTopArrastrado && esTopDestino) {
+      const periodo = grupo.periodo;
+      const topGroups = gruposNotas.filter(g => g.periodo === periodo && !g.parent_id && g.id !== grupo.id);
+      const topLoose = actividades.filter(a => a.periodo === periodo && !a.grupo_id);
+      const items = nivelSuperiorOrdenado(topGroups, topLoose);
+      const fechaDe = (it: typeof items[number]) => (it.kind === 'grupo' ? (it.g as any).fecha_creacion : it.a.fecha_creacion) || '';
+      const idxDestino = items.findIndex(it => it.kind === 'grupo' && it.g.id === destinoId);
+      if (idxDestino < 0) return;
+      const insertAt = lado === 'left' ? idxDestino : idxDestino + 1;
+      const ms = (f: string) => { const t = Date.parse(f); return isNaN(t) ? Date.now() : t; };
+      const prevF = insertAt > 0 ? fechaDe(items[insertAt - 1]) : '';
+      const nextF = insertAt < items.length ? fechaDe(items[insertAt]) : '';
+      let nuevaMs: number;
+      if (prevF && nextF) nuevaMs = Math.floor((ms(prevF) + ms(nextF)) / 2);
+      else if (nextF) nuevaMs = ms(nextF) - 60000;
+      else if (prevF) nuevaMs = ms(prevF) + 60000;
+      else nuevaMs = Date.now();
+      try {
+        await apiClient.gruposNotas.editar(grupo.id, { fecha_creacion: new Date(nuevaMs).toISOString() } as any);
+        await reloadGrupos();
+      } catch {
+        toast({ title: "Error", description: "No se pudo mover el grupo.", variant: "destructive" });
+      }
+      return;
+    }
+
+    // ── SUBGRUPOS: solo entre hermanos del mismo grupo padre ─────────────────
+    if (!esTopArrastrado && !esTopDestino && grupo.parent_id === destino.parent_id) {
+      const hermanos = gruposNotas
+        .filter(g => g.parent_id === grupo.parent_id && g.id !== grupo.id)
+        .sort((a, b) => a.orden - b.orden);
+      const idxDestino = hermanos.findIndex(g => g.id === destinoId);
+      const insertAt = idxDestino < 0 ? hermanos.length : (lado === 'left' ? idxDestino : idxDestino + 1);
+      const nuevoOrden = [...hermanos.slice(0, insertAt), grupo, ...hermanos.slice(insertAt)];
+      try {
+        for (let i = 0; i < nuevoOrden.length; i++) {
+          await apiClient.gruposNotas.editar(nuevoOrden[i].id, { orden: i });
+        }
+        await reloadGrupos();
+      } catch {
+        toast({ title: "Error", description: "No se pudo reordenar el subgrupo.", variant: "destructive" });
+      }
+      return;
+    }
+
+    toast({
+      title: "No se puede ahí",
+      description: esTopArrastrado
+        ? "Un grupo solo se reordena entre el nivel de arriba."
+        : "Un subgrupo solo se reordena dentro de su mismo grupo.",
+      variant: "destructive",
+    });
   };
 
   // Resumen de actividades pendientes (sin nota) en un periodo. Solo cuenta
@@ -4223,7 +4359,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                 onDragStart={handleDragStart}
                 onDragMove={handleDragMove}
                 onDragEnd={handleDragEnd}
-                onDragCancel={() => { setDragAct(null); setDropTarget(null); }}
+                onDragCancel={() => { setDragAct(null); setDropTarget(null); setDragGroup(null); setDropGroupTarget(null); }}
               >
               <table className={`w-full border-separate border-spacing-0${soloLectura ? ' ro-notas' : ''}`}>
                 <thead>
@@ -4318,11 +4454,15 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                       className="border-r border-b border-border/30 p-2 text-center text-xs font-semibold bg-emerald-800 text-white relative"
                                     >
                                       {!soloLectura && <GrupoDropZone gid={sec.grupo.id} activo={!!dragAct} />}
-                                      <div className="flex flex-col items-center">
-                                        <span>{sec.grupo.nombre}</span>
-                                        {sec.grupo.porcentaje !== null && (
-                                          <span className="text-white/70 text-[10px]">({sec.grupo.porcentaje}%)</span>
-                                        )}                                      </div>
+                                      {!soloLectura && <BandaReordenDropZone gid={sec.grupo.id} activo={!!dragGroup} lado={dropGroupTarget?.id === sec.grupo.id ? dropGroupTarget.side : null} />}
+                                      <BandaTitulo gid={sec.grupo.id} disabled={soloLectura}>
+                                        <div className="flex flex-col items-center">
+                                          <span>{sec.grupo.nombre}</span>
+                                          {sec.grupo.porcentaje !== null && (
+                                            <span className="text-white/70 text-[10px]">({sec.grupo.porcentaje}%)</span>
+                                          )}
+                                        </div>
+                                      </BandaTitulo>
                                       {!soloLectura && (
                                       <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
@@ -4360,12 +4500,15 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                     colSpan={sec.colSpan}
                                     className="border-r border-b border-border/30 p-2 text-center text-xs font-semibold bg-emerald-800 text-white relative"
                                   >
-                                    <div className="flex flex-col items-center">
-                                      <span>{sec.grupo.nombre}</span>
-                                      {sec.grupo.porcentaje !== null && (
-                                        <span className="text-white/70 text-[10px]">({sec.grupo.porcentaje}%)</span>
-                                      )}
-                                    </div>
+                                    {!soloLectura && <BandaReordenDropZone gid={sec.grupo.id} activo={!!dragGroup} lado={dropGroupTarget?.id === sec.grupo.id ? dropGroupTarget.side : null} />}
+                                    <BandaTitulo gid={sec.grupo.id} disabled={soloLectura}>
+                                      <div className="flex flex-col items-center">
+                                        <span>{sec.grupo.nombre}</span>
+                                        {sec.grupo.porcentaje !== null && (
+                                          <span className="text-white/70 text-[10px]">({sec.grupo.porcentaje}%)</span>
+                                        )}
+                                      </div>
+                                    </BandaTitulo>
                                     {!soloLectura && (
                                     <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
@@ -4567,11 +4710,15 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                     className="border-r border-b border-border/30 p-2 text-center text-xs font-semibold bg-emerald-600 text-white relative"
                                   >
                                     {!soloLectura && <GrupoDropZone gid={sub.grupo.id} activo={!!dragAct} />}
-                                    <div className="flex flex-col items-center">
-                                      <span>{sub.grupo.nombre}</span>
-                                      {sub.grupo.porcentaje !== null && (
-                                        <span className="text-white/70 text-[10px]">({sub.grupo.porcentaje}%)</span>
-                                      )}                                    </div>
+                                    {!soloLectura && <BandaReordenDropZone gid={sub.grupo.id} activo={!!dragGroup} lado={dropGroupTarget?.id === sub.grupo.id ? dropGroupTarget.side : null} />}
+                                    <BandaTitulo gid={sub.grupo.id} disabled={soloLectura}>
+                                      <div className="flex flex-col items-center">
+                                        <span>{sub.grupo.nombre}</span>
+                                        {sub.grupo.porcentaje !== null && (
+                                          <span className="text-white/70 text-[10px]">({sub.grupo.porcentaje}%)</span>
+                                        )}
+                                      </div>
+                                    </BandaTitulo>
                                     <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
                                         <button className="absolute top-1 right-1 p-1 rounded hover:bg-white/20" title="Más opciones">
@@ -5015,6 +5162,8 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                   // Fantasma translúcido SIN texto: deja ver la tabla debajo para
                   // ubicar bien dónde va a caer la columna.
                   <div className="w-[130px] h-16 rounded-md bg-emerald-400/30 border-2 border-dashed border-emerald-700 shadow-2xl" />
+                ) : dragGroup ? (
+                  <div className="w-[150px] h-16 rounded-md bg-emerald-700/30 border-2 border-dashed border-emerald-900 shadow-2xl" />
                 ) : null}
               </DragOverlay>
               </DndContext>
