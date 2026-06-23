@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession } from "@/hooks/useSession";
 import { apiClient, type ApiConsolidadoGrupo } from "@/lib/apiClient";
 import { useColegioConfig } from "@/hooks/useColegioConfig";
 import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNormi";
-import { Users, ChevronLeft } from "lucide-react";
+import { Users } from "lucide-react";
 
 const PERIODOS = [1, 2, 3, 4] as const;
 const ORDINAL: Record<number, string> = { 1: "Primer", 2: "Segundo", 3: "Tercer", 4: "Cuarto" };
@@ -20,13 +20,20 @@ const ORDINAL: Record<number, string> = { 1: "Primer", 2: "Segundo", 3: "Tercer"
  */
 const ConsolidadoGrupo = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { config } = useColegioConfig();
   const [dirGrupo, setDirGrupo] = useState<string | null>(null);
   const [grado, setGrado] = useState<string | null>(null);
   const [salon, setSalon] = useState<string | null>(null);
   const [loadingDg, setLoadingDg] = useState(true);
 
-  const [periodo, setPeriodo] = useState<number | null>(null);
+  // El periodo vive en la URL (?periodo=2) para que recargar (F5) mantenga la rejilla.
+  const periodoRaw = parseInt(searchParams.get("periodo") || "", 10);
+  const periodo: number | null = [1, 2, 3, 4].includes(periodoRaw) ? periodoRaw : null;
+  const setPeriodo = (p: number | null) => {
+    if (p == null) { searchParams.delete("periodo"); setSearchParams(searchParams, { replace: true }); }
+    else { searchParams.set("periodo", String(p)); setSearchParams(searchParams, { replace: true }); }
+  };
   const [data, setData] = useState<ApiConsolidadoGrupo | null>(null);
   const [loadingData, setLoadingData] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -120,9 +127,6 @@ const ConsolidadoGrupo = () => {
         ) : (
           /* ── Rejilla del periodo ─────────────────────────────── */
           <div>
-            <button onClick={() => setPeriodo(null)} className="mb-4 inline-flex items-center gap-1 text-sm text-primary hover:underline">
-              <ChevronLeft className="w-4 h-4" /> Elegir otro periodo
-            </button>
             <h2 className="text-xl font-bold text-foreground mb-4 text-center">
               {ORDINAL[periodo]} periodo · {dirGrupo}
             </h2>
