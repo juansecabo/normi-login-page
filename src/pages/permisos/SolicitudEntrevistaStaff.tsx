@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import SignatureCanvas from "react-signature-canvas";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Check, ChevronDown, UserRound, Plus, X } from "lucide-react";
+import { CalendarIcon, Check, ChevronDown, UserRound, Plus, X, XCircle } from "lucide-react";
 import FirmaImage from "@/components/FirmaImage";
 import { apiRequest } from "@/lib/apiClient";
 import { joinEntrevistadores, entrevistadoresDeSolicitud } from "@/lib/entrevistadores";
@@ -129,6 +129,19 @@ const SolicitudEntrevistaStaff = () => {
     supabase.from("Solicitudes_Entrevista").update({ respuesta_vista: true })
       .eq("creado_por", session.id).eq("respuesta_vista", false)
       .then(() => {}, () => {});
+  };
+
+  // El solicitante marca la asistencia (mismo campo `confirmado` que responde el
+  // acudiente). Sirve para cuando el acudiente llega a la entrevista pero olvidó
+  // marcar en su lado. Re-clic en el mismo valor lo vuelve a "Pendiente".
+  // respuesta_vista=true: lo marca el creador, así no enciende su propio numerito.
+  const marcarAsistencia = async (solicitudId: number, valor: boolean) => {
+    const actual = historial.find(s => s.id === solicitudId)?.confirmado;
+    const nuevoValor = actual === valor ? null : valor;
+    const { error } = await supabase.from("Solicitudes_Entrevista")
+      .update({ confirmado: nuevoValor, respuesta_vista: true }).eq("id", solicitudId);
+    if (error) { toast({ title: "No se pudo guardar", description: "Intenta de nuevo.", variant: "destructive" }); return; }
+    setHistorial(prev => prev.map(s => s.id === solicitudId ? { ...s, confirmado: nuevoValor } : s));
   };
 
   const handleFirmaEnd = () => { if (sigCanvas.current && !sigCanvas.current.isEmpty()) setFirma(sigCanvas.current.toDataURL("image/png")); };
@@ -381,7 +394,7 @@ const SolicitudEntrevistaStaff = () => {
                         <div>
                           <p className="font-semibold text-foreground text-base">{s.estudiante_apellidos} {s.estudiante_nombre}</p>
                           <p className="text-sm text-muted-foreground">{s.estudiante_grado} {s.estudiante_salon} — Entrevista: {fmtFecha(s.fecha_entrevista)} a las {s.hora_entrevista}</p>
-                          <p className="text-lg font-bold mt-1">{s.confirmado === true ? <span className="text-green-600">✓ Asistirá</span> : s.confirmado === false ? <span className="text-red-600">✗ No asistirá</span> : <span className="text-amber-600">Pendiente</span>}</p>
+                          <p className="text-lg font-bold mt-1">{s.confirmado === true ? <span className="text-green-600">✓ Asiste</span> : s.confirmado === false ? <span className="text-red-600">✗ No asiste</span> : <span className="text-amber-600">Pendiente</span>}</p>
                         </div>
                         <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${isExp ? "rotate-180" : ""}`} />
                       </button>
@@ -395,6 +408,26 @@ const SolicitudEntrevistaStaff = () => {
                           {s.creado_por_nombre && <p>Creado por: <span className="text-primary font-medium">{s.creado_por_nombre}</span></p>}
                           {s.firma_url && <div><p className="font-medium mb-1">Firma:</p><FirmaImage url={s.firma_url} /></div>}
                           {s.observaciones_padre && <p>Observaciones del acudiente: <span className="text-primary font-medium">{s.observaciones_padre}</span></p>}
+
+                          {/* Marcar asistencia (por si el acudiente llegó sin marcar en su lado) */}
+                          <div className="border-t border-border pt-3 mt-1">
+                            <p className="font-medium mb-2">Marcar asistencia:</p>
+                            <div className="flex gap-3">
+                              <button
+                                onClick={() => marcarAsistencia(s.id, true)}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 font-medium text-sm transition-all cursor-pointer ${s.confirmado === true ? "border-green-500 bg-green-50 text-green-700" : "border-border text-muted-foreground hover:border-green-300"}`}
+                              >
+                                <Check className="w-4 h-4" /> Asistió
+                              </button>
+                              <button
+                                onClick={() => marcarAsistencia(s.id, false)}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 font-medium text-sm transition-all cursor-pointer ${s.confirmado === false ? "border-red-500 bg-red-50 text-red-700" : "border-border text-muted-foreground hover:border-red-300"}`}
+                              >
+                                <XCircle className="w-4 h-4" /> No asistió
+                              </button>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-2">Toca de nuevo para volver a "Pendiente".</p>
+                          </div>
                         </div>
                       )}
                     </div>
