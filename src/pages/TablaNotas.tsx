@@ -59,20 +59,48 @@ import {
   type DragStartEvent,
   type DragEndEvent,
 } from "@dnd-kit/core";
+import { getEventCoordinates } from "@dnd-kit/utilities";
+
+// Modificador: centra el "fantasma" (DragOverlay) bajo el dedo/cursor, para que
+// lo que se arrastra siga exactamente al dedo (sin el desfase que tenía antes).
+const pegarFantasmaAlDedo = ({ activatorEvent, draggingNodeRect, transform }: any) => {
+  if (draggingNodeRect && activatorEvent) {
+    const coords = getEventCoordinates(activatorEvent);
+    if (!coords) return transform;
+    const offsetX = coords.x - draggingNodeRect.left;
+    const offsetY = coords.y - draggingNodeRect.top;
+    return {
+      ...transform,
+      x: transform.x + offsetX - draggingNodeRect.width / 2,
+      y: transform.y + offsetY - draggingNodeRect.height / 2,
+    };
+  }
+  return transform;
+};
 
 // --- Drag & drop de columnas de actividad (reubicar entre grupos / sacar afuera) ---
 // La columna se arrastra por su NOMBRE (handle), para no chocar con el botón ⋮.
 // Activación por long-press (delay) configurada en los sensores del componente.
 const ColumnaActividadDnD = ({ id, disabled, children }: { id: string; disabled?: boolean; children: ReactNode }) => {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: `act:${id}`, disabled });
+  const drag = useDraggable({ id: `act:${id}`, disabled });
+  const drop = useDroppable({ id: `col:${id}`, disabled });
+  // Un solo nodo es a la vez "lo que se agarra" y "zona donde se puede soltar".
+  const setRef = (el: HTMLElement | null) => { drag.setNodeRef(el); drop.setNodeRef(el); };
+  const hayArrastre = !!drop.active;
+  const soyElArrastrado = drop.active?.id === `act:${id}`;
+  // Silueta (línea) en el borde izquierdo cuando vas a soltar al lado de esta columna.
+  const marcarSilueta = hayArrastre && drop.isOver && !soyElArrastrado;
   return (
     <div
-      ref={setNodeRef}
-      {...(disabled ? {} : attributes)}
-      {...(disabled ? {} : listeners)}
+      ref={setRef}
+      {...(disabled ? {} : drag.attributes)}
+      {...(disabled ? {} : drag.listeners)}
       style={{ touchAction: disabled ? undefined : "none" }}
-      className={`flex-1 min-w-0 ${disabled ? "" : "cursor-grab active:cursor-grabbing"} ${isDragging ? "opacity-40" : ""}`}
+      className={`relative flex-1 min-w-0 ${disabled ? "" : "cursor-grab active:cursor-grabbing"} ${drag.isDragging ? "opacity-30" : ""}`}
     >
+      {marcarSilueta && (
+        <div className="absolute -left-2 top-0 bottom-0 w-1.5 bg-amber-500 rounded z-10 pointer-events-none" />
+      )}
       {children}
     </div>
   );
@@ -3452,6 +3480,14 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
       moverActividad(act, null);
     } else if (overId.startsWith("grp:")) {
       moverActividad(act, overId.slice(4));
+    } else if (overId.startsWith("col:")) {
+      // Soltada AL LADO de otra actividad: adopta el grupo de esa actividad
+      // (o queda suelta si esa otra también es suelta).
+      const targetId = overId.slice(4);
+      const target =
+        actividades.find(a => a.id === targetId && a.periodo === periodoActivo) ||
+        actividades.find(a => a.id === targetId);
+      if (target) moverActividad(act, (target as any).grupo_id ?? null);
     }
   };
 
@@ -4075,6 +4111,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               <DndContext
                 sensors={dndSensors}
                 collisionDetection={pointerWithin}
+                modifiers={[pegarFantasmaAlDedo]}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
                 onDragCancel={() => setDragAct(null)}
@@ -4866,9 +4903,9 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                 </tfoot>
                 )}
               </table>
-              <DragOverlay>
+              <DragOverlay dropAnimation={null}>
                 {dragAct ? (
-                  <div className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold shadow-lg max-w-[200px] truncate">
+                  <div className="min-w-[120px] px-2 py-3 bg-emerald-300 text-emerald-950 text-xs font-medium text-center shadow-2xl ring-2 ring-emerald-600 whitespace-nowrap">
                     {dragAct.nombre}
                   </div>
                 ) : null}
