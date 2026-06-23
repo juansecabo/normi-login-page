@@ -3608,11 +3608,25 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     const over = e.over;
     const overId = over ? String(over.id) : "";
     if (dragGroup) {
-      // Arrastrando una banda: destino válido = otra banda (gd:).
-      if (!overId.startsWith("gd:")) { setDropGroupTarget(null); return; }
-      const gid = overId.slice(3);
-      const lado = ladoPorMitad(`[data-band="${(window as any).CSS?.escape ? CSS.escape(gid) : gid}"]`, over.rect, e);
-      setDropGroupTarget(lado ? { id: gid, side: lado } : null);
+      // Arrastrando una banda. Destinos: otra banda (gd:) o —si es grupo top—
+      // una actividad SUELTA (col: de una suelta), para intercalar en el nivel
+      // de arriba.
+      if (overId.startsWith("gd:")) {
+        const gid = overId.slice(3);
+        const lado = ladoPorMitad(`[data-band="${(window as any).CSS?.escape ? CSS.escape(gid) : gid}"]`, over.rect, e);
+        setDropGroupTarget(lado ? { id: gid, side: lado } : null);
+        return;
+      }
+      if (overId.startsWith("col:") && !dragGroup.parent_id) {
+        const aid = overId.slice(4);
+        const a = actividades.find(x => x.id === aid && x.periodo === periodoActivo);
+        if (a && !a.grupo_id) {
+          const lado = ladoPorMitad(`th[data-col="${(window as any).CSS?.escape ? CSS.escape(aid) : aid}"]`, over.rect, e);
+          setDropGroupTarget(lado ? { id: aid, side: lado } : null);
+          return;
+        }
+      }
+      setDropGroupTarget(null);
       return;
     }
     if (!overId.startsWith("col:")) { setDropTarget(null); return; }
@@ -3631,11 +3645,18 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
 
     // ── Soltó una BANDA (reordenar grupo/subgrupo) ───────────────────────────
     if (grpDrag) {
-      if (!overId.startsWith("gd:")) return;
-      const destinoId = overId.slice(3);
-      if (destinoId === grpDrag.id) return;
-      const lado = grpTarget?.id === destinoId ? grpTarget.side : "left";
-      reubicarGrupo(grpDrag, destinoId, lado);
+      if (overId.startsWith("gd:")) {
+        const destinoId = overId.slice(3);
+        if (destinoId === grpDrag.id) return;
+        const lado = grpTarget?.id === destinoId ? grpTarget.side : "left";
+        reubicarGrupo(grpDrag, { tipo: 'grupo', id: destinoId }, lado);
+      } else if (overId.startsWith("col:")) {
+        // Grupo top soltado junto a una actividad suelta (intercalar en el nivel
+        // de arriba).
+        const aid = overId.slice(4);
+        const lado = grpTarget?.id === aid ? grpTarget.side : "left";
+        reubicarGrupo(grpDrag, { tipo: 'suelta', id: aid }, lado);
+      }
       return;
     }
 
@@ -3673,21 +3694,21 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
    *  - Subgrupo sobre subgrupo hermano (mismo padre) → reordena por `orden`.
    *  - Cualquier otra combinación → no permitido (el subgrupo no sale de su grupo).
    */
-  const reubicarGrupo = async (grupo: GrupoNotas, destinoId: string, lado: 'left' | 'right') => {
+  const reubicarGrupo = async (grupo: GrupoNotas, target: { tipo: 'grupo' | 'suelta'; id: string }, lado: 'left' | 'right') => {
     if (soloLectura) return;
-    const destino = gruposNotas.find(g => g.id === destinoId);
-    if (!destino) return;
     const esTopArrastrado = !grupo.parent_id;
-    const esTopDestino = !destino.parent_id;
 
     // ── NIVEL SUPERIOR: grupo top reordenado entre grupos top + sueltas ──────
-    if (esTopArrastrado && esTopDestino) {
+    // (el destino puede ser otro grupo top O una actividad suelta).
+    if (esTopArrastrado) {
       const periodo = grupo.periodo;
       const topGroups = gruposNotas.filter(g => g.periodo === periodo && !g.parent_id && g.id !== grupo.id);
       const topLoose = actividades.filter(a => a.periodo === periodo && !a.grupo_id);
       const items = nivelSuperiorOrdenado(topGroups, topLoose);
       const fechaDe = (it: typeof items[number]) => (it.kind === 'grupo' ? (it.g as any).fecha_creacion : it.a.fecha_creacion) || '';
-      const idxDestino = items.findIndex(it => it.kind === 'grupo' && it.g.id === destinoId);
+      const idxDestino = items.findIndex(it =>
+        (target.tipo === 'grupo' && it.kind === 'grupo' && it.g.id === target.id) ||
+        (target.tipo === 'suelta' && it.kind === 'suelta' && it.a.id === target.id));
       if (idxDestino < 0) return;
       const insertAt = lado === 'left' ? idxDestino : idxDestino + 1;
       const ms = (f: string) => { const t = Date.parse(f); return isNaN(t) ? Date.now() : t; };
@@ -3708,11 +3729,12 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     }
 
     // ── SUBGRUPOS: solo entre hermanos del mismo grupo padre ─────────────────
-    if (!esTopArrastrado && !esTopDestino && grupo.parent_id === destino.parent_id) {
+    const destino = target.tipo === 'grupo' ? gruposNotas.find(g => g.id === target.id) : null;
+    if (destino && destino.parent_id && grupo.parent_id === destino.parent_id) {
       const hermanos = gruposNotas
         .filter(g => g.parent_id === grupo.parent_id && g.id !== grupo.id)
         .sort((a, b) => a.orden - b.orden);
-      const idxDestino = hermanos.findIndex(g => g.id === destinoId);
+      const idxDestino = hermanos.findIndex(g => g.id === target.id);
       const insertAt = idxDestino < 0 ? hermanos.length : (lado === 'left' ? idxDestino : idxDestino + 1);
       const nuevoOrden = [...hermanos.slice(0, insertAt), grupo, ...hermanos.slice(insertAt)];
       try {
@@ -3728,9 +3750,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
 
     toast({
       title: "No se puede ahí",
-      description: esTopArrastrado
-        ? "Un grupo solo se reordena entre el nivel de arriba."
-        : "Un subgrupo solo se reordena dentro de su mismo grupo.",
+      description: "Un subgrupo solo se reordena dentro de su mismo grupo.",
       variant: "destructive",
     });
   };
