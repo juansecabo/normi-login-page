@@ -78,6 +78,22 @@ const pegarFantasmaAlDedo = ({ activatorEvent, draggingNodeRect, transform }: an
   return transform;
 };
 
+// Nivel superior de la tabla = grupos de primer nivel + actividades sueltas,
+// INTERCALADOS por fecha de creación (lo más nuevo a la derecha). Reordenar el
+// nivel superior = cambiar la fecha_creacion (que actúa como "posición").
+type NivelSupItem<G, A> = { kind: 'grupo'; g: G } | { kind: 'suelta'; a: A };
+function nivelSuperiorOrdenado<G extends { fecha_creacion?: string }, A extends { fecha_creacion?: string }>(grupos: G[], sueltas: A[]): NivelSupItem<G, A>[] {
+  const items: NivelSupItem<G, A>[] = [
+    ...grupos.map(g => ({ kind: 'grupo' as const, g })),
+    ...sueltas.map(a => ({ kind: 'suelta' as const, a })),
+  ];
+  return items.sort((x, y) => {
+    const fx = (x.kind === 'grupo' ? x.g.fecha_creacion : x.a.fecha_creacion) || '';
+    const fy = (y.kind === 'grupo' ? y.g.fecha_creacion : y.a.fecha_creacion) || '';
+    return fx < fy ? -1 : fx > fy ? 1 : 0;
+  });
+}
+
 // --- Drag & drop de columnas de actividad (reubicar entre grupos / sacar afuera) ---
 // La columna se arrastra por su NOMBRE (handle), para no chocar con el botón ⋮.
 // Activación por long-press (delay) configurada en los sensores del componente.
@@ -139,6 +155,7 @@ interface Actividad {
   porcentaje: number | null;
   grupo_id?: string | null;
   orden?: number;
+  fecha_creacion?: string;
 }
 
 // Estructura: { [id_estudiantil]: { [periodo]: { [actividad_id]: nota } } }
@@ -483,6 +500,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
             porcentaje: act.porcentaje,
             grupo_id: act.grupo_id ?? null,
             orden: act.orden ?? 0,
+            fecha_creacion: act.fecha_creacion ?? undefined,
           }));
           setActividades(actividadesCargadas);
           console.log("Actividades cargadas:", actividadesCargadas);
@@ -671,24 +689,22 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     const gruposPeriodo = gruposNotas.filter(g => g.periodo === periodo);
     if (gruposPeriodo.length === 0) return acts;
 
-    const tops = gruposPeriodo.filter(g => !g.parent_id).sort((a, b) => a.orden - b.orden);
+    const tops = gruposPeriodo.filter(g => !g.parent_id);
     const subs = (parentId: string) =>
       gruposPeriodo.filter(g => g.parent_id === parentId).sort((a, b) => a.orden - b.orden);
 
+    // Nivel superior (grupos top + actividades sueltas) intercalado por CREACIÓN:
+    // lo más nuevo cae a la derecha. Reordenar = cambiar la fecha_creacion (pos).
     const ordenadas: Actividad[] = [];
-    // 1. Recorrido jerárquico (los grupos van primero, en su orden)
-    for (const top of tops) {
-      const hijos = subs(top.id);
+    for (const it of nivelSuperiorOrdenado(tops, acts.filter(a => !a.grupo_id))) {
+      if (it.kind === 'suelta') { ordenadas.push(it.a); continue; }
+      const hijos = subs(it.g.id);
       if (hijos.length === 0) {
-        ordenadas.push(...acts.filter(a => a.grupo_id === top.id));
+        ordenadas.push(...acts.filter(a => a.grupo_id === it.g.id));
       } else {
-        for (const h of hijos) {
-          ordenadas.push(...acts.filter(a => a.grupo_id === h.id));
-        }
+        for (const h of hijos) ordenadas.push(...acts.filter(a => a.grupo_id === h.id));
       }
     }
-    // 2. Actividades sueltas al final (a la derecha de todos los grupos)
-    ordenadas.push(...acts.filter(a => !a.grupo_id));
     return ordenadas;
   };
 
@@ -720,7 +736,14 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
 
     const secciones: Seccion[] = [];
     let necesitaFila2 = false;
-    for (const top of tops) {
+    // Nivel superior intercalado por creación: grupos top + sueltas, lo nuevo a
+    // la derecha. Cada suelta es su propia sección de 1 columna en su posición.
+    for (const it of nivelSuperiorOrdenado(tops, acts.filter(a => !a.grupo_id))) {
+      if (it.kind === 'suelta') {
+        secciones.push({ tipo: 'sin-grupo', actividades: [it.a], colSpan: 1 });
+        continue;
+      }
+      const top = it.g;
       const hijos = subs(top.id);
       if (hijos.length === 0) {
         // Grupo hoja: colSpan = max(1, actividades). Si está vacío reservamos
@@ -743,11 +766,6 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         const total = subgrupos.reduce((s, x) => s + x.colSpan, 0);
         secciones.push({ tipo: 'grupo-con-sub', grupo: top, subgrupos, colSpan: total });
       }
-    }
-    // Actividades sueltas al final (a la derecha de todos los grupos)
-    const sinGrupo = acts.filter(a => !a.grupo_id);
-    if (sinGrupo.length > 0) {
-      secciones.push({ tipo: 'sin-grupo', actividades: sinGrupo, colSpan: sinGrupo.length });
     }
     return { hayJerarquia: secciones.some(s => s.tipo !== 'sin-grupo'), secciones, necesitaFila2 };
   };
@@ -3428,9 +3446,54 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     }
     if (antesDeActId === actividad.id) return; // soltada sobre sí misma
 
-    const cambioGrupo = ((actividad as any).grupo_id ?? null) !== destinoGrupoId;
+    const matchDe = (nombre: string) => ({
+      ano_escolar: anoEscolarActual(),
+      asignatura: asignaturaSeleccionada,
+      grado: gradoSeleccionado,
+      salon: salonSeleccionado,
+      periodo: actividad.periodo,
+      nombre_actividad: nombre,
+    });
 
-    // Lista del grupo destino (sin la actividad arrastrada), ordenada, e insertamos.
+    // ── Destino = NIVEL SUPERIOR (suelta) ────────────────────────────────────
+    // La posición en el nivel superior la da fecha_creacion (intercala con los
+    // grupos). Calculamos una fecha entre los vecinos del punto de inserción.
+    if (destinoGrupoId === null) {
+      const periodo = actividad.periodo;
+      const topGroups = gruposNotas.filter(g => g.periodo === periodo && !g.parent_id);
+      const topLoose = actividades.filter(a => a.periodo === periodo && !a.grupo_id && a.id !== actividad.id);
+      const items = nivelSuperiorOrdenado(topGroups, topLoose);
+      const fechaDe = (it: typeof items[number]) => (it.kind === 'grupo' ? (it.g as any).fecha_creacion : it.a.fecha_creacion) || '';
+      const idxAntes = antesDeActId ? items.findIndex(it => it.kind === 'suelta' && it.a.id === antesDeActId) : -1;
+      const insertAt = idxAntes >= 0 ? idxAntes : items.length;
+      const ms = (f: string) => { const t = Date.parse(f); return isNaN(t) ? Date.now() : t; };
+      const prevF = insertAt > 0 ? fechaDe(items[insertAt - 1]) : '';
+      const nextF = insertAt < items.length ? fechaDe(items[insertAt]) : '';
+      let nuevaMs: number;
+      if (prevF && nextF) nuevaMs = Math.floor((ms(prevF) + ms(nextF)) / 2);
+      else if (nextF) nuevaMs = ms(nextF) - 60000;
+      else if (prevF) nuevaMs = ms(prevF) + 60000;
+      else nuevaMs = Date.now();
+      const nuevaFecha = new Date(nuevaMs).toISOString();
+      const cambioGrupo = ((actividad as any).grupo_id ?? null) !== null;
+      try {
+        const upd: any = { fecha_creacion: nuevaFecha };
+        if (cambioGrupo) { upd.grupo_id = null; upd.porcentaje = null; }
+        const { error } = await supabase.from('Nombre de Actividades').update(upd).match(matchDe(actividad.nombre));
+        if (error) { toast({ title: "Error", description: "No se pudo mover la actividad.", variant: "destructive" }); return; }
+        if (cambioGrupo) await supabase.from('Notas').update({ grupo_id: null, porcentaje: null }).match(matchDe(actividad.nombre));
+        setActividades(prev => prev.map(a => a.id === actividad.id
+          ? { ...a, grupo_id: null, porcentaje: cambioGrupo ? null : a.porcentaje, fecha_creacion: nuevaFecha }
+          : a));
+      } catch {
+        toast({ title: "Error", description: "Error de conexión al mover la actividad.", variant: "destructive" });
+      }
+      return;
+    }
+
+    // ── Destino = DENTRO DE UN GRUPO/SUBGRUPO ─────────────────────────────────
+    // La posición dentro del grupo la da `orden`. Recalculamos el orden del grupo.
+    const cambioGrupo = ((actividad as any).grupo_id ?? null) !== destinoGrupoId;
     const enDestino = actividades
       .filter(a => a.periodo === actividad.periodo && ((a.grupo_id ?? null) === destinoGrupoId) && a.id !== actividad.id)
       .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0) || a.nombre.localeCompare(b.nombre));
@@ -3441,44 +3504,27 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
       actividad.id,
       ...enDestino.slice(insertAt).map(a => a.id),
     ];
-
-    // Si no cambió grupo y la posición es la misma, no hacemos nada.
     if (!cambioGrupo) {
       const actualIds = [actividad, ...enDestino]
         .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0) || a.nombre.localeCompare(b.nombre))
         .map(a => a.id);
       if (JSON.stringify(actualIds) === JSON.stringify(nuevoOrdenIds)) return;
     }
-
     try {
-      const matchDe = (nombre: string) => ({
-        ano_escolar: anoEscolarActual(),
-        asignatura: asignaturaSeleccionada,
-        grado: gradoSeleccionado,
-        salon: salonSeleccionado,
-        periodo: actividad.periodo,
-        nombre_actividad: nombre,
-      });
       if (cambioGrupo) {
         const { error: e1 } = await supabase
           .from('Nombre de Actividades')
           .update({ grupo_id: destinoGrupoId, porcentaje: null })
           .match(matchDe(actividad.nombre));
-        if (e1) {
-          toast({ title: "Error", description: "No se pudo mover la actividad.", variant: "destructive" });
-          return;
-        }
+        if (e1) { toast({ title: "Error", description: "No se pudo mover la actividad.", variant: "destructive" }); return; }
         await supabase.from('Notas').update({ grupo_id: destinoGrupoId, porcentaje: null }).match(matchDe(actividad.nombre));
       }
-      // Guardar el nuevo orden de todas las del grupo destino.
       const nombrePorId = new Map(actividades.map(a => [a.id, a.nombre]));
       for (let i = 0; i < nuevoOrdenIds.length; i++) {
         const nombre = nombrePorId.get(nuevoOrdenIds[i]) || (nuevoOrdenIds[i] === actividad.id ? actividad.nombre : null);
         if (!nombre) continue;
         await supabase.from('Nombre de Actividades').update({ orden: i }).match(matchDe(nombre));
       }
-
-      // Estado local: aplica grupo + nuevo orden al instante.
       const ordenPorId = new Map(nuevoOrdenIds.map((id, i) => [id, i]));
       setActividades(prev => prev.map(a => {
         const cambios: Partial<Actividad> = {};

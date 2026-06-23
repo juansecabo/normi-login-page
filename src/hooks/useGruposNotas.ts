@@ -11,6 +11,7 @@ export interface GrupoNotas extends GrupoCalc {
   salon: string;
   periodo: number;
   ano_escolar: number;
+  fecha_creacion?: string;
 }
 
 interface Aula {
