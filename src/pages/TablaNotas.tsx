@@ -1,6 +1,6 @@
 import { getPeriodoActual } from "@/utils/periodoActual";
 import { anoEscolarActual } from "@/utils/anoEscolar";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,6 +46,67 @@ import ComentarioModal from "@/components/notas/ComentarioModal";
 import NotificacionModal, { TipoNotificacion } from "@/components/notas/NotificacionModal";
 import { apiRequest, apiClient } from "@/lib/apiClient";
 import { useColegioConfig } from "@/hooks/useColegioConfig";
+import {
+  DndContext,
+  DragOverlay,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  useDraggable,
+  useDroppable,
+  pointerWithin,
+  type DragStartEvent,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+
+// --- Drag & drop de columnas de actividad (reubicar entre grupos / sacar afuera) ---
+// La columna se arrastra por su NOMBRE (handle), para no chocar con el botón ⋮.
+// Activación por long-press (delay) configurada en los sensores del componente.
+const ColumnaActividadDnD = ({ id, disabled, children }: { id: string; disabled?: boolean; children: ReactNode }) => {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: `act:${id}`, disabled });
+  return (
+    <div
+      ref={setNodeRef}
+      {...(disabled ? {} : attributes)}
+      {...(disabled ? {} : listeners)}
+      style={{ touchAction: disabled ? undefined : "none" }}
+      className={`flex-1 min-w-0 ${disabled ? "" : "cursor-grab active:cursor-grabbing"} ${isDragging ? "opacity-40" : ""}`}
+    >
+      {children}
+    </div>
+  );
+};
+
+/** Overlay invisible que cubre la banda de un grupo-hoja/subgrupo. Solo captura
+ *  el drop cuando hay un arrastre activo (si no, deja pasar los clics al ⋮). */
+const GrupoDropZone = ({ gid, activo }: { gid: string; activo: boolean }) => {
+  const { setNodeRef, isOver } = useDroppable({ id: `grp:${gid}` });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ pointerEvents: activo ? "auto" : "none" }}
+      className={`absolute inset-0 z-[2] rounded transition-colors ${
+        activo ? (isOver ? "ring-2 ring-amber-300 bg-amber-300/25" : "ring-1 ring-white/40") : ""
+      }`}
+    />
+  );
+};
+
+/** Chip flotante para soltar la actividad FUERA de todo grupo (queda suelta). */
+const SoltarAfueraDropZone = () => {
+  const { setNodeRef, isOver } = useDroppable({ id: "loose" });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`mb-2 px-4 py-2 rounded-lg border-2 border-dashed text-sm font-semibold text-center transition-colors ${
+        isOver ? "border-amber-500 bg-amber-100 text-amber-900" : "border-emerald-400 bg-emerald-50 text-emerald-800"
+      }`}
+    >
+      ⬇️ Suéltala aquí para sacarla del grupo (queda suelta, sin porcentaje)
+    </div>
+  );
+};
 
 // Notificación de notas migrada al server (multi-tenant via JWT).
 // Antes apuntaba a https://n8n.notasnormi.com/webhook/notificar-notas.
@@ -3315,6 +3376,85 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     }
   };
 
+  // --- Reubicar actividad arrastrando (long-press) entre grupos / sacar afuera ---
+  // Solo el salón abierto. Al mover, el porcentaje individual SIEMPRE queda en
+  // null: dentro de un grupo manda el % del grupo; suelta, el profe puede
+  // ponerle uno después con el lápiz. Actualiza Nombre de Actividades + Notas.
+  const [dragAct, setDragAct] = useState<Actividad | null>(null);
+  const dndSensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { delay: 350, tolerance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 350, tolerance: 8 } }),
+  );
+
+  const moverActividad = async (actividad: Actividad, destinoGrupoId: string | null) => {
+    if (soloLectura) return;
+    const actual = (actividad as any).grupo_id ?? null;
+    if (actual === destinoGrupoId) return; // ya está ahí
+    // No permitir soltar en un grupo que tiene subgrupos (debe ir en un subgrupo-hoja).
+    if (destinoGrupoId && gruposNotas.some(g => g.parent_id === destinoGrupoId)) {
+      toast({ title: "No se puede soltar ahí", description: "Ese grupo tiene subgrupos. Suelta la actividad dentro de un subgrupo.", variant: "destructive" });
+      return;
+    }
+    try {
+      const baseMatch = {
+        ano_escolar: anoEscolarActual(),
+        asignatura: asignaturaSeleccionada,
+        grado: gradoSeleccionado,
+        salon: salonSeleccionado,
+        periodo: actividad.periodo,
+        nombre_actividad: actividad.nombre,
+      };
+      const { error: e1 } = await supabase
+        .from('Nombre de Actividades')
+        .update({ grupo_id: destinoGrupoId, porcentaje: null })
+        .match(baseMatch);
+      if (e1) {
+        toast({ title: "Error", description: "No se pudo mover la actividad.", variant: "destructive" });
+        return;
+      }
+      // Las notas ya puestas heredan el grupo (y pierden el % individual).
+      await supabase
+        .from('Notas')
+        .update({ grupo_id: destinoGrupoId, porcentaje: null })
+        .match(baseMatch);
+
+      // Estado local: refleja el cambio al instante (las columnas se reorganizan).
+      setActividades(prev => prev.map(a =>
+        a.id === actividad.id && a.periodo === actividad.periodo
+          ? { ...a, grupo_id: destinoGrupoId, porcentaje: null }
+          : a
+      ));
+      const destinoNombre = destinoGrupoId
+        ? (gruposNotas.find(g => g.id === destinoGrupoId)?.nombre || "el grupo")
+        : null;
+      toast({
+        title: "Actividad movida",
+        description: destinoNombre
+          ? `"${actividad.nombre}" ahora está en "${destinoNombre}" (sin porcentaje propio).`
+          : `"${actividad.nombre}" quedó suelta (sin porcentaje).`,
+      });
+    } catch {
+      toast({ title: "Error", description: "Error de conexión al mover la actividad.", variant: "destructive" });
+    }
+  };
+
+  const handleDragStart = (e: DragStartEvent) => {
+    const id = String(e.active.id).replace(/^act:/, "");
+    const act = actividades.find(a => a.id === id && a.periodo === periodoActivo) || actividades.find(a => a.id === id) || null;
+    setDragAct(act);
+  };
+  const handleDragEnd = (e: DragEndEvent) => {
+    const act = dragAct;
+    setDragAct(null);
+    if (!act || !e.over) return;
+    const overId = String(e.over.id);
+    if (overId === "loose") {
+      moverActividad(act, null);
+    } else if (overId.startsWith("grp:")) {
+      moverActividad(act, overId.slice(4));
+    }
+  };
+
   // Resumen de actividades pendientes (sin nota) en un periodo. Solo cuenta
   // actividades YA aplicadas (con ≥1 nota en el aula). Si se pasa actividadId,
   // restringe a esa actividad.
@@ -3923,6 +4063,18 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               {soloLectura && (
                 <style>{`.ro-notas thead button{display:none!important;}`}</style>
               )}
+              <DndContext
+                sensors={dndSensors}
+                collisionDetection={pointerWithin}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDragCancel={() => setDragAct(null)}
+              >
+              {dragAct && (
+                <div className="sticky left-0 z-30 w-fit pt-2 pl-2">
+                  <SoltarAfueraDropZone />
+                </div>
+              )}
               <table className={`w-full border-separate border-spacing-0${soloLectura ? ' ro-notas' : ''}`}>
                 <thead>
                   {(() => {
@@ -3971,7 +4123,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                       className="border-r border-b border-border/30 p-2 text-center text-xs font-medium min-w-[120px] bg-emerald-300 text-emerald-950"
                                     >
                                       <div className="flex items-center justify-center gap-1">
-                                        <div className="flex-1 min-w-0">
+                                        <ColumnaActividadDnD id={actividad.id} disabled={soloLectura}>
                                           <div className="whitespace-nowrap" title={actividad.nombre}>
                                             {actividad.nombre}
                                           </div>
@@ -3980,7 +4132,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                               ({actividad.porcentaje}%)
                                             </div>
                                           )}
-                                        </div>
+                                        </ColumnaActividadDnD>
                                         <DropdownMenu>
                                           <DropdownMenuTrigger asChild>
                                             <button className="p-1 hover:bg-emerald-200 rounded transition-colors">
@@ -4014,6 +4166,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                       rowSpan={estructura.necesitaFila2 ? 2 : 1}
                                       className="border-r border-b border-border/30 p-2 text-center text-xs font-semibold bg-emerald-800 text-white relative"
                                     >
+                                      {!soloLectura && <GrupoDropZone gid={sec.grupo.id} activo={!!dragAct} />}
                                       <div className="flex flex-col items-center">
                                         <span>{sec.grupo.nombre}</span>
                                         {sec.grupo.porcentaje !== null && (
@@ -4228,11 +4381,11 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                       className="border-r border-b border-border/30 p-2 text-center text-xs font-medium min-w-[120px] bg-emerald-300 text-emerald-950"
                                     >
                                       <div className="flex items-center justify-center gap-1">
-                                        <div className="flex-1 min-w-0">
+                                        <ColumnaActividadDnD id={actividad.id} disabled={soloLectura}>
                                           <div className="whitespace-nowrap" title={actividad.nombre}>
                                             {actividad.nombre}
                                           </div>
-                                        </div>
+                                        </ColumnaActividadDnD>
                                         <DropdownMenu>
                                           <DropdownMenuTrigger asChild>
                                             <button className="p-1 hover:bg-emerald-200 rounded transition-colors">
@@ -4261,6 +4414,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                     colSpan={sub.colSpan}
                                     className="border-r border-b border-border/30 p-2 text-center text-xs font-semibold bg-emerald-600 text-white relative"
                                   >
+                                    {!soloLectura && <GrupoDropZone gid={sub.grupo.id} activo={!!dragAct} />}
                                     <div className="flex flex-col items-center">
                                       <span>{sub.grupo.nombre}</span>
                                       {sub.grupo.porcentaje !== null && (
@@ -4341,11 +4495,11 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                   className="border-r border-b border-border/30 p-2 text-center text-xs font-medium min-w-[120px] bg-emerald-300 text-emerald-950"
                                 >
                                   <div className="flex items-center justify-center gap-1">
-                                    <div className="flex-1 min-w-0">
+                                    <ColumnaActividadDnD id={actividad.id} disabled={soloLectura}>
                                       <div className="whitespace-nowrap" title={actividad.nombre}>
                                         {actividad.nombre}
                                       </div>
-                                    </div>
+                                    </ColumnaActividadDnD>
                                     <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
                                         <button className="p-1 hover:bg-emerald-200 rounded transition-colors">
@@ -4703,6 +4857,14 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                 </tfoot>
                 )}
               </table>
+              <DragOverlay>
+                {dragAct ? (
+                  <div className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold shadow-lg max-w-[200px] truncate">
+                    {dragAct.nombre}
+                  </div>
+                ) : null}
+              </DragOverlay>
+              </DndContext>
             </div>
             </>
           )}
