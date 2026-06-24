@@ -4,10 +4,15 @@ import { getSession, isPadreDeFamilia, AcudidoData } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { es } from "date-fns/locale";
-import { UserRound, X, ChevronDown, Check, XCircle } from "lucide-react";
+import { UserRound, X, ChevronDown, Check, XCircle, CalendarClock, CalendarIcon } from "lucide-react";
 import FirmaImage from "@/components/FirmaImage";
 import { entrevistadoresDeSolicitud } from "@/lib/entrevistadores";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const GRADO_ORDEN: Record<string, number> = {
   "Párvulo":0,"Prejardín":1,"Jardín":2,"Transición":3,"Primero":4,"Segundo":5,"Tercero":6,
@@ -65,15 +70,47 @@ const SolicitudEntrevistaAcudiente = () => {
     // Sin notificación de WhatsApp (decisión 11-06): la respuesta solo cambia
     // el estado en la plataforma. respuesta_vista=false enciende el numerito
     // en el dashboard del creador hasta que abra "Solicitudes creadas".
+    // Al responder manualmente Asistiré/No asistiré se limpia el flag de reprogramada.
     const { error } = await supabase
       .from("Solicitudes_Entrevista")
-      .update({ confirmado: nuevoValor, respuesta_vista: false })
+      .update({ confirmado: nuevoValor, reprogramada: false, respuesta_vista: false })
       .eq("id", solicitudId);
     if (error) {
       alert("No se pudo guardar tu respuesta. Por favor intenta de nuevo.");
       return;
     }
-    setSolicitudes(prev => prev.map(s => s.id === solicitudId ? { ...s, confirmado: nuevoValor } : s));
+    setSolicitudes(prev => prev.map(s => s.id === solicitudId ? { ...s, confirmado: nuevoValor, reprogramada: false } : s));
+  };
+
+  // Reprogramar (pedido coordinadora Diana, #17): el acudiente propone nueva
+  // fecha y hora; la solicitud queda confirmado=true + reprogramada=true.
+  // respuesta_vista=false enciende el numerito del creador para que vea el cambio.
+  const [reSol, setReSol] = useState<any | null>(null);
+  const [reFecha, setReFecha] = useState<Date | undefined>(undefined);
+  const [reCalOpen, setReCalOpen] = useState(false);
+  const [reH, setReH] = useState(""); const [reM, setReM] = useState(""); const [reAP, setReAP] = useState("");
+  const [reGuardando, setReGuardando] = useState(false);
+
+  const abrirReprogramar = (s: any) => {
+    setReFecha(s.fecha_entrevista ? new Date(s.fecha_entrevista + "T12:00:00") : undefined);
+    const m = String(s.hora_entrevista || "").match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+    setReH(m?.[1] || ""); setReM(m?.[2] || ""); setReAP((m?.[3] || "").toUpperCase());
+    setReSol(s);
+  };
+
+  const confirmarReprogramar = async () => {
+    if (!reSol || !reFecha || !reH || !reM || !reAP) return;
+    setReGuardando(true);
+    const fmtLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const nuevaFecha = fmtLocal(reFecha);
+    const nuevaHora = `${reH}:${reM} ${reAP}`;
+    const { error } = await supabase.from("Solicitudes_Entrevista")
+      .update({ fecha_entrevista: nuevaFecha, hora_entrevista: nuevaHora, confirmado: true, reprogramada: true, respuesta_vista: false })
+      .eq("id", reSol.id);
+    setReGuardando(false);
+    if (error) { alert("No se pudo reprogramar. Por favor intenta de nuevo."); return; }
+    setSolicitudes(prev => prev.map(s => s.id === reSol.id ? { ...s, fecha_entrevista: nuevaFecha, hora_entrevista: nuevaHora, confirmado: true, reprogramada: true } : s));
+    setReSol(null);
   };
 
   return (
@@ -146,7 +183,7 @@ const SolicitudEntrevistaAcudiente = () => {
                                 {/* Confirmar asistencia */}
                                 <div className="border-t border-border pt-3 mt-3">
                                   <p className="font-medium mb-2">Confirmar asistencia:</p>
-                                  <div className="flex gap-3">
+                                  <div className="flex gap-3 flex-wrap">
                                     <button
                                       onClick={() => toggleConfirmacion(s.id, true)}
                                       className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 font-medium text-sm transition-all cursor-pointer ${s.confirmado === true ? "border-green-500 bg-green-50 text-green-700" : "border-border text-muted-foreground hover:border-green-300"}`}
@@ -159,7 +196,17 @@ const SolicitudEntrevistaAcudiente = () => {
                                     >
                                       <XCircle className="w-4 h-4" /> No asistiré
                                     </button>
+                                    <button
+                                      onClick={() => abrirReprogramar(s)}
+                                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 font-medium text-sm transition-all cursor-pointer ${s.reprogramada ? "border-blue-500 bg-blue-50 text-blue-700" : "border-border text-muted-foreground hover:border-blue-300"}`}
+                                    >
+                                      <CalendarClock className="w-4 h-4" /> {s.reprogramada ? "Reprogramada" : "Reprogramar entrevista"}
+                                    </button>
                                   </div>
+                                  {s.reprogramada && (
+                                    <p className="text-xs text-blue-700 mt-2">Reprogramaste esta entrevista para el {fmtFecha(s.fecha_entrevista)} a las {s.hora_entrevista}.</p>
+                                  )}
+                                  <p className="text-xs text-muted-foreground mt-2">¿No puedes a esa hora? Usa "Reprogramar entrevista" para proponer otra fecha y hora.</p>
                                 </div>
                               </div>
                             )}
@@ -186,6 +233,61 @@ const SolicitudEntrevistaAcudiente = () => {
           )}
         </div>
       </main>
+
+      {/* Reprogramar entrevista: el acudiente propone nueva fecha y hora */}
+      <AlertDialog open={!!reSol} onOpenChange={(o) => { if (!o) setReSol(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reprogramar entrevista</AlertDialogTitle>
+            <AlertDialogDescription>
+              Elige el día y la hora en que sí puedes asistir. La entrevista quedará confirmada con la nueva fecha.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="space-y-4 py-1">
+            <div>
+              <p className="text-sm font-medium mb-1">Nueva fecha:</p>
+              <Popover open={reCalOpen} onOpenChange={setReCalOpen}>
+                <PopoverTrigger asChild>
+                  <button className="inline-flex items-center gap-1 px-3 py-1.5 border-b-2 border-primary/40 text-primary font-medium bg-transparent hover:bg-accent rounded cursor-pointer min-w-[200px]">
+                    {reFecha ? reFecha.toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" }) : "Seleccionar fecha"}
+                    <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={reFecha} onSelect={(d) => { setReFecha(d); setReCalOpen(false); }} locale={es} disabled={(d) => d < new Date(new Date().setHours(0,0,0,0))} />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div>
+              <p className="text-sm font-medium mb-1">Nueva hora:</p>
+              <div className="flex items-center gap-1">
+                <select value={reH} onChange={e => setReH(e.target.value)} className="px-1 py-1 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm cursor-pointer outline-none">
+                  <option value="">--</option>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map(h => <option key={h} value={String(h)}>{h}</option>)}
+                </select>
+                <span>:</span>
+                <select value={reM} onChange={e => setReM(e.target.value)} className="px-1 py-1 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm cursor-pointer outline-none">
+                  <option value="">--</option>
+                  {["00","05","10","15","20","25","30","35","40","45","50","55"].map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+                <select value={reAP} onChange={e => setReAP(e.target.value)} className="px-1 py-1 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm cursor-pointer outline-none">
+                  <option value="">--</option>
+                  <option value="AM">AM</option>
+                  <option value="PM">PM</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel className="cursor-pointer" disabled={reGuardando}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); confirmarReprogramar(); }} disabled={reGuardando || !reFecha || !reH || !reM || !reAP} className="cursor-pointer">
+              {reGuardando ? "Guardando…" : "Reprogramar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
