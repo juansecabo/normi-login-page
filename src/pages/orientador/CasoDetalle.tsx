@@ -5,6 +5,7 @@ import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/apiClient";
+import { useColegioConfig } from "@/hooks/useColegioConfig";
 import { ChevronDown, Plus, Search, Trash2, Pencil, FileDown, Send } from "lucide-react";
 import SignatureCanvas from "react-signature-canvas";
 import FirmaImage from "@/components/FirmaImage";
@@ -181,13 +182,14 @@ interface FormState {
 }
 
 const FirmaBlock = ({
-  label, urlGuardada, onSave, onClear, saving,
+  label, urlGuardada, onSave, onClear, saving, firmaGuardada,
 }: {
   label: string;
   urlGuardada: string | null;
   onSave: (dataUrl: string) => Promise<void>;
   onClear: () => Promise<void>;
   saving: boolean;
+  firmaGuardada?: string | null;
 }) => {
   const sigRef = useRef<any>(null);
   const [hasInk, setHasInk] = useState(false);
@@ -269,6 +271,16 @@ const FirmaBlock = ({
         >
           {saving ? "Guardando..." : "Guardar firma"}
         </button>
+        {firmaGuardada && (
+          <button
+            type="button"
+            onClick={() => onSave(firmaGuardada)}
+            disabled={saving}
+            className="text-xs px-3 py-1 rounded border border-primary text-primary hover:bg-primary/10 cursor-pointer disabled:opacity-50"
+          >
+            {saving ? "Guardando..." : "Usar firma guardada"}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -304,6 +316,8 @@ const formFromCaso = (c: Caso): FormState => ({
 const CasoDetalle = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { config } = useColegioConfig();
+  const firmaOrientadorGuardada = ((config as any)?.firma_orientador_url as string | undefined) || null;
   const { toast } = useToast();
   const [caso, setCaso] = useState<Caso | null>(null);
   const [estudiante, setEstudiante] = useState<Estudiante | null>(null);
@@ -965,6 +979,7 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
                 onSave={(d) => subirFirma(d, "orientadora")}
                 onClear={() => borrarFirma("orientadora")}
                 saving={savingFirmaO}
+                firmaGuardada={firmaOrientadorGuardada}
               />
               <FirmaBlock
                 label="Estudiante"
