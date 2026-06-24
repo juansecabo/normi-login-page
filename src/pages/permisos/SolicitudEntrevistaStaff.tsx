@@ -7,7 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 import SignatureCanvas from "react-signature-canvas";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Check, ChevronDown, UserRound, Plus, X, XCircle, RefreshCw, ClipboardList } from "lucide-react";
+import { CalendarIcon, Check, ChevronDown, UserRound, Plus, X, XCircle, RefreshCw, ClipboardList, Download } from "lucide-react";
+import { descargarCitacionEntrevista } from "@/utils/citacionEntrevistaPdf";
 import FirmaImage from "@/components/FirmaImage";
 import { apiRequest } from "@/lib/apiClient";
 import { joinEntrevistadores, entrevistadoresDeSolicitud } from "@/lib/entrevistadores";
@@ -646,6 +647,16 @@ const SolicitudEntrevistaStaff = () => {
                               </button>
                             </div>
                             <p className="text-xs text-muted-foreground mt-2">Al notificar, el acudiente recibe estas anotaciones por WhatsApp.</p>
+                          </div>
+
+                          {/* Descargar la citación (con firma y anotaciones) en PDF */}
+                          <div className="border-t border-border pt-3 mt-1">
+                            <button
+                              onClick={() => descargarCitacionEntrevista(s)}
+                              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-border font-medium text-sm hover:border-primary cursor-pointer"
+                            >
+                              <Download className="w-4 h-4" /> Descargar citación
+                            </button>
                           </div>
                         </div>
                       )}
