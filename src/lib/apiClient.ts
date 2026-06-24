@@ -738,6 +738,11 @@ export const apiClient = {
       return request<ApiConsolidadoGrupo>(`/api/consolidado-grupo${qs({ grado, salon, periodo })}`);
     },
   },
+  entrevistas: {
+    reprogramar(body: { solicitud_id: number; fecha: string; hora: string; fecha_texto?: string }): Promise<{ ok: true }> {
+      return request('/api/entrevistas/reprogramar', { method: 'POST', body: JSON.stringify(body) });
+    },
+  },
 };
 
 export { request as apiRequest };

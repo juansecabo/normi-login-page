@@ -9,6 +9,7 @@ import { es } from "date-fns/locale";
 import { UserRound, X, ChevronDown, Check, XCircle, CalendarClock, CalendarIcon } from "lucide-react";
 import FirmaImage from "@/components/FirmaImage";
 import { entrevistadoresDeSolicitud } from "@/lib/entrevistadores";
+import { apiClient } from "@/lib/apiClient";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -104,11 +105,16 @@ const SolicitudEntrevistaAcudiente = () => {
     const fmtLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     const nuevaFecha = fmtLocal(reFecha);
     const nuevaHora = `${reH}:${reM} ${reAP}`;
-    const { error } = await supabase.from("Solicitudes_Entrevista")
-      .update({ fecha_entrevista: nuevaFecha, hora_entrevista: nuevaHora, confirmado: true, reprogramada: true, respuesta_vista: false })
-      .eq("id", reSol.id);
+    const fechaTexto = reFecha.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    try {
+      // El server actualiza la solicitud Y notifica por WhatsApp al creador.
+      await apiClient.entrevistas.reprogramar({ solicitud_id: reSol.id, fecha: nuevaFecha, hora: nuevaHora, fecha_texto: fechaTexto });
+    } catch {
+      setReGuardando(false);
+      alert("No se pudo reprogramar. Por favor intenta de nuevo.");
+      return;
+    }
     setReGuardando(false);
-    if (error) { alert("No se pudo reprogramar. Por favor intenta de nuevo."); return; }
     setSolicitudes(prev => prev.map(s => s.id === reSol.id ? { ...s, fecha_entrevista: nuevaFecha, hora_entrevista: nuevaHora, confirmado: true, reprogramada: true } : s));
     setReSol(null);
   };
