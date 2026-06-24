@@ -58,6 +58,7 @@ interface Caso {
   estado: string;
   fecha_apertura: string;
   created_at: string;
+  tipo_diagnostico: string | null;
 }
 
 const fmtFecha = (s: string) => new Date(s + "T12:00:00").toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" });
@@ -178,6 +179,7 @@ const Casos = () => {
   const [filtroGrado, setFiltroGrado] = useState("");
   const [filtroSalon, setFiltroSalon] = useState("");
   const [busqueda, setBusqueda] = useState("");
+  const [soloDiagnostico, setSoloDiagnostico] = useState(false);
   const [autor, setAutor] = useState<{ id: string; nombre: string }>({ id: "", nombre: "" });
 
   // Modal nuevo caso
@@ -198,7 +200,7 @@ const Casos = () => {
     setAutor({ id: session.id, nombre: `${session.nombres || ""} ${session.apellidos || ""}`.trim() });
     (async () => {
       const [cR, eR] = await Promise.all([
-        supabase.from("Casos_Orientacion").select("id, estudiante_id, estudiante_nombre, estudiante_apellidos, estudiante_grado, estudiante_salon, motivo_atencion, estado, fecha_apertura, created_at").order("created_at", { ascending: false }),
+        supabase.from("Casos_Orientacion").select("id, estudiante_id, estudiante_nombre, estudiante_apellidos, estudiante_grado, estudiante_salon, motivo_atencion, estado, fecha_apertura, created_at, tipo_diagnostico").order("created_at", { ascending: false }),
         supabase.from("Estudiantes").select("id, grado, salon"),
       ]);
       setCasos((cR.data || []) as Caso[]);
@@ -225,6 +227,7 @@ const Casos = () => {
       if (filtroEstado && c.estado !== filtroEstado) return false;
       if (filtroGrado && c.estudiante_grado !== filtroGrado) return false;
       if (filtroSalon && c.estudiante_salon !== filtroSalon) return false;
+      if (soloDiagnostico && !c.tipo_diagnostico) return false;
       if (q) {
         const full = norm(`${c.estudiante_nombre} ${c.estudiante_apellidos}`);
         const matchNombre = tokens.every(t => full.includes(t));
@@ -239,7 +242,7 @@ const Casos = () => {
       if (np !== 0) return np;
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
-  }, [casos, filtroEstado, filtroGrado, filtroSalon, busqueda]);
+  }, [casos, filtroEstado, filtroGrado, filtroSalon, busqueda, soloDiagnostico]);
 
   const estudiantesBusqueda = useMemo(() => {
     const q = norm(estBusqueda.trim());
@@ -439,6 +442,10 @@ const Casos = () => {
                   <option value="">Todos los salones</option>
                   {salonesUnicos.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
+                <label className="inline-flex items-center gap-2 px-3 py-2 text-sm cursor-pointer select-none">
+                  <input type="checkbox" checked={soloDiagnostico} onChange={(e) => setSoloDiagnostico(e.target.checked)} className="accent-primary" />
+                  Solo con diagnóstico
+                </label>
               </div>
 
               {casosFiltrados.length === 0 ? (
@@ -455,6 +462,7 @@ const Casos = () => {
                       <div className="flex items-center gap-2 flex-wrap mb-1">
                         <span className="inline-block px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-700 rounded-full">{c.estudiante_grado} {c.estudiante_salon}</span>
                         {estadoBadge(c.estado)}
+                        {c.tipo_diagnostico && <span className="inline-block px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 rounded-full">Con diagnóstico</span>}
                       </div>
                       <p className="font-semibold text-foreground">{c.estudiante_apellidos} {c.estudiante_nombre}</p>
                       <p className="text-xs text-muted-foreground">Identificación: {c.estudiante_id}</p>

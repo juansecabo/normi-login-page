@@ -67,6 +67,10 @@ interface Caso {
   estado: string;
   fecha_apertura: string;
   fecha_cierre: string | null;
+  tipo_diagnostico: string | null;
+  diagnostico_descripcion: string | null;
+  diagnostico_fecha: string | null;
+  diagnostico_adjunto_url: string | null;
   seguimientos: Seguimiento[] | null;
   firma_orientadora_url: string | null;
   firma_estudiante_url: string | null;
@@ -545,6 +549,58 @@ const CasoDetalle = () => {
     setEliminandoSeg(false);
   };
 
+  // Diagnóstico del estudiante (#20 parte A): tipo + descripción + fecha + adjunto.
+  const [showDiag, setShowDiag] = useState(false);
+  const [diagTipo, setDiagTipo] = useState("");
+  const [diagDesc, setDiagDesc] = useState("");
+  const [diagFecha, setDiagFecha] = useState<Date | undefined>(undefined);
+  const [diagAdjuntoUrl, setDiagAdjuntoUrl] = useState<string | null>(null);
+  const [subiendoAdjunto, setSubiendoAdjunto] = useState(false);
+  const [guardandoDiag, setGuardandoDiag] = useState(false);
+
+  const abrirDiag = () => {
+    if (!caso) return;
+    setDiagTipo(caso.tipo_diagnostico || "");
+    setDiagDesc(caso.diagnostico_descripcion || "");
+    setDiagFecha(caso.diagnostico_fecha ? new Date(caso.diagnostico_fecha + "T12:00:00") : undefined);
+    setDiagAdjuntoUrl(caso.diagnostico_adjunto_url || null);
+    setShowDiag(true);
+  };
+
+  const subirAdjuntoDiag = async (file: File) => {
+    if (!caso) return;
+    setSubiendoAdjunto(true);
+    try {
+      const ext = file.name.split(".").pop() || "bin";
+      const fileName = `diagnosticos/${caso.id}_${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("normi-archivos").upload(fileName, file, { contentType: file.type || undefined, upsert: true });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from("normi-archivos").getPublicUrl(fileName);
+      setDiagAdjuntoUrl(urlData?.publicUrl || null);
+    } catch (e: any) {
+      toast({ title: "Error", description: "No se pudo subir el archivo: " + (e?.message || ""), variant: "destructive" });
+    } finally {
+      setSubiendoAdjunto(false);
+    }
+  };
+
+  const guardarDiagnostico = async () => {
+    if (!caso) return;
+    setGuardandoDiag(true);
+    const payload = {
+      tipo_diagnostico: diagTipo.trim() || null,
+      diagnostico_descripcion: diagDesc.trim() || null,
+      diagnostico_fecha: diagFecha ? fmtLocal(diagFecha) : null,
+      diagnostico_adjunto_url: diagAdjuntoUrl,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabase.from("Casos_Orientacion").update(payload).eq("id", caso.id);
+    setGuardandoDiag(false);
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    setShowDiag(false);
+    await cargar();
+  };
+
   // Notificar un seguimiento por WhatsApp a acudiente, coordinador (del nivel),
   // rector y director de grupo (#20). El server resuelve los destinatarios.
   const [notifSeg, setNotifSeg] = useState<number | null>(null);
@@ -875,6 +931,30 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
             <p className="text-sm whitespace-pre-wrap">{c.compromisos_estudiante || "—"}</p>
           </div>
 
+          {/* Diagnóstico */}
+          <div className="border-t border-border pt-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="font-semibold text-blue-700">Diagnóstico</p>
+              <button onClick={abrirDiag} className="inline-flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium border border-primary text-primary hover:bg-primary/10 cursor-pointer">
+                <Pencil className="w-4 h-4" /> {c.tipo_diagnostico ? "Editar" : "Agregar"}
+              </button>
+            </div>
+            {c.tipo_diagnostico ? (
+              <div className="text-sm space-y-1">
+                <p><span className="font-medium">Tipo:</span> {c.tipo_diagnostico}</p>
+                {c.diagnostico_fecha && <p><span className="font-medium">Fecha:</span> {fmtFecha(c.diagnostico_fecha)}</p>}
+                {c.diagnostico_descripcion && <p className="whitespace-pre-wrap"><span className="font-medium">Descripción:</span> {c.diagnostico_descripcion}</p>}
+                {c.diagnostico_adjunto_url && (
+                  <a href={c.diagnostico_adjunto_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline">
+                    <FileDown className="w-4 h-4" /> Ver adjunto
+                  </a>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Sin diagnóstico registrado.</p>
+            )}
+          </div>
+
           {/* Firmas */}
           <div className="border-t border-border pt-4">
             <p className="font-semibold text-blue-700 mb-3">Firmas</p>
@@ -1117,6 +1197,50 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
             <button onClick={() => setShowDeleteSeg(null)} disabled={eliminandoSeg} className="px-4 py-2 rounded-md border text-sm font-medium hover:bg-muted disabled:opacity-50">Cancelar</button>
             <button onClick={handleEliminarSeg} disabled={eliminandoSeg} className="px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90 disabled:opacity-50">
               {eliminandoSeg ? "Eliminando..." : "Eliminar"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Editar diagnóstico */}
+      <Dialog open={showDiag} onOpenChange={(o) => !o && !guardandoDiag && setShowDiag(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Diagnóstico del estudiante</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-1">
+            <div>
+              <label className="text-sm font-medium">Tipo de diagnóstico</label>
+              <input value={diagTipo} onChange={(e) => setDiagTipo(e.target.value)} placeholder="Ej: TDAH, dislexia, condición médica…"
+                className="w-full mt-1 px-3 py-2 border border-input rounded-md text-sm bg-background" />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Descripción</label>
+              <textarea value={diagDesc} onChange={(e) => setDiagDesc(e.target.value)} rows={3} placeholder="Detalles del diagnóstico…"
+                className="w-full mt-1 px-3 py-2 border border-input rounded-md text-sm bg-background resize-y" />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Fecha</label>
+              <input type="date" value={diagFecha ? fmtLocal(diagFecha) : ""} onChange={(e) => setDiagFecha(e.target.value ? new Date(e.target.value + "T12:00:00") : undefined)}
+                className="w-full mt-1 px-3 py-2 border border-input rounded-md text-sm bg-background" />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Adjunto</label>
+              <input type="file" accept="image/*,application/pdf" onChange={(e) => { const f = e.target.files?.[0]; if (f) subirAdjuntoDiag(f); }}
+                className="block w-full mt-1 text-sm text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:bg-primary file:text-primary-foreground file:cursor-pointer" />
+              {subiendoAdjunto && <p className="text-xs text-muted-foreground mt-1">Subiendo…</p>}
+              {diagAdjuntoUrl && !subiendoAdjunto && (
+                <div className="flex items-center gap-2 mt-1">
+                  <a href={diagAdjuntoUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline inline-flex items-center gap-1"><FileDown className="w-3.5 h-3.5" /> Ver adjunto actual</a>
+                  <button onClick={() => setDiagAdjuntoUrl(null)} className="text-xs text-destructive hover:underline">Quitar</button>
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <button onClick={() => setShowDiag(false)} disabled={guardandoDiag} className="px-4 py-2 rounded-md border text-sm font-medium hover:bg-muted disabled:opacity-50">Cancelar</button>
+            <button onClick={guardarDiagnostico} disabled={guardandoDiag || subiendoAdjunto} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-50">
+              {guardandoDiag ? "Guardando…" : "Guardar"}
             </button>
           </DialogFooter>
         </DialogContent>
