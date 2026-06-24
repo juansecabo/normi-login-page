@@ -38,6 +38,7 @@ export async function descargarCitacionEntrevista(s: any): Promise<void> {
 
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(13);
+  pdf.text("SOLICITUD DE ENTREVISTA CON ACUDIENTES", pageW / 2, y, { align: "center" });
   y += 12;
 
   pdf.setFontSize(11);
