@@ -212,7 +212,6 @@ const SolicitudEntrevistaAcudiente = () => {
                                   {s.reprogramada && (
                                     <p className="text-xs text-blue-700 mt-2">Reprogramaste esta entrevista para el {fmtFecha(s.fecha_entrevista)} a las {s.hora_entrevista}.</p>
                                   )}
-                                  <p className="text-xs text-muted-foreground mt-2">¿No puedes a esa hora? Usa "Reprogramar entrevista" para proponer otra fecha y hora.</p>
                                 </div>
                               </div>
                             )}
