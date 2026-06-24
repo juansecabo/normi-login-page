@@ -144,6 +144,47 @@ const SolicitudEntrevistaStaff = () => {
     setHistorial(prev => prev.map(s => s.id === solicitudId ? { ...s, confirmado: nuevoValor } : s));
   };
 
+  // Anotaciones de seguimiento de la entrevista (lo que se habló). El staff las
+  // escribe y puede notificarlas al acudiente por WhatsApp.
+  const [guardandoAnot, setGuardandoAnot] = useState<number | null>(null);
+  const [notificandoAnot, setNotificandoAnot] = useState<number | null>(null);
+  const setAnotacion = (id: number, texto: string) =>
+    setHistorial(prev => prev.map(s => s.id === id ? { ...s, anotaciones: texto } : s));
+
+  const guardarAnotaciones = async (s: any) => {
+    setGuardandoAnot(s.id);
+    const { error } = await supabase.from("Solicitudes_Entrevista")
+      .update({ anotaciones: s.anotaciones ?? null }).eq("id", s.id);
+    setGuardandoAnot(null);
+    if (error) { toast({ title: "No se pudo guardar", description: "Intenta de nuevo.", variant: "destructive" }); return; }
+    toast({ title: "Anotaciones guardadas" });
+  };
+
+  const notificarAnotaciones = async (s: any) => {
+    const texto = (s.anotaciones || "").trim();
+    if (!texto) { toast({ title: "Sin anotaciones", description: "Escribe las anotaciones antes de notificar.", variant: "destructive" }); return; }
+    if (!s.estudiante_id) { toast({ title: "No se pudo notificar", description: "Esta solicitud no tiene estudiante asociado.", variant: "destructive" }); return; }
+    setNotificandoAnot(s.id);
+    try {
+      // Guarda lo escrito antes de notificar (por si no le dio a "Guardar").
+      await supabase.from("Solicitudes_Entrevista").update({ anotaciones: texto }).eq("id", s.id);
+      const mensaje = `Anotaciones de la entrevista realizada sobre el estudiante ${s.estudiante_nombre} ${s.estudiante_apellidos} de ${s.estudiante_grado} ${s.estudiante_salon}:\n\n${texto}`;
+      await apiRequest('/api/comunicados/enviar', {
+        method: 'POST',
+        body: JSON.stringify({
+          destinatarios_label: `Acudiente del estudiante con id ${s.estudiante_id}`,
+          mensaje,
+          segmentos: [{ perfil: ["Acudientes"], id_destinatarios: [String(s.estudiante_id)] }],
+        }),
+      });
+      toast({ title: "Anotaciones enviadas", description: "Se notificó al acudiente por WhatsApp." });
+    } catch (e: any) {
+      toast({ title: "Error al notificar", description: e?.message || "Intenta de nuevo.", variant: "destructive" });
+    } finally {
+      setNotificandoAnot(null);
+    }
+  };
+
   // Reenviar la citación al acudiente (pedido coordinadora Diana: cuando el
   // acudiente no asiste, volver a citarlo con NUEVA fecha y hora). Abre un
   // diálogo para reprogramar; al confirmar actualiza la solicitud, reenvía el
@@ -497,6 +538,37 @@ const SolicitudEntrevistaStaff = () => {
                               <p className="text-xs text-muted-foreground mt-2">Eliges una nueva fecha y hora; el acudiente recibe de nuevo la citación y vuelve a quedar "Pendiente".</p>
                             </div>
                           )}
+
+                          {/* Seguimiento: anotaciones de lo que se habló + notificar a los padres */}
+                          <div className="border-t border-border pt-3 mt-1">
+                            <p className="font-medium mb-2">Anotaciones de la entrevista:</p>
+                            <textarea
+                              value={s.anotaciones || ""}
+                              onChange={(e) => setAnotacion(s.id, e.target.value)}
+                              rows={4}
+                              placeholder="Escribe aquí lo que se habló en la entrevista…"
+                              className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background resize-y"
+                            />
+                            <div className="flex flex-wrap gap-3 mt-2">
+                              <button
+                                onClick={() => guardarAnotaciones(s)}
+                                disabled={guardandoAnot === s.id}
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-border font-medium text-sm hover:border-primary disabled:opacity-60 cursor-pointer"
+                              >
+                                <Check className="w-4 h-4" />
+                                {guardandoAnot === s.id ? "Guardando…" : "Guardar anotaciones"}
+                              </button>
+                              <button
+                                onClick={() => notificarAnotaciones(s)}
+                                disabled={notificandoAnot === s.id || !(s.anotaciones || "").trim()}
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 disabled:opacity-60 cursor-pointer"
+                              >
+                                <UserRound className="w-4 h-4" />
+                                {notificandoAnot === s.id ? "Notificando…" : "Notificar a los padres"}
+                              </button>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-2">Al notificar, el acudiente recibe estas anotaciones por WhatsApp.</p>
+                          </div>
                         </div>
                       )}
                     </div>
