@@ -81,8 +81,8 @@ const SolicitudEntrevistaStaff = () => {
   const [fGrado, setFGrado] = useState("");
   const [fSalon, setFSalon] = useState("");
   const gradosHistorial = useMemo(
-    () => [...new Set(historial.map(s => s.estudiante_grado).filter(Boolean))],
-    [historial],
+    () => gradosColegio.filter(g => historial.some(s => s.estudiante_grado === g)),
+    [historial, gradosColegio],
   );
   const salonesHistorial = useMemo(
     () => [...new Set(historial.filter(s => !fGrado || s.estudiante_grado === fGrado).map(s => s.estudiante_salon).filter(Boolean))]
