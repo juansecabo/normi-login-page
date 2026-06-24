@@ -4,7 +4,8 @@ import { getSession, isOrientador, isAdmin, puedeAccederDashboard } from "@/hook
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronDown, Plus, Search, Trash2, Pencil, FileDown } from "lucide-react";
+import { apiClient } from "@/lib/apiClient";
+import { ChevronDown, Plus, Search, Trash2, Pencil, FileDown, Send } from "lucide-react";
 import SignatureCanvas from "react-signature-canvas";
 import FirmaImage from "@/components/FirmaImage";
 import iconCasos from "@/assets/icons/casos.png";
@@ -544,6 +545,33 @@ const CasoDetalle = () => {
     setEliminandoSeg(false);
   };
 
+  // Notificar un seguimiento por WhatsApp a acudiente, coordinador (del nivel),
+  // rector y director de grupo (#20). El server resuelve los destinatarios.
+  const [notifSeg, setNotifSeg] = useState<number | null>(null);
+  const [notificandoSeg, setNotificandoSeg] = useState(false);
+  const confirmarNotificarSeg = async () => {
+    if (!caso || notifSeg === null) return;
+    const sg = caso.seguimientos?.[notifSeg];
+    if (!sg) return;
+    const texto = [sg.anotacion, sg.observaciones].filter(Boolean).join("\n\n").trim();
+    if (!texto) { toast({ title: "Sin contenido", description: "Este seguimiento no tiene texto.", variant: "destructive" }); return; }
+    setNotificandoSeg(true);
+    try {
+      await apiClient.orientacion.notificarSeguimiento({
+        estudiante_id: caso.estudiante_id,
+        grado: caso.estudiante_grado,
+        salon: caso.estudiante_salon,
+        texto,
+      });
+      toast({ title: "Seguimiento notificado", description: "Se envió por WhatsApp al acudiente, coordinador, rector y director de grupo." });
+      setNotifSeg(null);
+    } catch (e: any) {
+      toast({ title: "Error al notificar", description: e?.message || "Intenta de nuevo.", variant: "destructive" });
+    } finally {
+      setNotificandoSeg(false);
+    }
+  };
+
   const subirFirma = async (dataUrl: string, who: "orientadora" | "estudiante") => {
     if (!caso) return;
     const setSaving = who === "orientadora" ? setSavingFirmaO : setSavingFirmaE;
@@ -893,6 +921,9 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
                         <span className="font-bold text-foreground">Seguimiento #{idx + 1}</span> · {fmtFecha(sg.fecha)} · {sg.autor_nombre}
                       </p>
                       <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={() => setNotifSeg(idx)} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-primary" title="Notificar seguimiento">
+                          <Send className="w-4 h-4" />
+                        </button>
                         <button onClick={() => abrirEditarSeg(idx, sg)} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-primary" title="Editar seguimiento">
                           <Pencil className="w-4 h-4" />
                         </button>
@@ -1086,6 +1117,24 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
             <button onClick={() => setShowDeleteSeg(null)} disabled={eliminandoSeg} className="px-4 py-2 rounded-md border text-sm font-medium hover:bg-muted disabled:opacity-50">Cancelar</button>
             <button onClick={handleEliminarSeg} disabled={eliminandoSeg} className="px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90 disabled:opacity-50">
               {eliminandoSeg ? "Eliminando..." : "Eliminar"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmar notificación de seguimiento */}
+      <Dialog open={notifSeg !== null} onOpenChange={(o) => !o && !notificandoSeg && setNotifSeg(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Notificar este seguimiento</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground py-2">
+            Se enviará por WhatsApp el texto de este seguimiento al <strong>acudiente</strong>, al <strong>coordinador</strong> del nivel, al <strong>rector</strong> y al <strong>director de grupo</strong> del estudiante.
+          </p>
+          <DialogFooter>
+            <button onClick={() => setNotifSeg(null)} disabled={notificandoSeg} className="px-4 py-2 rounded-md border text-sm font-medium hover:bg-muted disabled:opacity-50">Cancelar</button>
+            <button onClick={confirmarNotificarSeg} disabled={notificandoSeg} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-50">
+              {notificandoSeg ? "Notificando…" : "Notificar"}
             </button>
           </DialogFooter>
         </DialogContent>

@@ -743,6 +743,11 @@ export const apiClient = {
       return request('/api/entrevistas/reprogramar', { method: 'POST', body: JSON.stringify(body) });
     },
   },
+  orientacion: {
+    notificarSeguimiento(body: { estudiante_id: number | string; grado: string; salon: string; texto: string }): Promise<{ ok: true; enviados: number }> {
+      return request('/api/orientacion/notificar-seguimiento', { method: 'POST', body: JSON.stringify(body) });
+    },
+  },
 };
 
 export { request as apiRequest };
