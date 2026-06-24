@@ -197,7 +197,7 @@ const SolicitudEntrevistaStaff = () => {
     try {
       // Guarda lo escrito antes de notificar (por si no le dio a "Guardar").
       await supabase.from("Solicitudes_Entrevista").update({ anotaciones: texto }).eq("id", s.id);
-      const mensaje = `Anotaciones de la entrevista realizada sobre el estudiante ${s.estudiante_nombre} ${s.estudiante_apellidos} de ${s.estudiante_grado} ${s.estudiante_salon}:\n\n${texto}`;
+      const mensaje = `Anotaciones de la entrevista realizada sobre ${s.estudiante_nombre}:\n\n${texto}`;
       await apiRequest('/api/comunicados/enviar', {
         method: 'POST',
         body: JSON.stringify({
