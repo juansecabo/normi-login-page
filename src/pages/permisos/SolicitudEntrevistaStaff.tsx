@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getSession, isProfesor, puedeAccederDashboard, isAdmin } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
@@ -75,6 +75,29 @@ const SolicitudEntrevistaStaff = () => {
   const [historial, setHistorial] = useState<any[]>([]);
   const [loadingHistorial, setLoadingHistorial] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+
+  // Filtros del historial (nombre del estudiante, grado, salón)
+  const [fNombre, setFNombre] = useState("");
+  const [fGrado, setFGrado] = useState("");
+  const [fSalon, setFSalon] = useState("");
+  const gradosHistorial = useMemo(
+    () => [...new Set(historial.map(s => s.estudiante_grado).filter(Boolean))],
+    [historial],
+  );
+  const salonesHistorial = useMemo(
+    () => [...new Set(historial.filter(s => !fGrado || s.estudiante_grado === fGrado).map(s => s.estudiante_salon).filter(Boolean))]
+      .sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric: true })),
+    [historial, fGrado],
+  );
+  const historialFiltrado = useMemo(() => {
+    const q = fNombre.trim().toLowerCase();
+    return historial.filter(s => {
+      if (fGrado && s.estudiante_grado !== fGrado) return false;
+      if (fSalon && s.estudiante_salon !== fSalon) return false;
+      if (q && !`${s.estudiante_apellidos || ""} ${s.estudiante_nombre || ""}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [historial, fNombre, fGrado, fSalon]);
 
   const backLink = isAdmin() ? "/dashboard-admin" : puedeAccederDashboard() ? "/dashboard-rector" : "/dashboard";
   const session = getSession();
@@ -510,11 +533,31 @@ const SolicitudEntrevistaStaff = () => {
         {vista === "creadas" && (
           <div className="bg-card rounded-lg shadow-soft p-6">
             <h3 className="text-lg font-bold text-foreground mb-4">Solicitudes creadas</h3>
+
+            {!loadingHistorial && historial.length > 0 && (
+              <div className="flex flex-wrap gap-3 mb-4">
+                <input
+                  value={fNombre} onChange={(e) => setFNombre(e.target.value)}
+                  placeholder="Buscar por nombre del estudiante…"
+                  className="flex-1 min-w-[200px] px-3 py-2 border border-input rounded-md text-sm bg-background"
+                />
+                <select value={fGrado} onChange={(e) => { setFGrado(e.target.value); setFSalon(""); }} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                  <option value="">Todos los grados</option>
+                  {gradosHistorial.map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
+                <select value={fSalon} onChange={(e) => setFSalon(e.target.value)} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                  <option value="">Todos los salones</option>
+                  {salonesHistorial.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+            )}
+
             {loadingHistorial ? <p className="text-muted-foreground text-center py-8">Cargando...</p>
             : historial.length === 0 ? <p className="text-muted-foreground text-center py-8">No hay solicitudes registradas</p>
+            : historialFiltrado.length === 0 ? <p className="text-muted-foreground text-center py-8">Ninguna solicitud coincide con el filtro.</p>
             : (
               <div className="space-y-3">
-                {historial.map(s => {
+                {historialFiltrado.map(s => {
                   const isExp = expandedId === s.id;
                   return (
                     <div key={s.id} className="border border-border rounded-lg overflow-hidden">
