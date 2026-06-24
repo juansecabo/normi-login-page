@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { getSession, isProfesor, puedeAccederDashboard, isAdmin } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import SignatureCanvas from "react-signature-canvas";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Check, ChevronDown, UserRound, Plus, X, XCircle, RefreshCw } from "lucide-react";
+import { CalendarIcon, Check, ChevronDown, UserRound, Plus, X, XCircle, RefreshCw, ClipboardList } from "lucide-react";
 import FirmaImage from "@/components/FirmaImage";
 import { apiRequest } from "@/lib/apiClient";
 import { joinEntrevistadores, entrevistadoresDeSolicitud } from "@/lib/entrevistadores";
@@ -32,14 +32,20 @@ const cargoDisplay = (cargo: string, nombres: string) => {
 };
 
 
-type Tab = "crear" | "historial";
-
 const SolicitudEntrevistaStaff = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const sigCanvas = useRef<SignatureCanvas>(null);
 
-  const [tab, setTab] = useState<Tab>("crear");
+  // La vista vive en la URL (?vista=crear|creadas) para que al actualizar (F5)
+  // siga en la misma pantalla. Sin valor = menú con las dos fichas.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const vistaRaw = searchParams.get("vista");
+  const vista: "crear" | "creadas" | null = vistaRaw === "crear" || vistaRaw === "creadas" ? vistaRaw : null;
+  const irA = (v: "crear" | "creadas" | null) => {
+    if (v) searchParams.set("vista", v); else searchParams.delete("vista");
+    setSearchParams(searchParams);
+  };
   // Respuestas de acudientes aún no vistas (numerito sobre "Solicitudes creadas")
   const [respuestasNuevas, setRespuestasNuevas] = useState(0);
   const [aceptoTerminos, setAceptoTerminos] = useState(false);
@@ -117,7 +123,7 @@ const SolicitudEntrevistaStaff = () => {
     })();
   }, [grado, salon]);
 
-  useEffect(() => { if (tab === "historial") fetchHistorial(); }, [tab]);
+  useEffect(() => { if (vista === "creadas") { fetchHistorial(); setRespuestasNuevas(0); } }, [vista]);
 
   const fetchHistorial = async () => {
     setLoadingHistorial(true);
@@ -325,29 +331,55 @@ const SolicitudEntrevistaStaff = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormi backLink={backLink} />
+      <HeaderNormi />
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <div className="flex items-center gap-2 text-sm flex-wrap">
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
-            <span className="text-foreground font-medium">Solicitud de Entrevista</span>
+            {vista ? (
+              <>
+                <button onClick={() => irA(null)} className="text-primary hover:underline">Solicitud de Entrevista</button>
+                <span className="text-muted-foreground">&rarr;</span>
+                <span className="text-foreground font-medium">{vista === "crear" ? "Crear solicitud" : "Solicitudes creadas"}</span>
+              </>
+            ) : (
+              <span className="text-foreground font-medium">Solicitud de Entrevista</span>
+            )}
           </div>
         </div>
 
-        <div className="flex gap-2 mb-6">
-          <button onClick={() => setTab("crear")} className={`px-4 py-2 rounded-lg font-medium transition-colors cursor-pointer ${tab === "crear" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"}`}>Crear solicitud</button>
-          <button onClick={() => { setTab("historial"); setRespuestasNuevas(0); }} className={`relative px-4 py-2 rounded-lg font-medium transition-colors cursor-pointer ${tab === "historial" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"}`}>
-            Solicitudes creadas
-            {respuestasNuevas > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 shadow-sm z-10">
-                {respuestasNuevas}
-              </span>
-            )}
-          </button>
-        </div>
+        {/* Menú: dos fichas (Crear solicitud / Solicitudes creadas) */}
+        {vista === null && (
+          <div className="bg-card rounded-lg shadow-soft p-6 md:p-8">
+            <h2 className="text-xl font-bold text-foreground mb-6 text-center">Solicitud de Entrevista</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+              <button
+                onClick={() => irA("crear")}
+                className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg border-2 border-border bg-background transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/5"
+              >
+                <Plus className="w-12 h-12 text-lime-700" />
+                <span className="font-semibold text-foreground text-center">Crear solicitud</span>
+                <span className="text-xs text-muted-foreground text-center">Cita a un acudiente a una entrevista.</span>
+              </button>
+              <button
+                onClick={() => irA("creadas")}
+                className="relative flex flex-col items-center justify-center gap-4 p-8 rounded-lg border-2 border-border bg-background transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/5"
+              >
+                {respuestasNuevas > 0 && (
+                  <span className="absolute top-3 right-3 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 shadow-sm">
+                    {respuestasNuevas}
+                  </span>
+                )}
+                <ClipboardList className="w-12 h-12 text-orange-600" />
+                <span className="font-semibold text-foreground text-center">Solicitudes creadas</span>
+                <span className="text-xs text-muted-foreground text-center">Revisa estados, reprograma y deja anotaciones.</span>
+              </button>
+            </div>
+          </div>
+        )}
 
-        {tab === "crear" && (
+        {vista === "crear" && (
           <div className="bg-card rounded-lg shadow-soft p-6">
             <div className="text-sm text-foreground leading-relaxed space-y-4">
               {/* Fecha, Grado, Jornada */}
@@ -475,7 +507,7 @@ const SolicitudEntrevistaStaff = () => {
           </div>
         )}
 
-        {tab === "historial" && (
+        {vista === "creadas" && (
           <div className="bg-card rounded-lg shadow-soft p-6">
             <h3 className="text-lg font-bold text-foreground mb-4">Solicitudes creadas</h3>
             {loadingHistorial ? <p className="text-muted-foreground text-center py-8">Cargando...</p>
