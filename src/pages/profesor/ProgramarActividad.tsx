@@ -3,8 +3,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { subirArchivo } from "@/lib/storage";
 import { apiRequest } from "@/lib/apiClient";
-import { getSession, isProfesor } from "@/hooks/useSession";
-import { rankGrado } from "@/utils/grados";
+import { getSession, isProfesor, isEstudiante, isPadreDeFamilia } from "@/hooks/useSession";
+import { rankGrado, useGradosColegio } from "@/utils/grados";
 import HeaderNormi from "@/components/HeaderNormi";
 import CharCircle from "@/components/CharCircle";
 import {
@@ -128,6 +128,11 @@ const handleDescargarArchivo = async (url: string) => {
 const ProgramarActividad = () => {
   const navigate = useNavigate();
 
+  // #22: los internos que NO son profesores programan actividades GENERALES
+  // (sin asignatura, eligen grado/salón de toda la estructura del colegio).
+  const modoGeneral = !isProfesor();
+  const { grados: gradosColegio } = useGradosColegio();
+
   // Profesor info
   const [profesorIdReal, setProfesorIdReal] = useState("");
   const [profesorNombres, setProfesorNombres] = useState("");
@@ -201,7 +206,8 @@ const ProgramarActividad = () => {
     const inicializar = async () => {
       const session = getSession();
 
-      if (!session.id || !isProfesor()) {
+      // Estudiantes/acudientes no entran. Profesores y demás internos sí.
+      if (!session.id || isEstudiante() || isPadreDeFamilia()) {
         navigate("/");
         return;
       }
@@ -219,12 +225,19 @@ const ProgramarActividad = () => {
           .single();
 
         if (profesorError || !profesor) {
-          toast({ title: "Error", description: "No se pudo obtener la información del profesor", variant: "destructive" });
+          toast({ title: "Error", description: "No se pudo obtener tu información", variant: "destructive" });
           navigate('/dashboard');
           return;
         }
 
         setProfesorIdReal(profesor.numero_de_telefono);
+
+        // Modo general (no-profesor): sin asignación; la asignatura es fija "General".
+        if (modoGeneral) {
+          setAsignaturaSeleccionada("General");
+          setLoadingAsignaciones(false);
+          return;
+        }
 
         // Get assignments directly by id
         const { data: asignacionesData, error: asignacionError } = await supabase
@@ -279,13 +292,26 @@ const ProgramarActividad = () => {
 
   // ===== Programar tab: cascade grados/salones =====
   useEffect(() => {
+    // Modo general: los grados salen de la estructura del colegio (no de asignación).
+    if (modoGeneral) { setGrados([...gradosColegio].sort((a, b) => rankGrado(a) - rankGrado(b))); return; }
     if (!asignaturaSeleccionada) { setGrados([]); return; }
     const filtradas = asignaciones.filter(a => ((a['Asignatura(s)'] || []).flat() as string[]).includes(asignaturaSeleccionada));
     const todos = filtradas.flatMap(a => a['Grado(s)'] || []).flat() as string[];
     setGrados([...new Set(todos)].sort((a, b) => rankGrado(a) - rankGrado(b)));
-  }, [asignaturaSeleccionada, asignaciones]);
+  }, [asignaturaSeleccionada, asignaciones, modoGeneral, gradosColegio]);
 
   useEffect(() => {
+    // Modo general: salones reales del grado, desde Estudiantes del colegio.
+    if (modoGeneral) {
+      if (!gradoSeleccionado) { setSalones([]); return; }
+      (async () => {
+        const { data } = await supabase.from('Estudiantes').select('salon').eq('grado', gradoSeleccionado);
+        const set = new Set<string>();
+        for (const r of (data || []) as { salon: string | null }[]) if (r.salon) set.add(String(r.salon));
+        setSalones([...set].sort((a, b) => a.localeCompare(b, 'es', { numeric: true })));
+      })();
+      return;
+    }
     if (!asignaturaSeleccionada || !gradoSeleccionado) { setSalones([]); return; }
     const filtradas = asignaciones.filter(a => {
       const asigs = (a['Asignatura(s)'] || []).flat() as string[];
@@ -294,7 +320,7 @@ const ProgramarActividad = () => {
     });
     const todos = filtradas.flatMap(a => a['Salon(es)'] || []).flat() as string[];
     setSalones([...new Set(todos)].sort((a, b) => a.localeCompare(b, 'es', { numeric: true })));
-  }, [gradoSeleccionado, asignaturaSeleccionada, asignaciones]);
+  }, [gradoSeleccionado, asignaturaSeleccionada, asignaciones, modoGeneral]);
 
   // ===== Actividades tab: cascade grados/salones =====
   useEffect(() => {
@@ -729,8 +755,8 @@ const ProgramarActividad = () => {
           {vista === "programar" && (
             <div className="bg-card rounded-lg shadow-soft p-6 md:p-8 space-y-5 max-w-3xl mx-auto">
               {loadingAsignaciones ? (
-                <div className="text-center text-muted-foreground py-8">Cargando asignaturas...</div>
-              ) : asignaturas.length === 0 ? (
+                <div className="text-center text-muted-foreground py-8">Cargando...</div>
+              ) : (!modoGeneral && asignaturas.length === 0) ? (
                 <div className="text-center text-muted-foreground py-8">No tienes asignaturas asignadas</div>
               ) : (
                 <>
@@ -745,16 +771,21 @@ const ProgramarActividad = () => {
                     </button>
                   </div>
 
-                  {/* 1. Asignatura */}
-                  <div className="space-y-2">
-                    <Label>Asignatura</Label>
-                    <ResponsiveSelect
-                      value={asignaturaSeleccionada}
-                      onValueChange={handleAsignaturaChange}
-                      placeholder="Seleccionar asignatura"
-                      options={asignaturas.map((a) => ({ value: a, label: a }))}
-                    />
-                  </div>
+                  {/* 1. Asignatura — solo profesores; los demás internos programan actividad General */}
+                  {!modoGeneral && (
+                    <div className="space-y-2">
+                      <Label>Asignatura</Label>
+                      <ResponsiveSelect
+                        value={asignaturaSeleccionada}
+                        onValueChange={handleAsignaturaChange}
+                        placeholder="Seleccionar asignatura"
+                        options={asignaturas.map((a) => ({ value: a, label: a }))}
+                      />
+                    </div>
+                  )}
+                  {modoGeneral && (
+                    <p className="text-sm text-muted-foreground">Actividad <span className="font-semibold text-foreground">General</span> (institucional). Elige el grado y salón(es).</p>
+                  )}
 
                   {/* 2. Grado */}
                   {asignaturaSeleccionada && (
