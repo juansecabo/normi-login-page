@@ -1058,18 +1058,6 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
                         <p className="text-sm whitespace-pre-wrap">{sg.observaciones}</p>
                       </>
                     )}
-                    {sg.adjuntos && sg.adjuntos.length > 0 && (
-                      <>
-                        <p className="text-xs mt-2 font-bold text-emerald-700">Adjuntos:</p>
-                        <div className="flex flex-wrap gap-3">
-                          {sg.adjuntos.map((url, j) => (
-                            <a key={j} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
-                              <FileDown className="w-4 h-4" /> Archivo {j + 1}
-                            </a>
-                          ))}
-                        </div>
-                      </>
-                    )}
                   </div>
                 ))}
               </div>
