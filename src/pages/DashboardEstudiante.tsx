@@ -75,7 +75,7 @@ const DashboardEstudiante = () => {
             .gt('id', minComLastSeen),
           supabase
             .from('Calendario Actividades')
-            .select('*', { count: 'exact', head: true })
+            .select('auto_id, estudiantes_ids')
             .eq('Grado', session.grado)
             .eq('Salon', session.salon)
             .gt('auto_id', lastSeen['actividades'] ?? 0),
@@ -138,7 +138,11 @@ const DashboardEstudiante = () => {
           b.documentos = dedup.filter((c: any) => c.archivo_url && c.id > (lastSeen['documentos'] ?? 0)).length;
         }
 
-        b.actividades = actResult.count ?? 0;
+        // #25: contar solo las actividades que le aplican (todo el salón o dirigidas a él).
+        b.actividades = ((actResult.data as any[]) || []).filter((a) => {
+          const e = a.estudiantes_ids as (number | string)[] | null;
+          return !e || e.length === 0 || e.map(String).includes(String(id));
+        }).length;
 
         if (notasResult.data) {
           const notasEpochs = notasResult.data

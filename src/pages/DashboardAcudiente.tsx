@@ -83,7 +83,7 @@ const DashboardAcudiente = () => {
           ...acudidosData.flatMap((acudido, i) => [
             supabase
               .from('Calendario Actividades')
-              .select('*', { count: 'exact', head: true })
+              .select('auto_id, estudiantes_ids')
               .eq('Grado', acudido.grado)
               .eq('Salon', acudido.salon)
               .gt('auto_id', lastSeenAcudidos[i]['actividades'] ?? 0),
@@ -162,7 +162,12 @@ const DashboardAcudiente = () => {
         for (let i = 0; i < acudidosData.length; i++) {
           const actResult = acudidosResults[i * 2] as any;
           const notasResult = acudidosResults[i * 2 + 1] as any;
-          b.actividades += actResult.count ?? 0;
+          // #25: contar solo las actividades que le aplican a ESTE acudido.
+          const mid = String(acudidosData[i].id);
+          b.actividades += ((actResult.data as any[]) || []).filter((a) => {
+            const e = a.estudiantes_ids as (number | string)[] | null;
+            return !e || e.length === 0 || e.map(String).includes(mid);
+          }).length;
 
           if (notasResult.data) {
             const notasEpochs = notasResult.data

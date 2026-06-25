@@ -31,6 +31,7 @@ interface Actividad {
   Descripción: string;
   fecha_de_presentacion: string;
   archivo_url: string | null;
+  estudiantes_ids: number[] | null;
 }
 
 const GRADO_ORDEN: Record<string, number> = {
@@ -267,6 +268,11 @@ const TodasActividades = () => {
                               <span className="inline-block px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full">
                                 {a.Grado} {a.Salon}
                               </span>
+                              {a.estudiantes_ids && a.estudiantes_ids.length > 0 && (
+                                <span className="inline-block px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 rounded-full">
+                                  Dirigida a {a.estudiantes_ids.length} estudiante{a.estudiantes_ids.length > 1 ? "s" : ""}
+                                </span>
+                              )}
                               <span className="inline-block px-2 py-0.5 text-xs font-medium bg-secondary text-secondary-foreground rounded-full">
                                 {a.Asignatura}
                               </span>
