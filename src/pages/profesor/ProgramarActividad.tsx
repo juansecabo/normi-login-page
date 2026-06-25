@@ -901,8 +901,9 @@ const ProgramarActividad = () => {
                                 {estudiantesAula.length === 0 ? (
                                   <p className="text-xs text-muted-foreground">Cargando estudiantes…</p>
                                 ) : (() => {
-                                  const q = busquedaEst.trim().toLowerCase();
-                                  const lista = q ? estudiantesAula.filter(e => e.nombre.toLowerCase().includes(q)) : estudiantesAula;
+                                  const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+                                  const q = norm(busquedaEst.trim());
+                                  const lista = q ? estudiantesAula.filter(e => norm(e.nombre).includes(q)) : estudiantesAula;
                                   if (lista.length === 0) return <p className="text-xs text-muted-foreground px-2 py-1">Sin coincidencias.</p>;
                                   return lista.map((e) => {
                                     const marcado = estudiantesDestino.includes(e.id);
