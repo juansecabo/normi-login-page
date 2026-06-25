@@ -747,6 +747,12 @@ export const apiClient = {
     notificarSeguimiento(body: { estudiante_id: number | string; grado: string; salon: string; texto: string }): Promise<{ ok: true; enviados: number }> {
       return request('/api/orientacion/notificar-seguimiento', { method: 'POST', body: JSON.stringify(body) });
     },
+    contactoEstudiante(estudiante_id: number | string): Promise<{ estudiante_telefono: string; acudientes: { nombre: string; telefono: string }[] }> {
+      return request(`/api/orientacion/contacto-estudiante${qs({ estudiante_id })}`);
+    },
+    remisionRecibida(remision_id: number): Promise<{ ok: true; recibido_por_nombre: string }> {
+      return request('/api/orientacion/remision-recibida', { method: 'POST', body: JSON.stringify({ remision_id }) });
+    },
   },
 };
 

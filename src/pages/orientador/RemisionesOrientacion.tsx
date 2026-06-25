@@ -4,9 +4,10 @@ import { getSession, isOrientador, isAdmin } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronDown, Download, Check, Search, CalendarPlus } from "lucide-react";
+import { ChevronDown, Download, Check, Search, CalendarPlus, Phone } from "lucide-react";
 import iconCasos from "@/assets/icons/casos.png";
 import { markLastSeen } from "@/utils/notificaciones";
+import { apiClient } from "@/lib/apiClient";
 
 interface Remision {
   id: number;
@@ -79,6 +80,17 @@ const descargarWord = async (r: Remision) => {
       ? `${r.estudiante_grado} ${r.estudiante_salon}`
       : r.estudiante_grado;
 
+    // Contacto del estudiante y acudientes (para el Word).
+    let telEst = "No registrado";
+    let acuStr = "No registrados";
+    try {
+      const c = await apiClient.orientacion.contactoEstudiante(r.estudiante_id);
+      if (c.estudiante_telefono) telEst = c.estudiante_telefono;
+      if (c.acudientes.length > 0) {
+        acuStr = c.acudientes.map(a => `${a.nombre}${a.telefono ? ` (${a.telefono})` : ""}`).join("\n");
+      }
+    } catch (e) { console.warn("Contacto:", e); }
+
     doc.render({
       FECHA: fmtFecha(r.fecha),
       NOMBRE_ESTUDIANTE: `${r.estudiante_nombre} ${r.estudiante_apellidos}`,
@@ -86,6 +98,8 @@ const descargarWord = async (r: Remision) => {
       MOTIVO: r.motivo || "",
       DOCENTE: [r.docente_cargo, r.docente_nombre].filter(Boolean).join(" "),
       RECIBIDO_POR: r.recibido_por_nombre || "",
+      TELEFONO_ESTUDIANTE: telEst,
+      ACUDIENTES: acuStr,
     });
 
     const renderedZip = doc.getZip();
@@ -206,37 +220,43 @@ const RemisionesOrientacion = () => {
     });
   }, [remisiones, busqueda, filtroGrado, filtroSalon]);
 
+  // Contacto del estudiante (teléfono + acudientes), cargado al expandir.
+  const [contactos, setContactos] = useState<Record<number, { estudiante_telefono: string; acudientes: { nombre: string; telefono: string }[] } | "loading">>({});
+
   const toggleExpanded = (id: number) => {
     setExpandedIds(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
+    // Cargar contacto del estudiante la primera vez que se expande.
+    const rem = remisiones.find(r => r.id === id);
+    if (rem && contactos[id] === undefined) {
+      setContactos(prev => ({ ...prev, [id]: "loading" }));
+      apiClient.orientacion.contactoEstudiante(rem.estudiante_id)
+        .then(c => setContactos(prev => ({ ...prev, [id]: c })))
+        .catch(() => setContactos(prev => ({ ...prev, [id]: { estudiante_telefono: "", acudientes: [] } })));
+    }
   };
 
   const marcarRecibida = async (r: Remision) => {
     if (marcando != null) return;
     setMarcando(r.id);
-    const { error } = await supabase
-      .from("Remisiones_Orientacion")
-      .update({
-        recibido_por_id: autorId,
-        recibido_por_nombre: autorNombre,
-        fecha_recibido: new Date().toISOString(),
-      } as any)
-      .eq("id", r.id);
-    if (error) {
-      console.error("Marcar recibida:", error);
-      toast({ title: "Error", description: "No se pudo marcar como recibida.", variant: "destructive" });
-    } else {
+    try {
+      // El server marca recibida (recibido_por = usuario) y avisa por WhatsApp al docente.
+      const res = await apiClient.orientacion.remisionRecibida(r.id);
       setRemisiones(prev => prev.map(x =>
         x.id === r.id
-          ? { ...x, recibido_por_id: autorId, recibido_por_nombre: autorNombre, fecha_recibido: new Date().toISOString() }
+          ? { ...x, recibido_por_id: autorId, recibido_por_nombre: res.recibido_por_nombre || autorNombre, fecha_recibido: new Date().toISOString() }
           : x
       ));
-      toast({ title: "Recibida", description: "Marcada como recibida." });
+      toast({ title: "Recibida", description: "Marcada como recibida. Se avisó al docente por WhatsApp." });
+    } catch (e: any) {
+      console.error("Marcar recibida:", e);
+      toast({ title: "Error", description: "No se pudo marcar como recibida.", variant: "destructive" });
+    } finally {
+      setMarcando(null);
     }
-    setMarcando(null);
   };
 
   const backLink = isAdmin() ? "/dashboard-admin" : "/dashboard-rector";
@@ -337,6 +357,27 @@ const RemisionesOrientacion = () => {
                         <div>
                           <div className="text-xs font-medium text-muted-foreground mb-1">Motivo</div>
                           <div className="text-sm whitespace-pre-wrap">{r.motivo}</div>
+                        </div>
+                        {/* Contacto del estudiante y acudientes */}
+                        <div className="rounded-md border border-border bg-background p-3">
+                          <div className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> Contacto</div>
+                          {contactos[r.id] === undefined || contactos[r.id] === "loading" ? (
+                            <p className="text-sm text-muted-foreground">Cargando…</p>
+                          ) : (
+                            <div className="text-sm space-y-0.5">
+                              <p><span className="font-medium">Estudiante:</span> {(contactos[r.id] as any).estudiante_telefono || "No registrado"}</p>
+                              {((contactos[r.id] as any).acudientes || []).length > 0 ? (
+                                <div>
+                                  <span className="font-medium">Acudientes:</span>
+                                  <ul className="list-disc ml-5">
+                                    {(contactos[r.id] as any).acudientes.map((a: any, i: number) => (
+                                      <li key={i}>{a.nombre}{a.telefono ? ` — ${a.telefono}` : ""}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              ) : <p className="text-muted-foreground">Sin acudientes registrados.</p>}
+                            </div>
+                          )}
                         </div>
                         {r.firma_url && (
                           <div>
