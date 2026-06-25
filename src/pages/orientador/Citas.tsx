@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { getSession, isOrientador, isAdmin } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
-import { apiRequest } from "@/lib/apiClient";
 import { ChevronDown, Plus, Search, Calendar as CalendarIcon, Check, ClipboardList, Trash2 } from "lucide-react";
 import iconCitas from "@/assets/icons/citas.png";
 import { Calendar } from "@/components/ui/calendar";
@@ -36,6 +35,7 @@ const ASISTENTES_LABELS: Record<string, string> = {
   otro: "Otro acudiente",
 };
 
+const WEBHOOK_BASE = "https://n8n.notasnormi.com/webhook";
 
 interface Estudiante {
   id: number;
@@ -212,40 +212,43 @@ const Citas = () => {
       return;
     }
 
-    // Notificar por WhatsApp a los seleccionados en "Informar a".
-    // Migrado del webhook n8n (obsoleto) al endpoint del server, con segmentos
-    // POR ID del estudiante (estructurado, sin parser de texto → sin fugas).
+    // Notificar por WhatsApp a los seleccionados en "Informar a"
     try {
+      const session = getSession();
+      const remitente = [session.cargo, session.nombres, session.apellidos].filter(Boolean).join(" ");
       const fechaTexto = fecha.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
       const horaTexto = horaSave ? `${horaH}:${horaM} ${horaAP}` : "por definir";
       const incEst = asistentes.includes("estudiante");
       const incAcu = asistentes.includes("acudientes");
       const estLabel = `${estSeleccionado.nombres} ${estSeleccionado.apellidos} (${estSeleccionado.grado} ${estSeleccionado.salon})`;
-      const idEst = String(estSeleccionado.id);
-      const segmentos: { perfil: string[]; id_destinatarios: string[] }[] = [];
       let intro = "";
-      let label = "";
+      let destinatarios = "";
       if (incEst && incAcu) {
         intro = `Se ha agendado una cita de orientación escolar con ${estLabel} y sus acudientes.`;
-        label = `Estudiante y acudientes del estudiante con id ${idEst}`;
-        segmentos.push({ perfil: ["Estudiantes"], id_destinatarios: [idEst] }, { perfil: ["Acudientes"], id_destinatarios: [idEst] });
+        destinatarios = `Estudiante y acudientes del estudiante con id ${estSeleccionado.id}`;
       } else if (incEst) {
         intro = `Se ha agendado una cita de orientación escolar contigo.`;
-        label = `Estudiante con id ${idEst}`;
-        segmentos.push({ perfil: ["Estudiantes"], id_destinatarios: [idEst] });
+        destinatarios = `Estudiante con id ${estSeleccionado.id}`;
       } else if (incAcu) {
         intro = `Se ha agendado una cita de orientación escolar con usted, acudiente de ${estLabel}.`;
-        label = `Acudientes del estudiante con id ${idEst}`;
-        segmentos.push({ perfil: ["Acudientes"], id_destinatarios: [idEst] });
+        destinatarios = `Acudientes del estudiante con id ${estSeleccionado.id}`;
       }
       const motivoTrim = motivo.trim();
       const motivoConPunto = /[.!?]$/.test(motivoTrim) ? motivoTrim : `${motivoTrim}.`;
       const mensaje = `${intro}\n\nFecha: ${fechaTexto}.\nHora: ${horaTexto}.\nMotivo: ${motivoConPunto}`;
-      if (segmentos.length > 0) {
-        await apiRequest('/api/comunicados/enviar', {
-          method: 'POST',
-          body: JSON.stringify({ destinatarios_label: label, mensaje, segmentos }),
-        });
+      if (destinatarios) {
+        // Esta página solo la usan Orientador(a) Escolar y Administrador,
+        // así que siempre vamos por el workflow regular "Enviar Comunicado".
+        fetch(`${WEBHOOK_BASE}/enviar-comunicado`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            remitente,
+            destinatarios,
+            mensaje,
+            id_remitente: session.id,
+          }),
+        }).catch(e => console.error("Webhook cita:", e));
       }
     } catch (e) {
       console.error("Notificación cita:", e);
