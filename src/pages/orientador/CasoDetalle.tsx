@@ -32,6 +32,7 @@ interface Seguimiento {
   anotacion: string;
   observaciones: string;
   autor_nombre: string;
+  adjuntos?: string[];
 }
 
 interface Caso {
@@ -339,6 +340,8 @@ const CasoDetalle = () => {
   const [segObservaciones, setSegObservaciones] = useState("");
   const [segFecha, setSegFecha] = useState<Date | undefined>(new Date());
   const [guardandoSeg, setGuardandoSeg] = useState(false);
+  const [segAdjuntos, setSegAdjuntos] = useState<string[]>([]);
+  const [segSubiendo, setSegSubiendo] = useState(false);
 
   // Eliminaciones
   const [showDeleteCaso, setShowDeleteCaso] = useState(false);
@@ -512,6 +515,7 @@ const CasoDetalle = () => {
     setSegFecha(new Date());
     setSegAnotacion("");
     setSegObservaciones("");
+    setSegAdjuntos([]);
     setShowSeg(true);
   };
 
@@ -520,7 +524,25 @@ const CasoDetalle = () => {
     setSegFecha(sg.fecha ? new Date(sg.fecha + "T12:00:00") : new Date());
     setSegAnotacion(sg.anotacion || "");
     setSegObservaciones(sg.observaciones || "");
+    setSegAdjuntos(sg.adjuntos || []);
     setShowSeg(true);
+  };
+
+  const subirAdjuntoSeg = async (file: File) => {
+    if (!caso) return;
+    setSegSubiendo(true);
+    try {
+      const ext = file.name.split(".").pop() || "bin";
+      const fileName = `seguimientos/${caso.id}_${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("normi-archivos").upload(fileName, file, { contentType: file.type || undefined, upsert: true });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from("normi-archivos").getPublicUrl(fileName);
+      if (urlData?.publicUrl) setSegAdjuntos(prev => [...prev, urlData.publicUrl]);
+    } catch (e: any) {
+      toast({ title: "Error", description: "No se pudo subir el archivo: " + (e?.message || ""), variant: "destructive" });
+    } finally {
+      setSegSubiendo(false);
+    }
   };
 
   const handleGuardarSeg = async () => {
@@ -533,6 +555,7 @@ const CasoDetalle = () => {
       autor_nombre: editingSegIndex !== null && caso.seguimientos?.[editingSegIndex]?.autor_nombre
         ? caso.seguimientos[editingSegIndex].autor_nombre
         : autor.nombre,
+      adjuntos: segAdjuntos,
     };
     const base = caso.seguimientos || [];
     const seguimientos = editingSegIndex !== null
@@ -1035,6 +1058,18 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
                         <p className="text-sm whitespace-pre-wrap">{sg.observaciones}</p>
                       </>
                     )}
+                    {sg.adjuntos && sg.adjuntos.length > 0 && (
+                      <>
+                        <p className="text-xs mt-2 font-bold text-emerald-700">Adjuntos:</p>
+                        <div className="flex flex-wrap gap-3">
+                          {sg.adjuntos.map((url, j) => (
+                            <a key={j} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
+                              <FileDown className="w-4 h-4" /> Archivo {j + 1}
+                            </a>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1171,10 +1206,26 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
               <label className="text-sm font-medium block mb-1">Observaciones</label>
               <textarea value={segObservaciones} onChange={e => setSegObservaciones(e.target.value)} placeholder="Observaciones, conclusiones o compromisos..." className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background min-h-[100px] resize-y" />
             </div>
+            <div>
+              <label className="text-sm font-medium block mb-1">Archivos adjuntos (opcional)</label>
+              <input type="file" accept="image/*,application/pdf" onChange={(e) => { const f = e.target.files?.[0]; if (f) subirAdjuntoSeg(f); e.currentTarget.value = ""; }}
+                className="block w-full text-sm text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:bg-primary file:text-primary-foreground file:cursor-pointer" />
+              {segSubiendo && <p className="text-xs text-muted-foreground mt-1">Subiendo…</p>}
+              {segAdjuntos.length > 0 && (
+                <ul className="mt-2 space-y-1">
+                  {segAdjuntos.map((url, i) => (
+                    <li key={i} className="flex items-center gap-2 text-xs">
+                      <a href={url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1 truncate"><FileDown className="w-3.5 h-3.5 shrink-0" /> Archivo {i + 1}</a>
+                      <button type="button" onClick={() => setSegAdjuntos(prev => prev.filter((_, j) => j !== i))} className="text-destructive hover:underline shrink-0">Quitar</button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <button onClick={() => { setShowSeg(false); setEditingSegIndex(null); }} className="px-4 py-2 rounded-md border text-sm font-medium hover:bg-muted">Cancelar</button>
-            <button onClick={handleGuardarSeg} disabled={guardandoSeg || !segAnotacion.trim()} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
+            <button onClick={handleGuardarSeg} disabled={guardandoSeg || segSubiendo || !segAnotacion.trim()} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
               {guardandoSeg ? "Guardando..." : (editingSegIndex !== null ? "Guardar cambios" : "Registrar seguimiento")}
             </button>
           </DialogFooter>
