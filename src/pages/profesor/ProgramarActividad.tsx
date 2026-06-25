@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Calendar, Paperclip, FileText, X, Loader2, Pencil, Trash2, Eye, Download, RotateCcw } from "lucide-react";
+import { Calendar, Paperclip, FileText, X, Loader2, Pencil, Trash2, Eye, Download, RotateCcw, Search } from "lucide-react";
 
 const diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 
@@ -156,6 +156,7 @@ const ProgramarActividad = () => {
   const [destinoEspecifico, setDestinoEspecifico] = useState(false);
   const [estudiantesAula, setEstudiantesAula] = useState<{ id: string; nombre: string; salon: string }[]>([]);
   const [estudiantesDestino, setEstudiantesDestino] = useState<string[]>([]);
+  const [busquedaEst, setBusquedaEst] = useState("");
 
   // Programar form fields
   const [descripcion, setDescripcion] = useState("");
@@ -886,20 +887,36 @@ const ProgramarActividad = () => {
                             </button>
                           </div>
                           {destinoEspecifico && (
-                            <div className="border border-border rounded-md p-2 max-h-56 overflow-y-auto space-y-1">
-                              {estudiantesAula.length === 0 ? (
-                                <p className="text-xs text-muted-foreground">Cargando estudiantes…</p>
-                              ) : estudiantesAula.map((e) => {
-                                const marcado = estudiantesDestino.includes(e.id);
-                                return (
-                                  <label key={e.id} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted/40 cursor-pointer text-sm">
-                                    <input type="checkbox" checked={marcado}
-                                      onChange={() => setEstudiantesDestino(prev => marcado ? prev.filter(x => x !== e.id) : [...prev, e.id])}
-                                      className="w-4 h-4 accent-green-500 cursor-pointer" />
-                                    <span>{e.nombre}{salonesSeleccionados.length > 1 ? ` · Salón ${e.salon}` : ""}</span>
-                                  </label>
-                                );
-                              })}
+                            <div className="border border-border rounded-md overflow-hidden">
+                              <div className="relative border-b border-border bg-background">
+                                <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                                <input
+                                  value={busquedaEst}
+                                  onChange={(e) => setBusquedaEst(e.target.value)}
+                                  placeholder="Buscar estudiante…"
+                                  className="w-full pl-8 pr-3 py-2 text-sm bg-background outline-none"
+                                />
+                              </div>
+                              <div className="p-2 max-h-56 overflow-y-auto space-y-1">
+                                {estudiantesAula.length === 0 ? (
+                                  <p className="text-xs text-muted-foreground">Cargando estudiantes…</p>
+                                ) : (() => {
+                                  const q = busquedaEst.trim().toLowerCase();
+                                  const lista = q ? estudiantesAula.filter(e => e.nombre.toLowerCase().includes(q)) : estudiantesAula;
+                                  if (lista.length === 0) return <p className="text-xs text-muted-foreground px-2 py-1">Sin coincidencias.</p>;
+                                  return lista.map((e) => {
+                                    const marcado = estudiantesDestino.includes(e.id);
+                                    return (
+                                      <label key={e.id} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted/40 cursor-pointer text-sm">
+                                        <input type="checkbox" checked={marcado}
+                                          onChange={() => setEstudiantesDestino(prev => marcado ? prev.filter(x => x !== e.id) : [...prev, e.id])}
+                                          className="w-4 h-4 accent-green-500 cursor-pointer" />
+                                        <span>{e.nombre}{salonesSeleccionados.length > 1 ? ` · Salón ${e.salon}` : ""}</span>
+                                      </label>
+                                    );
+                                  });
+                                })()}
+                              </div>
                             </div>
                           )}
                           {destinoEspecifico && estudiantesDestino.length > 0 && (
