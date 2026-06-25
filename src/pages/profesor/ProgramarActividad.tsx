@@ -783,9 +783,6 @@ const ProgramarActividad = () => {
                       />
                     </div>
                   )}
-                  {modoGeneral && (
-                    <p className="text-sm text-muted-foreground">Actividad <span className="font-semibold text-foreground">General</span> (institucional). Elige el grado y salón(es).</p>
-                  )}
 
                   {/* 2. Grado */}
                   {asignaturaSeleccionada && (
