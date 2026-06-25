@@ -152,6 +152,10 @@ const ProgramarActividad = () => {
   const [gradoSeleccionado, setGradoSeleccionado] = useState("");
   const [salonesSeleccionados, setSalonesSeleccionados] = useState<string[]>([]);
   const [tipoSeleccionado, setTipoSeleccionado] = useState("");
+  // #25: dirigir la actividad a estudiantes específicos del salón (en vez de todo el salón).
+  const [destinoEspecifico, setDestinoEspecifico] = useState(false);
+  const [estudiantesAula, setEstudiantesAula] = useState<{ id: string; nombre: string; salon: string }[]>([]);
+  const [estudiantesDestino, setEstudiantesDestino] = useState<string[]>([]);
 
   // Programar form fields
   const [descripcion, setDescripcion] = useState("");
@@ -322,6 +326,20 @@ const ProgramarActividad = () => {
     setSalones([...new Set(todos)].sort((a, b) => a.localeCompare(b, 'es', { numeric: true })));
   }, [gradoSeleccionado, asignaturaSeleccionada, asignaciones, modoGeneral]);
 
+  // #25: cargar estudiantes de los salones seleccionados cuando se dirige a específicos.
+  useEffect(() => {
+    if (!destinoEspecifico || !gradoSeleccionado || salonesSeleccionados.length === 0) { setEstudiantesAula([]); return; }
+    let cancel = false;
+    (async () => {
+      const { data } = await supabase.from("Estudiantes").select("id, salon").eq("grado", gradoSeleccionado).in("salon", salonesSeleccionados);
+      const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
+      const en = sortByApellidosNombres(await enrichWithNombres((data || []) as any));
+      if (cancel) return;
+      setEstudiantesAula(en.map((e: any) => ({ id: String(e.id), nombre: `${e.apellidos || ""} ${e.nombres || ""}`.trim(), salon: String(e.salon) })));
+    })();
+    return () => { cancel = true; };
+  }, [destinoEspecifico, gradoSeleccionado, salonesSeleccionados]);
+
   // ===== Actividades tab: cascade grados/salones =====
   useEffect(() => {
     if (!actAsignatura) { setActGrados([]); return; }
@@ -423,11 +441,18 @@ const ProgramarActividad = () => {
     setDescripcion("");
     setFechaSeleccionada(undefined);
     setArchivosSeleccionados([]);
+    setDestinoEspecifico(false);
+    setEstudiantesDestino([]);
+    setEstudiantesAula([]);
   };
 
   const handleProgramar = async () => {
     if (salonesSeleccionados.length === 0) {
       toast({ title: "Error", description: "Selecciona al menos un salón", variant: "destructive" });
+      return;
+    }
+    if (destinoEspecifico && estudiantesDestino.length === 0) {
+      toast({ title: "Error", description: "Selecciona al menos un estudiante, o elige \"Todo el salón\".", variant: "destructive" });
       return;
     }
     if (!descripcion.trim()) {
@@ -474,6 +499,13 @@ const ProgramarActividad = () => {
       const fallidos: string[] = [];
 
       for (const salon of salonesAProgramar) {
+        // #25: si va a estudiantes específicos, solo los de ESTE salón.
+        const idsEsteSalon = destinoEspecifico
+          ? estudiantesDestino.filter(id => estudiantesAula.find(e => e.id === id)?.salon === salon)
+          : [];
+        // Salón marcado pero sin estudiantes elegidos en modo específico: se omite.
+        if (destinoEspecifico && idsEsteSalon.length === 0) continue;
+
         const insertData: Record<string, unknown> = {
           id_profesor: profesorIdReal,
           Nombres: profesorNombres,
@@ -483,6 +515,7 @@ const ProgramarActividad = () => {
           Salon: salon,
           Descripción: descripcionFinal,
           fecha_de_presentacion: fechaFormateada,
+          estudiantes_ids: destinoEspecifico ? idsEsteSalon.map(Number) : null,
         };
         if (archivoUrlFinal) {
           insertData.archivo_url = archivoUrlFinal;
@@ -512,6 +545,7 @@ const ProgramarActividad = () => {
               descripcion: descripcionFinal,
               fecha: mostrarFecha(fechaFormateada),
               ...(archivoUrlFinal ? { archivo_url: archivoUrlFinal } : {}),
+              ...(destinoEspecifico ? { estudiantes_ids: idsEsteSalon } : {}),
             }),
           });
         } catch (err) {
@@ -836,6 +870,43 @@ const ProgramarActividad = () => {
                           </p>
                         )}
                       </div>
+
+                      {/* #25: ¿Para todo el salón o estudiantes específicos? */}
+                      {salonesSeleccionados.length > 0 && (
+                        <div className="space-y-2">
+                          <Label>¿Para quién?</Label>
+                          <div className="flex gap-2 flex-wrap">
+                            <button type="button" onClick={() => { setDestinoEspecifico(false); setEstudiantesDestino([]); }}
+                              className={`px-3 py-2 rounded-md border text-sm cursor-pointer ${!destinoEspecifico ? "border-primary bg-primary/10 text-foreground" : "border-border bg-background text-muted-foreground hover:bg-muted/40"}`}>
+                              Todo el salón
+                            </button>
+                            <button type="button" onClick={() => setDestinoEspecifico(true)}
+                              className={`px-3 py-2 rounded-md border text-sm cursor-pointer ${destinoEspecifico ? "border-primary bg-primary/10 text-foreground" : "border-border bg-background text-muted-foreground hover:bg-muted/40"}`}>
+                              Estudiantes específicos
+                            </button>
+                          </div>
+                          {destinoEspecifico && (
+                            <div className="border border-border rounded-md p-2 max-h-56 overflow-y-auto space-y-1">
+                              {estudiantesAula.length === 0 ? (
+                                <p className="text-xs text-muted-foreground">Cargando estudiantes…</p>
+                              ) : estudiantesAula.map((e) => {
+                                const marcado = estudiantesDestino.includes(e.id);
+                                return (
+                                  <label key={e.id} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted/40 cursor-pointer text-sm">
+                                    <input type="checkbox" checked={marcado}
+                                      onChange={() => setEstudiantesDestino(prev => marcado ? prev.filter(x => x !== e.id) : [...prev, e.id])}
+                                      className="w-4 h-4 accent-green-500 cursor-pointer" />
+                                    <span>{e.nombre}{salonesSeleccionados.length > 1 ? ` · Salón ${e.salon}` : ""}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          )}
+                          {destinoEspecifico && estudiantesDestino.length > 0 && (
+                            <p className="text-xs text-muted-foreground">Solo le aparecerá a {estudiantesDestino.length} estudiante(s) y sus acudientes.</p>
+                          )}
+                        </div>
+                      )}
 
                       {/* 4. Tipo (opcional) — solo profesores; los internos no eligen tipo */}
                       {!modoGeneral && (

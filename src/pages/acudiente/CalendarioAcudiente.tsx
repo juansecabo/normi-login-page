@@ -110,10 +110,16 @@ const CalendarioAcudiente = () => {
         const todasActividades: ActividadConHijo[] = [];
         for (const { acudido, data, error } of resultados) {
           if (!error && data) {
-            data.forEach((a: ActividadCalendario) => {
+            // #25: solo las actividades para todo el salón o dirigidas a ESTE acudido.
+            const mid = String(acudido.id);
+            const propias = (data as any[]).filter((a) => {
+              const e = a.estudiantes_ids as (number | string)[] | null;
+              return !e || e.length === 0 || e.map(String).includes(mid);
+            });
+            propias.forEach((a: ActividadCalendario) => {
               todasActividades.push({ ...a, acudido });
             });
-            const ids = data.map((a: any) => Number(a.auto_id)).filter((id: number) => !isNaN(id) && id > 0);
+            const ids = propias.map((a: any) => Number(a.auto_id)).filter((id: number) => !isNaN(id) && id > 0);
             const maxId = ids.length > 0 ? Math.max(...ids) : 0;
             markLastSeen('actividades', acudido.id, maxId);
           }

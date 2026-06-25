@@ -97,8 +97,14 @@ const CalendarioEstudiante = () => {
           .order('fecha_de_presentacion', { ascending: true });
 
         if (!error && data) {
-          setActividades(data);
-          const ids = data.map((a: any) => Number(a.auto_id)).filter((id: number) => !isNaN(id) && id > 0);
+          // #25: ocultar actividades dirigidas a otros estudiantes del salón.
+          const mid = String(session.id);
+          const propias = (data as any[]).filter((a) => {
+            const e = a.estudiantes_ids as (number | string)[] | null;
+            return !e || e.length === 0 || e.map(String).includes(mid);
+          });
+          setActividades(propias);
+          const ids = propias.map((a: any) => Number(a.auto_id)).filter((id: number) => !isNaN(id) && id > 0);
           const maxId = ids.length > 0 ? Math.max(...ids) : 0;
           markLastSeen('actividades', session.id!, maxId);
         }
