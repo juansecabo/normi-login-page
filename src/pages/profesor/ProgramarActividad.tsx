@@ -837,16 +837,18 @@ const ProgramarActividad = () => {
                         )}
                       </div>
 
-                      {/* 4. Tipo (opcional) */}
-                      <div className="space-y-2">
-                        <Label>Tipo de actividad (opcional)</Label>
-                        <ResponsiveSelect
-                          value={tipoSeleccionado}
-                          onValueChange={setTipoSeleccionado}
-                          placeholder="Sin tipo específico"
-                          options={TIPOS_ACTIVIDAD.map((t) => ({ value: t, label: t }))}
-                        />
-                      </div>
+                      {/* 4. Tipo (opcional) — solo profesores; los internos no eligen tipo */}
+                      {!modoGeneral && (
+                        <div className="space-y-2">
+                          <Label>Tipo de actividad (opcional)</Label>
+                          <ResponsiveSelect
+                            value={tipoSeleccionado}
+                            onValueChange={setTipoSeleccionado}
+                            placeholder="Sin tipo específico"
+                            options={TIPOS_ACTIVIDAD.map((t) => ({ value: t, label: t }))}
+                          />
+                        </div>
+                      )}
 
                       {/* 5. Descripción */}
                       <div className="space-y-2">
