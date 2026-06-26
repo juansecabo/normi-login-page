@@ -4400,16 +4400,16 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
           ) : (
             <>
             {!soloLectura && !esFinalDefinitiva && getActividadesPorPeriodo(periodoActivo).length > 0 && (
-              <div className="flex items-center justify-end gap-4 px-3 py-2 border-l border-t border-border bg-muted/20 flex-wrap">
+              <div className="flex items-center justify-between md:justify-end gap-2 md:gap-4 px-3 py-2 border-l border-t border-border bg-muted/20">
                 <button
                   onClick={() => abrirPendientes(periodoActivo, null)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 text-sm font-semibold transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 text-sm font-semibold transition-colors whitespace-nowrap shrink-0"
                   title="Avisar a estudiantes y acudientes las actividades sin nota"
                 >
                   📭 Notificar pendientes
                 </button>
                 {getEstructuraThead(periodoActivo).hayJerarquia && (
-                  <label className="flex items-center gap-2 text-sm font-medium text-foreground cursor-pointer select-none">
+                  <label className="flex items-center gap-2 text-sm font-medium text-foreground cursor-pointer select-none whitespace-nowrap shrink-0">
                     <input
                       type="checkbox"
                       checked={verPromedios}
