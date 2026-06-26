@@ -108,6 +108,11 @@ const AvatarUploader = ({ width = 110, height = 140, target }: AvatarUploaderPro
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [target?.avatarUrl]);
 
+  // Mientras la <img> de la foto carga, mostramos una ruedita en vez de las
+  // iniciales (evita el "flash" de iniciales en quienes sí tienen foto).
+  const [imgLoaded, setImgLoaded] = useState(false);
+  useEffect(() => { setImgLoaded(false); }, [avatarUrl]);
+
   const [stage, setStage] = useState<Stage>("closed");
   const [pickedSrc, setPickedSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -288,7 +293,19 @@ const AvatarUploader = ({ width = 110, height = 140, target }: AvatarUploaderPro
         title={avatarUrl ? "Cambiar foto" : "Subir foto"}
       >
         {avatarUrl ? (
-          <img src={avatarUrl} alt="Foto de perfil" className="w-full h-full object-cover" />
+          <>
+            <img
+              src={avatarUrl}
+              alt="Foto de perfil"
+              onLoad={() => setImgLoaded(true)}
+              className={`w-full h-full object-cover transition-opacity duration-200 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
+            />
+            {!imgLoaded && (
+              <span className="absolute inset-0 flex items-center justify-center">
+                <Loader2 className="animate-spin text-primary/70" style={{ width: fontSize, height: fontSize }} />
+              </span>
+            )}
+          </>
         ) : (
           <span className="text-primary font-bold" style={{ fontSize }}>
             {initials(dispNombres, dispApellidos)}

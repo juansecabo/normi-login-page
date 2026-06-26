@@ -9,11 +9,11 @@
 
 import { useEffect, useState } from "react";
 
-// DESACTIVADA temporalmente (a pedido de Juan, 2026-06-15): la barra aparecía a
-// TODOS los perfiles en cada deploy. Para reactivarla, pon BANNER_ACTIVO = true.
-// Pendiente al reactivar: mostrarla solo a la audiencia afectada por el cambio
+// Reactivada (a pedido de Juan, 2026-06-26) tras la racha de cambios. La barra
+// vuelve a aparecer cuando hay un build más nuevo en el server.
+// Pendiente (opcional): mostrarla solo a la audiencia afectada por el cambio
 // (ver version.json + rol de la sesión).
-const BANNER_ACTIVO = false;
+const BANNER_ACTIVO = true;
 
 export default function UpdateBanner() {
   const [needRefresh, setNeedRefresh] = useState(false);
