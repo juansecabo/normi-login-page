@@ -99,7 +99,7 @@ const ConsolidadoNotasPreescolar = ({
               {apellidosEstudiante} {nombreEstudiante}
             </h2>
             <p className="text-muted-foreground">
-              Id: {idEstudiante} | {grado} - {salon}
+              Id: {idEstudiante} | {grado} {salon}
             </p>
             <p className="mt-2 text-xs text-muted-foreground italic">
               Informe descriptivo de preescolar
