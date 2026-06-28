@@ -4416,7 +4416,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                       onChange={(e) => setVerPromedios(e.target.checked)}
                       className="w-4 h-4 accent-primary cursor-pointer"
                     />
-                    Ver promedios
+                    Ver promedios por grupo
                   </label>
                 )}
               </div>
