@@ -669,17 +669,17 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
             <button
               type="button"
               onClick={() => toggleAsignatura(asignatura)}
-              className="w-full text-left bg-primary/10 hover:bg-primary/15 transition-colors p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3"
+              className="w-full text-left bg-primary/10 hover:bg-primary/15 transition-colors p-4 flex items-center justify-between gap-3"
             >
               <div className="min-w-0">
-                <h3 className="text-lg font-bold text-foreground">{asignatura}</h3>
+                <h3 className="text-lg font-bold text-foreground truncate">{asignatura}</h3>
                 {profesoresPorAsignatura[asignatura] && (
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">
                     {profLabelPorAsignatura[asignatura] || 'Profesor(a):'} {profesoresPorAsignatura[asignatura]}
                   </p>
                 )}
               </div>
-              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 self-end sm:self-auto">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted text-muted-foreground text-xs font-semibold whitespace-nowrap" title="Porcentaje calificado hasta ahora">{pctCalif}%</span>
                 {completo ? (
                   <span className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-semibold whitespace-nowrap">✓ Periodo completo</span>
