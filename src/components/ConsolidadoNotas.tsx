@@ -23,6 +23,8 @@ interface Actividad {
   porcentaje: number | null;
   asignatura: string;
   grupo_id?: string | null;
+  orden?: number | null;
+  fecha_creacion?: string;
 }
 
 interface GrupoLocal extends GrupoCalc {
@@ -30,6 +32,7 @@ interface GrupoLocal extends GrupoCalc {
   periodo: number;
   nombre: string;
   orden: number | null;
+  fecha_creacion?: string;
 }
 
 type NotasEstudiante = {
@@ -62,6 +65,17 @@ const periodos = [
   { numero: 3, nombre: "3°" },
   { numero: 4, nombre: "4°" },
 ];
+
+// Posición en el nivel superior de la tabla del profesor = fecha_creacion (UTC).
+// Mismo criterio que TablaNotas: grupos y actividades sueltas se intercalan por
+// fecha, para que el orden aquí sea idéntico al que ve el profesor.
+const parseFechaUTC = (f?: string): number => {
+  if (!f) return 0;
+  let s = String(f).trim().replace(' ', 'T');
+  if (!/[zZ]$|[+-]\d{2}:?\d{2}$/.test(s)) s += 'Z';
+  const t = Date.parse(s);
+  return isNaN(t) ? 0 : t;
+};
 
 const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante, grado, salon }: ConsolidadoNotasProps) => {
   const [asignaturas, setAsignaturas] = useState<string[]>([]);
@@ -218,6 +232,8 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
               porcentaje: act.porcentaje,
               asignatura: act.asignatura,
               grupo_id: act.grupo_id ?? null,
+              orden: act.orden ?? null,
+              fecha_creacion: act.fecha_creacion ?? undefined,
             });
           });
           setActividadesPorAsignatura(actividadesPorAsig);
@@ -227,7 +243,7 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
         // Cargar Grupos_Notas para todas las asignaturas del aula del estudiante
         const { data: gruposData } = await supabase
           .from('Grupos_Notas')
-          .select('id, nombre, asignatura, periodo, porcentaje, parent_id, orden')
+          .select('id, nombre, asignatura, periodo, porcentaje, parent_id, orden, fecha_creacion')
           .eq('ano_escolar', anoEscolarActual())
           .eq('grado', grado)
           .eq('salon', salon)
@@ -242,6 +258,7 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
             porcentaje: Number(g.porcentaje),
             parent_id: g.parent_id,
             orden: g.orden ?? null,
+            fecha_creacion: g.fecha_creacion ?? undefined,
           })));
         }
 
@@ -459,37 +476,47 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
       return <div className="p-4 text-center text-muted-foreground text-sm">No hay actividades registradas en este período</div>;
     }
     const gid = (a: Actividad) => a.grupo_id ?? actividadGrupo.get(`${asignatura}|${a.id}`) ?? null;
-    const gruposPeriodo = grupos
-      .filter(g => g.asignatura === asignatura && g.periodo === periodoActivo)
-      .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
+    const porOrden = (a: { orden?: number | null }, b: { orden?: number | null }) => (a.orden ?? 0) - (b.orden ?? 0);
+    const gruposPeriodo = grupos.filter(g => g.asignatura === asignatura && g.periodo === periodoActivo);
     const top = gruposPeriodo.filter(g => g.parent_id === null);
+    const sueltas = actividadesDelPeriodo.filter(a => gid(a) === null);
     const filas: JSX.Element[] = [];
 
-    if (top.length === 0) {
-      // Notas sueltas: sin grupos, solo las actividades.
-      actividadesDelPeriodo.forEach(a => filas.push(filaActividad(asignatura, periodoActivo, a, '')));
-    } else {
-      for (const g of top) {
+    // Pinta un grupo top: encabezado + sus actividades (por orden) + subgrupos (por orden).
+    const pintarGrupo = (g: GrupoLocal) => {
+      filas.push(
+        <div key={`g-${g.id}`} className="flex items-baseline gap-2 px-4 py-2 bg-secondary/70 border-t border-border">
+          <span className="font-bold text-foreground">{g.nombre}</span>
+          {g.porcentaje !== null && <span className="text-xs font-normal text-muted-foreground">({g.porcentaje}%)</span>}
+        </div>
+      );
+      actividadesDelPeriodo.filter(a => gid(a) === g.id).sort(porOrden)
+        .forEach(a => filas.push(filaActividad(asignatura, periodoActivo, a, 'pl-7')));
+      gruposPeriodo.filter(sg => sg.parent_id === g.id).sort(porOrden).forEach(sg => {
         filas.push(
-          <div key={`g-${g.id}`} className="flex items-baseline gap-2 px-4 py-2 bg-secondary/70 border-t border-border">
-            <span className="font-bold text-foreground">{g.nombre}</span>
-            {g.porcentaje !== null && <span className="text-xs font-normal text-muted-foreground">({g.porcentaje}%)</span>}
+          <div key={`sg-${sg.id}`} className="flex items-baseline gap-2 px-4 pl-7 py-1.5 bg-secondary/30 border-t border-border/60">
+            <span className="text-sm font-semibold text-foreground/80">{sg.nombre}</span>
+            {sg.porcentaje !== null && <span className="text-xs font-normal text-muted-foreground">({sg.porcentaje}%)</span>}
           </div>
         );
-        actividadesDelPeriodo.filter(a => gid(a) === g.id).forEach(a => filas.push(filaActividad(asignatura, periodoActivo, a, 'pl-7')));
-        const subs = gruposPeriodo.filter(sg => sg.parent_id === g.id);
-        for (const sg of subs) {
-          filas.push(
-            <div key={`sg-${sg.id}`} className="flex items-baseline gap-2 px-4 pl-7 py-1.5 bg-secondary/30 border-t border-border/60">
-              <span className="text-sm font-semibold text-foreground/80">{sg.nombre}</span>
-              {sg.porcentaje !== null && <span className="text-xs font-normal text-muted-foreground">({sg.porcentaje}%)</span>}
-            </div>
-          );
-          actividadesDelPeriodo.filter(a => gid(a) === sg.id).forEach(a => filas.push(filaActividad(asignatura, periodoActivo, a, 'pl-11')));
-        }
-      }
-      // Actividades sueltas (sin grupo) al final, si las hubiera.
-      actividadesDelPeriodo.filter(a => gid(a) === null).forEach(a => filas.push(filaActividad(asignatura, periodoActivo, a, '')));
+        actividadesDelPeriodo.filter(a => gid(a) === sg.id).sort(porOrden)
+          .forEach(a => filas.push(filaActividad(asignatura, periodoActivo, a, 'pl-11')));
+      });
+    };
+
+    if (top.length === 0) {
+      // Sin grupos (modo plano): solo actividades, en el orden de la tabla del profesor.
+      [...actividadesDelPeriodo]
+        .sort((a, b) => parseFechaUTC(a.fecha_creacion) - parseFechaUTC(b.fecha_creacion))
+        .forEach(a => filas.push(filaActividad(asignatura, periodoActivo, a, '')));
+    } else {
+      // Nivel superior = grupos + actividades sueltas INTERCALADOS por fecha_creacion,
+      // idéntico a la tabla del profesor: cada suelta cae en su posición real, no al final.
+      const items: Array<{ fecha: number; render: () => void }> = [
+        ...top.map(g => ({ fecha: parseFechaUTC(g.fecha_creacion), render: () => pintarGrupo(g) })),
+        ...sueltas.map(a => ({ fecha: parseFechaUTC(a.fecha_creacion), render: () => { filas.push(filaActividad(asignatura, periodoActivo, a, '')); } })),
+      ];
+      items.sort((x, y) => x.fecha - y.fecha).forEach(it => it.render());
     }
 
     // Definitiva del periodo: la fila SIEMPRE aparece. Si el periodo no está
