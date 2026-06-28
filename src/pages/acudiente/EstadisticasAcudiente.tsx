@@ -96,7 +96,7 @@ const EstadisticasAcudiente = () => {
                   </div>
                   <div>
                     <p className="font-semibold text-foreground">{h.nombre} {h.apellidos}</p>
-                    <p className="text-sm text-muted-foreground">{h.grado} {h.salon}</p>
+                    <p className="text-sm text-muted-foreground">{h.grado} - {h.salon}</p>
                   </div>
                 </button>
               ))}
