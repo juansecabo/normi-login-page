@@ -594,7 +594,7 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
           {apellidosEstudiante} {nombreEstudiante}
         </h2>
         <p className="text-muted-foreground">
-          ID: {idEstudiante} | {grado} - {salon}
+          ID: {idEstudiante} | {grado} {salon}
         </p>
         <div className="mt-3 flex justify-center">
           <SistemaEvaluacion />
