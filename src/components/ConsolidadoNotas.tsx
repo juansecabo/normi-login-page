@@ -475,13 +475,21 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
       actividadesDelPeriodo.filter(a => gid(a) === null).forEach(a => filas.push(filaActividad(asignatura, periodoActivo, a, '')));
     }
 
-    // Definitiva del periodo: solo cuando el periodo está completo para este estudiante.
-    if (periodoCompletoParaAsig(asignatura, periodoActivo)) {
-      const nf = calcularFinalPeriodo(asignatura, periodoActivo);
+    // Definitiva del periodo: la fila SIEMPRE aparece. Si el periodo no está
+    // completo para este estudiante, se muestra solo la rayita (la nota se
+    // revela cuando el profesor cierra el periodo), tal como aparecía antes.
+    {
+      const completo = periodoCompletoParaAsig(asignatura, periodoActivo);
+      const nf = completo ? calcularFinalPeriodo(asignatura, periodoActivo) : null;
       filas.push(
         <div key="def" className="flex items-center justify-between gap-3 px-4 py-2.5 border-t-2 border-border bg-primary/5">
           <span className="font-bold text-foreground">Definitiva del periodo</span>
-          <span className="font-bold tabular-nums text-foreground">{nf !== null ? nf.toFixed(1) : '—'}</span>
+          <span
+            className="font-bold tabular-nums text-foreground"
+            title={completo ? undefined : 'La nota definitiva se mostrará cuando el profesor cierre el periodo'}
+          >
+            {completo && nf !== null ? nf.toFixed(1) : '—'}
+          </span>
         </div>
       );
     }
@@ -565,8 +573,9 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
         const periodoActivo = periodoGlobal;
         const abierta = abiertas.has(asignatura);
         const completo = periodoCompletoParaAsig(asignatura, periodoActivo);
+        const pctCalif = Math.round(getPorcentajeCalificado(asignatura, periodoActivo));
         return (
-          <div key={asignatura} className="bg-card rounded-lg shadow-soft overflow-hidden">
+          <div key={asignatura} className="bg-card rounded-lg shadow-soft border border-border overflow-hidden">
             <button
               type="button"
               onClick={() => toggleAsignatura(asignatura)}
@@ -581,6 +590,7 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
                 )}
               </div>
               <div className="flex items-center gap-2 shrink-0">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted text-muted-foreground text-xs font-semibold whitespace-nowrap" title="Porcentaje calificado hasta ahora">{pctCalif}%</span>
                 {completo ? (
                   <span className="hidden sm:inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-semibold whitespace-nowrap">✓ Periodo completo</span>
                 ) : (
