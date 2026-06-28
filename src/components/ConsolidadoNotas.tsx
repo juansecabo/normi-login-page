@@ -456,6 +456,11 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
       <div key={act.id} className={`flex items-center justify-between gap-3 px-4 ${pl} py-2 border-t border-border/50`}>
         <span className="text-sm text-foreground flex items-center gap-1.5 min-w-0">
           <span className="truncate">{act.nombre}</span>
+          {/* Solo las actividades sueltas llevan % propio (las de grupo lo tienen
+              en null porque su peso lo da el grupo) → se muestra cuando existe. */}
+          {act.porcentaje !== null && act.porcentaje !== undefined && act.porcentaje > 0 && (
+            <span className="text-xs font-normal text-muted-foreground shrink-0">({act.porcentaje}%)</span>
+          )}
           {comentario && (
             <button type="button" onClick={() => setComentarioAbierto({ nombreActividad: act.nombre, comentario })} className="text-primary hover:text-primary/80 shrink-0" title="Ver comentario del profesor" aria-label="Ver comentario del profesor">
               <MessageSquareText className="w-4 h-4" />
