@@ -672,21 +672,21 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
               className="w-full text-left bg-primary/10 hover:bg-primary/15 transition-colors p-4 flex items-center justify-between gap-3"
             >
               <div className="min-w-0">
-                <h3 className="text-lg font-bold text-foreground">{asignatura}</h3>
+                <h3 className="text-lg font-bold text-foreground truncate">{asignatura}</h3>
                 {profesoresPorAsignatura[asignatura] && (
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">
                     {profLabelPorAsignatura[asignatura] || 'Profesor(a):'} {profesoresPorAsignatura[asignatura]}
                   </p>
                 )}
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted text-muted-foreground text-xs font-semibold whitespace-nowrap" title="Porcentaje calificado hasta ahora">{pctCalif}%</span>
                 {completo ? (
-                  <span className="hidden sm:inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-semibold whitespace-nowrap">✓ Periodo completo</span>
+                  <span className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-semibold whitespace-nowrap">✓ Periodo completo</span>
                 ) : (
-                  <span className="hidden sm:inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-medium whitespace-nowrap">Periodo no completo</span>
+                  <span className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-medium whitespace-nowrap">Periodo no completo</span>
                 )}
-                <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${abierta ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${abierta ? 'rotate-180' : ''}`} />
               </div>
             </button>
             {abierta && (
