@@ -299,26 +299,43 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
       .reduce((sum, a) => sum + (a.porcentaje || 0), 0);
   };
 
+  // % calificado "de lo que va": cuánto del 100% del periodo ya tiene nota para
+  // ESTE estudiante. Regla de pesos (la misma que define la definitiva):
+  //  - Actividad suelta: su propio %.
+  //  - Grupo SIN subgrupos: su %, repartido en partes iguales entre sus actividades.
+  //  - Grupo CON subgrupos: el peso lo aportan los subgrupos (su %); el % del grupo
+  //    padre es solo un tope. Una hoja (grupo/subgrupo) SIN actividades aporta 0
+  //    (queda pendiente) → el periodo no llega al 100%.
   const getPorcentajeCalificado = (asignatura: string, periodo: number) => {
-    // Modo grupos: % calificado = suma de pesos de los grupos top que ya tienen
-    // nota (lo calcula promedioGeneral, igual que la definitiva provisional).
-    const gruposPeriodo: GrupoCalc[] = grupos
-      .filter(g => g.asignatura === asignatura && g.periodo === periodo)
-      .map(g => ({ id: g.id, porcentaje: g.porcentaje, parent_id: g.parent_id }));
-    if (gruposPeriodo.some(g => g.parent_id === null)) {
-      const notasCalc: NotaCalc[] = getActividadesPorPeriodo(asignatura, periodo)
-        .filter(a => notas[asignatura]?.[periodo]?.[a.id] !== undefined)
-        .map(a => ({
-          porcentaje: a.porcentaje,
-          nota: notas[asignatura][periodo][a.id] as number,
-          grupo_id: a.grupo_id ?? actividadGrupo.get(`${asignatura}|${a.id}`) ?? null,
-        }));
-      return promedioGeneral(notasCalc, gruposPeriodo).sumaPorcentajes;
+    const acts = getActividadesPorPeriodo(asignatura, periodo);
+    const gid = (a: Actividad) => a.grupo_id ?? actividadGrupo.get(`${asignatura}|${a.id}`) ?? null;
+    const tieneNota = (a: Actividad) => notas[asignatura]?.[periodo]?.[a.id] !== undefined;
+    const gruposPeriodo = grupos.filter(g => g.asignatura === asignatura && g.periodo === periodo);
+    const top = gruposPeriodo.filter(g => g.parent_id === null);
+
+    // Hojas que aportan peso: los subgrupos (si el grupo tiene) o el propio grupo
+    // (si no los tiene). El peso de la hoja es su propio %.
+    const hojas: { id: string; peso: number }[] = [];
+    for (const g of top) {
+      const subs = gruposPeriodo.filter(s => s.parent_id === g.id);
+      if (subs.length > 0) subs.forEach(s => hojas.push({ id: s.id, peso: s.porcentaje || 0 }));
+      else hojas.push({ id: g.id, peso: g.porcentaje || 0 });
     }
-    return (actividadesPorAsignatura[asignatura] || [])
-      .filter(a => a.periodo === periodo && a.porcentaje !== null && a.porcentaje > 0)
-      .filter(a => notas[asignatura]?.[periodo]?.[a.id] !== undefined)
-      .reduce((sum, a) => sum + (a.porcentaje || 0), 0);
+
+    let calificado = 0;
+    // Hojas de grupos: peso × (actividades calificadas / actividades totales).
+    for (const h of hojas) {
+      const actsHoja = acts.filter(a => gid(a) === h.id);
+      if (actsHoja.length === 0) continue; // sin actividades → pendiente, no suma
+      const cal = actsHoja.filter(tieneNota).length;
+      calificado += h.peso * (cal / actsHoja.length);
+    }
+    // Actividades sueltas (sin grupo): cada una con su propio %.
+    for (const a of acts) {
+      if (gid(a) !== null) continue;
+      if (a.porcentaje !== null && a.porcentaje > 0 && tieneNota(a)) calificado += a.porcentaje;
+    }
+    return calificado;
   };
 
   const calcularFinalPeriodo = (asignatura: string, periodo: number): number | null => {
