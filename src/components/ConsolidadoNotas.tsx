@@ -447,13 +447,17 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
     setPeriodo(periodo);
   };
 
-  // Una fila de actividad (nombre a la izquierda, nota a la derecha). `pl` da la
-  // sangría según el nivel (suelta / dentro de grupo / dentro de subgrupo).
-  const filaActividad = (asignatura: string, periodoActivo: number, act: Actividad, pl: string) => {
+  // Una fila de actividad (nombre a la izquierda, nota a la derecha).
+  // `conector`: si va dentro de un grupo/subgrupo, dibuja el apéndice horizontal
+  // (la "ramita" del árbol) que la conecta con la línea vertical del padre.
+  const filaActividad = (asignatura: string, periodoActivo: number, act: Actividad, conector: boolean) => {
     const nota = notas[asignatura]?.[periodoActivo]?.[act.id];
     const comentario = comentarios[asignatura]?.[periodoActivo]?.[act.id];
+    const cls = conector
+      ? "relative pl-5 pr-4 py-2 flex items-center justify-between gap-3 border-t border-border/50 before:content-[''] before:absolute before:left-0 before:top-1/2 before:h-px before:w-3 before:bg-border"
+      : "px-4 py-2 flex items-center justify-between gap-3 border-t border-border/50";
     return (
-      <div key={act.id} className={`flex items-center justify-between gap-3 px-4 ${pl} py-2 border-t border-border/50`}>
+      <div key={act.id} className={cls}>
         <span className="text-sm text-foreground flex items-center gap-1.5 min-w-0">
           <span className="truncate">{act.nombre}</span>
           {/* Solo las actividades sueltas llevan % propio (las de grupo lo tienen
@@ -485,64 +489,73 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
     const gruposPeriodo = grupos.filter(g => g.asignatura === asignatura && g.periodo === periodoActivo);
     const top = gruposPeriodo.filter(g => g.parent_id === null);
     const sueltas = actividadesDelPeriodo.filter(a => gid(a) === null);
-    const filas: JSX.Element[] = [];
 
-    // Pinta un grupo top: encabezado + sus actividades (por orden) + subgrupos (por orden).
+    // Encabezado del subgrupo: ramita horizontal que lo conecta con la línea del grupo.
+    const subgrupoHeader = (sg: GrupoLocal) => (
+      <div className="relative pl-5 pr-4 py-1.5 flex items-baseline gap-2 bg-secondary/30 border-t border-border/60 before:content-[''] before:absolute before:left-0 before:top-1/2 before:h-px before:w-3 before:bg-border">
+        <span className="text-sm font-semibold text-foreground/80">{sg.nombre}</span>
+        {sg.porcentaje !== null && <span className="text-xs font-normal text-muted-foreground">({sg.porcentaje}%)</span>}
+      </div>
+    );
+
+    // Pinta un grupo top: encabezado (banda) + contenedor de hijos con LÍNEA VERTICAL
+    // (border-l). Cada actividad/subgrupo cuelga de esa línea con su ramita horizontal.
     const pintarGrupo = (g: GrupoLocal) => {
-      filas.push(
-        <div key={`g-${g.id}`} className="flex items-baseline gap-2 px-4 py-2 bg-secondary/70 border-t border-border">
-          <span className="font-bold text-foreground">{g.nombre}</span>
-          {g.porcentaje !== null && <span className="text-xs font-normal text-muted-foreground">({g.porcentaje}%)</span>}
+      const acts = actividadesDelPeriodo.filter(a => gid(a) === g.id).sort(porOrden);
+      const subs = gruposPeriodo.filter(sg => sg.parent_id === g.id).sort(porOrden);
+      return (
+        <div key={`g-${g.id}`} className="border-t border-border">
+          <div className="flex items-baseline gap-2 px-4 py-2 bg-secondary/70">
+            <span className="font-bold text-foreground">{g.nombre}</span>
+            {g.porcentaje !== null && <span className="text-xs font-normal text-muted-foreground">({g.porcentaje}%)</span>}
+          </div>
+          <div className="ml-6 border-l border-border/70">
+            {acts.map(a => filaActividad(asignatura, periodoActivo, a, true))}
+            {subs.map(sg => {
+              const subActs = actividadesDelPeriodo.filter(a => gid(a) === sg.id).sort(porOrden);
+              return (
+                <div key={`sg-${sg.id}`}>
+                  {subgrupoHeader(sg)}
+                  <div className="ml-5 border-l border-border/70">
+                    {subActs.map(a => filaActividad(asignatura, periodoActivo, a, true))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       );
-      actividadesDelPeriodo.filter(a => gid(a) === g.id).sort(porOrden)
-        .forEach(a => filas.push(filaActividad(asignatura, periodoActivo, a, 'pl-7')));
-      gruposPeriodo.filter(sg => sg.parent_id === g.id).sort(porOrden).forEach(sg => {
-        filas.push(
-          <div key={`sg-${sg.id}`} className="flex items-baseline gap-2 px-4 pl-7 py-1.5 bg-secondary/30 border-t border-border/60">
-            <span className="text-sm font-semibold text-foreground/80">{sg.nombre}</span>
-            {sg.porcentaje !== null && <span className="text-xs font-normal text-muted-foreground">({sg.porcentaje}%)</span>}
-          </div>
-        );
-        actividadesDelPeriodo.filter(a => gid(a) === sg.id).sort(porOrden)
-          .forEach(a => filas.push(filaActividad(asignatura, periodoActivo, a, 'pl-11')));
-      });
     };
 
-    if (top.length === 0) {
-      // Sin grupos (modo plano): solo actividades, en el orden de la tabla del profesor.
-      [...actividadesDelPeriodo]
-        .sort((a, b) => parseFechaUTC(a.fecha_creacion) - parseFechaUTC(b.fecha_creacion))
-        .forEach(a => filas.push(filaActividad(asignatura, periodoActivo, a, '')));
-    } else {
-      // Nivel superior = grupos + actividades sueltas INTERCALADOS por fecha_creacion,
-      // idéntico a la tabla del profesor: cada suelta cae en su posición real, no al final.
-      const items: Array<{ fecha: number; render: () => void }> = [
-        ...top.map(g => ({ fecha: parseFechaUTC(g.fecha_creacion), render: () => pintarGrupo(g) })),
-        ...sueltas.map(a => ({ fecha: parseFechaUTC(a.fecha_creacion), render: () => { filas.push(filaActividad(asignatura, periodoActivo, a, '')); } })),
-      ];
-      items.sort((x, y) => x.fecha - y.fecha).forEach(it => it.render());
-    }
+    // Nivel superior = grupos + actividades sueltas INTERCALADOS por fecha_creacion,
+    // idéntico a la tabla del profesor: cada suelta cae en su posición real, no al final.
+    const items: Array<{ fecha: number; el: JSX.Element }> = top.length === 0
+      ? [...actividadesDelPeriodo]
+          .sort((a, b) => parseFechaUTC(a.fecha_creacion) - parseFechaUTC(b.fecha_creacion))
+          .map(a => ({ fecha: parseFechaUTC(a.fecha_creacion), el: filaActividad(asignatura, periodoActivo, a, false) }))
+      : [
+          ...top.map(g => ({ fecha: parseFechaUTC(g.fecha_creacion), el: pintarGrupo(g) })),
+          ...sueltas.map(a => ({ fecha: parseFechaUTC(a.fecha_creacion), el: filaActividad(asignatura, periodoActivo, a, false) })),
+        ].sort((x, y) => x.fecha - y.fecha);
 
     // Definitiva del periodo: la fila SIEMPRE aparece. Si el periodo no está
     // completo para este estudiante, se muestra solo la rayita (la nota se
     // revela cuando el profesor cierra el periodo), tal como aparecía antes.
-    {
-      const completo = periodoCompletoParaAsig(asignatura, periodoActivo);
-      const nf = completo ? calcularFinalPeriodo(asignatura, periodoActivo) : null;
-      filas.push(
-        <div key="def" className="flex items-center justify-between gap-3 px-4 py-2.5 border-t-2 border-border bg-primary/5">
-          <span className="font-bold text-foreground">Definitiva del periodo</span>
-          <span
-            className="font-bold tabular-nums text-foreground"
-            title={completo ? undefined : 'La nota definitiva se mostrará cuando el profesor cierre el periodo'}
-          >
-            {completo && nf !== null ? nf.toFixed(1) : '—'}
-          </span>
-        </div>
-      );
-    }
-    return <div>{filas}</div>;
+    const completo = periodoCompletoParaAsig(asignatura, periodoActivo);
+    const nf = completo ? calcularFinalPeriodo(asignatura, periodoActivo) : null;
+    const definitiva = (
+      <div key="def" className="flex items-center justify-between gap-3 px-4 py-2.5 border-t-2 border-border bg-primary/5">
+        <span className="font-bold text-foreground">Definitiva del periodo</span>
+        <span
+          className="font-bold tabular-nums text-foreground"
+          title={completo ? undefined : 'La nota definitiva se mostrará cuando el profesor cierre el periodo'}
+        >
+          {completo && nf !== null ? nf.toFixed(1) : '—'}
+        </span>
+      </div>
+    );
+
+    return <div>{items.map(it => it.el)}{definitiva}</div>;
   };
 
   // Cabecera del estudiante (se muestra tanto en el selector como en las notas).
