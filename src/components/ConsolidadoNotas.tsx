@@ -447,17 +447,12 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
     setPeriodo(periodo);
   };
 
-  // Una fila de actividad (nombre a la izquierda, nota a la derecha).
-  // `conector`: si va dentro de un grupo/subgrupo, dibuja el apéndice horizontal
-  // (la "ramita" del árbol) que la conecta con la línea vertical del padre.
-  const filaActividad = (asignatura: string, periodoActivo: number, act: Actividad, conector: boolean) => {
+  // Contenido de una actividad (nombre + % propio de las sueltas + comentario | nota).
+  const contenidoActividad = (asignatura: string, periodoActivo: number, act: Actividad) => {
     const nota = notas[asignatura]?.[periodoActivo]?.[act.id];
     const comentario = comentarios[asignatura]?.[periodoActivo]?.[act.id];
-    const cls = conector
-      ? "relative pl-5 pr-4 py-2 flex items-center justify-between gap-3 border-t border-border/50 before:content-[''] before:absolute before:left-0 before:top-1/2 before:h-px before:w-3 before:bg-border"
-      : "px-4 py-2 flex items-center justify-between gap-3 border-t border-border/50";
     return (
-      <div key={act.id} className={cls}>
+      <>
         <span className="text-sm text-foreground flex items-center gap-1.5 min-w-0">
           <span className="truncate">{act.nombre}</span>
           {/* Solo las actividades sueltas llevan % propio (las de grupo lo tienen
@@ -472,13 +467,14 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
           )}
         </span>
         <span className="text-sm font-semibold tabular-nums text-foreground shrink-0">{nota !== undefined ? Number(nota).toFixed(2) : '—'}</span>
-      </div>
+      </>
     );
   };
 
-  // Cuerpo vertical de una asignatura: grupos/subgrupos como secciones continuas
-  // (no cajas separadas), actividades como filas, y la definitiva al final solo
-  // cuando el periodo está completo. NO cambia ningún cálculo, solo la interfaz.
+  // Cuerpo vertical de una asignatura. Las líneas de árbol se dibujan con celdas
+  // de guía: por cada nivel ancestro una celda con (o sin) línea vertical de paso,
+  // y la celda propia con el codo. El ÚLTIMO hijo de su nivel cierra en "L" (su
+  // vertical solo baja hasta el codo). NO cambia ningún cálculo, solo la interfaz.
   const renderCuerpoAsignatura = (asignatura: string, periodoActivo: number) => {
     const actividadesDelPeriodo = getActividadesPorPeriodo(asignatura, periodoActivo);
     if (actividadesDelPeriodo.length === 0) {
@@ -489,61 +485,93 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
     const gruposPeriodo = grupos.filter(g => g.asignatura === asignatura && g.periodo === periodoActivo);
     const top = gruposPeriodo.filter(g => g.parent_id === null);
     const sueltas = actividadesDelPeriodo.filter(a => gid(a) === null);
+    const filas: JSX.Element[] = [];
+    let rk = 0;
 
-    // Encabezado del subgrupo: ramita horizontal que lo conecta con la línea del grupo.
-    const subgrupoHeader = (sg: GrupoLocal) => (
-      <div className="relative pl-5 pr-4 py-1.5 flex items-baseline gap-2 bg-secondary/30 border-t border-border/60 before:content-[''] before:absolute before:left-0 before:top-1/2 before:h-px before:w-3 before:bg-border">
-        <span className="text-sm font-semibold text-foreground/80">{sg.nombre}</span>
-        {sg.porcentaje !== null && <span className="text-xs font-normal text-muted-foreground">({sg.porcentaje}%)</span>}
-      </div>
-    );
+    // Una fila del árbol: celdas de guía de ancestros + celda propia (codo + vertical) + contenido.
+    // `guias[i]` = la línea del ancestro de nivel i sigue (tiene hermanos abajo).
+    // `ultimo` = es el último hijo de su padre → su vertical termina en el codo (L).
+    const filaArbol = (guias: boolean[], ultimo: boolean, inner: JSX.Element, contentCls: string) => {
+      filas.push(
+        <div key={`r-${rk++}`} className="flex items-stretch border-t border-border/50">
+          {guias.map((draw, i) => (
+            <span key={i} className="relative w-6 shrink-0">
+              {draw && <span className="absolute left-3 top-0 bottom-0 w-px bg-border" />}
+            </span>
+          ))}
+          <span className="relative w-6 shrink-0">
+            <span className={`absolute left-3 top-0 w-px bg-border ${ultimo ? 'h-1/2' : 'bottom-0'}`} />
+            <span className="absolute left-3 top-1/2 h-px w-3 bg-border" />
+          </span>
+          <div className={`flex-1 flex items-center justify-between gap-3 pr-4 ${contentCls}`}>{inner}</div>
+        </div>
+      );
+    };
 
-    // Pinta un grupo top: encabezado (banda) + contenedor de hijos con LÍNEA VERTICAL
-    // (border-l). Cada actividad/subgrupo cuelga de esa línea con su ramita horizontal.
+    // Pinta un grupo top: encabezado (banda full-width) + sus hijos colgando del árbol.
     const pintarGrupo = (g: GrupoLocal) => {
+      filas.push(
+        <div key={`g-${g.id}`} className="flex items-baseline gap-2 px-4 py-2 bg-secondary/70 border-t border-border">
+          <span className="font-bold text-foreground">{g.nombre}</span>
+          {g.porcentaje !== null && <span className="text-xs font-normal text-muted-foreground">({g.porcentaje}%)</span>}
+        </div>
+      );
       const acts = actividadesDelPeriodo.filter(a => gid(a) === g.id).sort(porOrden);
       const subs = gruposPeriodo.filter(sg => sg.parent_id === g.id).sort(porOrden);
-      return (
-        <div key={`g-${g.id}`} className="border-t border-border">
-          <div className="flex items-baseline gap-2 px-4 py-2 bg-secondary/70">
-            <span className="font-bold text-foreground">{g.nombre}</span>
-            {g.porcentaje !== null && <span className="text-xs font-normal text-muted-foreground">({g.porcentaje}%)</span>}
-          </div>
-          <div className="ml-6 border-l border-border/70">
-            {acts.map(a => filaActividad(asignatura, periodoActivo, a, true))}
-            {subs.map(sg => {
-              const subActs = actividadesDelPeriodo.filter(a => gid(a) === sg.id).sort(porOrden);
-              return (
-                <div key={`sg-${sg.id}`}>
-                  {subgrupoHeader(sg)}
-                  <div className="ml-5 border-l border-border/70">
-                    {subActs.map(a => filaActividad(asignatura, periodoActivo, a, true))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      const hijos: Array<{ t: 'act'; a: Actividad } | { t: 'sub'; s: GrupoLocal }> = [
+        ...acts.map(a => ({ t: 'act' as const, a })),
+        ...subs.map(s => ({ t: 'sub' as const, s })),
+      ];
+      hijos.forEach((ch, idx) => {
+        const ultimoHijo = idx === hijos.length - 1;
+        if (ch.t === 'act') {
+          filaArbol([], ultimoHijo, contenidoActividad(asignatura, periodoActivo, ch.a), 'items-center py-2');
+        } else {
+          const sg = ch.s;
+          filaArbol(
+            [], ultimoHijo,
+            <span className="flex items-baseline gap-2 min-w-0">
+              <span className="text-sm font-semibold text-foreground/80 truncate">{sg.nombre}</span>
+              {sg.porcentaje !== null && <span className="text-xs font-normal text-muted-foreground shrink-0">({sg.porcentaje}%)</span>}
+            </span>,
+            'items-baseline py-1.5 bg-secondary/30',
+          );
+          const subActs = actividadesDelPeriodo.filter(a => gid(a) === sg.id).sort(porOrden);
+          subActs.forEach((a, j) => {
+            // Guía del grupo: sigue si el subgrupo NO es el último hijo del grupo.
+            filaArbol([!ultimoHijo], j === subActs.length - 1, contenidoActividad(asignatura, periodoActivo, a), 'items-center py-2');
+          });
+        }
+      });
+    };
+
+    // Fila de actividad suelta de nivel superior (sin conector: no cuelga de ningún grupo).
+    const filaSuelta = (a: Actividad) => {
+      filas.push(
+        <div key={`s-${rk++}`} className="px-4 py-2 flex items-center justify-between gap-3 border-t border-border/50">
+          {contenidoActividad(asignatura, periodoActivo, a)}
         </div>
       );
     };
 
     // Nivel superior = grupos + actividades sueltas INTERCALADOS por fecha_creacion,
     // idéntico a la tabla del profesor: cada suelta cae en su posición real, no al final.
-    const items: Array<{ fecha: number; el: JSX.Element }> = top.length === 0
+    const items: Array<{ fecha: number; render: () => void }> = top.length === 0
       ? [...actividadesDelPeriodo]
           .sort((a, b) => parseFechaUTC(a.fecha_creacion) - parseFechaUTC(b.fecha_creacion))
-          .map(a => ({ fecha: parseFechaUTC(a.fecha_creacion), el: filaActividad(asignatura, periodoActivo, a, false) }))
+          .map(a => ({ fecha: parseFechaUTC(a.fecha_creacion), render: () => filaSuelta(a) }))
       : [
-          ...top.map(g => ({ fecha: parseFechaUTC(g.fecha_creacion), el: pintarGrupo(g) })),
-          ...sueltas.map(a => ({ fecha: parseFechaUTC(a.fecha_creacion), el: filaActividad(asignatura, periodoActivo, a, false) })),
-        ].sort((x, y) => x.fecha - y.fecha);
+          ...top.map(g => ({ fecha: parseFechaUTC(g.fecha_creacion), render: () => pintarGrupo(g) })),
+          ...sueltas.map(a => ({ fecha: parseFechaUTC(a.fecha_creacion), render: () => filaSuelta(a) })),
+        ];
+    items.sort((x, y) => x.fecha - y.fecha).forEach(it => it.render());
 
     // Definitiva del periodo: la fila SIEMPRE aparece. Si el periodo no está
     // completo para este estudiante, se muestra solo la rayita (la nota se
     // revela cuando el profesor cierra el periodo), tal como aparecía antes.
     const completo = periodoCompletoParaAsig(asignatura, periodoActivo);
     const nf = completo ? calcularFinalPeriodo(asignatura, periodoActivo) : null;
-    const definitiva = (
+    filas.push(
       <div key="def" className="flex items-center justify-between gap-3 px-4 py-2.5 border-t-2 border-border bg-primary/5">
         <span className="font-bold text-foreground">Definitiva del periodo</span>
         <span
@@ -555,7 +583,7 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
       </div>
     );
 
-    return <div>{items.map(it => it.el)}{definitiva}</div>;
+    return <div>{filas}</div>;
   };
 
   // Cabecera del estudiante (se muestra tanto en el selector como en las notas).
