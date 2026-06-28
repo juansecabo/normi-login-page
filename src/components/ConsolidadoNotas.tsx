@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getPeriodoActual } from "@/utils/periodoActual";
 import { anoEscolarActual } from "@/utils/anoEscolar";
@@ -67,9 +68,24 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
   const [actividadesPorAsignatura, setActividadesPorAsignatura] = useState<ActividadesPorAsignatura>({});
   const [notas, setNotas] = useState<NotasEstudiante>({});
   const [comentarios, setComentarios] = useState<ComentariosEstudiante>({});
+  // Periodo elegido vive en la URL (?periodo=1..4) para que persista al
+  // refrescar y se vea en el breadcrumb. Si no hay periodo válido en la URL,
+  // se muestra la pantalla "Elige el periodo" antes de las notas.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const periodoParam = searchParams.get("periodo");
+  const periodoElegido = periodoParam && /^[1-4]$/.test(periodoParam) ? Number(periodoParam) : null;
+  const setPeriodo = (n: number) => {
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      p.set("periodo", String(n));
+      return p;
+    });
+  };
   // Periodo activo COMPARTIDO entre todas las asignaturas: cambiarlo en una
   // cambia la vista de todas (pedido del usuario).
-  const [periodoGlobal, setPeriodoGlobal] = useState<number>(getPeriodoActual());
+  // Periodo activo para el render (ya elegido). Si por algún motivo no hay,
+  // cae en 1 (no debería: el gate de abajo exige elegirlo antes).
+  const periodoGlobal = periodoElegido ?? 1;
   // Grupos jerárquicos por asignatura. Si una (asignatura, periodo) tiene
   // grupos, calcularFinalPeriodo usa promedioGeneral con ellos.
   const [grupos, setGrupos] = useState<GrupoLocal[]>([]);
@@ -374,9 +390,50 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
   };
 
   const handleChangePeriodo = (_asignatura: string, periodo: number) => {
-    // Periodo compartido: cambiar en una asignatura cambia todas.
-    setPeriodoGlobal(periodo);
+    // Periodo compartido: cambiar en una asignatura cambia todas (y la URL).
+    setPeriodo(periodo);
   };
+
+  // Cabecera del estudiante (se muestra tanto en el selector como en las notas).
+  const cabeceraEstudiante = (
+    <div className="bg-card rounded-lg shadow-soft p-6">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-foreground">
+          {apellidosEstudiante} {nombreEstudiante}
+        </h2>
+        <p className="text-muted-foreground">
+          ID: {idEstudiante} | {grado} - {salon}
+        </p>
+        <div className="mt-3 flex justify-center">
+          <SistemaEvaluacion />
+        </div>
+      </div>
+    </div>
+  );
+
+  // GATE: hay que elegir el periodo antes de ver las notas (como el profesor).
+  if (periodoElegido === null) {
+    return (
+      <div className="space-y-6">
+        {cabeceraEstudiante}
+        <div className="bg-card rounded-lg shadow-soft p-6 md:p-8">
+          <h3 className="text-xl font-bold text-foreground mb-5 text-center">Elige el periodo:</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {periodos.map((p) => (
+              <button
+                key={p.numero}
+                onClick={() => setPeriodo(p.numero)}
+                className="p-6 rounded-lg border-2 border-border bg-background text-center hover:border-primary hover:bg-primary/10 transition-colors flex flex-col items-center gap-2 font-medium text-foreground"
+              >
+                <span className="text-2xl font-bold text-primary">{p.numero}°</span>
+                <span>{["", "Primer", "Segundo", "Tercer", "Cuarto"][p.numero]} periodo</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -389,19 +446,7 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
   return (
     <div className="space-y-6">
       {/* Información del estudiante */}
-      <div className="bg-card rounded-lg shadow-soft p-6">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-foreground">
-            {apellidosEstudiante} {nombreEstudiante}
-          </h2>
-          <p className="text-muted-foreground">
-            ID: {idEstudiante} | {grado} - {salon}
-          </p>
-          <div className="mt-3 flex justify-center">
-            <SistemaEvaluacion />
-          </div>
-        </div>
-      </div>
+      {cabeceraEstudiante}
 
       {/* Tabla por cada asignatura */}
       {asignaturas.map((asignatura) => {

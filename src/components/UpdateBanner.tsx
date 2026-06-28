@@ -9,11 +9,10 @@
 
 import { useEffect, useState } from "react";
 
-// Reactivada (a pedido de Juan, 2026-06-26) tras la racha de cambios. La barra
-// vuelve a aparecer cuando hay un build más nuevo en el server.
-// Pendiente (opcional): mostrarla solo a la audiencia afectada por el cambio
-// (ver version.json + rol de la sesión).
-const BANNER_ACTIVO = true;
+// DESACTIVADA temporalmente (a pedido de Juan, 2026-06-26): va a hacer varios
+// cambios seguidos y no quiere que la barra salga en cada deploy. Para
+// reactivarla, pon BANNER_ACTIVO = true.
+const BANNER_ACTIVO = false;
 
 export default function UpdateBanner() {
   const [needRefresh, setNeedRefresh] = useState(false);

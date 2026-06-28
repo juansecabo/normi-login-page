@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { getSession, isEstudiante } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import ConsolidadoNotas from "@/components/ConsolidadoNotas";
@@ -7,8 +7,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { markLastSeen } from "@/utils/notificaciones";
 import { anoEscolarActual } from "@/utils/anoEscolar";
 
+const PERIODO_LABEL = ["", "1er Periodo", "2do Periodo", "3er Periodo", "4to Periodo"];
+
 const NotasEstudiante = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const periodoParam = searchParams.get("periodo");
+  const periodoNum = periodoParam && /^[1-4]$/.test(periodoParam) ? Number(periodoParam) : null;
+  const limpiarPeriodo = () => {
+    setSearchParams((prev) => { const p = new URLSearchParams(prev); p.delete("periodo"); return p; });
+  };
 
   useEffect(() => {
     const session = getSession();
@@ -49,7 +57,15 @@ const NotasEstudiante = () => {
               Inicio
             </button>
             <span className="text-muted-foreground">&rarr;</span>
-            <span className="text-foreground font-medium">Notas</span>
+            {periodoNum ? (
+              <>
+                <button onClick={limpiarPeriodo} className="text-primary hover:underline">Notas</button>
+                <span className="text-muted-foreground">&rarr;</span>
+                <span className="text-foreground font-medium">{PERIODO_LABEL[periodoNum]}</span>
+              </>
+            ) : (
+              <span className="text-foreground font-medium">Notas</span>
+            )}
           </div>
         </div>
 

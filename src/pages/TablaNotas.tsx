@@ -4121,12 +4121,27 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   // SELECTOR DE PERIODO: tras elegir el salón, si aún no se eligió periodo
   // (no hay ?periodo= en la URL), se muestran los 4 periodos + Definitiva Anual.
   // Al entrar a uno se ve su tabla (con las pestañas para saltar entre periodos).
-  if (!soloLectura && !hayPeriodoElegido) {
+  if (!hayPeriodoElegido) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <HeaderNormi backLink="/dashboard" />
+        <HeaderNormi backLink={soloLectura ? (isAdmin() ? "/dashboard-admin" : "/dashboard-rector") : "/dashboard"} />
         <main className="flex-1 container mx-auto p-4 md:p-8">
           <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
+            {soloLectura ? (
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <button onClick={() => navigate(isAdmin() ? "/dashboard-admin" : "/dashboard-rector")} className="text-primary hover:underline">Inicio</button>
+                <span className="text-muted-foreground">→</span>
+                <button onClick={() => navigate("/rector/seleccionar-grado")} className="text-primary hover:underline">Notas</button>
+                <span className="text-muted-foreground">→</span>
+                <button onClick={() => navigate("/rector/seleccionar-salon")} className="text-primary hover:underline">{gradoSeleccionado}</button>
+                <span className="text-muted-foreground">→</span>
+                <button onClick={() => navigate("/rector/modo-visualizacion")} className="text-primary hover:underline">{salonSeleccionado}</button>
+                <span className="text-muted-foreground">→</span>
+                <button onClick={() => navigate("/rector/lista-asignaturas")} className="text-primary hover:underline">Por Asignatura</button>
+                <span className="text-muted-foreground">→</span>
+                <span className="text-foreground font-medium">{asignaturaSeleccionada}</span>
+              </div>
+            ) : (
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Asignaturas</button>
               <span className="text-muted-foreground">→</span>
@@ -4136,6 +4151,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               <span className="text-muted-foreground">→</span>
               <span className="text-foreground font-medium">{salonSeleccionado}</span>
             </div>
+            )}
           </div>
           <div className="bg-card rounded-lg shadow-soft p-6 md:p-8">
             <h2 className="text-xl font-bold text-foreground mb-6 text-center">Elige tu periodo:</h2>
@@ -4158,6 +4174,14 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                         completo por cascada (ej. 1er periodo sin notas cerrado al cerrar el 2do). */}
                     {loading ? (
                       <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                    ) : soloLectura ? (
+                      // Internos/lectura: solo informativo, sin casilla (solo
+                      // los profesores marcan periodos como completos).
+                      completo ? (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-600 text-white font-semibold whitespace-nowrap">Completo</span>
+                      ) : (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 whitespace-nowrap">{pct}%</span>
+                      )
                     ) : (calificable || completo) ? (
                       <label
                         onClick={(e) => e.stopPropagation()}
@@ -4225,7 +4249,11 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                 <span className="text-muted-foreground">→</span>
                 <button onClick={() => navigate("/rector/lista-asignaturas")} className="text-primary hover:underline">Por Asignatura</button>
                 <span className="text-muted-foreground">→</span>
-                <span className="text-foreground font-medium">{asignaturaSeleccionada}</span>
+                <button onClick={volverASelectorPeriodo} className="text-primary hover:underline">{asignaturaSeleccionada}</button>
+                <span className="text-muted-foreground">→</span>
+                <span className="text-foreground font-medium">
+                  {periodoActivo === 0 ? 'Definitiva Anual' : (periodos[periodoActivo - 1]?.nombre || `Periodo ${periodoActivo}`)}
+                </span>
               </div>
             ) : (
             <div className="flex flex-wrap items-center gap-2 text-sm">

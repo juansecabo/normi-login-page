@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, isRectorOrCoordinador } from "@/hooks/useSession";
 import { getPeriodoActual } from "@/utils/periodoActual";
@@ -37,8 +37,21 @@ type PeriodosActivos = {
   [asignatura: string]: number;
 };
 
+const PERIODO_LABEL = ["", "1er Periodo", "2do Periodo", "3er Periodo", "4to Periodo"];
+
 const EstudianteConsolidado = () => {
   const navigate = useNavigate();
+  // Periodo elegido vive en la URL (?periodo=1..4) → persiste al refrescar y se
+  // ve en el breadcrumb. Sin periodo válido se muestra "Elige el periodo".
+  const [searchParams, setSearchParams] = useSearchParams();
+  const periodoParam = searchParams.get("periodo");
+  const periodoElegido = periodoParam && /^[1-4]$/.test(periodoParam) ? Number(periodoParam) : null;
+  const setPeriodo = (n: number) => {
+    setSearchParams((prev) => { const p = new URLSearchParams(prev); p.set("periodo", String(n)); return p; });
+  };
+  const limpiarPeriodo = () => {
+    setSearchParams((prev) => { const p = new URLSearchParams(prev); p.delete("periodo"); return p; });
+  };
   const [gradoSeleccionado, setGradoSeleccionado] = useState("");
   const [salonSeleccionado, setSalonSeleccionado] = useState("");
   const [estudiante, setEstudiante] = useState<Estudiante | null>(null);
@@ -247,17 +260,56 @@ const EstudianteConsolidado = () => {
     return Math.round((suma / periodosConNota) * 10) / 10;
   };
 
-  const handleChangePeriodo = (asignatura: string, periodo: number) => {
-    setPeriodosActivos(prev => ({
-      ...prev,
-      [asignatura]: periodo,
-    }));
+  const handleChangePeriodo = (_asignatura: string, periodo: number) => {
+    // Periodo compartido (en la URL): cambiarlo aplica a todas las asignaturas.
+    setPeriodo(periodo);
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Cargando...</p>
+      </div>
+    );
+  }
+
+  // GATE: elegir el periodo antes de ver las notas (como el profesor).
+  if (periodoElegido === null) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <HeaderNormi backLink="/dashboard-rector" />
+        <main className="flex-1 container mx-auto p-4 md:p-8">
+          <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <button onClick={() => navigate("/dashboard-rector")} className="text-primary hover:underline">Inicio</button>
+              <span className="text-muted-foreground">→</span>
+              <button onClick={() => navigate("/rector/seleccionar-grado")} className="text-primary hover:underline">Notas</button>
+              <span className="text-muted-foreground">→</span>
+              <button onClick={() => navigate("/rector/seleccionar-salon")} className="text-primary hover:underline">{gradoSeleccionado}</button>
+              <span className="text-muted-foreground">→</span>
+              <button onClick={() => navigate("/rector/modo-visualizacion")} className="text-primary hover:underline">{salonSeleccionado}</button>
+              <span className="text-muted-foreground">→</span>
+              <button onClick={() => navigate("/rector/lista-estudiantes")} className="text-primary hover:underline">Por Estudiante</button>
+              <span className="text-muted-foreground">→</span>
+              <span className="text-foreground font-medium">{estudiante?.apellidos} {estudiante?.nombres}</span>
+            </div>
+          </div>
+          <div className="bg-card rounded-lg shadow-soft p-6 md:p-8">
+            <h2 className="text-xl font-bold text-foreground mb-6 text-center">Elige el periodo:</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {periodos.map((p) => (
+                <button
+                  key={p.numero}
+                  onClick={() => setPeriodo(p.numero)}
+                  className="p-6 rounded-lg border-2 border-border bg-background text-center hover:border-primary hover:bg-primary/10 transition-colors flex flex-col items-center gap-2 font-medium text-foreground"
+                >
+                  <span className="text-2xl font-bold text-primary">{p.numero}°</span>
+                  <span>{["", "Primer", "Segundo", "Tercer", "Cuarto"][p.numero]} periodo</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
@@ -306,9 +358,11 @@ const EstudianteConsolidado = () => {
               Por Estudiante
             </button>
             <span className="text-muted-foreground">→</span>
-            <span className="text-foreground font-medium">
+            <button onClick={limpiarPeriodo} className="text-primary hover:underline">
               {estudiante?.apellidos} {estudiante?.nombres}
-            </span>
+            </button>
+            <span className="text-muted-foreground">→</span>
+            <span className="text-foreground font-medium">{PERIODO_LABEL[periodoElegido]}</span>
           </div>
         </div>
 
@@ -327,7 +381,7 @@ const EstudianteConsolidado = () => {
         {/* Tabla por cada asignatura */}
         <div className="space-y-6">
           {asignaturas.map((asignatura) => {
-            const periodoActivo = periodosActivos[asignatura] || getPeriodoActual();
+            const periodoActivo = periodoElegido;
             const actividadesDelPeriodo = getActividadesPorPeriodo(asignatura, periodoActivo);
             const finalDefinitiva = calcularFinalDefinitiva(asignatura);
 

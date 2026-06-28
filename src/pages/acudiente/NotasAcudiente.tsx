@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { getSession, isPadreDeFamilia, AcudidoData } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import ConsolidadoNotas from "@/components/ConsolidadoNotas";
@@ -8,11 +8,29 @@ import { markLastSeen, getAllLastSeen, countNewItems } from "@/utils/notificacio
 import { anoEscolarActual } from "@/utils/anoEscolar";
 import { User } from "lucide-react";
 
+const PERIODO_LABEL = ["", "1er Periodo", "2do Periodo", "3er Periodo", "4to Periodo"];
+
 const NotasAcudiente = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [acudidos, setAcudidos] = useState<AcudidoData[]>([]);
-  const [acudido, setAcudido] = useState<AcudidoData | null>(null);
   const [badgesPorAcudido, setBadgesPorAcudido] = useState<Record<string, number>>({});
+
+  // El hijo elegido y el periodo viven en la URL (?acudido=&periodo=) para
+  // persistir al refrescar y verse en el breadcrumb.
+  const acudidoId = searchParams.get("acudido");
+  const acudido: AcudidoData | null =
+    acudidos.find((a) => String(a.id) === String(acudidoId)) ||
+    (acudidos.length === 1 ? acudidos[0] : null);
+  const periodoParam = searchParams.get("periodo");
+  const periodoNum = periodoParam && /^[1-4]$/.test(periodoParam) ? Number(periodoParam) : null;
+
+  const volverAEscoger = () => {
+    setSearchParams((prev) => { const p = new URLSearchParams(prev); p.delete("acudido"); p.delete("periodo"); return p; });
+  };
+  const limpiarPeriodo = () => {
+    setSearchParams((prev) => { const p = new URLSearchParams(prev); p.delete("periodo"); return p; });
+  };
 
   useEffect(() => {
     const session = getSession();
@@ -24,9 +42,7 @@ const NotasAcudiente = () => {
     const acudidosData = session.acudidos || [];
     setAcudidos(acudidosData);
 
-    if (acudidosData.length === 1) {
-      seleccionar(acudidosData[0]);
-    } else {
+    if (acudidosData.length > 1) {
       // Calcular badges por acudido — todas las queries en paralelo.
       const fetchBadges = async () => {
         const results = await Promise.all(acudidosData.map(async (h) => {
@@ -53,23 +69,11 @@ const NotasAcudiente = () => {
     }
   }, [navigate]);
 
-  // Handle browser back button to return to student selection
+  // Al tener un hijo activo, marcar sus notas como vistas (badge a 0).
   useEffect(() => {
-    const handlePopState = () => {
-      if (acudido) {
-        setAcudido(null);
-      }
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [acudido]);
-
-  const seleccionar = (h: AcudidoData) => {
-    setAcudido(h);
-    window.history.pushState({ acudidoSelected: true }, '');
-    localStorage.setItem("acudidoSeleccionado", JSON.stringify(h));
-
-    const marcarVisto = async () => {
+    if (!acudido) return;
+    const h = acudido;
+    (async () => {
       const { data } = await supabase
         .from('Notas')
         .select('fecha_modificacion')
@@ -83,8 +87,13 @@ const NotasAcudiente = () => {
         const maxEpoch = epochs.length > 0 ? Math.max(...epochs) : 0;
         await markLastSeen('notas', h.id, maxEpoch);
       }
-    };
-    marcarVisto();
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [acudido?.id]);
+
+  // Elegir un hijo → va a la URL (y se limpia el periodo para que lo escoja).
+  const seleccionar = (h: AcudidoData) => {
+    setSearchParams((prev) => { const p = new URLSearchParams(prev); p.set("acudido", String(h.id)); p.delete("periodo"); return p; });
   };
 
   return (
@@ -98,13 +107,21 @@ const NotasAcudiente = () => {
               Inicio
             </button>
             <span className="text-muted-foreground">&rarr;</span>
-            {acudido && acudidos.length > 1 ? (
+            {acudido && acudidos.length > 1 && (
               <>
-                <button onClick={() => setAcudido(null)} className="text-primary hover:underline">
+                <button onClick={volverAEscoger} className="text-primary hover:underline">
                   Escoger Estudiante
                 </button>
                 <span className="text-muted-foreground">&rarr;</span>
-                <span className="text-foreground font-medium">Notas de {acudido.nombre}</span>
+              </>
+            )}
+            {periodoNum && acudido ? (
+              <>
+                <button onClick={limpiarPeriodo} className="text-primary hover:underline">
+                  Notas{acudido ? ` de ${acudido.nombre}` : ''}
+                </button>
+                <span className="text-muted-foreground">&rarr;</span>
+                <span className="text-foreground font-medium">{PERIODO_LABEL[periodoNum]}</span>
               </>
             ) : (
               <span className="text-foreground font-medium">Notas{acudido ? ` de ${acudido.nombre}` : ''}</span>
