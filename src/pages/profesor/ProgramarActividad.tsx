@@ -1076,7 +1076,7 @@ const ProgramarActividad = () => {
                       const d = new Date(yy, mm - 1, dd);
                       (d < hoy ? diasPasados : diasProximos).push(d);
                     }
-                    const delDia = diaSelCal ? (porFecha[fechaKey(diaSelCal)] || []).slice().sort((a, b) => a.Asignatura.localeCompare(b.Asignatura)) : [];
+                    const delDia = diaSelCal ? (porFecha[fechaKey(diaSelCal)] || []).slice().sort((a, b) => a.Asignatura.localeCompare(b.Asignatura, 'es') || rankGrado(a.Grado) - rankGrado(b.Grado) || Number(a.Salon) - Number(b.Salon)) : [];
                     const pasado = diaSelCal ? new Date(diaSelCal.getFullYear(), diaSelCal.getMonth(), diaSelCal.getDate()) < hoy : false;
                     return (
                       <div className="flex flex-col lg:flex-row lg:items-start gap-6">
