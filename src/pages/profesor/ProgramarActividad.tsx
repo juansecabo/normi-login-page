@@ -590,8 +590,8 @@ const ProgramarActividad = () => {
         toast({
           title: "Actividad programada",
           description: exitosos.length === 1
-            ? "La actividad se programó y se notificó a estudiantes y padres."
-            : `La actividad se programó en ${exitosos.length} salones (${exitosos.join(', ')}) y se notificó a estudiantes y padres.`,
+            ? "La actividad ha sido programada y está siendo notificada a estudiantes y acudientes."
+            : `La actividad ha sido programada en ${exitosos.length} salones (${exitosos.join(', ')}) y está siendo notificada a estudiantes y acudientes.`,
         });
       } else {
         toast({
