@@ -111,7 +111,7 @@ const CrearInstitucion = () => {
             variant="outline"
             size="sm"
             onClick={vista === "menu" ? () => navigate("/dashboard-plataforma") : () => { setVista("menu"); cargar(); }}
-            className="gap-1 mb-4 bg-card"
+            className="gap-1 mb-4"
           >
             <ArrowLeft className="w-4 h-4" /> {vista === "menu" ? "Volver al panel" : "Volver"}
           </Button>
@@ -483,7 +483,7 @@ const FichaAdmins = ({ id, admins, onChanged, volver }: { id: string; admins: Co
       {admins.length > 0 && (
         <div className="space-y-2 mb-6">
           {admins.map((a) => (
-            <div key={a.id} className="flex items-center gap-3 border border-border rounded-lg p-3 bg-card">
+            <div key={a.id} className="flex items-center gap-3 border border-border rounded-lg p-3">
               <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
                 {(a.nombres || "?").charAt(0).toUpperCase()}
               </div>
@@ -496,7 +496,7 @@ const FichaAdmins = ({ id, admins, onChanged, volver }: { id: string; admins: Co
         </div>
       )}
 
-      <div className="border border-border rounded-lg p-4 space-y-3 bg-card">
+      <div className="border border-border rounded-lg p-4 space-y-3">
         <h3 className="font-medium text-sm">Agregar administrador</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div><Label className="text-sm">Cédula *</Label><Input value={cedula} onChange={(e) => setCedula(e.target.value)} placeholder="Solo números" className="mt-1" /></div>
