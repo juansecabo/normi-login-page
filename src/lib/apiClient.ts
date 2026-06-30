@@ -635,6 +635,14 @@ export const apiClient = {
     crearAdmin(id: string, body: { cedula: string; nombres: string; apellidos: string; telefono?: string }): Promise<{ ok: true }> {
       return request(`/api/plataforma/colegios/${id}/admin`, { method: 'POST', body: JSON.stringify(body) });
     },
+    /** Busca una persona global por cédula (para autocompletar el formulario). */
+    buscarUsuario(cedula: string): Promise<{ usuario: { id: string; nombres: string | null; apellidos: string | null; numero_de_telefono: string | null } | null }> {
+      return request(`/api/plataforma/usuario/${encodeURIComponent(cedula)}`);
+    },
+    /** Asegura un interno del colegio con el cargo dado (Rector, Coordinador, etc.). */
+    crearInterno(id: string, body: { cedula: string; nombres: string; apellidos: string; telefono?: string; cargo: string }): Promise<{ ok: true }> {
+      return request(`/api/plataforma/colegios/${id}/interno`, { method: 'POST', body: JSON.stringify(body) });
+    },
     /** Publica el borrador → estado activo. */
     publicarColegio(id: string): Promise<{ ok: true; ya_activo?: boolean }> {
       return request(`/api/plataforma/colegios/${id}/publicar`, { method: 'POST' });

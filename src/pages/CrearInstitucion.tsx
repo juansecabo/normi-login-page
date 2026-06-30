@@ -450,24 +450,60 @@ const FichaEscala = ({ colegio, cfg, onSaved, volver }: { colegio: ColegioDetall
   );
 };
 
-// ───────────────────────── FICHA: ADMINISTRADORES ─────────────────────────
+// ───────────────────────── FICHA: PERSONAS DEL COLEGIO ─────────────────────────
+// Botones por rol. Los 6 cargos de staff son la MISMA tabla Internos (solo cambia
+// el cargo); estudiantes y acudientes usan sus tablas (que ya existen). Al escribir
+// una cédula que ya está en Usuarios, se autocompletan los datos.
+const ROLES_STAFF: { cargo: string; label: string }[] = [
+  { cargo: "Administrador", label: "Administrador(a)" },
+  { cargo: "Rector", label: "Rector(a)" },
+  { cargo: "Coordinador(a)", label: "Coordinadores" },
+  { cargo: "Administrativo(a)", label: "Administrativos" },
+  { cargo: "Orientador(a) Escolar", label: "Orientación escolar" },
+  { cargo: "Profesor(a)", label: "Profesores" },
+];
+
 const FichaAdmins = ({ id, admins, onChanged, volver }: { id: string; admins: ColegioAdmin[]; onChanged: () => Promise<void>; volver: () => void }) => {
   const { toast } = useToast();
+  // Rol seleccionado: un cargo de staff, o 'estudiante' / 'acudiente'.
+  const [rol, setRol] = useState<string | null>(null);
   const [cedula, setCedula] = useState("");
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [telefono, setTelefono] = useState("");
   const [guardando, setGuardando] = useState(false);
+  const [buscando, setBuscando] = useState(false);
 
-  const agregar = async () => {
+  const reset = () => { setCedula(""); setNombres(""); setApellidos(""); setTelefono(""); };
+  const labelRol = ROLES_STAFF.find((r) => r.cargo === rol)?.label || "";
+
+  // Autocompletar desde Usuarios al terminar de escribir la cédula.
+  const autocompletar = async () => {
+    const c = cedula.trim();
+    if (!/^\d{3,15}$/.test(c)) return;
+    setBuscando(true);
+    try {
+      const { usuario } = await apiClient.plataforma.buscarUsuario(c);
+      if (usuario) {
+        setNombres(usuario.nombres || "");
+        setApellidos(usuario.apellidos || "");
+        if (usuario.numero_de_telefono) setTelefono(usuario.numero_de_telefono);
+        toast({ title: "Persona encontrada", description: "Datos autocompletados desde Usuarios." });
+      }
+    } catch { /* silencioso: si no existe, el usuario llena a mano */ } finally {
+      setBuscando(false);
+    }
+  };
+
+  const agregarStaff = async () => {
     if (!/^\d{3,15}$/.test(cedula.trim())) { toast({ title: "Cédula inválida", description: "Solo números.", variant: "destructive" }); return; }
     if (!nombres.trim() || !apellidos.trim()) { toast({ title: "Faltan nombres o apellidos", variant: "destructive" }); return; }
     setGuardando(true);
     try {
-      await apiClient.plataforma.crearAdmin(id, { cedula: cedula.trim(), nombres: nombres.trim(), apellidos: apellidos.trim(), telefono: telefono.trim() || undefined });
-      setCedula(""); setNombres(""); setApellidos(""); setTelefono("");
+      await apiClient.plataforma.crearInterno(id, { cedula: cedula.trim(), nombres: nombres.trim(), apellidos: apellidos.trim(), telefono: telefono.trim() || undefined, cargo: rol! });
+      reset();
       await onChanged();
-      toast({ title: "Administrador agregado", description: "Entra por primera vez con su cédula como contraseña." });
+      toast({ title: `${labelRol} agregado`, description: "Entra por primera vez con su cédula como contraseña." });
     } catch (err: any) {
       toast({ title: "No se pudo agregar", description: err?.message, variant: "destructive" });
     } finally {
@@ -475,39 +511,55 @@ const FichaAdmins = ({ id, admins, onChanged, volver }: { id: string; admins: Co
     }
   };
 
+  const esStaff = rol !== null && ROLES_STAFF.some((r) => r.cargo === rol);
+
   return (
     <div>
-      <h2 className="text-xl font-semibold mb-1">Administradores</h2>
-      <p className="text-sm text-muted-foreground mb-4">El administrador podrá entrar a la plataforma y configurar el resto del colegio.</p>
+      <h2 className="text-xl font-semibold mb-1">Personas del colegio</h2>
+      <p className="text-sm text-muted-foreground mb-4">Agrega a las personas por rol, una por una. Al escribir una cédula que ya está registrada, se autocompletan los datos.</p>
 
-      {admins.length > 0 && (
-        <div className="space-y-2 mb-6">
-          {admins.map((a) => (
-            <div key={a.id} className="flex items-center gap-3 border border-border rounded-lg p-3 bg-card">
-              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
-                {(a.nombres || "?").charAt(0).toUpperCase()}
-              </div>
-              <div className="min-w-0">
-                <p className="font-medium truncate">{a.nombres} {a.apellidos}</p>
-                <p className="text-xs text-muted-foreground">Cédula: {a.id}{a.numero_de_telefono ? ` · ${a.numero_de_telefono}` : ""}</p>
-              </div>
-            </div>
-          ))}
+      {/* Botones por rol */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
+        {ROLES_STAFF.map((r) => (
+          <Button key={r.cargo} variant={rol === r.cargo ? "default" : "outline"} size="sm" className="bg-card data-[active=true]:bg-primary" data-active={rol === r.cargo} onClick={() => { setRol(r.cargo); reset(); }}>
+            {r.label}
+          </Button>
+        ))}
+        <Button variant={rol === "estudiante" ? "default" : "outline"} size="sm" className="bg-card" onClick={() => { setRol("estudiante"); reset(); }}>Estudiantes</Button>
+        <Button variant={rol === "acudiente" ? "default" : "outline"} size="sm" className="bg-card" onClick={() => { setRol("acudiente"); reset(); }}>Acudientes</Button>
+      </div>
+
+      {/* Formulario para los 6 cargos de staff (misma tabla Internos, distinto cargo) */}
+      {esStaff && (
+        <div className="border border-border rounded-lg p-4 space-y-3 bg-card">
+          <h3 className="font-medium text-sm">Agregar — {labelRol}</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div><Label className="text-sm">Cédula *</Label><Input value={cedula} onChange={(e) => setCedula(e.target.value)} onBlur={autocompletar} placeholder="Solo números" className="mt-1" /></div>
+            <div><Label className="text-sm">Teléfono</Label><Input value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="57300…" className="mt-1" /></div>
+            <div><Label className="text-sm">Nombres *</Label><Input value={nombres} onChange={(e) => setNombres(e.target.value)} className="mt-1" /></div>
+            <div><Label className="text-sm">Apellidos *</Label><Input value={apellidos} onChange={(e) => setApellidos(e.target.value)} className="mt-1" /></div>
+          </div>
+          <Button onClick={agregarStaff} disabled={guardando || buscando} className="gap-2">
+            {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Agregar {labelRol.toLowerCase()}
+          </Button>
         </div>
       )}
 
-      <div className="border border-border rounded-lg p-4 space-y-3 bg-card">
-        <h3 className="font-medium text-sm">Agregar administrador</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div><Label className="text-sm">Cédula *</Label><Input value={cedula} onChange={(e) => setCedula(e.target.value)} placeholder="Solo números" className="mt-1" /></div>
-          <div><Label className="text-sm">Teléfono</Label><Input value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="57300…" className="mt-1" /></div>
-          <div><Label className="text-sm">Nombres *</Label><Input value={nombres} onChange={(e) => setNombres(e.target.value)} className="mt-1" /></div>
-          <div><Label className="text-sm">Apellidos *</Label><Input value={apellidos} onChange={(e) => setApellidos(e.target.value)} className="mt-1" /></div>
+      {/* Estudiantes / Acudientes: usan sus tablas con campos adicionales (grado,
+          salón, acudidos). Por ahora se registran con datos completos entrando como
+          administrador del colegio (donde ya existe ese formulario). */}
+      {(rol === "estudiante" || rol === "acudiente") && (
+        <div className="border border-border rounded-lg p-4 bg-card text-sm text-muted-foreground">
+          Para agregar {rol === "estudiante" ? "estudiantes" : "acudientes"} se piden datos adicionales
+          ({rol === "estudiante" ? "grado y salón" : "estudiantes a cargo"}). Por ahora se registran con
+          todos sus datos entrando como administrador del colegio (botón “Entrar como administrador” en el panel),
+          donde ya existe el formulario completo con autocompletado por cédula.
         </div>
-        <Button onClick={agregar} disabled={guardando} className="gap-2">
-          {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Agregar
-        </Button>
-      </div>
+      )}
+
+      {!rol && (
+        <p className="text-sm text-muted-foreground">Elige un rol arriba para empezar a agregar personas.</p>
+      )}
     </div>
   );
 };
