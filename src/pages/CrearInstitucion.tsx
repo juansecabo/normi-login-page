@@ -473,27 +473,38 @@ const FichaAdmins = ({ id, admins, onChanged, volver }: { id: string; admins: Co
   const [telefono, setTelefono] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [buscando, setBuscando] = useState(false);
+  // Si la cédula ya existe en Usuarios, los datos vienen de ahí y NO se pueden
+  // editar (Usuarios es la única fuente de verdad de nombres/teléfono).
+  const [bloqueado, setBloqueado] = useState(false);
 
-  const reset = () => { setCedula(""); setNombres(""); setApellidos(""); setTelefono(""); };
+  const reset = () => { setCedula(""); setNombres(""); setApellidos(""); setTelefono(""); setBloqueado(false); };
   const labelRol = ROLES_STAFF.find((r) => r.cargo === rol)?.label || "";
 
-  // Autocompletar desde Usuarios al terminar de escribir la cédula.
-  const autocompletar = async () => {
+  // Autocompletar MIENTRAS se escribe la cédula (con un pequeño retardo). Si la
+  // persona ya existe en Usuarios, se traen sus datos y se BLOQUEAN los campos.
+  useEffect(() => {
     const c = cedula.trim();
-    if (!/^\d{3,15}$/.test(c)) return;
-    setBuscando(true);
-    try {
-      const { usuario } = await apiClient.plataforma.buscarUsuario(c);
-      if (usuario) {
-        setNombres(usuario.nombres || "");
-        setApellidos(usuario.apellidos || "");
-        if (usuario.numero_de_telefono) setTelefono(usuario.numero_de_telefono);
-        toast({ title: "Persona encontrada", description: "Datos autocompletados desde Usuarios." });
+    if (!/^\d{3,15}$/.test(c)) { setBloqueado(false); return; }
+    let vivo = true;
+    const t = setTimeout(async () => {
+      setBuscando(true);
+      try {
+        const { usuario } = await apiClient.plataforma.buscarUsuario(c);
+        if (!vivo) return;
+        if (usuario) {
+          setNombres(usuario.nombres || "");
+          setApellidos(usuario.apellidos || "");
+          setTelefono(usuario.numero_de_telefono || "");
+          setBloqueado(true);
+        } else {
+          setBloqueado(false);
+        }
+      } catch { if (vivo) setBloqueado(false); } finally {
+        if (vivo) setBuscando(false);
       }
-    } catch { /* silencioso: si no existe, el usuario llena a mano */ } finally {
-      setBuscando(false);
-    }
-  };
+    }, 450);
+    return () => { vivo = false; clearTimeout(t); };
+  }, [cedula]);
 
   const agregarStaff = async () => {
     if (!/^\d{3,15}$/.test(cedula.trim())) { toast({ title: "Cédula inválida", description: "Solo números.", variant: "destructive" }); return; }
@@ -534,11 +545,16 @@ const FichaAdmins = ({ id, admins, onChanged, volver }: { id: string; admins: Co
         <div className="border border-border rounded-lg p-4 space-y-3 bg-card">
           <h3 className="font-medium text-sm">Agregar — {labelRol}</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div><Label className="text-sm">Cédula *</Label><Input value={cedula} onChange={(e) => setCedula(e.target.value)} onBlur={autocompletar} placeholder="Solo números" className="mt-1" /></div>
-            <div><Label className="text-sm">Teléfono</Label><Input value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="57300…" className="mt-1" /></div>
-            <div><Label className="text-sm">Nombres *</Label><Input value={nombres} onChange={(e) => setNombres(e.target.value)} className="mt-1" /></div>
-            <div><Label className="text-sm">Apellidos *</Label><Input value={apellidos} onChange={(e) => setApellidos(e.target.value)} className="mt-1" /></div>
+            <div>
+              <Label className="text-sm">Cédula *</Label>
+              <Input value={cedula} onChange={(e) => setCedula(e.target.value)} placeholder="Solo números" className="mt-1" />
+              {buscando && <p className="text-xs text-muted-foreground mt-1">Buscando…</p>}
+            </div>
+            <div><Label className="text-sm">Teléfono</Label><Input value={telefono} onChange={(e) => setTelefono(e.target.value)} readOnly={bloqueado} placeholder="57300…" className={`mt-1 ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
+            <div><Label className="text-sm">Nombres *</Label><Input value={nombres} onChange={(e) => setNombres(e.target.value)} readOnly={bloqueado} className={`mt-1 ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
+            <div><Label className="text-sm">Apellidos *</Label><Input value={apellidos} onChange={(e) => setApellidos(e.target.value)} readOnly={bloqueado} className={`mt-1 ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
           </div>
+          {bloqueado && <p className="text-xs text-muted-foreground">Esta cédula ya está registrada en Usuarios — sus datos se toman de ahí y no se editan aquí.</p>}
           <Button onClick={agregarStaff} disabled={guardando || buscando} className="gap-2">
             {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Agregar {labelRol.toLowerCase()}
           </Button>
