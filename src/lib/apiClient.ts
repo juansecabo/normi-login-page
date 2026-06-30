@@ -643,6 +643,14 @@ export const apiClient = {
     crearInterno(id: string, body: { cedula: string; nombres: string; apellidos: string; telefono?: string; cargo: string }): Promise<{ ok: true }> {
       return request(`/api/plataforma/colegios/${id}/interno`, { method: 'POST', body: JSON.stringify(body) });
     },
+    /** Lista las personas del colegio por rol (internos con cargo, estudiantes, acudientes). */
+    listaPersonas(id: string): Promise<{
+      internos: { id: string; cargo: string; nombres: string; apellidos: string }[];
+      estudiantes: { id: string; grado: string | null; salon: string | null; nombres: string; apellidos: string }[];
+      acudientes: { id: string; nombres: string; apellidos: string }[];
+    }> {
+      return request(`/api/plataforma/colegios/${id}/personas`);
+    },
     /** Publica el borrador → estado activo. */
     publicarColegio(id: string): Promise<{ ok: true; ya_activo?: boolean }> {
       return request(`/api/plataforma/colegios/${id}/publicar`, { method: 'POST' });

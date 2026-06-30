@@ -487,6 +487,13 @@ const FichaAdmins = ({ id, admins, onChanged, volver }: { id: string; admins: Co
     if (bloqueadoRef.current) { setNombres(""); setApellidos(""); setTelefono(""); }
     setBloqueado(false);
   };
+
+  // Personas ya agregadas (para mostrarlas por rol).
+  const [personas, setPersonas] = useState<{ internos: any[]; estudiantes: any[]; acudientes: any[] }>({ internos: [], estudiantes: [], acudientes: [] });
+  const cargarPersonas = async () => {
+    try { setPersonas(await apiClient.plataforma.listaPersonas(id)); } catch { /* noop */ }
+  };
+  useEffect(() => { cargarPersonas(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [id]);
   const labelRol = ROLES_STAFF.find((r) => r.cargo === rol)?.label || "";
 
   // Autocompletar MIENTRAS se escribe la cédula (con un pequeño retardo). Si la
@@ -524,6 +531,7 @@ const FichaAdmins = ({ id, admins, onChanged, volver }: { id: string; admins: Co
       await apiClient.plataforma.crearInterno(id, { cedula: cedula.trim(), nombres: nombres.trim(), apellidos: apellidos.trim(), telefono: telefono.trim() || undefined, cargo: rol! });
       reset();
       await onChanged();
+      await cargarPersonas();
       toast({ title: `${labelRol} agregado`, description: "Entra por primera vez con su cédula como contraseña." });
     } catch (err: any) {
       toast({ title: "No se pudo agregar", description: err?.message, variant: "destructive" });
@@ -533,6 +541,10 @@ const FichaAdmins = ({ id, admins, onChanged, volver }: { id: string; admins: Co
   };
 
   const esStaff = rol !== null && ROLES_STAFF.some((r) => r.cargo === rol);
+  // Lista de personas del rol seleccionado, para mostrarlas debajo de los botones.
+  const listaActual: { id: string; nombres: string; apellidos: string; grado?: string | null; salon?: string | null }[] =
+    !rol ? [] : esStaff ? personas.internos.filter((i) => i.cargo === rol) : rol === "estudiante" ? personas.estudiantes : personas.acudientes;
+  const labelActual = esStaff ? labelRol : rol === "estudiante" ? "Estudiantes" : rol === "acudiente" ? "Acudientes" : "";
 
   return (
     <div>
@@ -549,6 +561,30 @@ const FichaAdmins = ({ id, admins, onChanged, volver }: { id: string; admins: Co
         <Button variant={rol === "estudiante" ? "default" : "outline"} size="sm" className="bg-card" onClick={() => { setRol("estudiante"); reset(); }}>Estudiantes</Button>
         <Button variant={rol === "acudiente" ? "default" : "outline"} size="sm" className="bg-card" onClick={() => { setRol("acudiente"); reset(); }}>Acudientes</Button>
       </div>
+
+      {/* Lista de personas ya agregadas en el rol seleccionado */}
+      {rol && (
+        <div className="mb-4">
+          <p className="text-sm font-medium mb-2">{labelActual} agregados ({listaActual.length})</p>
+          {listaActual.length === 0 ? (
+            <p className="text-xs text-muted-foreground">Aún no hay {labelActual.toLowerCase()} en este colegio.</p>
+          ) : (
+            <div className="space-y-2">
+              {listaActual.map((p) => (
+                <div key={p.id} className="flex items-center gap-3 border border-border rounded-lg p-2.5 bg-card">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm shrink-0">
+                    {(p.nombres || "?").charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{p.nombres} {p.apellidos}</p>
+                    <p className="text-xs text-muted-foreground">Cédula: {p.id}{p.grado ? ` · ${p.grado}${p.salon ? ` ${p.salon}` : ""}` : ""}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Formulario para los 6 cargos de staff (misma tabla Internos, distinto cargo) */}
       {esStaff && (
