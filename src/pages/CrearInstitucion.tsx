@@ -186,7 +186,7 @@ const MenuFichas = ({
         <Card icon={<GraduationCap className="w-8 h-8 text-primary" />} label="Escala de calificación" sub={`${cfg.escala_min ?? 0} a ${cfg.escala_max ?? 5} · aprueba con ${cfg.nota_aprobatoria ?? 3}`} onClick={() => ir("escala")} />
         <Card icon={<Clock className="w-8 h-8 text-primary" />} label="Jornadas, grados y salones" sub={estructura.grados ? `${estructura.grados} grado(s) · ${estructura.salones} salón(es)` : "Define la estructura (opcional)"} onClick={() => ir("estructura")} ok={estructura.grados > 0} />
         <Card icon={<FileText className="w-8 h-8 text-primary" />} label="Manual de Convivencia" sub={cfg.manual_url ? "PDF cargado" : "Sube el PDF (opcional)"} onClick={() => ir("manual")} ok={!!cfg.manual_url} />
-        <Card icon={<Users className="w-8 h-8 text-primary" />} label="Administradores" sub={admins.length ? `${admins.length} asignado(s)` : "Opcional — puede agregarse después"} onClick={() => ir("admins")} ok={tieneAdmin} />
+        <Card icon={<Users className="w-8 h-8 text-primary" />} label="Personas del colegio" sub="Administradores, rectores, profesores, estudiantes…" onClick={() => ir("admins")} ok={tieneAdmin} />
       </div>
 
       {!yaActivo && (
