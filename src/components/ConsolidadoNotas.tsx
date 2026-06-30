@@ -180,10 +180,12 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
           const nombres = idArr.map((id) => nombreById[id]).filter(Boolean);
           if (nombres.length) {
             profesMap[asig] = nombres.join(', ');
-            // Etiqueta según género (un solo profe) o genérica (varios).
+            // Etiqueta según género del único profe: F→Profesora, M→Profesor, y si
+            // NO hay género registrado, neutro "Profesor(a):" (no asumir masculino).
+            const gprof = generoById[idArr[0]];
             labelMap[asig] = nombres.length > 1
               ? 'Profesores(as):'
-              : (generoById[idArr[0]] === 'F' ? 'Profesora:' : 'Profesor:');
+              : (gprof === 'F' ? 'Profesora:' : gprof === 'M' ? 'Profesor:' : 'Profesor(a):');
           }
         });
         setProfesoresPorAsignatura(profesMap);
