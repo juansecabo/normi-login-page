@@ -476,15 +476,24 @@ const FichaAdmins = ({ id, admins, onChanged, volver }: { id: string; admins: Co
   // Si la cédula ya existe en Usuarios, los datos vienen de ahí y NO se pueden
   // editar (Usuarios es la única fuente de verdad de nombres/teléfono).
   const [bloqueado, setBloqueado] = useState(false);
+  // Espejo de `bloqueado` para leerlo dentro del efecto sin meterlo en deps.
+  const bloqueadoRef = useRef(false);
+  useEffect(() => { bloqueadoRef.current = bloqueado; }, [bloqueado]);
 
   const reset = () => { setCedula(""); setNombres(""); setApellidos(""); setTelefono(""); setBloqueado(false); };
+  // Al dejar de coincidir con una persona encontrada, limpia los datos que se
+  // habían autocompletado (pero NO lo que el usuario escribió a mano).
+  const limpiarSiEstabaBloqueado = () => {
+    if (bloqueadoRef.current) { setNombres(""); setApellidos(""); setTelefono(""); }
+    setBloqueado(false);
+  };
   const labelRol = ROLES_STAFF.find((r) => r.cargo === rol)?.label || "";
 
   // Autocompletar MIENTRAS se escribe la cédula (con un pequeño retardo). Si la
   // persona ya existe en Usuarios, se traen sus datos y se BLOQUEAN los campos.
   useEffect(() => {
     const c = cedula.trim();
-    if (!/^\d{3,15}$/.test(c)) { setBloqueado(false); return; }
+    if (!/^\d{3,15}$/.test(c)) { limpiarSiEstabaBloqueado(); return; }
     let vivo = true;
     const t = setTimeout(async () => {
       setBuscando(true);
@@ -497,13 +506,14 @@ const FichaAdmins = ({ id, admins, onChanged, volver }: { id: string; admins: Co
           setTelefono(usuario.numero_de_telefono || "");
           setBloqueado(true);
         } else {
-          setBloqueado(false);
+          limpiarSiEstabaBloqueado();
         }
-      } catch { if (vivo) setBloqueado(false); } finally {
+      } catch { if (vivo) limpiarSiEstabaBloqueado(); } finally {
         if (vivo) setBuscando(false);
       }
     }, 450);
     return () => { vivo = false; clearTimeout(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cedula]);
 
   const agregarStaff = async () => {
