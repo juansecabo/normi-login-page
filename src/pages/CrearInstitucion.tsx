@@ -471,6 +471,8 @@ const FichaAdmins = ({ id, admins, onChanged, volver }: { id: string; admins: Co
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [telefono, setTelefono] = useState("");
+  const [genero, setGenero] = useState("");          // "M" | "F" — obligatorio
+  const [fechaNac, setFechaNac] = useState("");       // YYYY-MM-DD — opcional
   const [guardando, setGuardando] = useState(false);
   const [buscando, setBuscando] = useState(false);
   // Si la cédula ya existe en Usuarios, los datos vienen de ahí y NO se pueden
@@ -480,11 +482,11 @@ const FichaAdmins = ({ id, admins, onChanged, volver }: { id: string; admins: Co
   const bloqueadoRef = useRef(false);
   useEffect(() => { bloqueadoRef.current = bloqueado; }, [bloqueado]);
 
-  const reset = () => { setCedula(""); setNombres(""); setApellidos(""); setTelefono(""); setBloqueado(false); };
+  const reset = () => { setCedula(""); setNombres(""); setApellidos(""); setTelefono(""); setGenero(""); setFechaNac(""); setBloqueado(false); };
   // Al dejar de coincidir con una persona encontrada, limpia los datos que se
   // habían autocompletado (pero NO lo que el usuario escribió a mano).
   const limpiarSiEstabaBloqueado = () => {
-    if (bloqueadoRef.current) { setNombres(""); setApellidos(""); setTelefono(""); }
+    if (bloqueadoRef.current) { setNombres(""); setApellidos(""); setTelefono(""); setGenero(""); setFechaNac(""); }
     setBloqueado(false);
   };
 
@@ -511,6 +513,8 @@ const FichaAdmins = ({ id, admins, onChanged, volver }: { id: string; admins: Co
           setNombres(usuario.nombres || "");
           setApellidos(usuario.apellidos || "");
           setTelefono(usuario.numero_de_telefono || "");
+          setGenero(usuario.genero || "");
+          setFechaNac(usuario.fecha_de_nacimiento || "");
           setBloqueado(true);
         } else {
           limpiarSiEstabaBloqueado();
@@ -526,9 +530,10 @@ const FichaAdmins = ({ id, admins, onChanged, volver }: { id: string; admins: Co
   const agregarStaff = async () => {
     if (!/^\d{3,15}$/.test(cedula.trim())) { toast({ title: "Cédula inválida", description: "Solo números.", variant: "destructive" }); return; }
     if (!nombres.trim() || !apellidos.trim()) { toast({ title: "Faltan nombres o apellidos", variant: "destructive" }); return; }
+    if (!bloqueado && genero !== "M" && genero !== "F") { toast({ title: "Falta el género", description: "El género es obligatorio.", variant: "destructive" }); return; }
     setGuardando(true);
     try {
-      await apiClient.plataforma.crearInterno(id, { cedula: cedula.trim(), nombres: nombres.trim(), apellidos: apellidos.trim(), telefono: telefono.trim() || undefined, cargo: rol! });
+      await apiClient.plataforma.crearInterno(id, { cedula: cedula.trim(), nombres: nombres.trim(), apellidos: apellidos.trim(), telefono: telefono.trim() || undefined, cargo: rol!, genero: genero || undefined, fecha_de_nacimiento: fechaNac || undefined });
       reset();
       await onChanged();
       await cargarPersonas();
@@ -599,6 +604,20 @@ const FichaAdmins = ({ id, admins, onChanged, volver }: { id: string; admins: Co
             <div><Label className="text-sm">Teléfono</Label><Input value={telefono} onChange={(e) => setTelefono(e.target.value)} readOnly={bloqueado} placeholder="57300…" className={`mt-1 ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
             <div><Label className="text-sm">Nombres *</Label><Input value={nombres} onChange={(e) => setNombres(e.target.value)} readOnly={bloqueado} className={`mt-1 ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
             <div><Label className="text-sm">Apellidos *</Label><Input value={apellidos} onChange={(e) => setApellidos(e.target.value)} readOnly={bloqueado} className={`mt-1 ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
+            <div>
+              <Label className="text-sm">Género *</Label>
+              <select
+                value={genero}
+                onChange={(e) => setGenero(e.target.value)}
+                disabled={bloqueado}
+                className={`mt-1 flex h-10 w-full rounded-md border border-input px-3 py-2 text-sm ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : "bg-background"}`}
+              >
+                <option value="">Selecciona…</option>
+                <option value="M">Masculino</option>
+                <option value="F">Femenino</option>
+              </select>
+            </div>
+            <div><Label className="text-sm">Fecha de nacimiento <span className="text-muted-foreground">(opcional)</span></Label><Input type="date" value={fechaNac} onChange={(e) => setFechaNac(e.target.value)} readOnly={bloqueado} className={`mt-1 ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
           </div>
           {bloqueado && <p className="text-xs text-muted-foreground">Esta cédula ya está registrada en Usuarios — sus datos se toman de ahí y no se editan aquí.</p>}
           <Button onClick={agregarStaff} disabled={guardando || buscando} className="gap-2">

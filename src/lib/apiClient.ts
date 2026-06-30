@@ -636,11 +636,11 @@ export const apiClient = {
       return request(`/api/plataforma/colegios/${id}/admin`, { method: 'POST', body: JSON.stringify(body) });
     },
     /** Busca una persona global por cédula (para autocompletar el formulario). */
-    buscarUsuario(cedula: string): Promise<{ usuario: { id: string; nombres: string | null; apellidos: string | null; numero_de_telefono: string | null } | null }> {
+    buscarUsuario(cedula: string): Promise<{ usuario: { id: string; nombres: string | null; apellidos: string | null; numero_de_telefono: string | null; genero: string | null; fecha_de_nacimiento: string | null } | null }> {
       return request(`/api/plataforma/usuario/${encodeURIComponent(cedula)}`);
     },
     /** Asegura un interno del colegio con el cargo dado (Rector, Coordinador, etc.). */
-    crearInterno(id: string, body: { cedula: string; nombres: string; apellidos: string; telefono?: string; cargo: string }): Promise<{ ok: true }> {
+    crearInterno(id: string, body: { cedula: string; nombres: string; apellidos: string; telefono?: string; cargo: string; genero?: string; fecha_de_nacimiento?: string }): Promise<{ ok: true }> {
       return request(`/api/plataforma/colegios/${id}/interno`, { method: 'POST', body: JSON.stringify(body) });
     },
     /** Lista las personas del colegio por rol (internos con cargo, estudiantes, acudientes). */
