@@ -624,7 +624,7 @@ export const apiClient = {
       return request('/api/plataforma/colegios', { method: 'POST', body: JSON.stringify({ nombre }) });
     },
     /** Detalle de un colegio para retomar/editar: fila + admins + estructura. */
-    getColegio(id: string): Promise<{ colegio: ColegioDetalle; admins: ColegioAdmin[]; estructura: { jornadas: number; grados: number; salones: number } }> {
+    getColegio(id: string): Promise<{ colegio: ColegioDetalle; admins: ColegioAdmin[]; estructura: { jornadas: number; grados: number; salones: number; asignaturas?: number } }> {
       return request(`/api/plataforma/colegios/${id}`);
     },
     /** Guarda el borrador (merge de configuracion). */

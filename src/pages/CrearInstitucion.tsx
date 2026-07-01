@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Building2, Image as ImageIcon, GraduationCap, Users, ArrowLeft,
-  Loader2, Pencil, Check, Rocket, Clock, Plus, Trash2, FileText, ExternalLink,
+  Loader2, Pencil, Check, Rocket, Clock, Plus, Trash2, FileText, ExternalLink, BookOpen,
 } from "lucide-react";
 import HeaderNormi from "@/components/HeaderNormi";
 import EscudoColegio from "@/components/EscudoColegio";
 import EstructuraColegioEditor from "@/components/EstructuraColegioEditor";
+import AsignaturasColegioEditor from "@/components/AsignaturasColegioEditor";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -20,7 +21,7 @@ import { useToast } from "@/hooks/use-toast";
  * sub-fichas (datos, escudo, escala, administradores) para no abrumar en una
  * sola pantalla. Todo se va guardando en el borrador; "Publicar" lo activa.
  */
-type Vista = "menu" | "datos" | "escudo" | "escala" | "estructura" | "manual" | "admins";
+type Vista = "menu" | "datos" | "escudo" | "escala" | "estructura" | "asignaturas" | "manual" | "admins";
 
 const CrearInstitucion = () => {
   const { id = "" } = useParams();
@@ -29,14 +30,14 @@ const CrearInstitucion = () => {
 
   const [colegio, setColegio] = useState<ColegioDetalle | null>(null);
   const [admins, setAdmins] = useState<ColegioAdmin[]>([]);
-  const [estructura, setEstructura] = useState<{ jornadas: number; grados: number; salones: number }>({ jornadas: 0, grados: 0, salones: 0 });
+  const [estructura, setEstructura] = useState<{ jornadas: number; grados: number; salones: number; asignaturas?: number }>({ jornadas: 0, grados: 0, salones: 0 });
   const [loading, setLoading] = useState(true);
   const [publicando, setPublicando] = useState(false);
 
   // La ficha activa vive en la URL (?ficha=datos) para que un F5 no saque al
   // usuario al menú: al recargar se restaura la sub-ficha donde estaba.
   const [searchParams, setSearchParams] = useSearchParams();
-  const FICHAS: Vista[] = ["menu", "datos", "escudo", "escala", "estructura", "manual", "admins"];
+  const FICHAS: Vista[] = ["menu", "datos", "escudo", "escala", "estructura", "asignaturas", "manual", "admins"];
   const fichaUrl = searchParams.get("ficha") as Vista | null;
   const vista: Vista = fichaUrl && FICHAS.includes(fichaUrl) ? fichaUrl : "menu";
   // PUSH (no replace) para que el botón "atrás" del navegador vaya ficha → menú
@@ -153,6 +154,13 @@ const CrearInstitucion = () => {
               <EstructuraColegioEditor colegioId={id} />
             </div>
           )}
+          {vista === "asignaturas" && (
+            <div>
+              <h2 className="text-xl font-semibold mb-1">Asignaturas y plan de estudios</h2>
+              <p className="text-sm text-muted-foreground mb-4">Escoge las asignaturas propias del colegio y define cuáles se ven en cada grado con su intensidad horaria.</p>
+              <AsignaturasColegioEditor colegioId={id} />
+            </div>
+          )}
           {vista === "manual" && <FichaManual id={id} manualUrl={cfg.manual_url || null} onChanged={cargar} />}
           {vista === "admins" && <FichaAdmins id={id} admins={admins} onChanged={cargar} volver={() => setVista("menu")} />}
         </div>
@@ -166,7 +174,7 @@ const MenuFichas = ({
   colegio, admins, cfg, estructura, ir, puedePublicar, publicar, publicando, tieneNombre, tieneAdmin, yaActivo,
 }: {
   colegio: ColegioDetalle; admins: ColegioAdmin[]; cfg: Record<string, any>;
-  estructura: { jornadas: number; grados: number; salones: number };
+  estructura: { jornadas: number; grados: number; salones: number; asignaturas?: number };
   ir: (v: Vista) => void; puedePublicar: boolean; publicar: () => void;
   publicando: boolean; tieneNombre: boolean; tieneAdmin: boolean; yaActivo: boolean;
 }) => {
@@ -185,6 +193,7 @@ const MenuFichas = ({
         <Card icon={<ImageIcon className="w-8 h-8 text-primary" />} label="Escudo" sub={colegio.logo_url ? "Escudo cargado" : "Imagen institucional (500×500)"} onClick={() => ir("escudo")} ok={!!colegio.logo_url} />
         <Card icon={<GraduationCap className="w-8 h-8 text-primary" />} label="Escala de calificación" sub={`${cfg.escala_min ?? 0} a ${cfg.escala_max ?? 5} · aprueba con ${cfg.nota_aprobatoria ?? 3}`} onClick={() => ir("escala")} />
         <Card icon={<Clock className="w-8 h-8 text-primary" />} label="Jornadas, grados y salones" sub={estructura.grados ? `${estructura.grados} grado(s) · ${estructura.salones} salón(es)` : "Define la estructura (opcional)"} onClick={() => ir("estructura")} ok={estructura.grados > 0} />
+        <Card icon={<BookOpen className="w-8 h-8 text-primary" />} label="Asignaturas" sub={(estructura.asignaturas || 0) > 0 ? `${estructura.asignaturas} asignatura(s) · plan por grado` : "Escoge las asignaturas del colegio"} onClick={() => ir("asignaturas")} ok={(estructura.asignaturas || 0) > 0} />
         <Card icon={<FileText className="w-8 h-8 text-primary" />} label="Manual de Convivencia" sub={cfg.manual_url ? "PDF cargado" : "Sube el PDF (opcional)"} onClick={() => ir("manual")} ok={!!cfg.manual_url} />
         <Card icon={<Users className="w-8 h-8 text-primary" />} label="Personas del colegio" sub="Administradores, rectores, profesores, estudiantes…" onClick={() => ir("admins")} ok={tieneAdmin} />
       </div>
