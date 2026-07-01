@@ -184,12 +184,14 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
           <p className="text-sm text-muted-foreground">Cada colegio define sus propias asignaturas. Estas son las que luego se asignan a los grados y a la carga académica de los profesores.</p>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5 rounded-lg border p-3">
+          {/* columns-2 (no grid): el orden alfabético fluye VERTICAL — primera
+              mitad en la columna izquierda, segunda en la derecha. */}
+          <div className="columns-1 sm:columns-2 gap-x-4 rounded-lg border p-3">
             {listaCombinada.map((nombre) => {
               const a = porNombre.get(nombre.toLowerCase());
               const marcada = !!a;
               return (
-                <label key={nombre} className="flex items-center gap-2.5 py-1 cursor-pointer select-none">
+                <label key={nombre} className="flex items-center gap-2.5 py-1 cursor-pointer select-none break-inside-avoid">
                   <input
                     type="checkbox"
                     checked={marcada}
