@@ -175,6 +175,9 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
           {asignaturas.length === 0 ? (
             <div className="text-sm text-muted-foreground border border-dashed rounded-lg p-4 text-center space-y-2">
               <p>Este colegio aún no tiene asignaturas.</p>
+              <Button variant="outline" size="sm" className="gap-1" disabled={agregando} onClick={() => agregarAsignatura(LISTA_TIPICA)}>
+                <ListChecks className="w-4 h-4" /> Agregar lista típica (luego la ajustas)
+              </Button>
             </div>
           ) : (
             <div className="flex flex-wrap gap-2">
