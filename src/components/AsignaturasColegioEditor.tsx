@@ -25,11 +25,22 @@ interface Asignatura { id: number; nombre: string; activa: boolean; orden: numbe
 interface PlanFila { id: number; grado: string; asignatura_id: number; intensidad_horaria: number | null; }
 interface Grado { id: number; grado: string; orden: number | null; activo: boolean; }
 
-/** Atajo de digitación: áreas típicas del plan de estudios colombiano. */
-const LISTA_TIPICA = [
-  "Matemáticas", "Lengua Castellana", "Inglés", "Ciencias Naturales",
-  "Ciencias Sociales", "Educación Física", "Educación Artística",
-  "Ética y Valores", "Educación Religiosa", "Tecnología e Informática",
+/**
+ * Lista maestra: unión de las asignaturas reales del Colegio Pestalozziano y la
+ * Escuela Normal Superior de Corozal (sin repetidas). Se muestran TODAS y cada
+ * colegio marca con un chulo cuáles ofrece; nada queda escogido por defecto.
+ */
+const LISTA_MAESTRA = [
+  "Artística", "Biología", "Castellano", "Cátedra de Estudios Afrocolombianos",
+  "Cátedra de Paz", "Cátedra Socioemocional", "Ciencias Naturales",
+  "Ciencias Naturales y Educación Ambiental", "Ciencias Políticas",
+  "Ciencias Sociales", "Dimensión Cognitiva", "Dimensión Comunicativa",
+  "Dimensión Corporal", "Dimensión de Ética y Valores", "Dimensión Estética",
+  "Dimensión General", "Educación Artística", "Educación Financiera y Emprendimiento",
+  "Educación Física", "Estadística", "Ética", "Filosofía", "Física", "Geometría",
+  "Informática", "Inglés", "Investigación Formativa", "Lectura Crítica",
+  "Matemáticas", "Pedagogía", "Práctica Pedagógica", "Psicología General",
+  "Química", "Religión", "Tecnología",
 ];
 
 interface Props {
@@ -142,6 +153,19 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
     } catch (e) { err(e, "No se pudieron guardar las horas."); }
   };
 
+  /** Índice de las asignaturas escogidas por nombre (case-insensitive). */
+  const porNombre = useMemo(
+    () => new Map(asignaturas.map((a) => [a.nombre.toLowerCase(), a])),
+    [asignaturas],
+  );
+
+  /** Lista maestra + las propias del colegio que no estén en ella (ordenada). */
+  const listaCombinada = useMemo(() => {
+    const enMaestra = new Set(LISTA_MAESTRA.map((n) => n.toLowerCase()));
+    const propias = asignaturas.map((a) => a.nombre).filter((n) => !enMaestra.has(n.toLowerCase()));
+    return [...LISTA_MAESTRA, ...propias].sort((x, y) => x.localeCompare(y, "es"));
+  }, [asignaturas]);
+
   const totalHorasGrado = useMemo(
     () => plan.filter((p) => p.grado === gradoSel).reduce((s, p) => s + (p.intensidad_horaria || 0), 0),
     [plan, gradoSel],
@@ -160,9 +184,27 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
           <p className="text-sm text-muted-foreground">Cada colegio define sus propias asignaturas. Estas son las que luego se asignan a los grados y a la carga académica de los profesores.</p>
         </CardHeader>
         <CardContent className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5 rounded-lg border p-3">
+            {listaCombinada.map((nombre) => {
+              const a = porNombre.get(nombre.toLowerCase());
+              const marcada = !!a;
+              return (
+                <label key={nombre} className="flex items-center gap-2.5 py-1 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={marcada}
+                    onChange={() => (a ? eliminarAsignatura(a) : agregarAsignatura([nombre]))}
+                    className="w-4 h-4 accent-primary shrink-0"
+                  />
+                  <span className={`text-sm ${marcada ? "" : "text-muted-foreground"}`}>{nombre}</span>
+                </label>
+              );
+            })}
+          </div>
+
           <div className="flex gap-2">
             <Input
-              placeholder="Nombre de la asignatura (ej. Matemáticas)"
+              placeholder="¿Falta una? Escríbela aquí (ej. Science)"
               value={nuevaAsig}
               onChange={(e) => setNuevaAsig(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && nuevaAsig.trim()) agregarAsignatura([nuevaAsig.trim()]); }}
@@ -172,30 +214,9 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
             </Button>
           </div>
 
-          {asignaturas.length === 0 ? (
-            <div className="text-sm text-muted-foreground border border-dashed rounded-lg p-4 text-center space-y-2">
-              <p>Este colegio aún no tiene asignaturas.</p>
-              <Button variant="outline" size="sm" className="gap-1" disabled={agregando} onClick={() => agregarAsignatura(LISTA_TIPICA)}>
-                <ListChecks className="w-4 h-4" /> Agregar lista típica (luego la ajustas)
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {asignaturas.map((a) => (
-                <span key={a.id} className="inline-flex items-center gap-1.5 rounded-full border bg-background px-3 py-1 text-sm">
-                  {a.nombre}
-                  <button
-                    type="button"
-                    onClick={() => eliminarAsignatura(a)}
-                    className="text-muted-foreground hover:text-destructive"
-                    title="Eliminar (solo si no tiene notas ni carga académica)"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
+          <p className="text-sm text-muted-foreground text-right">
+            <ListChecks className="w-4 h-4 inline mr-1" />{asignaturas.length} asignatura(s) escogida(s)
+          </p>
         </CardContent>
       </Card>
 
