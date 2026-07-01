@@ -194,7 +194,7 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
                     type="checkbox"
                     checked={marcada}
                     onChange={() => (a ? eliminarAsignatura(a) : agregarAsignatura([nombre]))}
-                    className="w-4 h-4 accent-primary shrink-0 cursor-pointer"
+                    className="w-4 h-4 accent-primary shrink-0"
                   />
                   <span className={`text-sm ${marcada ? "" : "text-muted-foreground"}`}>{nombre}</span>
                 </label>
@@ -257,7 +257,7 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
                   return (
                     <div key={a.id} className="flex items-center gap-3 px-3 py-2">
                       <label className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer select-none">
-                        <input type="checkbox" checked={marcada} onChange={() => toggleEnGrado(a)} className="w-4 h-4 accent-primary shrink-0 cursor-pointer" />
+                        <input type="checkbox" checked={marcada} onChange={() => toggleEnGrado(a)} className="w-4 h-4 accent-primary shrink-0" />
                         <span className={`text-sm truncate ${marcada ? "" : "text-muted-foreground"}`}>{a.nombre}</span>
                       </label>
                       {marcada && (
