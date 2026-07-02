@@ -640,7 +640,7 @@ export const apiClient = {
       return request(`/api/plataforma/usuario/${encodeURIComponent(cedula)}`);
     },
     /** Asegura un interno del colegio con el cargo dado (Rector, Coordinador, etc.). */
-    crearInterno(id: string, body: { cedula: string; nombres: string; apellidos: string; telefono?: string; cargo: string; genero?: string; fecha_de_nacimiento?: string; niveles_coordina?: string[]; direccion_de_grupo?: string }): Promise<{ ok: true }> {
+    crearInterno(id: string, body: { cedula: string; nombres: string; apellidos: string; telefono?: string; cargo: string; genero?: string; fecha_de_nacimiento?: string }): Promise<{ ok: true }> {
       return request(`/api/plataforma/colegios/${id}/interno`, { method: 'POST', body: JSON.stringify(body) });
     },
     /** Lista las personas del colegio por rol (internos con cargo, estudiantes, acudientes). */
