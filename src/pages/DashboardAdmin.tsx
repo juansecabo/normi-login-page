@@ -43,7 +43,7 @@ const Card = ({ bg, badge, icon, label, onClick }: { bg: string; badge?: number;
   >
     {badge ? <Badge count={badge} /> : null}
     {icon}
-    <span className="font-semibold text-lg text-foreground text-center max-w-full break-words">{label}</span>
+    <span className="font-semibold text-lg text-foreground text-center">{label}</span>
   </button>
 );
 
