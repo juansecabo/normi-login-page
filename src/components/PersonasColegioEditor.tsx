@@ -239,9 +239,13 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
         <div className="space-y-2">
           {listaActual.map((p) => (
             <div key={p.id} className="flex items-center gap-3 border border-border rounded-lg p-2.5 bg-card">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm shrink-0">
-                {(p.nombres || "?").charAt(0).toUpperCase()}
-              </div>
+              {p.avatar_url ? (
+                <img src={p.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" loading="lazy" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm shrink-0">
+                  {(p.nombres || "?").charAt(0).toUpperCase()}
+                </div>
+              )}
               <div className="min-w-0">
                 <p className="text-sm font-medium truncate">{p.nombres} {p.apellidos}</p>
                 <p className="text-xs text-muted-foreground">
