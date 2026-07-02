@@ -107,11 +107,43 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
     finally { setAgregando(false); }
   };
 
-  const eliminarAsignatura = async (a: Asignatura) => {
+  /**
+   * Desmarcar = quitarla del colegio: si está virgen se ELIMINA; si ya tiene
+   * historial (notas, asistencias, carga…) el server responde 409 y entonces
+   * se DESACTIVA (deja de ofrecerse para lo nuevo, historial intacto).
+   */
+  const quitarAsignatura = async (a: Asignatura) => {
     try {
       await apiRequest(`/api/institucion/asignaturas/${a.id}${qCid}`, { method: "DELETE" });
       await cargar();
-    } catch (e) { err(e, "No se pudo eliminar la asignatura."); }
+    } catch (e) {
+      if (e instanceof ApiError && (e.body as any)?.error === "asignatura_en_uso") {
+        try {
+          await apiRequest(`/api/institucion/asignaturas/${a.id}`, {
+            method: "PATCH",
+            body: JSON.stringify(withCid({ activa: false })),
+          });
+          toast({
+            title: `${a.nombre} desactivada`,
+            description: "Tiene notas u otros registros, así que no se borra: deja de ofrecerse para carga académica nueva y todo su historial queda intacto. Márcala de nuevo para reactivarla.",
+          });
+          await cargar();
+        } catch (e2) { err(e2, "No se pudo desactivar la asignatura."); }
+        return;
+      }
+      err(e, "No se pudo quitar la asignatura.");
+    }
+  };
+
+  /** Reactivar una asignatura que estaba desactivada. */
+  const reactivarAsignatura = async (a: Asignatura) => {
+    try {
+      await apiRequest(`/api/institucion/asignaturas/${a.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(withCid({ activa: true })),
+      });
+      await cargar();
+    } catch (e) { err(e, "No se pudo reactivar la asignatura."); }
   };
 
   // ── Plan de estudios ──
@@ -153,6 +185,9 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
     } catch (e) { err(e, "No se pudieron guardar las horas."); }
   };
 
+  /** Solo las activas: son las que se ofrecen (checklist y plan por grado). */
+  const activas = useMemo(() => asignaturas.filter((a) => a.activa), [asignaturas]);
+
   /** Índice de las asignaturas escogidas por nombre (case-insensitive). */
   const porNombre = useMemo(
     () => new Map(asignaturas.map((a) => [a.nombre.toLowerCase(), a])),
@@ -189,13 +224,15 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
           <div className="columns-1 sm:columns-2 gap-x-4 rounded-lg border p-3">
             {listaCombinada.map((nombre) => {
               const a = porNombre.get(nombre.toLowerCase());
-              const marcada = !!a;
+              // Marcada = existe Y activa. Una desactivada aparece sin chulo
+              // (ya no se ofrece) y al marcarla se REACTIVA (no se re-crea).
+              const marcada = !!a && a.activa;
               return (
                 <label key={nombre} className="flex items-center gap-2.5 py-1 cursor-pointer select-none break-inside-avoid">
                   <input
                     type="checkbox"
                     checked={marcada}
-                    onChange={() => (a ? eliminarAsignatura(a) : agregarAsignatura([nombre]))}
+                    onChange={() => (!a ? agregarAsignatura([nombre]) : a.activa ? quitarAsignatura(a) : reactivarAsignatura(a))}
                     className="w-4 h-4 accent-primary shrink-0 cursor-pointer"
                   />
                   <span className={`text-sm ${marcada ? "" : "text-muted-foreground"}`}>{nombre}</span>
@@ -217,7 +254,7 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
           </div>
 
           <p className="text-sm text-muted-foreground text-right">
-            <ListChecks className="w-4 h-4 inline mr-1" />{asignaturas.length} asignatura(s) escogida(s)
+            <ListChecks className="w-4 h-4 inline mr-1" />{activas.length} asignatura(s) escogida(s)
           </p>
         </CardContent>
       </Card>
@@ -233,7 +270,7 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
             <p className="text-sm text-muted-foreground border border-dashed rounded-lg p-4 text-center">
               Primero define los grados del colegio en la ficha <strong>Jornadas, grados y salones</strong>.
             </p>
-          ) : asignaturas.length === 0 ? (
+          ) : activas.length === 0 ? (
             <p className="text-sm text-muted-foreground border border-dashed rounded-lg p-4 text-center">
               Primero agrega las asignaturas del colegio (arriba).
             </p>
@@ -253,7 +290,7 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
               </div>
 
               <div className="divide-y rounded-lg border">
-                {asignaturas.map((a) => {
+                {activas.map((a) => {
                   const fila = planDelGrado.get(a.id);
                   const marcada = !!fila;
                   return (
