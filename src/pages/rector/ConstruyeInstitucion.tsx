@@ -287,15 +287,19 @@ const ConstruyeInstitucion = () => {
             </>)}
             {vista === "estructura" && <EstructuraColegioEditor permitirImportar />}
             {vista === "escala" && (
-              <EscalaColegioEditor
-                cfg={cfgColegio}
-                guardar={async (configuracion) => { await apiClient.colegio.patchConfig(configuracion); }}
-                alGuardar={() => { cargar(); setVista("menu"); }}
-              />
+              <div className="bg-card rounded-lg shadow-soft p-6 md:p-8">
+                <EscalaColegioEditor
+                  cfg={cfgColegio}
+                  guardar={async (configuracion) => { await apiClient.colegio.patchConfig(configuracion); }}
+                  alGuardar={() => { cargar(); setVista("menu"); }}
+                />
+              </div>
             )}
             {vista === "asignaturas" && <AsignaturasColegioEditor />}
             {vista === "manual" && (
-              <ManualColegio manualUrl={cfgColegio.manual_url || null} onChanged={cargar} />
+              <div className="bg-card rounded-lg shadow-soft p-6 md:p-8">
+                <ManualColegio manualUrl={cfgColegio.manual_url || null} onChanged={cargar} />
+              </div>
             )}
             {vista === "personas" && <PersonasColegioEditor rol={rolPersonas} setRol={setRolPersonas} />}
           </div>
