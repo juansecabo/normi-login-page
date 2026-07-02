@@ -123,10 +123,6 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
             method: "PATCH",
             body: JSON.stringify(withCid({ activa: false })),
           });
-          toast({
-            title: `${a.nombre} desactivada`,
-            description: "Tiene notas u otros registros, así que no se borra: deja de ofrecerse para carga académica nueva y todo su historial queda intacto. Márcala de nuevo para reactivarla.",
-          });
           await cargar();
         } catch (e2) { err(e2, "No se pudo desactivar la asignatura."); }
         return;
