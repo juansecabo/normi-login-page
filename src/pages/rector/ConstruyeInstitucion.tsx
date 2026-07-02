@@ -232,7 +232,7 @@ const ConstruyeInstitucion = () => {
               { id: "personas", label: "Personas", desc: "Administradores, rectores, profesores, estudiantes…", Icon: GraduationCap },
             ].map((f) => (
               <button key={f.id} onClick={() => setVista(f.id as typeof vista)}
-                className="flex items-start gap-4 p-6 rounded-lg border text-left transition-colors bg-card hover:bg-muted/40 cursor-pointer">
+                className="flex items-start gap-4 p-6 rounded-lg border text-left transition-colors bg-card hover:bg-muted cursor-pointer">
                 <f.Icon className="h-8 w-8 text-primary shrink-0" />
                 <div><p className="font-semibold text-foreground">{f.label}</p><p className="text-sm text-muted-foreground">{f.desc}</p></div>
               </button>
