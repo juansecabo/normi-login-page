@@ -1612,7 +1612,7 @@ const PanelControl = ({ embedded = false, tabFija }: { embedded?: boolean; tabFi
                       ) : (
                         filteredEst.map((e: any) => (
                           <TableRow key={e.id}>
-                            renderFotoCell(e.avatar_url, `${e.nombres || ""} ${e.apellidos || ""}`)
+                            {renderFotoCell(e.avatar_url, `${e.nombres || ""} ${e.apellidos || ""}`)}
                             <TableCell className="font-mono">{e.id}</TableCell>
                             <TableCell>{e.apellidos}</TableCell>
                             <TableCell>{e.nombres}</TableCell>
@@ -1880,7 +1880,7 @@ const PanelControl = ({ embedded = false, tabFija }: { embedded?: boolean; tabFi
                       ) : (
                         filteredPerf.map((p: any) => (
                           <TableRow key={p.padre_id || p.numero_de_telefono}>
-                            renderFotoCell(p.avatar_url, `${p.acudiente_nombres_only || ""} ${p.padre_apellidos_only || ""}`)
+                            {renderFotoCell(p.avatar_url, `${p.acudiente_nombres_only || ""} ${p.padre_apellidos_only || ""}`)}
                             <TableCell className="font-mono">{p.padre_id || "—"}</TableCell>
                             <TableCell>{p.padre_apellidos_only || "—"}</TableCell>
                             <TableCell>{p.acudiente_nombres_only || "—"}</TableCell>
