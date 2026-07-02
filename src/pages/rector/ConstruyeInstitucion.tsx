@@ -27,6 +27,9 @@ const ConstruyeInstitucion = () => {
   const { toast } = useToast();
   const cargo = getSession().cargo || "";
   const puedeEditar = cargo === "Rector" || cargo === "Administrador";
+  // También pueden ENTRAR coordinadores y profesores directores de grupo
+  // (la escritura en el backend sigue limitada a Rector/Administrador).
+  const puedeEntrar = puedeEditar || cargo === "Coordinador(a)" || cargo === "Profesor(a)";
 
   const [loading, setLoading] = useState(true);
   const [vista, setVista] = useState<'menu' | 'info' | 'escudo' | 'estructura' | 'personas'>('menu');
@@ -38,12 +41,12 @@ const ConstruyeInstitucion = () => {
   const [guardandoDatos, setGuardandoDatos] = useState(false);
   const [subiendoEscudo, setSubiendoEscudo] = useState(false);
 
-  const backLink = cargo === "Administrador" ? "/dashboard-admin" : "/dashboard-rector";
+  const backLink = cargo === "Administrador" ? "/dashboard-admin" : cargo === "Profesor(a)" ? "/dashboard" : "/dashboard-rector";
 
   useEffect(() => {
     const s = getSession();
     if (!s.id) { navigate("/"); return; }
-    if (!puedeEditar) { navigate(backLink, { replace: true }); return; }
+    if (!puedeEntrar) { navigate(backLink, { replace: true }); return; }
     cargar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
