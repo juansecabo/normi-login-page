@@ -14,6 +14,7 @@ import { Building, Image as ImageIcon, ArrowLeft, BookOpen, FileText, ExternalLi
 import { useRef } from "react";
 import EscalaColegioEditor from "@/components/EscalaColegioEditor";
 import AsignaturasColegioEditor from "@/components/AsignaturasColegioEditor";
+import PersonasColegioEditor from "@/components/PersonasColegioEditor";
 
 /**
  * "Construye tu Institución" — el Rector (o Administrador) declara la estructura
@@ -204,10 +205,10 @@ const ConstruyeInstitucion = () => {
               { id: "estructura", label: "Jornadas, grados y salones", desc: "Jornadas, grados y salones", Icon: Clock },
               { id: "asignaturas", label: "Asignaturas", desc: "Asignaturas del colegio y plan de estudios por grado", Icon: BookOpen },
               { id: "manual", label: "Manual de Convivencia", desc: cfgColegio.manual_url ? "PDF cargado" : "Sube el PDF (opcional)", Icon: FileText },
-              { id: "personas", label: "Personas y puestos", desc: "Próximamente", Icon: GraduationCap },
+              { id: "personas", label: "Personas y puestos", desc: "Administradores, rectores, profesores, estudiantes…", Icon: GraduationCap },
             ].map((f) => (
-              <button key={f.id} onClick={() => f.id !== "personas" && setVista(f.id as typeof vista)} disabled={f.id === "personas"}
-                className={`flex items-start gap-4 p-6 rounded-lg border text-left transition-colors ${f.id === "personas" ? "opacity-50 cursor-not-allowed bg-muted/30" : "bg-card hover:bg-muted/40 cursor-pointer"}`}>
+              <button key={f.id} onClick={() => setVista(f.id as typeof vista)}
+                className="flex items-start gap-4 p-6 rounded-lg border text-left transition-colors bg-card hover:bg-muted/40 cursor-pointer">
                 <f.Icon className="h-8 w-8 text-primary shrink-0" />
                 <div><p className="font-semibold text-foreground">{f.label}</p><p className="text-sm text-muted-foreground">{f.desc}</p></div>
               </button>
@@ -273,9 +274,7 @@ const ConstruyeInstitucion = () => {
             {vista === "manual" && (
               <ManualColegio manualUrl={cfgColegio.manual_url || null} onChanged={cargar} />
             )}
-            {vista === "personas" && (
-              <Card><CardContent className="py-10 text-center text-muted-foreground">Gestión de personas y puestos — próximamente.</CardContent></Card>
-            )}
+            {vista === "personas" && <PersonasColegioEditor />}
           </div>
         )}
       </main>
