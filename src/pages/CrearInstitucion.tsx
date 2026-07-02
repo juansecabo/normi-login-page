@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { getSession } from "@/hooks/useSession";
 import { apiClient, type ColegioDetalle, type ColegioAdmin } from "@/lib/apiClient";
 import { useToast } from "@/hooks/use-toast";
+import { aNumero } from "@/utils/numero";
 
 /**
  * Wizard de Crear/Configurar Institución para el SuperAdmin. Opera sobre un
@@ -364,7 +365,7 @@ const FichaEscala = ({ colegio, cfg, onSaved, volver }: { colegio: ColegioDetall
   const quitar = (i: number) => setRangos((prev) => prev.filter((_, idx) => idx !== i));
 
   const guardar = async () => {
-    const nMin = Number(min), nMax = Number(max), nAprob = Number(aprob), nDec = Number(dec);
+    const nMin = aNumero(min), nMax = aNumero(max), nAprob = aNumero(aprob), nDec = Number(dec);
     if (![nMin, nMax, nAprob, nDec].every((n) => Number.isFinite(n))) { toast({ title: "Valores inválidos", variant: "destructive" }); return; }
     if (nMax <= nMin) { toast({ title: "El máximo debe ser mayor al mínimo", variant: "destructive" }); return; }
     if (nAprob < nMin || nAprob > nMax) { toast({ title: "La nota aprobatoria debe estar dentro de la escala", variant: "destructive" }); return; }
@@ -374,7 +375,7 @@ const FichaEscala = ({ colegio, cfg, onSaved, volver }: { colegio: ColegioDetall
     for (const r of rangos) {
       const label = r.label.trim();
       if (!label && r.min === "" && r.max === "") continue; // fila vacía → se descarta
-      const rMin = Number(r.min), rMax = Number(r.max);
+      const rMin = aNumero(r.min), rMax = aNumero(r.max);
       if (!label) { toast({ title: "Falta el nombre de un rango", variant: "destructive" }); return; }
       if (!Number.isFinite(rMin) || !Number.isFinite(rMax)) { toast({ title: `Rango "${label}": desde/hasta inválidos`, variant: "destructive" }); return; }
       if (rMax <= rMin) { toast({ title: `Rango "${label}": el hasta debe ser mayor al desde`, variant: "destructive" }); return; }
@@ -411,9 +412,9 @@ const FichaEscala = ({ colegio, cfg, onSaved, volver }: { colegio: ColegioDetall
     <div>
       <h2 className="text-xl font-semibold mb-4">Escala de calificación</h2>
       <div className="grid grid-cols-2 gap-4 max-w-md">
-        <div><Label className="text-sm">Nota mínima</Label><Input type="number" step="0.1" value={min} onChange={(e) => setMin(e.target.value)} className="mt-1" /></div>
-        <div><Label className="text-sm">Nota máxima</Label><Input type="number" step="0.1" value={max} onChange={(e) => setMax(e.target.value)} className="mt-1" /></div>
-        <div><Label className="text-sm">Nota aprobatoria</Label><Input type="number" step="0.1" value={aprob} onChange={(e) => setAprob(e.target.value)} className="mt-1" /></div>
+        <div><Label className="text-sm">Nota mínima</Label><Input type="text" inputMode="decimal" value={min} onChange={(e) => setMin(e.target.value)} className="mt-1" /></div>
+        <div><Label className="text-sm">Nota máxima</Label><Input type="text" inputMode="decimal" value={max} onChange={(e) => setMax(e.target.value)} className="mt-1" /></div>
+        <div><Label className="text-sm">Nota aprobatoria</Label><Input type="text" inputMode="decimal" value={aprob} onChange={(e) => setAprob(e.target.value)} className="mt-1" /></div>
         <div><Label className="text-sm">Decimales</Label><Input type="number" step="1" min="0" max="2" value={dec} onChange={(e) => setDec(e.target.value)} className="mt-1" /></div>
       </div>
 
@@ -435,11 +436,11 @@ const FichaEscala = ({ colegio, cfg, onSaved, volver }: { colegio: ColegioDetall
               </div>
               <div className="w-20">
                 {i === 0 && <Label className="text-xs text-muted-foreground">Desde</Label>}
-                <Input type="number" step="0.1" min={min} max={max} value={r.min} onChange={(e) => actualizar(i, "min", e.target.value)} className="mt-1" />
+                <Input type="text" inputMode="decimal" value={r.min} onChange={(e) => actualizar(i, "min", e.target.value)} className="mt-1" />
               </div>
               <div className="w-20">
                 {i === 0 && <Label className="text-xs text-muted-foreground">Hasta</Label>}
-                <Input type="number" step="0.1" min={min} max={max} value={r.max} onChange={(e) => actualizar(i, "max", e.target.value)} className="mt-1" />
+                <Input type="text" inputMode="decimal" value={r.max} onChange={(e) => actualizar(i, "max", e.target.value)} className="mt-1" />
               </div>
               <div>
                 {i === 0 && <Label className="text-xs text-muted-foreground">Color</Label>}

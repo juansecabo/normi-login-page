@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { aNumero } from "@/utils/numero";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,7 +69,7 @@ const EditorGruposNotas = ({ open, onOpenChange, aula, grupos, otrosSalones = []
   const sumaTop = useMemo(() => arbol.reduce((s, g) => s + Number(g.porcentaje), 0), [arbol]);
 
   const handleCrear = async () => {
-    const pct = Number(nuevoPorcentaje);
+    const pct = aNumero(nuevoPorcentaje);
     if (!nuevoNombre.trim() || !Number.isFinite(pct) || pct <= 0 || pct > 100) {
       toast({ title: "Datos inválidos", description: "Nombre obligatorio y porcentaje entre 0.01 y 100." });
       return;

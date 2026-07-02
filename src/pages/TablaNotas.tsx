@@ -1,5 +1,6 @@
 import { getPeriodoActual } from "@/utils/periodoActual";
 import { anoEscolarActual } from "@/utils/anoEscolar";
+import { aNumero } from "@/utils/numero";
 import { useEffect, useState, useRef, useCallback, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -1047,7 +1048,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
       // (el profe lo asigna después). Si lo dieron, validamos rango.
       let pct: number | null = null;
       if (porcentajeActividad.trim() !== '') {
-        const n = parseFloat(porcentajeActividad);
+        const n = aNumero(porcentajeActividad);
         if (!Number.isFinite(n) || n <= 0 || n > 100) {
           toast({
             title: "Error",
@@ -1113,7 +1114,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     // Validar porcentaje si existe (sólo en modo plano sin grupo)
     let porcentaje: number | null = null;
     if (!grupoActividadId && porcentajeActividad.trim()) {
-      porcentaje = parseFloat(porcentajeActividad);
+      porcentaje = aNumero(porcentajeActividad);
       if (isNaN(porcentaje) || porcentaje < 0 || porcentaje > 100) {
         toast({
           title: "Error",
@@ -3335,7 +3336,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         });
       }
     } else {
-      const nota = parseFloat(valorEditando);
+      const nota = aNumero(valorEditando);
       
       // Validar rango según la escala del colegio (0-5, 0-10, etc.)
       if (isNaN(nota) || nota < colegioConfig.escala_min || nota > colegioConfig.escala_max) {
@@ -4061,7 +4062,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     // % opcional: vacío → null. Si lo da, debe estar entre 0.01 y 100.
     let pct: number | null = null;
     if (editPorcentaje.trim() !== '') {
-      const n = parseFloat(editPorcentaje);
+      const n = aNumero(editPorcentaje);
       if (!Number.isFinite(n) || n <= 0 || n > 100) {
         toast({ title: "Error", description: "El porcentaje debe estar entre 0.01 y 100, o vacío.", variant: "destructive" });
         return;
