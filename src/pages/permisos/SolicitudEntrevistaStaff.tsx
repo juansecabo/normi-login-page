@@ -12,6 +12,7 @@ import { descargarCitacionEntrevista } from "@/utils/citacionEntrevistaPdf";
 import FirmaImage from "@/components/FirmaImage";
 import { apiRequest } from "@/lib/apiClient";
 import { joinEntrevistadores, entrevistadoresDeSolicitud } from "@/lib/entrevistadores";
+import FormatoWhatsAppToolbar, { EditorComunicado, type EditorComunicadoHandle } from "@/components/FormatoWhatsAppToolbar";
 import { useGradosColegio } from "@/utils/grados";
 import { es } from "date-fns/locale";
 import {
@@ -69,6 +70,9 @@ const SolicitudEntrevistaStaff = () => {
   const [internoPick, setInternoPick] = useState<Interno | null>(null);
   const [entrevistadores, setEntrevistadores] = useState<Interno[]>([]);
   const [firma, setFirma] = useState<string | null>(null);
+  // Mensaje adicional opcional (formato WhatsApp: *negrilla*, _cursiva_).
+  const [mensajeAdicional, setMensajeAdicional] = useState("");
+  const editorMensajeRef = useRef<EditorComunicadoHandle>(null);
 
   // UI
   const [saving, setSaving] = useState(false);
@@ -324,6 +328,7 @@ const SolicitudEntrevistaStaff = () => {
       creado_por: Number(session.id),
       creado_por_nombre: [session.cargo, session.nombres, session.apellidos].filter(Boolean).join(" "),
       firma_url: firmaUrl,
+      mensaje: mensajeAdicional.trim() || null,
     });
 
     if (error) {
@@ -333,7 +338,8 @@ const SolicitudEntrevistaStaff = () => {
       // El remitente lo arma el server según el rol del usuario logueado.
       const fechaEntrevistaTexto = fechaEntrevista.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
       const entrevistaConNombre = joinEntrevistadores(entrevistadores);
-      const mensaje = `Se le informa que se ha solicitado una entrevista para el acudiente del estudiante ${estudianteSeleccionado.nombres} ${estudianteSeleccionado.apellidos} de ${estudianteSeleccionado.grado} ${estudianteSeleccionado.salon}.\n\nFecha: ${fechaEntrevistaTexto}\nHora: ${horaEntrevista}\nCon: ${entrevistaConNombre}\n\nPor favor ingrese a notasnormi.com y en el inicio haga click en la ficha "Solicitud de Entrevista", busque el día indicado, haga click sobre la citación y confirme su asistencia.`;
+      const bloqueMensaje = mensajeAdicional.trim() ? `\n\nMensaje:\n${mensajeAdicional.trim()}` : "";
+      const mensaje = `Se le informa que se ha solicitado una entrevista para el acudiente del estudiante ${estudianteSeleccionado.nombres} ${estudianteSeleccionado.apellidos} de ${estudianteSeleccionado.grado} ${estudianteSeleccionado.salon}.\n\nFecha: ${fechaEntrevistaTexto}\nHora: ${horaEntrevista}\nCon: ${entrevistaConNombre}${bloqueMensaje}\n\nPor favor ingrese a notasnormi.com y en el inicio haga click en la ficha "Solicitud de Entrevista", busque el día indicado, haga click sobre la citación y confirme su asistencia.`;
       apiRequest('/api/comunicados/enviar', {
         method: 'POST',
         body: JSON.stringify({
@@ -346,7 +352,7 @@ const SolicitudEntrevistaStaff = () => {
       toast({ title: "Solicitud creada", description: "La solicitud de entrevista fue registrada y se notificó al acudiente." });
       setGrado(""); setSalon(""); setEstudianteSeleccionado(null); setFechaEntrevista(undefined);
       setHoraH(""); setHoraM(""); setHoraAP(""); setCargoEntrevista(""); setInternoPick(null); setEntrevistadores([]);
-      setFirma(null); sigCanvas.current?.clear(); setAceptoTerminos(false);
+      setFirma(null); sigCanvas.current?.clear(); setAceptoTerminos(false); setMensajeAdicional("");
     }
     setSaving(false); setShowConfirm(false);
   };
@@ -505,6 +511,22 @@ const SolicitudEntrevistaStaff = () => {
                   </button>
                 </div>
               </div>
+
+              {/* Mensaje adicional opcional, con negrilla/cursiva (mismo editor
+                  de comunicados: se ve formateado y viaja en formato WhatsApp). */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <label className="text-sm font-medium text-foreground">Mensaje adicional <span className="text-muted-foreground font-normal">(opcional)</span></label>
+                  <FormatoWhatsAppToolbar editorRef={editorMensajeRef} />
+                </div>
+                <EditorComunicado
+                  ref={editorMensajeRef}
+                  valor={mensajeAdicional}
+                  setValor={setMensajeAdicional}
+                  placeholder="Escribe aquí un mensaje para el acudiente (motivo, recomendaciones, qué traer…)"
+                />
+              </div>
+
               <p>Agradecemos su atención y cumplimiento.</p>
               <p>Atentamente,</p>
 

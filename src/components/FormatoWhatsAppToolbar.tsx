@@ -61,7 +61,7 @@ function htmlToWhatsApp(root: HTMLElement | null): string {
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
-function whatsappToHtml(v: string): string {
+export function whatsappToHtml(v: string): string {
   if (!v) return "";
   let h = escapeHtml(v);
   h = h.replace(/\*([^*\n]+)\*/g, "<b>$1</b>");

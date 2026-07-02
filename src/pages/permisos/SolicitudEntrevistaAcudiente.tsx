@@ -9,6 +9,7 @@ import { es } from "date-fns/locale";
 import { UserRound, X, ChevronDown, Check, XCircle, CalendarClock, CalendarIcon } from "lucide-react";
 import FirmaImage from "@/components/FirmaImage";
 import { entrevistadoresDeSolicitud } from "@/lib/entrevistadores";
+import { whatsappToHtml } from "@/components/FormatoWhatsAppToolbar";
 import { apiClient } from "@/lib/apiClient";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -181,6 +182,13 @@ const SolicitudEntrevistaAcudiente = () => {
                                 <p>ACUDIENTE DEL ESTUDIANTE: <span className="text-primary font-medium">{s.estudiante_nombre} {s.estudiante_apellidos}</span></p>
                                 <p>Cordial Saludo,</p>
                                 <p>Por este medio nos permitimos solicitar su presencia en el colegio el día <span className="text-primary font-medium">{fmtFecha(s.fecha_entrevista)}</span> Hora: <span className="text-primary font-medium">{s.hora_entrevista}</span> para una entrevista con <span className="text-primary font-medium">{entrevistadoresDeSolicitud(s, "el/la ")}</span></p>
+                                {s.mensaje && (
+                                  <div className="bg-muted/50 border border-border rounded-md p-3">
+                                    <p className="font-medium mb-1">Mensaje:</p>
+                                    {/* Guardado en formato WhatsApp (*negrilla*, _cursiva_); se muestra formateado */}
+                                    <p className="whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: whatsappToHtml(s.mensaje) }} />
+                                  </div>
+                                )}
                                 <p>Agradecemos su atención y cumplimiento.</p>
                                 <p>Atentamente,</p>
                                 <p className="text-primary font-medium">{s.creado_por_nombre || `${s.solicitante_cargo} ${s.solicitante_nombre}`}</p>
