@@ -43,7 +43,7 @@ const EscalaColegioEditor = ({ cfg, guardar, alGuardar }: Props) => {
   const [dec, setDec] = useState(String(cfg.decimales ?? 1));
   const [rangos, setRangos] = useState<RangoDesempeno[]>(
     Array.isArray(cfg.rangos_desempeno) && cfg.rangos_desempeno.length > 0
-      ? cfg.rangos_desempeno.map((r: any) => ({ label: r.label ?? "", min: fmtNum(r.min), max: fmtNum(r.max), color: r.color ?? COLOR_POR_DEFECTO }))
+      ? [...cfg.rangos_desempeno].sort((a: any, b: any) => Number(b.min) - Number(a.min)).map((r: any) => ({ label: r.label ?? "", min: fmtNum(r.min), max: fmtNum(r.max), color: r.color ?? COLOR_POR_DEFECTO }))
       : [],
   );
   const [guardando, setGuardando] = useState(false);
@@ -97,7 +97,7 @@ const EscalaColegioEditor = ({ cfg, guardar, alGuardar }: Props) => {
         escala_min: nMin, escala_max: nMax, nota_aprobatoria: nAprob, decimales: nDec, escala: `${nMin}-${nMax}`,
       };
       // Solo escribir rangos si se definió alguno (no pisar con []).
-      if (rangosLimpios.length > 0) configuracion.rangos_desempeno = rangosLimpios.map(({ maxCrudo, ...r }) => r);
+      if (rangosLimpios.length > 0) configuracion.rangos_desempeno = [...rangosLimpios].sort((a, b) => b.min - a.min).map(({ maxCrudo, ...r }) => r);
       await guardar(configuracion);
       toast({ title: "Escala guardada" });
       alGuardar?.();
