@@ -12,6 +12,12 @@ interface AvatarUploaderProps {
   width?: number;
   height?: number;
   /**
+   * Modo "llenar el contenedor": el óvalo toma el 100% del alto del padre
+   * (manteniendo la proporción). Usado en los dashboards de PC para que las
+   * puntas del óvalo queden alineadas con el recuadro blanco de bienvenida.
+   */
+  fill?: boolean;
+  /**
    * Modo "editar la foto de otra persona" (ej. director de grupo → estudiante).
    * Si se pasa, el componente edita esa foto en vez de la del usuario logueado.
    */
@@ -78,7 +84,7 @@ const cameraSupported =
   !!navigator.mediaDevices?.getUserMedia &&
   (window.isSecureContext || window.location.hostname === "localhost");
 
-const AvatarUploader = ({ width = 110, height = 140, target }: AvatarUploaderProps) => {
+const AvatarUploader = ({ width = 110, height = 140, fill = false, target }: AvatarUploaderProps) => {
   const session = getSession();
   const targetMode = !!target;
   const dispNombres = targetMode ? target!.nombres : session.nombres;
@@ -127,7 +133,9 @@ const AvatarUploader = ({ width = 110, height = 140, target }: AvatarUploaderPro
   const streamRef = useRef<MediaStream | null>(null);
   const { toast } = useToast();
 
-  const dimension = { width, height, borderRadius: "50%" };
+  const dimension = fill
+    ? { aspectRatio: `${width} / ${height}`, borderRadius: "50%" }
+    : { width, height, borderRadius: "50%" };
   const fontSize = Math.round(Math.min(width, height) * 0.4);
 
   // Apagar stream cuando ya no se necesita la camara.
@@ -288,7 +296,7 @@ const AvatarUploader = ({ width = 110, height = 140, target }: AvatarUploaderPro
         type="button"
         onClick={openInstructions}
         disabled={uploading}
-        className="group relative overflow-hidden border-4 border-primary/20 shadow-soft bg-secondary flex items-center justify-center transition-all hover:border-primary/40 disabled:opacity-60 flex-shrink-0 aspect-square"
+        className={`group relative overflow-hidden border-4 border-primary/20 shadow-soft bg-secondary flex items-center justify-center transition-all hover:border-primary/40 disabled:opacity-60 flex-shrink-0 ${fill ? "h-full w-auto" : "aspect-square"}`}
         style={dimension}
         title={avatarUrl ? "Cambiar foto" : "Subir foto"}
       >

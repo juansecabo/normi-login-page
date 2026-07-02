@@ -314,8 +314,8 @@ const DashboardRector = () => {
               {cargo}
             </p>
           </div>
-          <div className="hidden xl:block absolute top-1/2 -translate-y-1/2 left-full ml-10">
-            <AvatarUploader />
+          <div className="hidden xl:block absolute inset-y-0 left-full ml-10">
+            <AvatarUploader fill />
           </div>
           <div className="xl:hidden flex justify-center mt-4">
             <AvatarUploader />
