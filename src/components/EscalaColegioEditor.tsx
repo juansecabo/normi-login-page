@@ -60,7 +60,7 @@ const EscalaColegioEditor = ({ cfg, guardar, alGuardar }: Props) => {
     if (nAprob < nMin || nAprob > nMax) { toast({ title: "La nota aprobatoria debe estar dentro de la escala", variant: "destructive" }); return; }
 
     // Rangos: ignorar filas vacías; validar las que tengan nombre.
-    const rangosLimpios: { label: string; min: number; max: number; color: string }[] = [];
+    const rangosLimpios: { label: string; min: number; max: number; maxCrudo: number; color: string }[] = [];
     for (const r of rangos) {
       const label = r.label.trim();
       if (!label && r.min === "" && r.max === "") continue; // fila vacía → se descarta
@@ -73,10 +73,22 @@ const EscalaColegioEditor = ({ cfg, guardar, alGuardar }: Props) => {
         toast({ title: `Rango "${label}" fuera de la escala`, description: `Debe estar entre ${nMin} y ${nMax}.`, variant: "destructive" });
         return;
       }
+      // NO se permiten rangos que se crucen con otros: cada nota debe caer en
+      // exactamente un rango (tocarse en el borde SÍ vale: 2-3 y 3-4).
+      for (const otro of rangosLimpios) {
+        if (rMin < otro.maxCrudo && otro.min < rMax) {
+          toast({
+            title: `Los rangos "${label}" y "${otro.label}" se cruzan`,
+            description: `"${otro.label}" va de ${fmtNum(otro.min)} a ${fmtNum(otro.maxCrudo)} y "${label}" de ${fmtNum(rMin)} a ${fmtNum(rMax)}. Ajusta los límites: pueden tocarse en el borde, pero no superponerse.`,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
       // El rango que llega al tope se ajusta a "máxima + épsilon" para que la nota
       // máxima exacta (ej: 5.0) quede incluida (la banda usa nota ≥ desde y nota < hasta).
       const maxFinal = Math.abs(rMax - nMax) < 0.005 ? nMax + 0.0001 : rMax;
-      rangosLimpios.push({ label, min: rMin, max: maxFinal, color: r.color || COLOR_POR_DEFECTO });
+      rangosLimpios.push({ label, min: rMin, max: maxFinal, maxCrudo: rMax, color: r.color || COLOR_POR_DEFECTO });
     }
 
     setGuardando(true);
@@ -85,7 +97,7 @@ const EscalaColegioEditor = ({ cfg, guardar, alGuardar }: Props) => {
         escala_min: nMin, escala_max: nMax, nota_aprobatoria: nAprob, decimales: nDec, escala: `${nMin}-${nMax}`,
       };
       // Solo escribir rangos si se definió alguno (no pisar con []).
-      if (rangosLimpios.length > 0) configuracion.rangos_desempeno = rangosLimpios;
+      if (rangosLimpios.length > 0) configuracion.rangos_desempeno = rangosLimpios.map(({ maxCrudo, ...r }) => r);
       await guardar(configuracion);
       toast({ title: "Escala guardada" });
       alGuardar?.();
