@@ -88,8 +88,9 @@ const Index = () => {
     const colegio_nombre = user.colegio?.nombre || null;
     const colegio_logo_url = user.colegio?.logo_url || null;
     const colegio_slug = user.colegio?.slug || null;
+    const genero = (user as any).genero || null;
     if (user.rol === 'SuperAdmin') {
-      saveSession(user.id, user.nombres, user.apellidos, 'SuperAdmin', null, null, null, null, multi, avatar, colegio_id, colegio_nombre, colegio_logo_url, colegio_slug);
+      saveSession(user.id, user.nombres, user.apellidos, 'SuperAdmin', null, null, null, null, multi, avatar, colegio_id, colegio_nombre, colegio_logo_url, colegio_slug, genero);
       navigate(getPostLoginRoute("/dashboard-plataforma"), { replace: true });
       return;
     }
@@ -98,7 +99,7 @@ const Index = () => {
         user.id, user.nombres, user.apellidos, 'Estudiante',
         user.nivel || null, user.grado || null, user.salon || null,
         null, multi, avatar,
-        colegio_id, colegio_nombre, colegio_logo_url, colegio_slug,
+        colegio_id, colegio_nombre, colegio_logo_url, colegio_slug, genero,
       );
       navigate(getPostLoginRoute("/dashboard-estudiante"), { replace: true });
       return;
@@ -108,12 +109,12 @@ const Index = () => {
         user.id, user.nombres, user.apellidos, 'Acudiente',
         null, null, null,
         (user.acudidos || []) as AcudidoData[], multi, avatar,
-        colegio_id, colegio_nombre, colegio_logo_url, colegio_slug,
+        colegio_id, colegio_nombre, colegio_logo_url, colegio_slug, genero,
       );
       navigate(getPostLoginRoute("/dashboard-acudiente"), { replace: true });
       return;
     }
-    saveSession(user.id, user.nombres, user.apellidos, user.rol, null, null, null, null, multi, avatar, colegio_id, colegio_nombre, colegio_logo_url, colegio_slug);
+    saveSession(user.id, user.nombres, user.apellidos, user.rol, null, null, null, null, multi, avatar, colegio_id, colegio_nombre, colegio_logo_url, colegio_slug, genero);
     if (user.rol === 'Administrador') {
       navigate(getPostLoginRoute("/dashboard-admin"), { replace: true });
     } else if (

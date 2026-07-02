@@ -16,7 +16,7 @@ import iconRegistros from "@/assets/icons/registros-comportamiento.png";
 import iconAsistencia from "@/assets/icons/asistencia.webp";
 import iconFotosGrupo from "@/assets/icons/fotos-grupo.webp";
 import { Users } from "lucide-react";
-import { getSession, isProfesor, isAdmin, isRectorOrCoordinador, isEstudiante, isPadreDeFamilia } from "@/hooks/useSession";
+import { bienvenida, getSession, isProfesor, isAdmin, isRectorOrCoordinador, isEstudiante, isPadreDeFamilia } from "@/hooks/useSession";
 import { usePendientesFirma } from "@/hooks/usePendientesFirma";
 import HeaderNormi from "@/components/HeaderNormi";
 import EncabezadoColegio from "@/components/EncabezadoColegio";
@@ -291,7 +291,7 @@ const Dashboard = () => {
         <div className="relative max-w-2xl mx-auto">
           <div className="bg-card rounded-lg shadow-soft p-8 text-center">
             <h2 className="text-2xl lg:text-3xl font-bold text-foreground mb-4">
-              Bienvenido(a)
+              {bienvenida(getSession().genero)}
             </h2>
             <p className="text-xl text-primary font-semibold">
               {nombres} {apellidos}

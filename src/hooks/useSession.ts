@@ -48,7 +48,13 @@ export interface SessionData {
   colegio_nombre: string | null;
   colegio_logo_url: string | null;
   colegio_slug: string | null;
+  /** Género de la persona (Usuarios.genero): "M", "F" o null si no tiene. */
+  genero: string | null;
 }
+
+/** Saludo de bienvenida según el género: Bienvenido / Bienvenida / Bienvenido(a). */
+export const bienvenida = (genero?: string | null): string =>
+  genero === "M" ? "Bienvenido" : genero === "F" ? "Bienvenida" : "Bienvenido(a)";
 
 // Cookie de sesión (sin expires → muere cuando el navegador se cierra)
 const SESSION_COOKIE = 'normi_session_active';
@@ -68,6 +74,7 @@ export const saveSession = (
   colegio_nombre?: string | null,
   colegio_logo_url?: string | null,
   colegio_slug?: string | null,
+  genero?: string | null,
 ) => {
   const cookieOptions = getCookieOptions();
 
@@ -108,6 +115,8 @@ export const saveSession = (
   else localStorage.removeItem("colegio_logo_url");
   if (colegio_slug) localStorage.setItem("colegio_slug", colegio_slug);
   else localStorage.removeItem("colegio_slug");
+  if (genero === "M" || genero === "F") localStorage.setItem("genero", genero);
+  else localStorage.removeItem("genero");
 
   // Cookie de sesión sin expires → se borra al cerrar el navegador
   Cookies.set(SESSION_COOKIE, '1', cookieOptions);
@@ -142,7 +151,8 @@ export const getSession = (): SessionData => {
     localStorage.removeItem("colegio_nombre");
     localStorage.removeItem("colegio_logo_url");
     localStorage.removeItem("colegio_slug");
-    return { id: null, nombres: null, apellidos: null, cargo: null, nivel: null, grado: null, salon: null, acudidos: null, multi_membership: false, sin_contrasena: false, avatar_url: null, colegio_id: null, colegio_nombre: null, colegio_logo_url: null, colegio_slug: null };
+    localStorage.removeItem("genero");
+    return { id: null, nombres: null, apellidos: null, cargo: null, nivel: null, grado: null, salon: null, acudidos: null, multi_membership: false, sin_contrasena: false, avatar_url: null, colegio_id: null, colegio_nombre: null, colegio_logo_url: null, colegio_slug: null, genero: null };
   }
 
   const id = localStorage.getItem("id") || null;
@@ -159,6 +169,7 @@ export const getSession = (): SessionData => {
   const colegio_nombre = localStorage.getItem("colegio_nombre") || null;
   const colegio_logo_url = localStorage.getItem("colegio_logo_url") || null;
   const colegio_slug = localStorage.getItem("colegio_slug") || null;
+  const genero = localStorage.getItem("genero") || null;
 
   let acudidos: AcudidoData[] | null = null;
   // Lee "acudidos" primero; si no existe, intenta "hijos" (clave legacy de
@@ -168,7 +179,7 @@ export const getSession = (): SessionData => {
     try { acudidos = JSON.parse(acudidosStr); } catch { acudidos = null; }
   }
 
-  return { id, nombres, apellidos, cargo, nivel, grado, salon, acudidos, multi_membership, sin_contrasena, avatar_url, colegio_id, colegio_nombre, colegio_logo_url, colegio_slug };
+  return { id, nombres, apellidos, cargo, nivel, grado, salon, acudidos, multi_membership, sin_contrasena, avatar_url, colegio_id, colegio_nombre, colegio_logo_url, colegio_slug, genero };
 };
 
 /** Actualiza solo el avatar en la sesion local (sin tocar el resto). */

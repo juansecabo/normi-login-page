@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getSession, isEstudiante } from "@/hooks/useSession";
+import { bienvenida, getSession, isEstudiante } from "@/hooks/useSession";
 import { usePendientesFirma } from "@/hooks/usePendientesFirma";
 import iconNotas from "@/assets/icons/notas.webp";
 import iconPerfil from "@/assets/icons/perfil.png";
@@ -231,7 +231,7 @@ const DashboardEstudiante = () => {
         <div className="relative max-w-2xl mx-auto">
           <div className="bg-card rounded-lg shadow-soft p-8 text-center">
             <h2 className="text-2xl lg:text-3xl font-bold text-foreground mb-4">
-              Bienvenido(a)
+              {bienvenida(getSession().genero)}
             </h2>
             <p className="text-xl text-primary font-semibold">
               {nombres} {apellidos}
