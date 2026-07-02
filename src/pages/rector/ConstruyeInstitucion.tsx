@@ -10,7 +10,10 @@ import { ApiError, apiClient } from "@/lib/apiClient";
 import { getSession } from "@/hooks/useSession";
 import EscudoColegio from "@/components/EscudoColegio";
 import EstructuraColegioEditor from "@/components/EstructuraColegioEditor";
-import { Building, Image as ImageIcon, ArrowLeft } from "lucide-react";
+import { Building, Image as ImageIcon, ArrowLeft, BookOpen, FileText, ExternalLink, Pencil, Trash2 } from "lucide-react";
+import { useRef } from "react";
+import EscalaColegioEditor from "@/components/EscalaColegioEditor";
+import AsignaturasColegioEditor from "@/components/AsignaturasColegioEditor";
 
 /**
  * "Construye tu Institución" — el Rector (o Administrador) declara la estructura
@@ -22,6 +25,71 @@ import { Building, Image as ImageIcon, ArrowLeft } from "lucide-react";
  * declaren. Por ahora su único consumidor será el dropdown de "agregar estudiante".
  */
 
+/** Manual de Convivencia del colegio propio (misma UX de la ficha del wizard). */
+const ManualColegio = ({ manualUrl, onChanged }: { manualUrl: string | null; onChanged: () => Promise<void> | void }) => {
+  const { toast } = useToast();
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [subiendo, setSubiendo] = useState(false);
+  const [quitando, setQuitando] = useState(false);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.type !== "application/pdf") { toast({ title: "Debe ser PDF", description: "El Manual de Convivencia solo acepta archivos PDF.", variant: "destructive" }); return; }
+    if (file.size > 20 * 1024 * 1024) { toast({ title: "Archivo grande", description: "Máximo 20 MB.", variant: "destructive" }); return; }
+    setSubiendo(true);
+    try {
+      await apiClient.institucion.subirManual(file);
+      await onChanged();
+    } catch (err: any) {
+      toast({ title: "No se pudo subir", description: err?.message, variant: "destructive" });
+    } finally {
+      setSubiendo(false);
+    }
+  };
+
+  const quitar = async () => {
+    setQuitando(true);
+    try {
+      await apiClient.institucion.quitarManual();
+      await onChanged();
+    } catch (err: any) {
+      toast({ title: "No se pudo quitar", description: err?.message, variant: "destructive" });
+    } finally {
+      setQuitando(false);
+    }
+  };
+
+  return (
+    <div>
+      <p className="text-sm text-muted-foreground mb-4">
+        Sube el manual en <strong>PDF</strong>. Aparecerá en el botón «Manual de Convivencia» del tablero de estudiantes, acudientes y personal.
+      </p>
+      {manualUrl ? (
+        <div className="flex flex-col gap-3">
+          <a href={manualUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-primary hover:underline w-fit">
+            <FileText className="w-5 h-5" /> Ver PDF actual <ExternalLink className="w-4 h-4" />
+          </a>
+          <div className="flex gap-2">
+            <Button onClick={() => fileRef.current?.click()} disabled={subiendo} variant="outline" className="gap-2">
+              {subiendo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Pencil className="w-4 h-4" />} Cambiar PDF
+            </Button>
+            <Button onClick={quitar} disabled={quitando} variant="outline" className="gap-2 text-destructive hover:text-destructive">
+              {quitando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Quitar
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button onClick={() => fileRef.current?.click()} disabled={subiendo} className="gap-2">
+          {subiendo ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />} Subir PDF
+        </Button>
+      )}
+      <input ref={fileRef} type="file" accept="application/pdf" onChange={handleFile} className="hidden" />
+    </div>
+  );
+};
+
 const ConstruyeInstitucion = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -32,12 +100,14 @@ const ConstruyeInstitucion = () => {
   const puedeEntrar = puedeEditar || cargo === "Coordinador(a)" || cargo === "Profesor(a)";
 
   const [loading, setLoading] = useState(true);
-  const [vista, setVista] = useState<'menu' | 'info' | 'escudo' | 'estructura' | 'personas'>('menu');
+  const [vista, setVista] = useState<'menu' | 'info' | 'escudo' | 'escala' | 'estructura' | 'asignaturas' | 'manual' | 'personas'>('menu');
 
   // Datos del colegio + escudo
   const [nombreColegio, setNombreColegio] = useState("");
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [datos, setDatos] = useState({ nit: "", ciudad: "", direccion: "", telefono: "", resolucion: "", dane: "", rector_nombre: "" });
+  // Config completa del colegio (escala, rangos, manual_url…) para las fichas nuevas.
+  const [cfgColegio, setCfgColegio] = useState<Record<string, any>>({});
   const [guardandoDatos, setGuardandoDatos] = useState(false);
   const [subiendoEscudo, setSubiendoEscudo] = useState(false);
 
@@ -57,6 +127,7 @@ const ConstruyeInstitucion = () => {
       setNombreColegio(cfg.nombre || "");
       setLogoUrl(cfg.logo_url || null);
       const c = (cfg.config || {}) as Record<string, string>;
+      setCfgColegio((cfg.config || {}) as Record<string, any>);
       setDatos({
         nit: c.nit || "", ciudad: c.ciudad || "", direccion: c.direccion || "",
         telefono: c.telefono || "", resolucion: c.resolucion || "", dane: c.dane || "",
@@ -114,7 +185,7 @@ const ConstruyeInstitucion = () => {
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             <button onClick={() => setVista("menu")} className={vista === "menu" ? "text-foreground font-medium" : "text-primary hover:underline"}>Configurar Institución</button>
-            {vista !== "menu" && (<><span className="text-muted-foreground">&rarr;</span><span className="text-foreground font-medium">{({ info: "Información del colegio", escudo: "Escudo", estructura: "Jornadas y salones", personas: "Personas y puestos" } as Record<string, string>)[vista]}</span></>)}
+            {vista !== "menu" && (<><span className="text-muted-foreground">&rarr;</span><span className="text-foreground font-medium">{({ info: "Información del colegio", escudo: "Escudo", escala: "Escala de calificación", estructura: "Jornadas, grados y salones", asignaturas: "Asignaturas", manual: "Manual de Convivencia", personas: "Personas y puestos" } as Record<string, string>)[vista]}</span></>)}
           </div>
         </div>
 
@@ -129,7 +200,10 @@ const ConstruyeInstitucion = () => {
             {[
               { id: "info", label: "Información del colegio", desc: "Nombre, NIT, ciudad y datos legales", Icon: Building },
               { id: "escudo", label: "Escudo", desc: "Sube o cambia el escudo del colegio", Icon: ImageIcon },
-              { id: "estructura", label: "Jornadas y salones", desc: "Jornadas, grados y salones", Icon: Clock },
+              { id: "escala", label: "Escala de calificación", desc: `${cfgColegio.escala_min ?? 0} a ${cfgColegio.escala_max ?? 5} · aprueba con ${cfgColegio.nota_aprobatoria ?? 3}`, Icon: GraduationCap },
+              { id: "estructura", label: "Jornadas, grados y salones", desc: "Jornadas, grados y salones", Icon: Clock },
+              { id: "asignaturas", label: "Asignaturas", desc: "Asignaturas del colegio y plan de estudios por grado", Icon: BookOpen },
+              { id: "manual", label: "Manual de Convivencia", desc: cfgColegio.manual_url ? "PDF cargado" : "Sube el PDF (opcional)", Icon: FileText },
               { id: "personas", label: "Personas y puestos", desc: "Próximamente", Icon: GraduationCap },
             ].map((f) => (
               <button key={f.id} onClick={() => f.id !== "personas" && setVista(f.id as typeof vista)} disabled={f.id === "personas"}
@@ -188,6 +262,17 @@ const ConstruyeInstitucion = () => {
             </Card>
             </>)}
             {vista === "estructura" && <EstructuraColegioEditor permitirImportar />}
+            {vista === "escala" && (
+              <EscalaColegioEditor
+                cfg={cfgColegio}
+                guardar={async (configuracion) => { await apiClient.colegio.patchConfig(configuracion); }}
+                alGuardar={() => { cargar(); setVista("menu"); }}
+              />
+            )}
+            {vista === "asignaturas" && <AsignaturasColegioEditor />}
+            {vista === "manual" && (
+              <ManualColegio manualUrl={cfgColegio.manual_url || null} onChanged={cargar} />
+            )}
             {vista === "personas" && (
               <Card><CardContent className="py-10 text-center text-muted-foreground">Gestión de personas y puestos — próximamente.</CardContent></Card>
             )}
