@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import HeaderNormi from "@/components/HeaderNormi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -101,20 +101,7 @@ const ConstruyeInstitucion = () => {
   const puedeEntrar = puedeEditar || cargo === "Coordinador(a)" || cargo === "Profesor(a)";
 
   const [loading, setLoading] = useState(true);
-  // La vista y el rol elegido (dentro de Personas) viven en la URL para que un
-  // F5 no devuelva al menú. PUSH (no replace) → el botón atrás baja un nivel.
-  const [searchParams, setSearchParams] = useSearchParams();
-  type VistaCI = 'menu' | 'info' | 'escudo' | 'escala' | 'estructura' | 'asignaturas' | 'manual' | 'personas';
-  const VISTAS: VistaCI[] = ['menu', 'info', 'escudo', 'escala', 'estructura', 'asignaturas', 'manual', 'personas'];
-  const vistaUrl = searchParams.get('vista') as VistaCI | null;
-  const vista: VistaCI = vistaUrl && VISTAS.includes(vistaUrl) ? vistaUrl : 'menu';
-  const setVista = (v: VistaCI) => setSearchParams(v === 'menu' ? {} : { vista: v });
-  const rolPersonas = searchParams.get('rol');
-  const setRolPersonas = (r: string | null) => {
-    const pms = new URLSearchParams(searchParams);
-    if (r) pms.set('rol', r); else pms.delete('rol');
-    setSearchParams(pms);
-  };
+  const [vista, setVista] = useState<'menu' | 'info' | 'escudo' | 'escala' | 'estructura' | 'asignaturas' | 'manual' | 'personas'>('menu');
 
   // Datos del colegio + escudo
   const [nombreColegio, setNombreColegio] = useState("");
@@ -199,18 +186,7 @@ const ConstruyeInstitucion = () => {
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             <button onClick={() => setVista("menu")} className={vista === "menu" ? "text-foreground font-medium" : "text-primary hover:underline"}>Configurar Institución</button>
-            {vista !== "menu" && (<>
-              <span className="text-muted-foreground">&rarr;</span>
-              {vista === "personas" && rolPersonas ? (
-                <button onClick={() => setRolPersonas(null)} className="text-primary hover:underline">Personas y puestos</button>
-              ) : (
-                <span className="text-foreground font-medium">{({ info: "Información del colegio", escudo: "Escudo", escala: "Escala de calificación", estructura: "Jornadas, grados y salones", asignaturas: "Asignaturas", manual: "Manual de Convivencia", personas: "Personas y puestos" } as Record<string, string>)[vista]}</span>
-              )}
-              {vista === "personas" && rolPersonas && (<>
-                <span className="text-muted-foreground">&rarr;</span>
-                <span className="text-foreground font-medium">{({ "Administrador": "Administrador(a)", "Rector": "Rector(a)", "Coordinador(a)": "Coordinadores", "Administrativo(a)": "Administrativos", "Orientador(a) Escolar": "Orientación escolar", "Profesor(a)": "Profesores", estudiante: "Estudiantes", acudiente: "Acudientes" } as Record<string, string>)[rolPersonas] || rolPersonas}</span>
-              </>)}
-            </>)}
+            {vista !== "menu" && (<><span className="text-muted-foreground">&rarr;</span><span className="text-foreground font-medium">{({ info: "Información del colegio", escudo: "Escudo", escala: "Escala de calificación", estructura: "Jornadas, grados y salones", asignaturas: "Asignaturas", manual: "Manual de Convivencia", personas: "Personas y puestos" } as Record<string, string>)[vista]}</span></>)}
           </div>
         </div>
 
@@ -240,6 +216,7 @@ const ConstruyeInstitucion = () => {
           </div>
         ) : (
           <div className="space-y-6">
+            <button onClick={() => setVista("menu")} className="inline-flex items-center gap-1 text-sm text-primary hover:underline"><ArrowLeft className="w-4 h-4" /> Volver</button>
             {vista === "info" && (<>
             {/* ── DATOS DEL COLEGIO ── */}
             <Card>
@@ -297,7 +274,7 @@ const ConstruyeInstitucion = () => {
             {vista === "manual" && (
               <ManualColegio manualUrl={cfgColegio.manual_url || null} onChanged={cargar} />
             )}
-            {vista === "personas" && <PersonasColegioEditor rol={rolPersonas} setRol={setRolPersonas} />}
+            {vista === "personas" && <PersonasColegioEditor />}
           </div>
         )}
       </main>
