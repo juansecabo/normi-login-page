@@ -95,8 +95,10 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
 
   // Personas ya agregadas (para las listas y los conteos de las tarjetas).
   const [personas, setPersonas] = useState<{ internos: any[]; estudiantes: any[]; acudientes: any[] }>({ internos: [], estudiantes: [], acudientes: [] });
+  const [cargandoPersonas, setCargandoPersonas] = useState(true);
   const cargarPersonas = async () => {
     try { setPersonas(await apiRequest(`/api/institucion/personas${qCid}`)); } catch { /* noop */ }
+    finally { setCargandoPersonas(false); }
   };
   useEffect(() => { cargarPersonas(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [colegioId]);
 
@@ -199,13 +201,16 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   // el SuperAdmin del wizard no tiene colegio en el JWT (usa "Entrar como admin").
   const usarPanelEmbebido = (rol === "estudiante" || rol === "acudiente") && !colegioId;
 
-  const CardRol = ({ Icono, label, sub, onClick }: { Icono: typeof Users; label: string; sub: string; onClick: () => void }) => (
+  const CardRol = ({ Icono, label, sub, onClick }: { Icono: typeof Users; label: string; sub: React.ReactNode; onClick: () => void }) => (
     <button onClick={onClick} className="flex flex-col items-center text-center sm:items-start sm:text-left bg-card border border-border rounded-lg p-5 shadow-sm hover:border-primary/60 hover:bg-secondary/40 transition-colors">
       <div className="mb-3"><Icono className="w-8 h-8 text-primary" /></div>
       <h3 className="font-semibold text-foreground">{label}</h3>
       <p className="text-sm text-muted-foreground mt-0.5">{sub}</p>
     </button>
   );
+
+  const subConteo = (clave: string) =>
+    cargandoPersonas ? <Loader2 className="w-4 h-4 animate-spin" /> : `${conteo(clave)} persona(s)`;
 
   // ── Vista 1: SOLO las tarjetas de roles ──
   if (!rol) {
@@ -214,10 +219,10 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
         <p className="text-sm text-muted-foreground mb-4">Elige un rol para ver sus personas{puedeAgregar ? " y agregar nuevas" : ""}.</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {ROLES_STAFF.map((r) => (
-            <CardRol key={r.cargo} Icono={r.Icono} label={r.label} sub={`${conteo(r.cargo)} persona(s)`} onClick={() => { setRol(r.cargo); reset(); }} />
+            <CardRol key={r.cargo} Icono={r.Icono} label={r.label} sub={subConteo(r.cargo)} onClick={() => { setRol(r.cargo); reset(); }} />
           ))}
-          <CardRol Icono={Backpack} label="Estudiantes" sub={`${conteo("estudiante")} persona(s)`} onClick={() => { setRol("estudiante"); reset(); }} />
-          <CardRol Icono={UsersRound} label="Acudientes" sub={`${conteo("acudiente")} persona(s)`} onClick={() => { setRol("acudiente"); reset(); }} />
+          <CardRol Icono={Backpack} label="Estudiantes" sub={subConteo("estudiante")} onClick={() => { setRol("estudiante"); reset(); }} />
+          <CardRol Icono={UsersRound} label="Acudientes" sub={subConteo("acudiente")} onClick={() => { setRol("acudiente"); reset(); }} />
         </div>
       </div>
     );
