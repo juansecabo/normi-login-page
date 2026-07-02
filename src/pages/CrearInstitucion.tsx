@@ -164,7 +164,7 @@ const CrearInstitucion = () => {
           )}
           {vista === "datos" && <FichaDatos colegio={colegio!} cfg={cfg} onSaved={cargar} volver={() => setVista("menu")} />}
           {vista === "escudo" && <FichaEscudo colegio={colegio!} onSaved={cargar} volver={() => setVista("menu")} />}
-          {vista === "escala" && <FichaEscala colegio={colegio!} cfg={cfg} onSaved={cargar} volver={() => setVista("menu")} />}
+          {vista === "escala" && <FichaEscala colegio={colegio!} cfg={cfg} onSaved={cargar} />}
           {vista === "estructura" && (
             <div>
               <h2 className="text-xl font-semibold mb-1">Jornadas, grados y salones</h2>
@@ -352,7 +352,7 @@ const FichaEscudo = ({ colegio, onSaved, volver }: { colegio: ColegioDetalle; on
 };
 
 // ───────────────────────── FICHA: ESCALA ─────────────────────────
-const FichaEscala = ({ colegio, cfg, onSaved, volver }: { colegio: ColegioDetalle; cfg: Record<string, any>; onSaved: () => Promise<void>; volver: () => void }) => (
+const FichaEscala = ({ colegio, cfg, onSaved }: { colegio: ColegioDetalle; cfg: Record<string, any>; onSaved: () => Promise<void> }) => (
   <div>
     <h2 className="text-xl font-semibold mb-4">Escala de calificación</h2>
     <EscalaColegioEditor
@@ -361,7 +361,6 @@ const FichaEscala = ({ colegio, cfg, onSaved, volver }: { colegio: ColegioDetall
         await apiClient.plataforma.patchColegio(colegio.id, { configuracion });
         await onSaved();
       }}
-      alGuardar={volver}
     />
   </div>
 );
