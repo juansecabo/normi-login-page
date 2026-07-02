@@ -173,52 +173,52 @@ const DashboardEstudiante = () => {
       <button onClick={() => navigate("/estudiante/actividades")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-green-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-green-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-green-200">
         <Badge count={badges.actividades} />
         <img src={iconActividades} alt="" className="w-16 h-16 object-contain" />
-        <span className="font-semibold text-lg text-foreground text-center">Actividades</span>
+        <span className="font-semibold text-foreground text-center">Actividades</span>
       </button>
     ) },
     { id: 'comunicados', render: (
       <button onClick={() => navigate("/estudiante/comunicados")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-lime-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-lime-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-lime-200">
         <Badge count={badges.comunicados} />
         <img src={iconComunicados} alt="" className="w-16 h-16 object-contain" />
-        <span className="font-semibold text-lg text-foreground text-center">Comunicados</span>
+        <span className="font-semibold text-foreground text-center">Comunicados</span>
       </button>
     ) },
     { id: 'documentos', render: (
       <button onClick={() => navigate("/estudiante/documentos")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-cyan-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-cyan-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-cyan-200">
         <Badge count={badges.documentos} />
         <img src={iconDocumentos} alt="" className="w-16 h-16 object-contain" />
-        <span className="font-semibold text-lg text-foreground text-center">Documentos</span>
+        <span className="font-semibold text-foreground text-center">Documentos</span>
       </button>
     ) },
     { id: 'estadisticas', render: (
       <button onClick={() => navigate("/estudiante/estadisticas")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-teal-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-teal-200">
         <img src={iconEstadisticas} alt="" className="w-16 h-16 object-contain" />
-        <span className="font-semibold text-lg text-foreground text-center">Estadísticas</span>
+        <span className="font-semibold text-foreground text-center">Estadísticas</span>
       </button>
     ) },
     { id: 'consultas', render: (
       <button onClick={() => navigate("/estudiante/consultas")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-pink-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-pink-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-pink-200">
         <img src={iconConsultas} alt="" className="w-16 h-16 object-contain" />
-        <span className="font-semibold text-lg text-foreground text-center">Consultas</span>
+        <span className="font-semibold text-foreground text-center">Consultas</span>
       </button>
     ) },
     { id: 'comunicados-firma', render: (
       <button onClick={() => navigate("/comunicados-firma")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-violet-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-violet-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-violet-200">
         <Badge count={pendFirma} />
         <img src={iconConsultas} alt="" className="w-16 h-16 object-contain" />
-        <span className="font-semibold text-lg text-foreground text-center">Comunicados con firma</span>
+        <span className="font-semibold text-foreground text-center">Comunicados con firma</span>
       </button>
     ) },
     { id: 'asistencia', render: (
       <button onClick={() => navigate("/asistencia")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-blue-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-blue-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-blue-200">
         <img src={iconAsistencia} alt="" className="w-16 h-16 object-contain" />
-        <span className="font-semibold text-lg text-foreground text-center">Asistencia</span>
+        <span className="font-semibold text-foreground text-center">Asistencia</span>
       </button>
     ) },
     { id: 'perfil', render: (
       <button onClick={() => navigate("/perfil")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-sky-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-sky-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-sky-200">
         <img src={iconPerfil} alt="" className="w-16 h-16 object-contain" />
-        <span className="font-semibold text-lg text-foreground text-center">Perfil</span>
+        <span className="font-semibold text-foreground text-center">Perfil</span>
       </button>
     ) },
   ];
