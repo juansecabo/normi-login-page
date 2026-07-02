@@ -75,6 +75,9 @@ const ManualColegio = ({ manualUrl, onChanged }: { manualUrl: string | null; onC
             <Button onClick={() => fileRef.current?.click()} disabled={subiendo} variant="outline" className="gap-2">
               {subiendo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Pencil className="w-4 h-4" />} Cambiar PDF
             </Button>
+            <Button onClick={quitar} disabled={quitando} variant="outline" className="gap-2 text-destructive hover:text-destructive">
+              {quitando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Quitar
+            </Button>
           </div>
         </div>
       ) : (
