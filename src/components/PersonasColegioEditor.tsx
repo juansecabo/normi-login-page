@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/apiClient";
 import { getSession } from "@/hooks/useSession";
 import { rankGrado } from "@/utils/grados";
+import PanelControl from "@/pages/rector/PanelControl";
 
 /**
  * "Personas del colegio": tarjetas por rol → página del cargo con su lista y
@@ -193,6 +194,10 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   const listaActual = !q ? listaDelRol : listaDelRol.filter((p) =>
     normalizar(`${p.nombres} ${p.apellidos}`).includes(q) || String(p.id).includes(q));
   const labelActual = esStaff ? labelRol : rol === "estudiante" ? "Estudiantes" : rol === "acudiente" ? "Acudientes" : "";
+  // Estudiantes/Acudientes: se incrusta el Panel de Control (mismo CRUD, misma
+  // data → lo que se haga aquí o allá es idéntico). Solo en el colegio propio:
+  // el SuperAdmin del wizard no tiene colegio en el JWT (usa "Entrar como admin").
+  const usarPanelEmbebido = (rol === "estudiante" || rol === "acudiente") && !colegioId;
 
   const CardRol = ({ Icono, label, sub, onClick }: { Icono: typeof Users; label: string; sub: string; onClick: () => void }) => (
     <button onClick={onClick} className="flex flex-col items-center text-center sm:items-start sm:text-left bg-card border border-border rounded-lg p-5 shadow-sm hover:border-primary/60 hover:bg-secondary/40 transition-colors">
@@ -238,6 +243,9 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
         )}
       </div>
 
+      {usarPanelEmbebido ? (
+        <PanelControl embedded tabFija={rol === "estudiante" ? "estudiantes" : "perfiles"} />
+      ) : (<>
       {/* Busqueda flexible (como la del Panel de Control) */}
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -289,6 +297,8 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
           donde ya existe el formulario completo con autocompletado por cédula.
         </div>
       )}
+
+      </>)}
 
       {/* Pop-up de agregar (solo staff) */}
       <Dialog open={dialogAbierto} onOpenChange={(o) => { if (!o) { setDialogAbierto(false); reset(); } }}>

@@ -180,7 +180,13 @@ async function fetchAllPages<T>(
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-const PanelControl = () => {
+/**
+ * `embedded`: renderiza SOLO el contenido de una pestaña (sin header, breadcrumb
+ * ni selector de tabs) para incrustarlo en otra página — lo usa "Personas" de
+ * Configurar Institución para Estudiantes/Acudientes. Mismo código, misma data:
+ * lo que se haga aquí o allá queda idéntico porque ES el mismo componente.
+ */
+const PanelControl = ({ embedded = false, tabFija }: { embedded?: boolean; tabFija?: "estudiantes" | "perfiles" } = {}) => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -195,11 +201,13 @@ const PanelControl = () => {
   // Pestalozziano incluye "Párvulo"; la Normal no.
   const { grados: gradosColegio } = useGradosColegio();
 
-  // Auth
+  // Auth (en modo embebido el acceso lo controla la página padre)
   useEffect(() => {
+    if (embedded) return;
     const session = getSession();
     if (!session.id) { navigate("/"); return; }
     if (!puedeAccederDashboard()) { navigate("/dashboard"); return; }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1480,11 +1488,11 @@ const PanelControl = () => {
   // ═══════════════════════════════════════════════════════════════════════════
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormi backLink="/dashboard-rector" />
+    <div className={embedded ? "" : "min-h-screen bg-background flex flex-col"}>
+      {!embedded && <HeaderNormi backLink="/dashboard-rector" />}
 
-      <main className="flex-1 container mx-auto p-4 md:p-8">
-        {/* Breadcrumb */}
+      <main className={embedded ? "" : "flex-1 container mx-auto p-4 md:p-8"}>
+        {!embedded && (
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <div className="flex items-center gap-2 text-sm">
             <button onClick={() => navigate("/dashboard-rector")} className="text-primary hover:underline">
@@ -1494,17 +1502,21 @@ const PanelControl = () => {
             <span className="text-foreground font-medium">Panel de Control</span>
           </div>
         </div>
+        )}
 
-        <div className="bg-card rounded-lg shadow-soft p-6 md:p-8">
+        <div className={embedded ? "" : "bg-card rounded-lg shadow-soft p-6 md:p-8"}>
+          {!embedded && (
           <h2 className="text-2xl font-bold text-foreground mb-6 text-center">
             Panel de Control
           </h2>
+          )}
 
-          <Tabs defaultValue="estudiantes">
+          <Tabs defaultValue={tabFija || "estudiantes"}>
             {/* En móvil scroll horizontal — los 5 tabs no caben en pantallas
                 chicas. En sm+ vuelve al flex con ancho parejo. El wrapper
                 usa margen negativo (-mx-6 / -mx-8) para que el scroll
                 llegue hasta el borde de la card. */}
+            {!embedded && (
             <div className="overflow-x-auto -mx-6 px-6 md:-mx-8 md:px-8 sm:mx-0 sm:px-0 mb-6">
               <TabsList className="inline-flex sm:flex sm:w-full">
                 <TabsTrigger value="estudiantes" className="sm:flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Estudiantes</TabsTrigger>
@@ -1514,6 +1526,7 @@ const PanelControl = () => {
                 <TabsTrigger value="catalogo-asignaturas" className="sm:flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Asignaturas</TabsTrigger>
               </TabsList>
             </div>
+            )}
 
             {/* ════════════════ TAB: ESTUDIANTES ════════════════ */}
             <TabsContent value="estudiantes">
