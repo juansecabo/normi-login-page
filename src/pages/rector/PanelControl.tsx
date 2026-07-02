@@ -1504,7 +1504,7 @@ const PanelControl = ({ embedded = false, tabFija }: { embedded?: boolean; tabFi
         </div>
         )}
 
-        <div className={embedded ? "" : "bg-card rounded-lg shadow-soft p-6 md:p-8"}>
+        <div className="bg-card rounded-lg shadow-soft p-6 md:p-8">
           {!embedded && (
           <h2 className="text-2xl font-bold text-foreground mb-6 text-center">
             Panel de Control
