@@ -56,6 +56,9 @@ export async function descargarCitacionEntrevista(s: any): Promise<void> {
   fila("Estudiante:", `${s.estudiante_nombre || ""} ${s.estudiante_apellidos || ""} — ${s.estudiante_grado || ""} ${s.estudiante_salon || ""}`.trim());
   fila("Entrevista el día:", `${fmtFecha(s.fecha_entrevista)} a las ${s.hora_entrevista || ""}`);
   fila("Entrevista con:", entrevistadoresDeSolicitud(s, "el/la "));
+  // Mensaje adicional (viene en formato WhatsApp: se quitan los marcadores * y _)
+  const mensajeLimpio = String(s.mensaje || "").replace(/\*([^*\n]+)\*/g, "$1").replace(/_([^_\n]+)_/g, "$1").trim();
+  if (mensajeLimpio) fila("Mensaje:", mensajeLimpio);
   if (s.creado_por_nombre) fila("Creado por:", s.creado_por_nombre);
 
   const estado = s.confirmado === true ? "Asistirá" : s.confirmado === false ? "No asistirá" : "Pendiente";

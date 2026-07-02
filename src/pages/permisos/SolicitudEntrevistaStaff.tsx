@@ -12,7 +12,7 @@ import { descargarCitacionEntrevista } from "@/utils/citacionEntrevistaPdf";
 import FirmaImage from "@/components/FirmaImage";
 import { apiRequest } from "@/lib/apiClient";
 import { joinEntrevistadores, entrevistadoresDeSolicitud } from "@/lib/entrevistadores";
-import FormatoWhatsAppToolbar, { EditorComunicado, type EditorComunicadoHandle } from "@/components/FormatoWhatsAppToolbar";
+import FormatoWhatsAppToolbar, { EditorComunicado, whatsappToHtml, type EditorComunicadoHandle } from "@/components/FormatoWhatsAppToolbar";
 import { useGradosColegio } from "@/utils/grados";
 import { es } from "date-fns/locale";
 import {
@@ -602,6 +602,13 @@ const SolicitudEntrevistaStaff = () => {
                           <p>Estudiante: <span className="text-primary font-medium">{s.estudiante_nombre} {s.estudiante_apellidos}</span> — {s.estudiante_grado} {s.estudiante_salon}</p>
                           <p>Entrevista el día: <span className="text-primary font-medium">{fmtFecha(s.fecha_entrevista)}</span> a las <span className="text-primary font-medium">{s.hora_entrevista}</span></p>
                           <p>Entrevista con: <span className="text-primary font-medium">{entrevistadoresDeSolicitud(s, "el/la ")}</span></p>
+                          {s.mensaje && (
+                            <div className="bg-muted/50 border border-border rounded-md p-3">
+                              <p className="font-medium mb-1">Mensaje:</p>
+                              {/* Guardado en formato WhatsApp (*negrilla*, _cursiva_); se muestra formateado */}
+                              <p className="whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: whatsappToHtml(s.mensaje) }} />
+                            </div>
+                          )}
                           {s.creado_por_nombre && <p>Creado por: <span className="text-primary font-medium">{s.creado_por_nombre}</span></p>}
                           {s.firma_url && <div><p className="font-medium mb-1">Firma:</p><FirmaImage url={s.firma_url} /></div>}
                           {s.observaciones_padre && <p>Observaciones del acudiente: <span className="text-primary font-medium">{s.observaciones_padre}</span></p>}
