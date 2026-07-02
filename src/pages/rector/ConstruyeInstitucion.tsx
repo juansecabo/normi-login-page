@@ -291,7 +291,7 @@ const ConstruyeInstitucion = () => {
                 <EscalaColegioEditor
                   cfg={cfgColegio}
                   guardar={async (configuracion) => { await apiClient.colegio.patchConfig(configuracion); }}
-                  alGuardar={() => { cargar(); }}
+                  alGuardar={() => { cargar(); setVista("menu"); }}
                 />
               </div>
             )}
