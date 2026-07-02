@@ -232,7 +232,7 @@ const DashboardRector = () => {
     { id: 'registros-comportamiento', render: (
       <button onClick={() => navigate("/registros-comportamiento")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-amber-100 transition-all duration-200 hover:shadow-md hover:bg-amber-200">
         <img src={iconRegistros} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center max-w-full break-words">Registros de Comportamiento</span>
+        <span className="font-semibold text-foreground text-center">Registros de Comportamiento</span>
       </button>
     ) },
     { id: 'remitir-orientacion', render: (
@@ -323,14 +323,14 @@ const DashboardRector = () => {
         </div>
 
         {/* Botones principales */}
-        <div className="bg-card rounded-lg shadow-soft p-8 max-w-4xl mx-auto mt-8">
+        <div className="bg-card rounded-lg shadow-soft p-8 max-w-7xl mx-auto mt-8">
           <h3 className="text-xl font-bold text-foreground mb-1 text-center">
             ¿Qué deseas consultar?
           </h3>
 
           <ReordenableDashboard
             dashboardKey="rector"
-            gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 max-w-5xl mx-auto"
+            gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6"
             items={items}
           />
         </div>

@@ -36,14 +36,14 @@ const Badge = ({ count }: { count: number }) => {
 };
 
 /** Una tarjeta del dashboard del admin. */
-const Card = ({ bg, badge, icon, label, labelClassName = "", onClick }: { bg: string; badge?: number; icon: ReactNode; label: string; labelClassName?: string; onClick: () => void }) => (
+const Card = ({ bg, badge, icon, label, onClick }: { bg: string; badge?: number; icon: ReactNode; label: string; onClick: () => void }) => (
   <button
     onClick={onClick}
     className={`relative w-full h-full flex flex-col items-center justify-center gap-4 p-8 rounded-lg ${bg} transition-all duration-200 hover:shadow-md`}
   >
     {badge ? <Badge count={badge} /> : null}
     {icon}
-    <span className={`font-semibold text-lg text-foreground text-center ${labelClassName}`}>{label}</span>
+    <span className="font-semibold text-lg text-foreground text-center">{label}</span>
   </button>
 );
 
@@ -110,7 +110,7 @@ const DashboardAdmin = () => {
     { id: 'permisos-excusas', render: <Card bg="bg-rose-100 hover:bg-rose-200" badge={permisosTotal} icon={<img src={iconPermisos} alt="" className="w-16 h-16 object-contain" />} label="Permisos y Excusas" onClick={() => navigate("/permisos-excusas")} /> },
     { id: 'solicitud-entrevista', render: <Card bg="bg-indigo-100 hover:bg-indigo-200" badge={badges.entrevista} icon={<img src={iconEntrevista} alt="" className="w-16 h-16 object-contain" />} label="Solicitud de Entrevista" onClick={() => navigate("/solicitud-entrevista-staff")} /> },
     { id: 'consultas', render: <Card bg="bg-pink-100 hover:bg-pink-200" icon={<img src={iconConsultas} alt="" className="w-16 h-16 object-contain" />} label="Consultas" onClick={() => navigate("/consultas")} /> },
-    { id: 'registros-comportamiento', render: <Card bg="bg-amber-100 hover:bg-amber-200" icon={<img src={iconRegistros} alt="" className="w-16 h-16 object-contain" />} label="Registros de Comportamiento" labelClassName="max-w-full break-words" onClick={() => navigate("/registros-comportamiento")} /> },
+    { id: 'registros-comportamiento', render: <Card bg="bg-amber-100 hover:bg-amber-200" icon={<img src={iconRegistros} alt="" className="w-16 h-16 object-contain" />} label="Registros de Comportamiento" onClick={() => navigate("/registros-comportamiento")} /> },
     { id: 'solicitudes-registro', render: <Card bg="bg-sky-100 hover:bg-sky-200" icon={<ClipboardList className="w-16 h-16 text-sky-700" strokeWidth={1.5} />} label="Solicitudes de Registro" onClick={() => navigate("/admin/correcciones-registro")} /> },
     { id: 'dudas-personal', render: <Card bg="bg-violet-100 hover:bg-violet-200" icon={<MessageCircleQuestion className="w-16 h-16 text-violet-700" strokeWidth={1.5} />} label="Dudas del Personal" onClick={() => navigate("/admin/dudas")} /> },
     { id: 'asistencia', render: <Card bg="bg-blue-100 hover:bg-blue-200" icon={<img src={iconAsistencia} alt="" className="w-16 h-16 object-contain" />} label="Asistencia" onClick={() => navigate("/asistencia")} /> },
@@ -143,14 +143,14 @@ const DashboardAdmin = () => {
           </div>
         </div>
 
-        <div className="bg-card rounded-lg shadow-soft p-8 max-w-4xl mx-auto mt-8">
+        <div className="bg-card rounded-lg shadow-soft p-8 max-w-7xl mx-auto mt-8">
           <h3 className="text-xl font-bold text-foreground mb-1 text-center">
             ¿Qué deseas consultar?
           </h3>
 
           <ReordenableDashboard
             dashboardKey="admin"
-            gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 max-w-5xl mx-auto"
+            gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6"
             items={items}
           />
         </div>

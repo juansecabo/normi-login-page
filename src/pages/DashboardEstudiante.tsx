@@ -249,14 +249,14 @@ const DashboardEstudiante = () => {
           </div>
         </div>
 
-        <div className="bg-card rounded-lg shadow-soft p-8 max-w-4xl mx-auto mt-8">
+        <div className="bg-card rounded-lg shadow-soft p-8 max-w-7xl mx-auto mt-8">
           <h3 className="text-xl font-bold text-foreground mb-1 text-center">
             ¿Qué deseas consultar?
           </h3>
 
           <ReordenableDashboard
             dashboardKey="estudiante"
-            gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 max-w-5xl mx-auto"
+            gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6"
             items={items}
           />
         </div>
