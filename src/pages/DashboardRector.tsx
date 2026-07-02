@@ -138,21 +138,21 @@ const DashboardRector = () => {
     items.push(
       { id: 'casos', render: (
         <button onClick={() => navigate("/orientador/casos")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-amber-100 transition-all duration-200 hover:shadow-md hover:bg-amber-200">
-          <img src={iconCasos} alt="" className="w-12 h-12 object-contain" />
-          <span className="font-semibold text-foreground text-center">Casos de Seguimiento</span>
+          <img src={iconCasos} alt="" className="w-16 h-16 object-contain" />
+          <span className="font-semibold text-lg text-foreground text-center">Casos de Seguimiento</span>
         </button>
       ) },
       { id: 'citas', render: (
         <button onClick={() => navigate("/orientador/citas")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-violet-100 transition-all duration-200 hover:shadow-md hover:bg-violet-200">
-          <img src={iconCitas} alt="" className="w-12 h-12 object-contain" />
-          <span className="font-semibold text-foreground text-center">Citas y Atención</span>
+          <img src={iconCitas} alt="" className="w-16 h-16 object-contain" />
+          <span className="font-semibold text-lg text-foreground text-center">Citas y Atención</span>
         </button>
       ) },
       { id: 'remisiones', render: (
         <button onClick={() => navigate("/orientador/remisiones")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-yellow-100 transition-all duration-200 hover:shadow-md hover:bg-yellow-200">
           <Badge count={badges.remisiones} />
-          <img src={iconCasos} alt="" className="w-12 h-12 object-contain" />
-          <span className="font-semibold text-foreground text-center">Remisiones Recibidas</span>
+          <img src={iconCasos} alt="" className="w-16 h-16 object-contain" />
+          <span className="font-semibold text-lg text-foreground text-center">Remisiones Recibidas</span>
         </button>
       ) },
     );
@@ -160,7 +160,7 @@ const DashboardRector = () => {
   if (!esAdministrativo) {
     items.push({ id: 'notas', render: (
       <button onClick={() => navigate("/rector/seleccionar-grado")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-emerald-100 transition-all duration-200 hover:shadow-md hover:bg-emerald-200">
-        <img src={iconNotas} alt="" className="w-12 h-12 object-contain" />
+        <img src={iconNotas} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground">Notas</span>
       </button>
     ) });
@@ -168,129 +168,129 @@ const DashboardRector = () => {
   items.push(
     { id: 'enviar-comunicado', render: (
       <button onClick={() => navigate("/enviar-comunicado")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 transition-all duration-200 hover:shadow-md hover:bg-teal-200">
-        <img src={iconEnviarComunicado} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Enviar Comunicado</span>
+        <img src={iconEnviarComunicado} alt="" className="w-16 h-16 object-contain" />
+        <span className="font-semibold text-lg text-foreground text-center">Enviar Comunicado</span>
       </button>
     ) },
     { id: 'comunicados-firma', render: (
       <button onClick={() => navigate("/comunicados-firma")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-violet-100 transition-all duration-200 hover:shadow-md hover:bg-violet-200">
         <Badge count={pendFirma} />
-        <img src={iconEnviarComunicado} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Comunicados con firma</span>
+        <img src={iconEnviarComunicado} alt="" className="w-16 h-16 object-contain" />
+        <span className="font-semibold text-lg text-foreground text-center">Comunicados con firma</span>
       </button>
     ) },
     { id: 'comunicados-recibidos', render: (
       <button onClick={() => navigate("/rector/comunicados-recibidos")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 transition-all duration-200 hover:shadow-md hover:bg-teal-200">
         <Badge count={badges.comunicados} />
-        <img src={iconComunicadosRecibidos} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Comunicados Recibidos</span>
+        <img src={iconComunicadosRecibidos} alt="" className="w-16 h-16 object-contain" />
+        <span className="font-semibold text-lg text-foreground text-center">Comunicados Recibidos</span>
       </button>
     ) },
     { id: 'documentos-recibidos', render: (
       <button onClick={() => navigate("/rector/documentos-recibidos")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-amber-100 transition-all duration-200 hover:shadow-md hover:bg-amber-200">
         <Badge count={badges.documentos} />
-        <img src={iconDocumentos} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Documentos Recibidos</span>
+        <img src={iconDocumentos} alt="" className="w-16 h-16 object-contain" />
+        <span className="font-semibold text-lg text-foreground text-center">Documentos Recibidos</span>
       </button>
     ) },
     { id: 'permisos-excusas', render: (
       <button onClick={() => navigate("/permisos-excusas")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-rose-100 transition-all duration-200 hover:shadow-md hover:bg-rose-200">
         <Badge count={badges.retiro + badges.inasistencia + badges.uniforme} />
-        <img src={iconPermisos} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Permisos y Excusas</span>
+        <img src={iconPermisos} alt="" className="w-16 h-16 object-contain" />
+        <span className="font-semibold text-lg text-foreground text-center">Permisos y Excusas</span>
       </button>
     ) },
     { id: 'solicitud-entrevista', render: (
       <button onClick={() => navigate("/solicitud-entrevista-staff")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-indigo-100 transition-all duration-200 hover:shadow-md hover:bg-indigo-200">
         <Badge count={badges.entrevista} />
-        <img src={iconEntrevista} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Solicitud de Entrevista</span>
+        <img src={iconEntrevista} alt="" className="w-16 h-16 object-contain" />
+        <span className="font-semibold text-lg text-foreground text-center">Solicitud de Entrevista</span>
       </button>
     ) },
     { id: 'estadisticas', render: (
       <button onClick={() => navigate("/rector/estadisticas")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-green-100 transition-all duration-200 hover:shadow-md hover:bg-green-200">
-        <img src={iconEstadisticas} alt="" className="w-12 h-12 object-contain" />
+        <img src={iconEstadisticas} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground">Estadísticas</span>
       </button>
     ) },
     { id: 'consultas', render: (
       <button onClick={() => navigate("/consultas")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-pink-100 transition-all duration-200 hover:shadow-md hover:bg-pink-200">
-        <img src={iconConsultas} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Consultas</span>
+        <img src={iconConsultas} alt="" className="w-16 h-16 object-contain" />
+        <span className="font-semibold text-lg text-foreground text-center">Consultas</span>
       </button>
     ) },
   );
   if (cargo === 'Coordinador(a)') {
     items.push({ id: 'conversaciones', render: (
       <button onClick={() => window.open("https://chat.notasnormi.com", "_blank")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-blue-100 transition-all duration-200 hover:shadow-md hover:bg-blue-200">
-        <img src={iconConversaciones} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Conversaciones</span>
+        <img src={iconConversaciones} alt="" className="w-16 h-16 object-contain" />
+        <span className="font-semibold text-lg text-foreground text-center">Conversaciones</span>
       </button>
     ) });
   }
   items.push(
     { id: 'registros-comportamiento', render: (
       <button onClick={() => navigate("/registros-comportamiento")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-amber-100 transition-all duration-200 hover:shadow-md hover:bg-amber-200">
-        <img src={iconRegistros} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Registros de Comportamiento</span>
+        <img src={iconRegistros} alt="" className="w-16 h-16 object-contain" />
+        <span className="font-semibold text-lg text-foreground text-center">Registros de Comportamiento</span>
       </button>
     ) },
     { id: 'remitir-orientacion', render: (
       <button onClick={() => navigate("/remitir-orientacion")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-sky-100 transition-all duration-200 hover:shadow-md hover:bg-sky-200">
-        <img src={iconEntrevista} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Remitir a Orientación</span>
+        <img src={iconEntrevista} alt="" className="w-16 h-16 object-contain" />
+        <span className="font-semibold text-lg text-foreground text-center">Remitir a Orientación</span>
       </button>
     ) },
   );
   if (cargo === 'Rector') {
     items.push({ id: 'conversaciones', render: (
       <button onClick={() => window.open("https://chat.notasnormi.com", "_blank")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-blue-100 transition-all duration-200 hover:shadow-md hover:bg-blue-200">
-        <img src={iconConversaciones} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Conversaciones</span>
+        <img src={iconConversaciones} alt="" className="w-16 h-16 object-contain" />
+        <span className="font-semibold text-lg text-foreground text-center">Conversaciones</span>
       </button>
     ) });
   }
   items.push(
     { id: 'panel-control', render: (
       <button onClick={() => navigate("/rector/panel-control")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-purple-100 transition-all duration-200 hover:shadow-md hover:bg-purple-200">
-        <img src={iconPanelControl} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Panel de Control</span>
+        <img src={iconPanelControl} alt="" className="w-16 h-16 object-contain" />
+        <span className="font-semibold text-lg text-foreground text-center">Panel de Control</span>
       </button>
     ) },
     ...(cargo === "Rector" || cargo === "Administrador" || cargo === "Coordinador(a)" ? [{ id: 'construye-institucion', render: (
       <button onClick={() => navigate("/construye-institucion")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 transition-all duration-200 hover:shadow-md hover:bg-teal-200">
-        <img src={iconConfigurarInstitucion} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Configurar Institución</span>
+        <img src={iconConfigurarInstitucion} alt="" className="w-16 h-16 object-contain" />
+        <span className="font-semibold text-lg text-foreground text-center">Configurar Institución</span>
       </button>
     ) }] : []),
     { id: 'uso-normi', render: (
       <button onClick={() => navigate("/rector/uso-normi")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-orange-100 transition-all duration-200 hover:shadow-md hover:bg-orange-200">
-        <img src={iconUsoAgente} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Uso de Normi</span>
+        <img src={iconUsoAgente} alt="" className="w-16 h-16 object-contain" />
+        <span className="font-semibold text-lg text-foreground text-center">Uso de Normi</span>
       </button>
     ) },
     { id: 'registro-normi', render: (
       <button onClick={() => navigate("/registro-normi")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-cyan-100 transition-all duration-200 hover:shadow-md hover:bg-cyan-200">
-        <img src={iconRegistroAgente} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Registro en Normi</span>
+        <img src={iconRegistroAgente} alt="" className="w-16 h-16 object-contain" />
+        <span className="font-semibold text-lg text-foreground text-center">Registro en Normi</span>
       </button>
     ) },
     { id: 'asistencia', render: (
       <button onClick={() => navigate("/asistencia")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-blue-100 transition-all duration-200 hover:shadow-md hover:bg-blue-200">
-        <img src={iconAsistencia} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Asistencia</span>
+        <img src={iconAsistencia} alt="" className="w-16 h-16 object-contain" />
+        <span className="font-semibold text-lg text-foreground text-center">Asistencia</span>
       </button>
     ) },
     { id: 'programar-actividad', render: (
       <button onClick={() => navigate("/profesor/programar-actividad")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-cyan-100 transition-all duration-200 hover:shadow-md hover:bg-cyan-200">
-        <img src={iconActividades} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Programar Actividad</span>
+        <img src={iconActividades} alt="" className="w-16 h-16 object-contain" />
+        <span className="font-semibold text-lg text-foreground text-center">Programar Actividad</span>
       </button>
     ) },
     { id: 'perfil', render: (
       <button onClick={() => navigate("/perfil")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-sky-100 transition-all duration-200 hover:shadow-md hover:bg-sky-200">
-        <img src={iconPerfil} alt="" className="w-12 h-12 object-contain" />
-        <span className="font-semibold text-foreground text-center">Perfil</span>
+        <img src={iconPerfil} alt="" className="w-16 h-16 object-contain" />
+        <span className="font-semibold text-lg text-foreground text-center">Perfil</span>
       </button>
     ) },
   );
@@ -330,7 +330,7 @@ const DashboardRector = () => {
 
           <ReordenableDashboard
             dashboardKey="rector"
-            gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6"
+            gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6"
             items={items}
           />
         </div>
