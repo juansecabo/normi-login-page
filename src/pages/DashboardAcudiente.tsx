@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { bienvenida, getSession, isPadreDeFamilia, AcudidoData } from "@/hooks/useSession";
+import { useBienvenida, getSession, isPadreDeFamilia, AcudidoData } from "@/hooks/useSession";
 import { usePendientesFirma } from "@/hooks/usePendientesFirma";
 import iconNotas from "@/assets/icons/notas.webp";
 import iconPerfil from "@/assets/icons/perfil.png";
@@ -32,6 +32,7 @@ const Badge = ({ count }: { count: number }) => {
 
 const DashboardAcudiente = () => {
   const navigate = useNavigate();
+  const saludo = useBienvenida();
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [acudidos, setAcudidos] = useState<AcudidoData[]>([]);
@@ -268,10 +269,10 @@ const DashboardAcudiente = () => {
         <EncabezadoColegio />
         <div className="relative max-w-2xl mx-auto">
           <div className="bg-card rounded-lg shadow-soft p-5 text-center">
-            <h2 className="text-2xl font-bold text-foreground mb-1">
-              {bienvenida(getSession().genero)}
+            <h2 className="text-lg font-bold text-foreground mb-1">
+              {saludo}
             </h2>
-            <p className="text-lg text-primary font-semibold">
+            <p className="text-2xl text-primary font-semibold">
               {`${nombres} ${apellidos}`.trim()}
             </p>
             <p className="text-sm text-muted-foreground mt-1 mb-1">

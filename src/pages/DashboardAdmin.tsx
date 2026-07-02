@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { bienvenida, getSession, isAdmin } from "@/hooks/useSession";
+import { useBienvenida, getSession, isAdmin } from "@/hooks/useSession";
 import { usePendientesFirma } from "@/hooks/usePendientesFirma";
 import { ClipboardList, MessageCircleQuestion } from "lucide-react";
 import iconNotas from "@/assets/icons/notas.webp";
@@ -49,6 +49,7 @@ const Card = ({ bg, badge, icon, label, onClick }: { bg: string; badge?: number;
 
 const DashboardAdmin = () => {
   const navigate = useNavigate();
+  const saludo = useBienvenida();
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [badges, setBadges] = useState({ retiro: 0, inasistencia: 0, uniforme: 0, entrevista: 0 });
@@ -124,10 +125,10 @@ const DashboardAdmin = () => {
         <EncabezadoColegio />
         <div className="relative max-w-2xl mx-auto">
           <div className="bg-card rounded-lg shadow-soft p-8 text-center">
-            <h2 className="text-2xl lg:text-3xl font-bold text-foreground mb-4">
-              {bienvenida(getSession().genero)}
+            <h2 className="text-xl font-bold text-foreground mb-4">
+              {saludo}
             </h2>
-            <p className="text-xl text-primary font-semibold">
+            <p className="text-2xl lg:text-3xl text-primary font-semibold">
               {nombres} {apellidos}
             </p>
             <p className="text-muted-foreground mt-2">

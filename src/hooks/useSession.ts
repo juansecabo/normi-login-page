@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
 
 // Función para obtener el dominio base para cookies compartidas
@@ -55,6 +56,37 @@ export interface SessionData {
 /** Saludo de bienvenida según el género: Bienvenido / Bienvenida / Bienvenido(a). */
 export const bienvenida = (genero?: string | null): string =>
   genero === "M" ? "Bienvenido" : genero === "F" ? "Bienvenida" : "Bienvenido(a)";
+
+// Evita repetir la consulta a /auth/me en cada montaje cuando la persona
+// realmente no tiene género registrado (una vez por pestaña basta).
+let generoBackfillHecho = false;
+
+/**
+ * Saludo de bienvenida reactivo. Si la sesión abierta aún no tiene el género
+ * guardado (sesiones iniciadas antes de que el login lo incluyera), lo trae
+ * una vez de /auth/me, lo guarda y actualiza el saludo sin re-login.
+ */
+export const useBienvenida = (): string => {
+  const [genero, setGenero] = useState<string | null>(() => localStorage.getItem("genero"));
+
+  useEffect(() => {
+    if (genero || generoBackfillHecho) return;
+    if (!Cookies.get(SESSION_COOKIE) || !localStorage.getItem("id")) return;
+    generoBackfillHecho = true;
+    import("@/lib/apiClient").then(({ apiClient }) =>
+      apiClient.auth.me().then(({ user }) => {
+        const g = (user as any)?.genero;
+        if (g === "M" || g === "F") {
+          localStorage.setItem("genero", g);
+          setGenero(g);
+        }
+      }),
+    ).catch(() => { /* sin red o sesión inválida: se queda el neutro */ });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return bienvenida(genero);
+};
 
 // Cookie de sesión (sin expires → muere cuando el navegador se cierra)
 const SESSION_COOKIE = 'normi_session_active';
