@@ -193,7 +193,7 @@ const ConstruyeInstitucion = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <HeaderNormi backLink={backLink} />
-      <main className="flex-1 container mx-auto p-4 md:p-8 max-w-4xl">
+      <main className={`flex-1 container mx-auto p-4 md:p-8 ${vista === "personas" ? "" : "max-w-4xl"}`}>
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <div className="flex items-center gap-2 text-sm flex-wrap">
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
