@@ -1360,7 +1360,7 @@ const PanelControl = ({ embedded = false, tabFija }: { embedded?: boolean; tabFi
   const salonesParaGrado = (grado: string) =>
     grado === "todos" ? salonesTodos : (salonesPorGrado[grado] || []);
 
-  // Celda de foto de perfil (solo admin). Muestra la foto o las iniciales.
+  // Celda de foto de perfil (visible para todos los roles del panel).
   // Si hay foto, al hacer click se abre en grande (tamaño real) en un pop up.
   const renderFotoCell = (url: string | null | undefined, nombre: string) => {
     const iniciales =
@@ -1570,7 +1570,7 @@ const PanelControl = ({ embedded = false, tabFija }: { embedded?: boolean; tabFi
                     {salonesParaGrado(filtroGradoEst).map((s) => <SelectItem key={s} value={s}>Salón {s}</SelectItem>)}
                   </SelectContent>
                 </Select>
-                {esAdmin && (
+                {(
                   <Select value={filtroFotoEst} onValueChange={setFiltroFotoEst}>
                     <SelectTrigger className="sm:w-52"><SelectValue placeholder="Foto" /></SelectTrigger>
                     <SelectContent>
@@ -1591,7 +1591,7 @@ const PanelControl = ({ embedded = false, tabFija }: { embedded?: boolean; tabFi
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        {esAdmin && <TableHead>Foto</TableHead>}
+                        <TableHead>Foto</TableHead>
                         <TableHead>ID</TableHead>
                         <TableHead>Apellidos</TableHead>
                         <TableHead>Nombres</TableHead>
@@ -1605,14 +1605,14 @@ const PanelControl = ({ embedded = false, tabFija }: { embedded?: boolean; tabFi
                     <TableBody>
                       {filteredEst.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={esAdmin ? 9 : 8} className="text-center text-muted-foreground">
+                          <TableCell colSpan={9} className="text-center text-muted-foreground">
                             No se encontraron estudiantes
                           </TableCell>
                         </TableRow>
                       ) : (
                         filteredEst.map((e: any) => (
                           <TableRow key={e.id}>
-                            {esAdmin && renderFotoCell(e.avatar_url, `${e.nombres || ""} ${e.apellidos || ""}`)}
+                            renderFotoCell(e.avatar_url, `${e.nombres || ""} ${e.apellidos || ""}`)
                             <TableCell className="font-mono">{e.id}</TableCell>
                             <TableCell>{e.apellidos}</TableCell>
                             <TableCell>{e.nombres}</TableCell>
@@ -1839,7 +1839,7 @@ const PanelControl = ({ embedded = false, tabFija }: { embedded?: boolean; tabFi
                     {salonesParaGrado(filtroGradoPerf).map((s) => <SelectItem key={s} value={s}>Salón {s}</SelectItem>)}
                   </SelectContent>
                 </Select>
-                {esAdmin && (
+                {(
                   <Select value={filtroFotoPerf} onValueChange={setFiltroFotoPerf}>
                     <SelectTrigger className="sm:w-52"><SelectValue placeholder="Foto" /></SelectTrigger>
                     <SelectContent>
@@ -1860,7 +1860,7 @@ const PanelControl = ({ embedded = false, tabFija }: { embedded?: boolean; tabFi
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        {esAdmin && <TableHead>Foto</TableHead>}
+                        <TableHead>Foto</TableHead>
                         <TableHead>ID</TableHead>
                         <TableHead>Apellidos</TableHead>
                         <TableHead>Nombres</TableHead>
@@ -1873,14 +1873,14 @@ const PanelControl = ({ embedded = false, tabFija }: { embedded?: boolean; tabFi
                     <TableBody>
                       {filteredPerf.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={esAdmin ? 8 : 7} className="text-center text-muted-foreground">
+                          <TableCell colSpan={8} className="text-center text-muted-foreground">
                             No se encontraron acudientes
                           </TableCell>
                         </TableRow>
                       ) : (
                         filteredPerf.map((p: any) => (
                           <TableRow key={p.padre_id || p.numero_de_telefono}>
-                            {esAdmin && renderFotoCell(p.avatar_url, `${p.acudiente_nombres_only || ""} ${p.padre_apellidos_only || ""}`)}
+                            renderFotoCell(p.avatar_url, `${p.acudiente_nombres_only || ""} ${p.padre_apellidos_only || ""}`)
                             <TableCell className="font-mono">{p.padre_id || "—"}</TableCell>
                             <TableCell>{p.padre_apellidos_only || "—"}</TableCell>
                             <TableCell>{p.acudiente_nombres_only || "—"}</TableCell>
