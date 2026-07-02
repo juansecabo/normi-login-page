@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   GraduationCap, Users, ShieldCheck, Briefcase, HeartHandshake, BookOpen,
-  Backpack, UsersRound, Plus, Check, Loader2,
+  Backpack, UsersRound, Plus, Check, Loader2, Search,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -59,6 +59,8 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   const puedeAgregar = !!colegioId || cargoSesion === "Rector" || cargoSesion === "Administrador";
 
   const [dialogAbierto, setDialogAbierto] = useState(false);
+  // Busqueda flexible dentro del cargo (nombre, apellido o cedula; sin tildes).
+  const [busqueda, setBusqueda] = useState("");
   const [cedula, setCedula] = useState("");
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
@@ -80,7 +82,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   useEffect(() => { bloqueadoRef.current = bloqueado; }, [bloqueado]);
 
   const reset = () => {
-    setCedula(""); setNombres(""); setApellidos(""); setTelefono(""); setGenero(""); setFechaNac("");
+    setCedula(""); setNombres(""); setApellidos(""); setTelefono(""); setGenero(""); setFechaNac(""); setBusqueda("");
     setNiveles([]); setEsDirector(false); setDirGrado(""); setDirSalon(""); setBloqueado(false);
   };
   // Al dejar de coincidir con una persona encontrada, limpia los datos que se
@@ -183,8 +185,13 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
     : r === "acudiente" ? personas.acudientes.length
     : personas.internos.filter((i) => tieneCargo(i, r)).length;
 
-  const listaActual: any[] =
+  const listaDelRol: any[] =
     !rol ? [] : esStaff ? personas.internos.filter((i) => tieneCargo(i, rol)) : rol === "estudiante" ? personas.estudiantes : personas.acudientes;
+  // Busqueda tolerante: ignora tildes y mayusculas; cruza nombre completo y cedula.
+  const normalizar = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const q = normalizar(busqueda.trim());
+  const listaActual = !q ? listaDelRol : listaDelRol.filter((p) =>
+    normalizar(`${p.nombres} ${p.apellidos}`).includes(q) || String(p.id).includes(q));
   const labelActual = esStaff ? labelRol : rol === "estudiante" ? "Estudiantes" : rol === "acudiente" ? "Acudientes" : "";
 
   const CardRol = ({ Icono, label, sub, onClick }: { Icono: typeof Users; label: string; sub: string; onClick: () => void }) => (
@@ -223,12 +230,23 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
       )}
 
       <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
-        <h2 className="text-xl font-semibold">{labelActual} <span className="text-muted-foreground font-normal">({listaActual.length})</span></h2>
+        <h2 className="text-xl font-semibold">{labelActual} <span className="text-muted-foreground font-normal">({q ? `${listaActual.length} de ${listaDelRol.length}` : listaDelRol.length})</span></h2>
         {esStaff && puedeAgregar && (
           <Button onClick={() => { reset(); setDialogAbierto(true); }} className="gap-1">
             <Plus className="w-4 h-4" /> Agregar
           </Button>
         )}
+      </div>
+
+      {/* Busqueda flexible (como la del Panel de Control) */}
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          placeholder={`Buscar en ${labelActual.toLowerCase()} por nombre, apellido o cédula…`}
+          className="pl-9"
+        />
       </div>
 
       {listaActual.length === 0 ? (
