@@ -128,7 +128,7 @@ const DashboardAdmin = () => {
             <h2 className="text-xl font-bold text-foreground mb-4">
               {saludo}
             </h2>
-            <p className="text-2xl lg:text-3xl text-primary font-semibold">
+            <p className="text-2xl text-primary font-semibold">
               {nombres} {apellidos}
             </p>
             <p className="text-muted-foreground mt-2">

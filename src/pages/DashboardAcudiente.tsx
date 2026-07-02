@@ -272,7 +272,7 @@ const DashboardAcudiente = () => {
             <h2 className="text-lg font-bold text-foreground mb-1">
               {saludo}
             </h2>
-            <p className="text-2xl text-primary font-semibold">
+            <p className="text-xl text-primary font-semibold">
               {`${nombres} ${apellidos}`.trim()}
             </p>
             <p className="text-sm text-muted-foreground mt-1 mb-1">
