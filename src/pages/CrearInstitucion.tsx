@@ -49,6 +49,14 @@ const CrearInstitucion = () => {
   const setVista = (v: Vista) => {
     setSearchParams(v === "menu" ? {} : { ficha: v });
   };
+  // Rol elegido dentro de "Personas del colegio" (vive en la URL para que el
+  // botón Volver de arriba sea jerárquico: rol → tarjetas de roles → menú).
+  const rolPersonas = searchParams.get("rol");
+  const setRolPersonas = (r: string | null) => {
+    const p = new URLSearchParams(searchParams);
+    if (r) p.set("rol", r); else p.delete("rol");
+    setSearchParams(p);
+  };
 
   // Guard de sesión: solo SuperAdmin.
   useEffect(() => {
@@ -110,12 +118,16 @@ const CrearInstitucion = () => {
       <HeaderNormi backLink="/dashboard-plataforma" />
       <main className="flex-1 container mx-auto p-6 md:p-8">
         <div className="max-w-3xl mx-auto">
-          {/* Botón de retroceso ÚNICO arriba: en el menú vuelve al panel; dentro
-              de una ficha vuelve al menú (y refresca conteos). */}
+          {/* Botón de retroceso ÚNICO arriba, jerárquico: página de un rol →
+              tarjetas de roles → menú de fichas → panel. */}
           <Button
             variant="outline"
             size="sm"
-            onClick={vista === "menu" ? () => navigate("/dashboard-plataforma") : () => { setVista("menu"); cargar(); }}
+            onClick={
+              vista === "menu" ? () => navigate("/dashboard-plataforma")
+              : vista === "admins" && rolPersonas ? () => setRolPersonas(null)
+              : () => { setVista("menu"); cargar(); }
+            }
             className="gap-1 mb-4 bg-card"
           >
             <ArrowLeft className="w-4 h-4" /> {vista === "menu" ? "Volver al panel" : "Volver"}
@@ -166,7 +178,7 @@ const CrearInstitucion = () => {
             </div>
           )}
           {vista === "manual" && <FichaManual id={id} manualUrl={cfg.manual_url || null} onChanged={cargar} />}
-          {vista === "admins" && <FichaAdmins id={id} admins={admins} onChanged={cargar} volver={() => setVista("menu")} />}
+          {vista === "admins" && <FichaAdmins id={id} admins={admins} onChanged={cargar} volver={() => setVista("menu")} rol={rolPersonas} setRol={setRolPersonas} />}
         </div>
       </main>
     </div>
@@ -479,10 +491,10 @@ const ROLES_STAFF: { cargo: string; label: string; Icono: typeof Users }[] = [
 ];
 const NIVELES_COORDINA = ["Preescolar", "Primaria", "Secundaria", "Media"];
 
-const FichaAdmins = ({ id, admins, onChanged, volver }: { id: string; admins: ColegioAdmin[]; onChanged: () => Promise<void>; volver: () => void }) => {
+const FichaAdmins = ({ id, admins, onChanged, volver, rol, setRol }: { id: string; admins: ColegioAdmin[]; onChanged: () => Promise<void>; volver: () => void; rol: string | null; setRol: (r: string | null) => void }) => {
   const { toast } = useToast();
-  // Rol seleccionado: null = tarjetas; un cargo de staff, o 'estudiante' / 'acudiente'.
-  const [rol, setRol] = useState<string | null>(null);
+  // Rol seleccionado (vive en la URL, lo maneja el padre): null = tarjetas;
+  // un cargo de staff, o 'estudiante' / 'acudiente'.
   const [dialogAbierto, setDialogAbierto] = useState(false);
   const [cedula, setCedula] = useState("");
   const [nombres, setNombres] = useState("");
@@ -595,13 +607,16 @@ const FichaAdmins = ({ id, admins, onChanged, volver }: { id: string; admins: Co
     }
   };
 
+  // Una persona cuenta en un cargo si es su cargo principal O está en sus
+  // cargos_extra (multi-cargo: ej. Rector que también es Administrador).
+  const tieneCargo = (i: any, r: string) => i.cargo === r || (Array.isArray(i.cargos_extra) && i.cargos_extra.includes(r));
   const conteo = (r: string) =>
     r === "estudiante" ? personas.estudiantes.length
     : r === "acudiente" ? personas.acudientes.length
-    : personas.internos.filter((i) => i.cargo === r).length;
+    : personas.internos.filter((i) => tieneCargo(i, r)).length;
 
   const listaActual: any[] =
-    !rol ? [] : esStaff ? personas.internos.filter((i) => i.cargo === rol) : rol === "estudiante" ? personas.estudiantes : personas.acudientes;
+    !rol ? [] : esStaff ? personas.internos.filter((i) => tieneCargo(i, rol)) : rol === "estudiante" ? personas.estudiantes : personas.acudientes;
   const labelActual = esStaff ? labelRol : rol === "estudiante" ? "Estudiantes" : rol === "acudiente" ? "Acudientes" : "";
 
   const CardRol = ({ Icono, label, sub, onClick }: { Icono: typeof Users; label: string; sub: string; onClick: () => void }) => (
@@ -629,13 +644,10 @@ const FichaAdmins = ({ id, admins, onChanged, volver }: { id: string; admins: Co
     );
   }
 
-  // ── Vista 2: página del rol elegido (lista + botón Agregar → pop-up) ──
+  // ── Vista 2: página del rol elegido (lista + botón Agregar → pop-up).
+  // El regreso a las tarjetas lo hace el botón "Volver" de arriba (jerárquico).
   return (
     <div>
-      <Button variant="outline" size="sm" onClick={() => { setRol(null); reset(); }} className="gap-1 mb-4 bg-card">
-        <ArrowLeft className="w-4 h-4" /> Roles
-      </Button>
-
       <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
         <h2 className="text-xl font-semibold">{labelActual} <span className="text-muted-foreground font-normal">({listaActual.length})</span></h2>
         {esStaff && (
