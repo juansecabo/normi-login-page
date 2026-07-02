@@ -202,9 +202,9 @@ const ConstruyeInstitucion = () => {
             {vista !== "menu" && (<>
               <span className="text-muted-foreground">&rarr;</span>
               {vista === "personas" && rolPersonas ? (
-                <button onClick={() => setRolPersonas(null)} className="text-primary hover:underline">Personas y puestos</button>
+                <button onClick={() => setRolPersonas(null)} className="text-primary hover:underline">Personas</button>
               ) : (
-                <span className="text-foreground font-medium">{({ info: "Información del colegio", escudo: "Escudo", escala: "Escala de calificación", estructura: "Jornadas, grados y salones", asignaturas: "Asignaturas", manual: "Manual de Convivencia", personas: "Personas y puestos" } as Record<string, string>)[vista]}</span>
+                <span className="text-foreground font-medium">{({ info: "Información del colegio", escudo: "Escudo", escala: "Escala de calificación", estructura: "Jornadas, grados y salones", asignaturas: "Asignaturas", manual: "Manual de Convivencia", personas: "Personas" } as Record<string, string>)[vista]}</span>
               )}
               {vista === "personas" && rolPersonas && (<>
                 <span className="text-muted-foreground">&rarr;</span>
@@ -229,7 +229,7 @@ const ConstruyeInstitucion = () => {
               { id: "estructura", label: "Jornadas, grados y salones", desc: "Jornadas, grados y salones", Icon: Clock },
               { id: "asignaturas", label: "Asignaturas", desc: "Asignaturas del colegio y plan de estudios por grado", Icon: BookOpen },
               { id: "manual", label: "Manual de Convivencia", desc: cfgColegio.manual_url ? "PDF cargado" : "Sube el PDF (opcional)", Icon: FileText },
-              { id: "personas", label: "Personas y puestos", desc: "Administradores, rectores, profesores, estudiantes…", Icon: GraduationCap },
+              { id: "personas", label: "Personas", desc: "Administradores, rectores, profesores, estudiantes…", Icon: GraduationCap },
             ].map((f) => (
               <button key={f.id} onClick={() => setVista(f.id as typeof vista)}
                 className="flex items-start gap-4 p-6 rounded-lg border text-left transition-colors bg-card hover:bg-muted/40 cursor-pointer">
