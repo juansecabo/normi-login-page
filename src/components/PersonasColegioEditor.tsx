@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import {
   GraduationCap, Users, ShieldCheck, Briefcase, HeartHandshake, BookOpen,
-  Backpack, UsersRound, Plus, Check, Loader2, Search,
+  Backpack, UsersRound, Plus, Check, Loader2, Search, ClipboardList,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -28,12 +29,26 @@ import PanelControl from "@/pages/rector/PanelControl";
 const ROLES_STAFF: { cargo: string; label: string; Icono: typeof Users }[] = [
   { cargo: "Administrador", label: "Administrador(a)", Icono: ShieldCheck },
   { cargo: "Rector", label: "Rector(a)", Icono: GraduationCap },
+  { cargo: "Secretaria General", label: "Secretaría", Icono: ClipboardList },
   { cargo: "Coordinador(a)", label: "Coordinadores", Icono: Users },
   { cargo: "Administrativo(a)", label: "Administrativos", Icono: Briefcase },
   { cargo: "Orientador(a) Escolar", label: "Orientación escolar", Icono: HeartHandshake },
   { cargo: "Profesor(a)", label: "Profesores", Icono: BookOpen },
 ];
 const NIVELES_COORDINA = ["Preescolar", "Primaria", "Secundaria", "Media"];
+
+// Jerarquía (espejo de services/jerarquia.ts del server): cada cargo agrega
+// desde su propio nivel hacia abajo; el techo (Administrador) solo lo agrega
+// otro Administrador y el Profesor no agrega personal (solo est/acu de su grupo).
+const CADENA = ROLES_STAFF.map((r) => r.cargo);
+const desdeCargo = (c: string) => CADENA.slice(CADENA.indexOf(c));
+const AGREGABLES: Record<string, string[]> = {
+  Administrador: desdeCargo("Administrador"),
+  Rector: desdeCargo("Rector"),
+  "Secretaria General": desdeCargo("Secretaria General"),
+  "Coordinador(a)": desdeCargo("Coordinador(a)"),
+  "Administrativo(a)": desdeCargo("Administrativo(a)"),
+};
 
 interface Props {
   /** Si se pasa, opera sobre ese colegio (modo SuperAdmin). Si no, sobre el del JWT. */
@@ -55,9 +70,24 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   const rol = rolProp !== undefined ? rolProp : rolInterno;
   const setRol = setRolProp || setRolInterno;
 
-  // Escritura: SuperAdmin (viene con colegioId) o Rector/Administrador del colegio.
+  // Jerarquía: las tarjetas visibles/agregables dependen del cargo del usuario
+  // (el SuperAdmin del wizard ve todas). Estudiantes/Acudientes los gestionan
+  // todos los que entran acá; el Profesor director solo los de SU grupo.
   const cargoSesion = getSession().cargo || "";
-  const puedeAgregar = !!colegioId || cargoSesion === "Rector" || cargoSesion === "Administrador";
+  const cargosAgregables = colegioId ? CADENA : (AGREGABLES[cargoSesion] || []);
+
+  // Dirección de grupo del profesor: limita estudiantes/acudientes a su grupo.
+  const [grupoDirector, setGrupoDirector] = useState<{ grado: string; salon: string } | null>(null);
+  useEffect(() => {
+    if (colegioId || cargoSesion !== "Profesor(a)") return;
+    supabase.from("Internos").select("direccion_de_grupo").eq("id", parseInt(getSession().id!)).maybeSingle()
+      .then(({ data }) => {
+        const dir = String((data as { direccion_de_grupo?: string } | null)?.direccion_de_grupo || "").trim();
+        const corte = dir.lastIndexOf(" ");
+        if (dir && corte > 0) setGrupoDirector({ grado: dir.slice(0, corte), salon: dir.slice(corte + 1) });
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [dialogAbierto, setDialogAbierto] = useState(false);
   // Busqueda flexible dentro del cargo (nombre, apellido o cedula; sin tildes).
@@ -184,7 +214,10 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   // cargos_extra (multi-cargo: ej. Rector que también es Administrador).
   const tieneCargo = (i: any, r: string) => i.cargo === r || (Array.isArray(i.cargos_extra) && i.cargos_extra.includes(r));
   const conteo = (r: string) =>
-    r === "estudiante" ? personas.estudiantes.length
+    r === "estudiante"
+      ? (grupoDirector
+          ? personas.estudiantes.filter((e: any) => e.grado === grupoDirector.grado && String(e.salon) === grupoDirector.salon).length
+          : personas.estudiantes.length)
     : r === "acudiente" ? personas.acudientes.length
     : personas.internos.filter((i) => tieneCargo(i, r)).length;
 
@@ -216,9 +249,9 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   if (!rol) {
     return (
       <div>
-        <p className="text-sm text-muted-foreground mb-4">Elige un rol para ver sus personas{puedeAgregar ? " y agregar nuevas" : ""}.</p>
+        <p className="text-sm text-muted-foreground mb-4">Elige un rol para ver sus personas y agregar nuevas.</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          {ROLES_STAFF.map((r) => (
+          {ROLES_STAFF.filter((r) => cargosAgregables.includes(r.cargo)).map((r) => (
             <CardRol key={r.cargo} Icono={r.Icono} label={r.label} sub={subConteo(r.cargo)} onClick={() => { setRol(r.cargo); reset(); }} />
           ))}
           <CardRol Icono={Backpack} label="Estudiantes" sub={subConteo("estudiante")} onClick={() => { setRol("estudiante"); reset(); }} />
@@ -241,7 +274,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
 
       <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
         <h2 className="text-xl font-semibold">{labelActual} <span className="text-muted-foreground font-normal">({q ? `${listaActual.length} de ${listaDelRol.length}` : listaDelRol.length})</span></h2>
-        {esStaff && puedeAgregar && (
+        {esStaff && rol !== null && cargosAgregables.includes(rol) && (
           <Button onClick={() => { reset(); setDialogAbierto(true); }} className="gap-1">
             <Plus className="w-4 h-4" /> Agregar
           </Button>
@@ -249,7 +282,13 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
       </div>
 
       {usarPanelEmbebido ? (
-        <PanelControl embedded tabFija={rol === "estudiante" ? "estudiantes" : "perfiles"} />
+        // El profesor director de grupo espera a conocer su grupo antes de
+        // montar el panel (si no, cargaría todo el colegio un instante).
+        cargoSesion === "Profesor(a)" && !grupoDirector ? (
+          <div className="flex justify-center p-10"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+        ) : (
+          <PanelControl embedded tabFija={rol === "estudiante" ? "estudiantes" : "perfiles"} soloGrupo={grupoDirector || undefined} />
+        )
       ) : (<>
       {/* Busqueda flexible (como la del Panel de Control) */}
       <div className="relative mb-4">

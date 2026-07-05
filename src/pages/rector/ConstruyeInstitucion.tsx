@@ -9,6 +9,7 @@ import { Building2, Clock, GraduationCap, Loader2 } from "lucide-react";
 import { ApiError, apiClient } from "@/lib/apiClient";
 import { getSession } from "@/hooks/useSession";
 import EscudoColegio from "@/components/EscudoColegio";
+import { supabase } from "@/integrations/supabase/client";
 import EstructuraColegioEditor from "@/components/EstructuraColegioEditor";
 import { Building, Image as ImageIcon, ArrowLeft, BookOpen, FileText, ExternalLink, Pencil, Trash2 } from "lucide-react";
 import { useRef } from "react";
@@ -96,9 +97,12 @@ const ConstruyeInstitucion = () => {
   const { toast } = useToast();
   const cargo = getSession().cargo || "";
   const puedeEditar = cargo === "Rector" || cargo === "Administrador";
-  // También pueden ENTRAR coordinadores y profesores directores de grupo
-  // (la escritura en el backend sigue limitada a Rector/Administrador).
-  const puedeEntrar = puedeEditar || cargo === "Coordinador(a)" || cargo === "Profesor(a)";
+  // También pueden ENTRAR secretaria, coordinadores, administrativos y
+  // profesores directores de grupo (a los profesores sin dirección se les
+  // saca abajo con la verificación async). La escritura de estructura en el
+  // backend sigue limitada a Rector/Administrador; en Personas manda la
+  // jerarquía (services/jerarquia.ts del server).
+  const puedeEntrar = puedeEditar || cargo === "Secretaria General" || cargo === "Coordinador(a)" || cargo === "Administrativo(a)" || cargo === "Profesor(a)";
 
   const [loading, setLoading] = useState(true);
   // La vista y el rol elegido (dentro de Personas) viven en la URL para que un
@@ -131,6 +135,14 @@ const ConstruyeInstitucion = () => {
     const s = getSession();
     if (!s.id) { navigate("/"); return; }
     if (!puedeEntrar) { navigate(backLink, { replace: true }); return; }
+    // De los profesores, solo entran los DIRECTORES DE GRUPO.
+    if (cargo === "Profesor(a)") {
+      supabase.from("Internos").select("direccion_de_grupo").eq("id", parseInt(s.id)).maybeSingle()
+        .then(({ data }) => {
+          const dir = String((data as { direccion_de_grupo?: string } | null)?.direccion_de_grupo || "").trim();
+          if (!dir) navigate(backLink, { replace: true });
+        });
+    }
     cargar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

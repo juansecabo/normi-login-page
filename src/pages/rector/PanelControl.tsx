@@ -186,7 +186,7 @@ async function fetchAllPages<T>(
  * Configurar Institución para Estudiantes/Acudientes. Mismo código, misma data:
  * lo que se haga aquí o allá queda idéntico porque ES el mismo componente.
  */
-const PanelControl = ({ embedded = false, tabFija }: { embedded?: boolean; tabFija?: "estudiantes" | "perfiles" } = {}) => {
+const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boolean; tabFija?: "estudiantes" | "perfiles"; soloGrupo?: { grado: string; salon: string } } = {}) => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -235,6 +235,11 @@ const PanelControl = ({ embedded = false, tabFija }: { embedded?: boolean; tabFi
   const [estTelefono, setEstTelefono] = useState("");
   // True cuando la cédula escrita ya existe en Usuarios (info autocompletada).
   const [estUsuarioExiste, setEstUsuarioExiste] = useState(false);
+  // Director de grupo: el formulario queda fijado a su grado+salón.
+  useEffect(() => {
+    if (soloGrupo && showEstDialog) { setEstGrado(soloGrupo.grado); setEstSalon(soloGrupo.salon); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showEstDialog]);
   // Contraseña del estudiante (solo lectura, visible únicamente para admin).
   const [estContrasena, setEstContrasena] = useState("");
   // Fase 10.E.17: el acudiente vive en Usuarios + Acudientes. El form pide
@@ -444,13 +449,17 @@ const PanelControl = ({ embedded = false, tabFija }: { embedded?: boolean; tabFi
 
   const fetchEstudiantes = async () => {
     setLoadingEst(true);
-    const raw = await fetchAllPages((from, to) =>
+    const raw = await fetchAllPages((from, to) => {
       // Fase 10.E.19: nombres/apellidos/teléfono viven en Usuarios.
-      supabase
+      let q = supabase
         .from("Estudiantes")
         .select("id, nivel, grado, salon, avatar_url")
-        .range(from, to)
-    );
+        .range(from, to);
+      // Director de grupo: solo los estudiantes de SU grado+salón (el dbProxy
+      // fuerza lo mismo en las escrituras).
+      if (soloGrupo) q = q.eq("grado", soloGrupo.grado).eq("salon", soloGrupo.salon);
+      return q;
+    });
     const usrMap = await fetchUsuariosBatch(raw.map((e: any) => String(e.id)));
     const data: any[] = raw.map((e: any) => {
       const u = usrMap.get(String(e.id));
@@ -646,7 +655,13 @@ const PanelControl = ({ embedded = false, tabFija }: { embedded?: boolean; tabFi
         return sa.localeCompare(sb, "es");
       });
 
-      setPerfiles(perfilesConstruidos);
+      // Director de grupo: solo acudientes con al menos un acudido en su grupo.
+      const visibles = soloGrupo
+        ? perfilesConstruidos.filter((p: any) =>
+            [1, 2, 3, 4].some((i) => p[`acudido${i}_grado`] === soloGrupo.grado && String(p[`acudido${i}_salon`]) === soloGrupo.salon))
+        : perfilesConstruidos;
+
+      setPerfiles(visibles);
     } catch (e) {
       console.error("[fetchPerfiles] Error cargando acudientes:", e);
       setPerfiles([]);
@@ -1206,10 +1221,17 @@ const PanelControl = ({ embedded = false, tabFija }: { embedded?: boolean; tabFi
       return;
     }
 
-    // Cada acudido debe ser estudiante de ESTE colegio (estudiantes[] = los del colegio).
+    // Cada acudido debe ser estudiante de ESTE colegio (estudiantes[] = los del
+    // colegio; para el director de grupo la lista ya viene solo con SU grupo).
     const noEst = acudidoIds.find((id) => !estudiantes.some((e) => e.id === Number(id)));
     if (noEst) {
-      toast({ title: "Estudiante no encontrado", description: `El id ${noEst} no es un estudiante de este colegio. Créalo primero en la pestaña Estudiantes.`, variant: "destructive" });
+      toast({
+        title: "Estudiante no encontrado",
+        description: soloGrupo
+          ? `El id ${noEst} no es un estudiante de su grupo (${soloGrupo.grado} ${soloGrupo.salon}).`
+          : `El id ${noEst} no es un estudiante de este colegio. Créalo primero en la pestaña Estudiantes.`,
+        variant: "destructive",
+      });
       return;
     }
 
@@ -2010,7 +2032,7 @@ const PanelControl = ({ embedded = false, tabFija }: { embedded?: boolean; tabFi
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Grado</Label>
-                <Select value={estGrado} onValueChange={setEstGrado}>
+                <Select value={estGrado} onValueChange={setEstGrado} disabled={!!soloGrupo}>
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar" />
                   </SelectTrigger>
@@ -2023,7 +2045,7 @@ const PanelControl = ({ embedded = false, tabFija }: { embedded?: boolean; tabFi
               </div>
               <div className="space-y-2">
                 <Label>Salón</Label>
-                <Select value={estSalon} onValueChange={setEstSalon}>
+                <Select value={estSalon} onValueChange={setEstSalon} disabled={!!soloGrupo}>
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar" />
                   </SelectTrigger>
