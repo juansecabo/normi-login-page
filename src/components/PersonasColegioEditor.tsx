@@ -395,8 +395,8 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="font-medium truncate">{p.nombres} {p.apellidos}</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm font-medium truncate">{p.nombres} {p.apellidos}</p>
+                <p className="text-xs text-muted-foreground">
                   Cédula: {p.id}
                   {p.grado ? ` · ${p.grado}${p.salon ? ` ${p.salon}` : ""}` : ""}
                   {Array.isArray(p.niveles_coordina) && p.niveles_coordina.length > 0 ? ` · Coordina: ${p.niveles_coordina.join(", ")}` : ""}
