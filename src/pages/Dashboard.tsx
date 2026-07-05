@@ -330,7 +330,7 @@ const Dashboard = () => {
               No tienes asignaturas asignadas
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="flex flex-wrap justify-center gap-4">
               {asignaturas.map((asignatura, index) => {
                 const isSelected = selectedAsignatura === asignatura;
 
@@ -343,7 +343,7 @@ const Dashboard = () => {
                       navigate("/seleccionar-grado");
                     }}
                     className={`
-                      p-6 rounded-lg border-2 text-center transition-all duration-200
+                      px-8 py-6 rounded-lg border-2 text-center transition-all duration-200
                       hover:shadow-md hover:border-primary hover:bg-primary/10
                       ${isSelected
                         ? 'border-primary bg-primary/20 shadow-md ring-2 ring-primary/30'
