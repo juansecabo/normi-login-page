@@ -111,7 +111,9 @@ const ConstruyeInstitucion = () => {
   type VistaCI = 'menu' | 'info' | 'escudo' | 'escala' | 'estructura' | 'asignaturas' | 'manual' | 'personas';
   const VISTAS: VistaCI[] = ['menu', 'info', 'escudo', 'escala', 'estructura', 'asignaturas', 'manual', 'personas'];
   const vistaUrl = searchParams.get('vista') as VistaCI | null;
-  const vista: VistaCI = vistaUrl && VISTAS.includes(vistaUrl) ? vistaUrl : 'menu';
+  // El profesor (director de grupo) solo tiene la ficha Personas — también por URL.
+  const vistaValida = (v: VistaCI) => VISTAS.includes(v) && (cargo !== "Profesor(a)" || v === 'personas');
+  const vista: VistaCI = vistaUrl && vistaValida(vistaUrl) ? vistaUrl : 'menu';
   const setVista = (v: VistaCI) => setSearchParams(v === 'menu' ? {} : { vista: v });
   const rolPersonas = searchParams.get('rol');
   const setRolPersonas = (r: string | null) => {
@@ -242,7 +244,8 @@ const ConstruyeInstitucion = () => {
               { id: "asignaturas", label: "Asignaturas", desc: "Asignaturas del colegio y plan de estudios por grado", Icon: BookOpen },
               { id: "manual", label: "Manual de Convivencia", desc: cfgColegio.manual_url ? "PDF cargado" : "Sube el PDF (opcional)", Icon: FileText },
               { id: "personas", label: "Personas", desc: "Administradores, rectores, profesores, estudiantes…", Icon: GraduationCap },
-            ].map((f) => (
+              // El profesor director de grupo solo gestiona Personas (su grupo).
+            ].filter((f) => cargo !== "Profesor(a)" || f.id === "personas").map((f) => (
               <button key={f.id} onClick={() => setVista(f.id as typeof vista)}
                 className="flex items-start gap-4 p-6 rounded-lg border text-left transition-colors bg-card hover:bg-muted cursor-pointer">
                 <f.Icon className="h-8 w-8 text-primary shrink-0" />
