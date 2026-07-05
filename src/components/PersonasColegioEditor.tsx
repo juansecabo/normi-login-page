@@ -351,7 +351,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
       )}
 
       <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
-        <h2 className="text-xl font-semibold">{labelActual} <span className="text-muted-foreground font-normal">({q ? `${listaActual.length} de ${listaDelRol.length}` : listaDelRol.length})</span></h2>
+        <h2 className="text-xl font-semibold">{labelActual} <span className="text-muted-foreground font-normal">({listaDelRol.length})</span></h2>
         {esStaff && rol !== null && cargosAgregables.includes(rol) && (
           <Button onClick={() => { reset(); setDialogAbierto(true); }} className="gap-1">
             <Plus className="w-4 h-4" /> Agregar
