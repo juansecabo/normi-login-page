@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   GraduationCap, Users, ShieldCheck, Briefcase, HeartHandshake, BookOpen,
-  Backpack, UsersRound, Plus, Check, Loader2, Search, ClipboardList, Pencil, Trash2,
+  Backpack, UsersRound, Plus, Check, Loader2, Search, ClipboardList,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -90,12 +90,6 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   }, []);
 
   const [dialogAbierto, setDialogAbierto] = useState(false);
-  // Cédula de la persona en edición (null = el pop-up está agregando).
-  const [editando, setEditando] = useState<string | null>(null);
-  const [confirmQuitar, setConfirmQuitar] = useState<any | null>(null);
-  const [quitando, setQuitando] = useState(false);
-  // Datos personales (Usuarios) solo los edita el Administrador (o SuperAdmin).
-  const esAdminUsuarios = !!colegioId || cargoSesion === "Administrador";
   // Busqueda flexible dentro del cargo (nombre, apellido o cedula; sin tildes).
   const [busqueda, setBusqueda] = useState("");
   const [cedula, setCedula] = useState("");
@@ -120,7 +114,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
 
   const reset = () => {
     setCedula(""); setNombres(""); setApellidos(""); setTelefono(""); setGenero(""); setFechaNac(""); setBusqueda("");
-    setNiveles([]); setEsDirector(false); setDirGrado(""); setDirSalon(""); setBloqueado(false); setEditando(null);
+    setNiveles([]); setEsDirector(false); setDirGrado(""); setDirSalon(""); setBloqueado(false);
   };
   // Al dejar de coincidir con una persona encontrada, limpia los datos que se
   // habían autocompletado (pero NO lo que el usuario escribió a mano).
@@ -158,7 +152,6 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   // Autocompletar MIENTRAS se escribe la cédula (con un pequeño retardo). Si la
   // persona ya existe en Usuarios, se traen sus datos y se BLOQUEAN los campos.
   useEffect(() => {
-    if (editando) return; // en edición los datos ya vienen prellenados
     const c = cedula.trim();
     if (!/^\d{3,15}$/.test(c)) { limpiarSiEstabaBloqueado(); return; }
     let vivo = true;
@@ -214,77 +207,6 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
       toast({ title: "No se pudo agregar", description: detail, variant: "destructive" });
     } finally {
       setGuardando(false);
-    }
-  };
-
-  // Abre el pop-up en modo edición con los datos de la persona prellenados.
-  const abrirEditar = async (p: any) => {
-    reset();
-    setEditando(String(p.id));
-    setCedula(String(p.id));
-    setNombres(p.nombres || "");
-    setApellidos(p.apellidos || "");
-    setNiveles(Array.isArray(p.niveles_coordina) ? p.niveles_coordina : []);
-    const dir = String(p.direccion_de_grupo || "").trim();
-    const corte = dir.lastIndexOf(" ");
-    setEsDirector(!!dir);
-    setDirGrado(dir && corte > 0 ? dir.slice(0, corte) : "");
-    setDirSalon(dir && corte > 0 ? dir.slice(corte + 1) : "");
-    setBloqueado(!esAdminUsuarios);
-    setDialogAbierto(true);
-    try {
-      const { usuario } = await apiRequest<{ usuario: any }>(`/api/institucion/usuario/${p.id}${qCid}`);
-      if (usuario) { setTelefono(usuario.numero_de_telefono || ""); setGenero(usuario.genero || ""); setFechaNac(usuario.fecha_de_nacimiento || ""); }
-    } catch { /* sin teléfono/fecha: se editan igual los extras */ }
-  };
-
-  const guardarEdicion = async () => {
-    if (rol === "Profesor(a)" && esDirector && (!dirGrado || !dirSalon)) {
-      toast({ title: "Falta el grupo", description: "Elige el grado y el salón del que es director(a).", variant: "destructive" }); return;
-    }
-    setGuardando(true);
-    try {
-      await apiRequest("/api/institucion/interno", {
-        method: "PATCH",
-        body: JSON.stringify(withCid({
-          cedula: editando, cargo: rol!,
-          ...(esAdminUsuarios ? {
-            nombres: nombres.trim(), apellidos: apellidos.trim(), telefono: telefono.trim(),
-            genero: genero || undefined, fecha_de_nacimiento: fechaNac,
-          } : {}),
-          ...(rol === "Coordinador(a)" ? { niveles_coordina: niveles } : {}),
-          ...(rol === "Profesor(a)" ? { direccion_de_grupo: esDirector && dirGrado && dirSalon ? `${dirGrado} ${dirSalon}` : "" } : {}),
-        })),
-      });
-      reset();
-      setDialogAbierto(false);
-      await onChanged?.();
-      await cargarPersonas();
-    } catch (err: any) {
-      const detail = (err?.body as any)?.detail || err?.message;
-      toast({ title: "No se pudo guardar", description: detail, variant: "destructive" });
-    } finally {
-      setGuardando(false);
-    }
-  };
-
-  // Quita ESTE cargo a la persona (si tiene otros los conserva; si era el
-  // único, sale del personal del colegio — el server hace la promoción).
-  const quitarCargo = async () => {
-    if (!confirmQuitar || !rol) return;
-    setQuitando(true);
-    try {
-      const params = new URLSearchParams({ cedula: String(confirmQuitar.id), cargo: rol });
-      if (colegioId) params.set("colegio_id", colegioId);
-      await apiRequest(`/api/institucion/interno?${params.toString()}`, { method: "DELETE" });
-      setConfirmQuitar(null);
-      await onChanged?.();
-      await cargarPersonas();
-    } catch (err: any) {
-      const detail = (err?.body as any)?.detail || err?.message;
-      toast({ title: "No se pudo quitar", description: detail, variant: "destructive" });
-    } finally {
-      setQuitando(false);
     }
   };
 
@@ -394,7 +316,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
                   {(p.nombres || "?").charAt(0).toUpperCase()}
                 </div>
               )}
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0">
                 <p className="text-sm font-medium truncate">{p.nombres} {p.apellidos}</p>
                 <p className="text-xs text-muted-foreground">
                   Cédula: {p.id}
@@ -403,16 +325,6 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
                   {p.direccion_de_grupo ? ` · Director(a) de grupo: ${p.direccion_de_grupo}` : ""}
                 </p>
               </div>
-              {esStaff && rol !== null && cargosAgregables.includes(rol) && (
-                <div className="flex items-center gap-1 shrink-0">
-                  <button onClick={() => abrirEditar(p)} className="p-2 text-muted-foreground hover:text-primary" title="Editar">
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => setConfirmQuitar(p)} className="p-2 text-muted-foreground hover:text-destructive" title="Quitar cargo">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -436,14 +348,14 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
       <Dialog open={dialogAbierto} onOpenChange={(o) => { if (!o) { setDialogAbierto(false); reset(); } }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editando ? "Editar" : "Agregar"} — {labelRol}</DialogTitle>
-            <DialogDescription>{editando ? "La cédula no se cambia desde aquí." : "Al escribir una cédula ya registrada, los datos se autocompletan."}</DialogDescription>
+            <DialogTitle>Agregar — {labelRol}</DialogTitle>
+            <DialogDescription>Al escribir una cédula ya registrada, los datos se autocompletan.</DialogDescription>
           </DialogHeader>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label className="text-sm">Cédula *</Label>
-              <Input value={cedula} onChange={(e) => setCedula(e.target.value)} placeholder="Solo números" readOnly={!!editando} className={`mt-1 ${editando ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} />
+              <Input value={cedula} onChange={(e) => setCedula(e.target.value)} placeholder="Solo números" className="mt-1" />
               {buscando && <p className="text-xs text-muted-foreground mt-1">Buscando…</p>}
             </div>
             <div><Label className="text-sm">Teléfono</Label><Input value={telefono} onChange={(e) => setTelefono(e.target.value)} readOnly={bloqueado} placeholder="57300…" className={`mt-1 ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
@@ -517,39 +429,12 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
             </div>
           )}
 
-          {bloqueado && (
-            <p className="text-xs text-muted-foreground">
-              {editando
-                ? "Los datos personales (nombres, teléfono, género, fecha) solo los edita el administrador."
-                : "Esta cédula ya está registrada en Usuarios — sus datos se toman de ahí y no se editan aquí."}
-            </p>
-          )}
+          {bloqueado && <p className="text-xs text-muted-foreground">Esta cédula ya está registrada en Usuarios — sus datos se toman de ahí y no se editan aquí.</p>}
 
           <DialogFooter>
             <Button variant="outline" onClick={() => { setDialogAbierto(false); reset(); }} disabled={guardando}>Cancelar</Button>
-            <Button onClick={editando ? guardarEdicion : agregarStaff} disabled={guardando || buscando} className="gap-2">
-              {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} {editando ? "Guardar" : "Agregar"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Confirmación de quitar cargo */}
-      <Dialog open={!!confirmQuitar} onOpenChange={(o) => { if (!o) setConfirmQuitar(null); }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Quitar cargo — {labelRol}</DialogTitle>
-            <DialogDescription className="pt-2 text-foreground">
-              ¿Quitarle el cargo de <strong>{labelRol}</strong> a{" "}
-              <strong>{confirmQuitar?.nombres} {confirmQuitar?.apellidos}</strong> (cédula {confirmQuitar?.id})?
-              <br /><br />
-              Si tiene otros cargos en el colegio, los conserva. Si este era su único cargo, saldrá del personal de la institución.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmQuitar(null)} disabled={quitando}>Cancelar</Button>
-            <Button variant="destructive" onClick={quitarCargo} disabled={quitando} className="gap-2">
-              {quitando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Quitar cargo
+            <Button onClick={agregarStaff} disabled={guardando || buscando} className="gap-2">
+              {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Agregar
             </Button>
           </DialogFooter>
         </DialogContent>
