@@ -315,8 +315,9 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Sección de Asignaturas */}
-        <div className="bg-card rounded-lg shadow-soft p-8 max-w-7xl mx-auto mt-8">
+        {/* Sección de Asignaturas: el cuadro se ajusta al ancho de sus fichas
+            (w-fit), no al del cuadro de abajo. */}
+        <div className="bg-card rounded-lg shadow-soft p-8 w-fit max-w-7xl mx-auto mt-8">
           <h3 className="text-xl font-bold text-foreground mb-6 text-center">
             Elige tu asignatura:
           </h3>
@@ -330,7 +331,10 @@ const Dashboard = () => {
               No tienes asignaturas asignadas
             </div>
           ) : (
-            <div className="flex flex-wrap justify-center gap-4">
+            // Todas las fichas con el MISMO ancho (columnas 1fr sobre un grid
+            // ajustado al contenido = el ancho de la más larga). Sin columnas
+            // de más para que no quede espacio vacío.
+            <div className={`grid gap-4 grid-cols-1 ${asignaturas.length >= 2 ? "sm:grid-cols-2" : ""} ${asignaturas.length >= 3 ? "lg:grid-cols-3" : ""}`}>
               {asignaturas.map((asignatura, index) => {
                 const isSelected = selectedAsignatura === asignatura;
 
