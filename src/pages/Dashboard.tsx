@@ -315,10 +315,9 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Sección de Asignaturas: fichas de ancho FIJO e igual para todas,
-            máximo 3 por fila (4+ asignaturas → fila nueva); el cuadro blanco
-            se ajusta a las fichas (más angosto que el cuadro de abajo). */}
-        <div className="bg-card rounded-lg shadow-soft p-8 w-fit max-w-full mx-auto mt-8">
+        {/* Sección de Asignaturas: el cuadro mide igual que el de abajo; las
+            fichas van centradas con el ancho de la más larga (no se estiran). */}
+        <div className="bg-card rounded-lg shadow-soft p-8 max-w-7xl mx-auto mt-8">
           <h3 className="text-xl font-bold text-foreground mb-6 text-center">
             Elige tu asignatura:
           </h3>
@@ -348,7 +347,7 @@ const Dashboard = () => {
                       navigate("/seleccionar-grado");
                     }}
                     className={`
-                      w-72 max-w-full px-4 py-6 rounded-lg border-2 text-center transition-all duration-200
+                      px-8 py-6 rounded-lg border-2 text-center transition-all duration-200
                       hover:shadow-md hover:border-primary hover:bg-primary/10
                       ${isSelected
                         ? 'border-primary bg-primary/20 shadow-md ring-2 ring-primary/30'
