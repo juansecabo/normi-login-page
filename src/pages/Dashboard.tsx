@@ -316,9 +316,10 @@ const Dashboard = () => {
         </div>
 
         {/* Sección de Asignaturas: fichas de ancho FIJO e igual para todas,
-            máximo 3 por fila (4+ asignaturas → fila nueva); el cuadro blanco
-            se ajusta a las fichas (más angosto que el cuadro de abajo). */}
-        <div className="bg-card rounded-lg shadow-soft p-8 w-fit max-w-full mx-auto mt-8">
+            máximo 3 por fila (4+ asignaturas → fila nueva). El cuadro blanco
+            SIEMPRE mide lo de 3 fichas (18rem×3 + 2 gaps + padding = 60rem),
+            aunque haya menos — las fichas quedan centradas. */}
+        <div className="bg-card rounded-lg shadow-soft p-8 w-[60rem] max-w-full mx-auto mt-8">
           <h3 className="text-xl font-bold text-foreground mb-6 text-center">
             Elige tu asignatura:
           </h3>
