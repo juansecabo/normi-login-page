@@ -144,8 +144,15 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   useEffect(() => {
     apiRequest<{ grados: any[]; salones: any[] }>(`/api/institucion/estructura${qCid}`)
       .then((r) => {
-        setGradosCol((r.grados || []).sort((a: any, b: any) => rankGrado(a.grado) - rankGrado(b.grado)));
-        setSalonesCol(r.salones || []);
+        const salones = r.salones || [];
+        // Colegios que importaron su estructura por salones (Normal,
+        // Pestalozziano) tienen Grados_Colegio vacía pero cada salón trae su
+        // grado — los grados se derivan de ahí.
+        const grados = (r.grados && r.grados.length > 0)
+          ? r.grados
+          : Array.from(new Set(salones.map((s: any) => String(s.grado)))).map((g) => ({ grado: g }));
+        setGradosCol(grados.sort((a: any, b: any) => rankGrado(a.grado) - rankGrado(b.grado)));
+        setSalonesCol(salones);
       })
       .catch(() => { /* sin estructura aún: el selector sale vacío */ });
     // eslint-disable-next-line react-hooks/exhaustive-deps
