@@ -722,12 +722,18 @@ const EnviarComunicadoAdmin = () => {
       const body = (error as { body?: { error?: string; detail?: string } })?.body;
       const bodyStr = body ? `${body.error || ""} ${body.detail || ""}` : "";
       const sinDestinatarios = /no[_ ]destinatarios|no se encontraron destinatarios/i.test(`${errorMsg} ${bodyStr}`);
+      const sinTelefonos = body?.error === "sin_telefonos";
+      // SIEMPRE variant destructive: el Toaster silencia los toasts de info y
+      // solo muestra pop-up los destructivos. Con detail específico sale el
+      // pop-up de validación (no el genérico "Error en el sistema").
       toast({
-        title: sinDestinatarios ? "Sin destinatarios" : "Error",
-        description: sinDestinatarios
+        title: sinTelefonos ? "Sin teléfonos registrados" : sinDestinatarios ? "Sin destinatarios" : "Error",
+        description: sinTelefonos
+          ? (body?.detail || "Ninguna de las personas destinatarias tiene número de teléfono registrado.")
+          : sinDestinatarios
           ? "Ningún usuario coincide con los filtros seleccionados. Revisa los destinatarios."
-          : errorMsg,
-        variant: sinDestinatarios ? "default" : "destructive",
+          : (body?.detail || errorMsg),
+        variant: "destructive",
       });
     } finally {
       setEnviando(false);
