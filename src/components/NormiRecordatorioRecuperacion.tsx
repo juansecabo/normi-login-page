@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession } from "@/hooks/useSession";
-import normiImg from "@/assets/normi-placeholder.webp";
+import normiImg from "@/assets/normi-recuperacion.webp";
 
 /**
  * Normi flotante que recuerda configurar un método de recuperación de
