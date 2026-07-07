@@ -158,7 +158,7 @@ const RegistroAcudiente = () => {
               </div>
               <div>
                 <Label className="text-sm">Fecha de nacimiento *</Label>
-                <Input type="date" value={fechaNac} onChange={(e) => setFechaNac(e.target.value)} className="mt-1" />
+                <Input type="date" value={fechaNac} onChange={(e) => setFechaNac(e.target.value)} min="1920-01-01" max={new Date().toISOString().slice(0, 10)} className="mt-1" />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
