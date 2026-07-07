@@ -9,6 +9,7 @@ import { apiRequest } from "@/lib/apiClient";
 import { getSession } from "@/hooks/useSession";
 import { rankGrado } from "@/utils/grados";
 import { Check, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import PhoneInput from "@/components/PhoneInput";
 import imgTablero from "@/assets/salon/tablero.webp";
 import imgEscritorio from "@/assets/salon/escritorio.webp";
 import imgProfesor from "@/assets/salon/profesor.webp";
@@ -144,9 +145,11 @@ const ArmarSalon = () => {
   const [acuGenero, setAcuGenero] = useState("");
   const [acuBloqueado, setAcuBloqueado] = useState(false);
   const [acuGuardando, setAcuGuardando] = useState(false);
+  // Cédula del acudiente en edición (null = el mini-form está agregando).
+  const [editandoAcu, setEditandoAcu] = useState<string | null>(null);
   const acuBloqueadoRef = useRef(false);
   useEffect(() => { acuBloqueadoRef.current = acuBloqueado; }, [acuBloqueado]);
-  const resetFormAcu = () => { setAcuCedula(""); setAcuNombres(""); setAcuApellidos(""); setAcuTelefono(""); setAcuGenero(""); setAcuBloqueado(false); setMostrarFormAcu(false); };
+  const resetFormAcu = () => { setAcuCedula(""); setAcuNombres(""); setAcuApellidos(""); setAcuTelefono(""); setAcuGenero(""); setAcuBloqueado(false); setMostrarFormAcu(false); setEditandoAcu(null); };
   const bloqueadoRef = useRef(false);
   useEffect(() => { bloqueadoRef.current = bloqueado; }, [bloqueado]);
 
@@ -260,6 +263,7 @@ const ArmarSalon = () => {
 
   // Autocompletar la cédula del acudiente nuevo.
   useEffect(() => {
+    if (editandoAcu) return; // en edición los datos ya vienen prellenados
     const c = acuCedula.trim();
     if (!/^\d{3,15}$/.test(c)) {
       if (acuBloqueadoRef.current) { setAcuNombres(""); setAcuApellidos(""); setAcuTelefono(""); setAcuGenero(""); }
@@ -282,6 +286,41 @@ const ArmarSalon = () => {
     return () => { vivo = false; clearTimeout(t); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [acuCedula]);
+
+  // Editar un acudiente existente (datos personales: solo el admin, inmutabilidad).
+  const abrirEditarAcu = async (a: Persona) => {
+    resetFormAcu();
+    setEditandoAcu(a.id);
+    setAcuCedula(a.id);
+    setAcuNombres(a.nombres); setAcuApellidos(a.apellidos); setAcuGenero(a.genero || "");
+    setAcuBloqueado(!esAdmin);
+    setMostrarFormAcu(true);
+    const { data } = await supabase.from("Usuarios").select("numero_de_telefono").eq("id", a.id).maybeSingle();
+    if (data) setAcuTelefono((data as any).numero_de_telefono || "");
+  };
+
+  const guardarAcudienteEditado = async () => {
+    if (!editandoAcu || !esAdmin) return;
+    if (!acuNombres.trim() || !acuApellidos.trim()) { toast({ title: "Faltan nombres o apellidos del acudiente", variant: "destructive" }); return; }
+    if (acuGenero !== "M" && acuGenero !== "F") { toast({ title: "Falta el género del acudiente", variant: "destructive" }); return; }
+    setAcuGuardando(true);
+    try {
+      const { error } = await supabase.from("Usuarios").update({
+        nombres: acuNombres.trim(), apellidos: acuApellidos.trim(), genero: acuGenero,
+        numero_de_telefono: acuTelefono.trim() || null,
+      }).eq("id", editandoAcu);
+      if (error) {
+        const msg = (error as any).code === "23505" ? "Ese teléfono ya pertenece a otra persona." : error.message;
+        toast({ title: "No se pudo guardar", description: msg, variant: "destructive" });
+        return;
+      }
+      const est = editando;
+      resetFormAcu();
+      if (est) await cargarAcudientesDe(est);
+    } finally {
+      setAcuGuardando(false);
+    }
+  };
 
   // Vincular (o crear) un acudiente para el estudiante en edición. Mismo
   // modelo del Panel de Control: Usuarios global + slots acudidoN en Acudientes.
@@ -480,7 +519,7 @@ const ArmarSalon = () => {
               <Input value={cedula} onChange={(e) => setCedula(e.target.value)} placeholder="Solo números" readOnly={!!editando} className={`mt-1 ${editando ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} />
               {buscando && <p className="text-xs text-muted-foreground mt-1">Buscando…</p>}
             </div>
-            <div><Label className="text-sm">Teléfono</Label><Input value={telefono} onChange={(e) => setTelefono(e.target.value)} readOnly={bloqueado} placeholder="57300…" className={`mt-1 ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
+            <div><Label className="text-sm">Teléfono</Label><div className="mt-1"><PhoneInput value={telefono} onChange={setTelefono} disabled={bloqueado} placeholder="3001234567" /></div></div>
             <div><Label className="text-sm">Apellidos *</Label><Input value={apellidos} onChange={(e) => setApellidos(e.target.value)} readOnly={bloqueado} className={`mt-1 ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
             <div><Label className="text-sm">Nombres *</Label><Input value={nombres} onChange={(e) => setNombres(e.target.value)} readOnly={bloqueado} className={`mt-1 ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
             <div>
@@ -530,7 +569,12 @@ const ArmarSalon = () => {
               ) : (
                 <ul className="text-sm mb-2 space-y-0.5">
                   {acudientesEst.map((a) => (
-                    <li key={a.id}>• {a.apellidos} {a.nombres} <span className="text-muted-foreground">(cédula {a.id})</span></li>
+                    <li key={a.id} className="flex items-center gap-1">
+                      <span>• {a.apellidos} {a.nombres} <span className="text-muted-foreground">(cédula {a.id})</span></span>
+                      <button onClick={() => abrirEditarAcu(a)} className="p-1 text-muted-foreground hover:text-primary" title="Editar acudiente">
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                    </li>
                   ))}
                 </ul>
               )}
@@ -543,8 +587,8 @@ const ArmarSalon = () => {
               ) : (
                 <div className="border rounded-lg p-3 space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div><Label className="text-sm">Cédula *</Label><Input value={acuCedula} onChange={(e) => setAcuCedula(e.target.value)} placeholder="Solo números" className="mt-1" /></div>
-                    <div><Label className="text-sm">Teléfono</Label><Input value={acuTelefono} onChange={(e) => setAcuTelefono(e.target.value)} readOnly={acuBloqueado} placeholder="57300…" className={`mt-1 ${acuBloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
+                    <div><Label className="text-sm">Cédula *</Label><Input value={acuCedula} onChange={(e) => setAcuCedula(e.target.value)} placeholder="Solo números" readOnly={!!editandoAcu} className={`mt-1 ${editandoAcu ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
+                    <div><Label className="text-sm">Teléfono</Label><div className="mt-1"><PhoneInput value={acuTelefono} onChange={setAcuTelefono} disabled={acuBloqueado} placeholder="3001234567" /></div></div>
                     <div><Label className="text-sm">Apellidos *</Label><Input value={acuApellidos} onChange={(e) => setAcuApellidos(e.target.value)} readOnly={acuBloqueado} className={`mt-1 ${acuBloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
                     <div><Label className="text-sm">Nombres *</Label><Input value={acuNombres} onChange={(e) => setAcuNombres(e.target.value)} readOnly={acuBloqueado} className={`mt-1 ${acuBloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
                     <div>
@@ -556,12 +600,20 @@ const ArmarSalon = () => {
                       </select>
                     </div>
                   </div>
-                  {acuBloqueado && <p className="text-xs text-muted-foreground">Esta cédula ya está registrada — sus datos se toman de Usuarios.</p>}
+                  {acuBloqueado && (
+                    <p className="text-xs text-muted-foreground">
+                      {editandoAcu
+                        ? "Los datos personales del acudiente solo los edita el administrador."
+                        : "Esta cédula ya está registrada — sus datos se toman de Usuarios."}
+                    </p>
+                  )}
                   <div className="flex justify-end gap-2">
                     <Button variant="outline" size="sm" onClick={resetFormAcu} disabled={acuGuardando}>Cancelar</Button>
-                    <Button size="sm" onClick={agregarAcudiente} disabled={acuGuardando} className="gap-1">
-                      {acuGuardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Agregar acudiente
-                    </Button>
+                    {(!editandoAcu || esAdmin) && (
+                      <Button size="sm" onClick={editandoAcu ? guardarAcudienteEditado : agregarAcudiente} disabled={acuGuardando} className="gap-1">
+                        {acuGuardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} {editandoAcu ? "Guardar" : "Agregar acudiente"}
+                      </Button>
+                    )}
                   </div>
                 </div>
               )}
