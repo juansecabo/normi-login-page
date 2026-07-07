@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/apiClient";
 import PhoneInput from "@/components/PhoneInput";
+import { capitalizarNombre } from "@/utils/texto";
 import { ArrowLeft, Check, Eye, EyeOff, Loader2, Plus, Trash2 } from "lucide-react";
 
 /**
@@ -137,8 +138,8 @@ const RegistroAcudiente = () => {
                 <Input value={cedula} onChange={(e) => setCedula(e.target.value)} inputMode="numeric" placeholder="Solo números" autoComplete="off" className="mt-1" />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div><Label className="text-sm">Apellidos *</Label><Input value={apellidos} onChange={(e) => setApellidos(e.target.value)} className="mt-1" /></div>
-                <div><Label className="text-sm">Nombres *</Label><Input value={nombres} onChange={(e) => setNombres(e.target.value)} className="mt-1" /></div>
+                <div><Label className="text-sm">Apellidos *</Label><Input value={apellidos} onChange={(e) => setApellidos(capitalizarNombre(e.target.value))} className="mt-1" /></div>
+                <div><Label className="text-sm">Nombres *</Label><Input value={nombres} onChange={(e) => setNombres(capitalizarNombre(e.target.value))} className="mt-1" /></div>
               </div>
               <div>
                 <Label className="text-sm">Celular (WhatsApp) *</Label>

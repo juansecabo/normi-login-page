@@ -10,6 +10,7 @@ import { getSession } from "@/hooks/useSession";
 import { rankGrado } from "@/utils/grados";
 import { Check, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import PhoneInput from "@/components/PhoneInput";
+import { capitalizarNombre } from "@/utils/texto";
 import imgTablero from "@/assets/salon/tablero.webp";
 import imgEscritorio from "@/assets/salon/escritorio.webp";
 import imgProfesor from "@/assets/salon/profesor.webp";
@@ -520,8 +521,8 @@ const ArmarSalon = () => {
               {buscando && <p className="text-xs text-muted-foreground mt-1">Buscando…</p>}
             </div>
             <div className="sm:col-span-2"><Label className="text-sm">Teléfono</Label><div className="mt-1"><PhoneInput value={telefono} onChange={setTelefono} disabled={bloqueado} placeholder="3001234567" /></div></div>
-            <div><Label className="text-sm">Apellidos *</Label><Input value={apellidos} onChange={(e) => setApellidos(e.target.value)} readOnly={bloqueado} className={`mt-1 ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
-            <div><Label className="text-sm">Nombres *</Label><Input value={nombres} onChange={(e) => setNombres(e.target.value)} readOnly={bloqueado} className={`mt-1 ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
+            <div><Label className="text-sm">Apellidos *</Label><Input value={apellidos} onChange={(e) => setApellidos(capitalizarNombre(e.target.value))} readOnly={bloqueado} className={`mt-1 ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
+            <div><Label className="text-sm">Nombres *</Label><Input value={nombres} onChange={(e) => setNombres(capitalizarNombre(e.target.value))} readOnly={bloqueado} className={`mt-1 ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
             <div>
               <Label className="text-sm">Género *</Label>
               <select value={genero} onChange={(e) => setGenero(e.target.value)} disabled={bloqueado} className={`mt-1 flex h-10 w-full rounded-md border border-input px-3 py-2 text-sm ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : "bg-background"}`}>
@@ -589,8 +590,8 @@ const ArmarSalon = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div><Label className="text-sm">Cédula *</Label><Input value={acuCedula} onChange={(e) => setAcuCedula(e.target.value)} placeholder="Solo números" readOnly={!!editandoAcu} className={`mt-1 ${editandoAcu ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
                     <div className="sm:col-span-2"><Label className="text-sm">Teléfono</Label><div className="mt-1"><PhoneInput value={acuTelefono} onChange={setAcuTelefono} disabled={acuBloqueado} placeholder="3001234567" /></div></div>
-                    <div><Label className="text-sm">Apellidos *</Label><Input value={acuApellidos} onChange={(e) => setAcuApellidos(e.target.value)} readOnly={acuBloqueado} className={`mt-1 ${acuBloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
-                    <div><Label className="text-sm">Nombres *</Label><Input value={acuNombres} onChange={(e) => setAcuNombres(e.target.value)} readOnly={acuBloqueado} className={`mt-1 ${acuBloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
+                    <div><Label className="text-sm">Apellidos *</Label><Input value={acuApellidos} onChange={(e) => setAcuApellidos(capitalizarNombre(e.target.value))} readOnly={acuBloqueado} className={`mt-1 ${acuBloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
+                    <div><Label className="text-sm">Nombres *</Label><Input value={acuNombres} onChange={(e) => setAcuNombres(capitalizarNombre(e.target.value))} readOnly={acuBloqueado} className={`mt-1 ${acuBloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
                     <div>
                       <Label className="text-sm">Género *</Label>
                       <select value={acuGenero} onChange={(e) => setAcuGenero(e.target.value)} disabled={acuBloqueado} className={`mt-1 flex h-10 w-full rounded-md border border-input px-3 py-2 text-sm ${acuBloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : "bg-background"}`}>
