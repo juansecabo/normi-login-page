@@ -108,6 +108,7 @@ const PhoneInput = ({ value, onChange, disabled, placeholder }: PhoneInputProps)
         onChange={(e) => setNumero(e.target.value)}
         placeholder={placeholder || "Número"}
         readOnly={disabled}
+        autoComplete="off"
         className={disabled ? "bg-muted" : ""}
       />
     </div>
