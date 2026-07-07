@@ -16,6 +16,7 @@ import SeleccionarSalon from "./pages/SeleccionarSalon";
 import ActividadesCalendario from "./pages/ActividadesCalendario";
 import NormiExaminadora from "./pages/NormiExaminadora";
 import NotFound from "./pages/NotFound";
+import NormiRecordatorioRecuperacion from "./components/NormiRecordatorioRecuperacion";
 
 // Rutas para Rector/Coordinador
 import SeleccionarGradoRector from "./pages/rector/SeleccionarGradoRector";
@@ -119,6 +120,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <ScrollToTop />
+        <NormiRecordatorioRecuperacion />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/dashboard" element={<Dashboard />} />
