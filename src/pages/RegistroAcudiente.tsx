@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -39,6 +39,28 @@ const RegistroAcudiente = () => {
   const [contrasena, setContrasena] = useState("");
   const [confirmar, setConfirmar] = useState("");
   const [verContrasena, setVerContrasena] = useState(false);
+  // La cédula ya existe en Usuarios → se usan sus datos guardados y NO se
+  // piden (ni se muestran: esta página es pública).
+  const [usuarioExiste, setUsuarioExiste] = useState(false);
+  const [verificandoCedula, setVerificandoCedula] = useState(false);
+
+  useEffect(() => {
+    const c = soloDigitos(cedula);
+    if (!/^\d{3,15}$/.test(c)) { setUsuarioExiste(false); return; }
+    let vivo = true;
+    const t = setTimeout(async () => {
+      setVerificandoCedula(true);
+      try {
+        const r = await apiRequest<{ existe: boolean }>("/api/registro/existe-usuario", {
+          method: "POST", body: JSON.stringify({ cedula: c }),
+        });
+        if (vivo) setUsuarioExiste(!!r.existe);
+      } catch { if (vivo) setUsuarioExiste(false); }
+      finally { if (vivo) setVerificandoCedula(false); }
+    }, 450);
+    return () => { vivo = false; clearTimeout(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cedula]);
 
   // Paso 2 — acudidos
   const [acudidos, setAcudidos] = useState<Acudido[]>([]);
@@ -53,6 +75,7 @@ const RegistroAcudiente = () => {
 
   const continuarPaso1 = () => {
     if (!/^\d{3,15}$/.test(soloDigitos(cedula))) { err("Cédula inválida", "El número de identidad debe tener entre 3 y 15 dígitos (el tuyo tiene " + soloDigitos(cedula).length + ")."); return; }
+    if (usuarioExiste) { setPaso(2); return; } // sus datos ya están en el sistema
     if (!apellidos.trim() || !nombres.trim()) { err("Faltan tus apellidos o nombres"); return; }
     if (soloDigitos(telefono).length < 10) { err("Teléfono inválido", "Escribe tu número de celular (es donde recibirás los comunicados del colegio)."); return; }
     if (genero !== "M" && genero !== "F") { err("Falta el género"); return; }
@@ -138,7 +161,17 @@ const RegistroAcudiente = () => {
               <div>
                 <Label className="text-sm">Tu número de identidad *</Label>
                 <Input value={cedula} onChange={(e) => setCedula(soloDigitos(e.target.value))} inputMode="numeric" placeholder="Solo números" autoComplete="off" className="mt-1" />
+                {verificandoCedula && <p className="text-xs text-muted-foreground mt-1">Verificando…</p>}
               </div>
+
+              {/* Cédula ya registrada: sus datos se usan tal cual y, por
+                  privacidad, NO se muestran ni se piden. */}
+              {usuarioExiste ? (
+                <div className="border border-primary/30 bg-primary/5 rounded-lg p-4 text-sm space-y-1">
+                  <p className="font-medium text-primary">✓ Esta cédula ya está registrada en Notas Normi.</p>
+                  <p className="text-muted-foreground">Usaremos los datos que ya tenemos (por seguridad no se muestran aquí) y tu contraseña sigue siendo la de siempre. Solo falta indicar tus estudiantes a cargo.</p>
+                </div>
+              ) : (<>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div><Label className="text-sm">Apellidos *</Label><Input value={apellidos} onChange={(e) => setApellidos(capitalizarNombre(e.target.value))} className="mt-1" /></div>
                 <div><Label className="text-sm">Nombres *</Label><Input value={nombres} onChange={(e) => setNombres(capitalizarNombre(e.target.value))} className="mt-1" /></div>
@@ -180,9 +213,10 @@ const RegistroAcudiente = () => {
                   </div>
                 </div>
               </div>
+              </>)}
               <div className="flex justify-between pt-2">
                 <Button variant="outline" onClick={() => navigate("/")} className="gap-1"><ArrowLeft className="w-4 h-4" /> Volver</Button>
-                <Button onClick={continuarPaso1}>Continuar</Button>
+                <Button onClick={continuarPaso1} disabled={verificandoCedula}>Continuar</Button>
               </div>
             </>
           ) : paso === 2 ? (
