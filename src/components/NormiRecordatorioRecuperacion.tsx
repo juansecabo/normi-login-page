@@ -19,6 +19,7 @@ const NormiRecordatorioRecuperacion = () => {
   const [sinMetodo, setSinMetodo] = useState(false);
 
   const enPerfil = location.pathname.startsWith("/perfil");
+  const esDashboard = location.pathname.startsWith("/dashboard");
 
   useEffect(() => {
     const s = getSession();
@@ -41,7 +42,7 @@ const NormiRecordatorioRecuperacion = () => {
   return (
     <button
       onClick={() => navigate("/perfil?seccion=recuperacion")}
-      className="fixed right-3 bottom-3 z-50 flex flex-col items-end gap-1 cursor-pointer text-left"
+      className={`fixed right-3 z-50 flex flex-col items-end gap-1 cursor-pointer text-left ${esDashboard ? "top-20" : "bottom-3"}`}
       title="Configurar recuperación de contraseña"
     >
       <span className="relative bg-card border border-border rounded-xl shadow-lg p-3 text-xs leading-snug max-w-[210px]">
