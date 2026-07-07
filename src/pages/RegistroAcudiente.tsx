@@ -166,7 +166,12 @@ const RegistroAcudiente = () => {
                 </div>
                 <div>
                   <Label className="text-sm">Confirmar contraseña *</Label>
-                  <Input type={verContrasena ? "text" : "password"} value={confirmar} onChange={(e) => setConfirmar(e.target.value)} autoComplete="new-password" className="mt-1" />
+                  <div className="relative mt-1">
+                    <Input type={verContrasena ? "text" : "password"} value={confirmar} onChange={(e) => setConfirmar(e.target.value)} autoComplete="new-password" className="pr-10" />
+                    <button type="button" onClick={() => setVerContrasena(!verContrasena)} tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                      {verContrasena ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
               </div>
               <div className="flex justify-between pt-2">
