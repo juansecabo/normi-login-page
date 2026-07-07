@@ -517,7 +517,7 @@ const ArmarSalon = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label className="text-sm">Cédula / ID *</Label>
-              <Input value={cedula} onChange={(e) => setCedula(e.target.value)} placeholder="Solo números" readOnly={!!editando} className={`mt-1 ${editando ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} />
+              <Input value={cedula} onChange={(e) => setCedula(soloDigitos(e.target.value))} placeholder="Solo números" readOnly={!!editando} className={`mt-1 ${editando ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} />
               {buscando && <p className="text-xs text-muted-foreground mt-1">Buscando…</p>}
             </div>
             <div className="sm:col-span-2"><Label className="text-sm">Teléfono</Label><div className="mt-1"><PhoneInput value={telefono} onChange={setTelefono} disabled={bloqueado} placeholder="3001234567" /></div></div>
@@ -588,7 +588,7 @@ const ArmarSalon = () => {
               ) : (
                 <div className="border rounded-lg p-3 space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div><Label className="text-sm">Cédula *</Label><Input value={acuCedula} onChange={(e) => setAcuCedula(e.target.value)} placeholder="Solo números" readOnly={!!editandoAcu} className={`mt-1 ${editandoAcu ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
+                    <div><Label className="text-sm">Cédula *</Label><Input value={acuCedula} onChange={(e) => setAcuCedula(soloDigitos(e.target.value))} placeholder="Solo números" readOnly={!!editandoAcu} className={`mt-1 ${editandoAcu ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
                     <div className="sm:col-span-2"><Label className="text-sm">Teléfono</Label><div className="mt-1"><PhoneInput value={acuTelefono} onChange={setAcuTelefono} disabled={acuBloqueado} placeholder="3001234567" /></div></div>
                     <div><Label className="text-sm">Apellidos *</Label><Input value={acuApellidos} onChange={(e) => setAcuApellidos(capitalizarNombre(e.target.value))} readOnly={acuBloqueado} className={`mt-1 ${acuBloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
                     <div><Label className="text-sm">Nombres *</Label><Input value={acuNombres} onChange={(e) => setAcuNombres(capitalizarNombre(e.target.value))} readOnly={acuBloqueado} className={`mt-1 ${acuBloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>

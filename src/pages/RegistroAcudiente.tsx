@@ -135,7 +135,7 @@ const RegistroAcudiente = () => {
             <>
               <div>
                 <Label className="text-sm">Tu número de identidad *</Label>
-                <Input value={cedula} onChange={(e) => setCedula(e.target.value)} inputMode="numeric" placeholder="Solo números" autoComplete="off" className="mt-1" />
+                <Input value={cedula} onChange={(e) => setCedula(soloDigitos(e.target.value))} inputMode="numeric" placeholder="Solo números" autoComplete="off" className="mt-1" />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div><Label className="text-sm">Apellidos *</Label><Input value={apellidos} onChange={(e) => setApellidos(capitalizarNombre(e.target.value))} className="mt-1" /></div>
@@ -195,7 +195,7 @@ const RegistroAcudiente = () => {
               ))}
               {acudidos.length < 4 && (
                 <div className="flex gap-2">
-                  <Input value={cedAcudido} onChange={(e) => setCedAcudido(e.target.value)} inputMode="numeric" placeholder="Documento del estudiante" onKeyDown={(e) => { if (e.key === "Enter") agregarAcudido(); }} />
+                  <Input value={cedAcudido} onChange={(e) => setCedAcudido(soloDigitos(e.target.value))} inputMode="numeric" placeholder="Documento del estudiante" onKeyDown={(e) => { if (e.key === "Enter") agregarAcudido(); }} />
                   <Button onClick={agregarAcudido} disabled={validando} variant="outline" className="gap-1 shrink-0">
                     {validando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} Agregar
                   </Button>

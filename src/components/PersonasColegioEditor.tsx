@@ -452,7 +452,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label className="text-sm">Cédula *</Label>
-              <Input value={cedula} onChange={(e) => setCedula(e.target.value)} placeholder="Solo números" readOnly={!!editando} className={`mt-1 ${editando ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} />
+              <Input value={cedula} onChange={(e) => setCedula(e.target.value.replace(/\D/g, ""))} placeholder="Solo números" readOnly={!!editando} className={`mt-1 ${editando ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} />
               {buscando && <p className="text-xs text-muted-foreground mt-1">Buscando…</p>}
             </div>
             <div className="sm:col-span-2"><Label className="text-sm">Teléfono</Label><div className="mt-1"><PhoneInput value={telefono} onChange={setTelefono} disabled={bloqueado} placeholder="3001234567" /></div></div>
