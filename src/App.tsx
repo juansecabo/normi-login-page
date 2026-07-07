@@ -17,6 +17,7 @@ import ActividadesCalendario from "./pages/ActividadesCalendario";
 import NormiExaminadora from "./pages/NormiExaminadora";
 import NotFound from "./pages/NotFound";
 import NormiRecordatorioRecuperacion from "./components/NormiRecordatorioRecuperacion";
+import RegistroAcudiente from "./pages/RegistroAcudiente";
 
 // Rutas para Rector/Coordinador
 import SeleccionarGradoRector from "./pages/rector/SeleccionarGradoRector";
@@ -123,6 +124,7 @@ const App = () => (
         <NormiRecordatorioRecuperacion />
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/registro-acudiente" element={<RegistroAcudiente />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard-plataforma" element={<DashboardPlataforma />} />
           <Route path="/dashboard-rector" element={<DashboardRector />} />

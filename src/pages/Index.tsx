@@ -393,6 +393,13 @@ const Index = () => {
                 </div>
               )}
             </div>
+
+            {/* Auto-registro de acudientes (sucesor del registro viejo de Vercel) */}
+            <div className="text-center">
+              <button type="button" onClick={() => navigate("/registro-acudiente")} className="text-sm text-primary hover:underline">
+                Soy acudiente y quiero registrarme
+              </button>
+            </div>
           </form>
           )}
 
