@@ -30,8 +30,13 @@ export function Toaster() {
 
       const title = typeof t.title === "string" ? t.title : "";
       const description = typeof t.description === "string" ? t.description : "";
+      // Genérico = no hay NINGÚN texto útil (ni título específico ni
+      // descripción). Un toast con solo título tipo "Las contraseñas no
+      // coinciden" es una VALIDACIÓN y debe mostrarse tal cual, no como
+      // "Error en el sistema".
+      const tituloUtil = !!title.trim() && !/^error\s*\d*$/i.test(title.trim());
       const esGenerico =
-        !description ||
+        (!description && !tituloUtil) ||
         /^api\s*\d+$/i.test(description.trim()) ||
         /^error\s*\d*$/i.test(description.trim()) ||
         /failed to fetch/i.test(description);

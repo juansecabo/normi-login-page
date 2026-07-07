@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/apiClient";
 import PhoneInput from "@/components/PhoneInput";
-import { ArrowLeft, Check, Loader2, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, Eye, EyeOff, Loader2, Plus, Trash2 } from "lucide-react";
 
 /**
  * Auto-registro de acudientes — "Soy acudiente y quiero registrarme" (login).
@@ -36,6 +36,7 @@ const RegistroAcudiente = () => {
   const [genero, setGenero] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [confirmar, setConfirmar] = useState("");
+  const [verContrasena, setVerContrasena] = useState(false);
 
   // Paso 2 — acudidos
   const [acudidos, setAcudidos] = useState<Acudido[]>([]);
@@ -153,8 +154,19 @@ const RegistroAcudiente = () => {
                 </select>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div><Label className="text-sm">Contraseña *</Label><Input type="password" value={contrasena} onChange={(e) => setContrasena(e.target.value)} autoComplete="new-password" className="mt-1" /></div>
-                <div><Label className="text-sm">Confirmar contraseña *</Label><Input type="password" value={confirmar} onChange={(e) => setConfirmar(e.target.value)} autoComplete="new-password" className="mt-1" /></div>
+                <div>
+                  <Label className="text-sm">Contraseña *</Label>
+                  <div className="relative mt-1">
+                    <Input type={verContrasena ? "text" : "password"} value={contrasena} onChange={(e) => setContrasena(e.target.value)} autoComplete="new-password" className="pr-10" />
+                    <button type="button" onClick={() => setVerContrasena(!verContrasena)} tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                      {verContrasena ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm">Confirmar contraseña *</Label>
+                  <Input type={verContrasena ? "text" : "password"} value={confirmar} onChange={(e) => setConfirmar(e.target.value)} autoComplete="new-password" className="mt-1" />
+                </div>
               </div>
               <div className="flex justify-between pt-2">
                 <Button variant="outline" onClick={() => navigate("/")} className="gap-1"><ArrowLeft className="w-4 h-4" /> Volver</Button>
