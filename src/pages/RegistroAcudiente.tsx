@@ -51,7 +51,7 @@ const RegistroAcudiente = () => {
   const err = (title: string, description?: string) => toast({ title, description, variant: "destructive" });
 
   const continuarPaso1 = () => {
-    if (!/^\d{3,15}$/.test(soloDigitos(cedula))) { err("Cédula inválida", "El número de identidad debe tener entre 3 y 15 dígitos (el tuyo tiene " + soloDigitos(cedula).length + ")."); return; }
+    if (!/^\d{3,15}$/.test(soloDigitos(cedula))) { err("Cédula inválida", "Escribe tu número de identidad (solo números)."); return; }
     if (!apellidos.trim() || !nombres.trim()) { err("Faltan tus apellidos o nombres"); return; }
     if (soloDigitos(telefono).length < 10) { err("Teléfono inválido", "Escribe tu número de celular (es donde recibirás los comunicados del colegio)."); return; }
     if (genero !== "M" && genero !== "F") { err("Falta el género"); return; }
@@ -62,7 +62,7 @@ const RegistroAcudiente = () => {
 
   const agregarAcudido = async () => {
     const ced = soloDigitos(cedAcudido);
-    if (!/^\d{3,15}$/.test(ced)) { err("Documento inválido", "El documento del estudiante debe tener entre 3 y 15 dígitos."); return; }
+    if (!/^\d{3,15}$/.test(ced)) { err("Documento inválido", "Escribe el número de identidad del estudiante."); return; }
     if (acudidos.some((a) => a.id === ced)) { err("Ya agregaste ese estudiante"); return; }
     if (ced === soloDigitos(cedula)) { err("Documento inválido", "Tu propia cédula no puede ser la de un estudiante a cargo."); return; }
     setValidando(true);
