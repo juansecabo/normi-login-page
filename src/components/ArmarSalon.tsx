@@ -134,12 +134,26 @@ const ArmarSalon = () => {
   const [edSalon, setEdSalon] = useState("");
   const [confirmEliminar, setConfirmEliminar] = useState<Persona | null>(null);
   const [eliminando, setEliminando] = useState(false);
+  // Acudientes del estudiante en edición + mini-formulario para agregar uno.
+  const [acudientesEst, setAcudientesEst] = useState<Persona[]>([]);
+  const [mostrarFormAcu, setMostrarFormAcu] = useState(false);
+  const [acuCedula, setAcuCedula] = useState("");
+  const [acuNombres, setAcuNombres] = useState("");
+  const [acuApellidos, setAcuApellidos] = useState("");
+  const [acuTelefono, setAcuTelefono] = useState("");
+  const [acuGenero, setAcuGenero] = useState("");
+  const [acuBloqueado, setAcuBloqueado] = useState(false);
+  const [acuGuardando, setAcuGuardando] = useState(false);
+  const acuBloqueadoRef = useRef(false);
+  useEffect(() => { acuBloqueadoRef.current = acuBloqueado; }, [acuBloqueado]);
+  const resetFormAcu = () => { setAcuCedula(""); setAcuNombres(""); setAcuApellidos(""); setAcuTelefono(""); setAcuGenero(""); setAcuBloqueado(false); setMostrarFormAcu(false); };
   const bloqueadoRef = useRef(false);
   useEffect(() => { bloqueadoRef.current = bloqueado; }, [bloqueado]);
 
   const resetForm = () => {
     setCedula(""); setNombres(""); setApellidos(""); setTelefono(""); setGenero(""); setFechaNac(""); setBloqueado(false);
     setEditando(null); setEdGrado(""); setEdSalon("");
+    setAcudientesEst([]); resetFormAcu();
   };
 
   // Autocompletar mientras se escribe la cédula (como en Personas).
@@ -215,6 +229,20 @@ const ArmarSalon = () => {
   };
 
   // ── Editar estudiante (datos personales solo admin; mover de salón, gestores) ──
+  const cargarAcudientesDe = async (estudianteId: string) => {
+    // Los 4 slots por separado (el dbProxy no soporta .or con paréntesis).
+    const num = Number(estudianteId);
+    const res = await Promise.all([1, 2, 3, 4].map((i) =>
+      supabase.from("Acudientes").select("id").eq(`acudido${i}_id`, num)));
+    const ids = Array.from(new Set(res.flatMap((r) => (r.data || []).map((a: any) => String(a.id)))));
+    if (ids.length === 0) { setAcudientesEst([]); return; }
+    const { data: us } = await supabase.from("Usuarios").select("id, nombres, apellidos, genero").in("id", ids);
+    setAcudientesEst(ids.map((id) => {
+      const u = (us || []).find((x: any) => String(x.id) === id) as any;
+      return { id, nombres: u?.nombres || "", apellidos: u?.apellidos || "", genero: u?.genero || null };
+    }));
+  };
+
   const abrirEditar = async (p: Persona) => {
     resetForm();
     setEditando(p.id);
@@ -223,8 +251,84 @@ const ArmarSalon = () => {
     setEdGrado(grado); setEdSalon(salon);
     setBloqueado(!esAdmin);
     setDialogAbierto(true);
-    const { data } = await supabase.from("Usuarios").select("numero_de_telefono, fecha_de_nacimiento").eq("id", p.id).maybeSingle();
+    const [{ data }] = await Promise.all([
+      supabase.from("Usuarios").select("numero_de_telefono, fecha_de_nacimiento").eq("id", p.id).maybeSingle(),
+      cargarAcudientesDe(p.id),
+    ]);
     if (data) { setTelefono((data as any).numero_de_telefono || ""); setFechaNac((data as any).fecha_de_nacimiento || ""); }
+  };
+
+  // Autocompletar la cédula del acudiente nuevo.
+  useEffect(() => {
+    const c = acuCedula.trim();
+    if (!/^\d{3,15}$/.test(c)) {
+      if (acuBloqueadoRef.current) { setAcuNombres(""); setAcuApellidos(""); setAcuTelefono(""); setAcuGenero(""); }
+      setAcuBloqueado(false);
+      return;
+    }
+    let vivo = true;
+    const t = setTimeout(async () => {
+      const { data } = await supabase.from("Usuarios").select("nombres, apellidos, numero_de_telefono, genero").eq("id", c).maybeSingle();
+      if (!vivo) return;
+      if (data) {
+        const u = data as any;
+        setAcuNombres(u.nombres || ""); setAcuApellidos(u.apellidos || ""); setAcuTelefono(u.numero_de_telefono || ""); setAcuGenero(u.genero || "");
+        setAcuBloqueado(true);
+      } else if (acuBloqueadoRef.current) {
+        setAcuNombres(""); setAcuApellidos(""); setAcuTelefono(""); setAcuGenero("");
+        setAcuBloqueado(false);
+      }
+    }, 450);
+    return () => { vivo = false; clearTimeout(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [acuCedula]);
+
+  // Vincular (o crear) un acudiente para el estudiante en edición. Mismo
+  // modelo del Panel de Control: Usuarios global + slots acudidoN en Acudientes.
+  const agregarAcudiente = async () => {
+    if (!editando) return;
+    const cedAcu = soloDigitos(acuCedula);
+    if (!/^\d{3,15}$/.test(cedAcu)) { toast({ title: "Cédula del acudiente inválida", variant: "destructive" }); return; }
+    if (!acuNombres.trim() || !acuApellidos.trim()) { toast({ title: "Faltan nombres o apellidos del acudiente", variant: "destructive" }); return; }
+    if (!acuBloqueado && acuGenero !== "M" && acuGenero !== "F") { toast({ title: "Falta el género del acudiente", variant: "destructive" }); return; }
+    if (acudientesEst.some((a) => a.id === cedAcu)) { toast({ title: "Ya es acudiente de este estudiante", variant: "destructive" }); return; }
+    if (acudientesEst.length >= 3) { toast({ title: "Límite de acudientes", description: "Un estudiante puede tener máximo 3 acudientes.", variant: "destructive" }); return; }
+    setAcuGuardando(true);
+    try {
+      const { data: yaUsuario } = await supabase.from("Usuarios").select("id").eq("id", cedAcu).maybeSingle();
+      if (!yaUsuario) {
+        const nuevo: Record<string, unknown> = { id: cedAcu, nombres: acuNombres.trim(), apellidos: acuApellidos.trim(), genero: acuGenero };
+        if (acuTelefono.trim()) nuevo.numero_de_telefono = acuTelefono.trim();
+        const { error: eU } = await supabase.from("Usuarios").insert(nuevo);
+        if (eU) {
+          const msg = (eU as any).code === "23505" ? "Ese teléfono ya pertenece a otra persona." : eU.message;
+          toast({ title: "No se pudo guardar", description: msg, variant: "destructive" });
+          return;
+        }
+      }
+      // Membresía Acudientes: primer slot libre (máx 4 acudidos por acudiente).
+      const { data: acuRow } = await supabase.from("Acudientes")
+        .select("id, acudido1_id, acudido2_id, acudido3_id, acudido4_id").eq("id", cedAcu).maybeSingle();
+      const estNum = Number(editando);
+      if (acuRow) {
+        const slots = [1, 2, 3, 4].map((i) => (acuRow as any)[`acudido${i}_id`]);
+        const libre = slots.findIndex((v) => v == null);
+        if (libre === -1) { toast({ title: "Límite de acudidos", description: "Ese acudiente ya tiene 4 estudiantes a cargo.", variant: "destructive" }); return; }
+        const { error: eA } = await supabase.from("Acudientes").update({ [`acudido${libre + 1}_id`]: estNum }).eq("id", cedAcu);
+        if (eA) { toast({ title: "No se pudo vincular", description: eA.message, variant: "destructive" }); return; }
+      } else {
+        const { error: eA } = await supabase.from("Acudientes").insert({ id: cedAcu, acudido1_id: estNum });
+        if (eA) {
+          if (!yaUsuario) await supabase.from("Usuarios").delete().eq("id", cedAcu);
+          toast({ title: "No se pudo vincular", description: eA.message, variant: "destructive" });
+          return;
+        }
+      }
+      resetFormAcu();
+      await cargarAcudientesDe(editando);
+    } finally {
+      setAcuGuardando(false);
+    }
   };
 
   const guardarEdicion = async () => {
@@ -377,8 +481,8 @@ const ArmarSalon = () => {
               {buscando && <p className="text-xs text-muted-foreground mt-1">Buscando…</p>}
             </div>
             <div><Label className="text-sm">Teléfono</Label><Input value={telefono} onChange={(e) => setTelefono(e.target.value)} readOnly={bloqueado} placeholder="57300…" className={`mt-1 ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
-            <div><Label className="text-sm">Nombres *</Label><Input value={nombres} onChange={(e) => setNombres(e.target.value)} readOnly={bloqueado} className={`mt-1 ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
             <div><Label className="text-sm">Apellidos *</Label><Input value={apellidos} onChange={(e) => setApellidos(e.target.value)} readOnly={bloqueado} className={`mt-1 ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
+            <div><Label className="text-sm">Nombres *</Label><Input value={nombres} onChange={(e) => setNombres(e.target.value)} readOnly={bloqueado} className={`mt-1 ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
             <div>
               <Label className="text-sm">Género *</Label>
               <select value={genero} onChange={(e) => setGenero(e.target.value)} disabled={bloqueado} className={`mt-1 flex h-10 w-full rounded-md border border-input px-3 py-2 text-sm ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : "bg-background"}`}>
@@ -416,6 +520,54 @@ const ArmarSalon = () => {
                 : "Esta cédula ya está registrada en Usuarios — sus datos se toman de ahí y no se editan aquí."}
             </p>
           )}
+
+          {/* Acudientes del estudiante (solo en edición) */}
+          {editando && (
+            <div className="pt-3 border-t">
+              <h3 className="text-sm font-semibold mb-1">Acudientes</h3>
+              {acudientesEst.length === 0 ? (
+                <p className="text-sm text-muted-foreground mb-2">Este estudiante no tiene acudientes registrados.</p>
+              ) : (
+                <ul className="text-sm mb-2 space-y-0.5">
+                  {acudientesEst.map((a) => (
+                    <li key={a.id}>• {a.apellidos} {a.nombres} <span className="text-muted-foreground">(cédula {a.id})</span></li>
+                  ))}
+                </ul>
+              )}
+              {!mostrarFormAcu ? (
+                acudientesEst.length < 3 && (
+                  <Button variant="outline" size="sm" onClick={() => setMostrarFormAcu(true)} className="gap-1">
+                    <Plus className="w-4 h-4" /> Agregar acudiente
+                  </Button>
+                )
+              ) : (
+                <div className="border rounded-lg p-3 space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div><Label className="text-sm">Cédula *</Label><Input value={acuCedula} onChange={(e) => setAcuCedula(e.target.value)} placeholder="Solo números" className="mt-1" /></div>
+                    <div><Label className="text-sm">Teléfono</Label><Input value={acuTelefono} onChange={(e) => setAcuTelefono(e.target.value)} readOnly={acuBloqueado} placeholder="57300…" className={`mt-1 ${acuBloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
+                    <div><Label className="text-sm">Apellidos *</Label><Input value={acuApellidos} onChange={(e) => setAcuApellidos(e.target.value)} readOnly={acuBloqueado} className={`mt-1 ${acuBloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
+                    <div><Label className="text-sm">Nombres *</Label><Input value={acuNombres} onChange={(e) => setAcuNombres(e.target.value)} readOnly={acuBloqueado} className={`mt-1 ${acuBloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
+                    <div>
+                      <Label className="text-sm">Género *</Label>
+                      <select value={acuGenero} onChange={(e) => setAcuGenero(e.target.value)} disabled={acuBloqueado} className={`mt-1 flex h-10 w-full rounded-md border border-input px-3 py-2 text-sm ${acuBloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : "bg-background"}`}>
+                        <option value="">Selecciona…</option>
+                        <option value="M">Masculino</option>
+                        <option value="F">Femenino</option>
+                      </select>
+                    </div>
+                  </div>
+                  {acuBloqueado && <p className="text-xs text-muted-foreground">Esta cédula ya está registrada — sus datos se toman de Usuarios.</p>}
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" size="sm" onClick={resetFormAcu} disabled={acuGuardando}>Cancelar</Button>
+                    <Button size="sm" onClick={agregarAcudiente} disabled={acuGuardando} className="gap-1">
+                      {acuGuardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Agregar acudiente
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <DialogFooter>
             <Button variant="outline" onClick={() => { setDialogAbierto(false); resetForm(); }} disabled={guardando}>Cancelar</Button>
             <Button onClick={editando ? guardarEdicion : agregarEstudiante} disabled={guardando || buscando || (!!editando && !esProfesor && !edSalon)} className="gap-2">
