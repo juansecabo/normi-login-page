@@ -35,6 +35,7 @@ const RegistroAcudiente = () => {
   const [nombres, setNombres] = useState("");
   const [telefono, setTelefono] = useState("");
   const [genero, setGenero] = useState("");
+  const [fechaNac, setFechaNac] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [confirmar, setConfirmar] = useState("");
   const [verContrasena, setVerContrasena] = useState(false);
@@ -55,6 +56,7 @@ const RegistroAcudiente = () => {
     if (!apellidos.trim() || !nombres.trim()) { err("Faltan tus apellidos o nombres"); return; }
     if (soloDigitos(telefono).length < 10) { err("Teléfono inválido", "Escribe tu número de celular (es donde recibirás los comunicados del colegio)."); return; }
     if (genero !== "M" && genero !== "F") { err("Falta el género"); return; }
+    if (!fechaNac) { err("Falta tu fecha de nacimiento"); return; }
     if (contrasena.length < 4 || contrasena.length > 50) { err("Contraseña inválida", "Debe tener entre 4 y 50 caracteres."); return; }
     if (contrasena !== confirmar) { err("Las contraseñas no coinciden"); return; }
     setPaso(2);
@@ -99,7 +101,7 @@ const RegistroAcudiente = () => {
         method: "POST",
         body: JSON.stringify({
           cedula: soloDigitos(cedula), nombres: nombres.trim(), apellidos: apellidos.trim(),
-          telefono: soloDigitos(telefono), genero, contrasena,
+          telefono: soloDigitos(telefono), genero, fecha_de_nacimiento: fechaNac, contrasena,
           acudidos: acudidos.map((a) => a.id),
         }),
       });
@@ -154,6 +156,10 @@ const RegistroAcudiente = () => {
                   <option value="F">Femenino</option>
                 </select>
               </div>
+              <div>
+                <Label className="text-sm">Fecha de nacimiento *</Label>
+                <Input type="date" value={fechaNac} onChange={(e) => setFechaNac(e.target.value)} className="mt-1" />
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label className="text-sm">Contraseña *</Label>
@@ -203,7 +209,13 @@ const RegistroAcudiente = () => {
               )}
               <div className="flex justify-between pt-2">
                 <Button variant="outline" onClick={() => setPaso(1)} className="gap-1"><ArrowLeft className="w-4 h-4" /> Atrás</Button>
-                <Button onClick={() => { if (acudidos.length === 0) { err("Agrega al menos un estudiante"); return; } setPaso(3); }}>Continuar</Button>
+                <Button onClick={() => {
+                  // Si dejó un documento escrito sin presionar «Agregar», no seguir:
+                  // seguramente olvidó agregar a ese estudiante.
+                  if (cedAcudido.trim()) { err("Te falta agregar ese estudiante", "Escribiste un documento pero no presionaste «Agregar». Agrégalo, o borra el campo si no era."); return; }
+                  if (acudidos.length === 0) { err("Agrega al menos un estudiante"); return; }
+                  setPaso(3);
+                }}>Continuar</Button>
               </div>
             </>
           ) : (
