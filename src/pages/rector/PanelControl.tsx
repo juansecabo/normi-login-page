@@ -223,6 +223,10 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
   const [filtroFotoEst, setFiltroFotoEst] = useState("todos");
   const [fotoAmpliada, setFotoAmpliada] = useState<string | null>(null);
   const esAdmin = isAdmin();
+  // Contraseñas visibles para TODOS los roles con acceso al Panel de Control
+  // (decisión 2026-07-06). El dbProxy permite leer `contrasena` a esos mismos
+  // roles; editar datos personales sigue siendo solo del admin.
+  const veContrasenas = puedeAccederDashboard();
   const [showEstDialog, setShowEstDialog] = useState(false);
   const [editingEst, setEditingEst] = useState<Estudiante | null>(null);
   const [showDeleteEst, setShowDeleteEst] = useState<Estudiante | null>(null);
@@ -698,16 +702,16 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
       setEstUsuarioExiste(true);
       setShowEstDialog(true);
 
-      // El teléfono (y la contraseña, solo para admin) viven en Usuarios.
+      // El teléfono (y la contraseña, roles del panel) viven en Usuarios.
       try {
-        const cols = esAdmin ? "numero_de_telefono, contrasena" : "numero_de_telefono";
+        const cols = veContrasenas ? "numero_de_telefono, contrasena" : "numero_de_telefono";
         const { data: u } = await supabase
           .from("Usuarios")
           .select(cols)
           .eq("id", String(est.id))
           .maybeSingle();
         setEstTelefono(((u as any)?.numero_de_telefono as string) || "");
-        if (esAdmin) setEstContrasena(((u as any)?.contrasena as string) || "");
+        if (veContrasenas) setEstContrasena(((u as any)?.contrasena as string) || "");
       } catch (e) {
         console.error("[openEstDialog] No se pudo cargar el teléfono:", e);
       }
@@ -1184,7 +1188,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
             setPerfPadreNombre((u as any).nombres || "");
             setPerfPadreApellidos((u as any).apellidos || "");
             setPerfTelefono((u as any).numero_de_telefono || "");
-            if (esAdmin) setPerfContrasena((u as any).contrasena || "");
+            if (veContrasenas) setPerfContrasena((u as any).contrasena || "");
           }
         } catch (e) {
           console.error("[openPerfDialog] No se pudo cargar Usuarios:", e);
@@ -2058,7 +2062,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
               </div>
             </div>
 
-            {esAdmin && (
+            {veContrasenas && (
               <div className="space-y-2">
                 <Label>Contraseña <span className="text-xs text-muted-foreground">(solo lectura)</span></Label>
                 <Input value={estContrasena} readOnly className="bg-muted" />
@@ -2501,7 +2505,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
               )}
             </div>
 
-            {esAdmin && (
+            {veContrasenas && (
               <div className="space-y-2">
                 <Label>Contraseña <span className="text-xs text-muted-foreground">(solo lectura)</span></Label>
                 <Input value={perfContrasena} readOnly className="bg-muted" />
