@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/apiClient";
-import { CalendarDays, Eraser, Loader2, Trash2, X } from "lucide-react";
+import { CalendarDays, Eraser, Loader2, Trash2 } from "lucide-react";
 
 /**
  * Ficha "Calendario" de Configurar Institución — calendario ANUAL visual:
@@ -65,10 +65,13 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
   };
   useEffect(() => { cargar(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [colegioId]);
 
-  // ── Herramienta y selección de rango (clic inicial → clic final) ──
+  // ── Herramienta y selección por ARRASTRE: mousedown fija el inicio, se
+  //    arrastra para extender y al soltar (mouseup global) se aplica el rango.
+  //    Un solo clic (down+up en el mismo día) marca únicamente ese día. ──
   const [herramienta, setHerramienta] = useState<Herramienta>("p1");
-  const [pendiente, setPendiente] = useState<string | null>(null);
-  const [hoverDia, setHoverDia] = useState<string | null>(null);
+  const [arrastre, setArrastre] = useState<{ ini: string; fin: string } | null>(null);
+  const arrastreRef = useRef<{ ini: string; fin: string } | null>(null);
+  const setArrastre2 = (v: { ini: string; fin: string } | null) => { arrastreRef.current = v; setArrastre(v); };
 
   const err = (title: string, description?: string) => toast({ title, description, variant: "destructive" });
 
@@ -129,7 +132,7 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
     setConfirmPeriodo(null);
   };
 
-  const clickDia = (f: string) => {
+  const bajarEnDia = (f: string) => {
     if (guardando) return;
     if (herramienta === "quitar") {
       const dia = dias.find((d) => d.fecha_inicio <= f && f <= d.fecha_fin);
@@ -138,24 +141,38 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
       if (per) { setConfirmPeriodo(per.periodo); return; }
       return;
     }
-    if (!pendiente) { setPendiente(f); return; }
-    const [ini, fin] = pendiente <= f ? [pendiente, f] : [f, pendiente];
-    setPendiente(null); setHoverDia(null);
-    if (herramienta === "sinclases") {
-      setMotivoTexto("");
-      setMotivoDialog({ ini, fin });
-    } else {
-      const n = Number(herramienta.slice(1));
-      guardarPeriodos([...periodos.filter((p) => p.periodo !== n), { periodo: n, fecha_inicio: ini, fecha_fin: fin, ano_escolar: anoEscolar }]);
-    }
+    setArrastre2({ ini: f, fin: f });
   };
+
+  const extenderA = (f: string) => {
+    if (arrastreRef.current) setArrastre2({ ...arrastreRef.current, fin: f });
+  };
+
+  // Al soltar el mouse EN CUALQUIER PARTE se aplica el rango arrastrado.
+  useEffect(() => {
+    const alSoltar = () => {
+      const a = arrastreRef.current;
+      if (!a) return;
+      setArrastre2(null);
+      const [ini, fin] = a.ini <= a.fin ? [a.ini, a.fin] : [a.fin, a.ini];
+      if (herramienta === "sinclases") {
+        setMotivoTexto("");
+        setMotivoDialog({ ini, fin });
+      } else if (herramienta.startsWith("p")) {
+        const n = Number(herramienta.slice(1));
+        guardarPeriodos([...periodos.filter((p) => p.periodo !== n), { periodo: n, fecha_inicio: ini, fecha_fin: fin, ano_escolar: anoEscolar }]);
+      }
+    };
+    window.addEventListener("mouseup", alSoltar);
+    return () => window.removeEventListener("mouseup", alSoltar);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [herramienta, periodos, anoEscolar]);
 
   // ── Clasificación visual de cada día ──
   const hoyISO = new Date().toISOString().slice(0, 10);
   const enSeleccion = (f: string): boolean => {
-    if (!pendiente) return false;
-    const b = hoverDia || pendiente;
-    const [ini, fin] = pendiente <= b ? [pendiente, b] : [b, pendiente];
+    if (!arrastre) return false;
+    const [ini, fin] = arrastre.ini <= arrastre.fin ? [arrastre.ini, arrastre.fin] : [arrastre.fin, arrastre.ini];
     return ini <= f && f <= fin;
   };
   const claseDia = (f: string, dow: number): { cls: string; title: string } => {
@@ -178,8 +195,8 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg"><CalendarDays className="h-5 w-5 text-primary" /> Calendario {anoEscolar}</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Elige una herramienta y haz clic en el día <strong>inicial</strong> y luego en el <strong>final</strong> para pintar el rango
-            (para un solo día, haz clic dos veces en él). Los fines de semana y festivos de Colombia ya se tienen en cuenta solos.
+            Elige una herramienta y <strong>haz clic</strong> en un día para marcarlo, o <strong>mantén presionado y arrastra</strong> para
+            pintar un rango. Los fines de semana y festivos de Colombia ya se tienen en cuenta solos.
             Los avisos automáticos no se envían los días sin clases, y Normi responde con estas fechas.
           </p>
         </CardHeader>
@@ -187,30 +204,22 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
           {/* ── Herramientas ── */}
           <div className="flex flex-wrap items-center gap-2">
             {[1, 2, 3, 4].map((n) => (
-              <button key={n} onClick={() => { setHerramienta(`p${n}` as Herramienta); setPendiente(null); }}
+              <button key={n} onClick={() => { setHerramienta(`p${n}` as Herramienta); setArrastre2(null); }}
                 className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer ${PERIODO_ESTILO[n].chip} ${herramienta === `p${n}` ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
                 {PERIODO_ESTILO[n].nombre}
               </button>
             ))}
-            <button onClick={() => { setHerramienta("sinclases"); setPendiente(null); }}
+            <button onClick={() => { setHerramienta("sinclases"); setArrastre2(null); }}
               className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer bg-red-200 border-red-400 ${herramienta === "sinclases" ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
               Día sin clases
             </button>
-            <button onClick={() => { setHerramienta("quitar"); setPendiente(null); }}
+            <button onClick={() => { setHerramienta("quitar"); setArrastre2(null); }}
               className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer bg-background inline-flex items-center gap-1 ${herramienta === "quitar" ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
               <Eraser className="w-3.5 h-3.5" /> Quitar
             </button>
             {guardando && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
           </div>
-          {pendiente && (
-            <p className="text-sm">
-              Inicio: <strong>{fechaLinda(pendiente)}</strong> — ahora haz clic en el día final…{" "}
-              <button onClick={() => { setPendiente(null); setHoverDia(null); }} className="inline-flex items-center gap-1 text-primary hover:underline cursor-pointer">
-                <X className="w-3.5 h-3.5" /> Cancelar
-              </button>
-            </p>
-          )}
-          {herramienta === "quitar" && !pendiente && (
+          {herramienta === "quitar" && (
             <p className="text-sm text-muted-foreground">Haz clic sobre un periodo o un día sin clases para quitarlo.</p>
           )}
 
@@ -230,9 +239,9 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
                       const dow = (new Date(anoEscolar, m, i + 1).getDay() + 6) % 7;
                       const { cls, title } = claseDia(f, dow);
                       return (
-                        <button key={f} type="button" title={title}
-                          onClick={() => clickDia(f)}
-                          onMouseEnter={() => { if (pendiente) setHoverDia(f); }}
+                        <button key={f} type="button" title={title} draggable={false}
+                          onMouseDown={(e) => { e.preventDefault(); bajarEnDia(f); }}
+                          onMouseEnter={() => extenderA(f)}
                           className={`h-7 w-full text-[11px] rounded-sm flex items-center justify-center ${cls} ${f === hoyISO ? "font-bold underline" : ""}`}>
                           {i + 1}
                         </button>
