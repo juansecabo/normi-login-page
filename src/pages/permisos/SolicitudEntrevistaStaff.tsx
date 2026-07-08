@@ -509,6 +509,9 @@ const SolicitudEntrevistaStaff = () => {
                     className="inline-flex items-center gap-1 px-3 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
                     <Plus className="w-4 h-4" /> Agregar
                   </button>
+                  {entrevistadores.length === 0 && (
+                    <span className="text-sm font-medium text-red-600">(Recuerde presionar Agregar)</span>
+                  )}
                 </div>
               </div>
 
@@ -545,7 +548,19 @@ const SolicitudEntrevistaStaff = () => {
                 </div>
               </div>
 
-              <button onClick={() => setShowConfirm(true)} disabled={!camposCompletos || saving}
+              <button onClick={() => {
+                // Alguien elegido en el selector pero sin presionar "Agregar":
+                // frenar aquí con el motivo claro (pop-up) en vez de fallar mudo.
+                if (internoPick) {
+                  toast({
+                    title: "Falta presionar Agregar",
+                    description: `Elegiste a ${internoPick.apellidos} ${internoPick.nombres} pero no presionaste el botón "Agregar". Agrégalo para incluirlo en la entrevista, o deja el selector vacío.`,
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                setShowConfirm(true);
+              }} disabled={!camposCompletos || saving}
                 className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-bold text-base transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
                 {saving ? "Creando..." : "Solicitar Entrevista"}
               </button>
