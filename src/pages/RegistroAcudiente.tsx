@@ -38,7 +38,7 @@ const ProgressBar = ({ paso, total }: { paso: number; total: number }) => {
  * uno contra el colegio) → 3) resumen y envío.
  */
 
-interface Acudido { id: string; nombres: string; apellidos: string; grado: string; salon: string; colegio_id: string; colegio_nombre: string; acudiente_ya_registrado?: boolean; }
+interface Acudido { id: string; nombres: string; apellidos: string; grado: string; salon: string; colegio_id: string; colegio_nombre: string; ya_es_acudiente_de_este?: boolean; acudiente_sin_cupo?: boolean; }
 
 const soloDigitos = (v: string) => v.replace(/\D/g, "");
 
@@ -87,7 +87,7 @@ const RegistroAcudiente = () => {
 
   // Paso 3 — envío / éxito
   const [enviando, setEnviando] = useState(false);
-  const [exito, setExito] = useState<{ colegio: string; contrasenaConservada: boolean } | null>(null);
+  const [exito, setExito] = useState<{ colegio: string; contrasenaConservada: boolean; agregado?: boolean } | null>(null);
 
   const err = (title: string, description?: string) => toast({ title, description, variant: "destructive" });
 
@@ -126,9 +126,14 @@ const RegistroAcudiente = () => {
         err("Colegios distintos", "Ese estudiante pertenece a otro colegio. Todos los estudiantes deben ser del mismo colegio.");
         return;
       }
-      // Ya es acudiente en el colegio de ese estudiante → frenar AQUÍ, no al final.
-      if (match.acudiente_ya_registrado) {
-        err("Ya estás registrado como acudiente", `Tu cédula ya figura como acudiente en ${match.colegio_nombre}. Inicia sesión con tu cédula, o usa "¿Olvidó su contraseña?" si no la recuerdas. Para agregar o cambiar estudiantes a cargo, comunícate con la institución.`);
+      // Ya es acudiente DE ESTE estudiante → frenar aquí con el motivo real.
+      if (match.ya_es_acudiente_de_este) {
+        err("Ya eres acudiente de este estudiante", `Ya figuras como acudiente de ${match.nombres} ${match.apellidos}. Inicia sesión con tu cédula para consultar sus notas, o usa "¿Olvidó su contraseña?" si no la recuerdas.`);
+        return;
+      }
+      // Ya tiene los 4 cupos de acudidos ocupados en ese colegio.
+      if (match.acudiente_sin_cupo) {
+        err("Ya tienes 4 estudiantes a cargo", `En ${match.colegio_nombre} ya tienes el máximo de 4 estudiantes a cargo. Comunícate con la institución si necesitas modificarlos.`);
         return;
       }
       setAcudidos((prev) => [...prev, match]);
@@ -143,7 +148,7 @@ const RegistroAcudiente = () => {
   const registrar = async () => {
     setEnviando(true);
     try {
-      const r = await apiRequest<{ ok: boolean; colegio_nombre: string; contrasena_conservada: boolean }>("/api/registro/acudiente", {
+      const r = await apiRequest<{ ok: boolean; colegio_nombre: string; contrasena_conservada: boolean; agregado_a_existente?: boolean }>("/api/registro/acudiente", {
         method: "POST",
         body: JSON.stringify({
           cedula: soloDigitos(cedula), nombres: nombres.trim(), apellidos: apellidos.trim(),
@@ -151,7 +156,7 @@ const RegistroAcudiente = () => {
           acudidos: acudidos.map((a) => a.id),
         }),
       });
-      setExito({ colegio: r.colegio_nombre, contrasenaConservada: r.contrasena_conservada });
+      setExito({ colegio: r.colegio_nombre, contrasenaConservada: r.contrasena_conservada, agregado: !!r.agregado_a_existente });
     } catch (e: any) {
       err("No se pudo completar el registro", e?.body?.detail || e?.message);
     } finally {
@@ -176,9 +181,11 @@ const RegistroAcudiente = () => {
           {exito ? (
             <div className="text-center space-y-4 py-4">
               <Check className="w-12 h-12 text-primary mx-auto" />
-              <p className="font-semibold text-lg">¡Registro completado!</p>
+              <p className="font-semibold text-lg">{exito.agregado ? "¡Estudiantes agregados!" : "¡Registro completado!"}</p>
               <p className="text-sm text-muted-foreground">
-                Quedaste registrado(a) como acudiente en <strong>{exito.colegio}</strong>.{" "}
+                {exito.agregado
+                  ? <>Los estudiantes quedaron agregados a tu cuenta de acudiente en <strong>{exito.colegio}</strong>.</>
+                  : <>Quedaste registrado(a) como acudiente en <strong>{exito.colegio}</strong>.</>}{" "}
                 {exito.contrasenaConservada
                   ? "Ya tenías una cuenta, así que tu contraseña sigue siendo la de siempre (si no la recuerdas, usa “¿Olvidó su contraseña?”)."
                   : "Ya puedes iniciar sesión con tu cédula y la contraseña que elegiste."}
