@@ -119,6 +119,59 @@ const ArmarSalon = () => {
   };
   useEffect(() => { cargarSalon(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [grado, salon]);
 
+  // ── Asignar/quitar director(a) de grupo desde esta vista (no-profesores) ──
+  const [dirDialog, setDirDialog] = useState(false);
+  const [profes, setProfes] = useState<{ id: string; nombre: string; grupo: string | null }[]>([]);
+  const [cargandoProfes, setCargandoProfes] = useState(false);
+  const [selProfe, setSelProfe] = useState("");
+  const [guardandoDir, setGuardandoDir] = useState(false);
+
+  const abrirDirDialog = async () => {
+    setSelProfe("");
+    setDirDialog(true);
+    if (director) return; // con director solo se ofrece quitarlo, no hace falta la lista
+    setCargandoProfes(true);
+    try {
+      const r = await apiRequest<{ internos: { id: string; cargo: string; cargos_extra?: string[]; direccion_de_grupo?: string | null; nombres?: string; apellidos?: string }[] }>("/api/institucion/personas");
+      const lista = (r.internos || [])
+        .filter((i) => i.cargo === "Profesor(a)" || (i.cargos_extra || []).includes("Profesor(a)"))
+        .map((i) => ({ id: String(i.id), nombre: `${i.apellidos || ""} ${i.nombres || ""}`.trim() || String(i.id), grupo: i.direccion_de_grupo || null }))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+      setProfes(lista);
+    } catch { setProfes([]); }
+    finally { setCargandoProfes(false); }
+  };
+
+  const quitarDirector = async () => {
+    if (!director) return;
+    setGuardandoDir(true);
+    try {
+      await apiRequest("/api/institucion/interno", {
+        method: "PATCH",
+        body: JSON.stringify({ cedula: director.id, cargo: "Profesor(a)", direccion_de_grupo: "" }),
+      });
+      setDirDialog(false);
+      await cargarSalon();
+    } catch (err: any) {
+      toast({ title: "No se pudo quitar", description: (err?.body as any)?.detail || err?.message, variant: "destructive" });
+    } finally { setGuardandoDir(false); }
+  };
+
+  const asignarDirector = async () => {
+    if (!selProfe) return;
+    setGuardandoDir(true);
+    try {
+      await apiRequest("/api/institucion/interno", {
+        method: "PATCH",
+        body: JSON.stringify({ cedula: selProfe, cargo: "Profesor(a)", direccion_de_grupo: `${grado} ${salon}` }),
+      });
+      setDirDialog(false);
+      await cargarSalon();
+    } catch (err: any) {
+      toast({ title: "No se pudo asignar", description: (err?.body as any)?.detail || err?.message, variant: "destructive" });
+    } finally { setGuardandoDir(false); }
+  };
+
   // ── Agregar estudiante (mismo flujo del Panel de Control, salón fijado) ──
   const [dialogAbierto, setDialogAbierto] = useState(false);
   const [cedula, setCedula] = useState("");
@@ -472,7 +525,17 @@ const ArmarSalon = () => {
           <p className="text-center text-sm font-medium mb-8">
             {director
               ? <>{director.genero === "F" ? "Directora" : "Director"} de grupo: {director.nombres} {director.apellidos}</>
-              : <span className="text-muted-foreground">Este salón aún no tiene director(a) de grupo (se asigna en Personas → Profesores).</span>}
+              : <span className="text-muted-foreground">Este salón aún no tiene director(a) de grupo.</span>}
+            {!esProfesor && (
+              <button
+                type="button"
+                onClick={abrirDirDialog}
+                className="inline-flex align-middle ml-2 text-muted-foreground hover:text-foreground cursor-pointer"
+                title={director ? "Cambiar director(a) de grupo" : "Asignar director(a) de grupo"}
+              >
+                {director ? <Pencil className="w-3.5 h-3.5" /> : <Plus className="w-4 h-4" />}
+              </button>
+            )}
           </p>
 
           {/* Pupitres (PC: 6 por fila; celular: 2) */}
@@ -646,6 +709,49 @@ const ArmarSalon = () => {
             <Button variant="destructive" onClick={eliminarEstudiante} disabled={eliminando} className="gap-2">
               {eliminando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Eliminar
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Asignar/quitar director(a) de grupo */}
+      <Dialog open={dirDialog} onOpenChange={setDirDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{director ? "Director(a) de grupo" : "Asignar director(a) de grupo"}</DialogTitle>
+            <DialogDescription>{grado} {salon}</DialogDescription>
+          </DialogHeader>
+          {director ? (
+            <div className="space-y-2 text-sm">
+              <p>Actual: <strong>{director.nombres} {director.apellidos}</strong></p>
+              <p className="text-xs text-muted-foreground">Un salón solo puede tener un(a) director(a) de grupo. Para asignar a otra persona, primero quita al actual.</p>
+            </div>
+          ) : cargandoProfes ? (
+            <div className="flex justify-center p-4"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+          ) : (
+            <div>
+              <Label className="text-sm">Profesor(a)</Label>
+              <select value={selProfe} onChange={(e) => setSelProfe(e.target.value)} className="mt-1 w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <option value="">Selecciona…</option>
+                {profes.map((p) => (
+                  <option key={p.id} value={p.id}>{p.nombre}{p.grupo ? ` — dirige ${p.grupo}` : ""}</option>
+                ))}
+              </select>
+              {selProfe && profes.find((p) => p.id === selProfe)?.grupo && (
+                <p className="text-xs text-amber-600 mt-2">Esta persona ya dirige {profes.find((p) => p.id === selProfe)?.grupo}; al asignarla aquí dejará ese grupo.</p>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDirDialog(false)} disabled={guardandoDir}>Cancelar</Button>
+            {director ? (
+              <Button variant="destructive" onClick={quitarDirector} disabled={guardandoDir} className="gap-2">
+                {guardandoDir ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Quitar dirección de grupo
+              </Button>
+            ) : (
+              <Button onClick={asignarDirector} disabled={!selProfe || guardandoDir} className="gap-2">
+                {guardandoDir ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Asignar
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
