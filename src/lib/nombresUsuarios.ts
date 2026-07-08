@@ -13,6 +13,8 @@ export interface NombresUsuario {
   apellidos: string;
   // Vive en Usuarios (antes en Estudiantes). Null para quien no la tenga.
   fecha_de_nacimiento: string | null;
+  /** M/F desde Usuarios (para artículos y cargos con género). Null si no está. */
+  genero: string | null;
 }
 
 /**
@@ -30,13 +32,14 @@ export async function fetchNombresPorIds(ids: Array<string | number>): Promise<M
     const slice = unique.slice(i, i + CHUNK);
     const { data } = await supabase
       .from("Usuarios")
-      .select("id, nombres, apellidos, fecha_de_nacimiento")
+      .select("id, nombres, apellidos, fecha_de_nacimiento, genero")
       .in("id", slice);
-    for (const u of (data || []) as Array<{ id: string | number; nombres: string | null; apellidos: string | null; fecha_de_nacimiento: string | null }>) {
+    for (const u of (data || []) as Array<{ id: string | number; nombres: string | null; apellidos: string | null; fecha_de_nacimiento: string | null; genero: string | null }>) {
       map.set(String(u.id), {
         nombres: u.nombres || "",
         apellidos: u.apellidos || "",
         fecha_de_nacimiento: u.fecha_de_nacimiento ?? null,
+        genero: u.genero ?? null,
       });
     }
   }
@@ -55,7 +58,7 @@ export async function enrichWithNombres<T extends { id: number | string }>(
   const map = await fetchNombresPorIds(rows.map((r) => r.id));
   return rows.map((r) => {
     const u = map.get(String(r.id));
-    return { ...r, nombres: u?.nombres || "", apellidos: u?.apellidos || "", fecha_de_nacimiento: u?.fecha_de_nacimiento ?? null };
+    return { ...r, nombres: u?.nombres || "", apellidos: u?.apellidos || "", fecha_de_nacimiento: u?.fecha_de_nacimiento ?? null, genero: u?.genero ?? null };
   });
 }
 

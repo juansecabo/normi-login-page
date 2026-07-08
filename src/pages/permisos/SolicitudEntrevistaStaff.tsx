@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 interface Estudiante { id: string; nombres: string; apellidos: string; grado: string; salon: string; }
-interface Interno { id: number; nombres: string; apellidos: string; cargo: string; }
+interface Interno { id: number; nombres: string; apellidos: string; cargo: string; genero?: string | null; }
 
 
 const cargoDisplay = (cargo: string, nombres: string) => {
@@ -324,7 +324,7 @@ const SolicitudEntrevistaStaff = () => {
       solicitante_nombre: [entrevistadores[0].nombres, entrevistadores[0].apellidos].filter(Boolean).join(" "),
       solicitante_cargo: entrevistadores[0].cargo,
       solicitante_id: entrevistadores[0].id,
-      entrevistadores: entrevistadores.map(e => ({ id: e.id, cargo: e.cargo, nombres: e.nombres, apellidos: e.apellidos })),
+      entrevistadores: entrevistadores.map(e => ({ id: e.id, cargo: e.cargo, nombres: e.nombres, apellidos: e.apellidos, genero: e.genero ?? null })),
       creado_por: Number(session.id),
       creado_por_nombre: [session.cargo, session.nombres, session.apellidos].filter(Boolean).join(" "),
       firma_url: firmaUrl,

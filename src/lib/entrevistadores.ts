@@ -1,13 +1,30 @@
 // Helpers para mostrar uno o varios entrevistadores en una Solicitud de Entrevista.
 
-export type Entrevistador = { cargo?: string; nombres?: string; apellidos?: string };
+export type Entrevistador = { cargo?: string; nombres?: string; apellidos?: string; genero?: string | null };
+
+/** "Profesor(a)" → "Profesor" (M) / "Profesora" (F). Sin género queda neutro. */
+const cargoSegunGenero = (cargo?: string, genero?: string | null): string => {
+  if (!cargo || !cargo.includes("(a)")) return cargo || "";
+  if (genero === "M") return cargo.replace("(a)", "");
+  if (genero === "F") {
+    return cargo.replace(/([A-Za-zÁÉÍÓÚáéíóúñÑ]+)\(a\)/, (_m, base: string) =>
+      base.endsWith("o") ? base.slice(0, -1) + "a" : base + "a");
+  }
+  return cargo;
+};
 
 export const fmtEntrevistador = (e: Entrevistador) =>
-  [e.cargo, e.nombres, e.apellidos].filter(Boolean).join(" ");
+  [cargoSegunGenero(e.cargo, e.genero), e.nombres, e.apellidos].filter(Boolean).join(" ");
 
-/** Une los entrevistadores: "A", "A y B", "A, B y C". `prefijo` antepone (ej. "el/la "). */
+/** Une los entrevistadores: "A", "A y B", "A, B y C". `prefijo` antepone (ej. "el/la ",
+ *  que con género conocido se vuelve "el " o "la " por persona). */
 export const joinEntrevistadores = (arr: Entrevistador[], prefijo = ""): string => {
-  const items = arr.map((e) => `${prefijo}${fmtEntrevistador(e)}`);
+  const items = arr.map((e) => {
+    const pref = prefijo === "el/la "
+      ? (e.genero === "F" ? "la " : e.genero === "M" ? "el " : "el/la ")
+      : prefijo;
+    return `${pref}${fmtEntrevistador(e)}`;
+  });
   if (items.length <= 1) return items[0] || "";
   return items.slice(0, -1).join(", ") + " y " + items[items.length - 1];
 };
