@@ -51,15 +51,15 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
   const [anoEscolar, setAnoEscolar] = useState<number>(new Date().getFullYear());
   const [periodos, setPeriodos] = useState<Periodo[]>([]);
   const [dias, setDias] = useState<DiaNoLectivo[]>([]);
-  const [festivos, setFestivos] = useState<Set<string>>(new Set());
+  const [festivos, setFestivos] = useState<Map<string, string>>(new Map());
 
   const cargar = async () => {
     try {
-      const r = await apiRequest<{ periodos: Periodo[]; dias: DiaNoLectivo[]; festivos: string[]; ano_escolar: number }>(`/api/institucion/calendario${qCid}`);
+      const r = await apiRequest<{ periodos: Periodo[]; dias: DiaNoLectivo[]; festivos: Array<{ fecha: string; nombre: string } | string>; ano_escolar: number }>(`/api/institucion/calendario${qCid}`);
       setAnoEscolar(r.ano_escolar);
       setPeriodos((r.periodos || []).filter((p) => p.ano_escolar === r.ano_escolar));
       setDias(r.dias || []);
-      setFestivos(new Set(r.festivos || []));
+      setFestivos(new Map((r.festivos || []).map((f) => (typeof f === "string" ? [f, "Festivo"] : [f.fecha, f.nombre]))));
     } catch { /* la vista muestra vacío */ }
     finally { setCargando(false); }
   };
@@ -67,8 +67,11 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
 
   // ── Herramienta y selección por ARRASTRE: mousedown fija el inicio, se
   //    arrastra para extender y al soltar (mouseup global) se aplica el rango.
-  //    Un solo clic (down+up en el mismo día) marca únicamente ese día. ──
-  const [herramienta, setHerramienta] = useState<Herramienta>("p1");
+  //    Un solo clic (down+up en el mismo día) marca únicamente ese día.
+  //    Clic de nuevo sobre la herramienta activa la SUELTA: sin herramienta,
+  //    el clic sobre un día pintado muestra su detalle (ver/editar). ──
+  const [herramienta, setHerramienta] = useState<Herramienta | null>(null);
+  const toggleHerramienta = (h: Herramienta) => { setArrastre2(null); setHerramienta((prev) => (prev === h ? null : h)); };
   const [arrastre, setArrastre] = useState<{ ini: string; fin: string } | null>(null);
   const arrastreRef = useRef<{ ini: string; fin: string } | null>(null);
   const setArrastre2 = (v: { ini: string; fin: string } | null) => { arrastreRef.current = v; setArrastre(v); };
@@ -132,6 +135,28 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
     setConfirmPeriodo(null);
   };
 
+  // ── Detalle de un día (sin herramienta): ver/editar lo que hay ahí ──
+  type Detalle =
+    | { tipo: "dia"; dia: DiaNoLectivo }
+    | { tipo: "festivo"; fecha: string; nombre: string }
+    | { tipo: "periodo"; periodo: Periodo };
+  const [detalle, setDetalle] = useState<Detalle | null>(null);
+  const [motivoEdit, setMotivoEdit] = useState("");
+  const guardarMotivo = async () => {
+    if (!detalle || detalle.tipo !== "dia") return;
+    setGuardando(true);
+    try {
+      await apiRequest(`/api/institucion/calendario/dias/${detalle.dia.id}${qCid}`, {
+        method: "PATCH",
+        body: JSON.stringify(withCid({ motivo: motivoEdit.trim() })),
+      });
+      setDetalle(null);
+      await cargar();
+    } catch (e: any) {
+      err("No se pudo guardar", (e?.body as any)?.detail || e?.message);
+    } finally { setGuardando(false); }
+  };
+
   const bajarEnDia = (f: string) => {
     if (guardando) return;
     if (herramienta === "quitar") {
@@ -139,6 +164,16 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
       if (dia) { setConfirmDia(dia); return; }
       const per = periodos.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin);
       if (per) { setConfirmPeriodo(per.periodo); return; }
+      return;
+    }
+    if (!herramienta) {
+      // Modo inspección: mostrar qué hay en ese día (y permitir editarlo).
+      const dia = dias.find((d) => d.fecha_inicio <= f && f <= d.fecha_fin);
+      if (dia) { setMotivoEdit(dia.motivo || ""); setDetalle({ tipo: "dia", dia }); return; }
+      const nombreFestivo = festivos.get(f);
+      if (nombreFestivo) { setDetalle({ tipo: "festivo", fecha: f, nombre: nombreFestivo }); return; }
+      const per = periodos.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin);
+      if (per) { setDetalle({ tipo: "periodo", periodo: per }); return; }
       return;
     }
     setArrastre2({ ini: f, fin: f });
@@ -158,7 +193,7 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
       if (herramienta === "sinclases") {
         setMotivoTexto("");
         setMotivoDialog({ ini, fin });
-      } else if (herramienta.startsWith("p")) {
+      } else if (herramienta && herramienta.startsWith("p")) {
         const n = Number(herramienta.slice(1));
         guardarPeriodos([...periodos.filter((p) => p.periodo !== n), { periodo: n, fecha_inicio: ini, fecha_fin: fin, ano_escolar: anoEscolar }]);
       }
@@ -180,7 +215,8 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
     if (enSeleccion(f)) return { cls: `${base} ring-2 ring-primary bg-primary/20`, title: "" };
     const dia = dias.find((d) => d.fecha_inicio <= f && f <= d.fecha_fin);
     if (dia) return { cls: `${base} bg-red-200 hover:bg-red-300 text-red-900`, title: dia.motivo || "Día sin clases" };
-    if (festivos.has(f)) return { cls: `${base} bg-stone-300 text-stone-600`, title: "Festivo (automático)" };
+    const nombreFestivo = festivos.get(f);
+    if (nombreFestivo) return { cls: `${base} bg-stone-300 text-stone-600`, title: `${nombreFestivo} (festivo automático)` };
     const per = periodos.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin);
     if (per) return { cls: `${base} ${PERIODO_ESTILO[per.periodo].fondo}`, title: PERIODO_ESTILO[per.periodo].nombre };
     if (dow >= 5) return { cls: `${base} text-muted-foreground/50`, title: "" };
@@ -196,7 +232,8 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
           <CardTitle className="flex items-center gap-2 text-lg"><CalendarDays className="h-5 w-5 text-primary" /> Calendario {anoEscolar}</CardTitle>
           <p className="text-sm text-muted-foreground">
             Elige una herramienta y <strong>haz clic</strong> en un día para marcarlo, o <strong>mantén presionado y arrastra</strong> para
-            pintar un rango. Los fines de semana y festivos de Colombia ya se tienen en cuenta solos.
+            pintar un rango. Clic de nuevo sobre la herramienta para soltarla: sin herramienta, el clic sobre un día pintado
+            muestra qué es y permite editarlo. Los fines de semana y festivos de Colombia ya se tienen en cuenta solos.
             Los avisos automáticos no se envían los días sin clases, y Normi responde con estas fechas.
           </p>
         </CardHeader>
@@ -204,16 +241,16 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
           {/* ── Herramientas ── */}
           <div className="flex flex-wrap items-center gap-2">
             {[1, 2, 3, 4].map((n) => (
-              <button key={n} onClick={() => { setHerramienta(`p${n}` as Herramienta); setArrastre2(null); }}
+              <button key={n} onClick={() => toggleHerramienta(`p${n}` as Herramienta)}
                 className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer ${PERIODO_ESTILO[n].chip} ${herramienta === `p${n}` ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
                 {PERIODO_ESTILO[n].nombre}
               </button>
             ))}
-            <button onClick={() => { setHerramienta("sinclases"); setArrastre2(null); }}
+            <button onClick={() => toggleHerramienta("sinclases")}
               className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer bg-red-200 border-red-400 ${herramienta === "sinclases" ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
               Día sin clases
             </button>
-            <button onClick={() => { setHerramienta("quitar"); setArrastre2(null); }}
+            <button onClick={() => toggleHerramienta("quitar")}
               className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer bg-background inline-flex items-center gap-1 ${herramienta === "quitar" ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
               <Eraser className="w-3.5 h-3.5" /> Quitar
             </button>
@@ -317,6 +354,53 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
               {guardando && <Loader2 className="w-4 h-4 animate-spin" />} Marcar sin clases
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Detalle de un día (modo inspección, sin herramienta) */}
+      <Dialog open={!!detalle} onOpenChange={(o) => { if (!o) setDetalle(null); }}>
+        <DialogContent className="max-w-md">
+          {detalle?.tipo === "dia" && (<>
+            <DialogHeader>
+              <DialogTitle>Día sin clases</DialogTitle>
+              <DialogDescription>
+                {detalle.dia.fecha_inicio === detalle.dia.fecha_fin
+                  ? fechaLinda(detalle.dia.fecha_inicio)
+                  : `${fechaLinda(detalle.dia.fecha_inicio)} — ${fechaLinda(detalle.dia.fecha_fin)}`}
+              </DialogDescription>
+            </DialogHeader>
+            <Input value={motivoEdit} onChange={(e) => setMotivoEdit(e.target.value)} placeholder="Motivo: semana de receso, jornada pedagógica…" maxLength={80}
+              onKeyDown={(e) => { if (e.key === "Enter") guardarMotivo(); }} />
+            <DialogFooter>
+              <Button variant="destructive" onClick={() => { const d = detalle.dia; setDetalle(null); setConfirmDia(d); }} disabled={guardando} className="gap-2">
+                <Trash2 className="w-4 h-4" /> Eliminar
+              </Button>
+              <Button onClick={guardarMotivo} disabled={guardando} className="gap-2">
+                {guardando && <Loader2 className="w-4 h-4 animate-spin" />} Guardar
+              </Button>
+            </DialogFooter>
+          </>)}
+          {detalle?.tipo === "festivo" && (<>
+            <DialogHeader>
+              <DialogTitle>{detalle.nombre}</DialogTitle>
+              <DialogDescription>{fechaLinda(detalle.fecha)}</DialogDescription>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">Festivo nacional de Colombia. Se aplica automáticamente en todos los colegios y no se puede editar.</p>
+          </>)}
+          {detalle?.tipo === "periodo" && (<>
+            <DialogHeader>
+              <DialogTitle>{PERIODO_ESTILO[detalle.periodo.periodo].nombre}</DialogTitle>
+              <DialogDescription>
+                Del {fechaLinda(detalle.periodo.fecha_inicio)} al {fechaLinda(detalle.periodo.fecha_fin)}
+              </DialogDescription>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">Para cambiar sus fechas, elige la herramienta "{PERIODO_ESTILO[detalle.periodo.periodo].nombre}" y pinta el nuevo rango.</p>
+            <DialogFooter>
+              <Button variant="destructive" onClick={() => { const n = detalle.periodo.periodo; setDetalle(null); setConfirmPeriodo(n); }} disabled={guardando} className="gap-2">
+                <Eraser className="w-4 h-4" /> Quitar periodo
+              </Button>
+            </DialogFooter>
+          </>)}
         </DialogContent>
       </Dialog>
 
