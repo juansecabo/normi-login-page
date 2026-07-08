@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,24 @@ import { apiRequest } from "@/lib/apiClient";
 import PhoneInput from "@/components/PhoneInput";
 import { capitalizarNombre } from "@/utils/texto";
 import { ArrowLeft, Check, Eye, EyeOff, Loader2, Plus, Trash2 } from "lucide-react";
+import normiImg from "@/assets/normi-registro.webp";
+import cailicoLogo from "@/assets/cailico-logo.webp";
+
+/** Barra de progreso del registro viejo de Vercel: paso X de N + porcentaje. */
+const ProgressBar = ({ paso, total }: { paso: number; total: number }) => {
+  const pct = Math.round((paso / total) * 100);
+  return (
+    <div className="w-full mb-8">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-sm font-medium text-muted-foreground">Paso {paso} de {total}</span>
+        <span className="text-sm font-medium text-primary">{pct}%</span>
+      </div>
+      <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+        <div className="h-full bg-primary rounded-full transition-all duration-500 ease-out" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+};
 
 /**
  * Auto-registro de acudientes — "Soy acudiente y quiero registrarme" (login).
@@ -137,13 +155,19 @@ const RegistroAcudiente = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-lg shadow-soft">
-        <CardHeader>
-          <CardTitle className="text-xl text-center">Registro de acudientes</CardTitle>
-          {!exito && <p className="text-sm text-muted-foreground text-center">Paso {paso} de 3</p>}
-        </CardHeader>
-        <CardContent className="space-y-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Normi decorativa (solo escritorio), como en el registro viejo de Vercel */}
+      <img src={normiImg} alt="" className="hidden lg:block fixed bottom-0 right-12 w-[420px] opacity-80 pointer-events-none select-none z-0" />
+
+      <div className="w-full max-w-lg relative z-10 py-6">
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold text-foreground">Registro de acudientes</h1>
+          <p className="text-sm text-muted-foreground mt-1">Notas Normi</p>
+        </div>
+
+      <Card className="w-full shadow-soft">
+        <CardContent className="space-y-4 p-6 sm:p-8">
+          {!exito && <ProgressBar paso={paso} total={3} />}
           {exito ? (
             <div className="text-center space-y-4 py-4">
               <Check className="w-12 h-12 text-primary mx-auto" />
@@ -158,6 +182,10 @@ const RegistroAcudiente = () => {
             </div>
           ) : paso === 1 ? (
             <>
+              <div className="text-center mb-4">
+                <h2 className="text-2xl font-bold text-foreground">Tus datos</h2>
+                <p className="text-sm text-muted-foreground mt-1">Cuéntanos quién eres</p>
+              </div>
               <div>
                 <Label className="text-sm">Tu número de identidad *</Label>
                 <Input value={cedula} onChange={(e) => setCedula(soloDigitos(e.target.value))} inputMode="numeric" placeholder="Solo números" autoComplete="off" className="mt-1" />
@@ -214,14 +242,17 @@ const RegistroAcudiente = () => {
                 </div>
               </div>
               </>)}
-              <div className="flex justify-between pt-2">
-                <Button variant="outline" onClick={() => navigate("/")} className="gap-1"><ArrowLeft className="w-4 h-4" /> Volver</Button>
-                <Button onClick={continuarPaso1} disabled={verificandoCedula}>Continuar</Button>
+              <div className="flex gap-3 pt-2">
+                <Button variant="outline" onClick={() => navigate("/")} className="flex-1 gap-1"><ArrowLeft className="w-4 h-4" /> Volver</Button>
+                <Button onClick={continuarPaso1} disabled={verificandoCedula} className="flex-1">Continuar</Button>
               </div>
             </>
           ) : paso === 2 ? (
             <>
-              <p className="text-sm text-muted-foreground">Agrega los estudiantes que tienes a cargo (mínimo 1, máximo 4) con su número de identidad.</p>
+              <div className="text-center mb-4">
+                <h2 className="text-2xl font-bold text-foreground">Estudiantes a cargo</h2>
+                <p className="text-sm text-muted-foreground mt-1">Agrega los estudiantes que tienes a cargo (mínimo 1, máximo 4) con su número de identidad.</p>
+              </div>
               {acudidos.map((a) => (
                 <div key={a.id} className="flex items-center justify-between border border-border rounded-lg p-3">
                   <div className="text-sm">
@@ -241,19 +272,23 @@ const RegistroAcudiente = () => {
                   </Button>
                 </div>
               )}
-              <div className="flex justify-between pt-2">
-                <Button variant="outline" onClick={() => setPaso(1)} className="gap-1"><ArrowLeft className="w-4 h-4" /> Atrás</Button>
+              <div className="flex gap-3 pt-2">
+                <Button variant="outline" onClick={() => setPaso(1)} className="flex-1 gap-1"><ArrowLeft className="w-4 h-4" /> Atrás</Button>
                 <Button onClick={() => {
                   // Si dejó un documento escrito sin presionar «Agregar», no seguir:
                   // seguramente olvidó agregar a ese estudiante.
                   if (cedAcudido.trim()) { err("Te falta agregar ese estudiante", "Escribiste un documento pero no presionaste «Agregar». Agrégalo, o borra el campo si no era."); return; }
                   if (acudidos.length === 0) { err("Agrega al menos un estudiante"); return; }
                   setPaso(3);
-                }}>Continuar</Button>
+                }} className="flex-1">Continuar</Button>
               </div>
             </>
           ) : (
             <>
+              <div className="text-center mb-4">
+                <h2 className="text-2xl font-bold text-foreground">Confirma tu registro</h2>
+                <p className="text-sm text-muted-foreground mt-1">Revisa que todo esté correcto</p>
+              </div>
               <div className="border border-border rounded-lg p-4 text-sm space-y-1">
                 <p><span className="text-muted-foreground">Acudiente:</span> {apellidos} {nombres} (doc. {soloDigitos(cedula)})</p>
                 <p><span className="text-muted-foreground">Celular:</span> +{soloDigitos(telefono)}</p>
@@ -261,9 +296,9 @@ const RegistroAcudiente = () => {
                 <p className="text-muted-foreground pt-1">Estudiantes a cargo:</p>
                 {acudidos.map((a) => <p key={a.id}>• {a.apellidos} {a.nombres} — {a.grado} {a.salon}</p>)}
               </div>
-              <div className="flex justify-between pt-2">
-                <Button variant="outline" onClick={() => setPaso(2)} disabled={enviando} className="gap-1"><ArrowLeft className="w-4 h-4" /> Atrás</Button>
-                <Button onClick={registrar} disabled={enviando} className="gap-2">
+              <div className="flex gap-3 pt-2">
+                <Button variant="outline" onClick={() => setPaso(2)} disabled={enviando} className="flex-1 gap-1"><ArrowLeft className="w-4 h-4" /> Atrás</Button>
+                <Button onClick={registrar} disabled={enviando} className="flex-1 gap-2">
                   {enviando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Registrarme
                 </Button>
               </div>
@@ -271,6 +306,15 @@ const RegistroAcudiente = () => {
           )}
         </CardContent>
       </Card>
+
+        <div className="text-center mt-8">
+          <p className="text-xs text-muted-foreground mb-2">Infraestructura creada por</p>
+          <a href="https://cailico.com" target="_blank" rel="noopener noreferrer" className="inline-block">
+            <img src={cailicoLogo} alt="Cailico" className="h-8 mx-auto object-contain" />
+          </a>
+          <a href="https://cailico.com" target="_blank" rel="noopener noreferrer" className="block text-xs text-muted-foreground hover:text-primary transition-colors mt-1">cailico.com</a>
+        </div>
+      </div>
     </div>
   );
 };
