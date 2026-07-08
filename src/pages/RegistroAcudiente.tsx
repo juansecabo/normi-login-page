@@ -38,7 +38,7 @@ const ProgressBar = ({ paso, total }: { paso: number; total: number }) => {
  * uno contra el colegio) → 3) resumen y envío.
  */
 
-interface Acudido { id: string; nombres: string; apellidos: string; grado: string; salon: string; colegio_id: string; colegio_nombre: string; }
+interface Acudido { id: string; nombres: string; apellidos: string; grado: string; salon: string; colegio_id: string; colegio_nombre: string; acudiente_ya_registrado?: boolean; }
 
 const soloDigitos = (v: string) => v.replace(/\D/g, "");
 
@@ -111,7 +111,7 @@ const RegistroAcudiente = () => {
     setValidando(true);
     try {
       const r = await apiRequest<{ existe: boolean; coincidencias?: Acudido[] }>("/api/registro/validar-estudiante", {
-        method: "POST", body: JSON.stringify({ cedula: ced }),
+        method: "POST", body: JSON.stringify({ cedula: ced, acudiente: soloDigitos(cedula) }),
       });
       if (!r.existe || !r.coincidencias?.length) {
         err("Estudiante no encontrado", `El documento ${ced} no está registrado como estudiante. Verifica el número o comunícate con la institución.`);
@@ -124,6 +124,11 @@ const RegistroAcudiente = () => {
         : r.coincidencias[0];
       if (!match) {
         err("Colegios distintos", "Ese estudiante pertenece a otro colegio. Todos los estudiantes deben ser del mismo colegio.");
+        return;
+      }
+      // Ya es acudiente en el colegio de ese estudiante → frenar AQUÍ, no al final.
+      if (match.acudiente_ya_registrado) {
+        err("Ya estás registrado como acudiente", `Tu cédula ya figura como acudiente en ${match.colegio_nombre}. Inicia sesión con tu cédula, o usa "¿Olvidó su contraseña?" si no la recuerdas. Para agregar o cambiar estudiantes a cargo, comunícate con la institución.`);
         return;
       }
       setAcudidos((prev) => [...prev, match]);
