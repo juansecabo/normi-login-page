@@ -71,7 +71,12 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
   //    Clic de nuevo sobre la herramienta activa la SUELTA: sin herramienta,
   //    el clic sobre un día pintado muestra su detalle (ver/editar). ──
   const [herramienta, setHerramienta] = useState<Herramienta | null>(null);
-  const toggleHerramienta = (h: Herramienta) => { setArrastre2(null); setHerramienta((prev) => (prev === h ? null : h)); };
+  const toggleHerramienta = (h: Herramienta, e?: React.MouseEvent<HTMLButtonElement>) => {
+    // Soltar el foco del chip: si no, al desactivarlo queda la línea del outline de foco.
+    e?.currentTarget?.blur();
+    setArrastre2(null);
+    setHerramienta((prev) => (prev === h ? null : h));
+  };
   const [arrastre, setArrastre] = useState<{ ini: string; fin: string } | null>(null);
   const arrastreRef = useRef<{ ini: string; fin: string } | null>(null);
   const setArrastre2 = (v: { ini: string; fin: string } | null) => { arrastreRef.current = v; setArrastre(v); };
@@ -241,17 +246,17 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
           {/* ── Herramientas ── */}
           <div className="flex flex-wrap items-center gap-2">
             {[1, 2, 3, 4].map((n) => (
-              <button key={n} onClick={() => toggleHerramienta(`p${n}` as Herramienta)}
-                className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer ${PERIODO_ESTILO[n].chip} ${herramienta === `p${n}` ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
+              <button key={n} onClick={(e) => toggleHerramienta(`p${n}` as Herramienta, e)}
+                className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer focus:outline-none ${PERIODO_ESTILO[n].chip} ${herramienta === `p${n}` ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
                 {PERIODO_ESTILO[n].nombre}
               </button>
             ))}
-            <button onClick={() => toggleHerramienta("sinclases")}
-              className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer bg-red-200 border-red-400 ${herramienta === "sinclases" ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
+            <button onClick={(e) => toggleHerramienta("sinclases", e)}
+              className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer focus:outline-none bg-red-200 border-red-400 ${herramienta === "sinclases" ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
               Día sin clases
             </button>
-            <button onClick={() => toggleHerramienta("quitar")}
-              className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer bg-background inline-flex items-center gap-1 ${herramienta === "quitar" ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
+            <button onClick={(e) => toggleHerramienta("quitar", e)}
+              className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer focus:outline-none bg-background inline-flex items-center gap-1 ${herramienta === "quitar" ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
               <Eraser className="w-3.5 h-3.5" /> Quitar
             </button>
             {guardando && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
