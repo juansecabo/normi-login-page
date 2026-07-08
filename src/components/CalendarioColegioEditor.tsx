@@ -124,11 +124,11 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
               <span className="w-24 text-sm font-medium pb-2">Periodo {n}</span>
               <div>
                 <Label className="text-xs text-muted-foreground">Inicio</Label>
-                <Input type="date" value={periodos[n].inicio} onChange={(e) => setPeriodos((p) => ({ ...p, [n]: { ...p[n], inicio: e.target.value } }))} className="w-44" />
+                <Input type="date" value={periodos[n].inicio} min={`${anoEscolar}-01-01`} max={`${anoEscolar}-12-31`} onChange={(e) => setPeriodos((p) => ({ ...p, [n]: { ...p[n], inicio: e.target.value } }))} className="w-44" />
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground">Fin</Label>
-                <Input type="date" value={periodos[n].fin} onChange={(e) => setPeriodos((p) => ({ ...p, [n]: { ...p[n], fin: e.target.value } }))} className="w-44" />
+                <Input type="date" value={periodos[n].fin} min={periodos[n].inicio || `${anoEscolar}-01-01`} max={`${anoEscolar}-12-31`} onChange={(e) => setPeriodos((p) => ({ ...p, [n]: { ...p[n], fin: e.target.value } }))} className="w-44" />
               </div>
             </div>
           ))}
