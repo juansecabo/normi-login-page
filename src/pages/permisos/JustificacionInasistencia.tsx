@@ -452,9 +452,8 @@ const JustificacionInasistencia = () => {
                     if (!firma) faltan.push("firmar en el recuadro de firma");
                     toast({
                       title: "Falta completar",
-                      description: `Para crear la justificación falta:
-${faltan.map((f) => `• ${f.charAt(0).toUpperCase()}${f.slice(1)}`).join("
-")}`,
+                      description: "Para crear la justificación falta:\n" +
+                        faltan.map((f) => "• " + f.charAt(0).toUpperCase() + f.slice(1)).join("\n"),
                       variant: "destructive",
                     });
                     return;
