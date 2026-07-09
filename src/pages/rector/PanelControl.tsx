@@ -2138,7 +2138,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
 
       {/* ──── Dialog: Agregar/Editar Interno ──── */}
       <Dialog open={showIntDialog} onOpenChange={setShowIntDialog}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>
               {editingInt ? "Editar Funcionario" : "Agregar Funcionario"}
@@ -2266,7 +2266,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
 
       {/* ──── Dialog: Agregar/Editar Asignación ──── */}
       <Dialog open={showAsigDialog} onOpenChange={setShowAsigDialog}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>
               {editingAsig ? "Editar Asignación" : "Agregar Asignación"}
@@ -2409,7 +2409,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
 
       {/* ──── Dialog: Agregar/Editar Perfil ──── */}
       <Dialog open={showPerfDialog} onOpenChange={setShowPerfDialog}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>
               {editingPerf ? "Editar Perfil" : "Agregar Perfil"}
