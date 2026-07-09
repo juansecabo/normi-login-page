@@ -352,14 +352,14 @@ const ArmarSalon = () => {
     setEditandoAcu(a.id);
     setAcuCedula(a.id);
     setAcuNombres(a.nombres); setAcuApellidos(a.apellidos); setAcuGenero(a.genero || "");
-    setAcuBloqueado(esProfesor); // roles del panel editan acudientes (2026-07-09); el director de grupo no
+    setAcuBloqueado(!esAdmin);
     setMostrarFormAcu(true);
     const { data } = await supabase.from("Usuarios").select("numero_de_telefono").eq("id", a.id).maybeSingle();
     if (data) setAcuTelefono((data as any).numero_de_telefono || "");
   };
 
   const guardarAcudienteEditado = async () => {
-    if (!editandoAcu || esProfesor) return;
+    if (!editandoAcu || !esAdmin) return;
     if (!acuNombres.trim() || !acuApellidos.trim()) { toast({ title: "Faltan nombres o apellidos del acudiente", variant: "destructive" }); return; }
     if (acuGenero !== "M" && acuGenero !== "F") { toast({ title: "Falta el género del acudiente", variant: "destructive" }); return; }
     setAcuGuardando(true);
@@ -678,7 +678,7 @@ const ArmarSalon = () => {
                   )}
                   <div className="flex justify-end gap-2">
                     <Button variant="outline" size="sm" onClick={resetFormAcu} disabled={acuGuardando}>Cancelar</Button>
-                    {(!editandoAcu || !esProfesor) && (
+                    {(!editandoAcu || esAdmin) && (
                       <Button size="sm" onClick={editandoAcu ? guardarAcudienteEditado : agregarAcudiente} disabled={acuGuardando} className="gap-1">
                         {acuGuardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} {editandoAcu ? "Guardar" : "Agregar acudiente"}
                       </Button>
