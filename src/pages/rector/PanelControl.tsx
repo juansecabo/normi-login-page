@@ -330,6 +330,8 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
   // True si la cédula del acudiente ya existe en Usuarios (datos bloqueados
   // para rector/coordinador; solo el admin puede modificarlos).
   const [perfUsuarioExiste, setPerfUsuarioExiste] = useState(false);
+  // Slots de acudidos visibles en el dialog (los vacíos se abren con "+ Agregar acudido").
+  const [slotsAcudidos, setSlotsAcudidos] = useState(1);
   const [perfNumEst, setPerfNumEst] = useState("1 (uno)");
   const [perfHijo1Id, setPerfHijo1Id] = useState("");
   const [perfHijo1Nombre, setPerfHijo1Nombre] = useState("");
@@ -1204,6 +1206,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
       setPerfHijo4Apellidos(p.acudido4_apellidos || "");
       setPerfHijo4Grado(p.acudido4_grado || "");
       setPerfHijo4Salon(p.acudido4_salon || "");
+      setSlotsAcudidos(Math.max(1, [p.acudido1_id, p.acudido2_id, p.acudido3_id, p.acudido4_id].filter((x) => x != null).length));
       setShowPerfDialog(true);
       // Nombres/apellidos/teléfono (y contraseña, solo admin) viven en Usuarios.
       if (p.padre_id) {
@@ -1229,6 +1232,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
       setPerfHijo2Id(""); setPerfHijo2Nombre(""); setPerfHijo2Apellidos(""); setPerfHijo2Grado(""); setPerfHijo2Salon("");
       setPerfHijo3Id(""); setPerfHijo3Nombre(""); setPerfHijo3Apellidos(""); setPerfHijo3Grado(""); setPerfHijo3Salon("");
       setPerfHijo4Id(""); setPerfHijo4Nombre(""); setPerfHijo4Apellidos(""); setPerfHijo4Grado(""); setPerfHijo4Salon("");
+      setSlotsAcudidos(1);
       setShowPerfDialog(true);
     }
   };
@@ -2501,26 +2505,31 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                 perfHijo1Grado, setPerfHijo1Grado,
                 perfHijo1Salon, setPerfHijo1Salon,
               )}
-              {renderHijoFields(2,
+              {slotsAcudidos >= 2 && renderHijoFields(2,
                 perfHijo2Id, setPerfHijo2Id,
                 perfHijo2Nombre, setPerfHijo2Nombre,
                 perfHijo2Apellidos, setPerfHijo2Apellidos,
                 perfHijo2Grado, setPerfHijo2Grado,
                 perfHijo2Salon, setPerfHijo2Salon,
               )}
-              {renderHijoFields(3,
+              {slotsAcudidos >= 3 && renderHijoFields(3,
                 perfHijo3Id, setPerfHijo3Id,
                 perfHijo3Nombre, setPerfHijo3Nombre,
                 perfHijo3Apellidos, setPerfHijo3Apellidos,
                 perfHijo3Grado, setPerfHijo3Grado,
                 perfHijo3Salon, setPerfHijo3Salon,
               )}
-              {renderHijoFields(4,
+              {slotsAcudidos >= 4 && renderHijoFields(4,
                 perfHijo4Id, setPerfHijo4Id,
                 perfHijo4Nombre, setPerfHijo4Nombre,
                 perfHijo4Apellidos, setPerfHijo4Apellidos,
                 perfHijo4Grado, setPerfHijo4Grado,
                 perfHijo4Salon, setPerfHijo4Salon,
+              )}
+              {slotsAcudidos < 4 && (
+                <Button type="button" variant="outline" size="sm" onClick={() => setSlotsAcudidos((n) => Math.min(4, n + 1))} className="gap-1">
+                  <Plus className="h-4 w-4" /> Agregar acudido
+                </Button>
               )}
             </div>
 
