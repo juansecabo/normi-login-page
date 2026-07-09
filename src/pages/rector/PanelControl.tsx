@@ -24,7 +24,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Plus, Pencil, Trash2, Search, X } from "lucide-react";
 import { useAsignaturas } from "@/hooks/useAsignaturas";
 import CatalogoAsignaturas from "@/components/CatalogoAsignaturas";
-import { apiClient } from "@/lib/apiClient";
+import { apiClient, apiRequest } from "@/lib/apiClient";
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
@@ -793,11 +793,20 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
     setSavingEst(true);
     const tel = estTelefono.trim() || null;
 
-    // Admin cambió la cédula → migrarla en TODAS las tablas antes de seguir.
-    const cambioIdEst = !!editingEst && esAdmin && idNorm !== String(editingEst.id);
+    // Cambió la identificación → migrarla en TODAS las tablas antes de seguir.
+    // Admin usa la cascada genérica (cualquier persona); los demás roles del
+    // panel usan la de ESTUDIANTES (valida que sea estudiante puro del colegio).
+    const cambioIdEst = !!editingEst && idNorm !== String(editingEst.id);
     if (cambioIdEst) {
       try {
-        await apiClient.auth.cambiarCedula(String(editingEst!.id), idNorm);
+        if (esAdmin) {
+          await apiClient.auth.cambiarCedula(String(editingEst!.id), idNorm);
+        } else {
+          await apiRequest("/api/institucion/corregir-id-estudiante", {
+            method: "POST",
+            body: JSON.stringify({ id_actual: String(editingEst!.id), id_nueva: idNorm }),
+          });
+        }
       } catch (e: any) {
         setSavingEst(false);
         toast({ title: "No se pudo cambiar la cédula", description: e?.body?.detail || e?.message || "Error", variant: "destructive" });
@@ -811,20 +820,19 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
       .from("Usuarios").select("id").eq("id", idNorm).maybeSingle();
     const usuarioYaExistia = !!existingUserEst;
 
-    // Datos de Usuarios (nombres/apellidos/teléfono) solo se escriben si la
-    // persona es NUEVA, o si es admin. Rector/coordinador no pueden modificar
-    // los datos de un Usuario ya existente (regla de inmutabilidad). Tampoco se
-    // setea contraseña: al crear queda vacía y la persona entra con su id.
-    if (!usuarioYaExistia || esAdmin) {
-      const usuariosEstPayload: Record<string, unknown> = {
-        id: idNorm,
+    // Datos personales de ESTUDIANTES: editables por todos los roles del panel
+    // (decisión 2026-07-08). Los existentes van por UPDATE (el proxy valida que
+    // el objetivo sea un estudiante del colegio). No se toca contraseña: al
+    // crear queda vacía y la persona entra con su id.
+    {
+      const datosEst = {
         nombres: estNombre.trim(),
         apellidos: estApellidos.trim(),
         numero_de_telefono: tel,
       };
-      const { error: errUsrEst } = await supabase
-        .from("Usuarios")
-        .upsert(usuariosEstPayload, { onConflict: "id" });
+      const { error: errUsrEst } = usuarioYaExistia
+        ? await supabase.from("Usuarios").update(datosEst).eq("id", idNorm)
+        : await supabase.from("Usuarios").upsert({ id: idNorm, ...datosEst }, { onConflict: "id" });
       if (errUsrEst) {
         setSavingEst(false);
         const code = (errUsrEst as any).code;
@@ -1992,26 +2000,18 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                   }
                 }}
                 placeholder="Ej: 1234567890"
-                readOnly={!!editingEst && !esAdmin}
-                className={editingEst && !esAdmin ? "bg-muted" : ""}
               />
-              {editingEst && esAdmin && (
-                <p className="text-xs text-amber-600">Cambiar la cédula la migra en todo el sistema (notas, vínculos, comunicados…).</p>
+              {editingEst && (
+                <p className="text-xs text-amber-600">Cambiar la identificación la migra en todo el sistema (notas, asistencia, vínculos, comunicados…).</p>
               )}
             </div>
-            {estUsuarioExiste && !esAdmin && (
-              <p className="text-xs text-muted-foreground">
-                Esta persona ya está registrada. Solo el administrador puede modificar sus datos personales.
-              </p>
-            )}
+
             <div className="space-y-2">
               <Label>Apellidos</Label>
               <Input
                 value={estApellidos}
                 onChange={(e) => setEstApellidos(e.target.value)}
                 placeholder="Apellidos del estudiante"
-                readOnly={estUsuarioExiste && !esAdmin}
-                className={estUsuarioExiste && !esAdmin ? "bg-muted" : ""}
               />
             </div>
             <div className="space-y-2">
@@ -2020,8 +2020,6 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                 value={estNombre}
                 onChange={(e) => setEstNombre(e.target.value)}
                 placeholder="Nombres del estudiante"
-                readOnly={estUsuarioExiste && !esAdmin}
-                className={estUsuarioExiste && !esAdmin ? "bg-muted" : ""}
               />
             </div>
             <div className="space-y-2">
@@ -2029,7 +2027,6 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
               <PhoneInput
                 value={estTelefono}
                 onChange={setEstTelefono}
-                disabled={estUsuarioExiste && !esAdmin}
                 placeholder="Ej: 3001234567"
               />
             </div>

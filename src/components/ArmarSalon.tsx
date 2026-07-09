@@ -306,7 +306,7 @@ const ArmarSalon = () => {
     setCedula(p.id);
     setNombres(p.nombres); setApellidos(p.apellidos); setGenero(p.genero || "");
     setEdGrado(grado); setEdSalon(salon);
-    setBloqueado(!esAdmin);
+    setBloqueado(false); // datos de ESTUDIANTES editables por todo el panel (2026-07-08)
     setDialogAbierto(true);
     const [{ data }] = await Promise.all([
       supabase.from("Usuarios").select("numero_de_telefono, fecha_de_nacimiento").eq("id", p.id).maybeSingle(),
@@ -428,7 +428,7 @@ const ArmarSalon = () => {
     if (!editando) return;
     setGuardando(true);
     try {
-      if (esAdmin) {
+      {
         if (!nombres.trim() || !apellidos.trim()) { toast({ title: "Faltan nombres o apellidos", variant: "destructive" }); return; }
         if (genero !== "M" && genero !== "F") { toast({ title: "Falta el género", variant: "destructive" }); return; }
         const { error: eU } = await supabase.from("Usuarios").update({
