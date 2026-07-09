@@ -65,15 +65,7 @@ export function Toaster() {
               <DialogTitle>Error en el sistema</DialogTitle>
             </div>
             <DialogDescription className="pt-3 text-base text-foreground">
-              Por favor comuníquese al WhatsApp del administrador y hágaselo saber:
-              <a
-                href="https://wa.me/573016241863"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block mt-3 text-lg font-bold text-primary hover:underline"
-              >
-                301 624 1863
-              </a>
+              Ocurrió un error inesperado. Por favor intenta de nuevo en un momento; si el problema persiste, infórmalo a la institución.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
