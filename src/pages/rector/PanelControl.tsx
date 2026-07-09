@@ -1978,7 +1978,9 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
 
       {/* ──── Dialog: Agregar/Editar Estudiante ──── */}
       <Dialog open={showEstDialog} onOpenChange={setShowEstDialog}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        {/* Sin autofocus: el primer campo es la identificación y quedaba
+            seleccionada al abrir — cualquier tecla la reemplazaba por error. */}
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>
               {editingEst ? "Editar Estudiante" : "Agregar Estudiante"}
