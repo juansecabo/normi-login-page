@@ -124,10 +124,15 @@ const ArmarSalon = () => {
   const [profes, setProfes] = useState<{ id: string; nombre: string; grupo: string | null }[]>([]);
   const [cargandoProfes, setCargandoProfes] = useState(false);
   const [selProfe, setSelProfe] = useState("");
+  const [buscaProfe, setBuscaProfe] = useState("");
   const [guardandoDir, setGuardandoDir] = useState(false);
+  // Búsqueda flexible: sin tildes ni mayúsculas.
+  const normalizar = (v: string) => v.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const profesFiltrados = profes.filter((p) => !buscaProfe.trim() || normalizar(p.nombre).includes(normalizar(buscaProfe)));
 
   const abrirDirDialog = async () => {
     setSelProfe("");
+    setBuscaProfe("");
     setDirDialog(true);
     if (director) return; // con director solo se ofrece quitarlo, no hace falta la lista
     setCargandoProfes(true);
@@ -730,12 +735,25 @@ const ArmarSalon = () => {
           ) : (
             <div>
               <Label className="text-sm">Profesor(a)</Label>
-              <select value={selProfe} onChange={(e) => setSelProfe(e.target.value)} className="mt-1 w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm">
+              <Input
+                value={buscaProfe}
+                onChange={(e) => {
+                  setBuscaProfe(e.target.value);
+                  // Si el elegido ya no coincide con la búsqueda, soltarlo.
+                  if (selProfe && !normalizar(profes.find((p) => p.id === selProfe)?.nombre || "").includes(normalizar(e.target.value))) setSelProfe("");
+                }}
+                placeholder="Buscar por nombre…"
+                className="mt-1 mb-2"
+              />
+              <select value={selProfe} onChange={(e) => setSelProfe(e.target.value)} size={Math.min(8, Math.max(2, profesFiltrados.length + 1))} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                 <option value="">Selecciona…</option>
-                {profes.map((p) => (
+                {profesFiltrados.map((p) => (
                   <option key={p.id} value={p.id}>{p.nombre}{p.grupo ? ` — dirige ${p.grupo}` : ""}</option>
                 ))}
               </select>
+              {profesFiltrados.length === 0 && (
+                <p className="text-xs text-muted-foreground mt-1">Ningún profesor coincide con la búsqueda.</p>
+              )}
               {selProfe && profes.find((p) => p.id === selProfe)?.grupo && (
                 <p className="text-xs text-amber-600 mt-2">Esta persona ya dirige {profes.find((p) => p.id === selProfe)?.grupo}; al asignarla aquí dejará ese grupo.</p>
               )}
