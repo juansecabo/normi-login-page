@@ -529,7 +529,7 @@ const ArmarSalon = () => {
           </div>
           <p className="text-center text-sm font-medium mb-8">
             {director
-              ? <>{director.genero === "F" ? "Directora" : "Director"} de grupo: {director.nombres} {director.apellidos}</>
+              ? <>{director.genero === "F" ? "Directora" : "Director"} de grupo: {director.apellidos} {director.nombres}</>
               : <span className="text-muted-foreground">Este salón aún no tiene director(a) de grupo.</span>}
             {!esProfesor && (
               <button
@@ -727,7 +727,7 @@ const ArmarSalon = () => {
           </DialogHeader>
           {director ? (
             <div className="space-y-2 text-sm">
-              <p>Actual: <strong>{director.nombres} {director.apellidos}</strong></p>
+              <p>Actual: <strong>{director.apellidos} {director.nombres}</strong></p>
               <p className="text-xs text-muted-foreground">Un salón solo puede tener un(a) director(a) de grupo. Para asignar a otra persona, primero quita al actual.</p>
             </div>
           ) : cargandoProfes ? (
