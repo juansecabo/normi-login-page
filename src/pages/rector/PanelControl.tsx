@@ -928,6 +928,26 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
 
     setSavingInt(true);
 
+    // Cambió la identificación del funcionario → migrarla en TODAS las tablas.
+    const idViejoInt = String(editingInt?.id || "");
+    const cambioIdInt = !!editingInt && idViejoInt !== "" && intId !== idViejoInt;
+    if (cambioIdInt) {
+      try {
+        if (esAdmin) {
+          await apiClient.auth.cambiarCedula(idViejoInt, intId);
+        } else {
+          await apiRequest("/api/institucion/corregir-id", {
+            method: "POST",
+            body: JSON.stringify({ id_actual: idViejoInt, id_nueva: intId }),
+          });
+        }
+      } catch (e: any) {
+        setSavingInt(false);
+        toast({ title: "No se pudo cambiar la identificación", description: e?.body?.detail || e?.message || "Error", variant: "destructive" });
+        return;
+      }
+    }
+
     // Orden importante: primero Usuarios (donde viven nombres/apellidos/contrasena),
     // después Internos (solo id + cargo). Si falla Usuarios y va primero, no
     // queda un Interno huérfano sin datos. Si Internos falla por id duplicado,
@@ -977,7 +997,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
       ({ error } = await supabase
         .from("Internos")
         .update(payload)
-        .eq("id", editingInt.id));
+        .eq("id", cambioIdInt ? Number(intId) : editingInt.id));
     } else {
       ({ error } = await supabase.from("Internos").insert(payload));
     }
@@ -1271,12 +1291,20 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
       return;
     }
 
-    // Admin cambió la cédula del acudiente → migrarla en TODAS las tablas.
+    // Cambió la cédula del acudiente → migrarla en TODAS las tablas. Admin usa
+    // la cascada genérica; los demás roles del panel el endpoint con validaciones.
     const idViejoAcu = soloDigitos(editingPerf?.padre_id || "");
-    const cambioIdPerf = !!editingPerf && esAdmin && idViejoAcu !== "" && cedAcu !== idViejoAcu;
+    const cambioIdPerf = !!editingPerf && idViejoAcu !== "" && cedAcu !== idViejoAcu;
     if (cambioIdPerf) {
       try {
-        await apiClient.auth.cambiarCedula(idViejoAcu, cedAcu);
+        if (esAdmin) {
+          await apiClient.auth.cambiarCedula(idViejoAcu, cedAcu);
+        } else {
+          await apiRequest("/api/institucion/corregir-id", {
+            method: "POST",
+            body: JSON.stringify({ id_actual: idViejoAcu, id_nueva: cedAcu }),
+          });
+        }
       } catch (e: any) {
         setSavingPerf(false);
         toast({ title: "No se pudo cambiar la cédula", description: e?.body?.detail || e?.message || "Error", variant: "destructive" });
@@ -1284,19 +1312,21 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
       }
     }
 
-    // 1) Usuarios (fuente única). Solo se escribe si el acudiente es NUEVO o si
-    //    es admin (regla de inmutabilidad). Sin contraseña: al crear queda
-    //    vacía y la persona entra con su id; si ya existía, conserva la suya.
+    // 1) Usuarios (fuente única). Datos personales editables por todos los roles
+    //    del panel (2026-07-09): existentes van por UPDATE (el proxy valida el
+    //    alcance). Sin contraseña: al crear queda vacía y la persona entra con su id.
     const tel = perfTelefono.trim() || null;
     const { data: existingUserAcu } = await supabase
       .from("Usuarios").select("id").eq("id", cedAcu).maybeSingle();
-    if (!existingUserAcu || esAdmin) {
-      const { error: errUsr } = await supabase.from("Usuarios").upsert({
-        id: cedAcu,
+    {
+      const datosAcu = {
         nombres: perfPadreNombre.trim(),
         apellidos: perfPadreApellidos.trim(),
         numero_de_telefono: tel,
-      }, { onConflict: "id" });
+      };
+      const { error: errUsr } = existingUserAcu
+        ? await supabase.from("Usuarios").update(datosAcu).eq("id", cedAcu)
+        : await supabase.from("Usuarios").upsert({ id: cedAcu, ...datosAcu }, { onConflict: "id" });
       if (errUsr) {
         setSavingPerf(false);
         const code = (errUsr as any).code;
@@ -2152,9 +2182,10 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                 value={intId}
                 onChange={(e) => setIntId(e.target.value)}
                 placeholder="Ej: 12345"
-                readOnly={!!editingInt}
-                className={editingInt ? "bg-muted" : ""}
               />
+              {editingInt && (
+                <p className="text-xs text-amber-600">Cambiar la identificación la migra en todo el sistema (asignaciones, comunicados…).</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Apellidos</Label>
@@ -2431,30 +2462,20 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                   }
                 }}
                 placeholder="Ej: 1234567890"
-                readOnly={!!editingPerf && !esAdmin}
-                className={editingPerf && !esAdmin ? "bg-muted" : ""}
               />
-              {editingPerf && esAdmin && (
-                <p className="text-xs text-amber-600">Cambiar la cédula la migra en todo el sistema (notas, vínculos, comunicados…).</p>
+              {editingPerf && (
+                <p className="text-xs text-amber-600">Cambiar la identificación la migra en todo el sistema (vínculos, comunicados…).</p>
               )}
             </div>
-            {perfUsuarioExiste && !esAdmin && (
-              <p className="text-xs text-muted-foreground">
-                Esta persona ya está registrada. Solo el administrador puede modificar sus datos personales.
-              </p>
-            )}
+
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Apellidos</Label>
-                <Input value={perfPadreApellidos} onChange={(e) => setPerfPadreApellidos(e.target.value)} placeholder="Apellidos"
-                  readOnly={perfUsuarioExiste && !esAdmin}
-                  className={perfUsuarioExiste && !esAdmin ? "bg-muted" : ""} />
+                <Input value={perfPadreApellidos} onChange={(e) => setPerfPadreApellidos(e.target.value)} placeholder="Apellidos" />
               </div>
               <div className="space-y-2">
                 <Label>Nombres</Label>
-                <Input value={perfPadreNombre} onChange={(e) => setPerfPadreNombre(e.target.value)} placeholder="Nombres"
-                  readOnly={perfUsuarioExiste && !esAdmin}
-                  className={perfUsuarioExiste && !esAdmin ? "bg-muted" : ""} />
+                <Input value={perfPadreNombre} onChange={(e) => setPerfPadreNombre(e.target.value)} placeholder="Nombres" />
               </div>
             </div>
             <div className="space-y-2">
@@ -2462,7 +2483,6 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
               <PhoneInput
                 value={perfTelefono}
                 onChange={setPerfTelefono}
-                disabled={perfUsuarioExiste && !esAdmin}
                 placeholder="Ej: 3001234567"
               />
             </div>

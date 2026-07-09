@@ -97,7 +97,10 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   const [confirmQuitar, setConfirmQuitar] = useState<any | null>(null);
   const [quitando, setQuitando] = useState(false);
   // Datos personales (Usuarios) solo los edita el Administrador (o SuperAdmin).
-  const esAdminUsuarios = !!colegioId || cargoSesion === "Administrador";
+  // Datos personales de Usuarios editables por todos los roles del panel
+  // (decisión 2026-07-09); el server aplica la jerarquía (nadie edita a un
+  // rango igual o superior). El profesor director no gestiona internos.
+  const esAdminUsuarios = !!colegioId || cargoSesion !== "Profesor(a)";
   // Busqueda flexible dentro del cargo (nombre, apellido o cedula; sin tildes).
   const [busqueda, setBusqueda] = useState("");
   const [cedula, setCedula] = useState("");
