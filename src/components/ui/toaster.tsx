@@ -83,7 +83,7 @@ export function Toaster() {
               <DialogTitle className="text-destructive">{errorValidacion?.title}</DialogTitle>
             </div>
             {errorValidacion?.description && (
-              <DialogDescription className="pt-3 text-base text-foreground">
+              <DialogDescription className="pt-3 text-base text-foreground whitespace-pre-line">
                 {errorValidacion.description}
               </DialogDescription>
             )}

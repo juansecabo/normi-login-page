@@ -243,7 +243,7 @@ const JustificacionInasistencia = () => {
             <div className="bg-muted/50 rounded-lg p-4 mb-4 border border-border">
               <h3 className="font-bold text-foreground text-center mb-3">FORMATO DE JUSTIFICACIÓN POR INASISTENCIA</h3>
               <p className="text-xs text-muted-foreground leading-relaxed text-justify">
-                El acudiente justificará en forma personal o por escrito las ausencias del estudiante, máximo a las 24 horas posteriores a ellas. El estudiante está obligado a presentarse al coordinador el mismo día que se reincorpora a la institución. Si por motivo de salud o fuerza mayor, el estudiante ha fallado al colegio el día en que se hizo alguna prueba evaluativa o se ha recibido algún trabajo señalado con anterioridad, pero su ausencia ya está justificada o autorizada, el estudiante tiene derecho a presentar la prueba correspondiente en un plazo prudente que será acordado con el respectivo profesor. Cuando la ausencia sea por más de un día y por enfermedad, el estudiante está obligado a presentar certificación y/o incapacidad médica, máximo el tercer día hábil de su ausencia.
+                El acudiente justificará en forma personal o por escrito las ausencias del estudiante, máximo a las 24 horas posteriores a ellas. Si por motivo de salud o fuerza mayor, el estudiante ha fallado al colegio el día en que se hizo alguna prueba evaluativa o se ha recibido algún trabajo señalado con anterioridad, pero su ausencia ya está justificada o autorizada, el estudiante tiene derecho a presentar la prueba correspondiente en un plazo prudente que será acordado con el respectivo profesor. Cuando la ausencia sea por más de un día y por enfermedad, el estudiante está obligado a presentar certificación y/o incapacidad médica, máximo el tercer día hábil de su ausencia.
               </p>
             </div>
 
@@ -452,7 +452,9 @@ const JustificacionInasistencia = () => {
                     if (!firma) faltan.push("firmar en el recuadro de firma");
                     toast({
                       title: "Falta completar",
-                      description: `Para crear la justificación falta: ${faltan.join("; ")}.`,
+                      description: `Para crear la justificación falta:
+${faltan.map((f) => `• ${f.charAt(0).toUpperCase()}${f.slice(1)}`).join("
+")}`,
                       variant: "destructive",
                     });
                     return;
