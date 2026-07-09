@@ -438,8 +438,29 @@ const JustificacionInasistencia = () => {
                 </div>
               </div>
 
-              <button onClick={() => setShowConfirm(true)} disabled={!camposCompletos || saving}
-                className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-bold text-base transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+              <button
+                onClick={() => {
+                  // Si falta algo, en vez de un botón mudo se explica QUÉ falta.
+                  if (!camposCompletos) {
+                    const faltan: string[] = [];
+                    if (!acudidoSeleccionado) faltan.push("seleccionar el estudiante");
+                    if (!tipoRango) faltan.push("elegir si la inasistencia fue de un día o de varios");
+                    if (tipoRango && (!fechaInicioFinal || !fechaFinFinal)) faltan.push("elegir la(s) fecha(s) de la inasistencia");
+                    if (!motivoTipo) faltan.push("elegir el motivo");
+                    if (motivoTipo === "otro" && !motivoOtro.trim()) faltan.push("escribir cuál es el otro motivo");
+                    if (!motivoDescripcion.trim()) faltan.push("escribir la descripción del motivo");
+                    if (!firma) faltan.push("firmar en el recuadro de firma");
+                    toast({
+                      title: "Falta completar",
+                      description: `Para crear la justificación falta: ${faltan.join("; ")}.`,
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  setShowConfirm(true);
+                }}
+                disabled={saving}
+                className={`w-full py-3 rounded-lg bg-primary text-primary-foreground font-bold text-base transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${!camposCompletos ? "opacity-50" : ""}`}>
                 {saving ? "Creando..." : "Crear justificación"}
               </button>
             </div>}
