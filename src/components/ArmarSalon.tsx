@@ -577,7 +577,7 @@ const ArmarSalon = () => {
 
       {/* Pop-up: agregar estudiante con todos sus datos */}
       <Dialog open={dialogAbierto} onOpenChange={(o) => { if (!o) { setDialogAbierto(false); resetForm(); } }}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>{editando ? "Editar estudiante" : `Agregar estudiante — ${grado} ${salon}`}</DialogTitle>
             <DialogDescription>{editando ? "La cédula no se cambia desde aquí." : "Al escribir una cédula ya registrada, los datos se autocompletan."}</DialogDescription>
@@ -700,7 +700,7 @@ const ArmarSalon = () => {
 
       {/* Confirmación de eliminar */}
       <Dialog open={!!confirmEliminar} onOpenChange={(o) => { if (!o) setConfirmEliminar(null); }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Eliminar estudiante</DialogTitle>
             <DialogDescription className="pt-2 text-foreground">
@@ -720,7 +720,7 @@ const ArmarSalon = () => {
 
       {/* Asignar/quitar director(a) de grupo */}
       <Dialog open={dirDialog} onOpenChange={setDirDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>{director ? "Director(a) de grupo" : "Asignar director(a) de grupo"}</DialogTitle>
             <DialogDescription>{grado} {salon}</DialogDescription>

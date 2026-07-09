@@ -443,7 +443,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
 
       {/* Pop-up de agregar (solo staff) */}
       <Dialog open={dialogAbierto} onOpenChange={(o) => { if (!o) { setDialogAbierto(false); reset(); } }}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>{editando ? "Editar" : "Agregar"} — {labelRol}</DialogTitle>
             <DialogDescription>{editando ? "La cédula no se cambia desde aquí." : "Al escribir una cédula ya registrada, los datos se autocompletan."}</DialogDescription>
@@ -545,7 +545,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
 
       {/* Confirmación de quitar cargo */}
       <Dialog open={!!confirmQuitar} onOpenChange={(o) => { if (!o) setConfirmQuitar(null); }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Quitar cargo — {labelRol}</DialogTitle>
             <DialogDescription className="pt-2 text-foreground">
