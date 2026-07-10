@@ -334,7 +334,7 @@ const BotonAgregarConLongPress = ({
 
 const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => {
   const navigate = useNavigate();
-  const { config: colegioConfig } = useColegioConfig();
+  const { config: colegioConfig, configCargada } = useColegioConfig();
   const [asignaturaSeleccionada, setAsignaturaSeleccionada] = useState("");
   const [gradoSeleccionado, setGradoSeleccionado] = useState("");
   const [salonSeleccionado, setSalonSeleccionado] = useState("");
@@ -3338,11 +3338,16 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     } else {
       const nota = aNumero(valorEditando);
       
-      // Validar rango según la escala del colegio (0-5, 0-10, etc.)
-      if (isNaN(nota) || nota < colegioConfig.escala_min || nota > colegioConfig.escala_max) {
+      // Validar rango según la escala del colegio (0-5, 0-10, etc.). SOLO si la
+      // config vino del servidor: con el default (0-5) se rechazarían notas
+      // válidas de colegios con otra escala. Sin config, valida el trigger de
+      // la base de datos (que sí conoce la escala real del colegio).
+      if (isNaN(nota) || (configCargada && (nota < colegioConfig.escala_min || nota > colegioConfig.escala_max))) {
         toast({
           title: "Error",
-          description: `La nota debe estar entre ${colegioConfig.escala_min} y ${colegioConfig.escala_max}`,
+          description: isNaN(nota)
+            ? "Escribe una nota numérica válida."
+            : `La nota debe estar entre ${colegioConfig.escala_min} y ${colegioConfig.escala_max}`,
           variant: "destructive",
         });
         setCeldaEditando(null);

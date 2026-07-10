@@ -55,6 +55,10 @@ export function useColegioConfig() {
   const [logoUrl, setLogoUrl] = useState<string | null>(() => (cacheValido() ? cached!.logoUrl : null));
   const [config, setConfig] = useState<ColegioConfig>(() => (cacheValido() ? cached!.config : DEFAULT_CONFIG));
   const [loading, setLoading] = useState(!cacheValido());
+  // true SOLO cuando la config vino del servidor. Mientras sea false, config es
+  // el DEFAULT (escala 0-5) y NO debe usarse para validar notas: un colegio con
+  // otra escala (Pestalozziano 0-10) rechazaria notas validas.
+  const [configCargada, setConfigCargada] = useState(cacheValido());
 
   // Reacciona al colegio de la sesión: al cambiar de perfil (otro colegio) se re-pide.
   const sesionColegioId = colegioActualId();
@@ -69,7 +73,8 @@ export function useColegioConfig() {
     }
     setLoading(true);
     let cancel = false;
-    (async () => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const intentar = async (intento: number) => {
       try {
         const res = await apiRequest<{ nombre: string; logo_url: string | null; config: Partial<ColegioConfig> | null }>(
           "/api/colegio/config",
@@ -87,16 +92,21 @@ export function useColegioConfig() {
         setNombre(nom);
         setLogoUrl(lu);
         setConfig(cfg);
+        setConfigCargada(true);
         setLoading(false);
       } catch {
         if (cancel) return;
         setLoading(false);
+        // Red móvil inestable / error transitorio: reintentar (hasta 5 veces)
+        // en vez de quedarse con la escala default en silencio.
+        if (intento < 5) timer = setTimeout(() => intentar(intento + 1), 4000);
       }
-    })();
-    return () => { cancel = true; };
+    };
+    intentar(1);
+    return () => { cancel = true; if (timer) clearTimeout(timer); };
   }, [sesionColegioId]);
 
-  return { nombre, logoUrl, config, loading };
+  return { nombre, logoUrl, config, loading, configCargada };
 }
 
 /** Invalida la cache (úsalo cuando el rector modifica la config). */
