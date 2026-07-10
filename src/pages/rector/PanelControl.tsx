@@ -223,6 +223,9 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
   const [filtroFotoEst, setFiltroFotoEst] = useState("todos");
   const [fotoAmpliada, setFotoAmpliada] = useState<string | null>(null);
   const esAdmin = isAdmin();
+  // Director de grupo: puede vincular/desvincular acudientes de sus estudiantes,
+  // pero NO modificar los datos personales de un acudiente ya registrado (2026-07-09).
+  const esProfesor = getSession().cargo === "Profesor(a)";
   // Contraseñas visibles para TODOS los roles con acceso al Panel de Control
   // (decisión 2026-07-06). El dbProxy permite leer `contrasena` a esos mismos
   // roles; editar datos personales sigue siendo solo del admin.
@@ -1298,7 +1301,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
     // Cambió la cédula del acudiente → migrarla en TODAS las tablas. Admin usa
     // la cascada genérica; los demás roles del panel el endpoint con validaciones.
     const idViejoAcu = soloDigitos(editingPerf?.padre_id || "");
-    const cambioIdPerf = !!editingPerf && idViejoAcu !== "" && cedAcu !== idViejoAcu;
+    const cambioIdPerf = !!editingPerf && !esProfesor && idViejoAcu !== "" && cedAcu !== idViejoAcu;
     if (cambioIdPerf) {
       try {
         if (esAdmin) {
@@ -1328,8 +1331,9 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
         apellidos: perfPadreApellidos.trim(),
         numero_de_telefono: tel,
       };
+      // El director de grupo NO toca los datos de un acudiente ya registrado.
       const { error: errUsr } = existingUserAcu
-        ? await supabase.from("Usuarios").update(datosAcu).eq("id", cedAcu)
+        ? (esProfesor ? { error: null } : await supabase.from("Usuarios").update(datosAcu).eq("id", cedAcu))
         : await supabase.from("Usuarios").upsert({ id: cedAcu, ...datosAcu }, { onConflict: "id" });
       if (errUsr) {
         setSavingPerf(false);
@@ -2466,8 +2470,10 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                   }
                 }}
                 placeholder="Ej: 1234567890"
+                readOnly={!!editingPerf && esProfesor}
+                className={editingPerf && esProfesor ? "bg-muted" : ""}
               />
-              {editingPerf && (
+              {editingPerf && !esProfesor && (
                 <p className="text-xs text-amber-600">Cambiar la identificación la migra en todo el sistema (vínculos, comunicados…).</p>
               )}
             </div>
@@ -2475,11 +2481,11 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Apellidos</Label>
-                <Input value={perfPadreApellidos} onChange={(e) => setPerfPadreApellidos(e.target.value)} placeholder="Apellidos" />
+                <Input value={perfPadreApellidos} onChange={(e) => setPerfPadreApellidos(e.target.value)} placeholder="Apellidos" readOnly={(esProfesor && (perfUsuarioExiste || !!editingPerf))} className={(esProfesor && (perfUsuarioExiste || !!editingPerf)) ? "bg-muted" : ""} />
               </div>
               <div className="space-y-2">
                 <Label>Nombres</Label>
-                <Input value={perfPadreNombre} onChange={(e) => setPerfPadreNombre(e.target.value)} placeholder="Nombres" />
+                <Input value={perfPadreNombre} onChange={(e) => setPerfPadreNombre(e.target.value)} placeholder="Nombres" readOnly={(esProfesor && (perfUsuarioExiste || !!editingPerf))} className={(esProfesor && (perfUsuarioExiste || !!editingPerf)) ? "bg-muted" : ""} />
               </div>
             </div>
             <div className="space-y-2">
@@ -2487,8 +2493,12 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
               <PhoneInput
                 value={perfTelefono}
                 onChange={setPerfTelefono}
+                disabled={(esProfesor && (perfUsuarioExiste || !!editingPerf))}
                 placeholder="Ej: 3001234567"
               />
+              {(esProfesor && (perfUsuarioExiste || !!editingPerf)) && (
+                <p className="text-xs text-muted-foreground">Como director(a) de grupo puedes vincular o desvincular estudiantes, pero no modificar los datos del acudiente.</p>
+              )}
             </div>
 
             <div className="pt-2 border-t space-y-3">
