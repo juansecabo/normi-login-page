@@ -118,33 +118,30 @@ const RegistroNormi = () => {
 
       // Estudiantes registrados: Usuarios con id = Estudiantes.id y teléfono no nulo
       // (Fase 10.E.15 — el teléfono solo vive en Usuarios)
+      // En LOTES de 400: un .in() con 2000+ ids (la Normal tiene 2222 estudiantes)
+      // revienta el límite de la URL de PostgREST y la consulta falla en silencio
+      // → todos aparecían "No registrado".
       const estudianteIdsStr = est.map((e) => String(e.id));
       const usuariosEstMap = new Map<string, any>();
-      if (estudianteIdsStr.length > 0) {
-        const usuariosEst = await fetchAllPages<any>((from, to) =>
-          supabase
-            .from("Usuarios")
-            .select("id, numero_de_telefono")
-            .in("id", estudianteIdsStr)
-            .not("numero_de_telefono", "is", null)
-            .range(from, to)
-        );
-        for (const u of usuariosEst as any[]) usuariosEstMap.set(String(u.id), u);
+      for (let i = 0; i < estudianteIdsStr.length; i += 400) {
+        const { data } = await supabase
+          .from("Usuarios")
+          .select("id, numero_de_telefono")
+          .in("id", estudianteIdsStr.slice(i, i + 400))
+          .not("numero_de_telefono", "is", null);
+        for (const u of (data || []) as any[]) usuariosEstMap.set(String(u.id), u);
       }
 
       // Construir lista combinada de perfiles
       const acudienteIds = (acuds as any[]).map((a) => a.id);
-      // Traer nombres y teléfonos desde Usuarios para los acudientes
+      // Nombres y teléfonos de los acudientes, también en LOTES de 400.
       const usuariosMap = new Map<string, any>();
-      if (acudienteIds.length > 0) {
-        const usuarios = await fetchAllPages<any>((from, to) =>
-          supabase
-            .from("Usuarios")
-            .select("id, nombres, apellidos, numero_de_telefono")
-            .in("id", acudienteIds)
-            .range(from, to)
-        );
-        for (const u of usuarios as any[]) usuariosMap.set(String(u.id), u);
+      for (let i = 0; i < acudienteIds.length; i += 400) {
+        const { data } = await supabase
+          .from("Usuarios")
+          .select("id, nombres, apellidos, numero_de_telefono")
+          .in("id", acudienteIds.slice(i, i + 400));
+        for (const u of (data || []) as any[]) usuariosMap.set(String(u.id), u);
       }
 
       // Perfiles del modelo nuevo (Acudientes + Usuarios)
