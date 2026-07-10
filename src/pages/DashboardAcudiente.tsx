@@ -243,7 +243,7 @@ const DashboardAcudiente = () => {
     { id: 'comunicados-firma', render: (
       <button onClick={() => navigate("/comunicados-firma")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-violet-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-violet-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-violet-200">
         <Badge count={pendFirma} />
-        <img src={iconConsultas} alt="" className="w-16 h-16 object-contain" />
+        <img src={iconComunicados} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground text-center">Comunicados con firma</span>
       </button>
     ) },
