@@ -16,7 +16,6 @@ import iconRegistros from "@/assets/icons/registros-comportamiento.png";
 import iconAsistencia from "@/assets/icons/asistencia.webp";
 import iconFotosGrupo from "@/assets/icons/fotos-grupo.webp";
 import iconConfigurarInstitucion from "@/assets/icons/configurar-institucion.webp";
-import iconDireccionGrupo from "@/assets/icons/direccion-grupo.webp";
 import { Users } from "lucide-react";
 import { useBienvenida, getSession, isProfesor, isAdmin, isRectorOrCoordinador, isEstudiante, isPadreDeFamilia } from "@/hooks/useSession";
 import { usePendientesFirma } from "@/hooks/usePendientesFirma";
@@ -272,7 +271,7 @@ const Dashboard = () => {
     ) },
     ...(esDirectorGrupo ? [{ id: 'direccion-grupo', render: (
       <button onClick={() => navigate("/direccion-grupo")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-lime-100 transition-all duration-200 hover:shadow-md hover:bg-lime-200">
-        <img src={iconDireccionGrupo} alt="" className="w-16 h-16 object-contain" />
+        <Users className="w-16 h-16 text-lime-700" />
         <span className="font-semibold text-foreground text-center">Dirección de grupo</span>
       </button>
     ) }, { id: 'construye-institucion', render: (
