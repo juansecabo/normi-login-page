@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getSession, puedeAccederDashboard, isAdmin } from "@/hooks/useSession";
 import PhoneInput from "@/components/PhoneInput";
 import HeaderNormi from "@/components/HeaderNormi";
-import { useGradosColegio } from "@/utils/grados";
+import { useGradosColegio, NIVEL_DE_GRADO } from "@/utils/grados";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -279,6 +279,13 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
 
   // Internos
   const [internos, setInternos] = useState<Interno[]>([]);
+  // Filtros por carga académica (solo aplican a profesores; con un filtro
+  // activo, los internos sin asignación que coincida quedan ocultos).
+  const [filtroNivelInt, setFiltroNivelInt] = useState("todos");
+  const [filtroGradoInt, setFiltroGradoInt] = useState("todos");
+  const [filtroSalonInt, setFiltroSalonInt] = useState("todos");
+  // Búsqueda flexible de profesor dentro del pop-up de Asignación.
+  const [filtroProfAsig, setFiltroProfAsig] = useState("");
   const [loadingInt, setLoadingInt] = useState(true);
   const [searchInt, setSearchInt] = useState("");
   const [showIntDialog, setShowIntDialog] = useState(false);
@@ -1095,6 +1102,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
       setAsigGrados([]);
       setAsigSalones([]);
     }
+    setFiltroProfAsig("");
     setShowAsigDialog(true);
   };
 
@@ -1485,8 +1493,26 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
     return false;
   };
 
+  // ¿El interno (profesor) tiene alguna asignación que cumpla los filtros de
+  // nivel/grado/salón? Una misma fila debe cumplir TODAS las condiciones activas.
+  const intAsigMatch = (i: Interno) => {
+    if (filtroNivelInt === "todos" && filtroGradoInt === "todos" && filtroSalonInt === "todos") return true;
+    return asignaciones.some((a) => {
+      if (String(a.id) !== String(i.id)) return false;
+      const grados: string[] = a["Grado(s)"] || [];
+      const salones: string[] = (a["Salon(es)"] || []).map(String);
+      if (filtroNivelInt !== "todos" && !grados.some((g) => NIVEL_DE_GRADO[g] === filtroNivelInt)) return false;
+      if (filtroGradoInt !== "todos" && !grados.includes(filtroGradoInt)) return false;
+      if (filtroSalonInt !== "todos" && !salones.includes(filtroSalonInt)) return false;
+      return true;
+    });
+  };
+  const nivelesColegio = ["Preescolar", "Primaria", "Secundaria", "Media"]
+    .filter((n) => gradosColegio.some((g) => NIVEL_DE_GRADO[g] === n));
+
   const filteredInt = internos.filter((i) =>
     matchesSearch(`${i.apellidos} ${i.nombres} ${i.id} ${i.cargo} ${(i as any).numero_de_telefono || ""}`, searchInt)
+    && intAsigMatch(i)
   );
 
   const filteredAsig = asignaciones.filter((a) =>
@@ -1734,6 +1760,31 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                 <Button onClick={() => openIntDialog()}>
                   <Plus className="w-4 h-4 mr-2" /> Agregar
                 </Button>
+              </div>
+
+              {/* Filtros por carga académica (aplican a profesores) */}
+              <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                <Select value={filtroNivelInt} onValueChange={setFiltroNivelInt}>
+                  <SelectTrigger className="sm:w-52"><SelectValue placeholder="Nivel" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los niveles</SelectItem>
+                    {nivelesColegio.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={filtroGradoInt} onValueChange={setFiltroGradoInt}>
+                  <SelectTrigger className="sm:w-52"><SelectValue placeholder="Grado" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los grados</SelectItem>
+                    {gradosColegio.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={filtroSalonInt} onValueChange={setFiltroSalonInt}>
+                  <SelectTrigger className="sm:w-52"><SelectValue placeholder="Salón" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los salones</SelectItem>
+                    {SALONES.map((s) => <SelectItem key={s} value={s}>Salón {s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
 
               {loadingInt ? (
@@ -2312,19 +2363,30 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            {/* Seleccionar Profesor */}
+            {/* Seleccionar Profesor (con búsqueda flexible) */}
             <div className="space-y-2">
               <Label>Profesor</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  value={filtroProfAsig}
+                  onChange={(e) => setFiltroProfAsig(e.target.value)}
+                  placeholder="Buscar por nombre, apellido o cédula…"
+                  className="pl-9"
+                />
+              </div>
               <Select value={asigProfesorId} onValueChange={handleSelectProfesor}>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar profesor" />
                 </SelectTrigger>
                 <SelectContent>
-                  {internos.map((i) => (
-                    <SelectItem key={i.id} value={String(i.id)}>
-                      {i.apellidos} {i.nombres}
-                    </SelectItem>
-                  ))}
+                  {internos
+                    .filter((i) => !filtroProfAsig.trim() || matchesSearch(`${i.apellidos} ${i.nombres} ${i.id}`, filtroProfAsig))
+                    .map((i) => (
+                      <SelectItem key={i.id} value={String(i.id)}>
+                        {i.apellidos} {i.nombres}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
               {asigNombres && (

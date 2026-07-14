@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/apiClient";
 import { getSession } from "@/hooks/useSession";
-import { rankGrado } from "@/utils/grados";
+import { rankGrado, NIVEL_DE_GRADO } from "@/utils/grados";
 import PanelControl from "@/pages/rector/PanelControl";
 import PhoneInput from "@/components/PhoneInput";
 import { capitalizarNombre } from "@/utils/texto";
@@ -125,6 +125,11 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   const [nvGrados, setNvGrados] = useState<string[]>([]);
   const [nvSalones, setNvSalones] = useState<string[]>([]);
   const [guardandoCarga, setGuardandoCarga] = useState(false);
+  // Filtros de la lista de profesores por su carga académica (o dirección de grupo).
+  const [filtroNivelP, setFiltroNivelP] = useState("todos");
+  const [filtroGradoP, setFiltroGradoP] = useState("todos");
+  const [filtroSalonP, setFiltroSalonP] = useState("todos");
+  const [asigsProf, setAsigsProf] = useState<any[]>([]);   // todas las asignaciones del colegio
   const [guardando, setGuardando] = useState(false);
   const [buscando, setBuscando] = useState(false);
   // Si la cédula ya existe en Usuarios, los datos vienen de ahí y NO se pueden
@@ -138,6 +143,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
     setCedula(""); setNombres(""); setApellidos(""); setTelefono(""); setGenero(""); setFechaNac(""); setBusqueda("");
     setNiveles([]); setEsDirector(false); setDirGrado(""); setDirSalon(""); setBloqueado(false); setEditando(null);
     setCargas([]); setCargasPend([]); setNvAsigs([]); setNvGrados([]); setNvSalones([]);
+    setFiltroNivelP("todos"); setFiltroGradoP("todos"); setFiltroSalonP("todos");
   };
   // Al dejar de coincidir con una persona encontrada, limpia los datos que se
   // habían autocompletado (pero NO lo que el usuario escribió a mano).
@@ -184,6 +190,42 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
       .then(({ data }) => setAsignaturasCol((data || []).map((a: any) => String(a.nombre))));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [puedeCarga]);
+
+  // Asignaciones del colegio: alimentan los filtros nivel/grado/salón de la
+  // lista de profesores. Solo en el colegio propio (el wizard SuperAdmin no
+  // tiene colegio en el JWT).
+  useEffect(() => {
+    if (colegioId || rol !== "Profesor(a)") return;
+    supabase.from("Asignación Profesores").select('id, "Grado(s)", "Salon(es)"')
+      .then(({ data }) => setAsigsProf(data || []));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rol]);
+
+  // ¿El profesor coincide con los filtros? Por una fila de su carga que cumpla
+  // TODAS las condiciones activas, o por su dirección de grupo.
+  const profMatchFiltros = (p: any) => {
+    if (filtroNivelP === "todos" && filtroGradoP === "todos" && filtroSalonP === "todos") return true;
+    const dir = String(p.direccion_de_grupo || "").trim();
+    const corte = dir.lastIndexOf(" ");
+    const dirGradoP = dir && corte > 0 ? dir.slice(0, corte) : "";
+    const dirSalonP = dir && corte > 0 ? dir.slice(corte + 1) : "";
+    const dirOk =
+      (filtroNivelP === "todos" || NIVEL_DE_GRADO[dirGradoP] === filtroNivelP) &&
+      (filtroGradoP === "todos" || dirGradoP === filtroGradoP) &&
+      (filtroSalonP === "todos" || dirSalonP === filtroSalonP);
+    if (dir && dirOk) return true;
+    return asigsProf.some((a) => {
+      if (String(a.id) !== String(p.id)) return false;
+      const grados: string[] = a["Grado(s)"] || [];
+      const salones: string[] = (a["Salon(es)"] || []).map(String);
+      if (filtroNivelP !== "todos" && !grados.some((g) => NIVEL_DE_GRADO[g] === filtroNivelP)) return false;
+      if (filtroGradoP !== "todos" && !grados.includes(filtroGradoP)) return false;
+      if (filtroSalonP !== "todos" && !salones.includes(filtroSalonP)) return false;
+      return true;
+    });
+  };
+  const nivelesColegio = ["Preescolar", "Primaria", "Secundaria", "Media"]
+    .filter((n) => gradosCol.some((g) => NIVEL_DE_GRADO[g.grado] === n));
 
   const cargarCargas = async (id: string) => {
     const { data } = await supabase
@@ -396,8 +438,11 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   // Busqueda tolerante: ignora tildes y mayusculas; cruza nombre completo y cedula.
   const normalizar = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const q = normalizar(busqueda.trim());
-  const listaActual = !q ? listaDelRol : listaDelRol.filter((p) =>
+  const listaBuscada = !q ? listaDelRol : listaDelRol.filter((p) =>
     normalizar(`${p.nombres} ${p.apellidos}`).includes(q) || String(p.id).includes(q));
+  const listaActual = rol === "Profesor(a)" && !colegioId
+    ? listaBuscada.filter(profMatchFiltros)
+    : listaBuscada;
   const labelActual = esStaff ? labelRol : rol === "estudiante" ? "Estudiantes" : rol === "acudiente" ? "Acudientes" : "";
   // Estudiantes/Acudientes: se incrusta el Panel de Control (mismo CRUD, misma
   // data → lo que se haga aquí o allá es idéntico). Solo en el colegio propio:
@@ -470,6 +515,24 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
           className="pl-9"
         />
       </div>
+
+      {/* Filtros de profesores por carga académica / dirección de grupo */}
+      {rol === "Profesor(a)" && !colegioId && (
+        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          <select value={filtroNivelP} onChange={(e) => setFiltroNivelP(e.target.value)} className="flex h-10 sm:w-52 rounded-md border border-input bg-card px-3 py-2 text-sm">
+            <option value="todos">Todos los niveles</option>
+            {nivelesColegio.map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
+          <select value={filtroGradoP} onChange={(e) => setFiltroGradoP(e.target.value)} className="flex h-10 sm:w-52 rounded-md border border-input bg-card px-3 py-2 text-sm">
+            <option value="todos">Todos los grados</option>
+            {gradosCol.map((g) => <option key={g.grado} value={g.grado}>{g.grado}</option>)}
+          </select>
+          <select value={filtroSalonP} onChange={(e) => setFiltroSalonP(e.target.value)} className="flex h-10 sm:w-52 rounded-md border border-input bg-card px-3 py-2 text-sm">
+            <option value="todos">Todos los salones</option>
+            {salonesUnicos.map((s) => <option key={s} value={s}>Salón {s}</option>)}
+          </select>
+        </div>
+      )}
 
       {listaActual.length === 0 ? (
         <p className="text-sm text-muted-foreground border border-dashed rounded-lg p-6 text-center bg-card">
