@@ -9,6 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Clock, Plus, Trash2, GraduationCap, DoorOpen, Loader2 } from "lucide-react";
 import { apiRequest, ApiError } from "@/lib/apiClient";
 import { ORDEN_GRADOS, rankGrado } from "@/utils/grados";
+import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 /**
  * Editor de estructura del colegio (Jornadas + Grados + Salones), compartido por:
@@ -190,6 +192,33 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
     catch (e) { err(e, "No se pudo eliminar el salón."); }
   };
 
+  // ── Cinturón de seguridad al borrar: si el salón tiene estudiantes
+  //    matriculados, pop-up de advertencia antes de eliminarlo. El conteo se
+  //    carga solo en el colegio propio (el wizard SuperAdmin opera sobre
+  //    borradores sin estudiantes y no puede leer Estudiantes por el proxy).
+  const [conteoEst, setConteoEst] = useState<Record<string, number>>({});
+  useEffect(() => {
+    if (colegioId) return;
+    (supabase.from("Estudiantes").select("grado, salon") as any).fetchAll()
+      .then(({ data }: any) => {
+        const m: Record<string, number> = {};
+        for (const r of (data || [])) {
+          if (!r.grado || r.salon == null) continue;
+          const k = `${r.grado}|${String(r.salon)}`;
+          m[k] = (m[k] || 0) + 1;
+        }
+        setConteoEst(m);
+      })
+      .catch(() => { /* sin conteo: el pop-up simplemente no se dispara */ });
+  }, [colegioId]);
+  const [confirmSalon, setConfirmSalon] = useState<{ id: number; grado: string; salon: string; n: number } | null>(null);
+  const [borrandoSalon, setBorrandoSalon] = useState(false);
+  const intentarBorrarSalon = (s: Salon) => {
+    const n = conteoEst[`${s.grado}|${String(s.salon)}`] || 0;
+    if (n > 0) setConfirmSalon({ id: s.id, grado: s.grado, salon: String(s.salon), n });
+    else borrarSalon(s.id);
+  };
+
   const toggleBulkGrado = (g: string) => setBulkGrados((prev) => prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]);
   const aplicarBulk = async () => {
     if (bulkGrados.length === 0) { toast({ title: "Elige grados", description: "Selecciona al menos un grado.", variant: "destructive" }); return; }
@@ -365,7 +394,7 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
                             {jornadas.map((j) => <SelectItem key={j.id} value={String(j.id)}>{j.nombre}</SelectItem>)}
                           </SelectContent>
                         </Select>
-                        <button onClick={() => borrarSalon(s.id)} className="text-muted-foreground hover:text-destructive" title="Eliminar salón"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={() => intentarBorrarSalon(s)} className="text-muted-foreground hover:text-destructive" title="Eliminar salón"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     ))}
                   </div>
@@ -378,6 +407,39 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
           )}
         </CardContent>
       </Card>
+
+      {/* Advertencia al borrar un salón CON estudiantes matriculados */}
+      <Dialog open={!!confirmSalon} onOpenChange={(o) => { if (!o) setConfirmSalon(null); }}>
+        <DialogContent className="max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>⚠️ Este salón tiene estudiantes</DialogTitle>
+            <DialogDescription className="pt-2 text-foreground">
+              <strong>{confirmSalon?.grado} {confirmSalon?.salon}</strong> tiene{" "}
+              <strong>{confirmSalon?.n} estudiante{confirmSalon?.n === 1 ? "" : "s"} matriculado{confirmSalon?.n === 1 ? "" : "s"}</strong>.
+              <br /><br />
+              Eliminarlo NO borra a los estudiantes ni sus notas (siguen matriculados en ese grado y salón),
+              pero el salón desaparecerá de la estructura del colegio y de sus selectores hasta que lo vuelvas a crear.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmSalon(null)} disabled={borrandoSalon}>Cancelar</Button>
+            <Button
+              variant="destructive"
+              disabled={borrandoSalon}
+              onClick={async () => {
+                if (!confirmSalon) return;
+                setBorrandoSalon(true);
+                await borrarSalon(confirmSalon.id);
+                setBorrandoSalon(false);
+                setConfirmSalon(null);
+              }}
+              className="gap-2"
+            >
+              {borrandoSalon ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Eliminar de todas formas
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
