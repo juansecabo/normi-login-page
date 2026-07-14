@@ -227,6 +227,19 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   const nivelesColegio = ["Preescolar", "Primaria", "Secundaria", "Media"]
     .filter((n) => gradosCol.some((g) => NIVEL_DE_GRADO[g.grado] === n));
 
+  // Salones ofrecidos por el filtro, en cascada: los del grado elegido; si solo
+  // hay nivel, los de los grados de ese nivel; si nada, todos los del colegio.
+  const salonesDeGrados = (gs: string[]) => {
+    const s = new Set<string>();
+    for (const r of salonesCol) if (gs.includes(String(r.grado))) s.add(String(r.salon));
+    return [...s].sort((a, b) => Number(a) - Number(b));
+  };
+  const salonesFiltroP = filtroGradoP !== "todos"
+    ? salonesDeGrados([filtroGradoP])
+    : filtroNivelP !== "todos"
+      ? salonesDeGrados(gradosCol.filter((g) => NIVEL_DE_GRADO[g.grado] === filtroNivelP).map((g) => g.grado))
+      : salonesUnicos;
+
   const cargarCargas = async (id: string) => {
     const { data } = await supabase
       .from("Asignación Profesores")
@@ -520,11 +533,11 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
           En cascada: con un nivel elegido, solo se ofrecen los grados de ese nivel. */}
       {rol === "Profesor(a)" && !colegioId && (
         <div className="flex flex-col sm:flex-row gap-3 mb-4">
-          <select value={filtroNivelP} onChange={(e) => { setFiltroNivelP(e.target.value); setFiltroGradoP("todos"); }} className="flex h-10 sm:w-52 rounded-md border border-input bg-card px-3 py-2 text-sm">
+          <select value={filtroNivelP} onChange={(e) => { setFiltroNivelP(e.target.value); setFiltroGradoP("todos"); setFiltroSalonP("todos"); }} className="flex h-10 sm:w-52 rounded-md border border-input bg-card px-3 py-2 text-sm">
             <option value="todos">Todos los niveles</option>
             {nivelesColegio.map((n) => <option key={n} value={n}>{n}</option>)}
           </select>
-          <select value={filtroGradoP} onChange={(e) => setFiltroGradoP(e.target.value)} className="flex h-10 sm:w-52 rounded-md border border-input bg-card px-3 py-2 text-sm">
+          <select value={filtroGradoP} onChange={(e) => { setFiltroGradoP(e.target.value); setFiltroSalonP("todos"); }} className="flex h-10 sm:w-52 rounded-md border border-input bg-card px-3 py-2 text-sm">
             <option value="todos">Todos los grados</option>
             {gradosCol
               .filter((g) => filtroNivelP === "todos" || NIVEL_DE_GRADO[g.grado] === filtroNivelP)
@@ -532,7 +545,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
           </select>
           <select value={filtroSalonP} onChange={(e) => setFiltroSalonP(e.target.value)} className="flex h-10 sm:w-52 rounded-md border border-input bg-card px-3 py-2 text-sm">
             <option value="todos">Todos los salones</option>
-            {salonesUnicos.map((s) => <option key={s} value={s}>Salón {s}</option>)}
+            {salonesFiltroP.map((s) => <option key={s} value={s}>Salón {s}</option>)}
           </select>
         </div>
       )}

@@ -1510,6 +1510,19 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
   const nivelesColegio = ["Preescolar", "Primaria", "Secundaria", "Media"]
     .filter((n) => gradosColegio.some((g) => NIVEL_DE_GRADO[g] === n));
 
+  // Salones del filtro de Internos, en cascada con el grado/nivel elegido.
+  const salonesFiltroInt = (() => {
+    if (filtroGradoInt !== "todos") return salonesParaGrado(filtroGradoInt);
+    if (filtroNivelInt !== "todos") {
+      const s = new Set<string>();
+      for (const g of gradosColegio.filter((g) => NIVEL_DE_GRADO[g] === filtroNivelInt)) {
+        for (const x of salonesParaGrado(g)) s.add(x);
+      }
+      return [...s].sort((a, b) => Number(a) - Number(b));
+    }
+    return salonesParaGrado("todos");
+  })();
+
   const filteredInt = internos.filter((i) =>
     matchesSearch(`${i.apellidos} ${i.nombres} ${i.id} ${i.cargo} ${(i as any).numero_de_telefono || ""}`, searchInt)
     && intAsigMatch(i)
@@ -1764,14 +1777,14 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
 
               {/* Filtros por carga académica (aplican a profesores) */}
               <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                <Select value={filtroNivelInt} onValueChange={(v) => { setFiltroNivelInt(v); setFiltroGradoInt("todos"); }}>
+                <Select value={filtroNivelInt} onValueChange={(v) => { setFiltroNivelInt(v); setFiltroGradoInt("todos"); setFiltroSalonInt("todos"); }}>
                   <SelectTrigger className="sm:w-52"><SelectValue placeholder="Nivel" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos los niveles</SelectItem>
                     {nivelesColegio.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
                   </SelectContent>
                 </Select>
-                <Select value={filtroGradoInt} onValueChange={setFiltroGradoInt}>
+                <Select value={filtroGradoInt} onValueChange={(v) => { setFiltroGradoInt(v); setFiltroSalonInt("todos"); }}>
                   <SelectTrigger className="sm:w-52"><SelectValue placeholder="Grado" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos los grados</SelectItem>
@@ -1784,7 +1797,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                   <SelectTrigger className="sm:w-52"><SelectValue placeholder="Salón" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos los salones</SelectItem>
-                    {SALONES.map((s) => <SelectItem key={s} value={s}>Salón {s}</SelectItem>)}
+                    {salonesFiltroInt.map((s) => <SelectItem key={s} value={s}>Salón {s}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
