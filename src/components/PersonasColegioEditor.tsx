@@ -114,6 +114,17 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   const [esDirector, setEsDirector] = useState(false);            // Profesor(a)
   const [dirGrado, setDirGrado] = useState("");
   const [dirSalon, setDirSalon] = useState("");
+  // Carga académica del profesor (tabla "Asignación Profesores"). Solo la
+  // gestionan los roles con permiso de escritura en el dbProxy (ADMIN_ONLY) y
+  // no aplica en el wizard del SuperAdmin (sin colegio en el JWT).
+  const puedeCarga = !colegioId && ["Administrador", "Rector", "Coordinador(a)"].includes(cargoSesion);
+  const [asignaturasCol, setAsignaturasCol] = useState<string[]>([]);
+  const [cargas, setCargas] = useState<any[]>([]);                 // filas existentes (edición)
+  const [cargasPend, setCargasPend] = useState<{ asignaturas: string[]; grados: string[]; salones: string[] }[]>([]); // al agregar
+  const [nvAsigs, setNvAsigs] = useState<string[]>([]);
+  const [nvGrados, setNvGrados] = useState<string[]>([]);
+  const [nvSalones, setNvSalones] = useState<string[]>([]);
+  const [guardandoCarga, setGuardandoCarga] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [buscando, setBuscando] = useState(false);
   // Si la cédula ya existe en Usuarios, los datos vienen de ahí y NO se pueden
@@ -126,6 +137,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   const reset = () => {
     setCedula(""); setNombres(""); setApellidos(""); setTelefono(""); setGenero(""); setFechaNac(""); setBusqueda("");
     setNiveles([]); setEsDirector(false); setDirGrado(""); setDirSalon(""); setBloqueado(false); setEditando(null);
+    setCargas([]); setCargasPend([]); setNvAsigs([]); setNvGrados([]); setNvSalones([]);
   };
   // Al dejar de coincidir con una persona encontrada, limpia los datos que se
   // habían autocompletado (pero NO lo que el usuario escribió a mano).
@@ -163,6 +175,56 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [colegioId]);
   const salonesDelGrado = salonesCol.filter((s) => s.grado === dirGrado).map((s) => s.salon).sort((a, b) => Number(a) - Number(b));
+  const salonesUnicos = Array.from(new Set(salonesCol.map((s) => String(s.salon)))).sort((a, b) => Number(a) - Number(b));
+
+  // Asignaturas activas del colegio (para la carga académica del profesor).
+  useEffect(() => {
+    if (!puedeCarga) return;
+    supabase.from("Asignaturas").select("nombre").eq("activa", true).order("nombre")
+      .then(({ data }) => setAsignaturasCol((data || []).map((a: any) => String(a.nombre))));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [puedeCarga]);
+
+  const cargarCargas = async (id: string) => {
+    const { data } = await supabase
+      .from("Asignación Profesores")
+      .select('row_id, "Asignatura(s)", "Grado(s)", "Salon(es)"')
+      .eq("id", parseInt(id));
+    setCargas(data || []);
+  };
+
+  // Añade una asignación: en edición escribe YA en la tabla; al agregar una
+  // persona nueva queda pendiente y se inserta después de crear el interno.
+  const anadirCarga = async () => {
+    if (nvAsigs.length === 0 || nvGrados.length === 0 || nvSalones.length === 0) {
+      toast({ title: "Carga incompleta", description: "Elige al menos una asignatura, un grado y un salón.", variant: "destructive" });
+      return;
+    }
+    if (editando) {
+      setGuardandoCarga(true);
+      const { error } = await supabase.from("Asignación Profesores").insert({
+        id: parseInt(editando), "Asignatura(s)": nvAsigs, "Grado(s)": nvGrados, "Salon(es)": nvSalones,
+      });
+      setGuardandoCarga(false);
+      if (error) { toast({ title: "No se pudo guardar la carga", description: error.message, variant: "destructive" }); return; }
+      await cargarCargas(editando);
+    } else {
+      setCargasPend((prev) => [...prev, { asignaturas: nvAsigs, grados: nvGrados, salones: nvSalones }]);
+    }
+    setNvAsigs([]); setNvGrados([]); setNvSalones([]);
+  };
+
+  const quitarCarga = async (row: any) => {
+    if (editando) {
+      setGuardandoCarga(true);
+      const { error } = await supabase.from("Asignación Profesores").delete().eq("row_id", row.row_id);
+      setGuardandoCarga(false);
+      if (error) { toast({ title: "No se pudo quitar", description: error.message, variant: "destructive" }); return; }
+      await cargarCargas(editando);
+    } else {
+      setCargasPend((prev) => prev.filter((c) => c !== row));
+    }
+  };
 
   const labelRol = ROLES_STAFF.find((r) => r.cargo === rol)?.label || "";
   const esStaff = rol !== null && ROLES_STAFF.some((r) => r.cargo === rol);
@@ -216,11 +278,28 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
           direccion_de_grupo: rol === "Profesor(a)" && esDirector && dirGrado && dirSalon ? `${dirGrado} ${dirSalon}` : undefined,
         })),
       });
+      // Carga académica pendiente del profesor nuevo: se inserta después de
+      // crear el interno (antes no existe). Un fallo aquí NO deshace la persona.
+      let cargasFallidas = 0;
+      if (rol === "Profesor(a)" && cargasPend.length > 0) {
+        for (const c of cargasPend) {
+          const { error } = await supabase.from("Asignación Profesores").insert({
+            id: parseInt(cedula.trim()), "Asignatura(s)": c.asignaturas, "Grado(s)": c.grados, "Salon(es)": c.salones,
+          });
+          if (error) cargasFallidas++;
+        }
+      }
       reset();
       setDialogAbierto(false);
       await onChanged?.();
       await cargarPersonas();
-      toast({ title: `${labelRol} agregado`, description: "Entra por primera vez con su cédula como contraseña." });
+      toast({
+        title: `${labelRol} agregado`,
+        description: cargasFallidas > 0
+          ? `Se creó la persona, pero ${cargasFallidas} asignación(es) de su carga no se guardaron. Revísalas editando al profesor.`
+          : "Entra por primera vez con su cédula como contraseña.",
+        ...(cargasFallidas > 0 ? { variant: "destructive" as const } : {}),
+      });
     } catch (err: any) {
       const detail = (err?.body as any)?.detail || err?.message;
       toast({ title: "No se pudo agregar", description: detail, variant: "destructive" });
@@ -244,6 +323,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
     setDirSalon(dir && corte > 0 ? dir.slice(corte + 1) : "");
     setBloqueado(!esAdminUsuarios);
     setDialogAbierto(true);
+    if (rol === "Profesor(a)" && puedeCarga) cargarCargas(String(p.id)).catch(() => {});
     try {
       const { usuario } = await apiRequest<{ usuario: any }>(`/api/institucion/usuario/${p.id}${qCid}`);
       if (usuario) { setTelefono(usuario.numero_de_telefono || ""); setGenero(usuario.genero || ""); setFechaNac(usuario.fecha_de_nacimiento || ""); }
@@ -526,6 +606,74 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
                   </div>
                 )
               )}
+            </div>
+          )}
+
+          {/* Profesor: carga académica (asignaciones) ahí mismo, sin ir al Panel de Control */}
+          {rol === "Profesor(a)" && puedeCarga && (
+            <div className="space-y-2 border-t border-border pt-3">
+              <Label className="text-sm font-semibold">Carga académica</Label>
+              {(editando ? cargas : cargasPend).length === 0 ? (
+                <p className="text-xs text-muted-foreground">Sin asignaciones todavía. Puedes añadirlas aquí o después desde el Panel de Control.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {(editando
+                    ? cargas.map((c) => ({ row: c, asignaturas: c["Asignatura(s)"] || [], grados: c["Grado(s)"] || [], salones: c["Salon(es)"] || [] }))
+                    : cargasPend.map((c) => ({ row: c, ...c }))
+                  ).map((c, i) => (
+                    <div key={i} className="flex items-start gap-2 text-sm border border-border rounded-md px-2.5 py-1.5 bg-secondary/30">
+                      <span className="flex-1 min-w-0">
+                        <strong>{(c.asignaturas as string[]).join(", ")}</strong>
+                        {" — "}{(c.grados as string[]).join(", ")} · Salón(es) {(c.salones as string[]).join(", ")}
+                      </span>
+                      <button type="button" onClick={() => quitarCarga(c.row)} disabled={guardandoCarga} className="p-1 text-muted-foreground hover:text-destructive shrink-0" title="Quitar asignación">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {asignaturasCol.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No hay asignaturas activas — agrégalas primero en la ficha <strong>Asignaturas</strong>.</p>
+              ) : (<>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Asignatura(s) ({nvAsigs.length})</Label>
+                  <div className="border rounded-md p-2 mt-1 max-h-32 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                    {asignaturasCol.map((a) => (
+                      <label key={a} className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                        <input type="checkbox" checked={nvAsigs.includes(a)} onChange={() => setNvAsigs((p) => p.includes(a) ? p.filter((x) => x !== a) : [...p, a])} className="w-4 h-4 accent-primary cursor-pointer" />
+                        {a}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Grado(s) ({nvGrados.length})</Label>
+                  <div className="border rounded-md p-2 mt-1 max-h-32 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                    {gradosCol.map((g) => (
+                      <label key={g.grado} className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                        <input type="checkbox" checked={nvGrados.includes(g.grado)} onChange={() => setNvGrados((p) => p.includes(g.grado) ? p.filter((x) => x !== g.grado) : [...p, g.grado])} className="w-4 h-4 accent-primary cursor-pointer" />
+                        {g.grado}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Salón(es) ({nvSalones.length})</Label>
+                  <div className="border rounded-md p-2 mt-1 flex flex-wrap gap-x-4 gap-y-1.5">
+                    {salonesUnicos.map((s) => (
+                      <label key={s} className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                        <input type="checkbox" checked={nvSalones.includes(s)} onChange={() => setNvSalones((p) => p.includes(s) ? p.filter((x) => x !== s) : [...p, s])} className="w-4 h-4 accent-primary cursor-pointer" />
+                        Salón {s}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={anadirCarga} disabled={guardandoCarga} className="gap-1">
+                  {guardandoCarga ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Añadir asignación
+                </Button>
+              </>)}
             </div>
           )}
 
