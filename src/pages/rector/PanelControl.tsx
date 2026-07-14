@@ -1764,7 +1764,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
 
               {/* Filtros por carga académica (aplican a profesores) */}
               <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                <Select value={filtroNivelInt} onValueChange={setFiltroNivelInt}>
+                <Select value={filtroNivelInt} onValueChange={(v) => { setFiltroNivelInt(v); setFiltroGradoInt("todos"); }}>
                   <SelectTrigger className="sm:w-52"><SelectValue placeholder="Nivel" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos los niveles</SelectItem>
@@ -1775,7 +1775,9 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                   <SelectTrigger className="sm:w-52"><SelectValue placeholder="Grado" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos los grados</SelectItem>
-                    {gradosColegio.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                    {gradosColegio
+                      .filter((g) => filtroNivelInt === "todos" || NIVEL_DE_GRADO[g] === filtroNivelInt)
+                      .map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <Select value={filtroSalonInt} onValueChange={setFiltroSalonInt}>
