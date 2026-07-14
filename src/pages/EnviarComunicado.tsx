@@ -308,6 +308,14 @@ const EnviarComunicado = () => {
 
     const gradosSel = Object.keys(gradosMarcados).filter(g => gradosMarcados[g]);
     const salonesSel = Object.keys(salonesMarcados).filter(s => salonesMarcados[s]);
+    // Sin grados marcados pero con NIVELES: la lista debe respetar los niveles
+    // (antes los ignoraba y mostraba TODOS los profesores del colegio, aunque
+    // el envío sí filtraba por nivel — confundía y permitía marcar un profesor
+    // por fuera de los niveles elegidos).
+    const nivelesSel = Object.keys(nivelesMarcados).filter(n => nivelesMarcados[n]);
+    const gradosFiltro = gradosSel.length > 0
+      ? gradosSel
+      : nivelesSel.flatMap(n => nivelesGrados[n] || []);
 
     const fetchProfes = async () => {
       setLoadingListaProfesores(true);
@@ -321,7 +329,7 @@ const EnviarComunicado = () => {
       const filtered = (data || []).filter((r: any) => {
         const grados = (r["Grado(s)"] as string[]) || [];
         const salones = (r["Salon(es)"] as string[]) || [];
-        if (gradosSel.length > 0 && !gradosSel.some(g => grados.includes(g))) return false;
+        if (gradosFiltro.length > 0 && !gradosFiltro.some(g => grados.includes(g))) return false;
         if (salonesSel.length > 0 && !salonesSel.some(s => salones.includes(s))) return false;
         return true;
       });
@@ -347,7 +355,7 @@ const EnviarComunicado = () => {
       setLoadingListaProfesores(false);
     };
     fetchProfes();
-  }, [gradosMarcados, salonesMarcados, perfilesMarcados.Profesores]);
+  }, [gradosMarcados, salonesMarcados, nivelesMarcados, nivelesGrados, perfilesMarcados.Profesores]);
 
   // Cargar las 4 listas de internos (Coordinadores, Administrativos, Secretaria General, Orientador(a) Escolar)
   useEffect(() => {
