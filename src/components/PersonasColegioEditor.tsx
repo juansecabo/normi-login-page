@@ -446,8 +446,12 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
     : r === "acudiente" ? personas.acudientes.length
     : personas.internos.filter((i) => tieneCargo(i, r)).length;
 
+  // Orden alfabético por apellidos (y nombres de desempate) — antes salían en
+  // el orden crudo de la BD (orden de creación), que se veía aleatorio.
   const listaDelRol: any[] =
-    !rol ? [] : esStaff ? personas.internos.filter((i) => tieneCargo(i, rol)) : rol === "estudiante" ? personas.estudiantes : personas.acudientes;
+    (!rol ? [] : esStaff ? personas.internos.filter((i) => tieneCargo(i, rol)) : rol === "estudiante" ? personas.estudiantes : personas.acudientes)
+      .slice()
+      .sort((a, b) => `${a.apellidos || ""} ${a.nombres || ""}`.localeCompare(`${b.apellidos || ""} ${b.nombres || ""}`, "es"));
   // Busqueda tolerante: ignora tildes y mayusculas; cruza nombre completo y cedula.
   const normalizar = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const q = normalizar(busqueda.trim());
@@ -562,11 +566,11 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
                 <img src={p.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" loading="lazy" />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm shrink-0">
-                  {(p.nombres || "?").charAt(0).toUpperCase()}
+                  {(p.apellidos || p.nombres || "?").charAt(0).toUpperCase()}
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="font-medium truncate">{p.nombres} {p.apellidos}</p>
+                <p className="font-medium truncate">{p.apellidos} {p.nombres}</p>
                 <p className="text-sm text-muted-foreground">
                   Cédula: {p.id}
                   {p.grado ? ` · ${p.grado}${p.salon ? ` ${p.salon}` : ""}` : ""}
