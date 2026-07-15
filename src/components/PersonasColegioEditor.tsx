@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -559,40 +560,62 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
           Aún no hay {labelActual.toLowerCase()} en este colegio.
         </p>
       ) : (
-        <div className="space-y-2">
-          {listaActual.map((p) => (
-            <div key={p.id} className="flex items-center gap-3 border border-border rounded-lg p-2.5 bg-card">
-              {p.avatar_url ? (
-                <img src={p.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" loading="lazy" />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm shrink-0">
-                  {(p.apellidos || p.nombres || "?").charAt(0).toUpperCase()}
-                </div>
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="font-medium truncate">{p.apellidos} {p.nombres}</p>
-                <p className="text-sm text-muted-foreground">
-                  Cédula: {p.id}
-                  {p.grado ? ` · ${p.grado}${p.salon ? ` ${p.salon}` : ""}` : ""}
-                  {Array.isArray(p.niveles_coordina) && p.niveles_coordina.length > 0 ? ` · Coordina: ${p.niveles_coordina.join(", ")}` : ""}
-                  {p.direccion_de_grupo ? ` · Director(a) de grupo: ${p.direccion_de_grupo}` : ""}
-                  {/* El server solo incluye teléfono y contraseña para roles del panel; contraseña null = entra con su cédula */}
-                  {"numero_de_telefono" in p ? ` · Cel: ${p.numero_de_telefono || "—"}` : ""}
-                  {"contrasena" in p ? ` · Contraseña: ${p.contrasena || "(su cédula)"}` : ""}
-                </p>
-              </div>
-              {esStaff && rol !== null && cargosAgregables.includes(rol) && (
-                <div className="flex items-center gap-1 shrink-0">
-                  <button onClick={() => abrirEditar(p)} className="p-2 text-muted-foreground hover:text-primary" title="Editar">
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => setConfirmQuitar(p)} className="p-2 text-muted-foreground hover:text-destructive" title="Quitar cargo">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
+        // Tabla al estilo de la pestaña Internos del Panel de Control (pedido
+        // de Juan 2026-07-15). Teléfono/contraseña solo llegan del server para
+        // roles del panel. El detalle (género, carga académica) vive en Editar.
+        <div className="overflow-x-auto border border-border rounded-lg bg-card">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-10"></TableHead>
+                <TableHead>ID</TableHead>
+                <TableHead>Apellidos</TableHead>
+                <TableHead>Nombres</TableHead>
+                <TableHead>Detalle</TableHead>
+                <TableHead>Teléfono</TableHead>
+                <TableHead>Contraseña</TableHead>
+                {esStaff && rol !== null && cargosAgregables.includes(rol) && (
+                  <TableHead className="text-right">Acciones</TableHead>
+                )}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {listaActual.map((p) => (
+                <TableRow key={p.id}>
+                  <TableCell className="py-2">
+                    {p.avatar_url ? (
+                      <img src={p.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" loading="lazy" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
+                        {(p.apellidos || p.nombres || "?").charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell className="font-mono">{p.id}</TableCell>
+                  <TableCell className="font-medium">{p.apellidos}</TableCell>
+                  <TableCell>{p.nombres}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {[
+                      p.direccion_de_grupo ? `Director(a) de grupo: ${p.direccion_de_grupo}` : "",
+                      Array.isArray(p.niveles_coordina) && p.niveles_coordina.length > 0 ? `Coordina: ${p.niveles_coordina.join(", ")}` : "",
+                    ].filter(Boolean).join(" · ") || "—"}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs">{p.numero_de_telefono || "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{"contrasena" in p ? (p.contrasena || "(su cédula)") : "—"}</TableCell>
+                  {esStaff && rol !== null && cargosAgregables.includes(rol) && (
+                    <TableCell className="text-right space-x-1 whitespace-nowrap">
+                      <button onClick={() => abrirEditar(p)} className="p-2 text-muted-foreground hover:text-primary" title="Editar">
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => setConfirmQuitar(p)} className="p-2 text-muted-foreground hover:text-destructive" title="Quitar cargo">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
 
