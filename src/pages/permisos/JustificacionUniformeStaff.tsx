@@ -12,6 +12,7 @@ import { descargarExcusasDocx, SeccionExcusa } from "@/utils/printExcusasDocx";
 import { useNivelesCoordina } from "@/hooks/useNivelesCoordina";
 import { useAulasProfesor } from "@/hooks/useAulasProfesor";
 import { NIVEL_DE_GRADO } from "@/utils/grados";
+import CalendarioFiltroDia, { keyDeDate } from "@/components/CalendarioFiltroDia";
 
 const GRADO_ORDEN: Record<string, number> = {
   "Párvulo": 0, "Prejardín": 1, "Jardín": 2, "Transición": 3,
@@ -53,6 +54,7 @@ const JustificacionUniformeStaff = () => {
   };
   const [filtroGrado, setFiltroGrado] = useState("");
   const [filtroSalon, setFiltroSalon] = useState("");
+  const [diaCal, setDiaCal] = useState<Date | undefined>(undefined);
   const [imprimirMode, setImprimirMode] = useState(false);
   const [seleccion, setSeleccion] = useState<Record<number, number>>({});
   const [descargando, setDescargando] = useState(false);
@@ -95,6 +97,9 @@ const JustificacionUniformeStaff = () => {
     if (filtroSalon && j.estudiante_salon !== filtroSalon) return false;
     return true;
   });
+  // Calendario lateral: días con registros (naranja) y filtro por día elegido.
+  const diasMarcados = [...new Set(justFiltradas.map(j => fechaKey(j.created_at)))];
+  const listaFinal = diaCal ? justFiltradas.filter(j => fechaKey(j.created_at) === keyDeDate(diaCal)) : justFiltradas;
 
   const cantidadSeleccionada = Object.keys(seleccion).length;
   const toggleImprimirMode = () => setImprimirMode(v => { if (v) setSeleccion({}); return !v; });
@@ -173,16 +178,19 @@ const JustificacionUniformeStaff = () => {
                 </select>
               </div>
 
-              {justFiltradas.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">No hay justificaciones con estos filtros</p>
+              <div className="flex flex-col lg:flex-row lg:items-start gap-6">
+                <CalendarioFiltroDia diasMarcados={diasMarcados} dia={diaCal} onDia={setDiaCal} />
+                <div className="flex-1 min-w-0">
+              {listaFinal.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">{diaCal ? "No hay justificaciones para este día" : "No hay justificaciones con estos filtros"}</p>
               ) : (
                 <div className="space-y-6">
                   <ImprimirToggle imprimirMode={imprimirMode} onToggle={toggleImprimirMode} cantidadSeleccionada={cantidadSeleccionada} onDescargar={handleDescargar} descargando={descargando} />
-                  <p className="text-sm text-muted-foreground">{justFiltradas.length} {justFiltradas.length === 1 ? "justificación" : "justificaciones"}</p>
+                  <p className="text-sm text-muted-foreground">{listaFinal.length} {listaFinal.length === 1 ? "justificación" : "justificaciones"}</p>
                   {(() => {
-                    const grupos: { key: string; items: typeof justFiltradas }[] = [];
-                    const byKey = new Map<string, typeof justFiltradas>();
-                    for (const j of justFiltradas) {
+                    const grupos: { key: string; items: typeof listaFinal }[] = [];
+                    const byKey = new Map<string, typeof listaFinal>();
+                    for (const j of listaFinal) {
                       const k = fechaKey(j.created_at);
                       let arr = byKey.get(k);
                       if (!arr) { arr = []; byKey.set(k, arr); grupos.push({ key: k, items: arr }); }
@@ -234,6 +242,8 @@ const JustificacionUniformeStaff = () => {
                   })()}
                 </div>
               )}
+                </div>
+              </div>
             </div>
           )}
         </div>

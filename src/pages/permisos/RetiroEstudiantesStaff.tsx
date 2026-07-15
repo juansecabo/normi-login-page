@@ -13,6 +13,7 @@ import { descargarExcusasDocx, SeccionExcusa } from "@/utils/printExcusasDocx";
 import { useNivelesCoordina } from "@/hooks/useNivelesCoordina";
 import { useAulasProfesor } from "@/hooks/useAulasProfesor";
 import { NIVEL_DE_GRADO } from "@/utils/grados";
+import CalendarioFiltroDia, { keyDeDate } from "@/components/CalendarioFiltroDia";
 
 const GRADO_ORDEN: Record<string, number> = {
   "Párvulo": 0, "Prejardín": 1, "Jardín": 2, "Transición": 3,
@@ -71,6 +72,7 @@ const RetiroEstudiantesStaff = () => {
   };
   const [filtroGrado, setFiltroGrado] = useState("");
   const [filtroSalon, setFiltroSalon] = useState("");
+  const [diaCal, setDiaCal] = useState<Date | undefined>(undefined);
   const [imprimirMode, setImprimirMode] = useState(false);
   const [seleccion, setSeleccion] = useState<Record<number, number>>({});
   const [descargando, setDescargando] = useState(false);
@@ -123,6 +125,9 @@ const RetiroEstudiantesStaff = () => {
     if (filtroSalon && a.estudiante_salon !== filtroSalon) return false;
     return true;
   });
+  // Calendario lateral: días con registros (naranja) y filtro por día elegido.
+  const diasMarcados = [...new Set(authFiltradas.map(a => fechaKey(a.created_at)))];
+  const listaFinal = diaCal ? authFiltradas.filter(a => fechaKey(a.created_at) === keyDeDate(diaCal)) : authFiltradas;
 
   const cantidadSeleccionada = Object.keys(seleccion).length;
   const toggleImprimirMode = () => setImprimirMode(v => { if (v) setSeleccion({}); return !v; });
@@ -211,16 +216,19 @@ const RetiroEstudiantesStaff = () => {
                 </select>
               </div>
 
-              {authFiltradas.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">No hay autorizaciones con estos filtros</p>
+              <div className="flex flex-col lg:flex-row lg:items-start gap-6">
+                <CalendarioFiltroDia diasMarcados={diasMarcados} dia={diaCal} onDia={setDiaCal} />
+                <div className="flex-1 min-w-0">
+              {listaFinal.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">{diaCal ? "No hay autorizaciones para este día" : "No hay autorizaciones con estos filtros"}</p>
               ) : (
                 <div className="space-y-6">
                   <ImprimirToggle imprimirMode={imprimirMode} onToggle={toggleImprimirMode} cantidadSeleccionada={cantidadSeleccionada} onDescargar={handleDescargar} descargando={descargando} />
-                  <p className="text-sm text-muted-foreground">{authFiltradas.length} {authFiltradas.length === 1 ? "autorización" : "autorizaciones"}</p>
+                  <p className="text-sm text-muted-foreground">{listaFinal.length} {listaFinal.length === 1 ? "autorización" : "autorizaciones"}</p>
                   {(() => {
-                    const grupos: { key: string; items: typeof authFiltradas }[] = [];
-                    const byKey = new Map<string, typeof authFiltradas>();
-                    for (const a of authFiltradas) {
+                    const grupos: { key: string; items: typeof listaFinal }[] = [];
+                    const byKey = new Map<string, typeof listaFinal>();
+                    for (const a of listaFinal) {
                       const k = fechaKey(a.created_at);
                       let arr = byKey.get(k);
                       if (!arr) { arr = []; byKey.set(k, arr); grupos.push({ key: k, items: arr }); }
@@ -297,6 +305,8 @@ const RetiroEstudiantesStaff = () => {
                   })()}
                 </div>
               )}
+                </div>
+              </div>
             </div>
           )}
         </div>
