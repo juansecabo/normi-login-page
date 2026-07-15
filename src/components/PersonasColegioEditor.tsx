@@ -576,6 +576,8 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
                   {p.grado ? ` · ${p.grado}${p.salon ? ` ${p.salon}` : ""}` : ""}
                   {Array.isArray(p.niveles_coordina) && p.niveles_coordina.length > 0 ? ` · Coordina: ${p.niveles_coordina.join(", ")}` : ""}
                   {p.direccion_de_grupo ? ` · Director(a) de grupo: ${p.direccion_de_grupo}` : ""}
+                  {/* El server solo incluye 'contrasena' para roles del panel; null = entra con su cédula */}
+                  {"contrasena" in p ? ` · Contraseña: ${p.contrasena || "(su cédula)"}` : ""}
                 </p>
               </div>
               {esStaff && rol !== null && cargosAgregables.includes(rol) && (
