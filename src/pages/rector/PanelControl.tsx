@@ -23,7 +23,6 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Plus, Pencil, Trash2, Search, X } from "lucide-react";
 import { useAsignaturas } from "@/hooks/useAsignaturas";
-import CatalogoAsignaturas from "@/components/CatalogoAsignaturas";
 import { apiClient, apiRequest } from "@/lib/apiClient";
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
@@ -1634,7 +1633,6 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                 <TabsTrigger value="perfiles" className="sm:flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Acudientes</TabsTrigger>
                 <TabsTrigger value="internos" className="sm:flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Internos</TabsTrigger>
                 <TabsTrigger value="asignaciones" className="sm:flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Asignaciones</TabsTrigger>
-                <TabsTrigger value="catalogo-asignaturas" className="sm:flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Asignaturas</TabsTrigger>
               </TabsList>
             </div>
             )}
@@ -2049,13 +2047,8 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
               )}
             </TabsContent>
 
-            {/* ════════════════ TAB: CATÁLOGO DE ASIGNATURAS ════════════════ */}
-            <TabsContent value="catalogo-asignaturas">
-              <CatalogoAsignaturas
-                asignaturas={asignaturasTodas}
-                onChange={refrescarAsignaturas}
-              />
-            </TabsContent>
+            {/* El catálogo de asignaturas (con rename propagado) se administra
+                en Configurar Institución → Asignaturas (decisión 2026-07-15). */}
           </Tabs>
         </div>
       </main>

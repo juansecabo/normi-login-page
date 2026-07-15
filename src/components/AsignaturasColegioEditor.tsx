@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { BookOpen, Plus, Trash2, Loader2, ListChecks, Clock } from "lucide-react";
+import { BookOpen, Plus, Trash2, Loader2, ListChecks, Clock, Pencil, Check } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { apiRequest, ApiError } from "@/lib/apiClient";
 import { rankGrado } from "@/utils/grados";
 
@@ -148,6 +149,26 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
     } catch (e) { err(e, "No se pudo reactivar la asignatura."); }
   };
 
+  // ── Renombrar (con propagación en el server a Notas, Actividades, carga
+  //    académica, asistencia, etc. — el historial queda coherente) ──
+  const [renombrando, setRenombrando] = useState<Asignatura | null>(null);
+  const [nuevoNombre, setNuevoNombre] = useState("");
+  const [guardandoNombre, setGuardandoNombre] = useState(false);
+  const renombrarAsignatura = async () => {
+    if (!renombrando || !nuevoNombre.trim()) return;
+    setGuardandoNombre(true);
+    try {
+      await apiRequest(`/api/institucion/asignaturas/${renombrando.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(withCid({ nombre: nuevoNombre.trim() })),
+      });
+      toast({ title: "Asignatura renombrada", description: `"${renombrando.nombre}" ahora se llama "${nuevoNombre.trim()}". Las notas, actividades y la carga de los profesores se actualizaron.` });
+      setRenombrando(null);
+      await cargar();
+    } catch (e) { err(e, "No se pudo renombrar la asignatura."); }
+    finally { setGuardandoNombre(false); }
+  };
+
   // ── Plan de estudios ──
   const planDelGrado = useMemo(
     () => new Map(plan.filter((p) => p.grado === gradoSel).map((p) => [p.asignatura_id, p])),
@@ -230,15 +251,27 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
               // (ya no se ofrece) y al marcarla se REACTIVA (no se re-crea).
               const marcada = !!a && a.activa;
               return (
-                <label key={nombre} className="flex items-center gap-2.5 py-1 cursor-pointer select-none break-inside-avoid">
-                  <input
-                    type="checkbox"
-                    checked={marcada}
-                    onChange={() => (!a ? agregarAsignatura([nombre]) : a.activa ? quitarAsignatura(a) : reactivarAsignatura(a))}
-                    className="w-4 h-4 accent-primary shrink-0 cursor-pointer"
-                  />
-                  <span className={`text-sm ${marcada ? "" : "text-muted-foreground"}`}>{nombre}</span>
-                </label>
+                <div key={nombre} className="flex items-center gap-1 py-1 break-inside-avoid">
+                  <label className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={marcada}
+                      onChange={() => (!a ? agregarAsignatura([nombre]) : a.activa ? quitarAsignatura(a) : reactivarAsignatura(a))}
+                      className="w-4 h-4 accent-primary shrink-0 cursor-pointer"
+                    />
+                    <span className={`text-sm truncate ${marcada ? "" : "text-muted-foreground"}`}>{nombre}</span>
+                  </label>
+                  {a && (
+                    <button
+                      type="button"
+                      onClick={() => { setRenombrando(a); setNuevoNombre(a.nombre); }}
+                      className="p-1 text-muted-foreground hover:text-primary shrink-0"
+                      title="Renombrar (actualiza notas, actividades y carga académica)"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>
@@ -340,6 +373,31 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
           )}
         </CardContent>
       </Card>
+
+      {/* ── Pop-up: renombrar asignatura (propaga a todo el historial) ── */}
+      <Dialog open={!!renombrando} onOpenChange={(o) => { if (!o) setRenombrando(null); }}>
+        <DialogContent className="max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>Renombrar asignatura</DialogTitle>
+            <DialogDescription>
+              Todas las notas, actividades, asistencias y la carga académica de los profesores que usan
+              "{renombrando?.nombre}" pasarán a usar el nombre nuevo, para que el historial quede coherente.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={nuevoNombre}
+            onChange={(e) => setNuevoNombre(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") renombrarAsignatura(); }}
+            placeholder="Nombre nuevo"
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenombrando(null)} disabled={guardandoNombre}>Cancelar</Button>
+            <Button onClick={renombrarAsignatura} disabled={guardandoNombre || !nuevoNombre.trim() || nuevoNombre.trim() === renombrando?.nombre} className="gap-2">
+              {guardandoNombre ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Renombrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
