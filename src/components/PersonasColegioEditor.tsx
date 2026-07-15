@@ -16,6 +16,7 @@ import { rankGrado, NIVEL_DE_GRADO } from "@/utils/grados";
 import PanelControl from "@/pages/rector/PanelControl";
 import PhoneInput from "@/components/PhoneInput";
 import { capitalizarNombre } from "@/utils/texto";
+import { cargoSegunGenero } from "@/lib/entrevistadores";
 
 /**
  * "Personas del colegio": tarjetas por rol → página del cargo con su lista y
@@ -126,6 +127,8 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   const [nvGrados, setNvGrados] = useState<string[]>([]);
   const [nvSalones, setNvSalones] = useState<string[]>([]);
   const [guardandoCarga, setGuardandoCarga] = useState(false);
+  // Foto ampliada en pop-up al hacer clic (como en el Panel de Control).
+  const [fotoGrande, setFotoGrande] = useState<{ url: string; nombre: string } | null>(null);
   // Filtros de la lista de profesores por su carga académica (o dirección de grupo).
   const [filtroNivelP, setFiltroNivelP] = useState("todos");
   const [filtroGradoP, setFiltroGradoP] = useState("todos");
@@ -584,7 +587,9 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
                 <TableRow key={p.id}>
                   <TableCell className="py-2">
                     {p.avatar_url ? (
-                      <img src={p.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" loading="lazy" />
+                      <button type="button" onClick={() => setFotoGrande({ url: p.avatar_url, nombre: `${p.apellidos} ${p.nombres}` })} title="Ver foto" className="cursor-zoom-in">
+                        <img src={p.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" loading="lazy" />
+                      </button>
                     ) : (
                       <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
                         {(p.apellidos || p.nombres || "?").charAt(0).toUpperCase()}
@@ -592,11 +597,11 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
                     )}
                   </TableCell>
                   <TableCell className="font-mono">{p.id}</TableCell>
-                  <TableCell className="font-medium">{p.apellidos}</TableCell>
+                  <TableCell>{p.apellidos}</TableCell>
                   <TableCell>{p.nombres}</TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {[
-                      p.direccion_de_grupo ? `Director(a) de grupo: ${p.direccion_de_grupo}` : "",
+                      p.direccion_de_grupo ? `${cargoSegunGenero("Director(a)", p.genero)} de grupo: ${p.direccion_de_grupo}` : "",
                       Array.isArray(p.niveles_coordina) && p.niveles_coordina.length > 0 ? `Coordina: ${p.niveles_coordina.join(", ")}` : "",
                     ].filter(Boolean).join(" · ") || "—"}
                   </TableCell>
@@ -802,6 +807,18 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
               {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} {editando ? "Guardar" : "Agregar"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Foto ampliada */}
+      <Dialog open={!!fotoGrande} onOpenChange={(o) => { if (!o) setFotoGrande(null); }}>
+        <DialogContent className="max-w-lg" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>{fotoGrande?.nombre}</DialogTitle>
+          </DialogHeader>
+          {fotoGrande && (
+            <img src={fotoGrande.url} alt={fotoGrande.nombre} className="w-full max-h-[70vh] object-contain rounded-md" />
+          )}
         </DialogContent>
       </Dialog>
 
