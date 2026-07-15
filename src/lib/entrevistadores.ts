@@ -3,7 +3,7 @@
 export type Entrevistador = { cargo?: string; nombres?: string; apellidos?: string; genero?: string | null };
 
 /** "Profesor(a)" → "Profesor" (M) / "Profesora" (F). Sin género queda neutro. */
-const cargoSegunGenero = (cargo?: string, genero?: string | null): string => {
+export const cargoSegunGenero = (cargo?: string, genero?: string | null): string => {
   if (!cargo || !cargo.includes("(a)")) return cargo || "";
   if (genero === "M") return cargo.replace("(a)", "");
   if (genero === "F") {

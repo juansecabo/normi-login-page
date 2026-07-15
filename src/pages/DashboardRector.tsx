@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { cargoSegunGenero } from "@/lib/entrevistadores";
 import { useBienvenida, getSession, isAdmin, puedeAccederDashboard, isAdministrativo } from "@/hooks/useSession";
 import { usePendientesFirma } from "@/hooks/usePendientesFirma";
 import iconNotas from "@/assets/icons/notas.webp";
@@ -311,7 +312,8 @@ const DashboardRector = () => {
               {nombres} {apellidos}
             </p>
             <p className="text-muted-foreground mt-2">
-              {cargo}
+              {/* Cargo con género: "Coordinador(a)" → "Coordinadora" si es mujer */}
+              {cargoSegunGenero(cargo, getSession().genero)}
             </p>
           </div>
           <div className="hidden xl:block absolute inset-y-0 left-full ml-10">
