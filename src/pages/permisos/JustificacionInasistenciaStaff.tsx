@@ -51,7 +51,8 @@ const JustificacionInasistenciaStaff = () => {
   };
   const [filtroGrado, setFiltroGrado] = useState("");
   const [filtroSalon, setFiltroSalon] = useState("");
-  const [diaCal, setDiaCal] = useState<Date | undefined>(undefined);
+  // Arranca en HOY (igual que el calendario de Actividades de padres/estudiantes).
+  const [diaCal, setDiaCal] = useState<Date | undefined>(new Date());
   const [imprimirMode, setImprimirMode] = useState(false);
   const [seleccion, setSeleccion] = useState<Record<number, number>>({});
   const [descargando, setDescargando] = useState(false);
