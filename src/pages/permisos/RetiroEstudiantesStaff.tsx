@@ -10,6 +10,8 @@ import { markLastSeen } from "@/utils/notificaciones";
 import { fechaKey, fmtDiaHeader, todayKey } from "@/utils/fechaUtils";
 import { ImprimirToggle, CardSelector } from "@/components/ImprimirSelector";
 import { descargarExcusasDocx, SeccionExcusa } from "@/utils/printExcusasDocx";
+import { useNivelesCoordina } from "@/hooks/useNivelesCoordina";
+import { NIVEL_DE_GRADO } from "@/utils/grados";
 
 const GRADO_ORDEN: Record<string, number> = {
   "Párvulo": 0, "Prejardín": 1, "Jardín": 2, "Transición": 3,
@@ -97,15 +99,21 @@ const RetiroEstudiantesStaff = () => {
     cargar();
   }, [navigate]);
 
-  const gradosUnicos = [...new Set(autorizaciones.map(a => a.estudiante_grado))]
+  // Coordinador(a): solo ve estudiantes de su(s) nivel(es); null = sin restricción.
+  const { nivelesCoordina } = useNivelesCoordina();
+  const visibles = nivelesCoordina
+    ? autorizaciones.filter(a => nivelesCoordina.includes(NIVEL_DE_GRADO[a.estudiante_grado] || ""))
+    : autorizaciones;
+
+  const gradosUnicos = [...new Set(visibles.map(a => a.estudiante_grado))]
     .sort((a, b) => (GRADO_ORDEN[a] ?? 99) - (GRADO_ORDEN[b] ?? 99));
   const salonesUnicos = [...new Set(
-    autorizaciones
+    visibles
       .filter(a => !filtroGrado || a.estudiante_grado === filtroGrado)
       .map(a => a.estudiante_salon)
   )].sort();
 
-  const authFiltradas = autorizaciones.filter(a => {
+  const authFiltradas = visibles.filter(a => {
     if (filtroGrado && a.estudiante_grado !== filtroGrado) return false;
     if (filtroSalon && a.estudiante_salon !== filtroSalon) return false;
     return true;
