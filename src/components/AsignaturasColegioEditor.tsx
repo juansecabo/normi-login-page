@@ -61,6 +61,8 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
   const [nuevaAsig, setNuevaAsig] = useState("");
   const [agregando, setAgregando] = useState(false);
   const [gradoSel, setGradoSel] = useState<string>("");
+  // Buscador del plan de estudios: filtra la lista de asignaturas del grado.
+  const [busquedaPlan, setBusquedaPlan] = useState("");
   // Borradores de horas mientras se escriben (se confirman en blur/Enter).
   const [horasDraft, setHorasDraft] = useState<Record<number, string>>({});
 
@@ -289,8 +291,19 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
                 ))}
               </div>
 
+              <Input
+                value={busquedaPlan}
+                onChange={(e) => setBusquedaPlan(e.target.value)}
+                placeholder="Buscar asignatura…"
+              />
+
               <div className="divide-y rounded-lg border">
-                {activas.map((a) => {
+                {activas
+                  .filter((a) => {
+                    const norm = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+                    return !busquedaPlan.trim() || norm(a.nombre).includes(norm(busquedaPlan.trim()));
+                  })
+                  .map((a) => {
                   const fila = planDelGrado.get(a.id);
                   const marcada = !!fila;
                   return (
