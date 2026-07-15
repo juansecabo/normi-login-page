@@ -10,6 +10,7 @@ import { fechaKey, fmtDiaHeader, todayKey } from "@/utils/fechaUtils";
 import { ImprimirToggle, CardSelector } from "@/components/ImprimirSelector";
 import { descargarExcusasDocx, SeccionExcusa } from "@/utils/printExcusasDocx";
 import { useNivelesCoordina } from "@/hooks/useNivelesCoordina";
+import { useAulasProfesor } from "@/hooks/useAulasProfesor";
 import { NIVEL_DE_GRADO } from "@/utils/grados";
 
 const GRADO_ORDEN: Record<string, number> = {
@@ -71,11 +72,15 @@ const JustificacionUniformeStaff = () => {
       });
   }, [navigate]);
 
-  // Coordinador(a): solo ve estudiantes de su(s) nivel(es); null = sin restricción.
+  // Coordinador(a): solo estudiantes de su(s) nivel(es). Profesor(a) (director
+  // o no): solo estudiantes de las aulas donde dicta alguna asignatura.
   const { nivelesCoordina } = useNivelesCoordina();
-  const visibles = nivelesCoordina
-    ? justificaciones.filter(j => nivelesCoordina.includes(NIVEL_DE_GRADO[j.estudiante_grado] || ""))
-    : justificaciones;
+  const { aulasProfesor } = useAulasProfesor();
+  const visibles = justificaciones.filter(j => {
+    if (nivelesCoordina && !nivelesCoordina.includes(NIVEL_DE_GRADO[j.estudiante_grado] || "")) return false;
+    if (aulasProfesor && !aulasProfesor.has(`${j.estudiante_grado}|${String(j.estudiante_salon)}`)) return false;
+    return true;
+  });
 
   const gradosUnicos = [...new Set(visibles.map(j => j.estudiante_grado))]
     .sort((a, b) => (GRADO_ORDEN[a] ?? 99) - (GRADO_ORDEN[b] ?? 99));
