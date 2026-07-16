@@ -7,6 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import ComentarioIndicador from "./ComentarioIndicador";
 
 interface FinalPeriodoCeldaProps {
   notaFinal: number | null;
@@ -46,9 +47,7 @@ const FinalPeriodoCelda = ({
         )}
 
         {/* Indicador de comentario */}
-        {comentario && (
-          <div className="absolute top-0 right-6 w-2 h-2 bg-amber-500 rounded-full" title={comentario} />
-        )}
+        {comentario && <ComentarioIndicador comentario={comentario} className="top-0 right-6" />}
         
         {/* Menú de opciones (visible on hover on desktop, always visible on mobile) */}
         {tieneAlgunaNota && !soloLectura && (
