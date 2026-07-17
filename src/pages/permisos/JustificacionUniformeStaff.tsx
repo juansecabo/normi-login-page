@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { getSession, isProfesor, puedeAccederDashboard, isAdmin } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
-import { Shirt, ChevronDown } from "lucide-react";
+import { Shirt, ChevronDown, Search, X } from "lucide-react";
+import { coincideBusqueda } from "@/utils/busqueda";
 import FirmaImage from "@/components/FirmaImage";
 import { markLastSeen } from "@/utils/notificaciones";
 import { fechaKey, fmtDiaHeader, todayKey } from "@/utils/fechaUtils";
@@ -52,6 +53,7 @@ const JustificacionUniformeStaff = () => {
       return next;
     });
   };
+  const [busqueda, setBusqueda] = useState("");
   const [filtroGrado, setFiltroGrado] = useState("");
   const [filtroSalon, setFiltroSalon] = useState("");
   // Arranca en HOY (igual que el calendario de Actividades de padres/estudiantes).
@@ -93,9 +95,11 @@ const JustificacionUniformeStaff = () => {
       .map(j => j.estudiante_salon)
   )].sort();
 
+  // La búsqueda entra ANTES de diasMarcados: el calendario solo marca días con resultados.
   const justFiltradas = visibles.filter(j => {
     if (filtroGrado && j.estudiante_grado !== filtroGrado) return false;
     if (filtroSalon && j.estudiante_salon !== filtroSalon) return false;
+    if (!coincideBusqueda(busqueda, j.estudiante_nombre, j.estudiante_apellidos, j.estudiante_id)) return false;
     return true;
   });
   // Calendario lateral: días con registros (naranja) y filtro por día elegido.
@@ -168,7 +172,17 @@ const JustificacionUniformeStaff = () => {
 
           {loading ? <div className="text-center py-8 text-muted-foreground">Cargando...</div> : (
             <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar por nombre o identificación…"
+                    className="w-full pl-9 pr-8 py-2 border border-input rounded-md text-sm bg-background" />
+                  {busqueda && (
+                    <button type="button" onClick={() => setBusqueda("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" title="Borrar búsqueda">
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
                 <select value={filtroGrado} onChange={(e) => { setFiltroGrado(e.target.value); setFiltroSalon(""); }} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                   <option value="">Todos los grados</option>
                   {gradosUnicos.map(g => <option key={g} value={g}>{g}</option>)}
