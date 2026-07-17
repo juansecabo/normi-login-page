@@ -229,6 +229,7 @@ const JustificacionUniformeStaff = () => {
                                   onCountChange={(n) => setCount(j.id, n)}
                                 />
                               )}
+                              <div className="bg-card rounded-md overflow-hidden">
                               <button onClick={() => toggleExpanded(j.id)} className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors cursor-pointer">
                                 <div>
                                   <span className="inline-block px-2 py-0.5 text-xs font-medium bg-orange-100 text-orange-700 rounded-full mb-0.5">{j.estudiante_grado} {j.estudiante_salon}</span>
@@ -239,7 +240,7 @@ const JustificacionUniformeStaff = () => {
                                 <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${isExp ? "rotate-180" : ""}`} />
                               </button>
                               {isExp && (
-                                <div className="border-t border-border p-4 bg-muted/10 text-sm text-foreground leading-relaxed space-y-3">
+                                <div className="border-t border-border p-4 bg-card text-sm text-foreground leading-relaxed space-y-3">
                                   <p className="font-bold text-center">FORMATO DE JUSTIFICACIÓN POR UNIFORME</p>
                                   <p><span className="font-medium">Estudiante:</span> <span className="text-primary font-medium">{j.estudiante_nombre} {j.estudiante_apellidos}</span> — <span className="text-primary font-medium">{j.estudiante_grado} {j.estudiante_salon}</span></p>
                                   <p><span className="font-medium">Fecha:</span> <span className="text-primary font-medium">{fmtFecha(j.fecha)}</span></p>
@@ -249,6 +250,7 @@ const JustificacionUniformeStaff = () => {
                                   {j.firma_url && <div><p className="font-medium mb-1">Firma:</p><FirmaImage url={j.firma_url} /></div>}
                                 </div>
                               )}
+                              </div>
                             </div>
                           );
                         })}
