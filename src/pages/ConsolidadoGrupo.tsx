@@ -144,7 +144,7 @@ const ConsolidadoGrupo = () => {
                 <table className="border-collapse text-sm">
                   <thead>
                     <tr>
-                      <th className="sticky left-0 top-0 z-30 bg-muted border-r border-b border-border px-3 py-2 text-left font-semibold text-foreground min-w-[200px]">
+                      <th className="sticky top-0 md:left-0 z-30 bg-muted border-r border-b border-border px-3 py-2 text-left font-semibold text-foreground min-w-[200px]">
                         Estudiante
                       </th>
                       {data.asignaturas.map((a) => (
@@ -162,7 +162,7 @@ const ConsolidadoGrupo = () => {
                       const rowBg = i % 2 ? "bg-card" : "bg-muted/40";
                       return (
                         <tr key={e.id} className={rowBg}>
-                          <td className="sticky left-0 z-10 bg-card border-r border-b border-border px-3 py-2 font-medium text-foreground whitespace-nowrap">
+                          <td className="md:sticky md:left-0 z-10 bg-card border-r border-b border-border px-3 py-2 font-medium text-foreground whitespace-nowrap">
                             {e.nombre}
                           </td>
                           {data.asignaturas.map((a) => {
