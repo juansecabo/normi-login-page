@@ -5,7 +5,7 @@ import { getSession } from "@/hooks/useSession";
 import { apiClient, type ApiConsolidadoGrupo } from "@/lib/apiClient";
 import { useColegioConfig } from "@/hooks/useColegioConfig";
 import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNormi";
-import { Users } from "lucide-react";
+import { Users, Download, Loader2 } from "lucide-react";
 
 const PERIODOS = [1, 2, 3, 4] as const;
 const ORDINAL: Record<number, string> = { 1: "Primer", 2: "Segundo", 3: "Tercer", 4: "Cuarto" };
@@ -75,6 +75,73 @@ const ConsolidadoGrupo = () => {
   const aprobada = (n: number | undefined) =>
     n != null && n >= config.nota_aprobatoria;
 
+  // Excel del consolidado — mismo formato (header verde, bordes) que TablaNotas.
+  const [descargandoExcel, setDescargandoExcel] = useState(false);
+  const descargarExcel = async () => {
+    if (!data || periodo == null) return;
+    setDescargandoExcel(true);
+    try {
+      const ExcelJS = (await import("exceljs")).default;
+      const { saveAs } = await import("file-saver");
+
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet("Consolidado");
+
+      const headers: string[] = ["Estudiante"];
+      data.asignaturas.forEach((a) => headers.push(a.completo ? a.nombre : `${a.nombre} (provisional)`));
+
+      const rows: (string | number | null)[][] = data.estudiantes.map((e) => {
+        const fila: (string | number | null)[] = [e.nombre];
+        data.asignaturas.forEach((a) => {
+          const n = e.notas[a.nombre];
+          fila.push(n == null ? null : Number(n.toFixed(config.decimales)));
+        });
+        return fila;
+      });
+
+      const headerRow = ws.addRow(headers);
+      headerRow.eachCell((cell) => {
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF16A34A" } };
+        cell.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 };
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+        cell.border = {
+          top: { style: "thin" }, bottom: { style: "thin" },
+          left: { style: "thin" }, right: { style: "thin" },
+        };
+      });
+      headerRow.height = 22;
+
+      rows.forEach((row) => {
+        const dataRow = ws.addRow(row);
+        dataRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+          cell.border = {
+            top: { style: "thin", color: { argb: "FFD0D0D0" } },
+            bottom: { style: "thin", color: { argb: "FFD0D0D0" } },
+            left: { style: "thin", color: { argb: "FFD0D0D0" } },
+            right: { style: "thin", color: { argb: "FFD0D0D0" } },
+          };
+          if (colNumber >= 2) cell.alignment = { horizontal: "center" };
+        });
+      });
+
+      ws.columns.forEach((col, idx) => {
+        let maxLen = headers[idx]?.length || 10;
+        rows.forEach((row) => {
+          const val = row[idx];
+          if (val !== null && val !== undefined) maxLen = Math.max(maxLen, val.toString().length);
+        });
+        col.width = Math.min(maxLen + 4, 40);
+      });
+
+      const buffer = await wb.xlsx.writeBuffer();
+      saveAs(new Blob([buffer]), `Consolidado ${dirGrupo} - ${ORDINAL[periodo]} periodo.xlsx`);
+    } catch (e) {
+      console.error("Error al generar Excel:", e);
+    } finally {
+      setDescargandoExcel(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <HeaderNormi />
@@ -130,6 +197,19 @@ const ConsolidadoGrupo = () => {
             <h2 className="text-xl font-bold text-foreground mb-4 text-center">
               {ORDINAL[periodo]} periodo · {dirGrupo}
             </h2>
+
+            {data && data.estudiantes.length > 0 && data.asignaturas.length > 0 && (
+              <div className="flex justify-end mb-3">
+                <button
+                  onClick={descargarExcel}
+                  disabled={descargandoExcel}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-border bg-card text-sm font-medium hover:bg-secondary/50 transition-colors disabled:opacity-50"
+                >
+                  {descargandoExcel ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                  Descargar Excel
+                </button>
+              </div>
+            )}
 
             {loadingData ? (
               <p className="text-center text-muted-foreground py-10">Cargando notas…</p>
