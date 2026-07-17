@@ -208,8 +208,8 @@ const RetiroEstudiantesStaff = () => {
             <div className="text-center py-8 text-muted-foreground">Cargando...</div>
           ) : (
             <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="relative">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="relative col-span-2 sm:col-span-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar por nombre o identificación…"
                     className="w-full pl-9 pr-8 py-2 border border-input rounded-md text-sm bg-background" />
