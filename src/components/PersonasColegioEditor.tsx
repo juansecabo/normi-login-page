@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   GraduationCap, Users, ShieldCheck, Briefcase, HeartHandshake, BookOpen,
-  Backpack, UsersRound, Plus, Check, Loader2, Search, ClipboardList, Pencil, Trash2,
+  Backpack, UsersRound, Plus, Check, Loader2, Search, ClipboardList, Pencil, Trash2, X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -143,10 +143,16 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   const bloqueadoRef = useRef(false);
   useEffect(() => { bloqueadoRef.current = bloqueado; }, [bloqueado]);
 
+  // Limpia SOLO el formulario del pop-up — no toca la búsqueda ni los filtros
+  // de la lista (editar a alguien no debe deshacer el filtrado en curso).
   const reset = () => {
-    setCedula(""); setNombres(""); setApellidos(""); setTelefono(""); setGenero(""); setFechaNac(""); setBusqueda("");
+    setCedula(""); setNombres(""); setApellidos(""); setTelefono(""); setGenero(""); setFechaNac("");
     setNiveles([]); setEsDirector(false); setDirGrado(""); setDirSalon(""); setBloqueado(false); setEditando(null);
     setCargas([]); setCargasPend([]); setNvAsigs([]); setNvGrados([]); setNvSalones([]);
+  };
+  // Limpia la búsqueda y los filtros de la lista (al cambiar de rol).
+  const resetListado = () => {
+    setBusqueda("");
     setFiltroNivelP("todos"); setFiltroGradoP("todos"); setFiltroSalonP("todos");
   };
   // Al dejar de coincidir con una persona encontrada, limpia los datos que se
@@ -456,11 +462,13 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
     (!rol ? [] : esStaff ? personas.internos.filter((i) => tieneCargo(i, rol)) : rol === "estudiante" ? personas.estudiantes : personas.acudientes)
       .slice()
       .sort((a, b) => `${a.apellidos || ""} ${a.nombres || ""}`.localeCompare(`${b.apellidos || ""} ${b.nombres || ""}`, "es"));
-  // Busqueda tolerante: ignora tildes y mayusculas; cruza nombre completo y cedula.
+  // Busqueda tolerante: ignora tildes y mayusculas; cruza nombre completo, cedula y celular.
   const normalizar = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const q = normalizar(busqueda.trim());
+  const qDigitos = q.replace(/\D/g, "");
   const listaBuscada = !q ? listaDelRol : listaDelRol.filter((p) =>
-    normalizar(`${p.nombres} ${p.apellidos}`).includes(q) || String(p.id).includes(q));
+    normalizar(`${p.nombres} ${p.apellidos}`).includes(q) || String(p.id).includes(q) ||
+    (!!qDigitos && String(p.numero_de_telefono || "").includes(qDigitos)));
   const listaActual = rol === "Profesor(a)" && !colegioId
     ? listaBuscada.filter(profMatchFiltros)
     : listaBuscada;
@@ -488,10 +496,10 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
         <p className="text-sm text-muted-foreground mb-4">Elige un rol para ver sus personas y agregar nuevas.</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {ROLES_STAFF.filter((r) => cargosAgregables.includes(r.cargo)).map((r) => (
-            <CardRol key={r.cargo} Icono={r.Icono} label={r.label} sub={subConteo(r.cargo)} onClick={() => { setRol(r.cargo); reset(); }} />
+            <CardRol key={r.cargo} Icono={r.Icono} label={r.label} sub={subConteo(r.cargo)} onClick={() => { setRol(r.cargo); reset(); resetListado(); }} />
           ))}
-          <CardRol Icono={Backpack} label="Estudiantes" sub={subConteo("estudiante")} onClick={() => { setRol("estudiante"); reset(); }} />
-          <CardRol Icono={UsersRound} label="Acudientes" sub={subConteo("acudiente")} onClick={() => { setRol("acudiente"); reset(); }} />
+          <CardRol Icono={Backpack} label="Estudiantes" sub={subConteo("estudiante")} onClick={() => { setRol("estudiante"); reset(); resetListado(); }} />
+          <CardRol Icono={UsersRound} label="Acudientes" sub={subConteo("acudiente")} onClick={() => { setRol("acudiente"); reset(); resetListado(); }} />
         </div>
       </div>
     );
@@ -503,7 +511,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
       {/* Botón local de regreso a las tarjetas SOLO cuando el rol es interno
           (en el wizard el Volver jerárquico de arriba hace este papel). */}
       {rolProp === undefined && (
-        <Button variant="outline" size="sm" onClick={() => { setRol(null); reset(); }} className="gap-1 mb-4 bg-card">
+        <Button variant="outline" size="sm" onClick={() => { setRol(null); reset(); resetListado(); }} className="gap-1 mb-4 bg-card">
           ← Roles
         </Button>
       )}
@@ -532,9 +540,19 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
         <Input
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
-          placeholder={`Buscar en ${labelActual.toLowerCase()} por nombre, apellido o cédula…`}
-          className="pl-9"
+          placeholder={`Buscar en ${labelActual.toLowerCase()} por nombre, apellido, cédula o celular…`}
+          className="pl-9 pr-9"
         />
+        {busqueda && (
+          <button
+            type="button"
+            onClick={() => setBusqueda("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            title="Borrar búsqueda"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Filtros de profesores por carga académica / dirección de grupo.
