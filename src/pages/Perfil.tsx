@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getSession, isEstudiante, isAdmin, isRectorOrCoordinador, isPadreDeFamilia } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
@@ -58,6 +58,13 @@ const Perfil = () => {
   const [verificada, setVerificada] = useState(false);
   const [verificando, setVerificando] = useState(false);
   const [metodo, setMetodo] = useState<"whatsapp" | "correo" | null>(null);
+  // En el celular las tarjetas WhatsApp/Correo llenan la pantalla y los campos
+  // aparecen abajo sin que se vea el cambio; al elegir, bajamos hasta ellos.
+  const camposRecRef = useRef<HTMLDivElement | null>(null);
+  const elegirMetodo = (m: "whatsapp" | "correo") => {
+    setMetodo(m);
+    setTimeout(() => camposRecRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+  };
   const [pregunta, setPregunta] = useState("");
   const [respuesta, setRespuesta] = useState("");
   const [correo, setCorreo] = useState("");
@@ -295,21 +302,21 @@ const Perfil = () => {
               ) : (
                 <div className="space-y-5">
                   <h3 className="font-semibold text-foreground">¿Cómo desea recuperar su contraseña cuando se olvide?</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <button onClick={() => setMetodo("whatsapp")} className={`flex flex-col items-center gap-3 p-8 rounded-xl border-2 bg-green-100 hover:bg-green-200 transition-colors cursor-pointer ${metodo === "whatsapp" ? "border-green-600 shadow-md" : "border-transparent"}`}>
-                      <MessageCircle className="w-12 h-12 text-green-600" />
-                      <span className="text-lg font-semibold text-foreground">Por WhatsApp</span>
-                      <span className="text-sm text-muted-foreground text-center">Normi te hará una pregunta secreta</span>
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    <button onClick={() => elegirMetodo("whatsapp")} className={`flex flex-col items-center gap-2 sm:gap-3 p-4 sm:p-8 rounded-xl border-2 bg-green-100 hover:bg-green-200 transition-colors cursor-pointer ${metodo === "whatsapp" ? "border-green-600 shadow-md" : "border-transparent"}`}>
+                      <MessageCircle className="w-8 h-8 sm:w-12 sm:h-12 text-green-600" />
+                      <span className="text-base sm:text-lg font-semibold text-foreground">Por WhatsApp</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground text-center">Normi te hará una pregunta secreta</span>
                     </button>
-                    <button onClick={() => setMetodo("correo")} className={`flex flex-col items-center gap-3 p-8 rounded-xl border-2 bg-blue-100 hover:bg-blue-200 transition-colors cursor-pointer ${metodo === "correo" ? "border-blue-600 shadow-md" : "border-transparent"}`}>
-                      <Mail className="w-12 h-12 text-blue-600" />
-                      <span className="text-lg font-semibold text-foreground">Por correo</span>
-                      <span className="text-sm text-muted-foreground text-center">Te llega al correo desde la página de inicio</span>
+                    <button onClick={() => elegirMetodo("correo")} className={`flex flex-col items-center gap-2 sm:gap-3 p-4 sm:p-8 rounded-xl border-2 bg-blue-100 hover:bg-blue-200 transition-colors cursor-pointer ${metodo === "correo" ? "border-blue-600 shadow-md" : "border-transparent"}`}>
+                      <Mail className="w-8 h-8 sm:w-12 sm:h-12 text-blue-600" />
+                      <span className="text-base sm:text-lg font-semibold text-foreground">Por correo</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground text-center">Te llega al correo desde la página de inicio</span>
                     </button>
                   </div>
 
                   {metodo === "whatsapp" && (
-                    <div className="space-y-3">
+                    <div ref={camposRecRef} className="space-y-3 scroll-mt-4">
                       <div>
                         <label className="text-sm font-medium block mb-1">Pregunta secreta</label>
                         <input value={pregunta} onChange={(e) => setPregunta(e.target.value)} placeholder="Una pregunta cuya respuesta solo tú conozcas" className={inputCls} maxLength={200} />
@@ -325,7 +332,7 @@ const Perfil = () => {
                   )}
 
                   {metodo === "correo" && (
-                    <div className="space-y-3">
+                    <div ref={camposRecRef} className="space-y-3 scroll-mt-4">
                       <div>
                         <label className="text-sm font-medium block mb-1">Correo de recuperación</label>
                         <input type="email" autoComplete="off" value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder="tucorreo@ejemplo.com" className={inputCls} />
