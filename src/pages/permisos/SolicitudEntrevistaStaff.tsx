@@ -397,7 +397,7 @@ const SolicitudEntrevistaStaff = () => {
                 className="relative flex flex-col items-center justify-center gap-4 p-8 rounded-lg border-2 border-border bg-background transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/5"
               >
                 {respuestasNuevas > 0 && (
-                  <span className="absolute top-3 right-3 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 shadow-sm">
+                  <span className="absolute top-3 right-3 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 shadow-sm animate-badge-pop">
                     {respuestasNuevas}
                   </span>
                 )}
