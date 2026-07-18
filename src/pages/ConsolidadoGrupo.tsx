@@ -72,10 +72,8 @@ const ConsolidadoGrupo = () => {
 
   const fmt = (n: number | undefined) =>
     n == null ? "—" : n.toFixed(config.decimales);
-  // El color se decide sobre el valor YA redondeado (el mismo que se muestra):
-  // una definitiva real de 2.96 se pinta "3.0" — sería confuso verla en rojo.
   const aprobada = (n: number | undefined) =>
-    n != null && Number(n.toFixed(config.decimales)) >= config.nota_aprobatoria;
+    n != null && n >= config.nota_aprobatoria;
 
   // Excel del consolidado — mismo formato (header verde, bordes) que TablaNotas.
   const [descargandoExcel, setDescargandoExcel] = useState(false);
