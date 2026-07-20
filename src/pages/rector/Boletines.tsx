@@ -41,14 +41,14 @@ interface GrupoInc { profesor: { id: string; nombre: string; genero: string | nu
 
 interface DatosBoletin {
   colegio: { nombre: string; logo_url: string | null; encabezado: string[]; sede: string };
-  grado: string; salon: string; periodo: number; ano_escolar: number;
+  grado: string; salon: string; periodo: number; ano_escolar: number; periodo_peso: number | null;
   escala: { min: number; max: number; decimales: number; aprobatoria: number; rangos: Array<{ label: string; min: number; max: number }> };
   columnas: Array<{ nombre: string; pct: number }> | null;
   estudiantes: EstBol[];
   director: { nombre: string; genero: string | null } | null;
 }
 
-const ORDINAL: Record<number, string> = { 1: "Primer", 2: "Segundo", 3: "Tercer", 4: "Cuarto" };
+const ORDINAL: Record<number, string> = { 1: "Primero", 2: "Segundo", 3: "Tercero", 4: "Cuarto" };
 const GRADO_ORDEN = ["Párvulo", "Prejardín", "Jardín", "Transición", "Primero", "Segundo", "Tercero", "Cuarto", "Quinto", "Sexto", "Séptimo", "Octavo", "Noveno", "Décimo", "Undécimo"];
 
 // Criterios estándar por etiqueta de desempeño (leyenda al pie, como SISNOTAS).
@@ -198,7 +198,7 @@ const Boletines = () => {
         y += 8;
         filaInfo([
           { label: "No. Lista", valor: String(est.num_lista), w: 25 },
-          { label: "Periodo", valor: `${ORDINAL[datos.periodo]}`, w: 45 },
+          { label: "Periodo", valor: `${ORDINAL[datos.periodo]}${datos.periodo_peso ? ` (${datos.periodo_peso}%)` : ""}`, w: 45 },
           { label: "Año Lectivo", valor: String(datos.ano_escolar), w: 30 },
           { label: "Fecha", valor: hoy, w: 40 },
           { label: "Sede", valor: datos.colegio.sede, w: 50 },
