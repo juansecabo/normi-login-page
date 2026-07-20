@@ -254,15 +254,18 @@ const Campo = ({ label, value, set, ph }: { label: string; value: string; set: (
 
 const FichaDatos = ({ colegio, cfg, onSaved, volver }: { colegio: ColegioDetalle; cfg: Record<string, any>; onSaved: () => Promise<void>; volver: () => void }) => {
   const { toast } = useToast();
+  // Datos legales en la RAÍZ de configuracion (mismo formato que Configurar
+  // Institución del rector y que lee el boletín). `datos_legales` anidado es
+  // formato viejo: se lee como fallback pero ya no se escribe.
   const dl = (cfg.datos_legales || {}) as Record<string, any>;
   const [nombre, setNombre] = useState(colegio.nombre === "Institución sin nombre" ? "" : colegio.nombre);
   const [ciudad, setCiudad] = useState(cfg.ciudad || "");
-  const [nit, setNit] = useState(dl.nit || "");
-  const [dane, setDane] = useState(dl.dane || "");
-  const [resolucion, setResolucion] = useState(dl.resolucion || "");
-  const [direccion, setDireccion] = useState(dl.direccion || "");
-  const [telefono, setTelefono] = useState(dl.telefono || "");
-  const [rectorNombre, setRectorNombre] = useState(dl.rector_nombre || "");
+  const [nit, setNit] = useState(cfg.nit ?? dl.nit ?? "");
+  const [dane, setDane] = useState(cfg.dane ?? dl.dane ?? "");
+  const [resolucion, setResolucion] = useState(cfg.resolucion ?? dl.resolucion ?? "");
+  const [direccion, setDireccion] = useState(cfg.direccion ?? dl.direccion ?? "");
+  const [telefono, setTelefono] = useState(cfg.telefono ?? dl.telefono ?? "");
+  const [rectorNombre, setRectorNombre] = useState(cfg.rector_nombre ?? dl.rector_nombre ?? "");
   const [guardando, setGuardando] = useState(false);
 
   const guardar = async () => {
@@ -273,7 +276,8 @@ const FichaDatos = ({ colegio, cfg, onSaved, volver }: { colegio: ColegioDetalle
         nombre: nombre.trim(),
         configuracion: {
           ciudad: ciudad.trim(),
-          datos_legales: { nit, dane, resolucion, direccion, telefono, rector_nombre: rectorNombre },
+          nit: nit.trim(), dane: dane.trim(), resolucion: resolucion.trim(),
+          direccion: direccion.trim(), telefono: telefono.trim(), rector_nombre: rectorNombre.trim(),
         },
       });
       await onSaved();
