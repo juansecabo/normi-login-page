@@ -6,9 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { apiRequest } from "@/lib/apiClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { FileText, Loader2, Download, AlertTriangle, CheckCircle2, Send } from "lucide-react";
+import { FileText, Loader2, Download } from "lucide-react";
 import { cargoSegunGenero } from "@/lib/entrevistadores";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 /**
  * Boletines (Fase 2) — réplica del "INFORME DE DESEMPEÑO" del Pestalozziano
@@ -32,13 +31,6 @@ interface FilaBol {
   logros: string[];
 }
 interface EstBol { id: string; nombres: string; apellidos: string; num_lista: number; filas: FilaBol[] }
-interface ItemInc {
-  asignatura: string; grado: string; salon: string;
-  sin_nota: string[];
-  actividades_incompletas: Array<{ actividad: string; faltan: string[] }>;
-}
-interface GrupoInc { profesor: { id: string; nombre: string; genero: string | null } | null; items: ItemInc[] }
-
 interface DatosBoletin {
   colegio: { nombre: string; logo_url: string | null; encabezado: string[]; sede: string };
   grado: string; salon: string; periodo: number; ano_escolar: number;
@@ -112,38 +104,6 @@ const Boletines = () => {
     } finally { setCargando(false); }
   };
   useEffect(() => { if (grado && salon) cargar(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [grado, salon, periodo]);
-
-  // ── Inconsistencias del periodo (todo el colegio) ──
-  const [inconsistencias, setInconsistencias] = useState<GrupoInc[] | null>(null);
-  const [notificando, setNotificando] = useState<string | null>(null);
-  const [confirmNotif, setConfirmNotif] = useState<GrupoInc | null>(null);
-  useEffect(() => {
-    let cancel = false;
-    setInconsistencias(null);
-    apiRequest<{ grupos: GrupoInc[] }>(`/api/boletines/inconsistencias?periodo=${periodo}`)
-      .then((r) => { if (!cancel) setInconsistencias(r.grupos || []); })
-      .catch(() => { if (!cancel) setInconsistencias([]); });
-    return () => { cancel = true; };
-  }, [periodo]);
-
-  const notificar = async () => {
-    if (!confirmNotif?.profesor) return;
-    setNotificando(confirmNotif.profesor.id);
-    try {
-      await apiRequest("/api/boletines/inconsistencias/notificar", {
-        method: "POST",
-        body: JSON.stringify({ periodo, profesor_id: confirmNotif.profesor.id }),
-      });
-      toast({ title: "Recordatorio enviado", description: `${confirmNotif.profesor.nombre} recibirá el detalle por WhatsApp.` });
-      setConfirmNotif(null);
-    } catch (e: any) {
-      toast({ title: "No se pudo enviar", description: e?.body?.detail || e?.message, variant: "destructive" });
-    } finally { setNotificando(null); }
-  };
-
-  const incDelAula = useMemo(() =>
-    (inconsistencias || []).flatMap((g) => g.items).filter((i) => i.grado === grado && String(i.salon) === salon),
-    [inconsistencias, grado, salon]);
 
   // ── PDF ──
   const generarPdf = async (soloEstudiante?: EstBol) => {
@@ -384,15 +344,6 @@ const Boletines = () => {
             <p className="text-center text-muted-foreground py-8">No hay estudiantes con notas en esta aula y periodo.</p>
           ) : (
             <div className="space-y-4">
-              {incDelAula.length > 0 && (
-                <div className="border border-amber-300 bg-amber-50 rounded-lg p-3 text-sm text-amber-800 flex gap-2">
-                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                  <span>
-                    Esta aula tiene planillas incompletas en {incDelAula.length} asignatura{incDelAula.length > 1 ? "s" : ""}
-                    {" "}({incDelAula.map((i) => i.asignatura).join(", ")}) — revisa las inconsistencias abajo antes de entregar boletines.
-                  </span>
-                </div>
-              )}
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <p className="text-sm text-muted-foreground">
                   {datos.estudiantes.length} estudiantes · {datos.columnas
@@ -420,89 +371,7 @@ const Boletines = () => {
             </div>
           )}
         </div>
-
-        {/* ── Inconsistencias del periodo (todo el colegio) ── */}
-        <div className="bg-card rounded-lg shadow-soft p-6 mt-6">
-          <h3 className="text-lg font-bold text-foreground flex items-center gap-2 mb-1">
-            <AlertTriangle className="h-5 w-5 text-amber-500" /> Inconsistencias del periodo
-          </h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Planillas incompletas de TODO el colegio en el {ORDINAL[periodo].toLowerCase()} periodo, agrupadas por profesor.
-            El botón le envía a cada uno el detalle por WhatsApp.
-          </p>
-
-          {inconsistencias === null ? (
-            <div className="text-center py-6 text-muted-foreground"><Loader2 className="w-5 h-5 animate-spin inline" /></div>
-          ) : inconsistencias.length === 0 ? (
-            <p className="text-sm text-emerald-700 flex items-center gap-2 py-3">
-              <CheckCircle2 className="w-4 h-4" /> Sin inconsistencias: todas las planillas con notas están completas.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {inconsistencias.map((g, gi) => (
-                <div key={g.profesor?.id || `sp-${gi}`} className="border border-border rounded-lg p-3">
-                  <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
-                    <p className="font-semibold text-foreground text-sm">
-                      {g.profesor
-                        ? `${cargoSegunGenero("Profesor(a)", g.profesor.genero)} ${g.profesor.nombre}`
-                        : "Sin profesor asignado (revisar carga académica)"}
-                    </p>
-                    {g.profesor && (
-                      <Button size="sm" variant="outline" className="gap-1.5"
-                        disabled={notificando === g.profesor.id}
-                        onClick={() => setConfirmNotif(g)}>
-                        {notificando === g.profesor.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                        Recordar por WhatsApp
-                      </Button>
-                    )}
-                  </div>
-                  <div className="space-y-1.5">
-                    {g.items.map((it, i) => (
-                      <div key={i} className="text-sm text-foreground bg-muted/40 rounded-md px-2.5 py-1.5">
-                        <span className="font-medium">{it.asignatura} — {it.grado} {it.salon}:</span>{" "}
-                        {it.sin_nota.length > 0 && (
-                          <span className="text-red-600">
-                            {it.sin_nota.length} estudiante{it.sin_nota.length > 1 ? "s" : ""} sin ninguna nota
-                            {" "}({it.sin_nota.slice(0, 3).join(", ")}{it.sin_nota.length > 3 ? "…" : ""})
-                          </span>
-                        )}
-                        {it.sin_nota.length > 0 && it.actividades_incompletas.length > 0 && " · "}
-                        {it.actividades_incompletas.length > 0 && (
-                          <span className="text-amber-700">
-                            {it.actividades_incompletas.length} actividad{it.actividades_incompletas.length > 1 ? "es" : ""} con huecos
-                            {" "}({it.actividades_incompletas.slice(0, 3).map((a) => `"${a.actividad}" faltan ${a.faltan.length}`).join(", ")}{it.actividades_incompletas.length > 3 ? "…" : ""})
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </main>
-
-      {/* ── Confirmar recordatorio ── */}
-      <Dialog open={!!confirmNotif} onOpenChange={(o) => !o && setConfirmNotif(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>¿Enviar recordatorio por WhatsApp?</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            {confirmNotif?.profesor && (
-              <>{cargoSegunGenero("Profesor(a)", confirmNotif.profesor.genero)} <span className="font-medium text-foreground">{confirmNotif.profesor.nombre}</span> recibirá
-              el detalle de sus {confirmNotif.items.length} planilla{confirmNotif.items.length > 1 ? "s" : ""} pendiente{confirmNotif.items.length > 1 ? "s" : ""} del {ORDINAL[periodo].toLowerCase()} periodo.</>
-            )}
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmNotif(null)}>Cancelar</Button>
-            <Button onClick={notificar} disabled={!!notificando} className="gap-2">
-              {notificando && <Loader2 className="w-4 h-4 animate-spin" />} Enviar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
