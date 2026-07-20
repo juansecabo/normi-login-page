@@ -20,6 +20,7 @@ import { CalendarDays, Eraser, Loader2, Trash2 } from "lucide-react";
 
 interface Periodo { periodo: number; fecha_inicio: string; fecha_fin: string; ano_escolar?: number }
 interface DiaNoLectivo { id: number; fecha_inicio: string; fecha_fin: string; motivo: string | null }
+interface Evento { id: number; fecha_inicio: string; fecha_fin: string; nombre: string }
 
 const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 const DIAS_SEMANA = ["L", "M", "M", "J", "V", "S", "D"];
@@ -30,7 +31,7 @@ const fechaLinda = (fISO: string) => {
   return new Date(y, m - 1, d).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" });
 };
 
-type Herramienta = "p1" | "p2" | "p3" | "p4" | "sinclases" | "quitar";
+type Herramienta = "p1" | "p2" | "p3" | "p4" | "sinclases" | "evento" | "quitar";
 
 const PERIODO_ESTILO: Record<number, { fondo: string; chip: string; nombre: string }> = {
   1: { fondo: "bg-emerald-200 hover:bg-emerald-300", chip: "bg-emerald-200 border-emerald-400", nombre: "Periodo 1" },
@@ -51,14 +52,16 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
   const [anoEscolar, setAnoEscolar] = useState<number>(new Date().getFullYear());
   const [periodos, setPeriodos] = useState<Periodo[]>([]);
   const [dias, setDias] = useState<DiaNoLectivo[]>([]);
+  const [eventos, setEventos] = useState<Evento[]>([]);
   const [festivos, setFestivos] = useState<Map<string, string>>(new Map());
 
   const cargar = async () => {
     try {
-      const r = await apiRequest<{ periodos: Periodo[]; dias: DiaNoLectivo[]; festivos: Array<{ fecha: string; nombre: string } | string>; ano_escolar: number }>(`/api/institucion/calendario${qCid}`);
+      const r = await apiRequest<{ periodos: Periodo[]; dias: DiaNoLectivo[]; eventos?: Evento[]; festivos: Array<{ fecha: string; nombre: string } | string>; ano_escolar: number }>(`/api/institucion/calendario${qCid}`);
       setAnoEscolar(r.ano_escolar);
       setPeriodos((r.periodos || []).filter((p) => p.ano_escolar === r.ano_escolar));
       setDias(r.dias || []);
+      setEventos(r.eventos || []);
       setFestivos(new Map((r.festivos || []).map((f) => (typeof f === "string" ? [f, "Festivo"] : [f.fecha, f.nombre]))));
     } catch { /* la vista muestra vacío */ }
     finally { setCargando(false); }
@@ -120,9 +123,39 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
     } finally { setGuardando(false); }
   };
 
+  // ── Evento (entrega de boletines, día deportivo…): pide nombre ──
+  const [eventoDialog, setEventoDialog] = useState<{ ini: string; fin: string } | null>(null);
+  const [eventoNombre, setEventoNombre] = useState("");
+  const crearEvento = async () => {
+    if (!eventoDialog || !eventoNombre.trim()) return;
+    setGuardando(true);
+    try {
+      await apiRequest("/api/institucion/calendario/eventos", {
+        method: "POST",
+        body: JSON.stringify(withCid({ fecha_inicio: eventoDialog.ini, fecha_fin: eventoDialog.fin, nombre: eventoNombre.trim() })),
+      });
+      setEventoDialog(null); setEventoNombre("");
+      await cargar();
+    } catch (e: any) {
+      err("No se pudo crear el evento", (e?.body as any)?.detail || e?.message);
+    } finally { setGuardando(false); }
+  };
+
   // ── Quitar (goma): confirmaciones ──
   const [confirmDia, setConfirmDia] = useState<DiaNoLectivo | null>(null);
   const [confirmPeriodo, setConfirmPeriodo] = useState<number | null>(null);
+  const [confirmEvento, setConfirmEvento] = useState<Evento | null>(null);
+  const eliminarEvento = async () => {
+    if (!confirmEvento) return;
+    setGuardando(true);
+    try {
+      await apiRequest(`/api/institucion/calendario/eventos/${confirmEvento.id}${qCid}`, { method: "DELETE" });
+      setConfirmEvento(null);
+      await cargar();
+    } catch (e: any) {
+      err("No se pudo eliminar", (e?.body as any)?.detail || e?.message);
+    } finally { setGuardando(false); }
+  };
   const eliminarDia = async () => {
     if (!confirmDia) return;
     setGuardando(true);
@@ -143,10 +176,26 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
   // ── Detalle de un día (sin herramienta): ver/editar lo que hay ahí ──
   type Detalle =
     | { tipo: "dia"; dia: DiaNoLectivo }
+    | { tipo: "evento"; evento: Evento }
     | { tipo: "festivo"; fecha: string; nombre: string }
     | { tipo: "periodo"; periodo: Periodo };
   const [detalle, setDetalle] = useState<Detalle | null>(null);
   const [motivoEdit, setMotivoEdit] = useState("");
+  const [eventoEdit, setEventoEdit] = useState("");
+  const guardarNombreEvento = async () => {
+    if (!detalle || detalle.tipo !== "evento" || !eventoEdit.trim()) return;
+    setGuardando(true);
+    try {
+      await apiRequest(`/api/institucion/calendario/eventos/${detalle.evento.id}${qCid}`, {
+        method: "PATCH",
+        body: JSON.stringify(withCid({ nombre: eventoEdit.trim() })),
+      });
+      setDetalle(null);
+      await cargar();
+    } catch (e: any) {
+      err("No se pudo guardar", (e?.body as any)?.detail || e?.message);
+    } finally { setGuardando(false); }
+  };
   const guardarMotivo = async () => {
     if (!detalle || detalle.tipo !== "dia") return;
     setGuardando(true);
@@ -167,6 +216,8 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
     if (herramienta === "quitar") {
       const dia = dias.find((d) => d.fecha_inicio <= f && f <= d.fecha_fin);
       if (dia) { setConfirmDia(dia); return; }
+      const ev = eventos.find((e) => e.fecha_inicio <= f && f <= e.fecha_fin);
+      if (ev) { setConfirmEvento(ev); return; }
       const per = periodos.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin);
       if (per) { setConfirmPeriodo(per.periodo); return; }
       return;
@@ -175,6 +226,8 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
       // Modo inspección: mostrar qué hay en ese día (y permitir editarlo).
       const dia = dias.find((d) => d.fecha_inicio <= f && f <= d.fecha_fin);
       if (dia) { setMotivoEdit(dia.motivo || ""); setDetalle({ tipo: "dia", dia }); return; }
+      const ev = eventos.find((e) => e.fecha_inicio <= f && f <= e.fecha_fin);
+      if (ev) { setEventoEdit(ev.nombre); setDetalle({ tipo: "evento", evento: ev }); return; }
       const nombreFestivo = festivos.get(f);
       if (nombreFestivo) { setDetalle({ tipo: "festivo", fecha: f, nombre: nombreFestivo }); return; }
       const per = periodos.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin);
@@ -198,6 +251,9 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
       if (herramienta === "sinclases") {
         setMotivoTexto("");
         setMotivoDialog({ ini, fin });
+      } else if (herramienta === "evento") {
+        setEventoNombre("");
+        setEventoDialog({ ini, fin });
       } else if (herramienta && herramienta.startsWith("p")) {
         const n = Number(herramienta.slice(1));
         guardarPeriodos([...periodos.filter((p) => p.periodo !== n), { periodo: n, fecha_inicio: ini, fecha_fin: fin, ano_escolar: anoEscolar }]);
@@ -220,6 +276,8 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
     if (enSeleccion(f)) return { cls: `${base} ring-2 ring-primary bg-primary/20`, title: "" };
     const dia = dias.find((d) => d.fecha_inicio <= f && f <= d.fecha_fin);
     if (dia) return { cls: `${base} bg-red-200 hover:bg-red-300 text-red-900`, title: dia.motivo || "Día sin clases" };
+    const ev = eventos.find((e) => e.fecha_inicio <= f && f <= e.fecha_fin);
+    if (ev) return { cls: `${base} bg-indigo-200 hover:bg-indigo-300 text-indigo-900`, title: ev.nombre };
     const nombreFestivo = festivos.get(f);
     if (nombreFestivo) return { cls: `${base} bg-stone-300 text-stone-600`, title: `${nombreFestivo} (festivo automático)` };
     const per = periodos.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin);
@@ -239,7 +297,7 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
             Elige una herramienta y <strong>haz clic</strong> en un día para marcarlo, o <strong>mantén presionado y arrastra</strong> para
             pintar un rango. Clic de nuevo sobre la herramienta para soltarla: sin herramienta, el clic sobre un día pintado
             muestra qué es y permite editarlo. Los fines de semana y festivos de Colombia ya se tienen en cuenta solos.
-            Los avisos automáticos no se envían los días sin clases, y Normi responde con estas fechas.
+            Los avisos automáticos no se envían los días sin clases, y Normi responde con estas fechas. Los <strong>Eventos</strong> (entrega de boletines, día deportivo…) son días CON clases donde además pasa algo — Normi también los informa.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -255,6 +313,10 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
               className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer focus:outline-none bg-red-200 border-red-400 ${herramienta === "sinclases" ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
               Día sin clases
             </button>
+            <button onClick={(e) => toggleHerramienta("evento", e)}
+              className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer focus:outline-none bg-indigo-200 border-indigo-400 ${herramienta === "evento" ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
+              Evento
+            </button>
             <button onClick={(e) => toggleHerramienta("quitar", e)}
               className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer focus:outline-none bg-background inline-flex items-center gap-1 ${herramienta === "quitar" ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
               <Eraser className="w-3.5 h-3.5" /> Quitar
@@ -262,7 +324,7 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
             {guardando && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
           </div>
           {herramienta === "quitar" && (
-            <p className="text-sm text-muted-foreground">Haz clic sobre un periodo o un día sin clases para quitarlo.</p>
+            <p className="text-sm text-muted-foreground">Haz clic sobre un periodo, un día sin clases o un evento para quitarlo.</p>
           )}
 
           {/* ── Los 12 meses ── */}
@@ -307,6 +369,7 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
               );
             })}
             <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-red-200 border border-red-400" /> Sin clases</span>
+            <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-indigo-200 border border-indigo-400" /> Evento (con clases)</span>
             <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-stone-300" /> Festivo (automático)</span>
           </div>
         </CardContent>
@@ -329,6 +392,32 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
                     <p className="text-xs text-muted-foreground">{d.motivo || "Sin motivo"}</p>
                   </div>
                   <button onClick={() => setConfirmDia(d)} className="text-muted-foreground hover:text-destructive cursor-pointer" title="Eliminar">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Lista de eventos ── */}
+      {eventos.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Eventos configurados</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="divide-y rounded-lg border">
+              {eventos.map((ev) => (
+                <div key={ev.id} className={`flex items-center justify-between px-4 py-2 ${ev.fecha_fin < hoyISO ? "opacity-50" : ""}`}>
+                  <div>
+                    <p className="text-sm font-medium">
+                      {ev.fecha_inicio === ev.fecha_fin ? fechaLinda(ev.fecha_inicio) : `${fechaLinda(ev.fecha_inicio)} — ${fechaLinda(ev.fecha_fin)}`}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{ev.nombre}</p>
+                  </div>
+                  <button onClick={() => setConfirmEvento(ev)} className="text-muted-foreground hover:text-destructive cursor-pointer" title="Eliminar">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -362,6 +451,30 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
         </DialogContent>
       </Dialog>
 
+      {/* Nombre del evento nuevo */}
+      <Dialog open={!!eventoDialog} onOpenChange={(o) => { if (!o) setEventoDialog(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nuevo evento</DialogTitle>
+            <DialogDescription>
+              {eventoDialog && (eventoDialog.ini === eventoDialog.fin
+                ? fechaLinda(eventoDialog.ini)
+                : `${fechaLinda(eventoDialog.ini)} — ${fechaLinda(eventoDialog.fin)}`)} · Hay clases ese día, solo se realiza el evento.
+            </DialogDescription>
+          </DialogHeader>
+          <div>
+            <Input value={eventoNombre} onChange={(e) => setEventoNombre(e.target.value)} placeholder="Nombre: entrega de boletines, día deportivo, izada de bandera…" maxLength={80} autoFocus
+              onKeyDown={(e) => { if (e.key === "Enter") crearEvento(); }} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEventoDialog(null)} disabled={guardando}>Cancelar</Button>
+            <Button onClick={crearEvento} disabled={guardando || !eventoNombre.trim()} className="gap-2">
+              {guardando && <Loader2 className="w-4 h-4 animate-spin" />} Crear evento
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Detalle de un día (modo inspección, sin herramienta) */}
       <Dialog open={!!detalle} onOpenChange={(o) => { if (!o) setDetalle(null); }}>
         <DialogContent className="max-w-md">
@@ -381,6 +494,26 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
                 <Trash2 className="w-4 h-4" /> Eliminar
               </Button>
               <Button onClick={guardarMotivo} disabled={guardando} className="gap-2">
+                {guardando && <Loader2 className="w-4 h-4 animate-spin" />} Guardar
+              </Button>
+            </DialogFooter>
+          </>)}
+          {detalle?.tipo === "evento" && (<>
+            <DialogHeader>
+              <DialogTitle>Evento</DialogTitle>
+              <DialogDescription>
+                {detalle.evento.fecha_inicio === detalle.evento.fecha_fin
+                  ? fechaLinda(detalle.evento.fecha_inicio)
+                  : `${fechaLinda(detalle.evento.fecha_inicio)} — ${fechaLinda(detalle.evento.fecha_fin)}`} · Hay clases ese día.
+              </DialogDescription>
+            </DialogHeader>
+            <Input value={eventoEdit} onChange={(e) => setEventoEdit(e.target.value)} placeholder="Nombre del evento" maxLength={80}
+              onKeyDown={(e) => { if (e.key === "Enter") guardarNombreEvento(); }} />
+            <DialogFooter>
+              <Button variant="destructive" onClick={() => { const ev = detalle.evento; setDetalle(null); setConfirmEvento(ev); }} disabled={guardando} className="gap-2">
+                <Trash2 className="w-4 h-4" /> Eliminar
+              </Button>
+              <Button onClick={guardarNombreEvento} disabled={guardando || !eventoEdit.trim()} className="gap-2">
                 {guardando && <Loader2 className="w-4 h-4 animate-spin" />} Guardar
               </Button>
             </DialogFooter>
@@ -406,6 +539,26 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
               </Button>
             </DialogFooter>
           </>)}
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmar quitar evento */}
+      <Dialog open={!!confirmEvento} onOpenChange={(o) => { if (!o) setConfirmEvento(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Eliminar evento</DialogTitle>
+            <DialogDescription className="pt-2 text-foreground">
+              ¿Eliminar el evento {confirmEvento && <strong>"{confirmEvento.nombre}"</strong>} del {confirmEvento && (confirmEvento.fecha_inicio === confirmEvento.fecha_fin
+                ? fechaLinda(confirmEvento.fecha_inicio)
+                : `${fechaLinda(confirmEvento.fecha_inicio)} — ${fechaLinda(confirmEvento.fecha_fin)}`)}?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmEvento(null)} disabled={guardando}>Cancelar</Button>
+            <Button variant="destructive" onClick={eliminarEvento} disabled={guardando} className="gap-2">
+              {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Eliminar
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
