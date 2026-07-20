@@ -309,13 +309,13 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
                 {PERIODO_ESTILO[n].nombre}
               </button>
             ))}
-            <button onClick={(e) => toggleHerramienta("sinclases", e)}
-              className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer focus:outline-none bg-red-200 border-red-400 ${herramienta === "sinclases" ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
-              Día sin clases
-            </button>
             <button onClick={(e) => toggleHerramienta("evento", e)}
               className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer focus:outline-none bg-indigo-200 border-indigo-400 ${herramienta === "evento" ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
               Evento
+            </button>
+            <button onClick={(e) => toggleHerramienta("sinclases", e)}
+              className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer focus:outline-none bg-red-200 border-red-400 ${herramienta === "sinclases" ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
+              Día sin clases
             </button>
             <button onClick={(e) => toggleHerramienta("quitar", e)}
               className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer focus:outline-none bg-background inline-flex items-center gap-1 ${herramienta === "quitar" ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
