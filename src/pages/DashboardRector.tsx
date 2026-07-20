@@ -214,6 +214,12 @@ const DashboardRector = () => {
         <span className="font-semibold text-foreground">Estadísticas</span>
       </button>
     ) },
+    { id: 'boletines', render: (
+      <button onClick={() => navigate("/rector/boletines")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-emerald-100 transition-all duration-200 hover:shadow-md hover:bg-emerald-200">
+        <span className="text-5xl leading-none">📄</span>
+        <span className="font-semibold text-foreground text-center">Boletines</span>
+      </button>
+    ) },
     { id: 'consultas', render: (
       <button onClick={() => navigate("/consultas")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-pink-100 transition-all duration-200 hover:shadow-md hover:bg-pink-200">
         <img src={iconConsultas} alt="" className="w-16 h-16 object-contain" />

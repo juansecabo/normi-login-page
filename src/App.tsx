@@ -35,6 +35,7 @@ import CrearInstitucion from "./pages/CrearInstitucion";
 import UsoNormi from "./pages/rector/UsoNormi";
 import AprendeNormi from "./pages/AprendeNormi";
 import LogrosProfesor from "./pages/profesor/LogrosProfesor";
+import Boletines from "./pages/rector/Boletines";
 import ComunicadosRecibidos from "./pages/rector/ComunicadosRecibidos";
 import DocumentosRecibidos from "./pages/rector/DocumentosRecibidos";
 
@@ -150,6 +151,7 @@ const App = () => (
           <Route path="/rector/tabla-notas" element={<TablaNotasReadOnlyRouter />} />
           <Route path="/rector/estudiante-consolidado" element={<EstudianteConsolidado />} />
           <Route path="/rector/estadisticas" element={<EstadisticasDashboard />} />
+          <Route path="/rector/boletines" element={<Boletines />} />
           <Route path="/rector/estudiantes-riesgo" element={<EstudiantesEnRiesgo />} />
           <Route path="/rector/panel-control" element={<PanelControl />} />
           <Route path="/rector/horarios-avisos" element={<HorariosAvisos />} />
