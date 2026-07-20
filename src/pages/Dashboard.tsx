@@ -281,6 +281,12 @@ const Dashboard = () => {
         <span className="font-semibold text-foreground text-center">Configurar Institución</span>
       </button>
     ) }] : []),
+    { id: 'logros', render: (
+      <button onClick={() => navigate("/profesor/logros")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-lime-100 transition-all duration-200 hover:shadow-md hover:bg-lime-200">
+        <span className="text-5xl leading-none">🎯</span>
+        <span className="font-semibold text-foreground text-center">Logros del periodo</span>
+      </button>
+    ) },
     { id: 'perfil', render: (
       <button onClick={() => navigate("/perfil")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-sky-100 transition-all duration-200 hover:shadow-md hover:bg-sky-200">
         <img src={iconPerfil} alt="" className="w-16 h-16 object-contain" />

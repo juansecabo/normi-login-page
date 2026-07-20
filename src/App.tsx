@@ -34,6 +34,7 @@ import ConstruyeInstitucion from "./pages/rector/ConstruyeInstitucion";
 import CrearInstitucion from "./pages/CrearInstitucion";
 import UsoNormi from "./pages/rector/UsoNormi";
 import AprendeNormi from "./pages/AprendeNormi";
+import LogrosProfesor from "./pages/profesor/LogrosProfesor";
 import ComunicadosRecibidos from "./pages/rector/ComunicadosRecibidos";
 import DocumentosRecibidos from "./pages/rector/DocumentosRecibidos";
 
@@ -156,6 +157,7 @@ const App = () => (
           <Route path="/crear-institucion/:id" element={<CrearInstitucion />} />
           <Route path="/rector/uso-normi" element={<UsoNormi />} />
           <Route path="/aprende-normi" element={<AprendeNormi />} />
+          <Route path="/profesor/logros" element={<LogrosProfesor />} />
 
           {/* Rutas para Admin */}
           <Route path="/admin/sugerencias" element={<Sugerencias />} />

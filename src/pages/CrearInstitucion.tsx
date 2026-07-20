@@ -11,6 +11,7 @@ import HeaderNormi from "@/components/HeaderNormi";
 import EscudoColegio from "@/components/EscudoColegio";
 import EstructuraColegioEditor from "@/components/EstructuraColegioEditor";
 import AsignaturasColegioEditor from "@/components/AsignaturasColegioEditor";
+import AreasColegioEditor from "@/components/AreasColegioEditor";
 import PersonasColegioEditor from "@/components/PersonasColegioEditor";
 import EscalaColegioEditor from "@/components/EscalaColegioEditor";
 import { Input } from "@/components/ui/input";
@@ -177,6 +178,9 @@ const CrearInstitucion = () => {
               <h2 className="text-xl font-semibold mb-1">Asignaturas y plan de estudios</h2>
               <p className="text-sm text-muted-foreground mb-4">Escoge las asignaturas propias del colegio y define cuáles se ven en cada grado con su intensidad horaria.</p>
               <AsignaturasColegioEditor colegioId={id} />
+              <div className="mt-6">
+                <AreasColegioEditor colegioId={id} />
+              </div>
             </div>
           )}
           {vista === "manual" && <FichaManual id={id} manualUrl={cfg.manual_url || null} onChanged={cargar} />}

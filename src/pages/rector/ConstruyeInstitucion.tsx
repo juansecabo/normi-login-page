@@ -16,6 +16,7 @@ import { useRef } from "react";
 import EscalaColegioEditor from "@/components/EscalaColegioEditor";
 import CalendarioColegioEditor from "@/components/CalendarioColegioEditor";
 import AsignaturasColegioEditor from "@/components/AsignaturasColegioEditor";
+import AreasColegioEditor from "@/components/AreasColegioEditor";
 import PersonasColegioEditor from "@/components/PersonasColegioEditor";
 import ArmarSalon from "@/components/ArmarSalon";
 
@@ -314,7 +315,12 @@ const ConstruyeInstitucion = () => {
                 />
               </div>
             )}
-            {vista === "asignaturas" && <AsignaturasColegioEditor />}
+            {vista === "asignaturas" && (
+              <div className="space-y-6">
+                <AsignaturasColegioEditor />
+                <AreasColegioEditor />
+              </div>
+            )}
             {vista === "calendario" && <CalendarioColegioEditor />}
             {vista === "manual" && (
               <div className="bg-card rounded-lg shadow-soft p-6 md:p-8">
