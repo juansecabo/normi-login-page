@@ -277,10 +277,15 @@ const ConstruyeInstitucion = () => {
                   <div><label className="text-sm font-medium block mb-1">NIT</label><Input value={datos.nit} onChange={(e) => setDatos({ ...datos, nit: e.target.value })} placeholder="Ej: 800.123.456-7" /></div>
                   <div><label className="text-sm font-medium block mb-1">Ciudad</label><Input value={datos.ciudad} onChange={(e) => setDatos({ ...datos, ciudad: e.target.value })} placeholder="Ej: Corozal" /></div>
                   <div><label className="text-sm font-medium block mb-1">Código DANE</label><Input value={datos.dane} onChange={(e) => setDatos({ ...datos, dane: e.target.value })} /></div>
-                  <div><label className="text-sm font-medium block mb-1">Resolución</label><Input value={datos.resolucion} onChange={(e) => setDatos({ ...datos, resolucion: e.target.value })} placeholder="Resolución de aprobación" /></div>
                   <div><label className="text-sm font-medium block mb-1">Dirección</label><Input value={datos.direccion} onChange={(e) => setDatos({ ...datos, direccion: e.target.value })} /></div>
                   <div><label className="text-sm font-medium block mb-1">Teléfono</label><Input value={datos.telefono} onChange={(e) => setDatos({ ...datos, telefono: e.target.value })} /></div>
-                  <div className="sm:col-span-2"><label className="text-sm font-medium block mb-1">Nombre del rector(a)</label><Input value={datos.rector_nombre} onChange={(e) => setDatos({ ...datos, rector_nombre: e.target.value })} /></div>
+                  <div><label className="text-sm font-medium block mb-1">Nombre del rector(a)</label><Input value={datos.rector_nombre} onChange={(e) => setDatos({ ...datos, rector_nombre: e.target.value })} /></div>
+                  <div className="sm:col-span-2">
+                    <label className="text-sm font-medium block mb-1">Resolución</label>
+                    <textarea value={datos.resolucion} onChange={(e) => setDatos({ ...datos, resolucion: e.target.value })}
+                      placeholder="Resolución o licencia de funcionamiento (texto completo)" rows={2}
+                      className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-ring" />
+                  </div>
                 </div>
                 <Button onClick={guardarDatos} disabled={guardandoDatos}>{guardandoDatos && <Loader2 className="w-4 h-4 mr-1 animate-spin" />} Guardar datos</Button>
               </CardContent>
