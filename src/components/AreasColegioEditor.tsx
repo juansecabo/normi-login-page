@@ -8,6 +8,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { Layers, Plus, Pencil, Trash2, Loader2, ArrowUp, ArrowDown, ListOrdered } from "lucide-react";
+import { useGradosColegio } from "@/utils/grados";
 
 /**
  * Áreas académicas (para boletines) + orden del boletín.
@@ -34,19 +35,19 @@ const AreasColegioEditor = ({ colegioId }: Props) => {
   const [areas, setAreas] = useState<Area[]>([]);
   const [composicion, setComposicion] = useState<Componente[]>([]);
   const [asignaturas, setAsignaturas] = useState<Asignatura[]>([]);
-  const [grados, setGrados] = useState<string[]>([]);
+  // Grados del colegio (derivados de estudiantes, NO de Grados_Colegio que el
+  // Pestalozziano no usa) — evita el dropdown vacío que se abría descolocado.
+  const { grados } = useGradosColegio();
 
   const cargar = async () => {
     try {
-      const [a, ap, est] = await Promise.all([
+      const [a, ap] = await Promise.all([
         apiRequest<{ areas: Area[]; composicion: Componente[] }>(`/api/institucion/areas${qCid}`),
         apiRequest<{ asignaturas: Asignatura[] }>(`/api/institucion/asignaturas-plan${qCid}`),
-        apiRequest<{ grados: Array<{ nombre: string }> }>(`/api/institucion/estructura${qCid}`).catch(() => ({ grados: [] as Array<{ nombre: string }> })),
       ]);
       setAreas(a.areas || []);
       setComposicion(a.composicion || []);
       setAsignaturas((ap.asignaturas || []).filter((x) => x.activa));
-      setGrados(((est as any).grados || []).map((g: any) => g.nombre));
     } catch {
       toast({ title: "No se pudieron cargar las áreas", variant: "destructive" });
     } finally {
