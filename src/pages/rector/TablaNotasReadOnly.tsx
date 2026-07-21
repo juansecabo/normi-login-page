@@ -8,6 +8,7 @@ import HeaderNormi from "@/components/HeaderNormi";
 import ComentarioModalReadOnly from "@/components/notas/ComentarioModalReadOnly";
 import { MessageSquare } from "lucide-react";
 import { promedioGeneral, esPeriodoCompleto, type NotaCalc, type GrupoCalc } from "@/lib/gradeCalculator";
+import { useColegioConfig } from "@/hooks/useColegioConfig";
 
 interface Estudiante {
   id: string;
@@ -50,6 +51,9 @@ const TablaNotasReadOnly = () => {
   const [gruposAula, setGruposAula] = useState<Array<{ id: string; periodo: number; porcentaje: number; parent_id: string | null }>>([]);
   const [notas, setNotas] = useState<NotasEstudiantes>({});
   const [comentarios, setComentarios] = useState<ComentariosEstudiantes>({});
+  // Colegios con `ocultar_definitivas` (ej. Pestalozziano): no se muestra la columna Definitiva.
+  const { config } = useColegioConfig();
+  const ocultarDef = !!(config as any).ocultar_definitivas;
   const [periodoActivo, setPeriodoActivo] = useState<number>(getPeriodoActual());
   const [nombreProfesor, setNombreProfesor] = useState<string>("");
 
@@ -460,6 +464,7 @@ const TablaNotasReadOnly = () => {
                             </div>
                           </th>
                         ))}
+                        {!ocultarDef && (
                         <th className="border-r border-b border-border/30 p-2 text-center text-xs font-medium min-w-[130px] bg-primary">
                           <div className="flex flex-col items-center">
                             <span>Definitiva Periodo</span>
@@ -468,6 +473,7 @@ const TablaNotasReadOnly = () => {
                             </span>
                           </div>
                         </th>
+                        )}
                   </tr>
                 </thead>
                 <tbody>
@@ -519,6 +525,7 @@ const TablaNotasReadOnly = () => {
                                 </td>
                               );
                             })}
+                            {!ocultarDef && (
                             <td className="border-r border-b border-border p-2 text-center text-sm font-semibold bg-primary/5">
                               {(() => {
                                 const nf = calcularFinalPeriodo(estudiante.id, periodoActivo);
@@ -531,6 +538,7 @@ const TablaNotasReadOnly = () => {
                                 ) : nf.toFixed(1);
                               })()}
                             </td>
+                            )}
                       </tr>
                     );
                   })}

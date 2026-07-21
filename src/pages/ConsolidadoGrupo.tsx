@@ -22,6 +22,9 @@ const ConsolidadoGrupo = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { config } = useColegioConfig();
+  // Colegios con `ocultar_definitivas` (ej. Pestalozziano): el consolidado es
+  // 100% definitivas, que aquí no se muestran (no coinciden con la plataforma oficial).
+  const ocultarDef = !!(config as any).ocultar_definitivas;
   const [dirGrupo, setDirGrupo] = useState<string | null>(null);
   const [grado, setGrado] = useState<string | null>(null);
   const [salon, setSalon] = useState<string | null>(null);
@@ -200,7 +203,7 @@ const ConsolidadoGrupo = () => {
               {ORDINAL[periodo]} periodo · {dirGrupo}
             </h2>
 
-            {data && data.estudiantes.length > 0 && data.asignaturas.length > 0 && (
+            {!ocultarDef && data && data.estudiantes.length > 0 && data.asignaturas.length > 0 && (
               <div className="flex justify-end mb-3">
                 <button
                   onClick={descargarExcel}
@@ -213,7 +216,11 @@ const ConsolidadoGrupo = () => {
               </div>
             )}
 
-            {loadingData ? (
+            {ocultarDef ? (
+              <p className="text-center text-muted-foreground py-10 max-w-md mx-auto">
+                El consolidado de definitivas no está habilitado en esta institución. Las notas finales se entregan por los canales oficiales del colegio (boletín).
+              </p>
+            ) : loadingData ? (
               <p className="text-center text-muted-foreground py-10">Cargando notas…</p>
             ) : error ? (
               <p className="text-center text-destructive py-10">{error}</p>

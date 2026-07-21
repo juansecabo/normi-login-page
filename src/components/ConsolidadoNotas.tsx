@@ -7,6 +7,7 @@ import ComentarioModalReadOnly from "@/components/notas/ComentarioModalReadOnly"
 import SistemaEvaluacion from "@/components/notas/SistemaEvaluacion";
 import { MessageSquareText, ChevronDown } from "lucide-react";
 import { promedioGeneral, promedioDeGrupo, type NotaCalc, type GrupoCalc } from "@/lib/gradeCalculator";
+import { useColegioConfig } from "@/hooks/useColegioConfig";
 
 interface ConsolidadoNotasProps {
   idEstudiante: string;
@@ -78,6 +79,10 @@ const parseFechaUTC = (f?: string): number => {
 };
 
 const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante, grado, salon }: ConsolidadoNotasProps) => {
+  // Colegios con `ocultar_definitivas` (ej. Pestalozziano): NO se muestra la
+  // definitiva del periodo — su cálculo no coincide con la plataforma oficial.
+  const { config } = useColegioConfig();
+  const ocultarDef = !!(config as any).ocultar_definitivas;
   const [asignaturas, setAsignaturas] = useState<string[]>([]);
   const [actividadesPorAsignatura, setActividadesPorAsignatura] = useState<ActividadesPorAsignatura>({});
   const [notas, setNotas] = useState<NotasEstudiante>({});
@@ -573,17 +578,19 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
     // revela cuando el profesor cierra el periodo), tal como aparecía antes.
     const completo = periodoCompletoParaAsig(asignatura, periodoActivo);
     const nf = completo ? calcularFinalPeriodo(asignatura, periodoActivo) : null;
-    filas.push(
-      <div key="def" className="flex items-center justify-between gap-3 px-4 py-2.5 border-t-2 border-border bg-primary/5">
-        <span className="font-bold text-foreground">Definitiva del periodo</span>
-        <span
-          className="font-bold tabular-nums text-foreground"
-          title={completo ? undefined : 'La nota definitiva se mostrará cuando el profesor cierre el periodo'}
-        >
-          {completo && nf !== null ? nf.toFixed(1) : '—'}
-        </span>
-      </div>
-    );
+    if (!ocultarDef) {
+      filas.push(
+        <div key="def" className="flex items-center justify-between gap-3 px-4 py-2.5 border-t-2 border-border bg-primary/5">
+          <span className="font-bold text-foreground">Definitiva del periodo</span>
+          <span
+            className="font-bold tabular-nums text-foreground"
+            title={completo ? undefined : 'La nota definitiva se mostrará cuando el profesor cierre el periodo'}
+          >
+            {completo && nf !== null ? nf.toFixed(1) : '—'}
+          </span>
+        </div>
+      );
+    }
 
     return <div>{filas}</div>;
   };
