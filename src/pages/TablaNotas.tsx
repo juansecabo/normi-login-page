@@ -3982,14 +3982,25 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
       }
 
       // Aviso: al cerrar el periodo, contar los estudiantes que aún NO tienen
-      // TODAS sus notas (tienen al menos una, pero les falta alguna actividad).
-      // Su definitiva seguirá siendo PROVISIONAL y sus reportes serán PARCIALES.
-      // Se cuenta contra TODAS las actividades del periodo (no solo las que
-      // tienen %), para que el modo equitativo también quede cubierto.
+      // TODAS sus notas (tienen al menos una, pero les falta alguna). Su
+      // definitiva seguirá siendo PROVISIONAL y sus reportes serán PARCIALES.
+      // Aplica en AMBOS modos (ponderado y equitativo). Solo se cuentan las
+      // actividades que APORTAN a la definitiva, para no dar un aviso exagerado:
+      //  - modo equitativo (sin ningún %): todas las actividades pesan → todas cuentan.
+      //  - modo ponderado: las que tienen % propio (>0) o están dentro de un grupo
+      //    (su peso vive en el grupo). Una actividad suelta sin peso no altera la
+      //    definitiva, así que no cuenta para "notas completas".
       const actsDelPeriodo = actividades.filter(a => a.periodo === periodo);
-      if (actsDelPeriodo.length > 0) {
+      const gruposDelPeriodo = gruposNotas.filter(g => g.periodo === periodo);
+      const hayAlgunPct =
+        actsDelPeriodo.some(a => a.porcentaje !== null && a.porcentaje !== undefined && Number(a.porcentaje) > 0) ||
+        gruposDelPeriodo.some(g => g.porcentaje !== null && g.porcentaje !== undefined && Number(g.porcentaje) > 0);
+      const actsQueAportan = hayAlgunPct
+        ? actsDelPeriodo.filter(a => (a.porcentaje !== null && a.porcentaje !== undefined && Number(a.porcentaje) > 0) || !!a.grupo_id)
+        : actsDelPeriodo;
+      if (actsQueAportan.length > 0) {
         const parciales = estudiantes.filter(est => {
-          const valores = actsDelPeriodo.map(act => notas[est.id]?.[periodo]?.[act.id]);
+          const valores = actsQueAportan.map(act => notas[est.id]?.[periodo]?.[act.id]);
           const tieneAlguna = valores.some(v => v !== undefined && v !== null);
           const tieneTodas = valores.every(v => v !== undefined && v !== null);
           return tieneAlguna && !tieneTodas;
