@@ -301,8 +301,9 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* ── Herramientas ── */}
-          <div className="flex flex-wrap items-center gap-2">
+          {/* ── Herramientas (barra fija al hacer scroll: no hay que subir a
+                marcar/desmarcar mientras se recorren los 12 meses) ── */}
+          <div className="sticky top-2 z-30 flex flex-wrap items-center gap-2 bg-card/95 backdrop-blur-sm border border-border rounded-xl shadow-md px-3 py-2 -mx-1">
             {[1, 2, 3, 4].map((n) => (
               <button key={n} onClick={(e) => toggleHerramienta(`p${n}` as Herramienta, e)}
                 className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer focus:outline-none ${PERIODO_ESTILO[n].chip} ${herramienta === `p${n}` ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
