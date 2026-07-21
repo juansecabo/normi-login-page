@@ -3978,6 +3978,29 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
           return next;
         });
         toast({ title: 'No se pudo guardar', description: 'No se pudo marcar el periodo como completo.', variant: 'destructive' });
+        return;
+      }
+
+      // Aviso: al cerrar el periodo, contar los estudiantes que aún NO tienen
+      // TODAS sus notas (tienen al menos una, pero les falta alguna actividad).
+      // Su definitiva seguirá siendo PROVISIONAL y sus reportes serán PARCIALES.
+      // Se cuenta contra TODAS las actividades del periodo (no solo las que
+      // tienen %), para que el modo equitativo también quede cubierto.
+      const actsDelPeriodo = actividades.filter(a => a.periodo === periodo);
+      if (actsDelPeriodo.length > 0) {
+        const parciales = estudiantes.filter(est => {
+          const valores = actsDelPeriodo.map(act => notas[est.id]?.[periodo]?.[act.id]);
+          const tieneAlguna = valores.some(v => v !== undefined && v !== null);
+          const tieneTodas = valores.every(v => v !== undefined && v !== null);
+          return tieneAlguna && !tieneTodas;
+        }).length;
+        if (parciales > 0) {
+          toast({
+            variant: 'success',
+            title: 'Periodo marcado como completo',
+            description: `${parciales} estudiante${parciales === 1 ? '' : 's'} aún no ${parciales === 1 ? 'tiene' : 'tienen'} todas las notas de este periodo: su definitiva seguirá siendo PROVISIONAL y sus reportes serán PARCIALES hasta que se completen.`,
+          });
+        }
       }
       return;
     }
