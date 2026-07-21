@@ -109,14 +109,66 @@ export function promedioJerarquico(notas: NotaCalc[], grupos: GrupoCalc[]): {
   return { promedio: r1(sumaProd / sumaPesos), sumaPorcentajes: sumaPesos };
 }
 
+/**
+ * MODO EQUITATIVO (sin ningún porcentaje). Reparte parejo por NIVEL respetando
+ * la jerarquía (mismo criterio que el server): valor de actividad = su nota;
+ * valor de grupo = promedio simple de sus hijos directos; nivel raíz = promedio
+ * simple de grupos raíz + actividades sueltas. Grupo/actividad sin nota no cuenta.
+ */
+function valorGrupoEquitativo(g: GrupoCalc, notas: NotaCalc[], grupos: GrupoCalc[]): number | null {
+  const subs = grupos.filter((s) => s.parent_id === g.id);
+  const valores: number[] = [];
+  for (const s of subs) {
+    const v = valorGrupoEquitativo(s, notas, grupos);
+    if (v !== null) valores.push(v);
+  }
+  for (const n of notas) {
+    if (n.grupo_id === g.id && n.nota !== null && n.nota !== undefined) valores.push(n.nota as number);
+  }
+  if (valores.length === 0) return null;
+  return r1(valores.reduce((a, b) => a + b, 0) / valores.length);
+}
+
+export function promedioEquitativo(notas: NotaCalc[], grupos: GrupoCalc[]): number | null {
+  const valores: number[] = [];
+  for (const g of grupos.filter((x) => x.parent_id === null)) {
+    const v = valorGrupoEquitativo(g, notas, grupos);
+    if (v !== null) valores.push(v);
+  }
+  for (const n of notas) {
+    if (!n.grupo_id && n.nota !== null && n.nota !== undefined) valores.push(n.nota as number);
+  }
+  if (valores.length === 0) return null;
+  return r1(valores.reduce((a, b) => a + b, 0) / valores.length);
+}
+
+/** ¿El profesor NO puso ningún porcentaje (ni en actividad ni en grupo)? */
+export function sinNingunPorcentaje(notas: NotaCalc[], grupos: GrupoCalc[] = []): boolean {
+  return !(
+    notas.some((n) => n.porcentaje !== null && n.porcentaje !== undefined && Number(n.porcentaje) > 0) ||
+    grupos.some((g) => g.porcentaje !== null && g.porcentaje !== undefined && Number(g.porcentaje) > 0)
+  );
+}
+
 export function promedioGeneral(notas: NotaCalc[], grupos: GrupoCalc[] = []): {
   promedio: number | null;
   sumaPorcentajes: number;
   cantidadActividades: number;
-  modo: 'plano' | 'jerarquico' | 'mixto';
+  modo: 'plano' | 'jerarquico' | 'mixto' | 'equitativo';
 } {
   const hayNotasEnGrupo = notas.some((n) => n.grupo_id !== null && n.grupo_id !== undefined);
   const hayGrupos = grupos.length > 0;
+
+  // Modo equitativo: aislado — solo si NO hay ningún porcentaje. Apenas exista
+  // uno, sigue el cálculo de siempre SIN CAMBIO (no afecta lo que ya funciona).
+  if (sinNingunPorcentaje(notas, grupos) && (hayGrupos || hayNotasEnGrupo || notas.length > 0)) {
+    return {
+      promedio: promedioEquitativo(notas, grupos),
+      sumaPorcentajes: 0,
+      cantidadActividades: notas.filter((n) => n.nota !== null && n.nota !== undefined).length,
+      modo: 'equitativo',
+    };
+  }
 
   if (!hayGrupos && !hayNotasEnGrupo) {
     const r = promedioPlano(notas);
@@ -189,6 +241,11 @@ export function promedioDeGrupo(grupoId: string, notas: NotaCalc[], grupos: Grup
 export function esPeriodoCompleto(notas: NotaCalc[], grupos: GrupoCalc[] = []): boolean {
   if (notas.length === 0) return false;
   if (notas.some((n) => n.nota === null || n.nota === undefined)) return false;
+
+  // Modo equitativo (sin ningún porcentaje): no hay un 100% que exigir; "completo"
+  // = todas las actividades del periodo tienen nota (ya validado arriba). El
+  // cierre real lo confirma la casilla "Periodo completo" que marca el profesor.
+  if (sinNingunPorcentaje(notas, grupos)) return true;
 
   const usaGrupos = grupos.length > 0 && notas.some((n) => n.grupo_id);
   if (usaGrupos) {

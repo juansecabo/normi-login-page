@@ -4020,6 +4020,19 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     const actsSueltas = actsPeriodo.filter(a => !a.grupo_id && a.porcentaje !== null);
     const sumaSueltas = actsSueltas.reduce((s, a) => s + Number(a.porcentaje || 0), 0);
 
+    // MODO EQUITATIVO: si el profe NO puso NINGÚN porcentaje (ni en actividades
+    // ni en grupos), no hay un 100% que esperar → la casilla "Periodo completo"
+    // aparece apenas exista AL MENOS UNA nota registrada en el periodo. (Al marcar
+    // con huecos se le avisa; ver el aviso en setPeriodoCompleto.)
+    const algunPct = actsPeriodo.some(a => a.porcentaje !== null && Number(a.porcentaje) > 0)
+      || gruposPeriodo.some(g => g.porcentaje !== null && g.porcentaje !== undefined && Number(g.porcentaje) > 0);
+    if (!algunPct) {
+      return Object.values(notas).some((porPeriodo: any) => {
+        const acts = porPeriodo?.[periodo];
+        return acts && Object.values(acts).some((v) => v !== null && v !== undefined);
+      });
+    }
+
     // Modo plano puro (sin grupos): las actividades sueltas con % deben sumar 100.
     // El checkbox aparece apenas la ESTRUCTURA llega a 100% — NO se exige que el
     // profe haya puesto notas (los reportes salen parciales si faltan).
