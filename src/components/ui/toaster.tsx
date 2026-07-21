@@ -3,7 +3,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ToastProvider, ToastViewport } from "@/components/ui/toast";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
 
 /**
  * Toaster con interceptor por tipo de mensaje:
@@ -12,21 +12,33 @@ import { AlertTriangle } from "lucide-react";
  *    y bloqueante (hay que verlos). Si el detalle es genérico → Dialog rojo
  *    "Error en el sistema" con el WhatsApp del admin; si es específico
  *    (validación) → Dialog rojo con el mensaje real.
- *  - ÉXITO / INFO (resto, ej. "Datos guardados", "Salones aplicados"): se
- *    DESCARTAN en silencio. Juan NO quiere confirmaciones de acciones rutinarias
- *    ni como pop up ni como toast esquina. (La barra de progreso de comunicados
- *    es otro componente, no pasa por aquí.)
+ *  - ÉXITO EXPLÍCITO (variant "success"): Dialog verde de confirmación. Se usa
+ *    SOLO donde Juan lo pidió (guardar datos del colegio, perfil, contraseña,
+ *    recuperación) — acciones donde el usuario quiere ver que sí quedó guardado.
+ *  - ÉXITO / INFO rutinario (resto): se DESCARTAN en silencio. Juan NO quiere
+ *    confirmaciones de acciones rutinarias ni como pop up ni como toast esquina.
+ *    (La barra de progreso de comunicados es otro componente, no pasa por aquí.)
  */
 export function Toaster() {
   const { toasts, dismiss } = useToast();
   const [errorOpen, setErrorOpen] = useState(false);
   const [errorValidacion, setErrorValidacion] = useState<{ title: string; description: string } | null>(null);
+  const [exito, setExito] = useState<{ title: string; description: string } | null>(null);
 
   useEffect(() => {
     for (const t of toasts) {
       if (t.open === false) continue;
-      const isDestructive = (t as any).variant === "destructive";
-      if (!isDestructive) { dismiss(t.id); continue; } // éxito/info → silencio
+      const variant = (t as any).variant;
+      const isDestructive = variant === "destructive";
+      if (variant === "success") {
+        dismiss(t.id);
+        setExito({
+          title: (typeof t.title === "string" && t.title) || "¡Listo!",
+          description: typeof t.description === "string" ? t.description : "",
+        });
+        continue;
+      }
+      if (!isDestructive) { dismiss(t.id); continue; } // éxito/info rutinario → silencio
 
       const title = typeof t.title === "string" ? t.title : "";
       const description = typeof t.description === "string" ? t.description : "";
@@ -70,6 +82,26 @@ export function Toaster() {
           </DialogHeader>
           <DialogFooter>
             <Button onClick={() => setErrorOpen(false)}>Entendido</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de ÉXITO (variant success): confirmación verde centrada */}
+      <Dialog open={exito !== null} onOpenChange={(o) => !o && setExito(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
+              <DialogTitle className="text-emerald-700">{exito?.title}</DialogTitle>
+            </div>
+            {exito?.description && (
+              <DialogDescription className="pt-3 text-base text-foreground whitespace-pre-line">
+                {exito.description}
+              </DialogDescription>
+            )}
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setExito(null)}>Entendido</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

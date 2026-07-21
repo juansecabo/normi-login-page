@@ -115,7 +115,7 @@ const Perfil = () => {
           localStorage.setItem("apellidos", apellidos);
         } catch { /* noop */ }
       }
-      toast({ title: "Datos actualizados", description: "El cambio aplica a todos tus perfiles en todos los colegios." });
+      toast({ title: "Datos actualizados", description: "El cambio aplica a todos tus perfiles en todos los colegios.", variant: "success" as any });
     } catch (e: any) {
       toast({ title: "Error", description: e?.body?.detail || "No se pudieron guardar los datos.", variant: "destructive" });
     }
@@ -139,7 +139,7 @@ const Perfil = () => {
     try {
       await apiClient.auth.changePassword(pwdActual, pwdNueva);
       setPwdActual(""); setPwdNueva(""); setPwdConfirma("");
-      toast({ title: "Contraseña cambiada", description: "Úsala desde ahora para entrar en cualquiera de tus perfiles." });
+      toast({ title: "Contraseña cambiada", description: "Úsala desde ahora para entrar en cualquiera de tus perfiles.", variant: "success" as any });
     } catch (e: any) {
       const msg = e?.status === 401 ? "La contraseña actual no es correcta." : "No se pudo cambiar la contraseña.";
       toast({ title: "Error", description: msg, variant: "destructive" });
@@ -193,6 +193,7 @@ const Perfil = () => {
         description: metodo === "whatsapp"
           ? "Cuando olvides tu contraseña, Normi te hará esta pregunta por WhatsApp."
           : "Cuando olvides tu contraseña, podrás recibirla en ese correo desde la página de inicio.",
+        variant: "success" as any,
       });
     } catch (e: any) {
       toast({ title: "Error", description: e?.body?.detail || "No se pudo guardar.", variant: "destructive" });

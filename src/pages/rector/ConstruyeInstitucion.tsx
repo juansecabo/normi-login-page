@@ -184,7 +184,7 @@ const ConstruyeInstitucion = () => {
       });
       // Reflejar el nombre nuevo en la sesión local (header, boletines)
       try { localStorage.setItem("colegio_nombre", nombreColegio.trim()); } catch { /* noop */ }
-      toast({ title: "Datos guardados", description: "Aparecerán en boletines, exámenes y documentos del colegio." });
+      toast({ title: "Datos guardados", description: "Aparecerán en boletines, exámenes y documentos del colegio.", variant: "success" as any });
     } catch (e) { err(e, "No se pudieron guardar los datos."); }
     setGuardandoDatos(false);
   };
