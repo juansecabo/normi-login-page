@@ -88,12 +88,12 @@ const EstudianteConsolidado = () => {
       const storedEstudiante = localStorage.getItem("estudianteSeleccionado");
 
       if (!storedGrado || !storedSalon) {
-        navigate("/dashboard/seleccionar-grado");
+        navigate("/seleccionar-grado");
         return;
       }
 
       if (!storedEstudiante) {
-        navigate("/dashboard/lista-estudiantes");
+        navigate("/lista-estudiantes");
         return;
       }
 
@@ -291,28 +291,28 @@ const EstudianteConsolidado = () => {
             </button>
             <span className="text-muted-foreground">→</span>
             <button
-              onClick={() => navigate("/dashboard/seleccionar-grado")}
+              onClick={() => navigate("/seleccionar-grado")}
               className="text-primary hover:underline"
             >
               Notas
             </button>
             <span className="text-muted-foreground">→</span>
             <button
-              onClick={() => navigate("/dashboard/seleccionar-salon")}
+              onClick={() => navigate("/seleccionar-salon")}
               className="text-primary hover:underline"
             >
               {gradoSeleccionado}
             </button>
             <span className="text-muted-foreground">→</span>
             <button
-              onClick={() => navigate("/dashboard/modo-visualizacion")}
+              onClick={() => navigate("/modo-visualizacion")}
               className="text-primary hover:underline"
             >
               {salonSeleccionado}
             </button>
             <span className="text-muted-foreground">→</span>
             <button
-              onClick={() => navigate("/dashboard/lista-estudiantes")}
+              onClick={() => navigate("/lista-estudiantes")}
               className="text-primary hover:underline"
             >
               Por Estudiante

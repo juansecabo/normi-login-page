@@ -4184,13 +4184,13 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <button onClick={() => navigate(isAdmin() ? "/dashboard" : "/dashboard")} className="text-primary hover:underline">Inicio</button>
                 <span className="text-muted-foreground">→</span>
-                <button onClick={() => navigate("/dashboard/seleccionar-grado")} className="text-primary hover:underline">Notas</button>
+                <button onClick={() => navigate("/seleccionar-grado")} className="text-primary hover:underline">Notas</button>
                 <span className="text-muted-foreground">→</span>
-                <button onClick={() => navigate("/dashboard/seleccionar-salon")} className="text-primary hover:underline">{gradoSeleccionado}</button>
+                <button onClick={() => navigate("/seleccionar-salon")} className="text-primary hover:underline">{gradoSeleccionado}</button>
                 <span className="text-muted-foreground">→</span>
-                <button onClick={() => navigate("/dashboard/modo-visualizacion")} className="text-primary hover:underline">{salonSeleccionado}</button>
+                <button onClick={() => navigate("/modo-visualizacion")} className="text-primary hover:underline">{salonSeleccionado}</button>
                 <span className="text-muted-foreground">→</span>
-                <button onClick={() => navigate("/dashboard/lista-asignaturas")} className="text-primary hover:underline">Por Asignatura</button>
+                <button onClick={() => navigate("/lista-asignaturas")} className="text-primary hover:underline">Por Asignatura</button>
                 <span className="text-muted-foreground">→</span>
                 <span className="text-foreground font-medium">{asignaturaSeleccionada}</span>
               </div>
@@ -4294,13 +4294,13 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <button onClick={() => navigate(isAdmin() ? "/dashboard" : "/dashboard")} className="text-primary hover:underline">Inicio</button>
                 <span className="text-muted-foreground">→</span>
-                <button onClick={() => navigate("/dashboard/seleccionar-grado")} className="text-primary hover:underline">Notas</button>
+                <button onClick={() => navigate("/seleccionar-grado")} className="text-primary hover:underline">Notas</button>
                 <span className="text-muted-foreground">→</span>
-                <button onClick={() => navigate("/dashboard/seleccionar-salon")} className="text-primary hover:underline">{gradoSeleccionado}</button>
+                <button onClick={() => navigate("/seleccionar-salon")} className="text-primary hover:underline">{gradoSeleccionado}</button>
                 <span className="text-muted-foreground">→</span>
-                <button onClick={() => navigate("/dashboard/modo-visualizacion")} className="text-primary hover:underline">{salonSeleccionado}</button>
+                <button onClick={() => navigate("/modo-visualizacion")} className="text-primary hover:underline">{salonSeleccionado}</button>
                 <span className="text-muted-foreground">→</span>
-                <button onClick={() => navigate("/dashboard/lista-asignaturas")} className="text-primary hover:underline">Por Asignatura</button>
+                <button onClick={() => navigate("/lista-asignaturas")} className="text-primary hover:underline">Por Asignatura</button>
                 <span className="text-muted-foreground">→</span>
                 <button onClick={volverASelectorPeriodo} className="text-primary hover:underline">{asignaturaSeleccionada}</button>
                 <span className="text-muted-foreground">→</span>

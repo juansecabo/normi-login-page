@@ -27,12 +27,12 @@ const ModoVisualizacion = () => {
     const storedSalon = localStorage.getItem("salonSeleccionado");
 
     if (!storedGrado) {
-      navigate("/dashboard/seleccionar-grado");
+      navigate("/seleccionar-grado");
       return;
     }
 
     if (!storedSalon) {
-      navigate("/dashboard/seleccionar-salon");
+      navigate("/seleccionar-salon");
       return;
     }
 
@@ -44,9 +44,9 @@ const ModoVisualizacion = () => {
   const handleSelectModo = (modo: "asignatura" | "estudiante") => {
     localStorage.setItem("modoVisualizacion", modo);
     if (modo === "asignatura") {
-      navigate("/dashboard/lista-asignaturas");
+      navigate("/lista-asignaturas");
     } else {
-      navigate("/dashboard/lista-estudiantes");
+      navigate("/lista-estudiantes");
     }
   };
 
@@ -75,14 +75,14 @@ const ModoVisualizacion = () => {
             </button>
             <span className="text-muted-foreground">→</span>
             <button
-              onClick={() => navigate("/dashboard/seleccionar-grado")}
+              onClick={() => navigate("/seleccionar-grado")}
               className="text-primary hover:underline"
             >
               Notas
             </button>
             <span className="text-muted-foreground">→</span>
             <button
-              onClick={() => navigate("/dashboard/seleccionar-salon")}
+              onClick={() => navigate("/seleccionar-salon")}
               className="text-primary hover:underline"
             >
               {gradoSeleccionado}

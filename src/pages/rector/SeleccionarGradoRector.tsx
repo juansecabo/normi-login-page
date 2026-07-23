@@ -27,7 +27,7 @@ const SeleccionarGradoRector = () => {
 
   const handleSelectGrado = (grado: string) => {
     localStorage.setItem("gradoSeleccionado", grado);
-    navigate("/dashboard/seleccionar-salon");
+    navigate("/seleccionar-salon");
   };
 
   if (loading) {

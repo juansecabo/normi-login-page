@@ -57,7 +57,7 @@ const TablaNotasPreescolarReadOnly = () => {
       const storedSalon = localStorage.getItem("salonSeleccionado");
 
       if (!storedGrado || !storedSalon) {
-        navigate("/dashboard/seleccionar-grado");
+        navigate("/seleccionar-grado");
         return;
       }
 
@@ -144,14 +144,14 @@ const TablaNotasPreescolarReadOnly = () => {
             </button>
             <span className="text-muted-foreground">→</span>
             <button
-              onClick={() => navigate("/dashboard/seleccionar-grado")}
+              onClick={() => navigate("/seleccionar-grado")}
               className="text-primary hover:underline"
             >
               Notas
             </button>
             <span className="text-muted-foreground">→</span>
             <button
-              onClick={() => navigate("/dashboard/seleccionar-salon")}
+              onClick={() => navigate("/seleccionar-salon")}
               className="text-primary hover:underline"
             >
               {gradoSeleccionado}

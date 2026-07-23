@@ -34,12 +34,12 @@ const ListaEstudiantes = () => {
     const storedSalon = localStorage.getItem("salonSeleccionado");
 
     if (!storedGrado) {
-      navigate("/dashboard/seleccionar-grado");
+      navigate("/seleccionar-grado");
       return;
     }
 
     if (!storedSalon) {
-      navigate("/dashboard/seleccionar-salon");
+      navigate("/seleccionar-salon");
       return;
     }
 
@@ -74,7 +74,7 @@ const ListaEstudiantes = () => {
 
   const handleSelectEstudiante = (estudiante: Estudiante) => {
     localStorage.setItem("estudianteSeleccionado", JSON.stringify(estudiante));
-    navigate("/dashboard/estudiante-consolidado");
+    navigate("/estudiante-consolidado");
   };
 
   return (
@@ -94,21 +94,21 @@ const ListaEstudiantes = () => {
             </button>
             <span className="text-muted-foreground">→</span>
             <button 
-              onClick={() => navigate("/dashboard/seleccionar-grado")}
+              onClick={() => navigate("/seleccionar-grado")}
               className="text-primary hover:underline"
             >
               Notas
             </button>
             <span className="text-muted-foreground">→</span>
             <button 
-              onClick={() => navigate("/dashboard/seleccionar-salon")}
+              onClick={() => navigate("/seleccionar-salon")}
               className="text-primary hover:underline"
             >
               {gradoSeleccionado}
             </button>
             <span className="text-muted-foreground">→</span>
             <button 
-              onClick={() => navigate("/dashboard/modo-visualizacion")}
+              onClick={() => navigate("/modo-visualizacion")}
               className="text-primary hover:underline"
             >
               {salonSeleccionado}

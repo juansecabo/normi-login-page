@@ -6,8 +6,8 @@ import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-route
 import { useEffect } from "react";
 import Index from "./pages/Index";
 import DashboardHome from "./pages/DashboardHome";
-import SeleccionarGrado from "./pages/SeleccionarGrado";
-import SeleccionarSalon from "./pages/SeleccionarSalon";
+import SeleccionarGradoPorRol from "./pages/SeleccionarGradoPorRol";
+import SeleccionarSalonPorRol from "./pages/SeleccionarSalonPorRol";
 import ActividadesCalendario from "./pages/ActividadesCalendario";
 import NormiExaminadora from "./pages/NormiExaminadora";
 import NotFound from "./pages/NotFound";
@@ -15,8 +15,6 @@ import NormiRecordatorioRecuperacion from "./components/NormiRecordatorioRecuper
 import RegistroAcudiente from "./pages/RegistroAcudiente";
 
 // Rutas para Rector/Coordinador
-import SeleccionarGradoRector from "./pages/rector/SeleccionarGradoRector";
-import SeleccionarSalonRector from "./pages/rector/SeleccionarSalonRector";
 import ModoVisualizacion from "./pages/rector/ModoVisualizacion";
 import ListaAsignaturas from "./pages/rector/ListaAsignaturas";
 import ListaEstudiantes from "./pages/rector/ListaEstudiantes";
@@ -94,8 +92,7 @@ import MiGrupo from "./pages/MiGrupo";
 import ConsolidadoGrupo from "./pages/ConsolidadoGrupo";
 import DireccionGrupo from "./pages/DireccionGrupo";
 import Perfil from "./pages/Perfil";
-import TablaNotasRouter from "./pages/TablaNotasRouter";
-import TablaNotasReadOnlyRouter from "./pages/TablaNotasReadOnlyRouter";
+import TablaNotasPorRol from "./pages/TablaNotasPorRol";
 
 // Rutas para Padre
 import NotasAcudiente from "./pages/acudiente/NotasAcudiente";
@@ -132,45 +129,59 @@ const App = () => (
           <Route path="/dashboard-acudiente" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard-padre" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard-admin" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/seleccionar-grado" element={<SeleccionarGrado />} />
-          <Route path="/seleccionar-salon" element={<SeleccionarSalon />} />
-          <Route path="/tabla-notas" element={<TablaNotasRouter />} />
+          {/* Notas: ruta ÚNICA por rol. El despachador monta el flujo del profesor
+              (editable) o el de directivos (solo lectura) según el cargo. */}
+          <Route path="/seleccionar-grado" element={<SeleccionarGradoPorRol />} />
+          <Route path="/seleccionar-salon" element={<SeleccionarSalonPorRol />} />
+          <Route path="/tabla-notas" element={<TablaNotasPorRol />} />
           <Route path="/actividades-calendario" element={<ActividadesCalendario />} />
           <Route path="/normi-examinadora" element={<NormiExaminadora />} />
 
-          {/* Subpáginas de gestión (directivos): cuelgan del home /dashboard/*.
-              Las viejas /rector/* se conservan como redirect (bookmarks/links). */}
-          <Route path="/dashboard/seleccionar-grado" element={<SeleccionarGradoRector />} />
-          <Route path="/dashboard/seleccionar-salon" element={<SeleccionarSalonRector />} />
-          <Route path="/dashboard/modo-visualizacion" element={<ModoVisualizacion />} />
-          <Route path="/dashboard/lista-asignaturas" element={<ListaAsignaturas />} />
-          <Route path="/dashboard/lista-estudiantes" element={<ListaEstudiantes />} />
-          <Route path="/dashboard/tabla-notas" element={<TablaNotasReadOnlyRouter />} />
-          <Route path="/dashboard/estudiante-consolidado" element={<EstudianteConsolidado />} />
-          <Route path="/dashboard/estadisticas" element={<EstadisticasDashboard />} />
-          <Route path="/dashboard/boletines" element={<Boletines />} />
-          <Route path="/dashboard/estudiantes-riesgo" element={<EstudiantesEnRiesgo />} />
-          <Route path="/dashboard/panel-control" element={<PanelControl />} />
-          <Route path="/dashboard/horarios-avisos" element={<HorariosAvisos />} />
-          <Route path="/dashboard/uso-normi" element={<UsoNormi />} />
-          <Route path="/dashboard/comunicados-recibidos" element={<ComunicadosRecibidos />} />
-          <Route path="/dashboard/documentos-recibidos" element={<DocumentosRecibidos />} />
-          {/* Redirects compat de las rutas viejas /rector/* → /dashboard/* */}
-          <Route path="/rector/seleccionar-grado" element={<Navigate to="/dashboard/seleccionar-grado" replace />} />
-          <Route path="/rector/seleccionar-salon" element={<Navigate to="/dashboard/seleccionar-salon" replace />} />
-          <Route path="/rector/modo-visualizacion" element={<Navigate to="/dashboard/modo-visualizacion" replace />} />
-          <Route path="/rector/lista-asignaturas" element={<Navigate to="/dashboard/lista-asignaturas" replace />} />
-          <Route path="/rector/lista-estudiantes" element={<Navigate to="/dashboard/lista-estudiantes" replace />} />
-          <Route path="/rector/tabla-notas" element={<Navigate to="/dashboard/tabla-notas" replace />} />
-          <Route path="/rector/estudiante-consolidado" element={<Navigate to="/dashboard/estudiante-consolidado" replace />} />
-          <Route path="/rector/estadisticas" element={<Navigate to="/dashboard/estadisticas" replace />} />
-          <Route path="/rector/boletines" element={<Navigate to="/dashboard/boletines" replace />} />
-          <Route path="/rector/estudiantes-riesgo" element={<Navigate to="/dashboard/estudiantes-riesgo" replace />} />
-          <Route path="/rector/panel-control" element={<Navigate to="/dashboard/panel-control" replace />} />
-          <Route path="/rector/horarios-avisos" element={<Navigate to="/dashboard/horarios-avisos" replace />} />
-          <Route path="/rector/uso-normi" element={<Navigate to="/dashboard/uso-normi" replace />} />
-          <Route path="/rector/comunicados-recibidos" element={<Navigate to="/dashboard/comunicados-recibidos" replace />} />
-          <Route path="/rector/documentos-recibidos" element={<Navigate to="/dashboard/documentos-recibidos" replace />} />
+          {/* Subpáginas de gestión (directivos) en la raíz — ya no cuelgan de /dashboard/. */}
+          <Route path="/modo-visualizacion" element={<ModoVisualizacion />} />
+          <Route path="/lista-asignaturas" element={<ListaAsignaturas />} />
+          <Route path="/lista-estudiantes" element={<ListaEstudiantes />} />
+          <Route path="/estudiante-consolidado" element={<EstudianteConsolidado />} />
+          <Route path="/estadisticas" element={<EstadisticasDashboard />} />
+          <Route path="/boletines" element={<Boletines />} />
+          <Route path="/estudiantes-riesgo" element={<EstudiantesEnRiesgo />} />
+          <Route path="/panel-control" element={<PanelControl />} />
+          <Route path="/horarios-avisos" element={<HorariosAvisos />} />
+          <Route path="/uso-normi" element={<UsoNormi />} />
+          <Route path="/comunicados-recibidos" element={<ComunicadosRecibidos />} />
+          <Route path="/documentos-recibidos" element={<DocumentosRecibidos />} />
+
+          {/* Redirects compat: rutas viejas (/dashboard/* de la fase anterior y /rector/* histórica) → raíz. */}
+          <Route path="/dashboard/seleccionar-grado" element={<Navigate to="/seleccionar-grado" replace />} />
+          <Route path="/dashboard/seleccionar-salon" element={<Navigate to="/seleccionar-salon" replace />} />
+          <Route path="/dashboard/modo-visualizacion" element={<Navigate to="/modo-visualizacion" replace />} />
+          <Route path="/dashboard/lista-asignaturas" element={<Navigate to="/lista-asignaturas" replace />} />
+          <Route path="/dashboard/lista-estudiantes" element={<Navigate to="/lista-estudiantes" replace />} />
+          <Route path="/dashboard/tabla-notas" element={<Navigate to="/tabla-notas" replace />} />
+          <Route path="/dashboard/estudiante-consolidado" element={<Navigate to="/estudiante-consolidado" replace />} />
+          <Route path="/dashboard/estadisticas" element={<Navigate to="/estadisticas" replace />} />
+          <Route path="/dashboard/boletines" element={<Navigate to="/boletines" replace />} />
+          <Route path="/dashboard/estudiantes-riesgo" element={<Navigate to="/estudiantes-riesgo" replace />} />
+          <Route path="/dashboard/panel-control" element={<Navigate to="/panel-control" replace />} />
+          <Route path="/dashboard/horarios-avisos" element={<Navigate to="/horarios-avisos" replace />} />
+          <Route path="/dashboard/uso-normi" element={<Navigate to="/uso-normi" replace />} />
+          <Route path="/dashboard/comunicados-recibidos" element={<Navigate to="/comunicados-recibidos" replace />} />
+          <Route path="/dashboard/documentos-recibidos" element={<Navigate to="/documentos-recibidos" replace />} />
+          <Route path="/rector/seleccionar-grado" element={<Navigate to="/seleccionar-grado" replace />} />
+          <Route path="/rector/seleccionar-salon" element={<Navigate to="/seleccionar-salon" replace />} />
+          <Route path="/rector/modo-visualizacion" element={<Navigate to="/modo-visualizacion" replace />} />
+          <Route path="/rector/lista-asignaturas" element={<Navigate to="/lista-asignaturas" replace />} />
+          <Route path="/rector/lista-estudiantes" element={<Navigate to="/lista-estudiantes" replace />} />
+          <Route path="/rector/tabla-notas" element={<Navigate to="/tabla-notas" replace />} />
+          <Route path="/rector/estudiante-consolidado" element={<Navigate to="/estudiante-consolidado" replace />} />
+          <Route path="/rector/estadisticas" element={<Navigate to="/estadisticas" replace />} />
+          <Route path="/rector/boletines" element={<Navigate to="/boletines" replace />} />
+          <Route path="/rector/estudiantes-riesgo" element={<Navigate to="/estudiantes-riesgo" replace />} />
+          <Route path="/rector/panel-control" element={<Navigate to="/panel-control" replace />} />
+          <Route path="/rector/horarios-avisos" element={<Navigate to="/horarios-avisos" replace />} />
+          <Route path="/rector/uso-normi" element={<Navigate to="/uso-normi" replace />} />
+          <Route path="/rector/comunicados-recibidos" element={<Navigate to="/comunicados-recibidos" replace />} />
+          <Route path="/rector/documentos-recibidos" element={<Navigate to="/documentos-recibidos" replace />} />
           <Route path="/construye-institucion" element={<ConstruyeInstitucion />} />
           <Route path="/crear-institucion/:id" element={<CrearInstitucion />} />
           <Route path="/aprende-normi" element={<AprendeNormi />} />
