@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { BookOpenCheck, Plus, Pencil, Trash2, Loader2, Sparkles, Check } from "lucide-react";
 import { rankGrado } from "@/utils/grados";
+import { getPeriodoActual } from "@/utils/periodoActual";
 
 /**
  * Logros del periodo — una sola columna. Cada logro tiene una casilla (chulo = agregado) y los
@@ -42,7 +43,7 @@ const LogrosProfesor = () => {
   const [asignatura, setAsignatura] = useState(() => searchParams.get("a") || "");
   const [grado, setGrado] = useState(() => searchParams.get("g") || "");
   const [periodo, setPeriodo] = useState<number>(() => {
-    const p = Number(searchParams.get("p")); return p >= 1 && p <= 4 ? p : 1;
+    const p = Number(searchParams.get("p")); return p >= 1 && p <= 4 ? p : getPeriodoActual();
   });
 
   const [banco, setBanco] = useState<Logro[]>([]);
