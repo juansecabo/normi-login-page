@@ -122,7 +122,7 @@ const Index = () => {
       user.rol === 'Administrativo(a)' || user.rol === 'Secretaria General' ||
       user.rol === 'Orientador(a) Escolar'
     ) {
-      navigate(getPostLoginRoute("/dashboard-rector"), { replace: true });
+      navigate(getPostLoginRoute("/panel"), { replace: true });
     } else {
       navigate(getPostLoginRoute("/dashboard"), { replace: true });
     }
@@ -164,7 +164,7 @@ const Index = () => {
         session.cargo === 'Secretaria General' ||
         session.cargo === 'Orientador(a) Escolar'
       ) {
-        navigate(getPostLoginRoute("/dashboard-rector"), { replace: true });
+        navigate(getPostLoginRoute("/panel"), { replace: true });
       } else if (session.cargo === 'Estudiante') {
         navigate(getPostLoginRoute("/dashboard-estudiante"), { replace: true });
       } else if (session.cargo === 'Acudiente') {

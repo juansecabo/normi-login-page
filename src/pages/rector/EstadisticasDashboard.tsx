@@ -163,13 +163,13 @@ const EstadisticasDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormi backLink="/dashboard-rector" />
+      <HeaderNormi backLink="/panel" />
 
       <main className="flex-1 container mx-auto p-4 md:p-8">
         {/* Breadcrumb */}
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <div className="flex flex-wrap items-center gap-2 text-sm">
-            <button onClick={() => navigate("/dashboard-rector")} className="text-primary hover:underline">Inicio</button>
+            <button onClick={() => navigate("/panel")} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">→</span>
             <span className="text-foreground font-medium">Estadísticas</span>
           </div>

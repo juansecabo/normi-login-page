@@ -889,7 +889,7 @@ const EnviarComunicado = () => {
     });
   };
 
-  const backLink = isAdmin() ? "/dashboard-admin" : puedeAccederDashboard() ? "/dashboard-rector" : "/dashboard";
+  const backLink = isAdmin() ? "/dashboard-admin" : puedeAccederDashboard() ? "/panel" : "/dashboard";
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

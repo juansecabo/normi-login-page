@@ -335,7 +335,7 @@ const TablaNotasReadOnly = () => {
 
   return (
     <div className="min-h-screen md:h-screen bg-background flex flex-col">
-      <HeaderNormi backLink="/dashboard-rector" />
+      <HeaderNormi backLink="/panel" />
 
       {/* Main Content */}
       <main className="flex-1 min-w-0 md:flex md:flex-col md:overflow-hidden container mx-auto p-4 md:p-8">
@@ -343,7 +343,7 @@ const TablaNotasReadOnly = () => {
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <button
-              onClick={() => navigate("/dashboard-rector")}
+              onClick={() => navigate("/panel")}
               className="text-primary hover:underline"
             >
               Inicio

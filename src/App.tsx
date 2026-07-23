@@ -130,7 +130,7 @@ const App = () => (
           <Route path="/registro-acudiente" element={<RegistroAcudiente />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard-plataforma" element={<DashboardPlataforma />} />
-          <Route path="/dashboard-rector" element={<DashboardRector />} />
+          <Route path="/panel" element={<DashboardRector />} />
           <Route path="/dashboard-estudiante" element={<DashboardEstudiante />} />
           <Route path="/dashboard-acudiente" element={<DashboardAcudiente />} />
           {/* Redirect compat para bookmarks/links viejos. */}

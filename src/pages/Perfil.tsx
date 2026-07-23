@@ -34,7 +34,7 @@ const Perfil = () => {
   const esEstudiante = isEstudiante();
 
   const backLink = isAdmin() ? "/dashboard-admin"
-    : isRectorOrCoordinador() ? "/dashboard-rector"
+    : isRectorOrCoordinador() ? "/panel"
     : isEstudiante() ? "/dashboard-estudiante"
     : isPadreDeFamilia() ? "/dashboard-acudiente"
     : "/dashboard";

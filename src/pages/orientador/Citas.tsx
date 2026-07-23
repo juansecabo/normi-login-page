@@ -111,7 +111,7 @@ const Citas = () => {
   const [motivo, setMotivo] = useState("");
   const [guardando, setGuardando] = useState(false);
 
-  const backLink = isAdmin() ? "/dashboard-admin" : "/dashboard-rector";
+  const backLink = isAdmin() ? "/dashboard-admin" : "/panel";
 
   useEffect(() => {
     const session = getSession();

@@ -652,7 +652,7 @@ const ComunicadosFirma = () => {
     }
   };
 
-  const backLink = isAdmin() ? "/dashboard-admin" : puedeAccederDashboard() ? "/dashboard-rector" : "/dashboard";
+  const backLink = isAdmin() ? "/dashboard-admin" : puedeAccederDashboard() ? "/panel" : "/dashboard";
 
   const firmadas = respuestas.filter((r) => r.fecha_firma);
   const noFirmadas = respuestas.filter((r) => !r.fecha_firma);

@@ -267,7 +267,7 @@ const RegistrosComportamiento = () => {
   const [estVistaId, setEstVistaId] = useState<number | null>(null);
   const [ordenarPor, setOrdenarPor] = useState<"fecha" | "tipo" | "profesor">("fecha");
 
-  const backLink = isAdmin() ? "/dashboard-admin" : isRectorOrCoordinador() ? "/dashboard-rector" : "/dashboard";
+  const backLink = isAdmin() ? "/dashboard-admin" : isRectorOrCoordinador() ? "/panel" : "/dashboard";
 
   useEffect(() => {
     const session = getSession();

@@ -629,7 +629,7 @@ export default function ConsultaPublica() {
   const backLink = esInterno
     ? sesion.cargo === "Administrador"
       ? "/dashboard-admin"
-      : "/dashboard-rector"
+      : "/panel"
     : "/dashboard-acudiente";
 
   return (

@@ -166,7 +166,7 @@ const RemisionesOrientacion = () => {
   useEffect(() => {
     const session = getSession();
     if (!session.id) { navigate("/"); return; }
-    if (!isOrientador() && !isAdmin()) { navigate("/dashboard-rector"); return; }
+    if (!isOrientador() && !isAdmin()) { navigate("/panel"); return; }
 
     setAutorId(session.id);
     setAutorNombre([session.nombres, session.apellidos].filter(Boolean).join(" "));
@@ -259,7 +259,7 @@ const RemisionesOrientacion = () => {
     }
   };
 
-  const backLink = isAdmin() ? "/dashboard-admin" : "/dashboard-rector";
+  const backLink = isAdmin() ? "/dashboard-admin" : "/panel";
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

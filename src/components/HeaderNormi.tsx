@@ -14,7 +14,7 @@ interface HeaderNormiProps {
   /**
    * Destino del clic en el logo. Si se omite, se calcula automáticamente
    * según el cargo del usuario logueado (admin → /dashboard-admin,
-   * rector/coord/admvo → /dashboard-rector, etc.).
+   * rector/coord/admvo → /panel, etc.).
    */
   backLink?: string;
 }
@@ -28,7 +28,7 @@ export const computeBackLinkFromSession = (): string => {
     cargo === "Coordinador(a)" ||
     cargo === "Administrativo(a)"
   ) {
-    return "/dashboard-rector";
+    return "/panel";
   }
   if (cargo === "Acudiente") return "/dashboard-acudiente";
   if (cargo === "Estudiante") return "/dashboard-estudiante";

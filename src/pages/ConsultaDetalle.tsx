@@ -939,7 +939,7 @@ export default function ConsultaDetalle() {
     cargar();
   };
 
-  const backLink = isAdmin() ? "/dashboard-admin" : puedeAccederDashboard() ? "/dashboard-rector" : "/dashboard";
+  const backLink = isAdmin() ? "/dashboard-admin" : puedeAccederDashboard() ? "/panel" : "/dashboard";
 
   if (loading) {
     return (

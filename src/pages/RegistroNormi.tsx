@@ -82,7 +82,7 @@ const RegistroNormi = () => {
     if (!isProfesor() && !puedeAccederDashboard()) { navigate("/dashboard"); return; }
   }, [navigate]);
 
-  const backLink = isAdmin() ? "/dashboard-admin" : puedeAccederDashboard() ? "/dashboard-rector" : "/dashboard";
+  const backLink = isAdmin() ? "/dashboard-admin" : puedeAccederDashboard() ? "/panel" : "/dashboard";
 
   // State
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);

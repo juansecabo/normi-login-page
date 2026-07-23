@@ -63,7 +63,7 @@ const JustificacionUniformeStaff = () => {
   const [seleccion, setSeleccion] = useState<Record<number, number>>({});
   const [descargando, setDescargando] = useState(false);
 
-  const backLink = isAdmin() ? "/dashboard-admin" : puedeAccederDashboard() ? "/dashboard-rector" : "/dashboard";
+  const backLink = isAdmin() ? "/dashboard-admin" : puedeAccederDashboard() ? "/panel" : "/dashboard";
 
   useEffect(() => {
     const session = getSession();

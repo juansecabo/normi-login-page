@@ -192,7 +192,7 @@ const Casos = () => {
   const [openSec, setOpenSec] = useState<number | null>(1);
   const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
 
-  const backLink = isAdmin() ? "/dashboard-admin" : "/dashboard-rector";
+  const backLink = isAdmin() ? "/dashboard-admin" : "/panel";
 
   useEffect(() => {
     const session = getSession();
