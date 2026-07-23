@@ -26,10 +26,16 @@ interface Logro {
   id: string; id_profesor: number; asignatura: string; grado: string;
   periodo: number; orden: number; texto: string;
   texto_basico: string | null; texto_bajo: string | null;
+  dimension: string | null; salon: string | null;
 }
 
 const PERIODOS = [1, 2, 3, 4];
 const ORDINAL: Record<number, string> = { 1: "Primer", 2: "Segundo", 3: "Tercer", 4: "Cuarto" };
+const DIMENSIONES: Array<{ v: string; label: string; corto: string }> = [
+  { v: "saber", label: "Saber (Cognitivo)", corto: "Saber" },
+  { v: "hacer", label: "Hacer (Procedimental)", corto: "Hacer" },
+  { v: "ser", label: "Ser (Actitudinal)", corto: "Ser" },
+];
 
 const LogrosProfesor = () => {
   const navigate = useNavigate();
@@ -37,6 +43,8 @@ const LogrosProfesor = () => {
 
   // Carga académica del profesor: combos (asignatura, grado) que dicta.
   const [combos, setCombos] = useState<Array<{ asignatura: string; grado: string }>>([]);
+  // Salones que dicta por (asignatura|grado), para el alcance "solo este salón".
+  const [salonesPorGA, setSalonesPorGA] = useState<Record<string, string[]>>({});
   const [cargando, setCargando] = useState(true);
 
   const [asignatura, setAsignatura] = useState("");
@@ -49,19 +57,25 @@ const LogrosProfesor = () => {
   useEffect(() => {
     const session = getSession();
     if (!session.id || !isProfesor()) { navigate("/"); return; }
-    supabase.from("Asignación Profesores").select('"Asignatura(s)", "Grado(s)"').eq("id", parseInt(session.id!))
+    supabase.from("Asignación Profesores").select('"Asignatura(s)", "Grado(s)", "Salon(es)"').eq("id", parseInt(session.id!))
       .then(({ data }) => {
         const set = new Map<string, { asignatura: string; grado: string }>();
+        const sal: Record<string, Set<string>> = {};
         for (const row of (data || []) as any[]) {
+          const salones = (row["Salon(es)"] || []) as string[];
           for (const a of (row["Asignatura(s)"] || []) as string[]) {
             for (const g of (row["Grado(s)"] || []) as string[]) {
               set.set(`${a}|${g}`, { asignatura: a, grado: g });
+              const key = `${a}|${g}`;
+              if (!sal[key]) sal[key] = new Set<string>();
+              for (const s of salones) sal[key].add(String(s));
             }
           }
         }
         const lista = [...set.values()].sort((x, y) =>
           x.asignatura.localeCompare(y.asignatura, "es") || rankGrado(x.grado) - rankGrado(y.grado));
         setCombos(lista);
+        setSalonesPorGA(Object.fromEntries(Object.entries(sal).map(([k, v]) => [k, [...v].sort()])));
         if (lista.length > 0) { setAsignatura(lista[0].asignatura); setGrado(lista[0].grado); }
         setCargando(false);
       });
@@ -90,12 +104,19 @@ const LogrosProfesor = () => {
   const [texto, setTexto] = useState("");
   const [textoBasico, setTextoBasico] = useState("");
   const [textoBajo, setTextoBajo] = useState("");
+  const [dimension, setDimension] = useState("");   // "" = sin clasificar
+  const [salonSel, setSalonSel] = useState("");     // "" = todo el grado
   const [guardando, setGuardando] = useState(false);
   const [generando, setGenerando] = useState(false);
 
-  const abrirNuevo = () => { setEditando(null); setTexto(""); setTextoBasico(""); setTextoBajo(""); setDialogAbierto(true); };
+  // Salones que el docente dicta en el grado/asignatura actual (para el alcance).
+  const salonesDelGrado = useMemo(
+    () => salonesPorGA[`${asignatura}|${grado}`] || [], [salonesPorGA, asignatura, grado]);
+
+  const abrirNuevo = () => { setEditando(null); setTexto(""); setTextoBasico(""); setTextoBajo(""); setDimension(""); setSalonSel(""); setDialogAbierto(true); };
   const abrirEditar = (l: Logro) => {
     setEditando(l); setTexto(l.texto); setTextoBasico(l.texto_basico || ""); setTextoBajo(l.texto_bajo || "");
+    setDimension(l.dimension || ""); setSalonSel(l.salon || "");
     setDialogAbierto(true);
   };
 
@@ -123,7 +144,7 @@ const LogrosProfesor = () => {
       if (editando) {
         await apiRequest(`/api/logros/${editando.id}`, {
           method: "PATCH",
-          body: JSON.stringify({ texto: texto.trim(), texto_basico: textoBasico.trim() || null, texto_bajo: textoBajo.trim() || null }),
+          body: JSON.stringify({ texto: texto.trim(), texto_basico: textoBasico.trim() || null, texto_bajo: textoBajo.trim() || null, dimension: dimension || null, salon: salonSel || null }),
         });
       } else {
         await apiRequest("/api/logros", {
@@ -131,6 +152,7 @@ const LogrosProfesor = () => {
           body: JSON.stringify({
             asignatura, grado, periodo,
             texto: texto.trim(), texto_basico: textoBasico.trim() || undefined, texto_bajo: textoBajo.trim() || undefined,
+            dimension: dimension || undefined, salon: salonSel || undefined,
           }),
         });
       }
@@ -170,8 +192,9 @@ const LogrosProfesor = () => {
             <BookOpenCheck className="h-5 w-5 text-primary" /> Logros del periodo
           </h2>
           <p className="text-sm text-muted-foreground mb-5">
-            Escribe los logros que trabajaste en el periodo (los mismos para todo el salón). En el boletín, cada estudiante
-            recibe la redacción según su desempeño: la principal si ganó, o la variante Básico/Bajo si le costó o no alcanzó.
+            Escribe los logros que trabajaste en el periodo. Por defecto aplican a <b>todo el grado</b> (los comparten los demás
+            docentes de la misma asignatura), pero puedes limitar uno a <b>un salón</b> y clasificarlo por dimensión (Saber/Hacer/Ser).
+            En el boletín, cada estudiante recibe la redacción según su desempeño: la principal si ganó, o la variante Básico/Bajo.
           </p>
 
           {cargando ? (
@@ -209,6 +232,16 @@ const LogrosProfesor = () => {
                 <div className="space-y-2">
                   {logros.map((l) => (
                     <div key={l.id} className="border border-border rounded-lg p-3 bg-card">
+                      <div className="flex flex-wrap gap-1.5 mb-1.5">
+                        {l.dimension && (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                            {DIMENSIONES.find((d) => d.v === l.dimension)?.corto || l.dimension}
+                          </span>
+                        )}
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                          {l.salon ? `Solo ${l.grado} ${l.salon}` : `Todo el grado`}
+                        </span>
+                      </div>
                       <div className="flex items-start justify-between gap-2">
                         <p className="text-sm text-foreground leading-relaxed">» {l.texto}</p>
                         <div className="flex gap-1 shrink-0">
@@ -256,6 +289,24 @@ const LogrosProfesor = () => {
             <div>
               <label className="text-sm font-medium block mb-1 text-red-500">Variante Bajo (no lo alcanza)</label>
               <Textarea value={textoBajo} onChange={(e) => setTextoBajo(e.target.value)} rows={2} placeholder="Opcional" />
+            </div>
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <div>
+                <label className="text-sm font-medium block mb-1">Dimensión</label>
+                <select value={dimension} onChange={(e) => setDimension(e.target.value)}
+                  className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                  <option value="">Sin clasificar</option>
+                  {DIMENSIONES.map((d) => <option key={d.v} value={d.v}>{d.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1">Aplica a</label>
+                <select value={salonSel} onChange={(e) => setSalonSel(e.target.value)}
+                  className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                  <option value="">Todo el grado ({grado})</option>
+                  {salonesDelGrado.map((s) => <option key={s} value={s}>Solo {grado} {s}</option>)}
+                </select>
+              </div>
             </div>
           </div>
           <DialogFooter>
