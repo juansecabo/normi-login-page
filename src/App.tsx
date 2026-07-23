@@ -179,6 +179,7 @@ const App = () => (
           <Route path="/rector/estudiantes-riesgo" element={<Navigate to="/estudiantes-riesgo" replace />} />
           <Route path="/rector/panel-control" element={<Navigate to="/panel-control" replace />} />
           <Route path="/rector/horarios-avisos" element={<Navigate to="/horarios-avisos" replace />} />
+          <Route path="/rector/uso-normi" element={<Navigate to="/uso-normi" replace />} />
           <Route path="/rector/comunicados-recibidos" element={<Navigate to="/comunicados-recibidos" replace />} />
           <Route path="/rector/documentos-recibidos" element={<Navigate to="/documentos-recibidos" replace />} />
           <Route path="/construye-institucion" element={<ConstruyeInstitucion />} />
