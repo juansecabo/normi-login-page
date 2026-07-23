@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { getSession, isProfesor } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,9 +37,13 @@ const LogrosProfesor = () => {
   const [salonesPorGA, setSalonesPorGA] = useState<Record<string, string[]>>({});
   const [cargando, setCargando] = useState(true);
 
-  const [asignatura, setAsignatura] = useState("");
-  const [grado, setGrado] = useState("");
-  const [periodo, setPeriodo] = useState<number>(1);
+  // La selección se guarda en la URL (?a=&g=&p=) para no perderla al actualizar la página.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [asignatura, setAsignatura] = useState(() => searchParams.get("a") || "");
+  const [grado, setGrado] = useState(() => searchParams.get("g") || "");
+  const [periodo, setPeriodo] = useState<number>(() => {
+    const p = Number(searchParams.get("p")); return p >= 1 && p <= 4 ? p : 1;
+  });
 
   const [banco, setBanco] = useState<Logro[]>([]);
   const [niveles, setNiveles] = useState<Nivel[]>([]);
@@ -70,7 +74,11 @@ const LogrosProfesor = () => {
         // Orden NUMÉRICO de salones (1,2,…,10), no de texto (que pondría 1,10,2,…).
         const ordenSalon = (a: string, b: string) => a.localeCompare(b, "es", { numeric: true });
         setSalonesPorGA(Object.fromEntries(Object.entries(sal).map(([k, v]) => [k, [...v].sort(ordenSalon)])));
-        if (lista.length > 0) { setAsignatura(lista[0].asignatura); setGrado(lista[0].grado); }
+        // Respetar la selección de la URL si es válida; si no, el primer combo.
+        const pa = searchParams.get("a"); const pg = searchParams.get("g");
+        const guardado = lista.find((c) => c.asignatura === pa && c.grado === pg);
+        if (guardado) { setAsignatura(guardado.asignatura); setGrado(guardado.grado); }
+        else if (lista.length > 0) { setAsignatura(lista[0].asignatura); setGrado(lista[0].grado); }
         setCargando(false);
       });
   }, [navigate]);
@@ -80,6 +88,11 @@ const LogrosProfesor = () => {
     combos.filter((c) => c.asignatura === asignatura).map((c) => c.grado), [combos, asignatura]);
   const salonesDelGrado = useMemo(
     () => salonesPorGA[`${asignatura}|${grado}`] || [], [salonesPorGA, asignatura, grado]);
+
+  // Persistir la selección en la URL (para que sobreviva a recargar la página).
+  useEffect(() => {
+    if (asignatura && grado) setSearchParams({ a: asignatura, g: grado, p: String(periodo) }, { replace: true });
+  }, [asignatura, grado, periodo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const cargarBanco = async () => {
     if (!asignatura || !grado) return;
