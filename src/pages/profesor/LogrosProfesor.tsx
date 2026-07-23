@@ -10,49 +10,44 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { BookOpenCheck, Plus, Pencil, Trash2, Loader2, Sparkles } from "lucide-react";
+import { BookOpenCheck, Plus, Pencil, Trash2, Loader2, Sparkles, Check, Users } from "lucide-react";
 import { rankGrado } from "@/utils/grados";
 
 /**
- * Logros del periodo (para el boletín). El profesor escribe 2-4 viñetas por
- * asignatura + grado + periodo — las MISMAS para todo el salón. Cada logro
- * tiene su redacción principal (desempeño Superior/Alto) y variantes para
- * Básico y Bajo: el boletín elige la variante según la nota del estudiante.
- * "Generar variantes con Normi" redacta Básico/Bajo con IA a partir de la
- * principal (el profesor las revisa y ajusta).
+ * Logros del periodo — modelo de BANCO + ASIGNACIÓN por salón (estilo SINAÍ, limpio).
+ *  - Banco (izquierda): catálogo de logros de la asignatura+grado, COMPARTIDO por todos los
+ *    docentes de esa materia y grado en el colegio.
+ *  - Seleccionados (derecha): los logros que ESTE docente aplicó a su salón en el periodo.
+ *    Cada profesor arma su propia lista; puede asignar un logro a varios salones a la vez.
+ *  - Cada logro guarda una redacción por NIVEL de desempeño del colegio (Superior/Alto/… o los
+ *    que el colegio configure). La IA redacta las de los niveles inferiores desde la principal.
  */
 
+interface Nivel { key: string; label: string; min: number; max: number; }
 interface Logro {
-  id: string; id_profesor: number; asignatura: string; grado: string;
-  periodo: number; orden: number; texto: string;
-  texto_basico: string | null; texto_bajo: string | null;
-  dimension: string | null; salon: string | null;
+  id: string; id_profesor: number; asignatura: string; grado: string; orden: number;
+  redacciones: Record<string, string>; salones: string[];
 }
 
 const PERIODOS = [1, 2, 3, 4];
 const ORDINAL: Record<number, string> = { 1: "Primer", 2: "Segundo", 3: "Tercer", 4: "Cuarto" };
-const DIMENSIONES: Array<{ v: string; label: string; corto: string }> = [
-  { v: "saber", label: "Saber (Cognitivo)", corto: "Saber" },
-  { v: "hacer", label: "Hacer (Procedimental)", corto: "Hacer" },
-  { v: "ser", label: "Ser (Actitudinal)", corto: "Ser" },
-];
 
 const LogrosProfesor = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Carga académica del profesor: combos (asignatura, grado) que dicta.
   const [combos, setCombos] = useState<Array<{ asignatura: string; grado: string }>>([]);
-  // Salones que dicta por (asignatura|grado), para el alcance "solo este salón".
   const [salonesPorGA, setSalonesPorGA] = useState<Record<string, string[]>>({});
   const [cargando, setCargando] = useState(true);
 
   const [asignatura, setAsignatura] = useState("");
   const [grado, setGrado] = useState("");
+  const [salon, setSalon] = useState("");
   const [periodo, setPeriodo] = useState<number>(1);
 
-  const [logros, setLogros] = useState<Logro[]>([]);
-  const [cargandoLogros, setCargandoLogros] = useState(false);
+  const [banco, setBanco] = useState<Logro[]>([]);
+  const [niveles, setNiveles] = useState<Nivel[]>([]);
+  const [cargandoBanco, setCargandoBanco] = useState(false);
 
   useEffect(() => {
     const session = getSession();
@@ -84,80 +79,112 @@ const LogrosProfesor = () => {
   const asignaturasUnicas = useMemo(() => [...new Set(combos.map((c) => c.asignatura))], [combos]);
   const gradosDeAsig = useMemo(() =>
     combos.filter((c) => c.asignatura === asignatura).map((c) => c.grado), [combos, asignatura]);
-
-  const cargarLogros = async () => {
-    if (!asignatura || !grado) return;
-    setCargandoLogros(true);
-    try {
-      const r = await apiRequest<{ logros: Logro[] }>(
-        `/api/logros?asignatura=${encodeURIComponent(asignatura)}&grado=${encodeURIComponent(grado)}&periodo=${periodo}`);
-      setLogros(r.logros || []);
-    } catch {
-      toast({ title: "No se pudieron cargar los logros", variant: "destructive" });
-    } finally { setCargandoLogros(false); }
-  };
-  useEffect(() => { cargarLogros(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [asignatura, grado, periodo]);
-
-  // ── Crear / editar (mismo dialog) ──
-  const [editando, setEditando] = useState<Logro | null>(null);
-  const [dialogAbierto, setDialogAbierto] = useState(false);
-  const [texto, setTexto] = useState("");
-  const [textoBasico, setTextoBasico] = useState("");
-  const [textoBajo, setTextoBajo] = useState("");
-  const [dimension, setDimension] = useState("");   // "" = sin clasificar
-  const [salonSel, setSalonSel] = useState("");     // "" = todo el grado
-  const [guardando, setGuardando] = useState(false);
-  const [generando, setGenerando] = useState(false);
-
-  // Salones que el docente dicta en el grado/asignatura actual (para el alcance).
   const salonesDelGrado = useMemo(
     () => salonesPorGA[`${asignatura}|${grado}`] || [], [salonesPorGA, asignatura, grado]);
 
-  const abrirNuevo = () => { setEditando(null); setTexto(""); setTextoBasico(""); setTextoBajo(""); setDimension(""); setSalonSel(""); setDialogAbierto(true); };
-  const abrirEditar = (l: Logro) => {
-    setEditando(l); setTexto(l.texto); setTextoBasico(l.texto_basico || ""); setTextoBajo(l.texto_bajo || "");
-    setDimension(l.dimension || ""); setSalonSel(l.salon || "");
-    setDialogAbierto(true);
+  // El primer salón por defecto al cambiar de grado/asignatura.
+  useEffect(() => {
+    if (salonesDelGrado.length > 0 && !salonesDelGrado.includes(salon)) setSalon(salonesDelGrado[0]);
+  }, [salonesDelGrado]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const cargarBanco = async () => {
+    if (!asignatura || !grado) return;
+    setCargandoBanco(true);
+    try {
+      const r = await apiRequest<{ banco: Logro[]; niveles: Nivel[] }>(
+        `/api/logros/banco?asignatura=${encodeURIComponent(asignatura)}&grado=${encodeURIComponent(grado)}&periodo=${periodo}`);
+      setBanco(r.banco || []);
+      setNiveles(r.niveles || []);
+    } catch {
+      toast({ title: "No se pudo cargar el banco de logros", variant: "destructive" });
+    } finally { setCargandoBanco(false); }
+  };
+  useEffect(() => { cargarBanco(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [asignatura, grado, periodo]);
+
+  const nivelAlto = niveles[0];
+  const textoPrincipal = (l: Logro) => (nivelAlto && l.redacciones?.[nivelAlto.key]) || Object.values(l.redacciones || {})[0] || "";
+  const estaEnSalon = (l: Logro) => (l.salones || []).includes(salon);
+  const seleccionados = useMemo(() => banco.filter(estaEnSalon), [banco, salon]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Asignar / quitar del salón actual (toca solo los salones que dicta el docente) ──
+  const [asignando, setAsignando] = useState<string | null>(null);
+  const toggleSalonActual = async (l: Logro) => {
+    if (!salon) return;
+    setAsignando(l.id);
+    const propios = (l.salones || []).filter((s) => salonesDelGrado.includes(s));
+    const activos = estaEnSalon(l) ? propios.filter((s) => s !== salon) : [...propios, salon];
+    try {
+      await apiRequest("/api/logros/asignar", {
+        method: "POST",
+        body: JSON.stringify({ logro_id: l.id, grado, periodo, activos, universo: salonesDelGrado }),
+      });
+      await cargarBanco();
+    } catch (e: any) {
+      toast({ title: "No se pudo asignar", description: e?.body?.detail || e?.message, variant: "destructive" });
+    } finally { setAsignando(null); }
   };
 
+  // ── Diálogo asignar a VARIOS salones ──
+  const [multiLogro, setMultiLogro] = useState<Logro | null>(null);
+  const [multiSel, setMultiSel] = useState<Set<string>>(new Set());
+  const abrirMulti = (l: Logro) => {
+    setMultiLogro(l);
+    setMultiSel(new Set((l.salones || []).filter((s) => salonesDelGrado.includes(s))));
+  };
+  const guardarMulti = async () => {
+    if (!multiLogro) return;
+    try {
+      await apiRequest("/api/logros/asignar", {
+        method: "POST",
+        body: JSON.stringify({ logro_id: multiLogro.id, grado, periodo, activos: [...multiSel], universo: salonesDelGrado }),
+      });
+      setMultiLogro(null);
+      await cargarBanco();
+    } catch (e: any) {
+      toast({ title: "No se pudo asignar", description: e?.body?.detail || e?.message, variant: "destructive" });
+    }
+  };
+
+  // ── Crear / editar logro (redacciones por nivel) ──
+  const [editando, setEditando] = useState<Logro | null>(null);
+  const [dialogAbierto, setDialogAbierto] = useState(false);
+  const [red, setRed] = useState<Record<string, string>>({});
+  const [guardando, setGuardando] = useState(false);
+  const [generando, setGenerando] = useState(false);
+
+  const abrirNuevo = () => { setEditando(null); setRed({}); setDialogAbierto(true); };
+  const abrirEditar = (l: Logro) => { setEditando(l); setRed({ ...(l.redacciones || {}) }); setDialogAbierto(true); };
+  const setNivelTexto = (key: string, v: string) => setRed((p) => ({ ...p, [key]: v }));
+
   const generarVariantes = async () => {
-    if (!texto.trim()) {
-      toast({ title: "Escribe primero el logro", description: "Normi redacta las variantes a partir de la redacción principal.", variant: "destructive" });
+    const principal = nivelAlto ? (red[nivelAlto.key] || "").trim() : "";
+    if (!principal) {
+      toast({ title: "Escribe primero la redacción principal", description: "Normi redacta los demás niveles a partir de ella.", variant: "destructive" });
       return;
     }
     setGenerando(true);
     try {
-      const r = await apiRequest<{ basico: string; bajo: string }>("/api/logros/variantes", {
-        method: "POST", body: JSON.stringify({ texto: texto.trim() }),
+      const r = await apiRequest<{ redacciones: Record<string, string> }>("/api/logros/variantes", {
+        method: "POST", body: JSON.stringify({ texto: principal }),
       });
-      setTextoBasico(r.basico);
-      setTextoBajo(r.bajo);
+      setRed((p) => ({ ...p, ...(r.redacciones || {}) }));
     } catch {
       toast({ title: "Normi no pudo generar las variantes", description: "Intenta de nuevo o escríbelas manualmente.", variant: "destructive" });
     } finally { setGenerando(false); }
   };
 
   const guardar = async () => {
-    if (!texto.trim()) return;
+    const redacciones = Object.fromEntries(Object.entries(red).map(([k, v]) => [k, String(v || "").trim()]).filter(([, v]) => v));
+    if (Object.keys(redacciones).length === 0) return;
     setGuardando(true);
     try {
       if (editando) {
-        await apiRequest(`/api/logros/${editando.id}`, {
-          method: "PATCH",
-          body: JSON.stringify({ texto: texto.trim(), texto_basico: textoBasico.trim() || null, texto_bajo: textoBajo.trim() || null, dimension: dimension || null, salon: salonSel || null }),
-        });
+        await apiRequest(`/api/logros/${editando.id}`, { method: "PATCH", body: JSON.stringify({ redacciones }) });
       } else {
-        await apiRequest("/api/logros", {
-          method: "POST",
-          body: JSON.stringify({
-            asignatura, grado, periodo,
-            texto: texto.trim(), texto_basico: textoBasico.trim() || undefined, texto_bajo: textoBajo.trim() || undefined,
-            dimension: dimension || undefined, salon: salonSel || undefined,
-          }),
-        });
+        await apiRequest("/api/logros", { method: "POST", body: JSON.stringify({ asignatura, grado, redacciones }) });
       }
       setDialogAbierto(false);
-      await cargarLogros();
+      await cargarBanco();
     } catch (e: any) {
       toast({ title: "No se pudo guardar", description: e?.body?.detail || e?.message, variant: "destructive" });
     } finally { setGuardando(false); }
@@ -169,7 +196,7 @@ const LogrosProfesor = () => {
     try {
       await apiRequest(`/api/logros/${borrando.id}`, { method: "DELETE" });
       setBorrando(null);
-      await cargarLogros();
+      await cargarBanco();
     } catch (e: any) {
       toast({ title: "No se pudo eliminar", description: e?.body?.detail || e?.message, variant: "destructive" });
     }
@@ -178,7 +205,7 @@ const LogrosProfesor = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <HeaderNormi backLink="/dashboard" />
-      <main className="flex-1 container mx-auto p-4 md:p-8 max-w-3xl">
+      <main className="flex-1 container mx-auto p-4 md:p-8 max-w-5xl">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <div className="flex items-center gap-2 text-sm flex-wrap">
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
@@ -192,9 +219,9 @@ const LogrosProfesor = () => {
             <BookOpenCheck className="h-5 w-5 text-primary" /> Logros del periodo
           </h2>
           <p className="text-sm text-muted-foreground mb-5">
-            Escribe los logros que trabajaste en el periodo. Por defecto aplican a <b>todo el grado</b> (los comparten los demás
-            docentes de la misma asignatura), pero puedes limitar uno a <b>un salón</b> y clasificarlo por dimensión (Saber/Hacer/Ser).
-            En el boletín, cada estudiante recibe la redacción según su desempeño: la principal si ganó, o la variante Básico/Bajo.
+            A la izquierda está el <b>banco</b> de logros del grado (compartido con los demás docentes de la asignatura).
+            Agrega al <b>salón</b> los que trabajaste — cada salón arma su propia lista. En el boletín, cada estudiante
+            recibe la redacción según su nivel de desempeño.
           </p>
 
           {cargando ? (
@@ -203,7 +230,7 @@ const LogrosProfesor = () => {
             <p className="text-center text-muted-foreground py-8">No tienes carga académica asignada.</p>
           ) : (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <select value={asignatura} onChange={(e) => { setAsignatura(e.target.value); const gs = combos.filter((c) => c.asignatura === e.target.value); setGrado(gs[0]?.grado || ""); }}
                   className="col-span-2 sm:col-span-1 px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                   {asignaturasUnicas.map((a) => <option key={a} value={a}>{a}</option>)}
@@ -212,53 +239,76 @@ const LogrosProfesor = () => {
                   className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                   {gradosDeAsig.map((g) => <option key={g} value={g}>{g}</option>)}
                 </select>
+                <select value={salon} onChange={(e) => setSalon(e.target.value)}
+                  className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                  {salonesDelGrado.map((s) => <option key={s} value={s}>{grado} {s}</option>)}
+                </select>
                 <select value={periodo} onChange={(e) => setPeriodo(parseInt(e.target.value, 10))}
                   className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                   {PERIODOS.map((p) => <option key={p} value={p}>{ORDINAL[p]} periodo</option>)}
                 </select>
               </div>
 
-              <div className="flex justify-end">
-                <Button onClick={abrirNuevo} className="gap-1"><Plus className="w-4 h-4" /> Agregar logro</Button>
-              </div>
-
-              {cargandoLogros ? (
+              {cargandoBanco ? (
                 <div className="text-center py-6 text-muted-foreground"><Loader2 className="w-5 h-5 animate-spin inline" /></div>
-              ) : logros.length === 0 ? (
-                <p className="text-center text-muted-foreground py-6">
-                  Aún no hay logros de {asignatura} — {grado} en el {ORDINAL[periodo].toLowerCase()} periodo.
-                </p>
               ) : (
-                <div className="space-y-2">
-                  {logros.map((l) => (
-                    <div key={l.id} className="border border-border rounded-lg p-3 bg-card">
-                      <div className="flex flex-wrap gap-1.5 mb-1.5">
-                        {l.dimension && (
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                            {DIMENSIONES.find((d) => d.v === l.dimension)?.corto || l.dimension}
-                          </span>
-                        )}
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                          {l.salon ? `Solo ${l.grado} ${l.salon}` : `Todo el grado`}
-                        </span>
-                      </div>
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm text-foreground leading-relaxed">» {l.texto}</p>
-                        <div className="flex gap-1 shrink-0">
-                          <button onClick={() => abrirEditar(l)} className="p-1.5 rounded hover:bg-muted"><Pencil className="w-4 h-4 text-muted-foreground" /></button>
-                          <button onClick={() => setBorrando(l)} className="p-1.5 rounded hover:bg-muted"><Trash2 className="w-4 h-4 text-destructive" /></button>
-                        </div>
-                      </div>
-                      {(l.texto_basico || l.texto_bajo) ? (
-                        <div className="mt-1.5 space-y-0.5">
-                          {l.texto_basico && <p className="text-xs text-muted-foreground"><span className="font-medium text-amber-600">Básico:</span> {l.texto_basico}</p>}
-                          {l.texto_bajo && <p className="text-xs text-muted-foreground"><span className="font-medium text-red-500">Bajo:</span> {l.texto_bajo}</p>}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-amber-600 mt-1">Sin variantes Básico/Bajo — todos recibirán la misma redacción.</p>
-                      )}
+                <div className="grid md:grid-cols-2 gap-4">
+                  {/* ── BANCO ── */}
+                  <div className="border border-border rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-bold text-foreground">Banco — {asignatura} · {grado}</h3>
+                      <Button size="sm" onClick={abrirNuevo} className="gap-1 h-8"><Plus className="w-4 h-4" /> Nuevo</Button>
                     </div>
-                  ))}
+                    {banco.length === 0 ? (
+                      <p className="text-center text-muted-foreground text-sm py-6">Aún no hay logros en el banco de esta asignatura y grado.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {banco.map((l) => {
+                          const en = estaEnSalon(l);
+                          return (
+                            <div key={l.id} className={`border rounded-lg p-2.5 ${en ? "border-primary/40 bg-primary/5" : "border-border bg-card"}`}>
+                              <p className="text-sm text-foreground leading-snug">{textoPrincipal(l)}</p>
+                              <div className="flex items-center gap-1 mt-2">
+                                <Button size="sm" variant={en ? "secondary" : "default"} disabled={asignando === l.id || !salon}
+                                  onClick={() => toggleSalonActual(l)} className="h-7 gap-1 text-xs">
+                                  {asignando === l.id ? <Loader2 className="w-3 h-3 animate-spin" /> : en ? <Check className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+                                  {en ? `En ${grado} ${salon}` : `Agregar a ${salon}`}
+                                </Button>
+                                <button title="Asignar a varios salones" onClick={() => abrirMulti(l)} className="p-1.5 rounded hover:bg-muted"><Users className="w-4 h-4 text-muted-foreground" /></button>
+                                <div className="flex-1" />
+                                <button title="Editar" onClick={() => abrirEditar(l)} className="p-1.5 rounded hover:bg-muted"><Pencil className="w-4 h-4 text-muted-foreground" /></button>
+                                <button title="Eliminar del banco" onClick={() => setBorrando(l)} className="p-1.5 rounded hover:bg-muted"><Trash2 className="w-4 h-4 text-destructive" /></button>
+                              </div>
+                              {(l.salones || []).length > 0 && (
+                                <p className="text-[11px] text-muted-foreground mt-1">Asignado a: {l.salones.map((s) => `${grado} ${s}`).join(", ")}</p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ── SELECCIONADOS DEL SALÓN ── */}
+                  <div className="border border-border rounded-lg p-3 bg-muted/20">
+                    <h3 className="text-sm font-bold text-foreground mb-3">Seleccionados — {grado} {salon} · {ORDINAL[periodo]} periodo</h3>
+                    {seleccionados.length === 0 ? (
+                      <p className="text-center text-muted-foreground text-sm py-6">Aún no has agregado logros a este salón. Toca “Agregar” en el banco.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {seleccionados.map((l) => (
+                          <div key={l.id} className="border border-border rounded-lg p-2.5 bg-card">
+                            <p className="text-sm text-foreground leading-snug">{textoPrincipal(l)}</p>
+                            <div className="flex justify-end mt-1">
+                              <Button size="sm" variant="ghost" disabled={asignando === l.id} onClick={() => toggleSalonActual(l)} className="h-7 gap-1 text-xs text-destructive">
+                                <Trash2 className="w-3 h-3" /> Quitar
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -266,54 +316,64 @@ const LogrosProfesor = () => {
         </div>
       </main>
 
-      {/* ── Dialog crear/editar ── */}
+      {/* ── Dialog crear/editar (redacciones por nivel) ── */}
       <Dialog open={dialogAbierto} onOpenChange={(o) => !o && setDialogAbierto(false)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editando ? "Editar logro" : "Nuevo logro"} — {asignatura} · {grado} · {ORDINAL[periodo]} periodo</DialogTitle>
+            <DialogTitle>{editando ? "Editar logro" : "Nuevo logro"} — {asignatura} · {grado}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium block mb-1">Logro (redacción principal — desempeño Superior/Alto)</label>
-              <Textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={3}
-                placeholder="Ej: Comprende el clima como un conjunto de fenómenos atmosféricos…" />
-            </div>
-            <Button variant="outline" size="sm" onClick={generarVariantes} disabled={generando || !texto.trim()} className="gap-2">
-              {generando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-primary" />}
-              Generar variantes con Normi
-            </Button>
-            <div>
-              <label className="text-sm font-medium block mb-1 text-amber-600">Variante Básico (lo alcanza con dificultad)</label>
-              <Textarea value={textoBasico} onChange={(e) => setTextoBasico(e.target.value)} rows={2} placeholder="Opcional" />
-            </div>
-            <div>
-              <label className="text-sm font-medium block mb-1 text-red-500">Variante Bajo (no lo alcanza)</label>
-              <Textarea value={textoBajo} onChange={(e) => setTextoBajo(e.target.value)} rows={2} placeholder="Opcional" />
-            </div>
-            <div className="grid grid-cols-2 gap-3 pt-1">
-              <div>
-                <label className="text-sm font-medium block mb-1">Dimensión</label>
-                <select value={dimension} onChange={(e) => setDimension(e.target.value)}
-                  className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
-                  <option value="">Sin clasificar</option>
-                  {DIMENSIONES.map((d) => <option key={d.v} value={d.v}>{d.label}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium block mb-1">Aplica a</label>
-                <select value={salonSel} onChange={(e) => setSalonSel(e.target.value)}
-                  className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
-                  <option value="">Todo el grado ({grado})</option>
-                  {salonesDelGrado.map((s) => <option key={s} value={s}>Solo {grado} {s}</option>)}
-                </select>
-              </div>
-            </div>
+            {niveles.length === 0 ? (
+              <p className="text-sm text-destructive">Este colegio no tiene niveles de desempeño configurados.</p>
+            ) : (
+              <>
+                <div>
+                  <label className="text-sm font-medium block mb-1">Redacción principal — nivel <b>{nivelAlto?.label}</b> (el más alto)</label>
+                  <Textarea value={nivelAlto ? (red[nivelAlto.key] || "") : ""} onChange={(e) => nivelAlto && setNivelTexto(nivelAlto.key, e.target.value)} rows={3}
+                    placeholder="Ej: Comprende el clima como un conjunto de fenómenos atmosféricos…" />
+                </div>
+                <Button variant="outline" size="sm" onClick={generarVariantes} disabled={generando || !(nivelAlto && (red[nivelAlto.key] || "").trim())} className="gap-2">
+                  {generando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-primary" />}
+                  Generar los demás niveles con Normi
+                </Button>
+                {niveles.slice(1).map((n) => (
+                  <div key={n.key}>
+                    <label className="text-sm font-medium block mb-1 text-muted-foreground">Nivel {n.label}</label>
+                    <Textarea value={red[n.key] || ""} onChange={(e) => setNivelTexto(n.key, e.target.value)} rows={2} placeholder="Opcional" />
+                  </div>
+                ))}
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogAbierto(false)} disabled={guardando}>Cancelar</Button>
-            <Button onClick={guardar} disabled={guardando || !texto.trim()} className="gap-2">
-              {guardando && <Loader2 className="w-4 h-4 animate-spin" />} Guardar
-            </Button>
+            <Button onClick={guardar} disabled={guardando} className="gap-2">{guardando && <Loader2 className="w-4 h-4 animate-spin" />} Guardar en el banco</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Dialog asignar a varios salones ── */}
+      <Dialog open={!!multiLogro} onOpenChange={(o) => !o && setMultiLogro(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Asignar a salones — {ORDINAL[periodo]} periodo</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">Marca los salones de {grado} donde aplica este logro.</p>
+          <div className="space-y-1.5 py-1">
+            {salonesDelGrado.map((s) => {
+              const on = multiSel.has(s);
+              return (
+                <button key={s} onClick={() => setMultiSel((p) => { const n = new Set(p); on ? n.delete(s) : n.add(s); return n; })}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-md border text-sm ${on ? "border-primary bg-primary/10 text-primary font-medium" : "border-input"}`}>
+                  <span className={`w-4 h-4 rounded border flex items-center justify-center ${on ? "bg-primary border-primary" : "border-muted-foreground"}`}>
+                    {on && <Check className="w-3 h-3 text-white" />}
+                  </span>
+                  {grado} {s}
+                </button>
+              );
+            })}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMultiLogro(null)}>Cancelar</Button>
+            <Button onClick={guardarMulti}>Guardar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -321,8 +381,9 @@ const LogrosProfesor = () => {
       {/* ── Dialog eliminar ── */}
       <Dialog open={!!borrando} onOpenChange={(o) => !o && setBorrando(null)}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>¿Eliminar este logro?</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">» {borrando?.texto}</p>
+          <DialogHeader><DialogTitle>¿Eliminar este logro del banco?</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">{borrando && textoPrincipal(borrando)}</p>
+          <p className="text-xs text-destructive">Se quitará también de todos los salones donde esté asignado.</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setBorrando(null)}>Cancelar</Button>
             <Button variant="destructive" onClick={borrar}>Eliminar</Button>
