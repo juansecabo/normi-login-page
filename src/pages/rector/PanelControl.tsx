@@ -5,6 +5,7 @@ import { getSession, puedeAccederDashboard, isAdmin } from "@/hooks/useSession";
 import PhoneInput from "@/components/PhoneInput";
 import HeaderNormi from "@/components/HeaderNormi";
 import { useGradosColegio, NIVEL_DE_GRADO } from "@/utils/grados";
+import { formatTelefono } from "@/utils/telefono";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -1725,7 +1726,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                             <TableCell>{e.nombres}</TableCell>
                             <TableCell>{e.grado}</TableCell>
                             <TableCell>{e.salon}</TableCell>
-                            <TableCell className="font-mono text-xs">{e.numero_de_telefono || "—"}</TableCell>
+                            <TableCell className="font-mono text-xs">{formatTelefono(e.numero_de_telefono) || "—"}</TableCell>
                             <TableCell className="text-muted-foreground">{e.contrasena || "—"}</TableCell>
                             <TableCell className="text-right space-x-1">
                               <Button variant="ghost" size="sm" onClick={() => openEstDialog(e)}>
@@ -1839,7 +1840,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                                 p.acudido4_grado && `${p.acudido4_grado} ${p.acudido4_salon || ""}`.trim(),
                               ].filter(Boolean).map((g, i) => <div key={i}>{g}</div>) || <span>—</span>}
                             </TableCell>
-                            <TableCell className="font-mono text-xs">{p.numero_de_telefono || "—"}</TableCell>
+                            <TableCell className="font-mono text-xs">{formatTelefono(p.numero_de_telefono) || "—"}</TableCell>
                             <TableCell className="text-muted-foreground">{p.contrasena || "—"}</TableCell>
                             <TableCell className="text-right space-x-1">
                               <Button variant="ghost" size="sm" onClick={() => openPerfDialog(p)}>

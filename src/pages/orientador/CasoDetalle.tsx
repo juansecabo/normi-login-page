@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { formatTelefono } from "@/utils/telefono";
 import { getSession, isOrientador, isAdmin, puedeAccederDashboard } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
@@ -904,7 +905,7 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
               <p><span className="text-muted-foreground">Lugar de nacimiento:</span> {c.lugar_nacimiento || "—"}</p>
               <p><span className="text-muted-foreground">Fecha de nacimiento:</span> {c.fecha_nacimiento ? fmtFecha(c.fecha_nacimiento) : "—"}</p>
               <p><span className="text-muted-foreground">Edad:</span> {c.edad ?? "—"}</p>
-              <p><span className="text-muted-foreground">Cel.:</span> {c.celular || "—"}</p>
+              <p><span className="text-muted-foreground">Cel.:</span> {formatTelefono(c.celular) || "—"}</p>
               <p><span className="text-muted-foreground">Barrio:</span> {c.barrio || "—"}</p>
               <p><span className="text-muted-foreground">Municipio:</span> {c.municipio || "—"}</p>
             </div>
@@ -937,14 +938,14 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
                 <p><span className="text-muted-foreground">Nombre:</span> {c.padre_nombre || "—"}</p>
                 <p><span className="text-muted-foreground">Ocupación:</span> {c.padre_ocupacion || "—"}</p>
                 <p><span className="text-muted-foreground">Empresa donde labora:</span> {c.padre_empresa || "—"}</p>
-                <p><span className="text-muted-foreground">N° Celular:</span> {c.padre_celular || "—"}</p>
+                <p><span className="text-muted-foreground">N° Celular:</span> {formatTelefono(c.padre_celular) || "—"}</p>
               </div>
               <div className="space-y-1 border border-border rounded p-3">
                 <p className="font-medium text-foreground">Madre</p>
                 <p><span className="text-muted-foreground">Nombre:</span> {c.madre_nombre || "—"}</p>
                 <p><span className="text-muted-foreground">Ocupación:</span> {c.madre_ocupacion || "—"}</p>
                 <p><span className="text-muted-foreground">Empresa donde labora:</span> {c.madre_empresa || "—"}</p>
-                <p><span className="text-muted-foreground">N° Celular:</span> {c.madre_celular || "—"}</p>
+                <p><span className="text-muted-foreground">N° Celular:</span> {formatTelefono(c.madre_celular) || "—"}</p>
               </div>
             </div>
             <p className="mt-2 text-sm"><span className="text-muted-foreground">Situación actual de los padres:</span> {c.situacion_padres || "—"}</p>

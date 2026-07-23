@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { formatTelefono } from "@/utils/telefono";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, isAdmin } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
@@ -191,7 +192,7 @@ const Sugerencias = () => {
                 <span><strong>De:</strong> {selected.nombres} {selected.apellidos || ""}</span>
                 <span><strong>Rol:</strong> {selected.rol}</span>
                 <span><strong>Contacto:</strong> {selected.contacto}</span>
-                {selectedTelefono && <span><strong>Teléfono:</strong> {selectedTelefono}</span>}
+                {selectedTelefono && <span><strong>Teléfono:</strong> {formatTelefono(selectedTelefono)}</span>}
               </div>
               <p className="text-xs text-muted-foreground">{formatDate(selected.created_at)}</p>
               <p className="text-foreground whitespace-pre-wrap">{selected.mensaje}</p>

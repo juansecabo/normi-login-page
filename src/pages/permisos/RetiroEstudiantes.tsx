@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { formatTelefono } from "@/utils/telefono";
 import { getSession, isPadreDeFamilia, AcudidoData } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
@@ -532,7 +533,7 @@ const RetiroEstudiantes = () => {
               {/* Teléfono (auto-filled) */}
               <div className="space-y-1">
                 <label className="text-sm font-medium text-foreground">Teléfono</label>
-                <div className="px-3 py-2 border border-input rounded-md text-sm bg-muted/30 text-primary font-medium">{telefonoAcudiente || "No disponible"}</div>
+                <div className="px-3 py-2 border border-input rounded-md text-sm bg-muted/30 text-primary font-medium">{formatTelefono(telefonoAcudiente) || "No disponible"}</div>
               </div>
 
               {/* Submit button */}

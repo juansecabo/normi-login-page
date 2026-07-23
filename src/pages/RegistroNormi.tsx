@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { formatTelefono } from "@/utils/telefono";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, isProfesor, puedeAccederDashboard, isAdmin } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
@@ -705,7 +706,7 @@ const RegistroNormi = () => {
                       <p className="font-semibold text-gray-900">Acudiente {i + 1}</p>
                     )}
                     <p><span className="font-medium">Nombre:</span> {p.acudiente_nombre}</p>
-                    <p><span className="font-medium">Teléfono:</span> {p.telefono}</p>
+                    <p><span className="font-medium">Teléfono:</span> {formatTelefono(p.telefono)}</p>
                   </div>
                 ))}
               </div>

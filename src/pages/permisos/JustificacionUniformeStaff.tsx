@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { formatTelefono } from "@/utils/telefono";
 import { getSession, isProfesor, puedeAccederDashboard, isAdmin } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
@@ -128,7 +129,7 @@ const JustificacionUniformeStaff = () => {
         const acudienteFila: { label: string; value: string }[] = [
           { label: "Acudiente:", value: `${[j.acudiente_nombres, j.acudiente_apellidos].filter(Boolean).join(" ")} — C.C. ${j.acudiente_id}` },
         ];
-        if (j.acudiente_telefono) acudienteFila.push({ label: "Teléfono:", value: j.acudiente_telefono });
+        if (j.acudiente_telefono) acudienteFila.push({ label: "Teléfono:", value: formatTelefono(j.acudiente_telefono) });
         secciones.push({
           titulo: "FORMATO DE JUSTIFICACIÓN POR UNIFORME",
           rows: [
@@ -246,7 +247,7 @@ const JustificacionUniformeStaff = () => {
                                   <p><span className="font-medium">Fecha:</span> <span className="text-primary font-medium">{fmtFecha(j.fecha)}</span></p>
                                   <p><span className="font-medium">Justificación:</span> <span className="text-primary font-medium">{j.justificacion}</span></p>
                                   <p><span className="font-medium">Acudiente:</span> <span className="text-primary font-medium">{[j.acudiente_nombres, j.acudiente_apellidos].filter(Boolean).join(" ")}</span> — C.C. <span className="text-primary font-medium">{j.acudiente_id}</span></p>
-                                  {j.acudiente_telefono && <p>Teléfono: <span className="text-primary font-medium">{j.acudiente_telefono}</span></p>}
+                                  {j.acudiente_telefono && <p>Teléfono: <span className="text-primary font-medium">{formatTelefono(j.acudiente_telefono)}</span></p>}
                                   {j.firma_url && <div><p className="font-medium mb-1">Firma:</p><FirmaImage url={j.firma_url} /></div>}
                                 </div>
                               )}

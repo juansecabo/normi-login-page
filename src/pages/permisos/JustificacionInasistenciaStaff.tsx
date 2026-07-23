@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { formatTelefono } from "@/utils/telefono";
 import { getSession, isProfesor, puedeAccederDashboard, isAdmin } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
@@ -140,7 +141,7 @@ const JustificacionInasistenciaStaff = () => {
             ],
             [
               { label: "Acudiente:", value: `${[j.acudiente_nombres, j.acudiente_apellidos].filter(Boolean).join(" ")} — C.C. ${j.acudiente_id}${j.acudiente_parentesco ? ` — ${j.acudiente_parentesco}` : ""}` },
-              { label: "Teléfono:", value: j.acudiente_telefono },
+              { label: "Teléfono:", value: formatTelefono(j.acudiente_telefono) },
             ],
           ],
           firmaUrl: j.firma_url,
@@ -250,7 +251,7 @@ const JustificacionInasistenciaStaff = () => {
                             <p><span className="font-medium">Motivo:</span> <Check className="w-4 h-4 inline text-primary" /> {MOTIVOS[j.motivo_tipo] || j.motivo_tipo}{j.motivo_otro ? `: ${j.motivo_otro}` : ""}</p>
                             <p><span className="font-medium">Descripción:</span> <span className="text-primary font-medium">{j.motivo_descripcion}</span></p>
                             <p><span className="font-medium">Acudiente:</span> <span className="text-primary font-medium">{[j.acudiente_nombres, j.acudiente_apellidos].filter(Boolean).join(" ")}</span> — C.C. <span className="text-primary font-medium">{j.acudiente_id}</span>{j.acudiente_parentesco ? ` — ${j.acudiente_parentesco}` : ""}</p>
-                            <p>Teléfono: <span className="text-primary font-medium">{j.acudiente_telefono}</span></p>
+                            <p>Teléfono: <span className="text-primary font-medium">{formatTelefono(j.acudiente_telefono)}</span></p>
                             {j.firma_url && <div><p className="font-medium mb-1">Firma:</p><FirmaImage url={j.firma_url} /></div>}
                             {j.archivos_url && j.archivos_url.length > 0 && (
                               <div className="space-y-2">
