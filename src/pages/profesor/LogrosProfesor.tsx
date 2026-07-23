@@ -67,7 +67,9 @@ const LogrosProfesor = () => {
         const lista = [...set.values()].sort((x, y) =>
           x.asignatura.localeCompare(y.asignatura, "es") || rankGrado(x.grado) - rankGrado(y.grado));
         setCombos(lista);
-        setSalonesPorGA(Object.fromEntries(Object.entries(sal).map(([k, v]) => [k, [...v].sort()])));
+        // Orden NUMÉRICO de salones (1,2,…,10), no de texto (que pondría 1,10,2,…).
+        const ordenSalon = (a: string, b: string) => a.localeCompare(b, "es", { numeric: true });
+        setSalonesPorGA(Object.fromEntries(Object.entries(sal).map(([k, v]) => [k, [...v].sort(ordenSalon)])));
         if (lista.length > 0) { setAsignatura(lista[0].asignatura); setGrado(lista[0].grado); }
         setCargando(false);
       });
@@ -237,7 +239,7 @@ const LogrosProfesor = () => {
                   {banco.map((l) => {
                     const on = agregada(l);
                     return (
-                      <div key={l.id} className={`p-3 flex items-start gap-3 ${on ? "bg-primary/5" : ""}`}>
+                      <div key={l.id} className="p-3 flex items-start gap-3">
                         {/* Casilla del logro */}
                         <button onClick={() => toggleLogro(l)} disabled={guardandoId === l.id} title={on ? "Quitar de todos los salones" : "Agregar a todos los salones"}
                           className={`mt-0.5 w-6 h-6 shrink-0 rounded-md border-2 flex items-center justify-center ${on ? "bg-primary border-primary" : "border-muted-foreground/40 hover:border-primary"}`}>
