@@ -111,24 +111,27 @@ const SeleccionarGrado = () => {
                 const isSelected = selectedGrado === grado;
 
                 return (
-                  <div
-                    key={index}
-                    className={`rounded-lg border-2 overflow-hidden transition-all duration-200
-                      ${isSelected ? 'border-primary shadow-md ring-2 ring-primary/30' : 'border-border'}`}
-                  >
+                  <div key={index} className="flex flex-col">
                     <button
                       onClick={() => {
                         setSelectedGrado(grado);
                         localStorage.setItem("gradoSeleccionado", grado);
                         navigate("/seleccionar-salon");
                       }}
-                      className="w-full p-6 text-center bg-background hover:bg-primary/10 hover:shadow-inner transition-colors"
+                      className={`
+                        p-6 rounded-lg border-2 text-center transition-all duration-200
+                        hover:shadow-md hover:border-primary hover:bg-primary/10
+                        ${isSelected
+                          ? 'border-primary bg-primary/20 shadow-md ring-2 ring-primary/30'
+                          : 'border-border bg-background'
+                        }
+                      `}
                     >
                       <span className="font-medium text-foreground">{grado}</span>
                     </button>
                     <button
                       onClick={() => navigate(`/profesor/logros?a=${encodeURIComponent(asignaturaSeleccionada)}&g=${encodeURIComponent(grado)}`)}
-                      className="w-full py-2 border-t border-border text-sm font-medium text-primary hover:bg-primary/5 transition-colors"
+                      className="mt-2 text-sm font-medium text-primary hover:underline"
                     >
                       Ver logros
                     </button>
