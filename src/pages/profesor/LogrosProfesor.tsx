@@ -252,7 +252,7 @@ const LogrosProfesor = () => {
                               const sel = (l.salones || []).includes(s);
                               return (
                                 <button key={s} onClick={() => toggleSalon(l, s)} disabled={guardandoId === l.id}
-                                  className={`text-xs font-medium px-2.5 py-1 rounded-full border inline-flex items-center gap-1 ${sel ? "border-primary bg-primary text-white" : "border-input text-muted-foreground hover:border-primary"}`}>
+                                  className={`text-xs font-medium px-2.5 py-1 rounded-full border inline-flex items-center gap-1 ${sel ? "border-primary/40 bg-primary/10 text-primary" : "border-input text-muted-foreground hover:border-primary"}`}>
                                   {sel && <Check className="w-3 h-3" />} {grado} {s}
                                 </button>
                               );
