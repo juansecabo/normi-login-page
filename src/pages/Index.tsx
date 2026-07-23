@@ -91,7 +91,7 @@ const Index = () => {
     const genero = (user as any).genero || null;
     if (user.rol === 'SuperAdmin') {
       saveSession(user.id, user.nombres, user.apellidos, 'SuperAdmin', null, null, null, null, multi, avatar, colegio_id, colegio_nombre, colegio_logo_url, colegio_slug, genero);
-      navigate(getPostLoginRoute("/dashboard-plataforma"), { replace: true });
+      navigate(getPostLoginRoute("/dashboard"), { replace: true });
       return;
     }
     if (user.rol === 'Estudiante') {
@@ -101,7 +101,7 @@ const Index = () => {
         null, multi, avatar,
         colegio_id, colegio_nombre, colegio_logo_url, colegio_slug, genero,
       );
-      navigate(getPostLoginRoute("/dashboard-estudiante"), { replace: true });
+      navigate(getPostLoginRoute("/dashboard"), { replace: true });
       return;
     }
     if (user.rol === 'Acudiente') {
@@ -111,18 +111,18 @@ const Index = () => {
         (user.acudidos || []) as AcudidoData[], multi, avatar,
         colegio_id, colegio_nombre, colegio_logo_url, colegio_slug, genero,
       );
-      navigate(getPostLoginRoute("/dashboard-acudiente"), { replace: true });
+      navigate(getPostLoginRoute("/dashboard"), { replace: true });
       return;
     }
     saveSession(user.id, user.nombres, user.apellidos, user.rol, null, null, null, null, multi, avatar, colegio_id, colegio_nombre, colegio_logo_url, colegio_slug, genero);
     if (user.rol === 'Administrador') {
-      navigate(getPostLoginRoute("/dashboard-admin"), { replace: true });
+      navigate(getPostLoginRoute("/dashboard"), { replace: true });
     } else if (
       user.rol === 'Rector' || user.rol === 'Coordinador(a)' ||
       user.rol === 'Administrativo(a)' || user.rol === 'Secretaria General' ||
       user.rol === 'Orientador(a) Escolar'
     ) {
-      navigate(getPostLoginRoute("/panel"), { replace: true });
+      navigate(getPostLoginRoute("/dashboard"), { replace: true });
     } else {
       navigate(getPostLoginRoute("/dashboard"), { replace: true });
     }
@@ -154,9 +154,9 @@ const Index = () => {
     const session = getSession();
     if (session.id) {
       if (session.cargo === 'SuperAdmin') {
-        navigate(getPostLoginRoute("/dashboard-plataforma"), { replace: true });
+        navigate(getPostLoginRoute("/dashboard"), { replace: true });
       } else if (session.cargo === 'Administrador') {
-        navigate(getPostLoginRoute("/dashboard-admin"), { replace: true });
+        navigate(getPostLoginRoute("/dashboard"), { replace: true });
       } else if (
         session.cargo === 'Rector' ||
         session.cargo === 'Coordinador(a)' ||
@@ -164,11 +164,11 @@ const Index = () => {
         session.cargo === 'Secretaria General' ||
         session.cargo === 'Orientador(a) Escolar'
       ) {
-        navigate(getPostLoginRoute("/panel"), { replace: true });
+        navigate(getPostLoginRoute("/dashboard"), { replace: true });
       } else if (session.cargo === 'Estudiante') {
-        navigate(getPostLoginRoute("/dashboard-estudiante"), { replace: true });
+        navigate(getPostLoginRoute("/dashboard"), { replace: true });
       } else if (session.cargo === 'Acudiente') {
-        navigate(getPostLoginRoute("/dashboard-acudiente"), { replace: true });
+        navigate(getPostLoginRoute("/dashboard"), { replace: true });
       } else {
         navigate(getPostLoginRoute("/dashboard"), { replace: true });
       }

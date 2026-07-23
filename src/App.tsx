@@ -5,12 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
-import DashboardRector from "./pages/DashboardRector";
-import DashboardEstudiante from "./pages/DashboardEstudiante";
-import DashboardAcudiente from "./pages/DashboardAcudiente";
-import DashboardAdmin from "./pages/DashboardAdmin";
-import DashboardPlataforma from "./pages/DashboardPlataforma";
+import DashboardHome from "./pages/DashboardHome";
 import SeleccionarGrado from "./pages/SeleccionarGrado";
 import SeleccionarSalon from "./pages/SeleccionarSalon";
 import ActividadesCalendario from "./pages/ActividadesCalendario";
@@ -128,14 +123,15 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/registro-acudiente" element={<RegistroAcudiente />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/dashboard-plataforma" element={<DashboardPlataforma />} />
-          <Route path="/panel" element={<DashboardRector />} />
-          <Route path="/dashboard-estudiante" element={<DashboardEstudiante />} />
-          <Route path="/dashboard-acudiente" element={<DashboardAcudiente />} />
-          {/* Redirect compat para bookmarks/links viejos. */}
-          <Route path="/dashboard-padre" element={<Navigate to="/dashboard-acudiente" replace />} />
-          <Route path="/dashboard-admin" element={<DashboardAdmin />} />
+          {/* Home ÚNICO: /dashboard despacha al dashboard segun el rol (DashboardHome). */}
+          <Route path="/dashboard" element={<DashboardHome />} />
+          {/* Rutas viejas → redirigen al home unico (compat con links/bookmarks). */}
+          <Route path="/dashboard-plataforma" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/panel" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard-estudiante" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard-acudiente" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard-padre" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard-admin" element={<Navigate to="/dashboard" replace />} />
           <Route path="/seleccionar-grado" element={<SeleccionarGrado />} />
           <Route path="/seleccionar-salon" element={<SeleccionarSalon />} />
           <Route path="/tabla-notas" element={<TablaNotasRouter />} />
