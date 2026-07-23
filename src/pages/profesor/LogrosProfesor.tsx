@@ -175,7 +175,7 @@ const LogrosProfesor = () => {
       if (editando) {
         await apiRequest(`/api/logros/${editando.id}`, { method: "PATCH", body: JSON.stringify({ redacciones }) });
       } else {
-        await apiRequest("/api/logros", { method: "POST", body: JSON.stringify({ asignatura, grado, redacciones }) });
+        await apiRequest("/api/logros", { method: "POST", body: JSON.stringify({ asignatura, grado, periodo, redacciones }) });
       }
       setDialogAbierto(false);
       await cargarBanco();
