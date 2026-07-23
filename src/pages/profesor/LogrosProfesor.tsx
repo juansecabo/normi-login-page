@@ -185,7 +185,7 @@ const LogrosProfesor = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <HeaderNormi backLink="/dashboard" />
-      <main className="flex-1 container mx-auto p-4 md:p-8 max-w-4xl">
+      <main className="flex-1 container mx-auto p-4 md:p-8 max-w-6xl">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <div className="flex items-center gap-2 text-sm flex-wrap">
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
@@ -248,17 +248,19 @@ const LogrosProfesor = () => {
 
                         <div className="flex-1 min-w-0">
                           <p className="text-sm text-foreground leading-snug">{textoPrincipal(l)}</p>
-                          <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                            <span className="text-xs text-muted-foreground mr-1">Salones:</span>
-                            {salonesDelGrado.map((s) => {
-                              const sel = (l.salones || []).includes(s);
-                              return (
-                                <button key={s} onClick={() => toggleSalon(l, s)} disabled={guardandoId === l.id}
-                                  className={`text-xs font-medium px-2.5 py-1 rounded-full border inline-flex items-center gap-1 ${sel ? "border-primary/40 bg-primary/10 text-primary" : "border-input text-muted-foreground hover:border-primary"}`}>
-                                  {sel && <Check className="w-3 h-3" />} {grado} {s}
-                                </button>
-                              );
-                            })}
+                          <div className="mt-2">
+                            <span className="text-sm font-bold text-foreground">Salones:</span>
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 mt-1.5">
+                              {salonesDelGrado.map((s) => {
+                                const sel = (l.salones || []).includes(s);
+                                return (
+                                  <button key={s} onClick={() => toggleSalon(l, s)} disabled={guardandoId === l.id}
+                                    className={`w-full text-xs font-medium px-2 py-1.5 rounded-full border inline-flex items-center justify-center gap-1 ${sel ? "border-primary/40 bg-primary/10 text-primary" : "border-input text-muted-foreground hover:border-primary"}`}>
+                                    {sel && <Check className="w-3 h-3 shrink-0" />} {grado} {s}
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
                         </div>
 
