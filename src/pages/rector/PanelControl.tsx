@@ -1629,9 +1629,9 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                 llegue hasta el borde de la card. */}
             {!embedded && (
             <div className="overflow-x-auto -mx-6 px-6 md:-mx-8 md:px-8 sm:mx-0 sm:px-0 mb-6">
-              <TabsList className="inline-flex sm:flex sm:w-full">
-                <TabsTrigger value="estudiantes" className="sm:flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Estudiantes</TabsTrigger>
-                <TabsTrigger value="perfiles" className="sm:flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Acudientes</TabsTrigger>
+              <TabsList className="flex w-full">
+                <TabsTrigger value="estudiantes" className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Estudiantes</TabsTrigger>
+                <TabsTrigger value="perfiles" className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Acudientes</TabsTrigger>
               </TabsList>
             </div>
             )}
