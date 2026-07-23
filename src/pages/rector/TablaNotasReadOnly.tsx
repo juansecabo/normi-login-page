@@ -85,7 +85,7 @@ const TablaNotasReadOnly = () => {
       const storedSalon = localStorage.getItem("salonSeleccionado");
 
       if (!storedAsignatura || !storedGrado || !storedSalon) {
-        navigate("/rector/seleccionar-grado");
+        navigate("/dashboard/seleccionar-grado");
         return;
       }
 
@@ -350,28 +350,28 @@ const TablaNotasReadOnly = () => {
             </button>
             <span className="text-muted-foreground">→</span>
             <button
-              onClick={() => navigate("/rector/seleccionar-grado")}
+              onClick={() => navigate("/dashboard/seleccionar-grado")}
               className="text-primary hover:underline"
             >
               Notas
             </button>
             <span className="text-muted-foreground">→</span>
             <button
-              onClick={() => navigate("/rector/seleccionar-salon")}
+              onClick={() => navigate("/dashboard/seleccionar-salon")}
               className="text-primary hover:underline"
             >
               {gradoSeleccionado}
             </button>
             <span className="text-muted-foreground">→</span>
             <button
-              onClick={() => navigate("/rector/modo-visualizacion")}
+              onClick={() => navigate("/dashboard/modo-visualizacion")}
               className="text-primary hover:underline"
             >
               {salonSeleccionado}
             </button>
             <span className="text-muted-foreground">→</span>
             <button
-              onClick={() => navigate("/rector/lista-asignaturas")}
+              onClick={() => navigate("/dashboard/lista-asignaturas")}
               className="text-primary hover:underline"
             >
               Por Asignatura

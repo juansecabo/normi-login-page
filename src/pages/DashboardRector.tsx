@@ -160,7 +160,7 @@ const DashboardRector = () => {
   }
   if (!esAdministrativo) {
     items.push({ id: 'notas', render: (
-      <button onClick={() => navigate("/rector/seleccionar-grado")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-emerald-100 transition-all duration-200 hover:shadow-md hover:bg-emerald-200">
+      <button onClick={() => navigate("/dashboard/seleccionar-grado")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-emerald-100 transition-all duration-200 hover:shadow-md hover:bg-emerald-200">
         <img src={iconNotas} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground">Notas</span>
       </button>
@@ -181,14 +181,14 @@ const DashboardRector = () => {
       </button>
     ) },
     { id: 'comunicados-recibidos', render: (
-      <button onClick={() => navigate("/rector/comunicados-recibidos")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 transition-all duration-200 hover:shadow-md hover:bg-teal-200">
+      <button onClick={() => navigate("/dashboard/comunicados-recibidos")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 transition-all duration-200 hover:shadow-md hover:bg-teal-200">
         <Badge count={badges.comunicados} />
         <img src={iconComunicadosRecibidos} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground text-center">Comunicados Recibidos</span>
       </button>
     ) },
     { id: 'documentos-recibidos', render: (
-      <button onClick={() => navigate("/rector/documentos-recibidos")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-amber-100 transition-all duration-200 hover:shadow-md hover:bg-amber-200">
+      <button onClick={() => navigate("/dashboard/documentos-recibidos")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-amber-100 transition-all duration-200 hover:shadow-md hover:bg-amber-200">
         <Badge count={badges.documentos} />
         <img src={iconDocumentos} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground text-center">Documentos Recibidos</span>
@@ -209,13 +209,13 @@ const DashboardRector = () => {
       </button>
     ) },
     { id: 'estadisticas', render: (
-      <button onClick={() => navigate("/rector/estadisticas")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-green-100 transition-all duration-200 hover:shadow-md hover:bg-green-200">
+      <button onClick={() => navigate("/dashboard/estadisticas")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-green-100 transition-all duration-200 hover:shadow-md hover:bg-green-200">
         <img src={iconEstadisticas} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground">Estadísticas</span>
       </button>
     ) },
     { id: 'boletines', render: (
-      <button onClick={() => navigate("/rector/boletines")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-emerald-100 transition-all duration-200 hover:shadow-md hover:bg-emerald-200">
+      <button onClick={() => navigate("/dashboard/boletines")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-emerald-100 transition-all duration-200 hover:shadow-md hover:bg-emerald-200">
         <span className="text-5xl leading-none">📄</span>
         <span className="font-semibold text-foreground text-center">Boletines</span>
       </button>
@@ -259,7 +259,7 @@ const DashboardRector = () => {
   }
   items.push(
     { id: 'panel-control', render: (
-      <button onClick={() => navigate("/rector/panel-control")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-purple-100 transition-all duration-200 hover:shadow-md hover:bg-purple-200">
+      <button onClick={() => navigate("/dashboard/panel-control")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-purple-100 transition-all duration-200 hover:shadow-md hover:bg-purple-200">
         <img src={iconPanelControl} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground text-center">Panel de Control</span>
       </button>
@@ -271,7 +271,7 @@ const DashboardRector = () => {
       </button>
     ) }] : []),
     { id: 'uso-normi', render: (
-      <button onClick={() => navigate("/rector/uso-normi")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-orange-100 transition-all duration-200 hover:shadow-md hover:bg-orange-200">
+      <button onClick={() => navigate("/dashboard/uso-normi")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-orange-100 transition-all duration-200 hover:shadow-md hover:bg-orange-200">
         <img src={iconUsoAgente} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground text-center">Uso de Normi</span>
       </button>

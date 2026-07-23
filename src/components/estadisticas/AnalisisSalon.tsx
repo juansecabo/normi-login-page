@@ -61,7 +61,7 @@ export const AnalisisSalon = ({ grado, salon, periodo, titulo }: AnalisisSalonPr
     params.set("periodo", String(periodo));
     params.set("grado", grado);
     params.set("salon", salon);
-    navigate(`/rector/estudiantes-riesgo?${params.toString()}`);
+    navigate(`/dashboard/estudiantes-riesgo?${params.toString()}`);
   };
 
   if (data.estudiantes_evaluados === 0) {

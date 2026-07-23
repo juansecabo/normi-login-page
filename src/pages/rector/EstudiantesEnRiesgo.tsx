@@ -43,7 +43,7 @@ const EstudiantesEnRiesgo = () => {
     if (gradoParam) params.set("grado", gradoParam);
     if (salonParam) params.set("salon", salonParam);
     if (asignaturaParam) params.set("asignatura", asignaturaParam);
-    return `/rector/estadisticas?${params.toString()}`;
+    return `/dashboard/estadisticas?${params.toString()}`;
   };
 
   useEffect(() => {

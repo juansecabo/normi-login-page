@@ -25,7 +25,7 @@ const SeleccionarSalonRector = () => {
 
     const storedGrado = localStorage.getItem("gradoSeleccionado");
     if (!storedGrado) {
-      navigate("/rector/seleccionar-grado");
+      navigate("/dashboard/seleccionar-grado");
       return;
     }
 
@@ -59,7 +59,7 @@ const SeleccionarSalonRector = () => {
 
   const handleSelectSalon = (salon: string) => {
     localStorage.setItem("salonSeleccionado", salon);
-    navigate("/rector/modo-visualizacion");
+    navigate("/dashboard/modo-visualizacion");
   };
 
   return (
@@ -79,7 +79,7 @@ const SeleccionarSalonRector = () => {
             </button>
             <span className="text-muted-foreground">→</span>
             <button 
-              onClick={() => navigate("/rector/seleccionar-grado")}
+              onClick={() => navigate("/dashboard/seleccionar-grado")}
               className="text-primary hover:underline"
             >
               Notas

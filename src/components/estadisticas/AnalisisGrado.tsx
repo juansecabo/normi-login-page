@@ -61,7 +61,7 @@ export const AnalisisGrado = ({ grado, periodo, titulo }: AnalisisGradoProps) =>
     params.set("nivel", "grado");
     params.set("periodo", String(periodo));
     params.set("grado", grado);
-    navigate(`/rector/estudiantes-riesgo?${params.toString()}`);
+    navigate(`/dashboard/estudiantes-riesgo?${params.toString()}`);
   };
 
   if (data.estudiantes_evaluados === 0) {

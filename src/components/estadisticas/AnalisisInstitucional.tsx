@@ -56,7 +56,7 @@ export const AnalisisInstitucional = ({ periodo, titulo }: AnalisisInstitucional
     const params = new URLSearchParams();
     params.set("nivel", "institucion");
     params.set("periodo", String(periodo));
-    navigate(`/rector/estudiantes-riesgo?${params.toString()}`);
+    navigate(`/dashboard/estudiantes-riesgo?${params.toString()}`);
   };
 
   if (data.estudiantes_evaluados === 0) {

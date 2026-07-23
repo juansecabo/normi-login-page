@@ -104,7 +104,7 @@ export const AnalisisAsignatura = ({ asignatura, periodo, grado, salon, titulo }
     params.set("asignatura", asignatura);
     if (gradoEfectivo) params.set("grado", gradoEfectivo);
     if (salonEfectivo) params.set("salon", salonEfectivo);
-    navigate(`/rector/estudiantes-riesgo?${params.toString()}`);
+    navigate(`/dashboard/estudiantes-riesgo?${params.toString()}`);
   };
 
   return (
