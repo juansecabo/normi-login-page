@@ -10,17 +10,14 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { BookOpenCheck, Plus, Pencil, Trash2, Loader2, Sparkles, Check, Users } from "lucide-react";
+import { BookOpenCheck, Plus, Pencil, Trash2, Loader2, Sparkles, Check } from "lucide-react";
 import { rankGrado } from "@/utils/grados";
 
 /**
- * Logros del periodo — modelo de BANCO + ASIGNACIÓN por salón (estilo SINAÍ, limpio).
- *  - Banco (izquierda): catálogo de logros de la asignatura+grado, COMPARTIDO por todos los
- *    docentes de esa materia y grado en el colegio.
- *  - Seleccionados (derecha): los logros que ESTE docente aplicó a su salón en el periodo.
- *    Cada profesor arma su propia lista; puede asignar un logro a varios salones a la vez.
- *  - Cada logro guarda una redacción por NIVEL de desempeño del colegio (Superior/Alto/… o los
- *    que el colegio configure). La IA redacta las de los niveles inferiores desde la principal.
+ * Logros del periodo — una sola columna. Cada logro tiene una casilla (chulo = agregado) y los
+ * salones del grado marcables en la misma fila. Marcar/desmarcar se guarda al instante (sin
+ * botón). El banco es compartido por asignatura+grado en el colegio; cada docente marca en qué
+ * salones aplica cada logro. Cada logro guarda una redacción por nivel de desempeño del colegio.
  */
 
 interface Nivel { key: string; label: string; min: number; max: number; }
@@ -42,12 +39,12 @@ const LogrosProfesor = () => {
 
   const [asignatura, setAsignatura] = useState("");
   const [grado, setGrado] = useState("");
-  const [salon, setSalon] = useState("");
   const [periodo, setPeriodo] = useState<number>(1);
 
   const [banco, setBanco] = useState<Logro[]>([]);
   const [niveles, setNiveles] = useState<Nivel[]>([]);
   const [cargandoBanco, setCargandoBanco] = useState(false);
+  const [guardandoId, setGuardandoId] = useState<string | null>(null);
 
   useEffect(() => {
     const session = getSession();
@@ -82,11 +79,6 @@ const LogrosProfesor = () => {
   const salonesDelGrado = useMemo(
     () => salonesPorGA[`${asignatura}|${grado}`] || [], [salonesPorGA, asignatura, grado]);
 
-  // El primer salón por defecto al cambiar de grado/asignatura.
-  useEffect(() => {
-    if (salonesDelGrado.length > 0 && !salonesDelGrado.includes(salon)) setSalon(salonesDelGrado[0]);
-  }, [salonesDelGrado]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const cargarBanco = async () => {
     if (!asignatura || !grado) return;
     setCargandoBanco(true);
@@ -103,47 +95,33 @@ const LogrosProfesor = () => {
 
   const nivelAlto = niveles[0];
   const textoPrincipal = (l: Logro) => (nivelAlto && l.redacciones?.[nivelAlto.key]) || Object.values(l.redacciones || {})[0] || "";
-  const estaEnSalon = (l: Logro) => (l.salones || []).includes(salon);
-  const seleccionados = useMemo(() => banco.filter(estaEnSalon), [banco, salon]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Asignar / quitar del salón actual (toca solo los salones que dicta el docente) ──
-  const [asignando, setAsignando] = useState<string | null>(null);
-  const toggleSalonActual = async (l: Logro) => {
-    if (!salon) return;
-    setAsignando(l.id);
-    const propios = (l.salones || []).filter((s) => salonesDelGrado.includes(s));
-    const activos = estaEnSalon(l) ? propios.filter((s) => s !== salon) : [...propios, salon];
+  // ── Guardado inmediato (sin botón). Optimista + persiste. Solo toca los salones del docente. ──
+  const aplicar = async (l: Logro, activos: string[]) => {
+    const fuera = (l.salones || []).filter((s) => !salonesDelGrado.includes(s)); // salones de otros docentes
+    const nuevos = [...activos, ...fuera];
+    setBanco((prev) => prev.map((x) => (x.id === l.id ? { ...x, salones: nuevos } : x)));
+    setGuardandoId(l.id);
     try {
       await apiRequest("/api/logros/asignar", {
         method: "POST",
         body: JSON.stringify({ logro_id: l.id, grado, periodo, activos, universo: salonesDelGrado }),
       });
-      await cargarBanco();
     } catch (e: any) {
-      toast({ title: "No se pudo asignar", description: e?.body?.detail || e?.message, variant: "destructive" });
-    } finally { setAsignando(null); }
-  };
-
-  // ── Diálogo asignar a VARIOS salones ──
-  const [multiLogro, setMultiLogro] = useState<Logro | null>(null);
-  const [multiSel, setMultiSel] = useState<Set<string>>(new Set());
-  const abrirMulti = (l: Logro) => {
-    setMultiLogro(l);
-    setMultiSel(new Set((l.salones || []).filter((s) => salonesDelGrado.includes(s))));
-  };
-  const guardarMulti = async () => {
-    if (!multiLogro) return;
-    try {
-      await apiRequest("/api/logros/asignar", {
-        method: "POST",
-        body: JSON.stringify({ logro_id: multiLogro.id, grado, periodo, activos: [...multiSel], universo: salonesDelGrado }),
-      });
-      setMultiLogro(null);
+      toast({ title: "No se pudo guardar", description: e?.body?.detail || e?.message, variant: "destructive" });
       await cargarBanco();
-    } catch (e: any) {
-      toast({ title: "No se pudo asignar", description: e?.body?.detail || e?.message, variant: "destructive" });
-    }
+    } finally { setGuardandoId(null); }
   };
+  const toggleSalon = (l: Logro, s: string) => {
+    const propios = (l.salones || []).filter((x) => salonesDelGrado.includes(x));
+    const activos = propios.includes(s) ? propios.filter((x) => x !== s) : [...propios, s];
+    aplicar(l, activos);
+  };
+  const toggleLogro = (l: Logro) => {
+    const propios = (l.salones || []).filter((x) => salonesDelGrado.includes(x));
+    aplicar(l, propios.length > 0 ? [] : [...salonesDelGrado]); // tiene alguno → quitar todos; si no → todos
+  };
+  const agregada = (l: Logro) => (l.salones || []).length > 0;
 
   // ── Crear / editar logro (redacciones por nivel) ──
   const [editando, setEditando] = useState<Logro | null>(null);
@@ -205,7 +183,7 @@ const LogrosProfesor = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <HeaderNormi backLink="/dashboard" />
-      <main className="flex-1 container mx-auto p-4 md:p-8 max-w-5xl">
+      <main className="flex-1 container mx-auto p-4 md:p-8 max-w-4xl">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <div className="flex items-center gap-2 text-sm flex-wrap">
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
@@ -215,13 +193,16 @@ const LogrosProfesor = () => {
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-6">
-          <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-2">
-            <BookOpenCheck className="h-5 w-5 text-primary" /> Logros del periodo
-          </h2>
+          <div className="flex items-start justify-between gap-2 mb-2 flex-wrap">
+            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+              <BookOpenCheck className="h-5 w-5 text-primary" /> Logros del periodo
+            </h2>
+            {combos.length > 0 && <Button onClick={abrirNuevo} className="gap-1"><Plus className="w-4 h-4" /> Nuevo logro</Button>}
+          </div>
           <p className="text-sm text-muted-foreground mb-5">
-            A la izquierda está el <b>banco</b> de logros del grado (compartido con los demás docentes de la asignatura).
-            Agrega al <b>salón</b> los que trabajaste — cada salón arma su propia lista. En el boletín, cada estudiante
-            recibe la redacción según su nivel de desempeño.
+            Marca la casilla de un logro para agregarlo, y elige en qué <b>salones</b> aplica. Se guarda solo.
+            El banco es compartido con los demás docentes de la asignatura; en el boletín cada estudiante recibe
+            la redacción según su nivel de desempeño.
           </p>
 
           {cargando ? (
@@ -230,7 +211,7 @@ const LogrosProfesor = () => {
             <p className="text-center text-muted-foreground py-8">No tienes carga académica asignada.</p>
           ) : (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <select value={asignatura} onChange={(e) => { setAsignatura(e.target.value); const gs = combos.filter((c) => c.asignatura === e.target.value); setGrado(gs[0]?.grado || ""); }}
                   className="col-span-2 sm:col-span-1 px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                   {asignaturasUnicas.map((a) => <option key={a} value={a}>{a}</option>)}
@@ -238,10 +219,6 @@ const LogrosProfesor = () => {
                 <select value={grado} onChange={(e) => setGrado(e.target.value)}
                   className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                   {gradosDeAsig.map((g) => <option key={g} value={g}>{g}</option>)}
-                </select>
-                <select value={salon} onChange={(e) => setSalon(e.target.value)}
-                  className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
-                  {salonesDelGrado.map((s) => <option key={s} value={s}>{grado} {s}</option>)}
                 </select>
                 <select value={periodo} onChange={(e) => setPeriodo(parseInt(e.target.value, 10))}
                   className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
@@ -251,64 +228,45 @@ const LogrosProfesor = () => {
 
               {cargandoBanco ? (
                 <div className="text-center py-6 text-muted-foreground"><Loader2 className="w-5 h-5 animate-spin inline" /></div>
+              ) : banco.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  Aún no hay logros de {asignatura} — {grado}. Crea el primero con “Nuevo logro”.
+                </p>
               ) : (
-                <div className="grid md:grid-cols-2 gap-4">
-                  {/* ── BANCO ── */}
-                  <div className="border border-border rounded-lg p-3">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-sm font-bold text-foreground">Banco — {asignatura} · {grado}</h3>
-                      <Button size="sm" onClick={abrirNuevo} className="gap-1 h-8"><Plus className="w-4 h-4" /> Nuevo</Button>
-                    </div>
-                    {banco.length === 0 ? (
-                      <p className="text-center text-muted-foreground text-sm py-6">Aún no hay logros en el banco de esta asignatura y grado.</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {banco.map((l) => {
-                          const en = estaEnSalon(l);
-                          return (
-                            <div key={l.id} className={`border rounded-lg p-2.5 ${en ? "border-primary/40 bg-primary/5" : "border-border bg-card"}`}>
-                              <p className="text-sm text-foreground leading-snug">{textoPrincipal(l)}</p>
-                              <div className="flex items-center gap-1 mt-2">
-                                <Button size="sm" variant={en ? "secondary" : "default"} disabled={asignando === l.id || !salon}
-                                  onClick={() => toggleSalonActual(l)} className="h-7 gap-1 text-xs">
-                                  {asignando === l.id ? <Loader2 className="w-3 h-3 animate-spin" /> : en ? <Check className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
-                                  {en ? `En ${grado} ${salon}` : `Agregar a ${salon}`}
-                                </Button>
-                                <button title="Asignar a varios salones" onClick={() => abrirMulti(l)} className="p-1.5 rounded hover:bg-muted"><Users className="w-4 h-4 text-muted-foreground" /></button>
-                                <div className="flex-1" />
-                                <button title="Editar" onClick={() => abrirEditar(l)} className="p-1.5 rounded hover:bg-muted"><Pencil className="w-4 h-4 text-muted-foreground" /></button>
-                                <button title="Eliminar del banco" onClick={() => setBorrando(l)} className="p-1.5 rounded hover:bg-muted"><Trash2 className="w-4 h-4 text-destructive" /></button>
-                              </div>
-                              {(l.salones || []).length > 0 && (
-                                <p className="text-[11px] text-muted-foreground mt-1">Asignado a: {l.salones.map((s) => `${grado} ${s}`).join(", ")}</p>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+                <div className="divide-y divide-border border border-border rounded-lg">
+                  {banco.map((l) => {
+                    const on = agregada(l);
+                    return (
+                      <div key={l.id} className={`p-3 flex items-start gap-3 ${on ? "bg-primary/5" : ""}`}>
+                        {/* Casilla del logro */}
+                        <button onClick={() => toggleLogro(l)} disabled={guardandoId === l.id} title={on ? "Quitar de todos los salones" : "Agregar a todos los salones"}
+                          className={`mt-0.5 w-6 h-6 shrink-0 rounded-md border-2 flex items-center justify-center ${on ? "bg-primary border-primary" : "border-muted-foreground/40 hover:border-primary"}`}>
+                          {guardandoId === l.id ? <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" /> : on ? <Check className="w-4 h-4 text-white" /> : null}
+                        </button>
 
-                  {/* ── SELECCIONADOS DEL SALÓN ── */}
-                  <div className="border border-border rounded-lg p-3 bg-muted/20">
-                    <h3 className="text-sm font-bold text-foreground mb-3">Seleccionados — {grado} {salon} · {ORDINAL[periodo]} periodo</h3>
-                    {seleccionados.length === 0 ? (
-                      <p className="text-center text-muted-foreground text-sm py-6">Aún no has agregado logros a este salón. Toca “Agregar” en el banco.</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {seleccionados.map((l) => (
-                          <div key={l.id} className="border border-border rounded-lg p-2.5 bg-card">
-                            <p className="text-sm text-foreground leading-snug">{textoPrincipal(l)}</p>
-                            <div className="flex justify-end mt-1">
-                              <Button size="sm" variant="ghost" disabled={asignando === l.id} onClick={() => toggleSalonActual(l)} className="h-7 gap-1 text-xs text-destructive">
-                                <Trash2 className="w-3 h-3" /> Quitar
-                              </Button>
-                            </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-foreground leading-snug">{textoPrincipal(l)}</p>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                            <span className="text-xs text-muted-foreground mr-1">Salones:</span>
+                            {salonesDelGrado.map((s) => {
+                              const sel = (l.salones || []).includes(s);
+                              return (
+                                <button key={s} onClick={() => toggleSalon(l, s)} disabled={guardandoId === l.id}
+                                  className={`text-xs font-medium px-2.5 py-1 rounded-full border inline-flex items-center gap-1 ${sel ? "border-primary bg-primary text-white" : "border-input text-muted-foreground hover:border-primary"}`}>
+                                  {sel && <Check className="w-3 h-3" />} {grado} {s}
+                                </button>
+                              );
+                            })}
                           </div>
-                        ))}
+                        </div>
+
+                        <div className="flex gap-1 shrink-0">
+                          <button title="Editar" onClick={() => abrirEditar(l)} className="p-1.5 rounded hover:bg-muted"><Pencil className="w-4 h-4 text-muted-foreground" /></button>
+                          <button title="Eliminar del banco" onClick={() => setBorrando(l)} className="p-1.5 rounded hover:bg-muted"><Trash2 className="w-4 h-4 text-destructive" /></button>
+                        </div>
                       </div>
-                    )}
-                  </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -348,32 +306,6 @@ const LogrosProfesor = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogAbierto(false)} disabled={guardando}>Cancelar</Button>
             <Button onClick={guardar} disabled={guardando} className="gap-2">{guardando && <Loader2 className="w-4 h-4 animate-spin" />} Guardar en el banco</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Dialog asignar a varios salones ── */}
-      <Dialog open={!!multiLogro} onOpenChange={(o) => !o && setMultiLogro(null)}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Asignar a salones — {ORDINAL[periodo]} periodo</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">Marca los salones de {grado} donde aplica este logro.</p>
-          <div className="space-y-1.5 py-1">
-            {salonesDelGrado.map((s) => {
-              const on = multiSel.has(s);
-              return (
-                <button key={s} onClick={() => setMultiSel((p) => { const n = new Set(p); on ? n.delete(s) : n.add(s); return n; })}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-md border text-sm ${on ? "border-primary bg-primary/10 text-primary font-medium" : "border-input"}`}>
-                  <span className={`w-4 h-4 rounded border flex items-center justify-center ${on ? "bg-primary border-primary" : "border-muted-foreground"}`}>
-                    {on && <Check className="w-3 h-3 text-white" />}
-                  </span>
-                  {grado} {s}
-                </button>
-              );
-            })}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setMultiLogro(null)}>Cancelar</Button>
-            <Button onClick={guardarMulti}>Guardar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
