@@ -1697,7 +1697,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
-                    <TableHeader>
+                    <TableHeader className="sticky top-0 z-20 bg-card [&_th]:bg-card">
                       <TableRow>
                         <TableHead>Foto</TableHead>
                         <TableHead>ID</TableHead>
@@ -1806,7 +1806,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
-                    <TableHeader>
+                    <TableHeader className="sticky top-0 z-20 bg-card [&_th]:bg-card">
                       <TableRow>
                         <TableHead>Foto</TableHead>
                         <TableHead>ID</TableHead>

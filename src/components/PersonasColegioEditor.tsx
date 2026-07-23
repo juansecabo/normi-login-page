@@ -586,7 +586,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
         // roles del panel. El detalle (género, carga académica) vive en Editar.
         <div className="overflow-x-auto border border-border rounded-lg bg-card">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 z-20 bg-card [&_th]:bg-card">
               <TableRow>
                 <TableHead className="w-10"></TableHead>
                 <TableHead>ID</TableHead>
