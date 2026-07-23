@@ -1726,7 +1726,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                             <TableCell>{e.nombres}</TableCell>
                             <TableCell>{e.grado}</TableCell>
                             <TableCell>{e.salon}</TableCell>
-                            <TableCell className="font-mono text-xs">{formatTelefono(e.numero_de_telefono) || "—"}</TableCell>
+                            <TableCell className="font-mono text-xs whitespace-nowrap">{formatTelefono(e.numero_de_telefono) || "—"}</TableCell>
                             <TableCell className="text-muted-foreground">{e.contrasena || "—"}</TableCell>
                             <TableCell className="text-right space-x-1">
                               <Button variant="ghost" size="sm" onClick={() => openEstDialog(e)}>
@@ -1840,7 +1840,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                                 p.acudido4_grado && `${p.acudido4_grado} ${p.acudido4_salon || ""}`.trim(),
                               ].filter(Boolean).map((g, i) => <div key={i}>{g}</div>) || <span>—</span>}
                             </TableCell>
-                            <TableCell className="font-mono text-xs">{formatTelefono(p.numero_de_telefono) || "—"}</TableCell>
+                            <TableCell className="font-mono text-xs whitespace-nowrap">{formatTelefono(p.numero_de_telefono) || "—"}</TableCell>
                             <TableCell className="text-muted-foreground">{p.contrasena || "—"}</TableCell>
                             <TableCell className="text-right space-x-1">
                               <Button variant="ghost" size="sm" onClick={() => openPerfDialog(p)}>
