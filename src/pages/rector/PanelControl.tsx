@@ -1695,7 +1695,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                   <Loader2 className="w-6 h-6 animate-spin" />
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-auto max-h-[70vh]">
                   <Table>
                     <TableHeader className="sticky top-0 z-20 bg-card [&_th]:bg-card">
                       <TableRow>
@@ -1804,7 +1804,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                   <Loader2 className="w-6 h-6 animate-spin" />
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-auto max-h-[70vh]">
                   <Table>
                     <TableHeader className="sticky top-0 z-20 bg-card [&_th]:bg-card">
                       <TableRow>

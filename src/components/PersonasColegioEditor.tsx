@@ -584,7 +584,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
         // Tabla al estilo de la pestaña Internos del Panel de Control (pedido
         // de Juan 2026-07-15). Teléfono/contraseña solo llegan del server para
         // roles del panel. El detalle (género, carga académica) vive en Editar.
-        <div className="overflow-x-auto border border-border rounded-lg bg-card">
+        <div className="overflow-auto max-h-[70vh] border border-border rounded-lg bg-card">
           <Table>
             <TableHeader className="sticky top-0 z-20 bg-card [&_th]:bg-card">
               <TableRow>
