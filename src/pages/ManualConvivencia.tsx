@@ -25,9 +25,9 @@ const ManualConvivencia = () => {
   // Determine back link based on role
   const session = getSession();
   const backLink = session.cargo === "Estudiante"
-    ? "/dashboard-estudiante"
+    ? "/dashboard"
     : (session.cargo === "Acudiente")
-    ? "/dashboard-acudiente"
+    ? "/dashboard"
     : session.cargo === "Profesor(a)"
     ? "/dashboard"
     : "/";

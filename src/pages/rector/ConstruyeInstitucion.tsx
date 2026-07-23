@@ -134,7 +134,7 @@ const ConstruyeInstitucion = () => {
   const [guardandoDatos, setGuardandoDatos] = useState(false);
   const [subiendoEscudo, setSubiendoEscudo] = useState(false);
 
-  const backLink = cargo === "Administrador" ? "/dashboard-admin" : cargo === "Profesor(a)" ? "/dashboard" : "/panel";
+  const backLink = cargo === "Administrador" ? "/dashboard" : cargo === "Profesor(a)" ? "/dashboard" : "/dashboard";
 
   useEffect(() => {
     const s = getSession();

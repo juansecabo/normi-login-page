@@ -69,7 +69,7 @@ const DashboardRector = () => {
 
     // Redirigir admin a su propio dashboard
     if (isAdmin()) {
-      navigate("/dashboard-admin", { replace: true });
+      navigate("/dashboard", { replace: true });
       return;
     }
 
@@ -304,7 +304,7 @@ const DashboardRector = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormi backLink="/panel" />
+      <HeaderNormi backLink="/dashboard" />
 
       {/* Main Content */}
       <main className="flex-1 container mx-auto p-8">

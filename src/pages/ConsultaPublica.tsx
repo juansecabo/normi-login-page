@@ -609,7 +609,7 @@ export default function ConsultaPublica() {
   if (error || !consulta)
     return (
       <div className="min-h-screen bg-background">
-        <HeaderNormi backLink="/dashboard-acudiente" />
+        <HeaderNormi backLink="/dashboard" />
         <div className="max-w-md mx-auto p-6 text-center">
           <Card>
             <CardContent className="p-6">
@@ -626,11 +626,7 @@ export default function ConsultaPublica() {
 
   const readonly = enviado && !modoEdicion;
   const sesion = getSession();
-  const backLink = esInterno
-    ? sesion.cargo === "Administrador"
-      ? "/dashboard-admin"
-      : "/panel"
-    : "/dashboard-acudiente";
+  const backLink = "/dashboard";
 
   return (
     <div className="min-h-screen bg-background">

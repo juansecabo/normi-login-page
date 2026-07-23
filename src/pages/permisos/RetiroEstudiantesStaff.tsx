@@ -81,9 +81,9 @@ const RetiroEstudiantesStaff = () => {
   const [descargando, setDescargando] = useState(false);
 
   const backLink = isAdmin()
-    ? "/dashboard-admin"
+    ? "/dashboard"
     : puedeAccederDashboard()
-    ? "/panel"
+    ? "/dashboard"
     : "/dashboard";
 
   useEffect(() => {

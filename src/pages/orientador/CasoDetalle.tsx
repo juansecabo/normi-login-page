@@ -352,7 +352,7 @@ const CasoDetalle = () => {
   const [savingFirmaO, setSavingFirmaO] = useState(false);
   const [savingFirmaE, setSavingFirmaE] = useState(false);
 
-  const backLink = isAdmin() ? "/dashboard-admin" : "/panel";
+  const backLink = isAdmin() ? "/dashboard" : "/dashboard";
 
   useEffect(() => {
     const session = getSession();

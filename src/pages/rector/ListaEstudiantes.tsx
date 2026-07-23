@@ -79,7 +79,7 @@ const ListaEstudiantes = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormi backLink="/panel" />
+      <HeaderNormi backLink="/dashboard" />
 
       {/* Main Content */}
       <main className="flex-1 container mx-auto p-8">
@@ -87,7 +87,7 @@ const ListaEstudiantes = () => {
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <button 
-              onClick={() => navigate("/panel")}
+              onClick={() => navigate("/dashboard")}
               className="text-primary hover:underline"
             >
               Inicio

@@ -225,7 +225,7 @@ const DashboardEstudiante = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormi backLink="/dashboard-estudiante" />
+      <HeaderNormi backLink="/dashboard" />
 
       <main className="flex-1 container mx-auto p-8">
         <EncabezadoColegio />

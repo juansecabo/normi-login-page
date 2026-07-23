@@ -33,10 +33,10 @@ const Perfil = () => {
   const setVista = (v: Vista) => setSearchParams(v === "menu" ? {} : { seccion: v });
   const esEstudiante = isEstudiante();
 
-  const backLink = isAdmin() ? "/dashboard-admin"
-    : isRectorOrCoordinador() ? "/panel"
-    : isEstudiante() ? "/dashboard-estudiante"
-    : isPadreDeFamilia() ? "/dashboard-acudiente"
+  const backLink = isAdmin() ? "/dashboard"
+    : isRectorOrCoordinador() ? "/dashboard"
+    : isEstudiante() ? "/dashboard"
+    : isPadreDeFamilia() ? "/dashboard"
     : "/dashboard";
 
   // ── Cambiar datos ──

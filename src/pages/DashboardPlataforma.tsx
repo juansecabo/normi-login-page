@@ -73,7 +73,7 @@ const DashboardPlataforma = () => {
         sa.avatar_url || null,
         c.id, c.nombre, c.logo_url, c.slug,
       );
-      navigate("/dashboard-admin");
+      navigate("/dashboard");
     } catch (err: any) {
       toast({
         title: "No se pudo entrar al colegio",
@@ -167,7 +167,7 @@ const DashboardPlataforma = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormi backLink="/dashboard-plataforma" />
+      <HeaderNormi backLink="/dashboard" />
 
       <main className="flex-1 container mx-auto p-6 md:p-8">
         <div className="max-w-4xl mx-auto">

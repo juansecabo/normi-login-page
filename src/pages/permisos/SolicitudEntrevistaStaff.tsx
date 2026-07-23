@@ -104,7 +104,7 @@ const SolicitudEntrevistaStaff = () => {
     });
   }, [historial, fNombre, fGrado, fSalon]);
 
-  const backLink = isAdmin() ? "/dashboard-admin" : puedeAccederDashboard() ? "/panel" : "/dashboard";
+  const backLink = isAdmin() ? "/dashboard" : puedeAccederDashboard() ? "/dashboard" : "/dashboard";
   const session = getSession();
 
   // Contador para el numerito del tab "Solicitudes creadas"

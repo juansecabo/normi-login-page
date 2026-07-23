@@ -89,12 +89,12 @@ const DocumentosRecibidos = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormi backLink="/panel" />
+      <HeaderNormi backLink="/dashboard" />
 
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <div className="flex items-center gap-2 text-sm">
-            <button onClick={() => navigate("/panel")} className="text-primary hover:underline">
+            <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">
               Inicio
             </button>
             <span className="text-muted-foreground">→</span>

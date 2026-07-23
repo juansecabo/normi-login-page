@@ -180,7 +180,7 @@ const UsoNormi = () => {
     }
   };
 
-  const backLink = isAdmin() ? "/dashboard-admin" : "/panel";
+  const backLink = isAdmin() ? "/dashboard" : "/dashboard";
   const maxProf = Math.max(...profesores.map(p => p.total), 1);
   const maxSalon = Math.max(...salones.map(s => s.total), 1);
 

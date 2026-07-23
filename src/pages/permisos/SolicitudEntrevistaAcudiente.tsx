@@ -126,7 +126,7 @@ const SolicitudEntrevistaAcudiente = () => {
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <div className="flex items-center gap-2 text-sm flex-wrap">
-            <button onClick={() => navigate("/dashboard-acudiente")} className="text-primary hover:underline">Inicio</button>
+            <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             <span className="text-foreground font-medium">Solicitudes de Entrevista</span>
           </div>

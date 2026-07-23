@@ -58,10 +58,10 @@ const Dashboard = () => {
 
     // Redirigir al dashboard correcto si no es profesor
     if (!isProfesor()) {
-      if (isAdmin()) navigate("/dashboard-admin", { replace: true });
-      else if (isRectorOrCoordinador()) navigate("/panel", { replace: true });
-      else if (isEstudiante()) navigate("/dashboard-estudiante", { replace: true });
-      else if (isPadreDeFamilia()) navigate("/dashboard-acudiente", { replace: true });
+      if (isAdmin()) navigate("/dashboard", { replace: true });
+      else if (isRectorOrCoordinador()) navigate("/dashboard", { replace: true });
+      else if (isEstudiante()) navigate("/dashboard", { replace: true });
+      else if (isPadreDeFamilia()) navigate("/dashboard", { replace: true });
       else navigate("/", { replace: true });
       return;
     }

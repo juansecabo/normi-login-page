@@ -63,7 +63,7 @@ const RemitirOrientacion = () => {
   const [firmaData, setFirmaData] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
 
-  const backLink = isProfesor() ? "/dashboard" : "/panel";
+  const backLink = isProfesor() ? "/dashboard" : "/dashboard";
 
   useEffect(() => {
     const session = getSession();

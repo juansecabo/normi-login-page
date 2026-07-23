@@ -19,21 +19,11 @@ interface HeaderNormiProps {
   backLink?: string;
 }
 
-export const computeBackLinkFromSession = (): string => {
-  const { cargo } = getSession();
-  if (cargo === "SuperAdmin") return "/dashboard-plataforma";
-  if (cargo === "Administrador") return "/dashboard-admin";
-  if (
-    cargo === "Rector" ||
-    cargo === "Coordinador(a)" ||
-    cargo === "Administrativo(a)"
-  ) {
-    return "/panel";
-  }
-  if (cargo === "Acudiente") return "/dashboard-acudiente";
-  if (cargo === "Estudiante") return "/dashboard-estudiante";
-  return "/dashboard";
-};
+// Home ÚNICO para todos los roles: /dashboard despacha al dashboard correcto
+// según el cargo (ver DashboardHome). Ya no hace falta resolver por rol; apuntar
+// a la ruta vieja (/panel, /dashboard-admin, etc.) provocaba un rebote (redirect)
+// que rompía la carga de la foto de perfil.
+export const computeBackLinkFromSession = (): string => "/dashboard";
 
 const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
   const navigate = useNavigate();
@@ -56,7 +46,7 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
 
   const handleVolverPlataforma = () => {
     if (restaurarSesionSuperAdmin()) {
-      navigate("/dashboard-plataforma", { replace: true });
+      navigate("/dashboard", { replace: true });
     } else {
       // Si por alguna razón el backup se perdió (cerraste pestaña, etc),
       // cerramos sesión para no quedar atrapados.

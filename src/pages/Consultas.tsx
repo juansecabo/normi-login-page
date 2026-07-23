@@ -688,7 +688,7 @@ export default function Consultas() {
     return Array.from(s).sort();
   }, [estudiantesDelGrado]);
 
-  const backLink = isAdmin() ? "/dashboard-admin" : puedeAccederDashboard() ? "/panel" : "/dashboard";
+  const backLink = "/dashboard";
 
   return (
     <div className="min-h-screen bg-background">

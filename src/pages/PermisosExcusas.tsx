@@ -57,11 +57,11 @@ const PermisosExcusas = () => {
   }, [navigate, esStaff]);
 
   const backLink = isAdmin()
-    ? "/dashboard-admin"
+    ? "/dashboard"
     : puedeAccederDashboard()
-    ? "/panel"
+    ? "/dashboard"
     : isPadreDeFamilia()
-    ? "/dashboard-acudiente"
+    ? "/dashboard"
     : "/dashboard";
 
   return (

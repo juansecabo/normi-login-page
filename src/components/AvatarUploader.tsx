@@ -116,8 +116,16 @@ const AvatarUploader = ({ width = 110, height = 140, fill = false, target }: Ava
 
   // Mientras la <img> de la foto carga, mostramos una ruedita en vez de las
   // iniciales (evita el "flash" de iniciales en quienes sí tienen foto).
+  const imgRef = useRef<HTMLImageElement | null>(null);
   const [imgLoaded, setImgLoaded] = useState(false);
-  useEffect(() => { setImgLoaded(false); }, [avatarUrl]);
+  useEffect(() => {
+    // Si la imagen ya está en caché del navegador (navegación SPA), el evento
+    // onLoad puede no dispararse nunca y el spinner giraría para siempre. Por eso
+    // chequeamos `complete` al montar/cambiar la URL y la marcamos cargada de una.
+    const el = imgRef.current;
+    if (el && el.complete && el.naturalWidth > 0) setImgLoaded(true);
+    else setImgLoaded(false);
+  }, [avatarUrl]);
 
   const [stage, setStage] = useState<Stage>("closed");
   const [pickedSrc, setPickedSrc] = useState<string | null>(null);

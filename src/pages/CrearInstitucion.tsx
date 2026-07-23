@@ -80,7 +80,7 @@ const CrearInstitucion = () => {
       setEstructura(estructura);
     } catch (err: any) {
       toast({ title: "No se pudo cargar", description: err?.message || "Intenta de nuevo.", variant: "destructive" });
-      navigate("/dashboard-plataforma", { replace: true });
+      navigate("/dashboard", { replace: true });
     } finally {
       setLoading(false);
     }
@@ -98,7 +98,7 @@ const CrearInstitucion = () => {
     try {
       await apiClient.plataforma.publicarColegio(id);
       toast({ title: "¡Institución creada!", description: `${colegio?.nombre} ya está activa.` });
-      navigate("/dashboard-plataforma", { replace: true });
+      navigate("/dashboard", { replace: true });
     } catch (err: any) {
       toast({ title: "No se pudo publicar", description: err?.message || "Revisa los datos.", variant: "destructive" });
       setPublicando(false);
@@ -108,7 +108,7 @@ const CrearInstitucion = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <HeaderNormi backLink="/dashboard-plataforma" />
+        <HeaderNormi backLink="/dashboard" />
         <div className="flex-1 flex items-center justify-center text-muted-foreground">
           <Loader2 className="w-6 h-6 animate-spin mr-2" /> Cargando…
         </div>
@@ -118,7 +118,7 @@ const CrearInstitucion = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormi backLink="/dashboard-plataforma" />
+      <HeaderNormi backLink="/dashboard" />
       <main className="flex-1 container mx-auto p-6 md:p-8">
         <div className="max-w-3xl mx-auto">
           {/* Botón de retroceso ÚNICO arriba, jerárquico: página de un rol →
@@ -127,7 +127,7 @@ const CrearInstitucion = () => {
             variant="outline"
             size="sm"
             onClick={
-              vista === "menu" ? () => navigate("/dashboard-plataforma")
+              vista === "menu" ? () => navigate("/dashboard")
               : vista === "admins" && rolPersonas ? () => setRolPersonas(null)
               : () => { setVista("menu"); cargar(); }
             }
