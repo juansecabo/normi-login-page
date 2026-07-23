@@ -250,12 +250,12 @@ const LogrosProfesor = () => {
                           <p className="text-sm text-foreground leading-snug">{textoPrincipal(l)}</p>
                           <div className="mt-2">
                             <span className="text-sm font-bold text-foreground">Salones:</span>
-                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 mt-1.5">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2 mt-1.5">
                               {salonesDelGrado.map((s) => {
                                 const sel = (l.salones || []).includes(s);
                                 return (
                                   <button key={s} onClick={() => toggleSalon(l, s)} disabled={guardandoId === l.id}
-                                    className={`w-full text-xs font-medium px-2 py-1.5 rounded-full border inline-flex items-center justify-center gap-1 ${sel ? "border-primary/40 bg-primary/10 text-primary" : "border-input text-muted-foreground hover:border-primary"}`}>
+                                    className={`w-full text-xs font-medium px-2 py-1.5 rounded-lg border inline-flex items-center justify-center gap-1 whitespace-nowrap ${sel ? "border-primary/40 bg-primary/10 text-primary" : "border-input text-muted-foreground hover:border-primary"}`}>
                                     {sel && <Check className="w-3 h-3 shrink-0" />} {grado} {s}
                                   </button>
                                 );
