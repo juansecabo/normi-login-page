@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { getSession, isAdmin, puedeAccederDashboard } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
@@ -77,10 +77,14 @@ const Boletines = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const [searchParams, setSearchParams] = useSearchParams();
   const [aulas, setAulas] = useState<Array<{ grado: string; salon: string }>>([]);
-  const [grado, setGrado] = useState("");
-  const [salon, setSalon] = useState("");
-  const [periodo, setPeriodo] = useState(1);
+  const [grado, setGrado] = useState(() => searchParams.get("g") || "");
+  const [salon, setSalon] = useState(() => searchParams.get("s") || "");
+  const [periodo, setPeriodo] = useState(() => {
+    const p = parseInt(searchParams.get("p") || "", 10);
+    return p >= 1 && p <= 4 ? p : 1;
+  });
   const [cargando, setCargando] = useState(false);
   const [datos, setDatos] = useState<DatosBoletin | null>(null);
   const [generando, setGenerando] = useState(false);
@@ -94,9 +98,22 @@ const Boletines = () => {
       const lista = [...set.values()].sort((a, b) =>
         (GRADO_ORDEN.indexOf(a.grado) - GRADO_ORDEN.indexOf(b.grado)) || a.salon.localeCompare(b.salon));
       setAulas(lista);
-      if (lista.length > 0) { setGrado(lista[0].grado); setSalon(lista[0].salon); }
+      if (lista.length > 0) {
+        // Si la URL trae un aula válida (?g=&s=), respétala; si no, primer aula.
+        const match = lista.find((a) => a.grado === searchParams.get("g") && a.salon === searchParams.get("s"));
+        if (match) { setGrado(match.grado); setSalon(match.salon); }
+        else { setGrado(lista[0].grado); setSalon(lista[0].salon); }
+      }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
+
+  // Refleja la selección en la URL (?g=&s=&p=) para que al refrescar o compartir
+  // el link se mantenga el aula y el periodo elegidos.
+  useEffect(() => {
+    if (grado && salon) setSearchParams({ g: grado, s: salon, p: String(periodo) }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [grado, salon, periodo]);
 
   const gradosUnicos = useMemo(() => [...new Set(aulas.map((a) => a.grado))], [aulas]);
   const salonesDeGrado = useMemo(() => aulas.filter((a) => a.grado === grado).map((a) => a.salon), [aulas, grado]);
