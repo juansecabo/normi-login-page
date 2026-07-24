@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { getSession, isEstudiante, isPadreDeFamilia } from "@/hooks/useSession";
+import { getSession } from "@/hooks/useSession";
 import { apiClient, type ApiConsolidadoGrupo } from "@/lib/apiClient";
 import { useColegioConfig } from "@/hooks/useColegioConfig";
 import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNormi";
@@ -22,9 +22,9 @@ const ConsolidadoGrupo = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { config } = useColegioConfig();
-  // `ocultar_definitivas` (ej. Pestalozziano) SOLO aplica a familias (estudiante/
-  // acudiente). El director de grupo es personal interno y sí ve su consolidado.
-  const ocultarDef = !!(config as any).ocultar_definitivas && (isEstudiante() || isPadreDeFamilia());
+  // Colegios con `ocultar_definitivas` (ej. Pestalozziano): el consolidado es
+  // 100% definitivas, que aquí no se muestran (no coinciden con la plataforma oficial).
+  const ocultarDef = !!(config as any).ocultar_definitivas;
   const [dirGrupo, setDirGrupo] = useState<string | null>(null);
   const [grado, setGrado] = useState<string | null>(null);
   const [salon, setSalon] = useState<string | null>(null);
