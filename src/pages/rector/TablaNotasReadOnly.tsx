@@ -3,7 +3,7 @@ import { anoEscolarActual } from "@/utils/anoEscolar";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { getSession, isRectorOrCoordinador } from "@/hooks/useSession";
+import { getSession, isRectorOrCoordinador, isEstudiante, isPadreDeFamilia } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import ComentarioModalReadOnly from "@/components/notas/ComentarioModalReadOnly";
 import { MessageSquare } from "lucide-react";
@@ -51,9 +51,10 @@ const TablaNotasReadOnly = () => {
   const [gruposAula, setGruposAula] = useState<Array<{ id: string; periodo: number; porcentaje: number; parent_id: string | null }>>([]);
   const [notas, setNotas] = useState<NotasEstudiantes>({});
   const [comentarios, setComentarios] = useState<ComentariosEstudiantes>({});
-  // Colegios con `ocultar_definitivas` (ej. Pestalozziano): no se muestra la columna Definitiva.
+  // `ocultar_definitivas` (ej. Pestalozziano) SOLO aplica a familias (estudiante/
+  // acudiente). Esta vista es del rector/coordinador (personal): sí ve la Definitiva.
   const { config } = useColegioConfig();
-  const ocultarDef = !!(config as any).ocultar_definitivas;
+  const ocultarDef = !!(config as any).ocultar_definitivas && (isEstudiante() || isPadreDeFamilia());
   const [periodoActivo, setPeriodoActivo] = useState<number>(getPeriodoActual());
   const [nombreProfesor, setNombreProfesor] = useState<string>("");
 

@@ -8,6 +8,7 @@ import SistemaEvaluacion from "@/components/notas/SistemaEvaluacion";
 import { MessageSquareText, ChevronDown } from "lucide-react";
 import { promedioGeneral, promedioDeGrupo, type NotaCalc, type GrupoCalc } from "@/lib/gradeCalculator";
 import { useColegioConfig } from "@/hooks/useColegioConfig";
+import { isEstudiante, isPadreDeFamilia } from "@/hooks/useSession";
 
 interface ConsolidadoNotasProps {
   idEstudiante: string;
@@ -82,7 +83,9 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
   // Colegios con `ocultar_definitivas` (ej. Pestalozziano): NO se muestra la
   // definitiva del periodo — su cálculo no coincide con la plataforma oficial.
   const { config } = useColegioConfig();
-  const ocultarDef = !!(config as any).ocultar_definitivas;
+  // Solo se oculta a las FAMILIAS (estudiante/acudiente). El personal (rector,
+  // coordinador, director de grupo) sí ve el consolidado de definitivas.
+  const ocultarDef = !!(config as any).ocultar_definitivas && (isEstudiante() || isPadreDeFamilia());
   const [asignaturas, setAsignaturas] = useState<string[]>([]);
   const [actividadesPorAsignatura, setActividadesPorAsignatura] = useState<ActividadesPorAsignatura>({});
   const [notas, setNotas] = useState<NotasEstudiante>({});
