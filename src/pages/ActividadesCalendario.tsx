@@ -121,7 +121,7 @@ const ActividadesCalendario = () => {
   const [gradoSeleccionado, setGradoSeleccionado] = useState(() => localStorage.getItem("gradoSeleccionado") || "");
   const [salonSeleccionado, setSalonSeleccionado] = useState(() => localStorage.getItem("salonSeleccionado") || "");
   const [profesorCodigo, setProfesorCodigo] = useState("");
-  const [profesorIdReal, setProfesorIdReal] = useState(""); // numero_de_telefono del profesor
+  const [profesorIdReal, setProfesorIdReal] = useState(""); // cédula del profesor (id_profesor)
   const [profesorNombres, setProfesorNombres] = useState("");
   const [profesorApellidos, setProfesorApellidos] = useState("");
   const [actividades, setActividades] = useState<ActividadCalendario[]>([]);
@@ -156,10 +156,11 @@ const ActividadesCalendario = () => {
       setProfesorNombres(session.nombres);
       setProfesorApellidos(session.apellidos);
 
-      // Buscar el numero_de_telefono del profesor desde Usuarios (Fase 10.E.15).
+      // id_profesor de Calendario Actividades = la CÉDULA del profesor (Usuarios.id).
+      // Consultamos solo para validar que el usuario existe.
       const { data: profesorData, error: profesorError } = await supabase
         .from('Usuarios')
-        .select('numero_de_telefono')
+        .select('id')
         .eq('id', String(session.id))
         .single();
 
@@ -174,7 +175,7 @@ const ActividadesCalendario = () => {
         return;
       }
 
-      const idProfesor = profesorData.numero_de_telefono;
+      const idProfesor = String(profesorData.id);
       setProfesorIdReal(idProfesor);
 
       const storedAsignatura = localStorage.getItem("asignaturaSeleccionada");

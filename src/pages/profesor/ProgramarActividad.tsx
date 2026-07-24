@@ -225,10 +225,11 @@ const ProgramarActividad = () => {
       setProfesorCargo(session.cargo || "Profesor(a)");
 
       try {
-        // Get numero_de_telefono for Calendario Actividades (id_profesor) (Fase 10.E.15: vive en Usuarios)
+        // id_profesor de Calendario Actividades = la CÉDULA del profesor (Usuarios.id),
+        // igual que Notas/Grupos/Logros. Consultamos solo para validar que existe.
         const { data: profesor, error: profesorError } = await supabase
           .from('Usuarios')
-          .select('numero_de_telefono')
+          .select('id')
           .eq('id', String(session.id))
           .single();
 
@@ -238,7 +239,7 @@ const ProgramarActividad = () => {
           return;
         }
 
-        setProfesorIdReal(profesor.numero_de_telefono);
+        setProfesorIdReal(String(profesor.id));
 
         // Modo general (no-profesor): sin asignación; la asignatura es fija "General".
         if (modoGeneral) {
