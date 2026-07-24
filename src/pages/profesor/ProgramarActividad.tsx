@@ -654,10 +654,11 @@ const ProgramarActividad = () => {
         toast({ title: "Error", description: "No se pudo programar la actividad en ningún salón.", variant: "destructive" });
       } else if (fallidos.length === 0) {
         toast({
+          variant: "success" as any,
           title: "Actividad programada",
           description: exitosos.length === 1
-            ? "La actividad ha sido programada y está siendo notificada a estudiantes y acudientes."
-            : `La actividad ha sido programada en ${exitosos.length} salones (${exitosos.join(', ')}) y está siendo notificada a estudiantes y acudientes.`,
+            ? "La actividad quedó programada y se está notificando a estudiantes y acudientes."
+            : `La actividad quedó programada en ${exitosos.length} salones (${exitosos.join(', ')}) y se está notificando a estudiantes y acudientes.`,
         });
       } else {
         toast({
