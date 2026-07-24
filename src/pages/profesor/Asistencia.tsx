@@ -6,7 +6,7 @@ import { apiClient, type AsistenciaRosterItem, type AsistenciaEstado } from "@/l
 import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNormi";
 import { useToast } from "@/hooks/use-toast";
 import { rankGrado } from "@/utils/grados";
-import { Check, X, FileText, ArrowLeft, RotateCcw } from "lucide-react";
+import { Check, X, FileText, ArrowLeft, RotateCcw, Clock } from "lucide-react";
 
 interface AsignacionRow {
   "Asignatura(s)": string[] | string[][];
@@ -28,6 +28,7 @@ const ESTADO_UI: Record<AsistenciaEstado, { label: string; color: string; ring: 
   presente: { label: "Presente", color: "bg-emerald-500", ring: "ring-emerald-400", text: "text-emerald-600" },
   ausente: { label: "Ausente", color: "bg-rose-500", ring: "ring-rose-400", text: "text-rose-600" },
   excusa: { label: "Con excusa", color: "bg-amber-400", ring: "ring-amber-400", text: "text-amber-600" },
+  tarde: { label: "Llegó tarde", color: "bg-orange-500", ring: "ring-orange-400", text: "text-orange-600" },
 };
 
 const THRESH = 90; // px para confirmar un swipe
@@ -126,7 +127,7 @@ const Asistencia = () => {
 
   const actual = roster[idx];
   const conteo = useMemo(() => {
-    const c = { presente: 0, ausente: 0, excusa: 0 };
+    const c = { presente: 0, ausente: 0, excusa: 0, tarde: 0 };
     for (const r of roster) if (r.estado) c[r.estado]++;
     return c;
   }, [roster]);
@@ -319,6 +320,7 @@ const Asistencia = () => {
                   <span className="text-emerald-600 font-semibold">{pl(conteo.presente, "presente", "presentes")}</span>
                   <span className="text-rose-600 font-semibold">{pl(conteo.ausente, "ausente", "ausentes")}</span>
                   <span className="text-amber-600 font-semibold">{pl(conteo.excusa, "con excusa", "con excusas")}</span>
+                  {conteo.tarde > 0 && <span className="text-orange-600 font-semibold">{pl(conteo.tarde, "tarde", "tarde")}</span>}
                 </div>
                 <div className="flex flex-wrap gap-3 justify-center">
                   <button onClick={volverAnterior} className="px-4 py-2 rounded-lg border border-border text-foreground hover:bg-muted flex items-center gap-1.5">
@@ -354,21 +356,25 @@ const Asistencia = () => {
                   )}
                 </div>
 
-                {/* Botones equivalentes */}
-                <div className="flex items-center justify-center gap-5 mt-6">
+                {/* Botones equivalentes — orden: Regresar · Excusa · Llegó tarde · No asistió · Asistió */}
+                <div className="flex items-center justify-center gap-4 mt-6">
                   <button onClick={volverAnterior} disabled={idx === 0} title="Volver al anterior"
                     className="w-12 h-12 rounded-full bg-muted text-foreground flex items-center justify-center shadow hover:scale-105 transition disabled:opacity-40 disabled:hover:scale-100">
                     <RotateCcw className="w-5 h-5" />
-                  </button>
-                  <button onClick={() => commit("ausente")} title="Ausente"
-                    className="w-16 h-16 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-lg hover:scale-105 transition">
-                    <X className="w-8 h-8" />
                   </button>
                   <button onClick={() => commit("excusa")} title="Con excusa"
                     className="w-14 h-14 rounded-full bg-amber-400 text-white flex items-center justify-center shadow-lg hover:scale-105 transition">
                     <FileText className="w-6 h-6" />
                   </button>
-                  <button onClick={() => commit("presente")} title="Presente"
+                  <button onClick={() => commit("tarde")} title="Llegó tarde"
+                    className="w-14 h-14 rounded-full bg-orange-500 text-white flex items-center justify-center shadow-lg hover:scale-105 transition">
+                    <Clock className="w-6 h-6" />
+                  </button>
+                  <button onClick={() => commit("ausente")} title="No asistió"
+                    className="w-16 h-16 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-lg hover:scale-105 transition">
+                    <X className="w-8 h-8" />
+                  </button>
+                  <button onClick={() => commit("presente")} title="Asistió"
                     className="w-16 h-16 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg hover:scale-105 transition">
                     <Check className="w-8 h-8" />
                   </button>

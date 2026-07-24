@@ -156,7 +156,7 @@ const CalendarioEstudiante = ({ estudiante, contextoLabel, puedeEditar, loadMont
         <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
           <span className="text-sm font-semibold text-foreground">{r.pct}% asistencia</span>
           <span className="text-xs text-muted-foreground">
-            <span className="text-emerald-600">{r.p} P</span> · <span className="text-rose-600">{r.a} A</span> · <span className="text-amber-600">{r.e} E</span>
+            <span className="text-emerald-600">{r.p} P</span> · <span className="text-rose-600">{r.a} A</span> · <span className="text-amber-600">{r.e} E</span>{r.t > 0 ? <> · <span className="text-orange-600">{r.t} T</span></> : null}
           </span>
         </div>
       </div>

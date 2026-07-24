@@ -7,16 +7,23 @@ export const ESTADO_UI: Record<AsistenciaEstado, {
   presente: { label: "Presente", corto: "P", chip: "bg-emerald-100 text-emerald-700", cell: "bg-emerald-500", dot: "bg-emerald-500", excel: "FF16A34A" },
   ausente:  { label: "Ausente",  corto: "A", chip: "bg-rose-100 text-rose-700",       cell: "bg-rose-500",    dot: "bg-rose-500",    excel: "FFDC2626" },
   excusa:   { label: "Con excusa", corto: "E", chip: "bg-amber-100 text-amber-700",   cell: "bg-amber-400",   dot: "bg-amber-400",   excel: "FFF59E0B" },
+  tarde:    { label: "Llegó tarde", corto: "T", chip: "bg-orange-100 text-orange-700", cell: "bg-orange-500", dot: "bg-orange-500", excel: "FFF97316" },
 };
 
-export const ESTADOS_LISTA: AsistenciaEstado[] = ["presente", "ausente", "excusa"];
+export const ESTADOS_LISTA: AsistenciaEstado[] = ["presente", "ausente", "excusa", "tarde"];
 
-/** % de asistencia (presentes / total marcado) + desglose. */
-export function resumen(regs: { estado: AsistenciaEstado }[]): { pct: number; p: number; a: number; e: number; total: number } {
-  let p = 0, a = 0, e = 0;
-  for (const r of regs) { if (r.estado === "presente") p++; else if (r.estado === "ausente") a++; else e++; }
-  const total = p + a + e;
-  return { pct: total ? Math.round((p / total) * 100) : 0, p, a, e, total };
+/** % de asistencia + desglose. 'tarde' cuenta como ASISTIÓ (no es inasistencia). */
+export function resumen(regs: { estado: AsistenciaEstado }[]): { pct: number; p: number; a: number; e: number; t: number; total: number } {
+  let p = 0, a = 0, e = 0, t = 0;
+  for (const r of regs) {
+    if (r.estado === "presente") p++;
+    else if (r.estado === "ausente") a++;
+    else if (r.estado === "tarde") t++;
+    else e++;
+  }
+  const total = p + a + e + t;
+  // Asistió = presente + tarde (la tardanza no es inasistencia).
+  return { pct: total ? Math.round(((p + t) / total) * 100) : 0, p, a, e, t, total };
 }
 
 /** Hoy en Bogotá, YYYY-MM-DD. */

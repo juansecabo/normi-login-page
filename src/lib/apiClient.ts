@@ -349,7 +349,7 @@ export interface ApiConsolidadoGrupo {
   estudiantes: { id: string; nombre: string; notas: Record<string, number> }[];
 }
 
-export type AsistenciaEstado = 'presente' | 'ausente' | 'excusa';
+export type AsistenciaEstado = 'presente' | 'ausente' | 'excusa' | 'tarde';
 
 export interface AsistenciaRosterItem {
   estudiante_id: string;
