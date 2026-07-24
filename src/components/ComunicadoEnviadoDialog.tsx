@@ -20,18 +20,21 @@ interface Progress {
   fallos: number;
   completado: boolean;
   cancelado?: boolean;
+  fallos_detalle?: Array<{ nombre: string; telefono: string }>;
 }
 
 const ComunicadoEnviadoDialog = ({ open, onOpenChange, jobId, total }: ComunicadoEnviadoDialogProps) => {
   const [progress, setProgress] = useState<Progress | null>(null);
   const [cancelando, setCancelando] = useState(false);
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
+  const [verFallos, setVerFallos] = useState(false);
 
   // Reset state cuando se abre con un job nuevo o el modal se cierra,
   // para que el "Cancelando..." de un envio anterior no quede pegado.
   useEffect(() => {
     setCancelando(false);
     setConfirmCancelOpen(false);
+    setVerFallos(false);
   }, [jobId, open]);
 
   const handleCancelarConfirmado = async () => {
@@ -104,7 +107,15 @@ const ComunicadoEnviadoDialog = ({ open, onOpenChange, jobId, total }: Comunicad
               {!completado && !cancelado && <Loader2 className="w-4 h-4 animate-spin" />}
               <span>
                 <strong className="text-foreground">{procesados}</strong> de <strong className="text-foreground">{totalShow}</strong> {totalShow === 1 ? "destinatario" : "destinatarios"}
-                {fallos > 0 ? <span className="text-red-600"> ({fallos} fallaron)</span> : null}
+                {fallos > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setVerFallos((v) => !v)}
+                    className="text-red-600 underline hover:text-red-700"
+                  >
+                    {" "}({fallos} {fallos === 1 ? "falló" : "fallaron"} — ver quién)
+                  </button>
+                ) : null}
               </span>
             </p>
             <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
@@ -113,6 +124,25 @@ const ComunicadoEnviadoDialog = ({ open, onOpenChange, jobId, total }: Comunicad
                 style={{ width: totalShow > 0 ? `${(procesados / totalShow) * 100}%` : "0%" }}
               />
             </div>
+            {verFallos && fallos > 0 && (
+              <div className="mt-1 max-h-44 overflow-auto rounded-md border border-red-200 bg-red-50 p-2 text-left">
+                <p className="text-xs font-semibold text-red-700 mb-1">No se pudo enviar a:</p>
+                {progress?.fallos_detalle && progress.fallos_detalle.length > 0 ? (
+                  <ul className="space-y-0.5">
+                    {progress.fallos_detalle.map((f, i) => (
+                      <li key={i} className="text-xs text-red-800">
+                        {f.nombre} — <span className="font-mono">{f.telefono}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-red-700 italic">El detalle aparece cuando el envío termina.</p>
+                )}
+                <p className="text-[11px] text-red-600 mt-1">
+                  Suele ser un número de teléfono mal registrado. Corrígelo en Panel de Control.
+                </p>
+              </div>
+            )}
             {!completado && !cancelado && (
               <p className="text-xs text-muted-foreground text-center italic">
                 Puedes cerrar esta ventana — el envío sigue en segundo plano.
