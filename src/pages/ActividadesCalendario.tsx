@@ -392,7 +392,6 @@ const ActividadesCalendario = () => {
         }
 
         toast({
-          variant: "success" as any,
           title: "Actividad creada",
           description: "La actividad se ha creado correctamente y se notificó a estudiantes y padres",
         });
