@@ -206,6 +206,9 @@ const ProgramarActividad = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [actividadAEliminar, setActividadAEliminar] = useState<ActividadCalendario | null>(null);
 
+  const [dupDialogOpen, setDupDialogOpen] = useState(false);
+  const [dupSalones, setDupSalones] = useState<string[]>([]);
+
   // Load profesor data and asignaciones
   useEffect(() => {
     const inicializar = async () => {
@@ -472,8 +475,70 @@ const ProgramarActividad = () => {
       toast({ title: "Fecha inválida", description: "No se puede programar actividades en fechas pasadas.", variant: "destructive" });
       return;
     }
-    setGuardando(true);
 
+    // Antiduplicado: si YA existe una actividad EXACTAMENTE igual (mismo
+    // profesor, asignatura, grado, salón, fecha y descripción letra por letra;
+    // los adjuntos NO cuentan), avisamos antes de reenviarla a todo el salón.
+    const descripcionCmp = (tipoSeleccionado && tipoSeleccionado !== "Otro")
+      ? `${tipoSeleccionado}: ${descripcion.trim()}`
+      : descripcion.trim();
+    const fechaCmp = formatearFecha(fechaSeleccionada!);
+
+    setGuardando(true);
+    try {
+      const salonesConDuplicado: string[] = [];
+      for (const salon of salonesSeleccionados) {
+        // Mismo criterio de omisión que el envío real (#25).
+        const idsEsteSalon = destinoEspecifico
+          ? estudiantesDestino.filter(id => estudiantesAula.find(e => e.id === id)?.salon === salon)
+          : [];
+        if (destinoEspecifico && idsEsteSalon.length === 0) continue;
+
+        const { data: existentes } = await supabase
+          .from('Calendario Actividades')
+          .select('estudiantes_ids')
+          .eq('id_profesor', profesorIdReal)
+          .eq('Asignatura', asignaturaSeleccionada)
+          .eq('Grado', gradoSeleccionado)
+          .eq('Salon', salon)
+          .eq('Descripción', descripcionCmp)
+          .eq('fecha_de_presentacion', fechaCmp);
+
+        // El destino (todo el salón vs. estudiantes puntuales) también debe ser
+        // idéntico para considerarla "la misma actividad".
+        const idsDestino = destinoEspecifico ? idsEsteSalon.map(Number).sort((a, b) => a - b) : null;
+        const hayIgual = (existentes || []).some((row: { estudiantes_ids: number[] | null }) => {
+          const rowIds = row.estudiantes_ids;
+          if (idsDestino === null) return rowIds == null; // ambos = todo el salón
+          if (!Array.isArray(rowIds)) return false;
+          const a = rowIds.map(Number).sort((x, y) => x - y);
+          return a.length === idsDestino.length && a.every((v, i) => v === idsDestino[i]);
+        });
+        if (hayIgual) salonesConDuplicado.push(salon);
+      }
+
+      if (salonesConDuplicado.length > 0) {
+        setDupSalones(salonesConDuplicado);
+        setDupDialogOpen(true);
+        return; // esperamos la decisión del profesor en el aviso
+      }
+    } catch (e) {
+      // Si la verificación falla, NO bloqueamos: se programa normalmente.
+      console.warn('No se pudo verificar duplicados:', e);
+    } finally {
+      setGuardando(false);
+    }
+
+    await ejecutarProgramacion();
+  };
+
+  /**
+   * Ejecuta la programación real (subir archivos + crear en cada salón +
+   * notificar a estudiantes y acudientes). Se llama directo cuando no hay
+   * duplicado, o desde el aviso cuando el profesor confirma "Programar de nuevo".
+   */
+  const ejecutarProgramacion = async () => {
+    setGuardando(true);
     try {
       let archivoUrlFinal: string | null = null;
       if (archivosSeleccionados.length > 0) {
@@ -1249,6 +1314,29 @@ const ProgramarActividad = () => {
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleEliminarActividad} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Aviso: ya existe una actividad EXACTAMENTE igual programada */}
+      <AlertDialog open={dupDialogOpen} onOpenChange={setDupDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Actividad duplicada</AlertDialogTitle>
+            <AlertDialogDescription>
+              Ya tienes programada esta misma actividad (misma descripción, asignatura, grado, salón y fecha)
+              {dupSalones.length === 1
+                ? ` en ${gradoSeleccionado} ${dupSalones[0]}`
+                : ` en ${gradoSeleccionado}: salones ${dupSalones.join(', ')}`}.
+              <br />
+              Si continúas, se enviará otra vez la notificación a los estudiantes y acudientes. ¿Deseas programarla de nuevo de todos modos?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setDupDialogOpen(false); ejecutarProgramacion(); }}>
+              Programar de nuevo
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
