@@ -138,6 +138,7 @@ const Asistencia = () => {
   // Intención de swipe en vivo (para overlay de color).
   const intencion: AsistenciaEstado | null = useMemo(() => {
     if (!drag) return null;
+    if (drag.y < -THRESH && Math.abs(drag.y) > Math.abs(drag.x)) return "tarde";
     if (drag.y > THRESH && drag.y > Math.abs(drag.x)) return "excusa";
     if (drag.x > THRESH) return "presente";
     if (drag.x < -THRESH) return "ausente";
@@ -205,7 +206,8 @@ const Asistencia = () => {
     startRef.current = null;
     pendingRef.current = null;
     const est = d
-      ? d.y > THRESH && d.y > Math.abs(d.x) ? "excusa"
+      ? (d.y < -THRESH && Math.abs(d.y) > Math.abs(d.x)) ? "tarde"
+        : d.y > THRESH && d.y > Math.abs(d.x) ? "excusa"
         : d.x > THRESH ? "presente"
         : d.x < -THRESH ? "ausente"
         : null
@@ -246,7 +248,7 @@ const Asistencia = () => {
       return { transform: `translate(${leaving.fromX}px, ${leaving.fromY}px) rotate(${leaving.fromX * 0.04}deg)`, transition: "none" };
     }
     const x = leaving.dir === "presente" ? 700 : leaving.dir === "ausente" ? -700 : 0;
-    const y = leaving.dir === "excusa" ? 800 : 0;
+    const y = leaving.dir === "excusa" ? 800 : leaving.dir === "tarde" ? -800 : 0;
     const rot = leaving.dir === "presente" ? 25 : leaving.dir === "ausente" ? -25 : 0;
     return { transform: `translate(${x}px, ${y}px) rotate(${rot}deg)`, opacity: 0, transition: "transform .26s ease-out, opacity .26s ease-out" };
   };
@@ -268,7 +270,7 @@ const Asistencia = () => {
         {step === "select" && (
           <div className="bg-card rounded-lg shadow-soft p-6 md:p-8 max-w-xl mx-auto mt-4">
             <h2 className="text-2xl font-bold text-foreground mb-1 text-center">Tomar asistencia</h2>
-            <p className="text-sm text-muted-foreground mb-6 text-center">Elige la clase y el día. Luego deslizas a la derecha (presente), izquierda (ausente) o abajo (con excusa).</p>
+            <p className="text-sm text-muted-foreground mb-6 text-center">Elige la clase y el día. Luego deslizas a la derecha (presente), izquierda (ausente), arriba (llegó tarde) o abajo (con excusa).</p>
 
             {loading ? (
               <p className="text-center text-muted-foreground">Cargando tus asignaciones…</p>
