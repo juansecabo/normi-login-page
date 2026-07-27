@@ -386,6 +386,21 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   const [modoIntentTick, setModoIntentTick] = useState(0);
   // Marca "periodo completo" por periodo (persistida en BD: tabla Periodos_Completos).
   const [periodosCompletos, setPeriodosCompletos] = useState<Record<number, boolean>>({});
+  // Habilitaciones (recuperación). Piloto: por ahora solo el colegio de prueba.
+  // Estructura: { [idEstudiantil]: { [periodo]: { nota, definitivaNueva } } }.
+  const [habilitaciones, setHabilitaciones] = useState<Record<string, Record<number, { nota: number; definitivaNueva: number }>>>({});
+  // Modal para capturar la nota de habilitación.
+  const [habModalOpen, setHabModalOpen] = useState(false);
+  const [habContexto, setHabContexto] = useState<{ estId: string; nombre: string; periodo: number; definitivaAnterior: number } | null>(null);
+  const [habNotaInput, setHabNotaInput] = useState("");
+  const [habGuardando, setHabGuardando] = useState(false);
+  // Piloto de habilitaciones: solo el colegio de prueba (Cailico).
+  const esColegioPrueba = getSession()?.colegio_id === '2f96f076-83df-4b84-8bbc-9c1df79a372b';
+  // Ponderación de la habilitación (provisional — pendiente de confirmar/configurar
+  // por colegio): la nueva definitiva pondera 40% la definitiva anterior + 60% la
+  // nota de habilitación, y nunca baja de la anterior (solo puede subir).
+  const HAB_PESO_ANTERIOR = 0.4;
+  const HAB_PESO_HABILITACION = 0.6;
   // Modal "+ Agregar" tiene dos tipos cuando el periodo está en modo Grupos
   const [tipoNuevoItem, setTipoNuevoItem] = useState<'actividad' | 'grupo'>('actividad');
   const [grupoPadrePara, setGrupoPadrePara] = useState<string | null>(null); // si se crea subgrupo
@@ -3933,6 +3948,86 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
 
   const getPeriodoCompleto = (periodo: number): boolean => periodosCompletos[periodo] === true;
 
+  // ─── Habilitaciones (recuperación) ────────────────────────────────────────
+  const cargarHabilitaciones = useCallback(async () => {
+    if (!esColegioPrueba) return;
+    if (!asignaturaSeleccionada || !gradoSeleccionado || !salonSeleccionado) return;
+    const { data } = await supabase
+      .from('Habilitaciones')
+      .select('id_estudiantil, periodo, nota_habilitacion, definitiva_nueva')
+      .eq('asignatura', asignaturaSeleccionada)
+      .eq('grado', gradoSeleccionado)
+      .eq('salon', salonSeleccionado)
+      .eq('ano_escolar', anoEscolarActual());
+    const map: Record<string, Record<number, { nota: number; definitivaNueva: number }>> = {};
+    (data || []).forEach((h: any) => {
+      const est = String(h.id_estudiantil);
+      if (!map[est]) map[est] = {};
+      map[est][h.periodo] = { nota: Number(h.nota_habilitacion), definitivaNueva: Number(h.definitiva_nueva) };
+    });
+    setHabilitaciones(map);
+  }, [esColegioPrueba, asignaturaSeleccionada, gradoSeleccionado, salonSeleccionado]);
+
+  useEffect(() => { cargarHabilitaciones(); }, [cargarHabilitaciones]);
+
+  const getHabilitacion = (estId: string, periodo: number) =>
+    habilitaciones[String(estId)]?.[periodo] || null;
+
+  // Nueva definitiva ponderada. Solo puede subir la nota (nunca bajarla).
+  const calcularDefinitivaHab = (anterior: number, notaHab: number): number => {
+    const ponderada = HAB_PESO_ANTERIOR * anterior + HAB_PESO_HABILITACION * notaHab;
+    return Math.round(Math.max(anterior, ponderada) * 10) / 10;
+  };
+
+  const abrirHabilitacion = (estudiante: Estudiante, periodo: number, notaFinal: number | null) => {
+    if (notaFinal === null) return;
+    const existente = getHabilitacion(String(estudiante.id), periodo);
+    setHabContexto({
+      estId: String(estudiante.id),
+      nombre: `${estudiante.nombres} ${estudiante.apellidos}`,
+      periodo,
+      definitivaAnterior: notaFinal,
+    });
+    setHabNotaInput(existente ? String(existente.nota) : "");
+    setHabModalOpen(true);
+  };
+
+  const guardarHabilitacion = async () => {
+    if (!habContexto) return;
+    const notaHab = aNumero(habNotaInput);
+    if (notaHab === null || isNaN(notaHab) || notaHab < colegioConfig.escala_min || notaHab > colegioConfig.escala_max) {
+      toast({
+        title: "Nota inválida",
+        description: `La nota debe estar entre ${colegioConfig.escala_min} y ${colegioConfig.escala_max}`,
+        variant: "destructive",
+      });
+      return;
+    }
+    setHabGuardando(true);
+    const definitivaNueva = calcularDefinitivaHab(habContexto.definitivaAnterior, notaHab);
+    const { error } = await supabase
+      .from('Habilitaciones')
+      .upsert({
+        id_estudiantil: Number(habContexto.estId),
+        asignatura: asignaturaSeleccionada,
+        grado: gradoSeleccionado,
+        salon: salonSeleccionado,
+        periodo: habContexto.periodo,
+        ano_escolar: anoEscolarActual(),
+        nota_habilitacion: notaHab,
+        definitiva_anterior: habContexto.definitivaAnterior,
+        definitiva_nueva: definitivaNueva,
+      }, { onConflict: 'colegio_id,id_estudiantil,asignatura,grado,salon,periodo,ano_escolar' });
+    setHabGuardando(false);
+    if (error) {
+      toast({ title: "No se pudo guardar la habilitación", description: error.message || String(error), variant: "destructive" });
+      return;
+    }
+    setHabModalOpen(false);
+    toast({ title: "Habilitación guardada", description: `Nueva definitiva: ${definitivaNueva.toFixed(1)}`, variant: "success" as any });
+    await cargarHabilitaciones();
+  };
+
   // Fila base para upsert de un periodo.
   const filaPeriodoCompleto = (p: number, completo: boolean) => ({
     asignatura: asignaturaSeleccionada,
@@ -5012,6 +5107,8 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                               const finalPeriodo = calcularFinalPeriodo(estudiante.id, periodo.numero);
                               const comentario = comentarios[estudiante.id]?.[periodo.numero]?.[`${periodo.numero}-Definitiva Periodo`] || null;
                               const tieneNotas = tieneAlgunaNotaEnPeriodo(estudiante.id, periodo.numero);
+                              const completoPer = getPeriodoCompleto(periodo.numero)
+                                && periodoCompletoParaEst(estudiante.id, periodo.numero);
                               return (
                                 <FinalPeriodoCelda
                                   key={periodo.numero}
@@ -5032,6 +5129,9 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                     periodo.numero
                                   )}
                                   onNotificarPadre={tieneNotas ? () => handleNotificarFinalPeriodoIndividual(estudiante, periodo.numero, finalPeriodo) : undefined}
+                                  habilitacion={getHabilitacion(estudiante.id, periodo.numero)}
+                                  puedeHabilitar={esColegioPrueba && completoPer && !soloLectura && finalPeriodo !== null && finalPeriodo < colegioConfig.nota_aprobatoria}
+                                  onHabilitar={() => abrirHabilitacion(estudiante, periodo.numero, finalPeriodo)}
                                 />
                               );
                             })}
@@ -5207,6 +5307,9 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                     periodoActivo
                                   )}
                                   onNotificarPadre={(tieneNotas && puedeNotificar) ? () => handleNotificarFinalPeriodoIndividual(estudiante, periodoActivo, notaFinal) : undefined}
+                                  habilitacion={getHabilitacion(estudiante.id, periodoActivo)}
+                                  puedeHabilitar={esColegioPrueba && completo && !soloLectura && notaFinal !== null && notaFinal < colegioConfig.nota_aprobatoria}
+                                  onHabilitar={() => abrirHabilitacion(estudiante, periodoActivo, notaFinal)}
                                 />
                               );
                             })()}
@@ -5777,6 +5880,61 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
           onConfirmar={handleEnviarPendientes}
         />
       )}
+
+      {/* Modal de Habilitación (recuperación) */}
+      <Dialog open={habModalOpen} onOpenChange={(o) => { if (!o) setHabModalOpen(false); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Habilitación</DialogTitle>
+          </DialogHeader>
+          {habContexto && (() => {
+            const notaHab = aNumero(habNotaInput);
+            const notaValida = notaHab !== null && !isNaN(notaHab) && notaHab >= colegioConfig.escala_min && notaHab <= colegioConfig.escala_max;
+            const nuevaDef = notaValida ? calcularDefinitivaHab(habContexto.definitivaAnterior, notaHab as number) : null;
+            return (
+              <div className="space-y-4">
+                <div className="text-sm text-muted-foreground">
+                  <p><span className="font-medium text-foreground">{habContexto.nombre}</span></p>
+                  <p>{asignaturaSeleccionada} · {gradoSeleccionado} {salonSeleccionado} · Periodo {habContexto.periodo}</p>
+                </div>
+                <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2 text-sm">
+                  <span>Definitiva actual</span>
+                  <span className="font-semibold text-destructive">{habContexto.definitivaAnterior.toFixed(1)}</span>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="hab-nota">Nota de la habilitación</Label>
+                  <Input
+                    id="hab-nota"
+                    type="number"
+                    step="0.1"
+                    min={colegioConfig.escala_min}
+                    max={colegioConfig.escala_max}
+                    value={habNotaInput}
+                    onChange={(e) => setHabNotaInput(e.target.value)}
+                    placeholder={`${colegioConfig.escala_min}-${colegioConfig.escala_max}`}
+                    autoFocus
+                  />
+                </div>
+                <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span>Nueva definitiva</span>
+                    <span className="font-bold text-blue-600">{nuevaDef !== null ? nuevaDef.toFixed(1) : "—"}</span>
+                  </div>
+                  <p className="mt-1 text-[11px] leading-tight text-muted-foreground">
+                    Ponderación: {Math.round(HAB_PESO_ANTERIOR * 100)}% definitiva anterior + {Math.round(HAB_PESO_HABILITACION * 100)}% habilitación. La nota solo puede subir.
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setHabModalOpen(false)} disabled={habGuardando}>Cancelar</Button>
+            <Button onClick={guardarHabilitacion} disabled={habGuardando}>
+              {habGuardando ? "Guardando…" : "Guardar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );

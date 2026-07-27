@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MoreVertical, MessageSquare, Trash2, Send } from "lucide-react";
+import { MoreVertical, MessageSquare, Trash2, Send, GraduationCap } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +18,11 @@ interface FinalPeriodoCeldaProps {
   onAbrirComentario: () => void;
   onEliminarComentario: () => void;
   onNotificarPadre?: () => void;
+  // Habilitación: si el estudiante ya habilitó, se muestra la nueva definitiva con marca "H".
+  habilitacion?: { nota: number; definitivaNueva: number } | null;
+  // puedeHabilitar → muestra la opción "Habilitación" en el menú (periodo completo + reprobó).
+  puedeHabilitar?: boolean;
+  onHabilitar?: () => void;
 }
 
 const FinalPeriodoCelda = ({
@@ -29,6 +34,9 @@ const FinalPeriodoCelda = ({
   onAbrirComentario,
   onEliminarComentario,
   onNotificarPadre,
+  habilitacion = null,
+  puedeHabilitar = false,
+  onHabilitar,
 }: FinalPeriodoCeldaProps) => {
   const [showMenu, setShowMenu] = useState(false);
   const esProvisional = provisional && notaFinal !== null;
@@ -36,19 +44,29 @@ const FinalPeriodoCelda = ({
   return (
     <td className="border-r border-b border-border p-1 text-center text-sm min-w-[100px] bg-primary/10 font-semibold relative group">
       <div className="relative flex flex-col items-center justify-center min-h-8">
-        <span
-          className={notaFinal === null ? "text-muted-foreground" : ""}
-          title={esProvisional ? "Provisional — el periodo aún no está completo" : undefined}
-        >
-          {notaFinal !== null ? notaFinal.toFixed(1) : "—"}
-        </span>
-        {esProvisional && (
+        {habilitacion ? (
+          <span
+            className="text-blue-600"
+            title={`Habilitación aplicada (antes ${notaFinal !== null ? notaFinal.toFixed(1) : "—"})`}
+          >
+            {habilitacion.definitivaNueva.toFixed(1)}
+            <sup className="text-[9px] ml-0.5 font-bold">H</sup>
+          </span>
+        ) : (
+          <span
+            className={notaFinal === null ? "text-muted-foreground" : ""}
+            title={esProvisional ? "Provisional — el periodo aún no está completo" : undefined}
+          >
+            {notaFinal !== null ? notaFinal.toFixed(1) : "—"}
+          </span>
+        )}
+        {esProvisional && !habilitacion && (
           <span className="text-[9px] font-normal leading-none text-muted-foreground">provisional</span>
         )}
 
         {/* Indicador de comentario */}
         {comentario && <ComentarioIndicador comentario={comentario} className="top-0 right-6" />}
-        
+
         {/* Menú de opciones (visible on hover on desktop, always visible on mobile) */}
         {tieneAlgunaNota && !soloLectura && (
           <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
@@ -64,13 +82,22 @@ const FinalPeriodoCelda = ({
                   {comentario ? "Editar comentario" : "Agregar comentario"}
                 </DropdownMenuItem>
                 {comentario && (
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={onEliminarComentario}
                     className="text-destructive focus:text-destructive"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
                     Eliminar comentario
                   </DropdownMenuItem>
+                )}
+                {puedeHabilitar && onHabilitar && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={onHabilitar} className="text-blue-600 focus:text-blue-700">
+                      <GraduationCap className="w-4 h-4 mr-2" />
+                      {habilitacion ? "Editar habilitación" : "Habilitación"}
+                    </DropdownMenuItem>
+                  </>
                 )}
                 {onNotificarPadre && (
                   <>
