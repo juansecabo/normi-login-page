@@ -102,7 +102,7 @@ const FinalPeriodoCelda = ({
                     Eliminar comentario
                   </DropdownMenuItem>
                 )}
-                {puedeHabilitar && onHabilitar && (
+                {(puedeHabilitar || habilitacion) && onHabilitar && (
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={onHabilitar} className="text-blue-600 focus:text-blue-700">

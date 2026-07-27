@@ -3994,8 +3994,41 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     if (!hab) return null;
     const original = calcularFinalPeriodo(String(estId), periodo);
     if (original === null) return null;
+    // Si la definitiva base ya aprueba por sí sola, la habilitación no aplica
+    // (el efecto de limpieza la borra de la BD). Se muestra la definitiva normal.
+    if (configCargada && original >= colegioConfig.nota_aprobatoria) return null;
     return { nota: hab.nota, metodo: hab.metodo, definitivaNueva: calcularDefinitivaHab(original, hab.nota, hab.metodo, hab.pesoHab) };
   };
+
+  // Limpieza automática: si la definitiva base de un estudiante sube hasta la nota
+  // aprobatoria (o más), la habilitación deja de ser necesaria → se borra. Solo
+  // corre con la config cargada (para no usar la aprobatoria default por error).
+  useEffect(() => {
+    if (!esColegioPrueba || !configCargada) return;
+    if (!asignaturaSeleccionada || !gradoSeleccionado || !salonSeleccionado) return;
+    const sobran: { est: string; periodo: number }[] = [];
+    Object.entries(habilitaciones).forEach(([est, porPeriodo]) => {
+      Object.keys(porPeriodo).forEach((pStr) => {
+        const p = Number(pStr);
+        const base = calcularFinalPeriodo(est, p);
+        if (base !== null && base >= colegioConfig.nota_aprobatoria) sobran.push({ est, periodo: p });
+      });
+    });
+    if (sobran.length === 0) return;
+    (async () => {
+      for (const s of sobran) {
+        await supabase.from('Habilitaciones').delete()
+          .eq('id_estudiantil', Number(s.est))
+          .eq('asignatura', asignaturaSeleccionada)
+          .eq('grado', gradoSeleccionado)
+          .eq('salon', salonSeleccionado)
+          .eq('periodo', s.periodo)
+          .eq('ano_escolar', anoEscolarActual());
+      }
+      cargarHabilitaciones();
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [habilitaciones, notas, colegioConfig.nota_aprobatoria, configCargada, esColegioPrueba, asignaturaSeleccionada, gradoSeleccionado, salonSeleccionado]);
 
   const abrirHabilitacion = (estudiante: Estudiante, periodo: number, notaOriginal: number | null) => {
     if (notaOriginal === null) return;
