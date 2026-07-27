@@ -466,9 +466,13 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   const normalizar = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const q = normalizar(busqueda.trim());
   const qDigitos = q.replace(/\D/g, "");
+  // El match por dígitos del teléfono SOLO cuando la búsqueda es numérica (cédula/
+  // celular). Si escribes texto o una contraseña, no debe "colar" por sus dígitos.
+  const qEsNumerico = /^[0-9+\-\s]+$/.test(busqueda.trim());
   const listaBuscada = !q ? listaDelRol : listaDelRol.filter((p) =>
     normalizar(`${p.nombres} ${p.apellidos}`).includes(q) || String(p.id).includes(q) ||
-    (!!qDigitos && String(p.numero_de_telefono || "").includes(qDigitos)));
+    ("contrasena" in p && normalizar(String((p as any).contrasena || "")).includes(q)) ||
+    (qEsNumerico && !!qDigitos && String(p.numero_de_telefono || "").includes(qDigitos)));
   const listaActual = rol === "Profesor(a)" && !colegioId
     ? listaBuscada.filter(profMatchFiltros)
     : listaBuscada;
