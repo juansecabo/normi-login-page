@@ -304,12 +304,11 @@ const ObservadorEstudiantil = () => {
           {/* NIVEL 2: cuaderno del estudiante */}
           {estSel && (
             <div className="space-y-5">
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <button onClick={volver} className="text-sm text-primary hover:underline">← Volver</button>
-                {esInterno && (
+              {esInterno && (
+                <div className="flex items-center justify-end">
                   <Button onClick={abrirNuevo} className="gap-2"><Plus className="w-4 h-4" /> Agregar observación</Button>
-                )}
-              </div>
+                </div>
+              )}
 
               {cargandoObs ? (
                 <div className="text-center py-8 text-muted-foreground">Cargando...</div>
