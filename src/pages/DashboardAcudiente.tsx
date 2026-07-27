@@ -12,6 +12,7 @@ import iconEstadisticas from "@/assets/icons/estadisticas.webp";
 import iconComunicados from "@/assets/icons/comunicados.webp";
 import iconDocumentos from "@/assets/icons/documentos.webp";
 import iconAsistencia from "@/assets/icons/asistencia.webp";
+import iconObservador from "@/assets/icons/observador.webp";
 import HeaderNormi from "@/components/HeaderNormi";
 import EncabezadoColegio from "@/components/EncabezadoColegio";
 import AvatarUploader from "@/components/AvatarUploader";
@@ -36,8 +37,24 @@ const DashboardAcudiente = () => {
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [acudidos, setAcudidos] = useState<AcudidoData[]>([]);
-  const [badges, setBadges] = useState({ notas: 0, actividades: 0, comunicados: 0, documentos: 0 });
+  const [badges, setBadges] = useState({ notas: 0, actividades: 0, comunicados: 0, documentos: 0, observador: 0 });
   const pendFirma = usePendientesFirma();
+
+  // Badge del Observador Estudiantil: nº de observaciones nuevas desde la última
+  // vez que el acudiente entró (piloto: solo colegio de prueba).
+  useEffect(() => {
+    const s = getSession();
+    if (!s.id || s.colegio_id !== "2f96f076-83df-4b84-8bbc-9c1df79a372b") return;
+    (async () => {
+      const [{ data: obs }, { data: lec }] = await Promise.all([
+        supabase.from("Observador_Estudiantil").select("created_at"),
+        supabase.from("Observador_Lecturas").select("ultima_lectura").eq("acudiente_id", s.id).maybeSingle(),
+      ]);
+      const last = (lec as any)?.ultima_lectura ? new Date((lec as any).ultima_lectura).getTime() : 0;
+      const count = (obs || []).filter((o: any) => new Date(o.created_at).getTime() > last).length;
+      setBadges(b => ({ ...b, observador: count }));
+    })();
+  }, []);
 
   useEffect(() => {
     const session = getSession();
@@ -195,6 +212,13 @@ const DashboardAcudiente = () => {
         <span className="font-semibold text-foreground">Notas</span>
       </button>
     ) },
+    ...(getSession().colegio_id === "2f96f076-83df-4b84-8bbc-9c1df79a372b" ? [{ id: 'observador', render: (
+      <button onClick={() => navigate("/observador-estudiantil")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-orange-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-orange-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-orange-200">
+        <Badge count={badges.observador} />
+        <img src={iconObservador} alt="" className="w-16 h-16 object-contain" />
+        <span className="font-semibold text-foreground text-center">Observador Estudiantil</span>
+      </button>
+    ) }] : []),
     { id: 'actividades', render: (
       <button onClick={() => navigate("/acudiente/actividades")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-green-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-green-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-green-200">
         <Badge count={badges.actividades} />
