@@ -390,19 +390,19 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   // Habilitaciones (recuperación). Piloto: por ahora solo el colegio de prueba.
   // Estructura: { [idEstudiantil]: { [periodo]: { nota, definitivaNueva, metodo } } }.
   type HabMetodo = 'reemplazo' | 'ponderado';
-  const [habilitaciones, setHabilitaciones] = useState<Record<string, Record<number, { nota: number; definitivaNueva: number; metodo: HabMetodo }>>>({});
+  const [habilitaciones, setHabilitaciones] = useState<Record<string, Record<number, { nota: number; definitivaNueva: number; metodo: HabMetodo; pesoHab: number }>>>({});
   // Modal para capturar la nota de habilitación.
   const [habModalOpen, setHabModalOpen] = useState(false);
   const [habContexto, setHabContexto] = useState<{ estId: string; nombre: string; periodo: number; definitivaAnterior: number; existe: boolean } | null>(null);
   const [habNotaInput, setHabNotaInput] = useState("");
   const [habMetodo, setHabMetodo] = useState<HabMetodo>('reemplazo');
+  // % de la habilitación en modo ponderado (el % de la definitiva anterior es 100 - este).
+  const [habPesoHab, setHabPesoHab] = useState<number>(60);
   const [habGuardando, setHabGuardando] = useState(false);
   // Piloto de habilitaciones: solo el colegio de prueba (Cailico).
   const esColegioPrueba = getSession()?.colegio_id === '2f96f076-83df-4b84-8bbc-9c1df79a372b';
-  // Ponderado (provisional — pendiente de configurar por colegio): la nueva
-  // definitiva pondera 40% la definitiva anterior + 60% la nota de habilitación.
-  const HAB_PESO_ANTERIOR = 0.4;
-  const HAB_PESO_HABILITACION = 0.6;
+  // Ponderado por defecto: 60% habilitación + 40% definitiva anterior (editable por el profe).
+  const HAB_PESO_HAB_DEFAULT = 60;
   // Modal "+ Agregar" tiene dos tipos cuando el periodo está en modo Grupos
   const [tipoNuevoItem, setTipoNuevoItem] = useState<'actividad' | 'grupo'>('actividad');
   const [grupoPadrePara, setGrupoPadrePara] = useState<string | null>(null); // si se crea subgrupo
@@ -3956,18 +3956,19 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     if (!asignaturaSeleccionada || !gradoSeleccionado || !salonSeleccionado) return;
     const { data } = await supabase
       .from('Habilitaciones')
-      .select('id_estudiantil, periodo, nota_habilitacion, metodo')
+      .select('id_estudiantil, periodo, nota_habilitacion, metodo, peso_habilitacion')
       .eq('asignatura', asignaturaSeleccionada)
       .eq('grado', gradoSeleccionado)
       .eq('salon', salonSeleccionado)
       .eq('ano_escolar', anoEscolarActual());
-    const map: Record<string, Record<number, { nota: number; metodo: HabMetodo }>> = {};
+    const map: Record<string, Record<number, { nota: number; metodo: HabMetodo; pesoHab: number }>> = {};
     (data || []).forEach((h: any) => {
       const est = String(h.id_estudiantil);
       if (!map[est]) map[est] = {};
       map[est][h.periodo] = {
         nota: Number(h.nota_habilitacion),
         metodo: (h.metodo === 'ponderado' ? 'ponderado' : 'reemplazo'),
+        pesoHab: h.peso_habilitacion !== null && h.peso_habilitacion !== undefined ? Number(h.peso_habilitacion) : HAB_PESO_HAB_DEFAULT,
       };
     });
     setHabilitaciones(map);
@@ -3976,9 +3977,11 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   useEffect(() => { cargarHabilitaciones(); }, [cargarHabilitaciones]);
 
   // Nueva definitiva según el método elegido. Solo puede subir (nunca bajar).
-  const calcularDefinitivaHab = (original: number, notaHab: number, metodo: HabMetodo): number => {
+  // pesoHab = % de la habilitación en modo ponderado (el resto va a la definitiva anterior).
+  const calcularDefinitivaHab = (original: number, notaHab: number, metodo: HabMetodo, pesoHab: number): number => {
+    const p = Math.min(100, Math.max(0, pesoHab));
     const cruda = metodo === 'ponderado'
-      ? HAB_PESO_ANTERIOR * original + HAB_PESO_HABILITACION * notaHab
+      ? ((100 - p) / 100) * original + (p / 100) * notaHab
       : notaHab; // reemplazo directo
     return Math.round(Math.max(original, cruda) * 10) / 10;
   };
@@ -3991,7 +3994,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     if (!hab) return null;
     const original = calcularFinalPeriodo(String(estId), periodo);
     if (original === null) return null;
-    return { nota: hab.nota, metodo: hab.metodo, definitivaNueva: calcularDefinitivaHab(original, hab.nota, hab.metodo) };
+    return { nota: hab.nota, metodo: hab.metodo, definitivaNueva: calcularDefinitivaHab(original, hab.nota, hab.metodo, hab.pesoHab) };
   };
 
   const abrirHabilitacion = (estudiante: Estudiante, periodo: number, notaOriginal: number | null) => {
@@ -4007,6 +4010,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     });
     setHabNotaInput(existente ? String(existente.nota) : "");
     setHabMetodo(existente ? existente.metodo : 'reemplazo');
+    setHabPesoHab(existente ? existente.pesoHab : HAB_PESO_HAB_DEFAULT);
     setHabModalOpen(true);
   };
 
@@ -4022,6 +4026,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
       return;
     }
     setHabGuardando(true);
+    const pesoHab = habMetodo === 'ponderado' ? Math.min(100, Math.max(0, Math.round(habPesoHab))) : HAB_PESO_HAB_DEFAULT;
     const { error } = await supabase
       .from('Habilitaciones')
       .upsert({
@@ -4033,13 +4038,14 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         ano_escolar: anoEscolarActual(),
         nota_habilitacion: notaHab,
         metodo: habMetodo,
+        peso_habilitacion: pesoHab,
       }, { onConflict: 'colegio_id,id_estudiantil,asignatura,grado,salon,periodo,ano_escolar' });
     setHabGuardando(false);
     if (error) {
       toast({ title: "No se pudo guardar la habilitación", description: error.message || String(error), variant: "destructive" });
       return;
     }
-    const definitivaNueva = calcularDefinitivaHab(habContexto.definitivaAnterior, notaHab, habMetodo);
+    const definitivaNueva = calcularDefinitivaHab(habContexto.definitivaAnterior, notaHab, habMetodo, pesoHab);
     setHabModalOpen(false);
     toast({ title: "Habilitación guardada", description: `Nueva definitiva: ${definitivaNueva.toFixed(1)}`, variant: "success" as any });
     await cargarHabilitaciones();
@@ -5932,7 +5938,8 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
           {habContexto && (() => {
             const notaHab = aNumero(habNotaInput);
             const notaValida = notaHab !== null && !isNaN(notaHab) && notaHab >= colegioConfig.escala_min && notaHab <= colegioConfig.escala_max;
-            const nuevaDef = notaValida ? calcularDefinitivaHab(habContexto.definitivaAnterior, notaHab as number, habMetodo) : null;
+            const nuevaDef = notaValida ? calcularDefinitivaHab(habContexto.definitivaAnterior, notaHab as number, habMetodo, habPesoHab) : null;
+            const pesoAnt = Math.min(100, Math.max(0, 100 - habPesoHab));
             return (
               <div className="space-y-4">
                 <div className="text-sm text-muted-foreground">
@@ -5969,9 +5976,37 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                     </label>
                     <label htmlFor="hab-ponderado" className="flex items-start gap-2 rounded-md border p-2 cursor-pointer hover:bg-muted/40">
                       <RadioGroupItem value="ponderado" id="hab-ponderado" className="mt-0.5" />
-                      <div className="text-sm">
-                        <div className="font-medium">Ponderado ({Math.round(HAB_PESO_ANTERIOR * 100)}% / {Math.round(HAB_PESO_HABILITACION * 100)}%)</div>
-                        <div className="text-[11px] text-muted-foreground">{Math.round(HAB_PESO_ANTERIOR * 100)}% definitiva actual + {Math.round(HAB_PESO_HABILITACION * 100)}% habilitación.</div>
+                      <div className="text-sm flex-1">
+                        <div className="font-medium">Ponderado</div>
+                        <div className="text-[11px] text-muted-foreground">Se combina la definitiva actual con la habilitación según los porcentajes.</div>
+                        {habMetodo === 'ponderado' && (
+                          <div className="mt-2 grid grid-cols-2 gap-2" onClick={(e) => e.preventDefault()}>
+                            <div className="space-y-1">
+                              <span className="text-[11px] text-muted-foreground">% definitiva actual</span>
+                              <Input
+                                type="number" min={0} max={100} step={5}
+                                value={pesoAnt}
+                                onChange={(e) => {
+                                  const v = Math.min(100, Math.max(0, Math.round(aNumero(e.target.value) ?? 0)));
+                                  setHabPesoHab(100 - v);
+                                }}
+                                className="h-8"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <span className="text-[11px] text-muted-foreground">% habilitación</span>
+                              <Input
+                                type="number" min={0} max={100} step={5}
+                                value={habPesoHab}
+                                onChange={(e) => {
+                                  const v = Math.min(100, Math.max(0, Math.round(aNumero(e.target.value) ?? 0)));
+                                  setHabPesoHab(v);
+                                }}
+                                className="h-8"
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </label>
                   </RadioGroup>
