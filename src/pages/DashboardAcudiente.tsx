@@ -198,7 +198,9 @@ const DashboardAcudiente = () => {
         console.error('Error fetching badges:', err);
       }
 
-      setBadges(b);
+      // Merge (no reemplazo total): así no se pierde el badge del observador
+      // que calcula el otro efecto.
+      setBadges(prev => ({ ...prev, ...b }));
     };
 
     fetchBadges();
