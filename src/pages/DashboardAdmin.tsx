@@ -21,6 +21,7 @@ import iconRegistros from "@/assets/icons/registros-comportamiento.png";
 import iconAsistencia from "@/assets/icons/asistencia.webp";
 import iconConfigurarInstitucion from "@/assets/icons/configurar-institucion.webp";
 import iconBoletines from "@/assets/icons/boletines.webp";
+import iconFormatos from "@/assets/icons/formatos.webp";
 import HeaderNormi from "@/components/HeaderNormi";
 import EncabezadoColegio from "@/components/EncabezadoColegio";
 import AvatarUploader from "@/components/AvatarUploader";
@@ -100,6 +101,7 @@ const DashboardAdmin = () => {
     { id: 'notas', render: <Card bg="bg-emerald-100 hover:bg-emerald-200" icon={<img src={iconNotas} alt="" className="w-16 h-16 object-contain" />} label="Notas" onClick={() => navigate("/seleccionar-grado")} /> },
     { id: 'estadisticas', render: <Card bg="bg-green-100 hover:bg-green-200" icon={<img src={iconEstadisticas} alt="" className="w-16 h-16 object-contain" />} label="Estadísticas" onClick={() => navigate("/estadisticas")} /> },
     { id: 'boletines', render: <Card bg="bg-emerald-100 hover:bg-emerald-200" icon={<img src={iconBoletines} alt="" className="w-16 h-16 object-contain" />} label="Boletines" onClick={() => navigate("/boletines")} /> },
+    { id: 'formatos', render: <Card bg="bg-orange-100 hover:bg-orange-200" icon={<img src={iconFormatos} alt="" className="w-16 h-16 object-contain" />} label="Formatos" onClick={() => navigate("/formatos")} /> },
     { id: 'enviar-comunicado', render: <Card bg="bg-teal-100 hover:bg-teal-200" icon={<img src={iconEnviarComunicado} alt="" className="w-16 h-16 object-contain" />} label="Enviar Comunicado" onClick={() => navigate("/enviar-comunicado-admin")} /> },
     { id: 'comunicados-firma', render: <Card bg="bg-violet-100 hover:bg-violet-200" badge={pendFirma} icon={<img src={iconEnviarComunicado} alt="" className="w-16 h-16 object-contain" />} label="Comunicados con firma" onClick={() => navigate("/comunicados-firma")} /> },
     { id: 'todas-actividades', render: <Card bg="bg-emerald-100 hover:bg-emerald-200" icon={<img src={iconActividades} alt="" className="w-16 h-16 object-contain" />} label="Todas las Actividades" onClick={() => navigate("/admin/todas-actividades")} /> },
