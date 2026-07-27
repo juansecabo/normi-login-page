@@ -116,7 +116,7 @@ const ObservadorEstudiantil = () => {
       .from("Observador_Estudiantil")
       .select("id, estudiante_id, autor_id, autor_nombre, comentario, created_at")
       .eq("estudiante_id", estId)
-      .order("created_at", { ascending: true }); // cronológico: las nuevas quedan abajo
+      .order("created_at", { ascending: false }); // lo más reciente arriba
     setObservaciones((data || []) as Observacion[]);
     setCargandoObs(false);
   };
