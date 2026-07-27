@@ -46,7 +46,7 @@ import FinalPeriodoCelda from "@/components/notas/FinalPeriodoCelda";
 import ComentarioModal from "@/components/notas/ComentarioModal";
 import NotificacionModal, { TipoNotificacion } from "@/components/notas/NotificacionModal";
 import { apiRequest, apiClient } from "@/lib/apiClient";
-import { useColegioConfig } from "@/hooks/useColegioConfig";
+import { useColegioConfig, aprobado } from "@/hooks/useColegioConfig";
 import {
   DndContext,
   DragOverlay,
@@ -5129,6 +5129,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                     periodo.numero
                                   )}
                                   onNotificarPadre={tieneNotas ? () => handleNotificarFinalPeriodoIndividual(estudiante, periodo.numero, finalPeriodo) : undefined}
+                                  notaAprobatoria={colegioConfig.nota_aprobatoria}
                                   habilitacion={getHabilitacion(estudiante.id, periodo.numero)}
                                   puedeHabilitar={esColegioPrueba && completoPer && !soloLectura && finalPeriodo !== null && finalPeriodo < colegioConfig.nota_aprobatoria}
                                   onHabilitar={() => abrirHabilitacion(estudiante, periodo.numero, finalPeriodo)}
@@ -5143,7 +5144,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                               return (
                                 <td className="border-r border-b border-border p-1 text-center text-sm min-w-[130px] bg-primary/20 font-bold relative group">
                                   <div className="relative flex items-center justify-center h-8">
-                                    <span className={finalDef !== null ? "" : "text-muted-foreground"}>
+                                    <span className={finalDef === null ? "text-muted-foreground" : aprobado(finalDef, colegioConfig) ? "text-green-600" : "text-red-600"}>
                                       {finalDef !== null ? finalDef.toFixed(1) : "—"}
                                     </span>
                                     {comentario && (
@@ -5307,6 +5308,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                     periodoActivo
                                   )}
                                   onNotificarPadre={(tieneNotas && puedeNotificar) ? () => handleNotificarFinalPeriodoIndividual(estudiante, periodoActivo, notaFinal) : undefined}
+                                  notaAprobatoria={colegioConfig.nota_aprobatoria}
                                   habilitacion={getHabilitacion(estudiante.id, periodoActivo)}
                                   puedeHabilitar={esColegioPrueba && completo && !soloLectura && notaFinal !== null && notaFinal < colegioConfig.nota_aprobatoria}
                                   onHabilitar={() => abrirHabilitacion(estudiante, periodoActivo, notaFinal)}

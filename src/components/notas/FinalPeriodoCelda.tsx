@@ -15,6 +15,8 @@ interface FinalPeriodoCeldaProps {
   tieneAlgunaNota: boolean; // Nueva prop: si el estudiante tiene al menos una nota en el período
   provisional?: boolean; // true → el periodo aún no está completo; la nota es provisional
   soloLectura?: boolean;
+  // Umbral de aprobación del colegio → la definitiva se pinta verde si aprueba, roja si no.
+  notaAprobatoria?: number;
   onAbrirComentario: () => void;
   onEliminarComentario: () => void;
   onNotificarPadre?: () => void;
@@ -31,6 +33,7 @@ const FinalPeriodoCelda = ({
   tieneAlgunaNota,
   provisional = false,
   soloLectura = false,
+  notaAprobatoria,
   onAbrirComentario,
   onEliminarComentario,
   onNotificarPadre,
@@ -40,21 +43,30 @@ const FinalPeriodoCelda = ({
 }: FinalPeriodoCeldaProps) => {
   const [showMenu, setShowMenu] = useState(false);
   const esProvisional = provisional && notaFinal !== null;
+  // Color de la definitiva según el umbral del colegio: verde aprueba, roja no.
+  // Si hubo habilitación, se evalúa la NUEVA definitiva (la que se muestra).
+  const valorMostrado = habilitacion ? habilitacion.definitivaNueva : notaFinal;
+  const colorDefinitiva =
+    notaAprobatoria === undefined || valorMostrado === null
+      ? ""
+      : valorMostrado >= notaAprobatoria
+      ? "text-green-600"
+      : "text-red-600";
 
   return (
     <td className="border-r border-b border-border p-1 text-center text-sm min-w-[100px] bg-primary/10 font-semibold relative group">
       <div className="relative flex flex-col items-center justify-center min-h-8">
         {habilitacion ? (
           <span
-            className="text-blue-600"
+            className={colorDefinitiva}
             title={`Habilitación aplicada (antes ${notaFinal !== null ? notaFinal.toFixed(1) : "—"})`}
           >
             {habilitacion.definitivaNueva.toFixed(1)}
-            <sup className="text-[9px] ml-0.5 font-bold">H</sup>
+            <sup className="text-[9px] ml-0.5 font-bold text-blue-600">H</sup>
           </span>
         ) : (
           <span
-            className={notaFinal === null ? "text-muted-foreground" : ""}
+            className={notaFinal === null ? "text-muted-foreground" : colorDefinitiva}
             title={esProvisional ? "Provisional — el periodo aún no está completo" : undefined}
           >
             {notaFinal !== null ? notaFinal.toFixed(1) : "—"}
