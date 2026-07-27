@@ -537,8 +537,7 @@ const ObservadorEstudiantil = () => {
           </DialogHeader>
           {multi ? (
             <p className="text-sm text-muted-foreground -mt-1">
-              {seleccionadosArr.slice(0, 6).map(e => `${e.nombres} ${e.apellidos}`).join(", ")}
-              {seleccionadosArr.length > 6 ? ` y ${seleccionadosArr.length - 6} más` : ""}. El mismo mensaje se guardará para cada uno.
+              El mismo mensaje se guardará para los {seleccionadosArr.length} estudiantes seleccionados.
             </p>
           ) : estSel && (
             <p className="text-sm text-muted-foreground -mt-1">
