@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { apiRequest } from "@/lib/apiClient";
 import { toast } from "@/hooks/use-toast";
 import { cargoSegunGenero } from "@/lib/entrevistadores";
-import { Search, Plus, Pencil, Trash2, NotebookPen, ChevronDown } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, NotebookPen, ChevronDown, Users, Check, X } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -71,6 +71,10 @@ const ObservadorEstudiantil = () => {
   const [guardando, setGuardando] = useState(false);
   const [eliminarId, setEliminarId] = useState<number | null>(null);
   const [viendo, setViendo] = useState<Observacion | null>(null);
+  // Selección múltiple (anotar a varios estudiantes, incluso de distintos salones).
+  const [modoSeleccion, setModoSeleccion] = useState(false);
+  const [seleccionados, setSeleccionados] = useState<Record<number, Estudiante>>({});
+  const [multi, setMulti] = useState(false); // el modal está en modo "varios estudiantes"
 
   // Cargo conjugado por género (Profesora/Profesor, Coordinadora/Coordinador…),
   // nunca el neutro "(a)" cuando se conoce el género.
@@ -164,10 +168,70 @@ const ObservadorEstudiantil = () => {
     });
   }, [estudiantes, filtroGrado, filtroSalon, busqueda]);
 
-  const abrirNuevo = () => { setEditandoId(null); setTexto(""); setModalOpen(true); };
-  const abrirEditar = (o: Observacion) => { setEditandoId(o.id); setTexto(o.comentario); setModalOpen(true); };
+  const abrirNuevo = () => { setMulti(false); setEditandoId(null); setTexto(""); setModalOpen(true); };
+  const abrirEditar = (o: Observacion) => { setMulti(false); setEditandoId(o.id); setTexto(o.comentario); setModalOpen(true); };
+
+  // ─── Selección múltiple ───────────────────────────────────────────────────
+  const seleccionadosArr = Object.values(seleccionados);
+  const toggleSel = (e: Estudiante) => {
+    setSeleccionados(prev => {
+      const next = { ...prev };
+      if (next[e.id]) delete next[e.id]; else next[e.id] = e;
+      return next;
+    });
+  };
+  const seleccionarFiltrados = () => {
+    setSeleccionados(prev => {
+      const next = { ...prev };
+      estudiantesFiltrados.forEach(e => { next[e.id] = e; });
+      return next;
+    });
+  };
+  const quitarSel = (id: number) => setSeleccionados(prev => { const n = { ...prev }; delete n[id]; return n; });
+  const salirSeleccion = () => { setModoSeleccion(false); setSeleccionados({}); };
+  const abrirNuevoMultiple = () => { setMulti(true); setEditandoId(null); setTexto(""); setModalOpen(true); };
+
+  const guardarMultiple = async () => {
+    const lista = Object.values(seleccionados);
+    if (lista.length === 0 || !texto.trim()) return;
+    setGuardando(true);
+    const filas = lista.map(e => ({
+      estudiante_id: e.id,
+      estudiante_nombre: e.nombres,
+      estudiante_apellidos: e.apellidos,
+      estudiante_grado: e.grado,
+      estudiante_salon: e.salon,
+      autor_id: session.id,
+      autor_nombre: autorNombre,
+      comentario: texto.trim(),
+    }));
+    const { error } = await supabase.from("Observador_Estudiantil").insert(filas);
+    if (error) {
+      setGuardando(false);
+      toast({ title: "No se pudo guardar", description: error.message || String(error), variant: "destructive" });
+      return;
+    }
+    // Notificar a los acudientes de cada estudiante (no bloquea).
+    lista.forEach(e => {
+      apiRequest("/api/observador/notificar", {
+        method: "POST",
+        body: JSON.stringify({
+          estudiante_id: e.id,
+          estudiante_nombre: `${e.nombres} ${e.apellidos}`,
+          comentario: texto.trim(),
+          autor_nombre: autorNombre,
+        }),
+      }).catch(err => console.error("notificar observador:", err));
+    });
+    setGuardando(false);
+    setModalOpen(false);
+    setMulti(false);
+    toast({ title: `Observación agregada a ${lista.length} estudiante${lista.length === 1 ? "" : "s"}`, description: "Se notificó a los acudientes.", variant: "success" as any });
+    salirSeleccion();
+  };
 
   const guardar = async () => {
+    if (multi) return guardarMultiple();
     if (!estSel || !texto.trim()) return;
     setGuardando(true);
     if (editandoId != null) {
@@ -264,6 +328,21 @@ const ObservadorEstudiantil = () => {
             </div>
           ) : (
             <div className="space-y-4">
+              {/* Barra: activar/salir de selección múltiple */}
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                {!modoSeleccion ? (
+                  <button onClick={() => setModoSeleccion(true)}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-primary/40 text-primary text-sm font-medium hover:bg-primary/10">
+                    <Users className="w-4 h-4" /> Seleccionar varios
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-medium text-foreground">Selecciona los estudiantes (de uno o varios salones)</span>
+                    <button onClick={salirSeleccion} className="text-xs text-muted-foreground hover:text-foreground underline">Cancelar</button>
+                  </div>
+                )}
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -282,22 +361,78 @@ const ObservadorEstudiantil = () => {
                   {salonesUnicos.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
-              {estudiantesFiltrados.length === 0 ? (
-                <p className="text-center py-10 text-muted-foreground">No hay estudiantes con esos filtros.</p>
-              ) : (
-                <div className="space-y-2">
-                  {estudiantesFiltrados.map(e => (
-                    <button key={e.id} onClick={() => abrirEstudiante(e)}
-                      className="w-full flex items-center justify-between border border-border rounded-lg p-4 text-left hover:bg-muted/30 transition-colors">
-                      <div>
-                        <p className="font-semibold text-foreground text-sm">{e.apellidos} {e.nombres}</p>
-                        <p className="text-xs text-muted-foreground">{e.grado} {e.salon}</p>
-                      </div>
-                      <ChevronDown className="w-5 h-5 -rotate-90 text-muted-foreground" />
+
+              {/* Layout: lista + (en modo selección) panel lateral de elegidos */}
+              <div className={modoSeleccion ? "grid grid-cols-1 lg:grid-cols-3 gap-4" : ""}>
+                <div className={modoSeleccion ? "lg:col-span-2 space-y-2" : "space-y-2"}>
+                  {modoSeleccion && estudiantesFiltrados.length > 0 && (
+                    <button onClick={seleccionarFiltrados} className="text-xs text-primary hover:underline">
+                      Seleccionar todos los que se ven ({estudiantesFiltrados.length})
                     </button>
-                  ))}
+                  )}
+                  {estudiantesFiltrados.length === 0 ? (
+                    <p className="text-center py-10 text-muted-foreground">No hay estudiantes con esos filtros.</p>
+                  ) : modoSeleccion ? (
+                    estudiantesFiltrados.map(e => {
+                      const marcado = !!seleccionados[e.id];
+                      return (
+                        <label key={e.id} className={`w-full flex items-center gap-3 border rounded-lg p-3 cursor-pointer transition-colors ${marcado ? "border-primary bg-primary/5" : "border-border hover:bg-muted/30"}`}>
+                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${marcado ? "bg-primary border-primary" : "border-border"}`}>
+                            {marcado && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
+                          </div>
+                          <input type="checkbox" className="sr-only" checked={marcado} onChange={() => toggleSel(e)} />
+                          <div>
+                            <p className="font-semibold text-foreground text-sm">{e.apellidos} {e.nombres}</p>
+                            <p className="text-xs text-muted-foreground">{e.grado} {e.salon}</p>
+                          </div>
+                        </label>
+                      );
+                    })
+                  ) : (
+                    estudiantesFiltrados.map(e => (
+                      <button key={e.id} onClick={() => abrirEstudiante(e)}
+                        className="w-full flex items-center justify-between border border-border rounded-lg p-4 text-left hover:bg-muted/30 transition-colors">
+                        <div>
+                          <p className="font-semibold text-foreground text-sm">{e.apellidos} {e.nombres}</p>
+                          <p className="text-xs text-muted-foreground">{e.grado} {e.salon}</p>
+                        </div>
+                        <ChevronDown className="w-5 h-5 -rotate-90 text-muted-foreground" />
+                      </button>
+                    ))
+                  )}
                 </div>
-              )}
+
+                {modoSeleccion && (
+                  <aside className="lg:col-span-1">
+                    <div className="lg:sticky lg:top-4 border border-border rounded-lg p-3 bg-muted/10">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-semibold">Seleccionados ({seleccionadosArr.length})</p>
+                        {seleccionadosArr.length > 0 && (
+                          <button onClick={() => setSeleccionados({})} className="text-xs text-muted-foreground hover:text-destructive">Quitar todos</button>
+                        )}
+                      </div>
+                      {seleccionadosArr.length === 0 ? (
+                        <p className="text-xs text-muted-foreground py-4 text-center">Aún no has elegido a nadie. Marca estudiantes y aparecerán aquí.</p>
+                      ) : (
+                        <div className="space-y-1.5 max-h-[50vh] overflow-y-auto">
+                          {seleccionadosArr.map(e => (
+                            <div key={e.id} className="flex items-center justify-between gap-2 text-sm bg-background border border-border rounded-md px-2 py-1.5">
+                              <div className="min-w-0">
+                                <p className="truncate font-medium">{e.apellidos} {e.nombres}</p>
+                                <p className="text-[11px] text-muted-foreground">{e.grado} {e.salon}</p>
+                              </div>
+                              <button onClick={() => quitarSel(e.id)} className="text-muted-foreground hover:text-destructive shrink-0"><X className="w-4 h-4" /></button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <Button onClick={abrirNuevoMultiple} disabled={seleccionadosArr.length === 0} className="w-full mt-3 gap-2">
+                        <Plus className="w-4 h-4" /> Agregar observación{seleccionadosArr.length > 0 ? ` (${seleccionadosArr.length})` : ""}
+                      </Button>
+                    </div>
+                  </aside>
+                )}
+              </div>
             </div>
           ))}
 
@@ -386,9 +521,14 @@ const ObservadorEstudiantil = () => {
       <Dialog open={modalOpen} onOpenChange={(o) => { if (!o) setModalOpen(false); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editandoId != null ? "Editar observación" : "Nueva observación"}</DialogTitle>
+            <DialogTitle>{multi ? `Nueva observación para ${seleccionadosArr.length} estudiante${seleccionadosArr.length === 1 ? "" : "s"}` : (editandoId != null ? "Editar observación" : "Nueva observación")}</DialogTitle>
           </DialogHeader>
-          {estSel && (
+          {multi ? (
+            <p className="text-sm text-muted-foreground -mt-1">
+              {seleccionadosArr.slice(0, 6).map(e => `${e.nombres} ${e.apellidos}`).join(", ")}
+              {seleccionadosArr.length > 6 ? ` y ${seleccionadosArr.length - 6} más` : ""}. El mismo mensaje se guardará para cada uno.
+            </p>
+          ) : estSel && (
             <p className="text-sm text-muted-foreground -mt-1">
               {estSel.apellidos} {estSel.nombres} · {estSel.grado} {estSel.salon}
             </p>
