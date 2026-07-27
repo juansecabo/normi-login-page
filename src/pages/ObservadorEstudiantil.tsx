@@ -362,7 +362,7 @@ const ObservadorEstudiantil = () => {
 
       {/* Pop-up de LECTURA (letra normal) — cualquiera que haga click en una observación */}
       <Dialog open={!!viendo} onOpenChange={(o) => { if (!o) setViendo(null); }}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Observación</DialogTitle>
           </DialogHeader>
@@ -372,7 +372,7 @@ const ObservadorEstudiantil = () => {
                 <span className="font-semibold text-foreground">{viendo.autor_nombre || "—"}</span>
                 {" · "}{fmtFechaHora(viendo.created_at)}
               </p>
-              <div className="whitespace-pre-wrap text-lg text-foreground leading-relaxed bg-muted/20 border border-border rounded-md p-4">
+              <div className="whitespace-pre-wrap break-words text-lg text-foreground leading-relaxed bg-muted/20 border border-border rounded-md p-4 max-h-[60vh] overflow-y-auto">
                 {viendo.comentario}
               </div>
             </div>
