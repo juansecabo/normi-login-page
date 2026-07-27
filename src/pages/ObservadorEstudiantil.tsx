@@ -377,15 +377,7 @@ const ObservadorEstudiantil = () => {
               </div>
             </div>
           )}
-          <DialogFooter className="gap-2 sm:justify-between">
-            {viendo && viendo.autor_id === session.id && esInterno ? (
-              <div className="flex gap-2">
-                <Button variant="ghost" onClick={() => { setEliminarId(viendo.id); setViendo(null); }} className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                  Eliminar
-                </Button>
-                <Button variant="outline" onClick={() => { abrirEditar(viendo); setViendo(null); }}>Editar</Button>
-              </div>
-            ) : <span />}
+          <DialogFooter>
             <Button onClick={() => setViendo(null)}>Cerrar</Button>
           </DialogFooter>
         </DialogContent>
