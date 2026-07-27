@@ -399,8 +399,6 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   // % de la habilitación en modo ponderado (el % de la definitiva anterior es 100 - este).
   const [habPesoHab, setHabPesoHab] = useState<number>(60);
   const [habGuardando, setHabGuardando] = useState(false);
-  // Piloto de habilitaciones: solo el colegio de prueba (Cailico).
-  const esColegioPrueba = getSession()?.colegio_id === '2f96f076-83df-4b84-8bbc-9c1df79a372b';
   // Ponderado por defecto: 60% habilitación + 40% definitiva anterior (editable por el profe).
   const HAB_PESO_HAB_DEFAULT = 60;
   // Modal "+ Agregar" tiene dos tipos cuando el periodo está en modo Grupos
@@ -3952,7 +3950,6 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
 
   // ─── Habilitaciones (recuperación) ────────────────────────────────────────
   const cargarHabilitaciones = useCallback(async () => {
-    if (!esColegioPrueba) return;
     if (!asignaturaSeleccionada || !gradoSeleccionado || !salonSeleccionado) return;
     const { data } = await supabase
       .from('Habilitaciones')
@@ -3972,7 +3969,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
       };
     });
     setHabilitaciones(map);
-  }, [esColegioPrueba, asignaturaSeleccionada, gradoSeleccionado, salonSeleccionado]);
+  }, [asignaturaSeleccionada, gradoSeleccionado, salonSeleccionado]);
 
   useEffect(() => { cargarHabilitaciones(); }, [cargarHabilitaciones]);
 
@@ -4004,7 +4001,9 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   // aprobatoria (o más), la habilitación deja de ser necesaria → se borra. Solo
   // corre con la config cargada (para no usar la aprobatoria default por error).
   useEffect(() => {
-    if (!esColegioPrueba || !configCargada) return;
+    // Solo los que pueden escribir (profesor/admin/rector) limpian; en solo-lectura
+    // (rector/coordinador viendo) NO se borra nada, solo se oculta la H al mostrar.
+    if (soloLectura || !configCargada) return;
     if (!asignaturaSeleccionada || !gradoSeleccionado || !salonSeleccionado) return;
     const sobran: { est: string; periodo: number }[] = [];
     Object.entries(habilitaciones).forEach(([est, porPeriodo]) => {
@@ -4028,7 +4027,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
       cargarHabilitaciones();
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [habilitaciones, notas, colegioConfig.nota_aprobatoria, configCargada, esColegioPrueba, asignaturaSeleccionada, gradoSeleccionado, salonSeleccionado]);
+  }, [habilitaciones, notas, colegioConfig.nota_aprobatoria, configCargada, soloLectura, asignaturaSeleccionada, gradoSeleccionado, salonSeleccionado]);
 
   const abrirHabilitacion = (estudiante: Estudiante, periodo: number, notaOriginal: number | null) => {
     if (notaOriginal === null) return;
@@ -5210,7 +5209,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                   onNotificarPadre={tieneNotas ? () => handleNotificarFinalPeriodoIndividual(estudiante, periodo.numero, finalPeriodo) : undefined}
                                   notaAprobatoria={colegioConfig.nota_aprobatoria}
                                   habilitacion={getHabilitacionView(estudiante.id, periodo.numero)}
-                                  puedeHabilitar={esColegioPrueba && completoPer && !soloLectura && finalPeriodo !== null && finalPeriodo < colegioConfig.nota_aprobatoria}
+                                  puedeHabilitar={completoPer && !soloLectura && finalPeriodo !== null && finalPeriodo < colegioConfig.nota_aprobatoria}
                                   onHabilitar={() => abrirHabilitacion(estudiante, periodo.numero, finalPeriodo)}
                                 />
                               );
@@ -5389,7 +5388,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                   onNotificarPadre={(tieneNotas && puedeNotificar) ? () => handleNotificarFinalPeriodoIndividual(estudiante, periodoActivo, notaFinal) : undefined}
                                   notaAprobatoria={colegioConfig.nota_aprobatoria}
                                   habilitacion={getHabilitacionView(estudiante.id, periodoActivo)}
-                                  puedeHabilitar={esColegioPrueba && completo && !soloLectura && notaFinal !== null && notaFinal < colegioConfig.nota_aprobatoria}
+                                  puedeHabilitar={completo && !soloLectura && notaFinal !== null && notaFinal < colegioConfig.nota_aprobatoria}
                                   onHabilitar={() => abrirHabilitacion(estudiante, periodoActivo, notaFinal)}
                                 />
                               );
