@@ -276,7 +276,7 @@ const DashboardRector = () => {
       </button>
     ) },
     ...(getSession().colegio_id === "2f96f076-83df-4b84-8bbc-9c1df79a372b" ? [{ id: 'observador', render: (
-      <button onClick={() => navigate("/observador-estudiantil")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-orange-100 transition-all duration-200 hover:shadow-md hover:bg-orange-200">
+      <button onClick={() => navigate("/observador-estudiantil")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-sky-100 transition-all duration-200 hover:shadow-md hover:bg-sky-200">
         <img src={iconObservador} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground text-center">Observador Estudiantil</span>
       </button>
