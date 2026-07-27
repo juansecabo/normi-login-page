@@ -367,7 +367,7 @@ const ObservadorEstudiantil = () => {
                 <div className={modoSeleccion ? "lg:col-span-2 space-y-2" : "space-y-2"}>
                   {modoSeleccion && estudiantesFiltrados.length > 0 && (
                     <button onClick={seleccionarFiltrados} className="text-xs text-primary hover:underline">
-                      Seleccionar todos los que se ven ({estudiantesFiltrados.length})
+                      Seleccionar todos ({estudiantesFiltrados.length})
                     </button>
                   )}
                   {estudiantesFiltrados.length === 0 ? (
@@ -403,7 +403,7 @@ const ObservadorEstudiantil = () => {
                 </div>
 
                 {modoSeleccion && (
-                  <aside className="lg:col-span-1">
+                  <aside className="hidden lg:block lg:col-span-1">
                     <div className="lg:sticky lg:top-4 border border-border rounded-lg p-3 bg-muted/10">
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-sm font-semibold">Seleccionados ({seleccionadosArr.length})</p>
@@ -433,6 +433,7 @@ const ObservadorEstudiantil = () => {
                   </aside>
                 )}
               </div>
+              {modoSeleccion && <div className="h-20 lg:hidden" />}
             </div>
           ))}
 
@@ -493,6 +494,17 @@ const ObservadorEstudiantil = () => {
           )}
         </div>
       </main>
+
+      {/* Barra fija de acción en MÓVIL (el panel lateral de "Seleccionados" solo se
+          ve en pantallas grandes; en el teléfono usamos esta barra siempre visible). */}
+      {modoSeleccion && !estSel && (
+        <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-card border-t border-border p-3 shadow-lg flex items-center justify-between gap-3">
+          <span className="text-sm font-medium">{seleccionadosArr.length} seleccionado{seleccionadosArr.length === 1 ? "" : "s"}</span>
+          <Button onClick={abrirNuevoMultiple} disabled={seleccionadosArr.length === 0} className="gap-2">
+            <Plus className="w-4 h-4" /> Agregar observación
+          </Button>
+        </div>
+      )}
 
       {/* Pop-up de LECTURA (letra normal) — cualquiera que haga click en una observación */}
       <Dialog open={!!viendo} onOpenChange={(o) => { if (!o) setViendo(null); }}>
