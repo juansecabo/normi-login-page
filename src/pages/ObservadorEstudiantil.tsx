@@ -79,6 +79,8 @@ const ObservadorEstudiantil = () => {
   // Cargo conjugado por género (Profesora/Profesor, Coordinadora/Coordinador…),
   // nunca el neutro "(a)" cuando se conoce el género.
   const autorNombre = [cargoSegunGenero(session.cargo || undefined, session.genero), session.nombres, session.apellidos].filter(Boolean).join(" ").trim();
+  // Artículo para el mensaje de WhatsApp ("La Profesora…", "El Profesor…"); vacío si no hay género.
+  const autorPrefijo = session.genero === "M" ? "El " : session.genero === "F" ? "La " : "";
 
   // Guard de acceso
   useEffect(() => {
@@ -220,6 +222,7 @@ const ObservadorEstudiantil = () => {
           estudiante_nombre: `${e.nombres} ${e.apellidos}`,
           comentario: texto.trim(),
           autor_nombre: autorNombre,
+          autor_prefijo: autorPrefijo,
         }),
       }).catch(err => console.error("notificar observador:", err));
     });
@@ -267,6 +270,7 @@ const ObservadorEstudiantil = () => {
         estudiante_nombre: `${estSel.nombres} ${estSel.apellidos}`,
         comentario: texto.trim(),
         autor_nombre: autorNombre,
+        autor_prefijo: autorPrefijo,
       }),
     }).catch(e => console.error("notificar observador:", e));
     setGuardando(false);
