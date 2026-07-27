@@ -372,7 +372,7 @@ const ObservadorEstudiantil = () => {
                 <span className="font-semibold text-foreground">{viendo.autor_nombre || "—"}</span>
                 {" · "}{fmtFechaHora(viendo.created_at)}
               </p>
-              <div className="whitespace-pre-wrap text-sm text-foreground leading-relaxed bg-muted/20 border border-border rounded-md p-3">
+              <div className="whitespace-pre-wrap text-lg text-foreground leading-relaxed bg-muted/20 border border-border rounded-md p-4">
                 {viendo.comentario}
               </div>
             </div>
