@@ -46,12 +46,13 @@ const DashboardAcudiente = () => {
     const s = getSession();
     if (!s.id || s.colegio_id !== "2f96f076-83df-4b84-8bbc-9c1df79a372b") return;
     (async () => {
-      const [{ data: obs }, { data: lec }] = await Promise.all([
-        supabase.from("Observador_Estudiantil").select("created_at"),
-        supabase.from("Observador_Lecturas").select("ultima_lectura").eq("acudiente_id", s.id).maybeSingle(),
+      const [{ data: obs }, { data: lecs }] = await Promise.all([
+        supabase.from("Observador_Estudiantil").select("estudiante_id, created_at"),
+        supabase.from("Observador_Lecturas").select("estudiante_id, ultima_lectura").eq("acudiente_id", s.id),
       ]);
-      const last = (lec as any)?.ultima_lectura ? new Date((lec as any).ultima_lectura).getTime() : 0;
-      const count = (obs || []).filter((o: any) => new Date(o.created_at).getTime() > last).length;
+      const lastByEst: Record<number, number> = {};
+      (lecs || []).forEach((l: any) => { lastByEst[Number(l.estudiante_id)] = new Date(l.ultima_lectura).getTime(); });
+      const count = (obs || []).filter((o: any) => new Date(o.created_at).getTime() > (lastByEst[Number(o.estudiante_id)] || 0)).length;
       setBadges(b => ({ ...b, observador: count }));
     })();
   }, []);

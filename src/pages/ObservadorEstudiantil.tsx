@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { apiRequest } from "@/lib/apiClient";
 import { toast } from "@/hooks/use-toast";
 import { cargoSegunGenero } from "@/lib/entrevistadores";
-import { Search, Plus, Pencil, Trash2, NotebookPen, ChevronDown, Users, Check, X } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, NotebookPen, ChevronDown, Users, Check, X, User } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -58,6 +58,8 @@ const ObservadorEstudiantil = () => {
   const [estSel, setEstSel] = useState<Estudiante | null>(null);
   const [observaciones, setObservaciones] = useState<Observacion[]>([]);
   const [cargandoObs, setCargandoObs] = useState(false);
+  // Acudiente: nº de observaciones no leídas por cada estudiante (badge por estudiante).
+  const [unreadPorEst, setUnreadPorEst] = useState<Record<number, number>>({});
 
   // Filtros (internos)
   const [filtroGrado, setFiltroGrado] = useState("");
@@ -97,11 +99,20 @@ const ObservadorEstudiantil = () => {
         setEstudiantes(acudidos.map(a => ({
           id: Number(a.id), nombres: a.nombre, apellidos: a.apellidos, grado: a.grado, salon: a.salon,
         })));
-        // Marcar como leídas (limpia el badge del dashboard).
-        supabase.from("Observador_Lecturas").upsert(
-          { acudiente_id: session.id, ultima_lectura: new Date().toISOString() },
-          { onConflict: "colegio_id,acudiente_id" },
-        ).then(() => {});
+        // No-leídas POR ESTUDIANTE (badge por cada uno). No marcamos nada leído
+        // aquí: eso pasa al ENTRAR a cada estudiante.
+        const [{ data: obs }, { data: lecs }] = await Promise.all([
+          supabase.from("Observador_Estudiantil").select("estudiante_id, created_at"),
+          supabase.from("Observador_Lecturas").select("estudiante_id, ultima_lectura").eq("acudiente_id", session.id),
+        ]);
+        const lastByEst: Record<number, number> = {};
+        (lecs || []).forEach((l: any) => { lastByEst[Number(l.estudiante_id)] = new Date(l.ultima_lectura).getTime(); });
+        const unread: Record<number, number> = {};
+        (obs || []).forEach((o: any) => {
+          const est = Number(o.estudiante_id);
+          if (new Date(o.created_at).getTime() > (lastByEst[est] || 0)) unread[est] = (unread[est] || 0) + 1;
+        });
+        setUnreadPorEst(unread);
         setLoading(false);
         return;
       }
@@ -134,6 +145,14 @@ const ObservadorEstudiantil = () => {
     setObservaciones([]);
     cargarObservaciones(e.id);
     setSearchParams({ est: String(e.id) }); // persiste en la URL: al recargar sigue aquí
+    // Acudiente: al entrar, marca leído SOLO ese estudiante → se le quita su badge.
+    if (esAcudiente) {
+      supabase.from("Observador_Lecturas").upsert(
+        { acudiente_id: session.id, estudiante_id: e.id, ultima_lectura: new Date().toISOString() },
+        { onConflict: "colegio_id,acudiente_id,estudiante_id" },
+      ).then(() => {});
+      setUnreadPorEst(prev => { const n = { ...prev }; delete n[e.id]; return n; });
+    }
   };
 
   const volver = () => {
@@ -141,14 +160,17 @@ const ObservadorEstudiantil = () => {
     setSearchParams({});
   };
 
-  // Al recargar (o entrar con ?est=<id> en la URL), reabrir el estudiante.
+  // Mantiene estSel EN SINCRONÍA con la URL (?est=<id>): al recargar reabre; al
+  // dar "atrás" (se quita ?est) vuelve a la lista. Antes solo abría, nunca cerraba.
   useEffect(() => {
     const estId = searchParams.get("est");
-    if (!estId || estSel || estudiantes.length === 0) return;
+    if (!estId) { if (estSel) setEstSel(null); return; }
+    if (estSel && String(estSel.id) === estId) return;
+    if (estudiantes.length === 0) return;
     const found = estudiantes.find(e => String(e.id) === estId);
-    if (found) { setEstSel(found); cargarObservaciones(found.id); }
+    if (found) abrirEstudiante(found);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [estudiantes, searchParams]);
+  }, [estudiantes, searchParams, estSel]);
 
   // Filtros para internos
   const gradosUnicos = useMemo(() => [...new Set(estudiantes.map(e => e.grado).filter(Boolean))]
@@ -316,20 +338,34 @@ const ObservadorEstudiantil = () => {
           {!estSel && (loading ? (
             <div className="text-center py-8 text-muted-foreground">Cargando...</div>
           ) : esAcudiente ? (
-            <div className="space-y-2">
-              {estudiantes.length === 0 ? (
-                <p className="text-center py-10 text-muted-foreground">No tienes estudiantes asociados.</p>
-              ) : estudiantes.map(e => (
-                <button key={e.id} onClick={() => abrirEstudiante(e)}
-                  className="w-full flex items-center justify-between border border-border rounded-lg p-4 text-left hover:bg-muted/30 transition-colors">
-                  <div>
-                    <p className="font-semibold text-foreground text-sm">{e.apellidos} {e.nombres}</p>
-                    <p className="text-xs text-muted-foreground">{e.grado} {e.salon}</p>
-                  </div>
-                  <ChevronDown className="w-5 h-5 -rotate-90 text-muted-foreground" />
-                </button>
-              ))}
-            </div>
+            estudiantes.length === 0 ? (
+              <p className="text-center py-10 text-muted-foreground">No tienes estudiantes asociados.</p>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {estudiantes.map(e => {
+                    const nuevos = unreadPorEst[e.id] || 0;
+                    return (
+                      <button key={e.id} onClick={() => abrirEstudiante(e)}
+                        className="relative flex items-center gap-3 border border-border rounded-lg p-4 text-left hover:bg-muted/30 hover:shadow-md transition-all">
+                        {nuevos > 0 && (
+                          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 shadow-sm">
+                            {nuevos > 99 ? "99+" : nuevos}
+                          </span>
+                        )}
+                        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                          <User className="w-5 h-5 text-muted-foreground" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-foreground">{e.nombres} {e.apellidos}</p>
+                          <p className="text-xs text-muted-foreground">{e.grado} {e.salon}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )
           ) : (
             <div className="space-y-4">
               {/* Barra: activar/salir de selección múltiple */}
