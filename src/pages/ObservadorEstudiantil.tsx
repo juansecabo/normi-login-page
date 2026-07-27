@@ -8,6 +8,7 @@ import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { apiRequest } from "@/lib/apiClient";
 import { toast } from "@/hooks/use-toast";
+import { cargoSegunGenero } from "@/lib/entrevistadores";
 import { Search, Plus, Pencil, Trash2, NotebookPen, ChevronDown } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -69,7 +70,9 @@ const ObservadorEstudiantil = () => {
   const [guardando, setGuardando] = useState(false);
   const [eliminarId, setEliminarId] = useState<number | null>(null);
 
-  const autorNombre = [session.cargo, session.nombres, session.apellidos].filter(Boolean).join(" ").trim();
+  // Cargo conjugado por género (Profesora/Profesor, Coordinadora/Coordinador…),
+  // nunca el neutro "(a)" cuando se conoce el género.
+  const autorNombre = [cargoSegunGenero(session.cargo || undefined, session.genero), session.nombres, session.apellidos].filter(Boolean).join(" ").trim();
 
   // Guard de acceso
   useEffect(() => {
@@ -113,7 +116,7 @@ const ObservadorEstudiantil = () => {
       .from("Observador_Estudiantil")
       .select("id, estudiante_id, autor_id, autor_nombre, comentario, created_at")
       .eq("estudiante_id", estId)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: true }); // cronológico: las nuevas quedan abajo
     setObservaciones((data || []) as Observacion[]);
     setCargandoObs(false);
   };
@@ -299,36 +302,38 @@ const ObservadorEstudiantil = () => {
                   <p>Aún no hay observaciones para este estudiante.</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {observaciones.map(o => {
-                    const esMio = o.autor_id === session.id;
-                    return (
-                      <div key={o.id} className="rounded-lg border border-amber-200 shadow-sm overflow-hidden">
-                        <div className="flex items-center justify-between px-4 py-2 bg-amber-50 border-b border-amber-200">
-                          <div className="text-xs text-amber-900">
-                            <span className="font-semibold">{o.autor_nombre || "—"}</span>
-                            <span className="text-amber-700"> · {fmtFechaHora(o.created_at)}</span>
+                // Una sola "página de cuaderno": papel rayado continuo + margen rojo,
+                // y todas las observaciones fluyen dentro, una debajo de otra.
+                <div style={paperStyle} className="relative rounded-lg border border-amber-200 shadow-sm px-6 py-5 pl-14">
+                  <div className="absolute left-10 top-0 bottom-0 w-px bg-red-300/70" />
+                  <div className="space-y-7">
+                    {observaciones.map(o => {
+                      const esMio = o.autor_id === session.id;
+                      return (
+                        <div key={o.id} className="group">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <p className="text-xs text-amber-800/90">
+                              <span className="font-semibold">{o.autor_nombre || "—"}</span>
+                              <span className="text-amber-700/80"> · {fmtFechaHora(o.created_at)}</span>
+                            </p>
+                            {esMio && esInterno && (
+                              <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => abrirEditar(o)} title="Editar" className="p-1 rounded hover:bg-amber-100 text-amber-800">
+                                  <Pencil className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => setEliminarId(o.id)} title="Eliminar" className="p-1 rounded hover:bg-red-100 text-red-600">
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
                           </div>
-                          {esMio && esInterno && (
-                            <div className="flex items-center gap-1">
-                              <button onClick={() => abrirEditar(o)} title="Editar" className="p-1.5 rounded hover:bg-amber-100 text-amber-800">
-                                <Pencil className="w-4 h-4" />
-                              </button>
-                              <button onClick={() => setEliminarId(o.id)} title="Eliminar" className="p-1.5 rounded hover:bg-red-100 text-red-600">
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                        <div style={paperStyle} className="px-5 py-3 pl-12 relative">
-                          <div className="absolute left-8 top-0 bottom-0 w-px bg-red-300" />
                           <p className="whitespace-pre-wrap text-slate-800 text-2xl leading-8" style={{ fontFamily: "'Caveat', cursive" }}>
                             {o.comentario}
                           </p>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
