@@ -69,6 +69,7 @@ const ObservadorEstudiantil = () => {
   const [editandoId, setEditandoId] = useState<number | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [eliminarId, setEliminarId] = useState<number | null>(null);
+  const [viendo, setViendo] = useState<Observacion | null>(null);
 
   // Cargo conjugado por género (Profesora/Profesor, Coordinadora/Coordinador…),
   // nunca el neutro "(a)" cuando se conoce el género.
@@ -327,7 +328,9 @@ const ObservadorEstudiantil = () => {
                               </div>
                             )}
                           </div>
-                          <p className="whitespace-pre-wrap text-slate-800 text-2xl leading-8" style={{ fontFamily: "'Caveat', cursive" }}>
+                          <p onClick={() => setViendo(o)} title="Ver observación"
+                            className="whitespace-pre-wrap text-slate-800 text-2xl leading-8 cursor-pointer hover:text-slate-950"
+                            style={{ fontFamily: "'Caveat', cursive" }}>
                             {o.comentario}
                           </p>
                         </div>
@@ -340,6 +343,37 @@ const ObservadorEstudiantil = () => {
           )}
         </div>
       </main>
+
+      {/* Pop-up de LECTURA (letra normal) — cualquiera que haga click en una observación */}
+      <Dialog open={!!viendo} onOpenChange={(o) => { if (!o) setViendo(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Observación</DialogTitle>
+          </DialogHeader>
+          {viendo && (
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                <span className="font-semibold text-foreground">{viendo.autor_nombre || "—"}</span>
+                {" · "}{fmtFechaHora(viendo.created_at)}
+              </p>
+              <div className="whitespace-pre-wrap text-sm text-foreground leading-relaxed bg-muted/20 border border-border rounded-md p-3">
+                {viendo.comentario}
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2 sm:justify-between">
+            {viendo && viendo.autor_id === session.id && esInterno ? (
+              <div className="flex gap-2">
+                <Button variant="ghost" onClick={() => { setEliminarId(viendo.id); setViendo(null); }} className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                  Eliminar
+                </Button>
+                <Button variant="outline" onClick={() => { abrirEditar(viendo); setViendo(null); }}>Editar</Button>
+              </div>
+            ) : <span />}
+            <Button onClick={() => setViendo(null)}>Cerrar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Modal agregar/editar (texto normal mientras se escribe) */}
       <Dialog open={modalOpen} onOpenChange={(o) => { if (!o) setModalOpen(false); }}>
