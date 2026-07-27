@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   getSession, isAdmin, isProfesor, isPadreDeFamilia, isEstudiante,
   puedeAccederDashboard, type AcudidoData,
@@ -48,6 +48,7 @@ const paperStyle: React.CSSProperties = {
 
 const ObservadorEstudiantil = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const session = getSession();
   const esAcudiente = isPadreDeFamilia();
   const esInterno = isProfesor() || isAdmin() || puedeAccederDashboard();
@@ -126,7 +127,22 @@ const ObservadorEstudiantil = () => {
     setEstSel(e);
     setObservaciones([]);
     cargarObservaciones(e.id);
+    setSearchParams({ est: String(e.id) }); // persiste en la URL: al recargar sigue aquí
   };
+
+  const volver = () => {
+    setEstSel(null);
+    setSearchParams({});
+  };
+
+  // Al recargar (o entrar con ?est=<id> en la URL), reabrir el estudiante.
+  useEffect(() => {
+    const estId = searchParams.get("est");
+    if (!estId || estSel || estudiantes.length === 0) return;
+    const found = estudiantes.find(e => String(e.id) === estId);
+    if (found) { setEstSel(found); cargarObservaciones(found.id); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [estudiantes, searchParams]);
 
   // Filtros para internos
   const gradosUnicos = useMemo(() => [...new Set(estudiantes.map(e => e.grado).filter(Boolean))]
@@ -213,7 +229,7 @@ const ObservadorEstudiantil = () => {
             <span className="text-muted-foreground">→</span>
             {estSel ? (
               <>
-                <button onClick={() => setEstSel(null)} className="text-primary hover:underline">Observador Estudiantil</button>
+                <button onClick={volver} className="text-primary hover:underline">Observador Estudiantil</button>
                 <span className="text-muted-foreground">→</span>
                 <span className="text-foreground font-medium">{estSel.apellidos} {estSel.nombres}</span>
               </>
@@ -289,7 +305,7 @@ const ObservadorEstudiantil = () => {
           {estSel && (
             <div className="space-y-5">
               <div className="flex items-center justify-between flex-wrap gap-3">
-                <button onClick={() => setEstSel(null)} className="text-sm text-primary hover:underline">← Volver</button>
+                <button onClick={volver} className="text-sm text-primary hover:underline">← Volver</button>
                 {esInterno && (
                   <Button onClick={abrirNuevo} className="gap-2"><Plus className="w-4 h-4" /> Agregar observación</Button>
                 )}
