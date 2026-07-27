@@ -36,6 +36,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "@/hooks/use-toast";
 import { toast as sonnerToast } from "sonner";
 // El escudo y nombre del colegio se obtienen dinámicamente desde la sesión
@@ -387,18 +388,19 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   // Marca "periodo completo" por periodo (persistida en BD: tabla Periodos_Completos).
   const [periodosCompletos, setPeriodosCompletos] = useState<Record<number, boolean>>({});
   // Habilitaciones (recuperación). Piloto: por ahora solo el colegio de prueba.
-  // Estructura: { [idEstudiantil]: { [periodo]: { nota, definitivaNueva } } }.
-  const [habilitaciones, setHabilitaciones] = useState<Record<string, Record<number, { nota: number; definitivaNueva: number }>>>({});
+  // Estructura: { [idEstudiantil]: { [periodo]: { nota, definitivaNueva, metodo } } }.
+  type HabMetodo = 'reemplazo' | 'ponderado';
+  const [habilitaciones, setHabilitaciones] = useState<Record<string, Record<number, { nota: number; definitivaNueva: number; metodo: HabMetodo }>>>({});
   // Modal para capturar la nota de habilitación.
   const [habModalOpen, setHabModalOpen] = useState(false);
-  const [habContexto, setHabContexto] = useState<{ estId: string; nombre: string; periodo: number; definitivaAnterior: number } | null>(null);
+  const [habContexto, setHabContexto] = useState<{ estId: string; nombre: string; periodo: number; definitivaAnterior: number; existe: boolean } | null>(null);
   const [habNotaInput, setHabNotaInput] = useState("");
+  const [habMetodo, setHabMetodo] = useState<HabMetodo>('reemplazo');
   const [habGuardando, setHabGuardando] = useState(false);
   // Piloto de habilitaciones: solo el colegio de prueba (Cailico).
   const esColegioPrueba = getSession()?.colegio_id === '2f96f076-83df-4b84-8bbc-9c1df79a372b';
-  // Ponderación de la habilitación (provisional — pendiente de confirmar/configurar
-  // por colegio): la nueva definitiva pondera 40% la definitiva anterior + 60% la
-  // nota de habilitación, y nunca baja de la anterior (solo puede subir).
+  // Ponderado (provisional — pendiente de configurar por colegio): la nueva
+  // definitiva pondera 40% la definitiva anterior + 60% la nota de habilitación.
   const HAB_PESO_ANTERIOR = 0.4;
   const HAB_PESO_HABILITACION = 0.6;
   // Modal "+ Agregar" tiene dos tipos cuando el periodo está en modo Grupos
@@ -3954,41 +3956,57 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     if (!asignaturaSeleccionada || !gradoSeleccionado || !salonSeleccionado) return;
     const { data } = await supabase
       .from('Habilitaciones')
-      .select('id_estudiantil, periodo, nota_habilitacion, definitiva_nueva')
+      .select('id_estudiantil, periodo, nota_habilitacion, metodo')
       .eq('asignatura', asignaturaSeleccionada)
       .eq('grado', gradoSeleccionado)
       .eq('salon', salonSeleccionado)
       .eq('ano_escolar', anoEscolarActual());
-    const map: Record<string, Record<number, { nota: number; definitivaNueva: number }>> = {};
+    const map: Record<string, Record<number, { nota: number; metodo: HabMetodo }>> = {};
     (data || []).forEach((h: any) => {
       const est = String(h.id_estudiantil);
       if (!map[est]) map[est] = {};
-      map[est][h.periodo] = { nota: Number(h.nota_habilitacion), definitivaNueva: Number(h.definitiva_nueva) };
+      map[est][h.periodo] = {
+        nota: Number(h.nota_habilitacion),
+        metodo: (h.metodo === 'ponderado' ? 'ponderado' : 'reemplazo'),
+      };
     });
     setHabilitaciones(map);
   }, [esColegioPrueba, asignaturaSeleccionada, gradoSeleccionado, salonSeleccionado]);
 
   useEffect(() => { cargarHabilitaciones(); }, [cargarHabilitaciones]);
 
-  const getHabilitacion = (estId: string, periodo: number) =>
-    habilitaciones[String(estId)]?.[periodo] || null;
-
-  // Nueva definitiva ponderada. Solo puede subir la nota (nunca bajarla).
-  const calcularDefinitivaHab = (anterior: number, notaHab: number): number => {
-    const ponderada = HAB_PESO_ANTERIOR * anterior + HAB_PESO_HABILITACION * notaHab;
-    return Math.round(Math.max(anterior, ponderada) * 10) / 10;
+  // Nueva definitiva según el método elegido. Solo puede subir (nunca bajar).
+  const calcularDefinitivaHab = (original: number, notaHab: number, metodo: HabMetodo): number => {
+    const cruda = metodo === 'ponderado'
+      ? HAB_PESO_ANTERIOR * original + HAB_PESO_HABILITACION * notaHab
+      : notaHab; // reemplazo directo
+    return Math.round(Math.max(original, cruda) * 10) / 10;
   };
 
-  const abrirHabilitacion = (estudiante: Estudiante, periodo: number, notaFinal: number | null) => {
-    if (notaFinal === null) return;
-    const existente = getHabilitacion(String(estudiante.id), periodo);
+  // Habilitación lista para pintar en la celda: la definitiva original se lee en
+  // vivo (calcularFinalPeriodo, ya persistida como fila "Definitiva Periodo") y la
+  // nueva se calcula al vuelo. No guardamos ninguna definitiva en Habilitaciones.
+  const getHabilitacionView = (estId: string, periodo: number): { nota: number; definitivaNueva: number; metodo: HabMetodo } | null => {
+    const hab = habilitaciones[String(estId)]?.[periodo];
+    if (!hab) return null;
+    const original = calcularFinalPeriodo(String(estId), periodo);
+    if (original === null) return null;
+    return { nota: hab.nota, metodo: hab.metodo, definitivaNueva: calcularDefinitivaHab(original, hab.nota, hab.metodo) };
+  };
+
+  const abrirHabilitacion = (estudiante: Estudiante, periodo: number, notaOriginal: number | null) => {
+    if (notaOriginal === null) return;
+    const existente = habilitaciones[String(estudiante.id)]?.[periodo];
     setHabContexto({
       estId: String(estudiante.id),
       nombre: `${estudiante.nombres} ${estudiante.apellidos}`,
       periodo,
-      definitivaAnterior: notaFinal,
+      // notaOriginal = definitiva base (sin habilitación), calculada en vivo.
+      definitivaAnterior: notaOriginal,
+      existe: !!existente,
     });
     setHabNotaInput(existente ? String(existente.nota) : "");
+    setHabMetodo(existente ? existente.metodo : 'reemplazo');
     setHabModalOpen(true);
   };
 
@@ -4004,7 +4022,6 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
       return;
     }
     setHabGuardando(true);
-    const definitivaNueva = calcularDefinitivaHab(habContexto.definitivaAnterior, notaHab);
     const { error } = await supabase
       .from('Habilitaciones')
       .upsert({
@@ -4015,16 +4032,39 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         periodo: habContexto.periodo,
         ano_escolar: anoEscolarActual(),
         nota_habilitacion: notaHab,
-        definitiva_anterior: habContexto.definitivaAnterior,
-        definitiva_nueva: definitivaNueva,
+        metodo: habMetodo,
       }, { onConflict: 'colegio_id,id_estudiantil,asignatura,grado,salon,periodo,ano_escolar' });
     setHabGuardando(false);
     if (error) {
       toast({ title: "No se pudo guardar la habilitación", description: error.message || String(error), variant: "destructive" });
       return;
     }
+    const definitivaNueva = calcularDefinitivaHab(habContexto.definitivaAnterior, notaHab, habMetodo);
     setHabModalOpen(false);
     toast({ title: "Habilitación guardada", description: `Nueva definitiva: ${definitivaNueva.toFixed(1)}`, variant: "success" as any });
+    await cargarHabilitaciones();
+  };
+
+  // Quita la habilitación: la definitiva vuelve a la original (sin recuperación).
+  const quitarHabilitacion = async () => {
+    if (!habContexto) return;
+    setHabGuardando(true);
+    const { error } = await supabase
+      .from('Habilitaciones')
+      .delete()
+      .eq('id_estudiantil', Number(habContexto.estId))
+      .eq('asignatura', asignaturaSeleccionada)
+      .eq('grado', gradoSeleccionado)
+      .eq('salon', salonSeleccionado)
+      .eq('periodo', habContexto.periodo)
+      .eq('ano_escolar', anoEscolarActual());
+    setHabGuardando(false);
+    if (error) {
+      toast({ title: "No se pudo quitar la habilitación", description: error.message || String(error), variant: "destructive" });
+      return;
+    }
+    setHabModalOpen(false);
+    toast({ title: "Habilitación quitada", description: "La definitiva vuelve a la nota original.", variant: "success" as any });
     await cargarHabilitaciones();
   };
 
@@ -5130,7 +5170,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                   )}
                                   onNotificarPadre={tieneNotas ? () => handleNotificarFinalPeriodoIndividual(estudiante, periodo.numero, finalPeriodo) : undefined}
                                   notaAprobatoria={colegioConfig.nota_aprobatoria}
-                                  habilitacion={getHabilitacion(estudiante.id, periodo.numero)}
+                                  habilitacion={getHabilitacionView(estudiante.id, periodo.numero)}
                                   puedeHabilitar={esColegioPrueba && completoPer && !soloLectura && finalPeriodo !== null && finalPeriodo < colegioConfig.nota_aprobatoria}
                                   onHabilitar={() => abrirHabilitacion(estudiante, periodo.numero, finalPeriodo)}
                                 />
@@ -5309,7 +5349,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                   )}
                                   onNotificarPadre={(tieneNotas && puedeNotificar) ? () => handleNotificarFinalPeriodoIndividual(estudiante, periodoActivo, notaFinal) : undefined}
                                   notaAprobatoria={colegioConfig.nota_aprobatoria}
-                                  habilitacion={getHabilitacion(estudiante.id, periodoActivo)}
+                                  habilitacion={getHabilitacionView(estudiante.id, periodoActivo)}
                                   puedeHabilitar={esColegioPrueba && completo && !soloLectura && notaFinal !== null && notaFinal < colegioConfig.nota_aprobatoria}
                                   onHabilitar={() => abrirHabilitacion(estudiante, periodoActivo, notaFinal)}
                                 />
@@ -5892,7 +5932,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
           {habContexto && (() => {
             const notaHab = aNumero(habNotaInput);
             const notaValida = notaHab !== null && !isNaN(notaHab) && notaHab >= colegioConfig.escala_min && notaHab <= colegioConfig.escala_max;
-            const nuevaDef = notaValida ? calcularDefinitivaHab(habContexto.definitivaAnterior, notaHab as number) : null;
+            const nuevaDef = notaValida ? calcularDefinitivaHab(habContexto.definitivaAnterior, notaHab as number, habMetodo) : null;
             return (
               <div className="space-y-4">
                 <div className="text-sm text-muted-foreground">
@@ -5917,23 +5957,47 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                     autoFocus
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label>¿Cómo se aplica la nota?</Label>
+                  <RadioGroup value={habMetodo} onValueChange={(v) => setHabMetodo(v as HabMetodo)} className="gap-2">
+                    <label htmlFor="hab-reemplazo" className="flex items-start gap-2 rounded-md border p-2 cursor-pointer hover:bg-muted/40">
+                      <RadioGroupItem value="reemplazo" id="hab-reemplazo" className="mt-0.5" />
+                      <div className="text-sm">
+                        <div className="font-medium">Reemplazar la nota</div>
+                        <div className="text-[11px] text-muted-foreground">La definitiva pasa a ser la nota de la habilitación.</div>
+                      </div>
+                    </label>
+                    <label htmlFor="hab-ponderado" className="flex items-start gap-2 rounded-md border p-2 cursor-pointer hover:bg-muted/40">
+                      <RadioGroupItem value="ponderado" id="hab-ponderado" className="mt-0.5" />
+                      <div className="text-sm">
+                        <div className="font-medium">Ponderado ({Math.round(HAB_PESO_ANTERIOR * 100)}% / {Math.round(HAB_PESO_HABILITACION * 100)}%)</div>
+                        <div className="text-[11px] text-muted-foreground">{Math.round(HAB_PESO_ANTERIOR * 100)}% definitiva actual + {Math.round(HAB_PESO_HABILITACION * 100)}% habilitación.</div>
+                      </div>
+                    </label>
+                  </RadioGroup>
+                </div>
                 <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm">
                   <div className="flex items-center justify-between">
                     <span>Nueva definitiva</span>
                     <span className="font-bold text-blue-600">{nuevaDef !== null ? nuevaDef.toFixed(1) : "—"}</span>
                   </div>
-                  <p className="mt-1 text-[11px] leading-tight text-muted-foreground">
-                    Ponderación: {Math.round(HAB_PESO_ANTERIOR * 100)}% definitiva anterior + {Math.round(HAB_PESO_HABILITACION * 100)}% habilitación. La nota solo puede subir.
-                  </p>
+                  <p className="mt-1 text-[11px] leading-tight text-muted-foreground">La nota solo puede subir, nunca bajar.</p>
                 </div>
               </div>
             );
           })()}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setHabModalOpen(false)} disabled={habGuardando}>Cancelar</Button>
-            <Button onClick={guardarHabilitacion} disabled={habGuardando}>
-              {habGuardando ? "Guardando…" : "Guardar"}
-            </Button>
+          <DialogFooter className="gap-2 sm:justify-between">
+            {habContexto?.existe ? (
+              <Button variant="ghost" onClick={quitarHabilitacion} disabled={habGuardando} className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                Quitar habilitación
+              </Button>
+            ) : <span />}
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setHabModalOpen(false)} disabled={habGuardando}>Cancelar</Button>
+              <Button onClick={guardarHabilitacion} disabled={habGuardando}>
+                {habGuardando ? "Guardando…" : "Guardar"}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
