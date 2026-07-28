@@ -113,6 +113,10 @@ const ObservadorEstudiantil = () => {
           if (new Date(o.created_at).getTime() > (lastByEst[est] || 0)) unread[est] = (unread[est] || 0) + 1;
         });
         setUnreadPorEst(unread);
+        // Un solo estudiante → entrar directo (igual que Notas), sin lista.
+        if (acudidos.length === 1 && !searchParams.get("est")) {
+          setSearchParams({ est: String(Number(acudidos[0].id)) }, { replace: true });
+        }
         setLoading(false);
         return;
       }
