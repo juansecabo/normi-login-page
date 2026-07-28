@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { FileText, Loader2, Download, AlertTriangle, CheckCircle2, Send } from "lucide-react";
 import { cargoSegunGenero } from "@/lib/entrevistadores";
+import { registerBoletinFonts } from "@/lib/boletinFonts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 /**
@@ -170,6 +171,7 @@ const Boletines = () => {
       const { default: jsPDF } = await import("jspdf");
       // Oficio / US Legal (216 × 356 mm), igual que el informe SISNOTAS de referencia.
       const pdf = new jsPDF("p", "mm", "legal");
+      registerBoletinFonts(pdf); // tipografía condensada idéntica al informe SISNOTAS
       const W = 216, MX = 10;
       const fmt = (n: number | null) => (n == null ? "" : n.toFixed(1));
       const hoy = new Date().toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" });
@@ -185,9 +187,9 @@ const Boletines = () => {
         paginaEst += 1;
         // ESPACIO DEL ESCUDO (siempre reservado; varía por colegio)
         if (escudo) { try { pdf.addImage(escudo, "PNG", MX, 8, 18, 18); } catch { /* sin escudo */ } }
-        pdf.setFont("helvetica", "bold").setFontSize(10);
+        pdf.setFont("HelveticaCond", "bold").setFontSize(10);
         pdf.text(datos.colegio.nombre.toUpperCase(), W / 2, 12, { align: "center" });
-        pdf.setFont("helvetica", "normal").setFontSize(5.6);
+        pdf.setFont("HelveticaCond", "normal").setFontSize(5.6);
         let hy = 15.5;
         for (const linea of datos.colegio.encabezado.slice(0, 3)) {
           pdf.text(linea, W / 2, hy, { align: "center" }); hy += 2.6;
@@ -195,7 +197,7 @@ const Boletines = () => {
         pdf.setFontSize(6.5);
         pdf.text(`Pág. ${paginaEst}`, W - MX, 9, { align: "right" });
 
-        pdf.setFont("helvetica", "bold").setFontSize(10);
+        pdf.setFont("HelveticaCond", "bold").setFontSize(10);
         pdf.text("INFORME DE DESEMPEÑO", W / 2, 30, { align: "center" });
 
         // Bloque de identificación (2 filas)
@@ -205,9 +207,9 @@ const Boletines = () => {
           let x = MX;
           for (const c of celdas) {
             pdf.rect(x, yy, c.w, 8);
-            pdf.setFont("helvetica", "bold").setFontSize(5.6);
+            pdf.setFont("HelveticaCond", "bold").setFontSize(5.6);
             pdf.text(c.label, x + 1, yy + 2.6);
-            pdf.setFont("helvetica", "bold").setFontSize(7.5);
+            pdf.setFont("ArialNarrow", "normal").setFontSize(7.5);
             pdf.text(c.valor, x + 1, yy + 6.4);
             x += c.w;
           }
@@ -237,7 +239,7 @@ const Boletines = () => {
       const cabeceraTabla = (y: number): number => {
         // Fila de cabecera con fondo gris (RGB 240 = 0.941), igual al informe SISNOTAS.
         pdf.setFillColor(240, 240, 240);
-        pdf.setFont("helvetica", "bold").setFontSize(6.4);
+        pdf.setFont("HelveticaCond", "bold").setFontSize(6.4);
         let x = MX;
         const th = 9;
         const celda = (w: number, texto: string, sub?: string) => {
@@ -286,13 +288,13 @@ const Boletines = () => {
           saltoSiHaceFalta(6);
           let x = MX;
           const rh = 5.4;
-          pdf.setFont("helvetica", f.esComponente ? "normal" : "bold").setFontSize(6.6);
+          pdf.setFont(f.esComponente ? "ArialNarrow" : "HelveticaCond", f.esComponente ? "normal" : "bold").setFontSize(6.6);
           pdf.rect(x, y, wNombre, rh);
           pdf.text((f.esComponente ? nombreTxt : nombreTxt.toUpperCase()).slice(0, 60), x + 1, y + 3.7);
           x += wNombre;
           const celdaC = (w: number, texto: string, bold = false) => {
             pdf.rect(x, y, w, rh);
-            pdf.setFont("helvetica", bold ? "bold" : "normal").setFontSize(6.4);
+            pdf.setFont(bold ? "HelveticaCond" : "ArialNarrow", bold ? "bold" : "normal").setFontSize(6.4);
             if (texto) pdf.text(texto, x + w / 2, y + 3.7, { align: "center" });
             x += w;
           };
@@ -322,7 +324,7 @@ const Boletines = () => {
           // Logros (viñetas ») — TODOS en UN solo recuadro y con el texto
           // JUSTIFICADO a ambos márgenes (réplica exacta del informe SISNOTAS).
           if (f.logros.length > 0) {
-            pdf.setFont("helvetica", "normal").setFontSize(6.2);
+            pdf.setFont("HelveticaCond", "normal").setFontSize(6.2);
             const anchoTexto = W - 2 * MX - 4;
             const parrafos = f.logros.map((l) => `» ${l}`);
             const wrapped = parrafos.map((p) => pdf.splitTextToSize(p, anchoTexto));
@@ -348,16 +350,16 @@ const Boletines = () => {
         // La columna de criterios se ajusta al criterio más largo en una sola
         // línea (+respiro), sin pasarse del ancho útil: ni desborde ni vacío.
         const wEsc = 22, wNac = 30;
-        pdf.setFont("helvetica", "normal");
+        pdf.setFont("HelveticaCond", "normal");
         const wCriTexto = Math.max(0, ...ordRangos.map((r) => pdf.getTextWidth(criterioDe(r.label))));
         const wCri = Math.min((W - 2 * MX) - wEsc - wNac, wCriTexto + 3);
-        pdf.setFont("helvetica", "bold");
+        pdf.setFont("HelveticaCond", "bold");
         pdf.rect(MX, y, wEsc, 3.6); pdf.rect(MX + wEsc, y, wNac, 3.6); pdf.rect(MX + wEsc + wNac, y, wCri, 3.6);
         pdf.text("Escala Numérica", MX + 1, y + 2.5);
         pdf.text("Escala Nacional", MX + wEsc + 1, y + 2.5);
         pdf.text("Criterios de Evaluación", MX + wEsc + wNac + 1, y + 2.5);
         let ly = y + 3.6;
-        pdf.setFont("helvetica", "normal");
+        pdf.setFont("HelveticaCond", "normal");
         for (const r of ordRangos) {
           const maxTx = r.max > datos.escala.max ? datos.escala.max : r.max;
           pdf.rect(MX, ly, wEsc, 3.4); pdf.rect(MX + wEsc, ly, wNac, 3.4); pdf.rect(MX + wEsc + wNac, ly, wCri, 3.4);
@@ -375,7 +377,7 @@ const Boletines = () => {
           // El nombre se auto-reduce si no cabe en el ancho de la firma (evita desborde).
           const nombreDir = datos.director.nombre.toUpperCase();
           let fsNombre = 6.4;
-          pdf.setFont("helvetica", "normal").setFontSize(fsNombre);
+          pdf.setFont("HelveticaCond", "normal").setFontSize(fsNombre);
           while (pdf.getTextWidth(nombreDir) > anchoFirma - 2 && fsNombre > 4) {
             fsNombre -= 0.2; pdf.setFontSize(fsNombre);
           }
@@ -383,7 +385,7 @@ const Boletines = () => {
           pdf.setFontSize(6.4);
           pdf.text(cargoSegunGenero("Director(a) de Grupo", datos.director.genero), cx, ly + 1.6, { align: "center" });
         }
-        pdf.setFont("helvetica", "normal").setFontSize(5.2);
+        pdf.setFont("HelveticaCond", "normal").setFontSize(5.2);
         pdf.text("Generado con Notas Normi — notasnormi.com", MX, 350);
       }
 
