@@ -324,11 +324,15 @@ const Boletines = () => {
         // ── Pie: leyenda de escala + firma ──
         saltoSiHaceFalta(34);
         y += 5;
-        pdf.setFont("helvetica", "bold").setFontSize(5.6);
+        pdf.setFontSize(5.6);
         const ordRangos = [...datos.escala.rangos].sort((a, b) => b.min - a.min);
-        // La columna de criterios ocupa TODO el ancho útil restante (antes 78mm
-        // fijos hacían que el criterio más largo se saliera del borde derecho).
-        const wEsc = 22, wNac = 30, wCri = (W - 2 * MX) - wEsc - wNac;
+        // La columna de criterios se ajusta al criterio más largo en una sola
+        // línea (+respiro), sin pasarse del ancho útil: ni desborde ni vacío.
+        const wEsc = 22, wNac = 30;
+        pdf.setFont("helvetica", "normal");
+        const wCriTexto = Math.max(0, ...ordRangos.map((r) => pdf.getTextWidth(criterioDe(r.label))));
+        const wCri = Math.min((W - 2 * MX) - wEsc - wNac, wCriTexto + 3);
+        pdf.setFont("helvetica", "bold");
         pdf.rect(MX, y, wEsc, 3.6); pdf.rect(MX + wEsc, y, wNac, 3.6); pdf.rect(MX + wEsc + wNac, y, wCri, 3.6);
         pdf.text("Escala Numérica", MX + 1, y + 2.5);
         pdf.text("Escala Nacional", MX + wEsc + 1, y + 2.5);
