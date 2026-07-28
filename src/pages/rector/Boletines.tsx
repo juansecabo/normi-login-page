@@ -175,9 +175,13 @@ const Boletines = () => {
       const escudo = datos.colegio.logo_url ? await escudoAPng(datos.colegio.logo_url) : null;
       const lista = soloEstudiante ? [soloEstudiante] : datos.estudiantes;
 
-      let pagina = 0;
+      // La numeración "Pág. N" es POR ESTUDIANTE: cada boletín arranca en 1 y solo
+      // sube si ese mismo estudiante ocupa varias páginas. `hojaEmitida` decide si
+      // hay que abrir una hoja nueva antes del siguiente estudiante.
+      let paginaEst = 0;
+      let hojaEmitida = false;
       const encabezado = (est: EstBol): number => {
-        pagina += 1;
+        paginaEst += 1;
         // ESPACIO DEL ESCUDO (siempre reservado; varía por colegio)
         if (escudo) { try { pdf.addImage(escudo, "PNG", MX, 8, 18, 18); } catch { /* sin escudo */ } }
         pdf.setFont("helvetica", "bold").setFontSize(10);
@@ -188,7 +192,7 @@ const Boletines = () => {
           pdf.text(linea, W / 2, hy, { align: "center" }); hy += 2.6;
         }
         pdf.setFontSize(6.5);
-        pdf.text(`Pág. ${pagina}`, W - MX, 9, { align: "right" });
+        pdf.text(`Pág. ${paginaEst}`, W - MX, 9, { align: "right" });
 
         pdf.setFont("helvetica", "bold").setFontSize(10);
         pdf.text("INFORME DE DESEMPEÑO", W / 2, 30, { align: "center" });
@@ -230,12 +234,13 @@ const Boletines = () => {
       const wNombre = W - 2 * MX - wIH - wFA - wVal - wNiv - wDes - cols.length * wGrupo;
 
       const cabeceraTabla = (y: number): number => {
-        pdf.setFillColor(255, 255, 255);
+        // Fila de cabecera con fondo gris (RGB 240 = 0.941), igual al informe SISNOTAS.
+        pdf.setFillColor(240, 240, 240);
         pdf.setFont("helvetica", "bold").setFontSize(6.4);
         let x = MX;
         const th = 9;
         const celda = (w: number, texto: string, sub?: string) => {
-          pdf.rect(x, y, w, th);
+          pdf.rect(x, y, w, th, "FD");
           if (sub) {
             pdf.text(texto, x + w / 2, y + 3.6, { align: "center" });
             pdf.text(sub, x + w / 2, y + 6.8, { align: "center" });
@@ -251,11 +256,14 @@ const Boletines = () => {
         celda(wVal, "Val");
         celda(wNiv, "Niv");
         celda(wDes, "Desempeño");
+        pdf.setFillColor(255, 255, 255);
         return y + th;
       };
 
       for (const est of lista) {
-        if (pagina > 0) pdf.addPage();
+        paginaEst = 0;                          // cada estudiante reinicia en Pág. 1
+        if (hojaEmitida) pdf.addPage();
+        hojaEmitida = true;
         let y = encabezado(est);
         y = cabeceraTabla(y);
 
