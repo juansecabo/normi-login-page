@@ -44,7 +44,7 @@ const DashboardAcudiente = () => {
   // vez que el acudiente entró (piloto: solo colegio de prueba).
   useEffect(() => {
     const s = getSession();
-    if (!s.id || s.colegio_id !== "2f96f076-83df-4b84-8bbc-9c1df79a372b") return;
+    if (!s.id) return;
     (async () => {
       const [{ data: obs }, { data: lecs }] = await Promise.all([
         supabase.from("Observador_Estudiantil").select("estudiante_id, created_at"),
@@ -215,13 +215,13 @@ const DashboardAcudiente = () => {
         <span className="font-semibold text-foreground">Notas</span>
       </button>
     ) },
-    ...(getSession().colegio_id === "2f96f076-83df-4b84-8bbc-9c1df79a372b" ? [{ id: 'observador', render: (
+    { id: 'observador', render: (
       <button onClick={() => navigate("/observador-estudiantil")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-sky-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-sky-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-sky-200">
         <Badge count={badges.observador} />
         <img src={iconObservador} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground text-center">Observador Estudiantil</span>
       </button>
-    ) }] : []),
+    ) },
     { id: 'actividades', render: (
       <button onClick={() => navigate("/acudiente/actividades")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-green-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-green-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-green-200">
         <Badge count={badges.actividades} />

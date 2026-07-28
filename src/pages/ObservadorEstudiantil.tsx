@@ -15,9 +15,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-// Piloto: por ahora solo el colegio de prueba (Cailico). Luego se abre a todos.
-const COLEGIO_PRUEBA = "2f96f076-83df-4b84-8bbc-9c1df79a372b";
-
 const GRADO_ORDEN: Record<string, number> = {
   "Párvulo": 0, "Pre-Jardín": 1, "Prejardín": 1, "Jardín": 2, "Transición": 3,
   "Primero": 4, "Segundo": 5, "Tercero": 6, "Cuarto": 7, "Quinto": 8,
@@ -87,7 +84,6 @@ const ObservadorEstudiantil = () => {
   // Guard de acceso
   useEffect(() => {
     if (!session.id) { navigate("/"); return; }
-    if (session.colegio_id !== COLEGIO_PRUEBA) { navigate("/"); return; }
     if (isEstudiante() || (!esInterno && !esAcudiente)) { navigate("/"); return; }
   }, [navigate]);
 
