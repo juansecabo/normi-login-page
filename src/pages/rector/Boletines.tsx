@@ -307,17 +307,24 @@ const Boletines = () => {
             y += 4;
           }
 
-          // Logros (viñetas »)
-          if (!esArea && f.logros.length > 0) {
+          // Logros (viñetas ») — TODOS en UN solo recuadro y con el texto
+          // JUSTIFICADO a ambos márgenes (réplica exacta del informe SISNOTAS).
+          if (f.logros.length > 0) {
             pdf.setFont("helvetica", "normal").setFontSize(6.2);
-            for (const l of f.logros) {
-              const lineas = pdf.splitTextToSize(`» ${l}`, W - 2 * MX - 4);
-              const alto = lineas.length * 2.9 + 1.6;
-              saltoSiHaceFalta(alto);
-              pdf.rect(MX, y, W - 2 * MX, alto);
-              pdf.text(lineas, MX + 2, y + 2.8);
-              y += alto;
+            const anchoTexto = W - 2 * MX - 4;
+            const parrafos = f.logros.map((l) => `» ${l}`);
+            const wrapped = parrafos.map((p) => pdf.splitTextToSize(p, anchoTexto));
+            const totalLineas = wrapped.reduce((s, w) => s + w.length, 0);
+            const alto = totalLineas * 2.9 + 2;
+            saltoSiHaceFalta(alto);
+            pdf.rect(MX, y, W - 2 * MX, alto);
+            let ty = y + 2.8;
+            for (let i = 0; i < parrafos.length; i++) {
+              // justify estira todas las líneas menos la última de cada párrafo.
+              pdf.text(parrafos[i], MX + 2, ty, { maxWidth: anchoTexto, align: "justify" });
+              ty += wrapped[i].length * 2.9;
             }
+            y += alto;
           }
         }
 
