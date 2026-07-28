@@ -311,13 +311,17 @@ const Boletines = () => {
           celdaC(wDes, (f.desempeno || "").toUpperCase(), true);
           y += rh;
 
-          // Desglose propio cuando NO hay columnas uniformes
+          // Desglose propio cuando NO hay columnas uniformes: grupos + actividades
+          // sueltas, cada uno con su % (si no tiene %, va sin paréntesis = equitativo).
           if (cols.length === 0 && f.grupos && f.grupos.length > 0) {
-            const linea = f.grupos.map((g) => `${g.nombre} (${g.pct}%): ${g.nota != null ? fmt(g.nota) : "—"}`).join("   ·   ");
+            const linea = f.grupos.map((g) => {
+              const pctTxt = g.pct != null && g.pct !== "" ? ` (${g.pct}%)` : "";
+              return `${g.nombre}${pctTxt}: ${g.nota != null ? fmt(g.nota) : "—"}`;
+            }).join("   ·   ");
             saltoSiHaceFalta(4);
             pdf.rect(MX, y, W - 2 * MX, 4);
             pdf.setFont("helvetica", "italic").setFontSize(5.8);
-            pdf.text(linea.slice(0, 130), MX + 3, y + 2.7);
+            pdf.text(linea.slice(0, 160), MX + 3, y + 2.7);
             y += 4;
           }
 
@@ -341,6 +345,18 @@ const Boletines = () => {
             y += alto;
           }
         }
+
+        // ── OBSERVACIONES: recuadro en blanco para que el profesor/director escriba ──
+        saltoSiHaceFalta(26);
+        y += 4;
+        pdf.setFillColor(240, 240, 240);
+        pdf.rect(MX, y, W - 2 * MX, 5, "FD");
+        pdf.setFillColor(255, 255, 255);
+        pdf.setFont("HelveticaCond", "bold").setFontSize(6.4);
+        pdf.text("OBSERVACIONES", MX + 2, y + 3.4);
+        y += 5;
+        pdf.rect(MX, y, W - 2 * MX, 18); // espacio en blanco para escribir a mano
+        y += 18;
 
         // ── Pie: leyenda de escala + firma ──
         saltoSiHaceFalta(34);
