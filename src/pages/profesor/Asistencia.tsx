@@ -28,7 +28,7 @@ const ESTADO_UI: Record<AsistenciaEstado, { label: string; color: string; ring: 
   presente: { label: "Presente", color: "bg-emerald-500", ring: "ring-emerald-400", text: "text-emerald-600" },
   ausente: { label: "Ausente", color: "bg-rose-500", ring: "ring-rose-400", text: "text-rose-600" },
   excusa: { label: "Con excusa", color: "bg-amber-400", ring: "ring-amber-400", text: "text-amber-600" },
-  tarde: { label: "Llegó tarde", color: "bg-orange-500", ring: "ring-orange-400", text: "text-orange-600" },
+  tarde: { label: "Entró tarde", color: "bg-orange-500", ring: "ring-orange-400", text: "text-orange-600" },
 };
 
 const THRESH = 90; // px para confirmar un swipe
@@ -270,7 +270,7 @@ const Asistencia = () => {
         {step === "select" && (
           <div className="bg-card rounded-lg shadow-soft p-6 md:p-8 max-w-xl mx-auto mt-4">
             <h2 className="text-2xl font-bold text-foreground mb-1 text-center">Tomar asistencia</h2>
-            <p className="text-sm text-muted-foreground mb-6 text-center">Elige la clase y el día. Luego deslizas a la derecha (presente), izquierda (ausente), arriba (llegó tarde) o abajo (con excusa).</p>
+            <p className="text-sm text-muted-foreground mb-6 text-center">Elige la clase y el día. Luego deslizas a la derecha (presente), izquierda (ausente), arriba (entró tarde) o abajo (con excusa).</p>
 
             {loading ? (
               <p className="text-center text-muted-foreground">Cargando tus asignaciones…</p>
@@ -358,7 +358,7 @@ const Asistencia = () => {
                   )}
                 </div>
 
-                {/* Botones equivalentes — orden: Regresar · Excusa · Llegó tarde · No asistió · Asistió */}
+                {/* Botones equivalentes — orden: Regresar · Excusa · Entró tarde · No asistió · Asistió */}
                 <div className="flex items-center justify-center gap-4 mt-6">
                   <button onClick={volverAnterior} disabled={idx === 0} title="Volver al anterior"
                     className="w-12 h-12 rounded-full bg-muted text-foreground flex items-center justify-center shadow hover:scale-105 transition disabled:opacity-40 disabled:hover:scale-100">
@@ -368,7 +368,7 @@ const Asistencia = () => {
                     className="w-14 h-14 rounded-full bg-amber-400 text-white flex items-center justify-center shadow-lg hover:scale-105 transition">
                     <FileText className="w-6 h-6" />
                   </button>
-                  <button onClick={() => commit("tarde")} title="Llegó tarde"
+                  <button onClick={() => commit("tarde")} title="Entró tarde"
                     className="w-14 h-14 rounded-full bg-orange-500 text-white flex items-center justify-center shadow-lg hover:scale-105 transition">
                     <Clock className="w-6 h-6" />
                   </button>

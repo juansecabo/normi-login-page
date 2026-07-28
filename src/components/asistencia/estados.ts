@@ -7,7 +7,7 @@ export const ESTADO_UI: Record<AsistenciaEstado, {
   presente: { label: "Presente", corto: "P", chip: "bg-emerald-100 text-emerald-700", cell: "bg-emerald-500", dot: "bg-emerald-500", excel: "FF16A34A" },
   ausente:  { label: "Ausente",  corto: "A", chip: "bg-rose-100 text-rose-700",       cell: "bg-rose-500",    dot: "bg-rose-500",    excel: "FFDC2626" },
   excusa:   { label: "Con excusa", corto: "E", chip: "bg-amber-100 text-amber-700",   cell: "bg-amber-400",   dot: "bg-amber-400",   excel: "FFF59E0B" },
-  tarde:    { label: "Llegó tarde", corto: "T", chip: "bg-orange-100 text-orange-700", cell: "bg-orange-500", dot: "bg-orange-500", excel: "FFF97316" },
+  tarde:    { label: "Entró tarde", corto: "T", chip: "bg-orange-100 text-orange-700", cell: "bg-orange-500", dot: "bg-orange-500", excel: "FFF97316" },
 };
 
 export const ESTADOS_LISTA: AsistenciaEstado[] = ["presente", "ausente", "excusa", "tarde"];
