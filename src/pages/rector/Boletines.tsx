@@ -318,11 +318,14 @@ const Boletines = () => {
               const pctTxt = g.pct != null && g.pct !== "" ? ` (${g.pct}%)` : "";
               return `${g.nombre}${pctTxt}: ${g.nota != null ? fmt(g.nota) : "—"}`;
             }).join("   ·   ");
-            saltoSiHaceFalta(4);
-            pdf.rect(MX, y, W - 2 * MX, 4);
             pdf.setFont("helvetica", "italic").setFontSize(5.8);
-            pdf.text(linea.slice(0, 160), MX + 3, y + 2.7);
-            y += 4;
+            // Se ajusta en varias líneas si hay muchos ítems (ej. 8 actividades).
+            const wrap = pdf.splitTextToSize(linea, W - 2 * MX - 6);
+            const alto = wrap.length * 3 + 1;
+            saltoSiHaceFalta(alto);
+            pdf.rect(MX, y, W - 2 * MX, alto);
+            pdf.text(wrap, MX + 3, y + 2.7);
+            y += alto;
           }
 
           // Logros (viñetas ») — TODOS en UN solo recuadro y con el texto
