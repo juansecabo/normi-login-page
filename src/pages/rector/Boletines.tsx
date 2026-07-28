@@ -326,7 +326,9 @@ const Boletines = () => {
         y += 5;
         pdf.setFont("helvetica", "bold").setFontSize(5.6);
         const ordRangos = [...datos.escala.rangos].sort((a, b) => b.min - a.min);
-        const wEsc = 22, wNac = 30, wCri = 78;
+        // La columna de criterios ocupa TODO el ancho útil restante (antes 78mm
+        // fijos hacían que el criterio más largo se saliera del borde derecho).
+        const wEsc = 22, wNac = 30, wCri = (W - 2 * MX) - wEsc - wNac;
         pdf.rect(MX, y, wEsc, 3.6); pdf.rect(MX + wEsc, y, wNac, 3.6); pdf.rect(MX + wEsc + wNac, y, wCri, 3.6);
         pdf.text("Escala Numérica", MX + 1, y + 2.5);
         pdf.text("Escala Nacional", MX + wEsc + 1, y + 2.5);
