@@ -518,7 +518,7 @@ const ObservadorEstudiantil = () => {
                             )}
                           </div>
                           <p onClick={() => setViendo(o)} title="Ver observación"
-                            className="whitespace-pre-wrap text-slate-800 text-2xl leading-8 cursor-pointer hover:text-slate-950"
+                            className="whitespace-pre-wrap text-slate-800 text-2xl md:text-3xl leading-8 cursor-pointer hover:text-slate-950"
                             style={{ fontFamily: "'Caveat', cursive" }}>
                             {o.comentario}
                           </p>
