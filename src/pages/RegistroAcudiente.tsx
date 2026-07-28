@@ -97,7 +97,7 @@ const RegistroAcudiente = () => {
     if (!apellidos.trim() || !nombres.trim()) { err("Faltan tus apellidos o nombres"); return; }
     if (soloDigitos(telefono).length < 10) { err("Teléfono inválido", "Escribe tu número de celular (es donde recibirás los comunicados del colegio)."); return; }
     if (genero !== "M" && genero !== "F") { err("Falta el género"); return; }
-    if (!fechaNac) { err("Falta tu fecha de nacimiento"); return; }
+    // La fecha de nacimiento es OPCIONAL.
     if (contrasena.length < 4 || contrasena.length > 50) { err("Contraseña inválida", "Debe tener entre 4 y 50 caracteres."); return; }
     if (contrasena !== confirmar) { err("Las contraseñas no coinciden"); return; }
     setPaso(2);
@@ -152,7 +152,7 @@ const RegistroAcudiente = () => {
         method: "POST",
         body: JSON.stringify({
           cedula: soloDigitos(cedula), nombres: nombres.trim(), apellidos: apellidos.trim(),
-          telefono: soloDigitos(telefono), genero, fecha_de_nacimiento: fechaNac, contrasena,
+          telefono: soloDigitos(telefono), genero, fecha_de_nacimiento: fechaNac || null, contrasena,
           acudidos: acudidos.map((a) => a.id),
         }),
       });
@@ -230,7 +230,7 @@ const RegistroAcudiente = () => {
                 </select>
               </div>
               <div>
-                <Label className="text-sm">Fecha de nacimiento *</Label>
+                <Label className="text-sm">Fecha de nacimiento <span className="text-muted-foreground font-normal">(opcional)</span></Label>
                 <Input type="date" value={fechaNac} onChange={(e) => setFechaNac(e.target.value)} min="1920-01-01" max={new Date().toISOString().slice(0, 10)} className="mt-1" />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
