@@ -57,6 +57,9 @@ const ObservadorEstudiantil = () => {
   const [cargandoObs, setCargandoObs] = useState(false);
   // Acudiente: nº de observaciones no leídas por cada estudiante (badge por estudiante).
   const [unreadPorEst, setUnreadPorEst] = useState<Record<number, number>>({});
+  // Interno: estudiantes que YA tienen observaciones (para el símbolo y el filtro).
+  const [conObs, setConObs] = useState<Set<number>>(new Set());
+  const [filtroConObs, setFiltroConObs] = useState(false);
 
   // Filtros (internos)
   const [filtroGrado, setFiltroGrado] = useState("");
@@ -116,13 +119,18 @@ const ObservadorEstudiantil = () => {
         setLoading(false);
         return;
       }
-      // Interno: todos los estudiantes del colegio (enriquecidos con nombres).
-      const { data } = await supabase.from("Estudiantes").select("id, grado, salon");
+      // Interno: todos los estudiantes del colegio (enriquecidos con nombres) +
+      // qué estudiantes ya tienen observaciones (para marcarlos y poder filtrar).
+      const [{ data }, { data: obsIds }] = await Promise.all([
+        supabase.from("Estudiantes").select("id, grado, salon"),
+        supabase.from("Observador_Estudiantil").select("estudiante_id"),
+      ]);
       const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
       const todos = sortByApellidosNombres(await enrichWithNombres((data || []) as any));
       setEstudiantes(todos.map((e: any) => ({
         id: Number(e.id), nombres: e.nombres, apellidos: e.apellidos, grado: e.grado, salon: e.salon,
       })));
+      setConObs(new Set((obsIds || []).map((o: any) => Number(o.estudiante_id))));
       setLoading(false);
     };
     cargar();
@@ -184,13 +192,14 @@ const ObservadorEstudiantil = () => {
     return estudiantes.filter(e => {
       if (filtroGrado && e.grado !== filtroGrado) return false;
       if (filtroSalon && e.salon !== filtroSalon) return false;
+      if (filtroConObs && !conObs.has(e.id)) return false;
       if (tokens.length) {
         const full = norm(`${e.nombres} ${e.apellidos}`);
         if (!tokens.every(t => full.includes(t))) return false;
       }
       return true;
     });
-  }, [estudiantes, filtroGrado, filtroSalon, busqueda]);
+  }, [estudiantes, filtroGrado, filtroSalon, busqueda, filtroConObs, conObs]);
 
   const abrirNuevo = () => { setMulti(false); setEditandoId(null); setTexto(""); setModalOpen(true); };
   const abrirEditar = (o: Observacion) => { setMulti(false); setEditandoId(o.id); setTexto(o.comentario); setModalOpen(true); };
@@ -369,10 +378,16 @@ const ObservadorEstudiantil = () => {
               {/* Barra: activar/salir de selección múltiple */}
               <div className="flex items-center justify-between flex-wrap gap-2">
                 {!modoSeleccion ? (
-                  <button onClick={() => setModoSeleccion(true)}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-primary/40 text-primary text-sm font-medium hover:bg-primary/10">
-                    <Users className="w-4 h-4" /> Seleccionar varios
-                  </button>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <button onClick={() => setModoSeleccion(true)}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-primary/40 text-primary text-sm font-medium hover:bg-primary/10">
+                      <Users className="w-4 h-4" /> Seleccionar varios
+                    </button>
+                    <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-border text-sm font-medium text-foreground cursor-pointer hover:bg-muted/40 select-none">
+                      <input type="checkbox" checked={filtroConObs} onChange={e => setFiltroConObs(e.target.checked)} className="w-4 h-4 accent-orange-500" />
+                      <NotebookPen className="w-4 h-4 text-orange-500" /> Con observaciones
+                    </label>
+                  </div>
                 ) : (
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium text-foreground">Selecciona los estudiantes (de uno o varios salones)</span>
@@ -420,7 +435,10 @@ const ObservadorEstudiantil = () => {
                           </div>
                           <input type="checkbox" className="sr-only" checked={marcado} onChange={() => toggleSel(e)} />
                           <div>
-                            <p className="font-semibold text-foreground text-sm">{e.apellidos} {e.nombres}</p>
+                            <p className="font-semibold text-foreground text-sm flex items-center gap-1.5">
+                              {e.apellidos} {e.nombres}
+                              {conObs.has(e.id) && <NotebookPen className="w-3.5 h-3.5 text-orange-500 shrink-0" title="Tiene observaciones" />}
+                            </p>
                             <p className="text-xs text-muted-foreground">{e.grado} {e.salon}</p>
                           </div>
                         </label>
@@ -431,7 +449,10 @@ const ObservadorEstudiantil = () => {
                       <button key={e.id} onClick={() => abrirEstudiante(e)}
                         className="w-full flex items-center justify-between border border-border rounded-lg p-4 text-left hover:bg-muted/30 transition-colors">
                         <div>
-                          <p className="font-semibold text-foreground text-sm">{e.apellidos} {e.nombres}</p>
+                          <p className="font-semibold text-foreground text-sm flex items-center gap-1.5">
+                            {e.apellidos} {e.nombres}
+                            {conObs.has(e.id) && <NotebookPen className="w-3.5 h-3.5 text-orange-500 shrink-0" title="Tiene observaciones" />}
+                          </p>
                           <p className="text-xs text-muted-foreground">{e.grado} {e.salon}</p>
                         </div>
                         <ChevronDown className="w-5 h-5 -rotate-90 text-muted-foreground" />
