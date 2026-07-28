@@ -168,8 +168,9 @@ const Boletines = () => {
     setGenerando(true);
     try {
       const { default: jsPDF } = await import("jspdf");
-      const pdf = new jsPDF("p", "mm", "a4");
-      const W = 210, MX = 10;
+      // Oficio / US Legal (216 × 356 mm), igual que el informe SISNOTAS de referencia.
+      const pdf = new jsPDF("p", "mm", "legal");
+      const W = 216, MX = 10;
       const fmt = (n: number | null) => (n == null ? "" : n.toFixed(1));
       const hoy = new Date().toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" });
       const escudo = datos.colegio.logo_url ? await escudoAPng(datos.colegio.logo_url) : null;
@@ -212,17 +213,17 @@ const Boletines = () => {
           }
         };
         filaInfo([
-          { label: "Nombre", valor: `${est.apellidos} ${est.nombres}`.toUpperCase(), w: 95 },
+          { label: "Nombre", valor: `${est.apellidos} ${est.nombres}`.toUpperCase(), w: 96 },
           { label: "No. Identificación", valor: est.id, w: 45 },
-          { label: "Grado / Grupo", valor: `${datos.grado} ${datos.salon}`, w: 50 },
+          { label: "Grado / Grupo", valor: `${datos.grado} ${datos.salon}`, w: 55 },
         ], y);
         y += 8;
         filaInfo([
-          { label: "No. Lista", valor: String(est.num_lista), w: 25 },
+          { label: "No. Lista", valor: String(est.num_lista), w: 26 },
           { label: "Periodo", valor: `${ORDINAL[datos.periodo]}${datos.periodo_peso ? ` (${datos.periodo_peso}%)` : ""}`, w: 45 },
           { label: "Año Lectivo", valor: String(datos.ano_escolar), w: 30 },
           { label: "Fecha", valor: hoy, w: 40 },
-          { label: "Sede", valor: datos.colegio.sede, w: 50 },
+          { label: "Sede", valor: datos.colegio.sede, w: 55 },
         ], y);
         return y + 10;
       };
@@ -240,6 +241,9 @@ const Boletines = () => {
         let x = MX;
         const th = 9;
         const celda = (w: number, texto: string, sub?: string) => {
+          // pdf.text() deja el fill en NEGRO (color del glifo); re-fijamos el gris
+          // antes de CADA rect o las celdas siguientes salen negras.
+          pdf.setFillColor(240, 240, 240);
           pdf.rect(x, y, w, th, "FD");
           if (sub) {
             pdf.text(texto, x + w / 2, y + 3.6, { align: "center" });
@@ -268,7 +272,7 @@ const Boletines = () => {
         y = cabeceraTabla(y);
 
         const saltoSiHaceFalta = (alto: number) => {
-          if (y + alto > 282) {
+          if (y + alto > 340) {
             pdf.addPage();
             y = encabezado(est);
             y = cabeceraTabla(y);
@@ -363,15 +367,24 @@ const Boletines = () => {
           ly += 3.4;
         }
         if (datos.director) {
-          const fx = W - MX - 55;
+          const anchoFirma = 60;
+          const fx = W - MX - anchoFirma;
+          const cx = fx + anchoFirma / 2;
           pdf.setLineWidth(0.25);
-          pdf.line(fx, ly - 4, fx + 55, ly - 4);
-          pdf.setFont("helvetica", "normal").setFontSize(6.4);
-          pdf.text(datos.director.nombre.toUpperCase(), fx + 27.5, ly - 1.2, { align: "center" });
-          pdf.text(cargoSegunGenero("Director(a) de Grupo", datos.director.genero), fx + 27.5, ly + 1.6, { align: "center" });
+          pdf.line(fx, ly - 4, fx + anchoFirma, ly - 4);
+          // El nombre se auto-reduce si no cabe en el ancho de la firma (evita desborde).
+          const nombreDir = datos.director.nombre.toUpperCase();
+          let fsNombre = 6.4;
+          pdf.setFont("helvetica", "normal").setFontSize(fsNombre);
+          while (pdf.getTextWidth(nombreDir) > anchoFirma - 2 && fsNombre > 4) {
+            fsNombre -= 0.2; pdf.setFontSize(fsNombre);
+          }
+          pdf.text(nombreDir, cx, ly - 1.2, { align: "center" });
+          pdf.setFontSize(6.4);
+          pdf.text(cargoSegunGenero("Director(a) de Grupo", datos.director.genero), cx, ly + 1.6, { align: "center" });
         }
         pdf.setFont("helvetica", "normal").setFontSize(5.2);
-        pdf.text("Generado con Notas Normi — notasnormi.com", MX, 292);
+        pdf.text("Generado con Notas Normi — notasnormi.com", MX, 350);
       }
 
       const nombreArchivo = soloEstudiante
