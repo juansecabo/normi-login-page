@@ -232,9 +232,9 @@ const Boletines = () => {
 
       // Anchos de la tabla principal
       const cols = datos.columnas || [];
-      const wIH = 8, wFA = 8, wVal = 10, wNiv = 8, wDes = 22;
+      const wIH = 8, wFA = 8, wVal = 10, wDes = 22;
       const wGrupo = cols.length > 0 ? 22 : 0;
-      const wNombre = W - 2 * MX - wIH - wFA - wVal - wNiv - wDes - cols.length * wGrupo;
+      const wNombre = W - 2 * MX - wIH - wFA - wVal - wDes - cols.length * wGrupo;
 
       const cabeceraTabla = (y: number): number => {
         // Fila de cabecera con fondo gris (RGB 240 = 0.941), igual al informe SISNOTAS.
@@ -260,7 +260,6 @@ const Boletines = () => {
         celda(wFA, "F.A");
         for (const c of cols) celda(wGrupo, c.nombre, `(${c.pct}%)`);
         celda(wVal, "Val");
-        celda(wNiv, "Niv");
         celda(wDes, "Desempeño");
         pdf.setFillColor(255, 255, 255);
         return y + th;
@@ -307,7 +306,6 @@ const Boletines = () => {
             }
           }
           celdaC(wVal, fmt(f.val), true);
-          celdaC(wNiv, "");
           celdaC(wDes, (f.desempeno || "").toUpperCase(), true);
           y += rh;
 
