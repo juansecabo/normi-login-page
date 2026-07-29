@@ -127,6 +127,8 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   const [nvGrados, setNvGrados] = useState<string[]>([]);
   const [nvSalones, setNvSalones] = useState<string[]>([]);
   const [guardandoCarga, setGuardandoCarga] = useState(false);
+  // Asignación en edición: rowId (fila existente en BD) o idx (fila pendiente al crear).
+  const [editCarga, setEditCarga] = useState<{ rowId?: number; idx?: number } | null>(null);
   // Foto ampliada en pop-up al hacer clic (como en el Panel de Control).
   const [fotoGrande, setFotoGrande] = useState<{ url: string; nombre: string } | null>(null);
   // Filtros de la lista de profesores por su carga académica (o dirección de grupo).
@@ -265,7 +267,20 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
       toast({ title: "Carga incompleta", description: "Elige al menos una asignatura, un grado y un salón.", variant: "destructive" });
       return;
     }
-    if (editando) {
+    // ── Editar una asignación existente (fila en BD) ──
+    if (editCarga?.rowId != null) {
+      setGuardandoCarga(true);
+      const { error } = await supabase.from("Asignación Profesores")
+        .update({ "Asignatura(s)": nvAsigs, "Grado(s)": nvGrados, "Salon(es)": nvSalones })
+        .eq("row_id", editCarga.rowId);
+      setGuardandoCarga(false);
+      if (error) { toast({ title: "No se pudo actualizar", description: error.message, variant: "destructive" }); return; }
+      await cargarCargas(editando!);
+    // ── Editar una asignación pendiente (persona nueva, aún sin crear) ──
+    } else if (editCarga?.idx != null) {
+      setCargasPend((prev) => prev.map((c, i) => i === editCarga.idx ? { asignaturas: nvAsigs, grados: nvGrados, salones: nvSalones } : c));
+    // ── Añadir nueva en edición (fila directa en BD) ──
+    } else if (editando) {
       setGuardandoCarga(true);
       const { error } = await supabase.from("Asignación Profesores").insert({
         id: parseInt(editando), "Asignatura(s)": nvAsigs, "Grado(s)": nvGrados, "Salon(es)": nvSalones,
@@ -273,10 +288,19 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
       setGuardandoCarga(false);
       if (error) { toast({ title: "No se pudo guardar la carga", description: error.message, variant: "destructive" }); return; }
       await cargarCargas(editando);
+    // ── Añadir nueva pendiente (persona nueva) ──
     } else {
       setCargasPend((prev) => [...prev, { asignaturas: nvAsigs, grados: nvGrados, salones: nvSalones }]);
     }
-    setNvAsigs([]); setNvGrados([]); setNvSalones([]);
+    setNvAsigs([]); setNvGrados([]); setNvSalones([]); setEditCarga(null);
+  };
+
+  // Carga una asignación existente/pendiente en el formulario para editarla.
+  const editarCarga = (c: any, i: number) => {
+    setNvAsigs([...(c.asignaturas || [])]);
+    setNvGrados([...(c.grados || [])]);
+    setNvSalones([...(c.salones || [])]);
+    setEditCarga(editando ? { rowId: c.row.row_id } : { idx: i });
   };
 
   const quitarCarga = async (row: any) => {
@@ -764,6 +788,9 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
                         <strong>{(c.asignaturas as string[]).join(", ")}</strong>
                         {" — "}{(c.grados as string[]).join(", ")} · Salón(es) {(c.salones as string[]).join(", ")}
                       </span>
+                      <button type="button" onClick={() => editarCarga(c, i)} disabled={guardandoCarga} className="p-1 text-muted-foreground hover:text-primary shrink-0" title="Editar asignación">
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
                       <button type="button" onClick={() => quitarCarga(c.row)} disabled={guardandoCarga} className="p-1 text-muted-foreground hover:text-destructive shrink-0" title="Quitar asignación">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -808,9 +835,17 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
                     ))}
                   </div>
                 </div>
-                <Button type="button" variant="outline" size="sm" onClick={anadirCarga} disabled={guardandoCarga} className="gap-1">
-                  {guardandoCarga ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Añadir asignación
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button type="button" variant="outline" size="sm" onClick={anadirCarga} disabled={guardandoCarga} className="gap-1">
+                    {guardandoCarga ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (editCarga ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />)}
+                    {editCarga ? "Guardar cambios" : "Añadir asignación"}
+                  </Button>
+                  {editCarga && (
+                    <button type="button" onClick={() => { setEditCarga(null); setNvAsigs([]); setNvGrados([]); setNvSalones([]); }} className="text-xs text-muted-foreground hover:text-foreground underline">
+                      Cancelar
+                    </button>
+                  )}
+                </div>
               </>)}
             </div>
           )}
