@@ -232,6 +232,9 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
   const veContrasenas = puedeAccederDashboard();
   const [showEstDialog, setShowEstDialog] = useState(false);
   const [editingEst, setEditingEst] = useState<Estudiante | null>(null);
+  // Barrera extra: al editar, la cédula queda bloqueada hasta tocar el lápiz.
+  const [estCedEditable, setEstCedEditable] = useState(false);
+  const [acuCedEditable, setAcuCedEditable] = useState(false);
   const [showDeleteEst, setShowDeleteEst] = useState<Estudiante | null>(null);
   const [savingEst, setSavingEst] = useState(false);
   const [estId, setEstId] = useState("");
@@ -705,7 +708,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
     setEstAcu3Cedula(""); setEstAcu3Nombre(""); setEstAcu3Tel("");
     const emptyAcu: AcuSnap = { ced: "", nom: "", tel: "" };
     if (est) {
-      setEditingEst(est);
+      setEditingEst(est); setEstCedEditable(false);
       setEstId(String(est.id));
       setEstNombre(est.nombres || "");
       setEstApellidos(est.apellidos || "");
@@ -770,7 +773,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
         acudientes: acuSlots,
       });
     } else {
-      setEditingEst(null);
+      setEditingEst(null); setEstCedEditable(false);
       setEstId("");
       setEstNombre("");
       setEstApellidos("");
@@ -1192,7 +1195,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
     setPerfContrasena("");
     setPerfUsuarioExiste(!!p);
     if (p) {
-      setEditingPerf(p);
+      setEditingPerf(p); setAcuCedEditable(false);
       setPerfPadreId(p.padre_id || "");
       setPerfPadreNombre(p.acudiente_nombre || "");
       setPerfPadreApellidos("");
@@ -1898,21 +1901,31 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Cédula / ID estudiantil</Label>
-              <Input
-                type="text"
-                inputMode="numeric"
-                value={estId}
-                onChange={async (e) => {
-                  const v = soloDigitos(e.target.value);
-                  setEstId(v);
-                  if (!editingEst) {
-                    const existe = await autofillDesdeUsuarios(v, setEstNombre, setEstApellidos, setEstTelefono);
-                    setEstUsuarioExiste(existe);
-                  }
-                }}
-                placeholder="Ej: 1234567890"
-              />
-              {editingEst && (
+              <div className="flex items-center gap-2">
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={estId}
+                  onChange={async (e) => {
+                    const v = soloDigitos(e.target.value);
+                    setEstId(v);
+                    if (!editingEst) {
+                      const existe = await autofillDesdeUsuarios(v, setEstNombre, setEstApellidos, setEstTelefono);
+                      setEstUsuarioExiste(existe);
+                    }
+                  }}
+                  placeholder="Ej: 1234567890"
+                  readOnly={!!editingEst && !estCedEditable}
+                  className={(!!editingEst && !estCedEditable) ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}
+                />
+                {editingEst && !estCedEditable && (
+                  <button type="button" onClick={() => setEstCedEditable(true)} title="Corregir identificación"
+                    className="shrink-0 p-2 rounded-md border border-input text-muted-foreground hover:text-primary hover:border-primary">
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              {editingEst && estCedEditable && (
                 <p className="text-xs text-amber-600">Cambiar la identificación la migra en todo el sistema (notas, asistencia, vínculos, comunicados…).</p>
               )}
             </div>
@@ -2339,23 +2352,31 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Cédula del acudiente</Label>
-              <Input
-                type="text"
-                inputMode="numeric"
-                value={perfPadreId}
-                onChange={async (e) => {
-                  const v = soloDigitos(e.target.value);
-                  setPerfPadreId(v);
-                  if (!editingPerf) {
-                    const existe = await autofillDesdeUsuarios(v, setPerfPadreNombre, setPerfPadreApellidos, setPerfTelefono);
-                    setPerfUsuarioExiste(existe);
-                  }
-                }}
-                placeholder="Ej: 1234567890"
-                readOnly={!!editingPerf && esProfesor}
-                className={editingPerf && esProfesor ? "bg-muted" : ""}
-              />
-              {editingPerf && !esProfesor && (
+              <div className="flex items-center gap-2">
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={perfPadreId}
+                  onChange={async (e) => {
+                    const v = soloDigitos(e.target.value);
+                    setPerfPadreId(v);
+                    if (!editingPerf) {
+                      const existe = await autofillDesdeUsuarios(v, setPerfPadreNombre, setPerfPadreApellidos, setPerfTelefono);
+                      setPerfUsuarioExiste(existe);
+                    }
+                  }}
+                  placeholder="Ej: 1234567890"
+                  readOnly={!!editingPerf && (esProfesor || !acuCedEditable)}
+                  className={(!!editingPerf && (esProfesor || !acuCedEditable)) ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}
+                />
+                {editingPerf && !esProfesor && !acuCedEditable && (
+                  <button type="button" onClick={() => setAcuCedEditable(true)} title="Corregir identificación"
+                    className="shrink-0 p-2 rounded-md border border-input text-muted-foreground hover:text-primary hover:border-primary">
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              {editingPerf && !esProfesor && acuCedEditable && (
                 <p className="text-xs text-amber-600">Cambiar la identificación la migra en todo el sistema (vínculos, comunicados…).</p>
               )}
             </div>

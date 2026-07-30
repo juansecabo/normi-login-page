@@ -97,6 +97,8 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   const [dialogAbierto, setDialogAbierto] = useState(false);
   // Cédula de la persona en edición (null = el pop-up está agregando).
   const [editando, setEditando] = useState<string | null>(null);
+  // Barrera extra: al editar, la cédula queda bloqueada hasta tocar el lápiz.
+  const [cedulaEditable, setCedulaEditable] = useState(false);
   const [confirmQuitar, setConfirmQuitar] = useState<any | null>(null);
   const [quitando, setQuitando] = useState(false);
   // Datos personales (Usuarios) solo los edita el Administrador (o SuperAdmin).
@@ -153,7 +155,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   // de la lista (editar a alguien no debe deshacer el filtrado en curso).
   const reset = () => {
     setCedula(""); setNombres(""); setApellidos(""); setTelefono(""); setGenero(""); setFechaNac("");
-    setNiveles([]); setEsDirector(false); setDirGrado(""); setDirSalon(""); setBloqueado(false); setEditando(null);
+    setNiveles([]); setEsDirector(false); setDirGrado(""); setDirSalon(""); setBloqueado(false); setEditando(null); setCedulaEditable(false);
     setCargas([]); setCargasPend([]); setNvAsigs([]); setNvGrados([]); setNvSalones([]);
   };
   // Limpia la búsqueda y los filtros de la lista (al cambiar de rol).
@@ -434,7 +436,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
       // resto. Reusa la migración atómica del server (RPC cambiar_cedula).
       let cedulaActual = editando!;
       const cedNueva = cedula.trim();
-      if (esAdmin && cedNueva && cedNueva !== cedulaActual) {
+      if (esAdmin && cedulaEditable && cedNueva && cedNueva !== cedulaActual) {
         if (!/^\d{3,15}$/.test(cedNueva)) {
           toast({ title: "Cédula inválida", description: "Solo números (3 a 15 dígitos).", variant: "destructive" });
           setGuardando(false); return;
@@ -712,8 +714,16 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="sm:col-span-2">
               <Label className="text-sm">Cédula *</Label>
-              <Input value={cedula} onChange={(e) => setCedula(e.target.value.replace(/\D/g, ""))} placeholder="Solo números" readOnly={!!editando && !esAdmin} className={`mt-1 ${(!!editando && !esAdmin) ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} />
-              {editando && esAdmin && (
+              <div className="flex items-center gap-2 mt-1">
+                <Input value={cedula} onChange={(e) => setCedula(e.target.value.replace(/\D/g, ""))} placeholder="Solo números" readOnly={!!editando && !(esAdmin && cedulaEditable)} className={`${(!!editando && !(esAdmin && cedulaEditable)) ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} />
+                {editando && esAdmin && !cedulaEditable && (
+                  <button type="button" onClick={() => setCedulaEditable(true)} title="Corregir cédula"
+                    className="shrink-0 p-2 rounded-md border border-border text-muted-foreground hover:text-primary hover:border-primary">
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              {editando && esAdmin && cedulaEditable && (
                 <p className="text-xs text-amber-600 mt-1">Cambiar la cédula la migra en todo el sistema (notas, asistencia, vínculos, comunicados…).</p>
               )}
               {buscando && <p className="text-xs text-muted-foreground mt-1">Buscando…</p>}
