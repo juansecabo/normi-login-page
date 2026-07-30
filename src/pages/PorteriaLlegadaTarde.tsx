@@ -114,11 +114,6 @@ const PorteriaLlegadaTarde = () => {
     if (next[e.id]) delete next[e.id]; else next[e.id] = e;
     return next;
   });
-  const seleccionarFiltrados = () => setSeleccionados(prev => {
-    const next = { ...prev };
-    estudiantesFiltrados.forEach(e => { next[e.id] = e; });
-    return next;
-  });
   const quitarSel = (id: number) => setSeleccionados(prev => { const n = { ...prev }; delete n[id]; return n; });
 
   const enviarReporte = async () => {
@@ -212,9 +207,6 @@ const PorteriaLlegadaTarde = () => {
                 <p className="text-center py-10 text-muted-foreground">No hay estudiantes con esos filtros.</p>
               ) : (
                 <>
-                  <button onClick={seleccionarFiltrados} className="text-xs text-primary hover:underline">
-                    Seleccionar todos ({estudiantesFiltrados.length})
-                  </button>
                   {estudiantesFiltrados.map(e => {
                     const marcado = !!seleccionados[e.id];
                     return (
