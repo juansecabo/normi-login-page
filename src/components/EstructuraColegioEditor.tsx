@@ -6,7 +6,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Clock, Plus, Trash2, GraduationCap, DoorOpen, Loader2 } from "lucide-react";
+import { Clock, Plus, Trash2, GraduationCap, DoorOpen, Loader2, Layers, Pencil } from "lucide-react";
 import { apiRequest, ApiError } from "@/lib/apiClient";
 import { ORDEN_GRADOS, rankGrado } from "@/utils/grados";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,11 +23,15 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
  */
 
 interface Jornada { id: number; nombre: string; hora_entrada: string | null; hora_salida: string | null; hora_aviso: string | null; orden: number | null; activa: boolean; }
-interface Grado { id: number; grado: string; orden: number | null; activo: boolean; }
+interface Grado { id: number; grado: string; nivel: string | null; orden: number | null; activo: boolean; }
 interface Salon { id: number; grado: string; salon: string; jornada_id: number | null; activo: boolean; }
+interface Nivel { id: number; nombre: string; orden: number | null; activo: boolean; }
 
 /** Jornadas estándar que se ofrecen de un tap (sin que el usuario las escriba). */
 const JORNADAS_ESTANDAR = ["Matutina", "Vespertina", "Nocturna"];
+/** Niveles estándar que se ofrecen de un tap. */
+const NIVELES_ESTANDAR = ["Preescolar", "Primaria", "Secundaria", "Media"];
+const SIN_NIVEL = "__sin__";
 
 // ── Conversión 24h ⇄ 12h (AM/PM) para el selector de hora ──
 const a24 = (h12: number, min: number, ampm: "AM" | "PM"): string => {
@@ -94,6 +98,7 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
   const [jornadas, setJornadas] = useState<Jornada[]>([]);
   const [grados, setGrados] = useState<Grado[]>([]);
   const [salones, setSalones] = useState<Salon[]>([]);
+  const [niveles, setNiveles] = useState<Nivel[]>([]);
 
   const [jorNombre, setJorNombre] = useState("");
   const [jorHora, setJorHora] = useState("");
@@ -117,10 +122,11 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
 
   const cargar = async () => {
     try {
-      const r = await apiRequest<{ jornadas: Jornada[]; grados: Grado[]; salones: Salon[] }>(`/api/institucion/estructura${qCid}`);
+      const r = await apiRequest<{ jornadas: Jornada[]; grados: Grado[]; salones: Salon[]; niveles: Nivel[] }>(`/api/institucion/estructura${qCid}`);
       setJornadas(r.jornadas || []);
       setGrados(r.grados || []);
       setSalones(r.salones || []);
+      setNiveles(r.niveles || []);
     } catch (e) {
       err(e, "No se pudo cargar la estructura.");
     } finally {
@@ -163,15 +169,85 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
       if (existente) {
         await apiRequest(`/api/institucion/grados/${existente.id}${qCid}`, { method: "DELETE" });
       } else {
-        await apiRequest("/api/institucion/grados", { method: "POST", body: JSON.stringify(withCid({ grado, orden: rankGrado(grado) })) });
+        await apiRequest("/api/institucion/grados", { method: "POST", body: JSON.stringify(withCid({ grado, nivel: nivelSugerido(grado), orden: rankGrado(grado) })) });
       }
       await cargar();
     } catch (e) { err(e, "No se pudo actualizar el grado. (Si tiene salones, quítalos primero.)"); }
   };
   const gradosOrdenados = useMemo(
-    () => [...grados].sort((a, b) => rankGrado(a.grado) - rankGrado(b.grado)),
+    () => [...grados].sort((a, b) => {
+      const ra = rankGrado(a.grado), rb = rankGrado(b.grado);
+      if (ra !== rb) return ra - rb;                       // canónicos primero, en su orden
+      return a.grado.localeCompare(b.grado, "es");         // custom (rank alto) alfabéticos
+    }),
     [grados],
   );
+
+  /** Nivel estándar sugerido para un grado estándar (para el alta rápida). */
+  const nivelSugerido = (grado: string): string | null => {
+    if (["Párvulo", "Prejardín", "Jardín", "Transición"].includes(grado)) return "Preescolar";
+    if (["Primero", "Segundo", "Tercero", "Cuarto", "Quinto"].includes(grado)) return "Primaria";
+    if (["Sexto", "Séptimo", "Octavo", "Noveno"].includes(grado)) return "Secundaria";
+    if (["Décimo", "Undécimo"].includes(grado)) return "Media";
+    return null;
+  };
+
+  // ── Niveles ──
+  const nivelesOrdenados = useMemo(
+    () => [...niveles].sort((a, b) => (a.orden ?? 999) - (b.orden ?? 999) || a.nombre.localeCompare(b.nombre, "es")),
+    [niveles],
+  );
+  const [nivNombre, setNivNombre] = useState("");
+  const crearNivelNombre = async (nombre: string) => {
+    if (!nombre.trim()) return;
+    try {
+      await apiRequest("/api/institucion/niveles", { method: "POST", body: JSON.stringify(withCid({ nombre: nombre.trim(), orden: niveles.length })) });
+      await cargar();
+    } catch (e) { err(e, "No se pudo crear el nivel."); }
+  };
+  const [editNivel, setEditNivel] = useState<{ id: number; nombre: string } | null>(null);
+  const [guardandoNivel, setGuardandoNivel] = useState(false);
+  const guardarNombreNivel = async () => {
+    if (!editNivel || !editNivel.nombre.trim()) return;
+    setGuardandoNivel(true);
+    try {
+      await apiRequest(`/api/institucion/niveles/${editNivel.id}`, { method: "PATCH", body: JSON.stringify(withCid({ nombre: editNivel.nombre.trim() })) });
+      setEditNivel(null);
+      await cargar();
+    } catch (e) { err(e, "No se pudo renombrar el nivel."); }
+    setGuardandoNivel(false);
+  };
+  const borrarNivel = async (id: number) => {
+    try { await apiRequest(`/api/institucion/niveles/${id}${qCid}`, { method: "DELETE" }); await cargar(); }
+    catch (e) { err(e, "No se pudo eliminar el nivel."); }
+  };
+
+  // ── Grados (custom + nivel + renombrar) ──
+  const [gradoNombre, setGradoNombre] = useState("");
+  const crearGradoCustom = async (grado: string) => {
+    if (!grado.trim()) return;
+    try {
+      await apiRequest("/api/institucion/grados", { method: "POST", body: JSON.stringify(withCid({ grado: grado.trim(), orden: 900 })) });
+      setGradoNombre("");
+      await cargar();
+    } catch (e) { err(e, "No se pudo crear el grado."); }
+  };
+  const setNivelGrado = async (id: number, nivel: string | null) => {
+    try { await apiRequest(`/api/institucion/grados/${id}`, { method: "PATCH", body: JSON.stringify(withCid({ nivel })) }); await cargar(); }
+    catch (e) { err(e, "No se pudo cambiar el nivel del grado."); }
+  };
+  const [editGrado, setEditGrado] = useState<{ id: number; grado: string } | null>(null);
+  const [guardandoGrado, setGuardandoGrado] = useState(false);
+  const guardarNombreGrado = async () => {
+    if (!editGrado || !editGrado.grado.trim()) return;
+    setGuardandoGrado(true);
+    try {
+      await apiRequest(`/api/institucion/grados/${editGrado.id}`, { method: "PATCH", body: JSON.stringify(withCid({ grado: editGrado.grado.trim() })) });
+      setEditGrado(null);
+      await cargar();
+    } catch (e) { err(e, "No se pudo renombrar el grado."); }
+    setGuardandoGrado(false);
+  };
 
   // ── Salones ──
   const salonesDeGrado = (grado: string) =>
@@ -288,13 +364,52 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
         </CardContent>
       </Card>
 
+      {/* ── NIVELES ── */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg"><Layers className="h-5 w-5 text-primary" /> Niveles</CardTitle>
+          <p className="text-sm text-muted-foreground">Los niveles agrupan los grados (ej: Preescolar, Primaria…). Cada grado pertenece a un nivel; los coordinadores y los comunicados pueden dirigirse a un nivel completo.</p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {nivelesOrdenados.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {nivelesOrdenados.map((n) => (
+                <div key={n.id} className="flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-full border border-primary/40 bg-primary/5 text-sm">
+                  <span className="font-medium">{n.nombre}</span>
+                  <button onClick={() => setEditNivel({ id: n.id, nombre: n.nombre })} className="text-muted-foreground hover:text-primary p-0.5" title="Renombrar nivel"><Pencil className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => borrarNivel(n.id)} className="text-muted-foreground hover:text-destructive p-0.5" title="Eliminar nivel"><Trash2 className="w-3.5 h-3.5" /></button>
+                </div>
+              ))}
+            </div>
+          )}
+          {/* Niveles estándar de un tap */}
+          {NIVELES_ESTANDAR.some((n) => !niveles.some((x) => x.nombre.toLowerCase() === n.toLowerCase())) && (
+            <div className="pt-1">
+              <p className="text-xs text-muted-foreground mb-2">Agrega un nivel:</p>
+              <div className="flex flex-wrap gap-2">
+                {NIVELES_ESTANDAR.filter((n) => !niveles.some((x) => x.nombre.toLowerCase() === n.toLowerCase())).map((n) => (
+                  <Button key={n} variant="outline" size="sm" onClick={() => crearNivelNombre(n)}><Plus className="w-4 h-4 mr-1" /> {n}</Button>
+                ))}
+              </div>
+            </div>
+          )}
+          <details className="pt-1">
+            <summary className="text-xs text-primary cursor-pointer">Otro nivel (nombre personalizado)</summary>
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              <Input value={nivNombre} onChange={(e) => setNivNombre(e.target.value)} placeholder="Nombre del nivel" className="flex-1 min-w-[160px]" maxLength={40} />
+              <Button onClick={async () => { await crearNivelNombre(nivNombre); setNivNombre(""); }}><Plus className="w-4 h-4 mr-1" /> Agregar</Button>
+            </div>
+          </details>
+        </CardContent>
+      </Card>
+
       {/* ── GRADOS ── */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg"><GraduationCap className="h-5 w-5 text-primary" /> Grados</CardTitle>
-          <p className="text-sm text-muted-foreground">Marca los grados que ofrece el colegio.{permitirImportar ? " Si el colegio ya tiene estudiantes, puedes traer su estructura actual con un clic." : ""}</p>
+          <p className="text-sm text-muted-foreground">Marca los grados que ofrece el colegio y asígnale un nivel a cada uno.{permitirImportar ? " Si el colegio ya tiene estudiantes, puedes traer su estructura actual con un clic." : ""}</p>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           {permitirImportar && (
             <div>
               <Button variant="outline" size="sm" onClick={importarEstructura} disabled={importando}>
@@ -302,17 +417,56 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
               </Button>
             </div>
           )}
-          <div className="flex flex-wrap gap-2">
-            {ORDEN_GRADOS.map((g) => {
-              const on = gradosDeclarados.has(g);
-              return (
-                <button key={g} onClick={() => toggleGrado(g)}
-                  className={`px-3 py-1.5 rounded-full border text-sm transition-colors cursor-pointer ${on ? "bg-primary text-primary-foreground border-primary" : "bg-background text-foreground border-border hover:bg-muted/50"}`}>
-                  {g}
-                </button>
-              );
-            })}
+
+          {/* Alta rápida: grados estándar (toggle). */}
+          <div>
+            <p className="text-xs text-muted-foreground mb-2">Alta rápida (toca para agregar o quitar):</p>
+            <div className="flex flex-wrap gap-2">
+              {ORDEN_GRADOS.map((g) => {
+                const on = gradosDeclarados.has(g);
+                return (
+                  <button key={g} onClick={() => toggleGrado(g)}
+                    className={`px-3 py-1.5 rounded-full border text-sm transition-colors cursor-pointer ${on ? "bg-primary text-primary-foreground border-primary" : "bg-background text-foreground border-border hover:bg-muted/50"}`}>
+                    {g}
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
+          {/* Grado personalizado. */}
+          <details>
+            <summary className="text-xs text-primary cursor-pointer">Otro grado (nombre personalizado)</summary>
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              <Input value={gradoNombre} onChange={(e) => setGradoNombre(e.target.value)} placeholder="Nombre del grado" className="flex-1 min-w-[160px]" maxLength={40} />
+              <Button onClick={() => crearGradoCustom(gradoNombre)}><Plus className="w-4 h-4 mr-1" /> Agregar</Button>
+            </div>
+          </details>
+
+          {/* Lista de grados declarados: nivel + renombrar + borrar. */}
+          {gradosOrdenados.length > 0 && (
+            <div className="border-t border-border pt-3 space-y-2">
+              <p className="text-xs text-muted-foreground">Grados del colegio ({gradosOrdenados.length}):</p>
+              {gradosOrdenados.map((g) => (
+                <div key={g.id} className="flex items-center gap-2 flex-wrap border border-border rounded-md px-3 py-2">
+                  <span className="font-medium flex-1 min-w-[90px]">{g.grado}</span>
+                  <label className="text-xs text-muted-foreground">Nivel</label>
+                  <Select value={g.nivel ?? SIN_NIVEL} onValueChange={(v) => setNivelGrado(g.id, v === SIN_NIVEL ? null : v)}>
+                    <SelectTrigger className="w-44"><SelectValue placeholder="Sin nivel" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={SIN_NIVEL}>Sin nivel</SelectItem>
+                      {nivelesOrdenados.map((n) => <SelectItem key={n.id} value={n.nombre}>{n.nombre}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <button onClick={() => setEditGrado({ id: g.id, grado: g.grado })} className="text-muted-foreground hover:text-primary p-1" title="Renombrar grado"><Pencil className="w-4 h-4" /></button>
+                  <button onClick={() => toggleGrado(g.grado)} className="text-muted-foreground hover:text-destructive p-1" title="Eliminar grado"><Trash2 className="w-4 h-4" /></button>
+                </div>
+              ))}
+              {niveles.length === 0 && (
+                <p className="text-xs text-amber-700">Tip: crea niveles arriba para poder asignarlos a los grados.</p>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -407,6 +561,36 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
           )}
         </CardContent>
       </Card>
+
+      {/* Renombrar NIVEL (se propaga a grados, estudiantes, comunicados…) */}
+      <Dialog open={!!editNivel} onOpenChange={(o) => { if (!o) setEditNivel(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Renombrar nivel</DialogTitle>
+            <DialogDescription className="pt-1">El nuevo nombre se aplicará en todo el colegio (grados, estudiantes, coordinadores y comunicados de ese nivel).</DialogDescription>
+          </DialogHeader>
+          <Input value={editNivel?.nombre ?? ""} onChange={(e) => setEditNivel((p) => p ? { ...p, nombre: e.target.value } : p)} maxLength={40} autoFocus onKeyDown={(e) => { if (e.key === "Enter") guardarNombreNivel(); }} />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditNivel(null)} disabled={guardandoNivel}>Cancelar</Button>
+            <Button onClick={guardarNombreNivel} disabled={guardandoNivel || !editNivel?.nombre.trim()}>{guardandoNivel && <Loader2 className="w-4 h-4 mr-1 animate-spin" />} Guardar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Renombrar GRADO (se propaga a notas, actividades, asistencia, asignaciones…) */}
+      <Dialog open={!!editGrado} onOpenChange={(o) => { if (!o) setEditGrado(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Renombrar grado</DialogTitle>
+            <DialogDescription className="pt-1">El nuevo nombre se aplicará en todo el colegio: estudiantes, notas, actividades, asistencia, salones y asignaciones de ese grado.</DialogDescription>
+          </DialogHeader>
+          <Input value={editGrado?.grado ?? ""} onChange={(e) => setEditGrado((p) => p ? { ...p, grado: e.target.value } : p)} maxLength={40} autoFocus onKeyDown={(e) => { if (e.key === "Enter") guardarNombreGrado(); }} />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditGrado(null)} disabled={guardandoGrado}>Cancelar</Button>
+            <Button onClick={guardarNombreGrado} disabled={guardandoGrado || !editGrado?.grado.trim()}>{guardandoGrado && <Loader2 className="w-4 h-4 mr-1 animate-spin" />} Guardar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Advertencia al borrar un salón CON estudiantes matriculados */}
       <Dialog open={!!confirmSalon} onOpenChange={(o) => { if (!o) setConfirmSalon(null); }}>
