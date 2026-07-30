@@ -710,7 +710,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
           </DialogHeader>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
+            <div className="sm:col-span-2">
               <Label className="text-sm">Cédula *</Label>
               <Input value={cedula} onChange={(e) => setCedula(e.target.value.replace(/\D/g, ""))} placeholder="Solo números" readOnly={!!editando && !esAdmin} className={`mt-1 ${(!!editando && !esAdmin) ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} />
               {editando && esAdmin && (
@@ -718,8 +718,6 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
               )}
               {buscando && <p className="text-xs text-muted-foreground mt-1">Buscando…</p>}
             </div>
-            {/* Espaciador: la cédula va sola en su fila; Apellidos + Nombres comparten la siguiente */}
-            <div className="hidden sm:block" />
             <div><Label className="text-sm">Apellidos *</Label><Input value={apellidos} onChange={(e) => setApellidos(capitalizarNombre(e.target.value))} readOnly={bloqueado} className={`mt-1 ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
             <div><Label className="text-sm">Nombres *</Label><Input value={nombres} onChange={(e) => setNombres(capitalizarNombre(e.target.value))} readOnly={bloqueado} className={`mt-1 ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
             <div className="sm:col-span-2"><Label className="text-sm">Teléfono</Label><div className="mt-1"><PhoneInput value={telefono} onChange={setTelefono} disabled={bloqueado} placeholder="3001234567" /></div></div>
