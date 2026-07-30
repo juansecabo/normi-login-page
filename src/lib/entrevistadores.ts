@@ -4,6 +4,8 @@ export type Entrevistador = { cargo?: string; nombres?: string; apellidos?: stri
 
 /** "Profesor(a)" → "Profesor" (M) / "Profesora" (F). Sin género queda neutro. */
 export const cargoSegunGenero = (cargo?: string, genero?: string | null): string => {
+  // Cargos sin "(a)" pero con femenino propio (ej. Portero → Portera).
+  if (cargo === "Portero") return genero === "F" ? "Portera" : "Portero";
   if (!cargo || !cargo.includes("(a)")) return cargo || "";
   if (genero === "M") return cargo.replace("(a)", "");
   if (genero === "F") {

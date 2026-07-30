@@ -40,6 +40,7 @@ const perfilesDelCargo = (cargo: string | undefined): string[] => {
     case 'Administrativo(a)': return ['Administrativos'];
     case 'Secretaria General': return ['Secretaria General'];
     case 'Orientador(a) Escolar': return ['Orientador(a) Escolar', 'Orientadores'];
+    case 'Portero': return ['Portero', 'Porteros'];
     default: return [];
   }
 };
@@ -238,6 +239,8 @@ const DashboardRector = () => {
         <span className="font-semibold text-foreground text-center">Formatos</span>
       </button>
     ) });
+  }
+  if (cargo === 'Rector' || cargo === 'Coordinador(a)' || cargo === 'Portero') {
     items.push({ id: 'porteria', render: (
       <button onClick={() => navigate("/porteria")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-orange-100 transition-all duration-200 hover:shadow-md hover:bg-orange-200">
         <img src={iconPorteria} alt="" className="w-16 h-16 object-contain" />
@@ -326,6 +329,12 @@ const DashboardRector = () => {
     ) },
   );
 
+  // El Portero(a) solo ve un conjunto acotado de fichas (en este orden).
+  const FICHAS_PORTERO = ['porteria', 'enviar-comunicado', 'comunicados-recibidos', 'documentos-recibidos', 'consultas'];
+  const itemsVisibles = cargo === 'Portero'
+    ? (FICHAS_PORTERO.map(fid => items.find(i => i.id === fid)).filter(Boolean) as ReordItem[])
+    : items;
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <HeaderNormi backLink="/dashboard" />
@@ -363,7 +372,7 @@ const DashboardRector = () => {
           <ReordenableDashboard
             dashboardKey="rector"
             gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6"
-            items={items}
+            items={itemsVisibles}
           />
         </div>
 

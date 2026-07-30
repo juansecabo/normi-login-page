@@ -23,7 +23,7 @@ import { buildTemplateBodyPreview, MAX_WA_TEMPLATE_BODY, WA_TEMPLATE_OVERHEAD } 
 // destinatarios + WhatsApp + guardar) en proceso, con multi-tenant filtrado
 // por el JWT del usuario.
 
-type PerfilKey = 'Estudiantes' | 'Padres' | 'Profesores' | 'Coordinadores' | 'Rector' | 'Administrativos' | 'Secretaria' | 'Orientador';
+type PerfilKey = 'Estudiantes' | 'Padres' | 'Profesores' | 'Coordinadores' | 'Rector' | 'Administrativos' | 'Secretaria' | 'Orientador' | 'Portero';
 
 const PERFILES_UI: { key: PerfilKey; label: string }[] = [
   { key: 'Estudiantes', label: 'Estudiantes' },
@@ -34,6 +34,7 @@ const PERFILES_UI: { key: PerfilKey; label: string }[] = [
   { key: 'Administrativos', label: 'Administrativos' },
   { key: 'Secretaria', label: 'Secretaria General' },
   { key: 'Orientador', label: 'Orientador(a) Escolar' },
+  { key: 'Portero', label: 'Porteros' },
 ];
 
 // El envío masivo personalizado ahora vive en el server:
@@ -115,7 +116,7 @@ const EnviarComunicado = () => {
   // Destinatarios state — perfiles (multi-select con checkboxes)
   const [perfilesMarcados, setPerfilesMarcados] = useState<Record<PerfilKey, boolean>>({
     Estudiantes: false, Padres: false, Profesores: false,
-    Coordinadores: false, Rector: false, Administrativos: false, Secretaria: false, Orientador: false,
+    Coordinadores: false, Rector: false, Administrativos: false, Secretaria: false, Orientador: false, Portero: false,
   });
 
   // Niveles y grados REALMENTE existentes en este colegio, derivados de la tabla
@@ -216,7 +217,7 @@ const EnviarComunicado = () => {
   const limpiarFormulario = () => {
     setPerfilesMarcados({
       Estudiantes: false, Padres: false, Profesores: false,
-      Coordinadores: false, Rector: false, Administrativos: false, Secretaria: false, Orientador: false,
+      Coordinadores: false, Rector: false, Administrativos: false, Secretaria: false, Orientador: false, Portero: false,
     });
     setNivelesMarcados({});
     setGradosMarcados({});
@@ -549,6 +550,7 @@ const EnviarComunicado = () => {
       }
     }
     if (sel.Rector) partes.push("Rector");
+    if (sel.Portero) partes.push("Porteros");
     if (sel.Administrativos) {
       if (administrativosSeleccionados.length === 0) partes.push("Administrativos");
       else {
@@ -735,6 +737,7 @@ const EnviarComunicado = () => {
       addInterno("Secretaria General", perfilesMarcados.Secretaria, secretariasSeleccionadas);
       addInterno("Orientadores", perfilesMarcados.Orientador, orientadoresSeleccionados);
       if (perfilesMarcados.Rector) internosTodos.push("Rector");
+      if (perfilesMarcados.Portero) internosTodos.push("Porteros");
 
       if (internosConIds.perfiles.length > 0) {
         segmentos.push({ perfil: internosConIds.perfiles, id_destinatarios: internosConIds.ids });
