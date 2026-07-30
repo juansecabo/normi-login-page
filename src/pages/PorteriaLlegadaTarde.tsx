@@ -1,0 +1,371 @@
+import { useEffect, useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { getSession } from "@/hooks/useSession";
+import HeaderNormi from "@/components/HeaderNormi";
+import { supabase } from "@/integrations/supabase/client";
+import { apiRequest, ApiError } from "@/lib/apiClient";
+import { toast } from "@/hooks/use-toast";
+import { Search, Check, X, Clock, DoorOpen, Send, Trash2, Loader2, RefreshCw } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+
+/**
+ * Portería → Reporte de llegada tarde. El administrador/rector/coordinador
+ * selecciona uno o varios estudiantes que llegaron tarde y notifica por WhatsApp
+ * a sus acudientes (con la hora de entrada). Cada reporte queda guardado; se
+ * puede corregir (eliminar) un reporte equivocado del historial del día.
+ */
+
+const GRADO_ORDEN: Record<string, number> = {
+  "Párvulo": 0, "Pre-Jardín": 1, "Prejardín": 1, "Jardín": 2, "Transición": 3,
+  "Primero": 4, "Segundo": 5, "Tercero": 6, "Cuarto": 7, "Quinto": 8,
+  "Sexto": 9, "Séptimo": 10, "Octavo": 11, "Noveno": 12, "Décimo": 13, "Undécimo": 14,
+};
+const ROLES_OK = ["Administrador", "Rector", "Coordinador(a)"];
+const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+
+/** "07:15" → "7:15 a. m." */
+const horaBonita = (h24?: string | null): string => {
+  if (!h24) return "";
+  const [h, m] = h24.split(":").map(Number);
+  if (Number.isNaN(h)) return h24;
+  const ampm = h < 12 ? "a. m." : "p. m.";
+  let h12 = h % 12; if (h12 === 0) h12 = 12;
+  return `${h12}:${String(m ?? 0).padStart(2, "0")} ${ampm}`;
+};
+
+interface Estudiante { id: number; nombres: string; apellidos: string; grado: string; salon: string; }
+interface Registro {
+  id: number; estudiante_nombre: string | null; grado: string | null; salon: string | null;
+  hora_entrada: string | null; reportado_por_nombre: string | null; acudientes_notificados: number;
+}
+
+const PorteriaLlegadaTarde = () => {
+  const navigate = useNavigate();
+  const session = getSession();
+
+  const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [seleccionados, setSeleccionados] = useState<Record<number, Estudiante>>({});
+  const [enviando, setEnviando] = useState(false);
+
+  const [filtroGrado, setFiltroGrado] = useState("");
+  const [filtroSalon, setFiltroSalon] = useState("");
+  const [busqueda, setBusqueda] = useState("");
+
+  const [historial, setHistorial] = useState<Registro[]>([]);
+  const [cargandoHist, setCargandoHist] = useState(true);
+  const [eliminarReg, setEliminarReg] = useState<Registro | null>(null);
+  const [eliminando, setEliminando] = useState(false);
+
+  // Guard de acceso.
+  useEffect(() => {
+    if (!session.id) { navigate("/"); return; }
+    if (!ROLES_OK.includes(session.cargo || "")) { navigate("/dashboard"); return; }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const cargar = async () => {
+      const { data } = await supabase.from("Estudiantes").select("id, grado, salon");
+      const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
+      const todos = sortByApellidosNombres(await enrichWithNombres((data || []) as any));
+      setEstudiantes(todos.map((e: any) => ({
+        id: Number(e.id), nombres: e.nombres, apellidos: e.apellidos, grado: e.grado, salon: e.salon,
+      })));
+      setLoading(false);
+    };
+    cargar();
+    cargarHistorial();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const cargarHistorial = async () => {
+    setCargandoHist(true);
+    try {
+      const r = await apiRequest<{ items: Registro[] }>("/api/porteria/historial");
+      setHistorial(r.items || []);
+    } catch { /* silencioso */ }
+    setCargandoHist(false);
+  };
+
+  const gradosUnicos = useMemo(() => [...new Set(estudiantes.map(e => e.grado).filter(Boolean))]
+    .sort((a, b) => (GRADO_ORDEN[a] ?? 99) - (GRADO_ORDEN[b] ?? 99) || a.localeCompare(b, "es")), [estudiantes]);
+  const salonesUnicos = useMemo(() => [...new Set(
+    estudiantes.filter(e => !filtroGrado || e.grado === filtroGrado).map(e => e.salon).filter(Boolean)
+  )].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })), [estudiantes, filtroGrado]);
+
+  const estudiantesFiltrados = useMemo(() => {
+    const tokens = norm(busqueda.trim()).split(/\s+/).filter(Boolean);
+    return estudiantes.filter(e => {
+      if (filtroGrado && e.grado !== filtroGrado) return false;
+      if (filtroSalon && e.salon !== filtroSalon) return false;
+      if (tokens.length) {
+        const full = norm(`${e.nombres} ${e.apellidos}`);
+        if (!tokens.every(t => full.includes(t))) return false;
+      }
+      return true;
+    });
+  }, [estudiantes, filtroGrado, filtroSalon, busqueda]);
+
+  const seleccionadosArr = Object.values(seleccionados);
+  const toggleSel = (e: Estudiante) => setSeleccionados(prev => {
+    const next = { ...prev };
+    if (next[e.id]) delete next[e.id]; else next[e.id] = e;
+    return next;
+  });
+  const seleccionarFiltrados = () => setSeleccionados(prev => {
+    const next = { ...prev };
+    estudiantesFiltrados.forEach(e => { next[e.id] = e; });
+    return next;
+  });
+  const quitarSel = (id: number) => setSeleccionados(prev => { const n = { ...prev }; delete n[id]; return n; });
+
+  const enviarReporte = async () => {
+    const lista = seleccionadosArr;
+    if (lista.length === 0) return;
+    setEnviando(true);
+    try {
+      const r = await apiRequest<{ reportados: number; notificados: number; sin_acudiente: string[] }>(
+        "/api/porteria/reportar-tarde",
+        { method: "POST", body: JSON.stringify({ estudiante_ids: lista.map(e => e.id) }) },
+      );
+      const sin = r.sin_acudiente?.length
+        ? ` Sin acudiente registrado: ${r.sin_acudiente.join(", ")}.`
+        : "";
+      toast({
+        title: `Reporte enviado (${r.reportados} estudiante${r.reportados === 1 ? "" : "s"})`,
+        description: `Se notificó a ${r.notificados} acudiente${r.notificados === 1 ? "" : "s"}.${sin}`,
+        variant: "success" as any,
+      });
+      setSeleccionados({});
+      await cargarHistorial();
+    } catch (e) {
+      const detail = e instanceof ApiError ? ((e.body as any)?.detail || (e.body as any)?.error) : null;
+      toast({ title: "No se pudo enviar el reporte", description: detail || "Intenta de nuevo.", variant: "destructive" });
+    }
+    setEnviando(false);
+  };
+
+  const confirmarEliminar = async () => {
+    if (!eliminarReg) return;
+    setEliminando(true);
+    try {
+      await apiRequest(`/api/porteria/historial/${eliminarReg.id}`, { method: "DELETE" });
+      setEliminarReg(null);
+      await cargarHistorial();
+    } catch (e) {
+      const detail = e instanceof ApiError ? ((e.body as any)?.detail || (e.body as any)?.error) : null;
+      toast({ title: "No se pudo eliminar", description: detail || "Intenta de nuevo.", variant: "destructive" });
+    }
+    setEliminando(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <HeaderNormi backLink="/porteria" />
+      <main className="flex-1 container mx-auto p-4 md:p-8">
+        <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
+          <div className="flex items-center gap-2 text-sm flex-wrap">
+            <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
+            <span className="text-muted-foreground">→</span>
+            <button onClick={() => navigate("/porteria")} className="text-primary hover:underline">Portería</button>
+            <span className="text-muted-foreground">→</span>
+            <span className="text-foreground font-medium">Llegada tarde</span>
+          </div>
+        </div>
+
+        <div className="bg-card rounded-lg shadow-soft p-6 space-y-4">
+          <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <Clock className="w-6 h-6 text-orange-500" /> Reporte de llegada tarde
+          </h2>
+          <p className="text-sm text-muted-foreground -mt-2">
+            Selecciona los estudiantes que llegaron tarde y envía el reporte. Se notificará por WhatsApp
+            a sus acudientes con la <strong>hora de entrada</strong> (la de este momento).
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input value={busqueda} onChange={e => setBusqueda(e.target.value)}
+                placeholder="Buscar estudiante por nombre..."
+                className="w-full pl-9 pr-3 py-2 border border-input rounded-md text-sm bg-background" />
+            </div>
+            <select value={filtroGrado} onChange={e => { setFiltroGrado(e.target.value); setFiltroSalon(""); }}
+              className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+              <option value="">Todos los grados</option>
+              {gradosUnicos.map(g => <option key={g} value={g}>{g}</option>)}
+            </select>
+            <select value={filtroSalon} onChange={e => setFiltroSalon(e.target.value)}
+              className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+              <option value="">Todos los salones</option>
+              {salonesUnicos.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Lista de estudiantes */}
+            <div className="lg:col-span-2 space-y-2">
+              {loading ? (
+                <div className="text-center py-10 text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
+              ) : estudiantesFiltrados.length === 0 ? (
+                <p className="text-center py-10 text-muted-foreground">No hay estudiantes con esos filtros.</p>
+              ) : (
+                <>
+                  <button onClick={seleccionarFiltrados} className="text-xs text-primary hover:underline">
+                    Seleccionar todos ({estudiantesFiltrados.length})
+                  </button>
+                  {estudiantesFiltrados.map(e => {
+                    const marcado = !!seleccionados[e.id];
+                    return (
+                      <label key={e.id} className={`w-full flex items-center gap-3 border rounded-lg p-3 cursor-pointer transition-colors ${marcado ? "border-primary bg-primary/5" : "border-border hover:bg-muted/30"}`}>
+                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${marcado ? "bg-primary border-primary" : "border-border"}`}>
+                          {marcado && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
+                        </div>
+                        <input type="checkbox" className="sr-only" checked={marcado} onChange={() => toggleSel(e)} />
+                        <div>
+                          <p className="font-semibold text-foreground text-sm">{e.apellidos} {e.nombres}</p>
+                          <p className="text-xs text-muted-foreground">{e.grado} {e.salon}</p>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </>
+              )}
+            </div>
+
+            {/* Panel de seleccionados + enviar */}
+            <aside className="hidden lg:block lg:col-span-1">
+              <div className="lg:sticky lg:top-4 border border-border rounded-lg p-3 bg-muted/10">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-semibold">Seleccionados ({seleccionadosArr.length})</p>
+                  {seleccionadosArr.length > 0 && (
+                    <button onClick={() => setSeleccionados({})} className="text-xs text-muted-foreground hover:text-destructive">Quitar todos</button>
+                  )}
+                </div>
+                {seleccionadosArr.length === 0 ? (
+                  <p className="text-xs text-muted-foreground py-4 text-center">Marca los estudiantes que llegaron tarde y aparecerán aquí.</p>
+                ) : (
+                  <div className="space-y-1.5 max-h-[45vh] overflow-y-auto">
+                    {seleccionadosArr.map(e => (
+                      <div key={e.id} className="flex items-center justify-between gap-2 text-sm bg-background border border-border rounded-md px-2 py-1.5">
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">{e.apellidos} {e.nombres}</p>
+                          <p className="text-[11px] text-muted-foreground">{e.grado} {e.salon}</p>
+                        </div>
+                        <button onClick={() => quitarSel(e.id)} className="text-muted-foreground hover:text-destructive shrink-0"><X className="w-4 h-4" /></button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <Button onClick={enviarReporte} disabled={seleccionadosArr.length === 0 || enviando} className="w-full mt-3 gap-2">
+                  {enviando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  Enviar reporte{seleccionadosArr.length > 0 ? ` (${seleccionadosArr.length})` : ""}
+                </Button>
+              </div>
+            </aside>
+          </div>
+        </div>
+
+        {/* Historial del día */}
+        <div className="bg-card rounded-lg shadow-soft p-6 mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+              <Clock className="w-5 h-5 text-primary" /> Reportados hoy ({historial.length})
+            </h3>
+            <button onClick={cargarHistorial} className="text-muted-foreground hover:text-primary p-1" title="Actualizar"><RefreshCw className="w-4 h-4" /></button>
+          </div>
+          {cargandoHist ? (
+            <div className="text-center py-6 text-muted-foreground"><Loader2 className="w-5 h-5 animate-spin mx-auto" /></div>
+          ) : historial.length === 0 ? (
+            <p className="text-center py-8 text-muted-foreground text-sm">Aún no hay reportes de llegada tarde hoy.</p>
+          ) : (
+            <div className="space-y-2">
+              {historial.map(r => (
+                <div key={r.id} className="flex items-center justify-between gap-3 border border-border rounded-lg px-3 py-2">
+                  <div className="min-w-0">
+                    <p className="font-medium text-foreground text-sm truncate">{r.estudiante_nombre}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {r.grado} {r.salon} · {horaBonita(r.hora_entrada)}
+                      {" · "}{r.acudientes_notificados} acudiente{r.acudientes_notificados === 1 ? "" : "s"} notificado{r.acudientes_notificados === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                  <button onClick={() => setEliminarReg(r)} className="text-muted-foreground hover:text-destructive shrink-0 p-1" title="Corregir / eliminar reporte">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* Barra fija en MÓVIL */}
+      {seleccionadosArr.length > 0 && (
+        <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-card border-t border-border p-3 shadow-lg flex items-center justify-between gap-3">
+          <span className="text-sm font-medium">{seleccionadosArr.length} seleccionado{seleccionadosArr.length === 1 ? "" : "s"}</span>
+          <Button onClick={enviarReporte} disabled={enviando} className="gap-2">
+            {enviando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} Enviar reporte
+          </Button>
+        </div>
+      )}
+
+      {/* Confirmar corrección/eliminación de un reporte */}
+      <Dialog open={!!eliminarReg} onOpenChange={(o) => { if (!o) setEliminarReg(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Corregir reporte</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground py-1">
+            Se eliminará el reporte de llegada tarde de <strong>{eliminarReg?.estudiante_nombre}</strong> del historial.
+            <br /><br />
+            Ten en cuenta que si el mensaje de WhatsApp al acudiente <strong>ya se envió, no se puede deshacer</strong>;
+            esto solo corrige el registro.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEliminarReg(null)} disabled={eliminando}>Cancelar</Button>
+            <Button variant="destructive" onClick={confirmarEliminar} disabled={eliminando} className="gap-2">
+              {eliminando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Eliminar del historial
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default PorteriaLlegadaTarde;
+
+export const PorteriaHub = () => {
+  const navigate = useNavigate();
+  const session = getSession();
+  useEffect(() => {
+    if (!session.id) { navigate("/"); return; }
+    if (!ROLES_OK.includes(session.cargo || "")) { navigate("/dashboard"); return; }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <HeaderNormi backLink="/dashboard" />
+      <main className="flex-1 container mx-auto p-4 md:p-8">
+        <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
+          <div className="flex items-center gap-2 text-sm flex-wrap">
+            <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
+            <span className="text-muted-foreground">→</span>
+            <span className="text-foreground font-medium">Portería</span>
+          </div>
+        </div>
+        <div className="max-w-2xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <button onClick={() => navigate("/porteria/llegada-tarde")}
+            className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-orange-100 hover:bg-orange-200 transition-all duration-200 hover:shadow-md">
+            <Clock className="w-14 h-14 text-orange-600" strokeWidth={1.5} />
+            <span className="font-semibold text-foreground text-center">Reporte de llegada tarde</span>
+          </button>
+          <div className="relative flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-muted/40 opacity-70 cursor-not-allowed">
+            <span className="absolute top-2 right-3 text-[11px] font-semibold text-muted-foreground bg-background/70 rounded-full px-2 py-0.5">Próximamente</span>
+            <DoorOpen className="w-14 h-14 text-muted-foreground" strokeWidth={1.5} />
+            <span className="font-semibold text-muted-foreground text-center">Reporte de entrada</span>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};

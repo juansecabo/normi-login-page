@@ -90,6 +90,7 @@ import MisConsultasEstudiante from "./pages/estudiante/MisConsultasEstudiante";
 import ComunicadosFirma from "./pages/ComunicadosFirma";
 import RegistrosComportamiento from "./pages/RegistrosComportamiento";
 import ObservadorEstudiantil from "./pages/ObservadorEstudiantil";
+import PorteriaLlegadaTarde, { PorteriaHub } from "./pages/PorteriaLlegadaTarde";
 import MiGrupo from "./pages/MiGrupo";
 import ConsolidadoGrupo from "./pages/ConsolidadoGrupo";
 import DireccionGrupo from "./pages/DireccionGrupo";
@@ -249,6 +250,9 @@ const App = () => (
           {/* Registros de Comportamiento */}
           <Route path="/registros-comportamiento" element={<RegistrosComportamiento />} />
           <Route path="/observador-estudiantil" element={<ObservadorEstudiantil />} />
+          {/* Portería: hub + reporte de llegada tarde (admin/rector/coordinador) */}
+          <Route path="/porteria" element={<PorteriaHub />} />
+          <Route path="/porteria/llegada-tarde" element={<PorteriaLlegadaTarde />} />
           <Route path="/direccion-grupo" element={<DireccionGrupo />} />
           <Route path="/mi-grupo" element={<MiGrupo />} />
           <Route path="/consolidado-grupo" element={<ConsolidadoGrupo />} />

@@ -23,6 +23,7 @@ import iconConfigurarInstitucion from "@/assets/icons/configurar-institucion.web
 import iconBoletines from "@/assets/icons/boletines.webp";
 import iconFormatos from "@/assets/icons/formatos.webp";
 import iconObservador from "@/assets/icons/observador.webp";
+import iconPorteria from "@/assets/icons/porteria.png";
 import HeaderNormi from "@/components/HeaderNormi";
 import EncabezadoColegio from "@/components/EncabezadoColegio";
 import AvatarUploader from "@/components/AvatarUploader";
@@ -117,6 +118,7 @@ const DashboardAdmin = () => {
     { id: 'consultas', render: <Card bg="bg-pink-100 hover:bg-pink-200" icon={<img src={iconConsultas} alt="" className="w-16 h-16 object-contain" />} label="Consultas" onClick={() => navigate("/consultas")} /> },
     { id: 'registros-comportamiento', render: <Card bg="bg-amber-100 hover:bg-amber-200" icon={<img src={iconRegistros} alt="" className="w-16 h-16 object-contain" />} label="Registros de Comportamiento" onClick={() => navigate("/registros-comportamiento")} /> },
     { id: 'observador', render: <Card bg="bg-sky-100 hover:bg-sky-200" icon={<img src={iconObservador} alt="" className="w-16 h-16 object-contain" />} label="Observador Estudiantil" onClick={() => navigate("/observador-estudiantil")} /> },
+    { id: 'porteria', render: <Card bg="bg-orange-100 hover:bg-orange-200" icon={<img src={iconPorteria} alt="" className="w-16 h-16 object-contain" />} label="Portería" onClick={() => navigate("/porteria")} /> },
     { id: 'solicitudes-registro', render: <Card bg="bg-sky-100 hover:bg-sky-200" icon={<ClipboardList className="w-16 h-16 text-sky-700" strokeWidth={1.5} />} label="Solicitudes de Registro" onClick={() => navigate("/admin/correcciones-registro")} /> },
     { id: 'dudas-personal', render: <Card bg="bg-violet-100 hover:bg-violet-200" icon={<MessageCircleQuestion className="w-16 h-16 text-violet-700" strokeWidth={1.5} />} label="Dudas del Personal" onClick={() => navigate("/admin/dudas")} /> },
     { id: 'asistencia', render: <Card bg="bg-blue-100 hover:bg-blue-200" icon={<img src={iconAsistencia} alt="" className="w-16 h-16 object-contain" />} label="Asistencia" onClick={() => navigate("/asistencia")} /> },

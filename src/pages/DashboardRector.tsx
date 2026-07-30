@@ -26,6 +26,7 @@ import iconActividades from "@/assets/icons/actividades.webp";
 import iconBoletines from "@/assets/icons/boletines.webp";
 import iconFormatos from "@/assets/icons/formatos.webp";
 import iconObservador from "@/assets/icons/observador.webp";
+import iconPorteria from "@/assets/icons/porteria.png";
 import HeaderNormi from "@/components/HeaderNormi";
 import EncabezadoColegio from "@/components/EncabezadoColegio";
 import AvatarUploader from "@/components/AvatarUploader";
@@ -235,6 +236,12 @@ const DashboardRector = () => {
       <button onClick={() => navigate("/formatos")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-orange-100 transition-all duration-200 hover:shadow-md hover:bg-orange-200">
         <img src={iconFormatos} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground text-center">Formatos</span>
+      </button>
+    ) });
+    items.push({ id: 'porteria', render: (
+      <button onClick={() => navigate("/porteria")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-orange-100 transition-all duration-200 hover:shadow-md hover:bg-orange-200">
+        <img src={iconPorteria} alt="" className="w-16 h-16 object-contain" />
+        <span className="font-semibold text-foreground text-center">Portería</span>
       </button>
     ) });
   }
