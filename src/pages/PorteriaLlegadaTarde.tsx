@@ -23,7 +23,7 @@ const GRADO_ORDEN: Record<string, number> = {
   "Primero": 4, "Segundo": 5, "Tercero": 6, "Cuarto": 7, "Quinto": 8,
   "Sexto": 9, "Séptimo": 10, "Octavo": 11, "Noveno": 12, "Décimo": 13, "Undécimo": 14,
 };
-const ROLES_OK = ["Administrador", "Rector", "Coordinador(a)"];
+const ROLES_OK = ["Administrador", "Rector", "Coordinador(a)", "Portero"];
 const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 
 /** "07:15" → "7:15 a. m." */
