@@ -57,6 +57,7 @@ const PorteriaLlegadaTarde = () => {
   const [cargandoHist, setCargandoHist] = useState(true);
   const [eliminarReg, setEliminarReg] = useState<Registro | null>(null);
   const [eliminando, setEliminando] = useState(false);
+  const [tab, setTab] = useState<"reportar" | "historial">("reportar");
 
   // Guard de acceso.
   useEffect(() => {
@@ -170,6 +171,19 @@ const PorteriaLlegadaTarde = () => {
           </div>
         </div>
 
+        {/* Pestañas: Reportar / Reportados hoy */}
+        <div className="flex gap-2 mb-4">
+          <button onClick={() => setTab("reportar")}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${tab === "reportar" ? "bg-primary text-primary-foreground" : "bg-card text-foreground hover:bg-muted/50 border border-border"}`}>
+            Reportar llegada tarde
+          </button>
+          <button onClick={() => { setTab("historial"); cargarHistorial(); }}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${tab === "historial" ? "bg-primary text-primary-foreground" : "bg-card text-foreground hover:bg-muted/50 border border-border"}`}>
+            Reportados hoy ({historial.length})
+          </button>
+        </div>
+
+        {tab === "reportar" && (
         <div className="bg-card rounded-lg shadow-soft p-6 space-y-4">
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
             <Clock className="w-6 h-6 text-orange-500" /> Reporte de llegada tarde
@@ -258,9 +272,10 @@ const PorteriaLlegadaTarde = () => {
             </aside>
           </div>
         </div>
+        )}
 
-        {/* Historial del día */}
-        <div className="bg-card rounded-lg shadow-soft p-6 mt-6">
+        {tab === "historial" && (
+        <div className="bg-card rounded-lg shadow-soft p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
               <Clock className="w-5 h-5 text-primary" /> Reportados hoy ({historial.length})
@@ -290,6 +305,7 @@ const PorteriaLlegadaTarde = () => {
             </div>
           )}
         </div>
+        )}
       </main>
 
       {/* Barra fija en MÓVIL */}
