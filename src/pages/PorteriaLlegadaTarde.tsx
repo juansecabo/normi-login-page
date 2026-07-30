@@ -8,6 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { Search, Check, X, Clock, Send, Trash2, Loader2, RefreshCw, Calendar, ChevronDown, ClipboardList } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import CalendarioFiltroDia, { keyDeDate } from "@/components/CalendarioFiltroDia";
 
 /**
  * Portería → Llegada tarde. Dos pantallas:
@@ -40,10 +41,6 @@ const fmtFecha = (ymd?: string | null): string => {
   const [y, m, d] = ymd.split("-");
   return d && m && y ? `${d}/${m}/${y}` : ymd;
 };
-/** Hoy en Bogotá como "YYYY-MM-DD". */
-const hoyBogota = (): string =>
-  new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
-
 interface Estudiante { id: number; nombres: string; apellidos: string; grado: string; salon: string; }
 interface Registro {
   id: number; estudiante_id: string; estudiante_nombre: string | null; grado: string | null; salon: string | null;
@@ -266,8 +263,9 @@ export const PorteriaRegistro = () => {
   const [eliminarReg, setEliminarReg] = useState<Registro | null>(null);
   const [eliminando, setEliminando] = useState(false);
 
-  // Por día
-  const [fecha, setFecha] = useState(hoyBogota());
+  // Por día (calendario tipo Permisos y Excusas)
+  const [dia, setDia] = useState<Date | undefined>(new Date());
+  const [diasMarcados, setDiasMarcados] = useState<string[]>([]);
   const [regsDia, setRegsDia] = useState<Registro[]>([]);
   const [cargandoDia, setCargandoDia] = useState(true);
 
@@ -285,13 +283,20 @@ export const PorteriaRegistro = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const cargarDia = async (f: string) => {
+  const cargarDia = async (d: Date | undefined) => {
     setCargandoDia(true);
     try {
-      const r = await apiRequest<{ items: Registro[] }>(`/api/porteria/historial?fecha=${encodeURIComponent(f)}`);
+      const url = d ? `/api/porteria/historial?fecha=${encodeURIComponent(keyDeDate(d))}` : "/api/porteria/historial";
+      const r = await apiRequest<{ items: Registro[] }>(url);
       setRegsDia(r.items || []);
     } catch { setRegsDia([]); }
     setCargandoDia(false);
+  };
+  const cargarDias = async () => {
+    try {
+      const r = await apiRequest<{ dias: { fecha: string }[] }>("/api/porteria/dias");
+      setDiasMarcados((r.dias || []).map(x => x.fecha));
+    } catch { setDiasMarcados([]); }
   };
   const cargarResumen = async () => {
     setCargandoResumen(true);
@@ -312,7 +317,8 @@ export const PorteriaRegistro = () => {
     setCargandoEst(false);
   };
 
-  useEffect(() => { cargarDia(fecha); /* eslint-disable-next-line */ }, [fecha]);
+  useEffect(() => { cargarDia(dia); /* eslint-disable-next-line */ }, [dia]);
+  useEffect(() => { cargarDias(); /* eslint-disable-next-line */ }, []);
   useEffect(() => { if (sub === "estudiante" && resumen.length === 0) cargarResumen(); /* eslint-disable-next-line */ }, [sub]);
 
   const confirmarEliminar = async () => {
@@ -322,7 +328,8 @@ export const PorteriaRegistro = () => {
       await apiRequest(`/api/porteria/historial/${eliminarReg.id}`, { method: "DELETE" });
       setEliminarReg(null);
       // Refresca lo que esté visible.
-      await cargarDia(fecha);
+      await cargarDia(dia);
+      await cargarDias();
       if (sub === "estudiante") {
         await cargarResumen();
         if (expandido) {
@@ -374,39 +381,41 @@ export const PorteriaRegistro = () => {
         {/* ── POR DÍA ── */}
         {sub === "dia" && (
           <div className="bg-card rounded-lg shadow-soft p-6">
-            <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
-              <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-primary" /> Llegadas tarde del día
-              </h3>
-              <div className="flex items-center gap-2">
-                <input type="date" value={fecha} max={hoyBogota()} onChange={e => setFecha(e.target.value || hoyBogota())}
-                  className="px-3 py-2 border border-input rounded-md text-sm bg-background" />
-                <button onClick={() => cargarDia(fecha)} className="text-muted-foreground hover:text-primary p-1" title="Actualizar"><RefreshCw className="w-4 h-4" /></button>
+            <h3 className="text-lg font-bold text-foreground flex items-center gap-2 mb-4">
+              <Calendar className="w-5 h-5 text-primary" />
+              {dia ? `Llegadas tarde del ${fmtFecha(keyDeDate(dia))}` : "Todas las llegadas tarde"}
+            </h3>
+            <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-6">
+              <CalendarioFiltroDia diasMarcados={diasMarcados} dia={dia} onDia={setDia} />
+              <div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  {dia ? fmtFecha(keyDeDate(dia)) : "Histórico completo"} · {regsDia.length} reporte{regsDia.length === 1 ? "" : "s"}
+                </p>
+                {cargandoDia ? (
+                  <div className="text-center py-6 text-muted-foreground"><Loader2 className="w-5 h-5 animate-spin mx-auto" /></div>
+                ) : regsDia.length === 0 ? (
+                  <p className="text-center py-8 text-muted-foreground text-sm">No hay reportes de llegada tarde en esta fecha.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {regsDia.map(r => (
+                      <div key={r.id} className="flex items-center justify-between gap-3 border border-border rounded-lg px-3 py-2">
+                        <div className="min-w-0">
+                          <p className="font-medium text-foreground text-sm truncate">{r.estudiante_nombre}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {r.grado} {r.salon} · {horaBonita(r.hora_entrada)}
+                            {!dia && r.fecha ? ` · ${fmtFecha(r.fecha)}` : ""}
+                            {" · "}{r.acudientes_notificados} acudiente{r.acudientes_notificados === 1 ? "" : "s"} notificado{r.acudientes_notificados === 1 ? "" : "s"}
+                          </p>
+                        </div>
+                        <button onClick={() => setEliminarReg(r)} className="text-muted-foreground hover:text-destructive shrink-0 p-1" title="Corregir / eliminar reporte">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
-            <p className="text-sm text-muted-foreground mb-3">{fmtFecha(fecha)} · {regsDia.length} reporte{regsDia.length === 1 ? "" : "s"}</p>
-            {cargandoDia ? (
-              <div className="text-center py-6 text-muted-foreground"><Loader2 className="w-5 h-5 animate-spin mx-auto" /></div>
-            ) : regsDia.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground text-sm">No hay reportes de llegada tarde en esta fecha.</p>
-            ) : (
-              <div className="space-y-2">
-                {regsDia.map(r => (
-                  <div key={r.id} className="flex items-center justify-between gap-3 border border-border rounded-lg px-3 py-2">
-                    <div className="min-w-0">
-                      <p className="font-medium text-foreground text-sm truncate">{r.estudiante_nombre}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {r.grado} {r.salon} · {horaBonita(r.hora_entrada)}
-                        {" · "}{r.acudientes_notificados} acudiente{r.acudientes_notificados === 1 ? "" : "s"} notificado{r.acudientes_notificados === 1 ? "" : "s"}
-                      </p>
-                    </div>
-                    <button onClick={() => setEliminarReg(r)} className="text-muted-foreground hover:text-destructive shrink-0 p-1" title="Corregir / eliminar reporte">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         )}
 
