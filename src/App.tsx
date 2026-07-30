@@ -90,7 +90,7 @@ import MisConsultasEstudiante from "./pages/estudiante/MisConsultasEstudiante";
 import ComunicadosFirma from "./pages/ComunicadosFirma";
 import RegistrosComportamiento from "./pages/RegistrosComportamiento";
 import ObservadorEstudiantil from "./pages/ObservadorEstudiantil";
-import PorteriaLlegadaTarde, { PorteriaHub } from "./pages/PorteriaLlegadaTarde";
+import PorteriaLlegadaTarde, { PorteriaHub, PorteriaRegistro } from "./pages/PorteriaLlegadaTarde";
 import MiGrupo from "./pages/MiGrupo";
 import ConsolidadoGrupo from "./pages/ConsolidadoGrupo";
 import DireccionGrupo from "./pages/DireccionGrupo";
@@ -253,6 +253,7 @@ const App = () => (
           {/* Portería: hub + reporte de llegada tarde (admin/rector/coordinador) */}
           <Route path="/porteria" element={<PorteriaHub />} />
           <Route path="/porteria/llegada-tarde" element={<PorteriaLlegadaTarde />} />
+          <Route path="/porteria/registro" element={<PorteriaRegistro />} />
           <Route path="/direccion-grupo" element={<DireccionGrupo />} />
           <Route path="/mi-grupo" element={<MiGrupo />} />
           <Route path="/consolidado-grupo" element={<ConsolidadoGrupo />} />

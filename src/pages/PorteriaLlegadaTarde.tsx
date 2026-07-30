@@ -5,15 +5,16 @@ import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { apiRequest, ApiError } from "@/lib/apiClient";
 import { toast } from "@/hooks/use-toast";
-import { Search, Check, X, Clock, DoorOpen, Send, Trash2, Loader2, RefreshCw } from "lucide-react";
+import { Search, Check, X, Clock, Send, Trash2, Loader2, RefreshCw, Calendar, ChevronDown, ClipboardList } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
 /**
- * Portería → Reporte de llegada tarde. El administrador/rector/coordinador
- * selecciona uno o varios estudiantes que llegaron tarde y notifica por WhatsApp
- * a sus acudientes (con la hora de entrada). Cada reporte queda guardado; se
- * puede corregir (eliminar) un reporte equivocado del historial del día.
+ * Portería → Llegada tarde. Dos pantallas:
+ *  - Reportar (PorteriaLlegadaTarde): selecciona estudiantes y notifica a los
+ *    acudientes por WhatsApp con la hora de entrada.
+ *  - Registro (PorteriaRegistro): consulta el histórico por día o por estudiante
+ *    (cuántas veces ha llegado tarde cada uno) y permite corregir un reporte.
  */
 
 const GRADO_ORDEN: Record<string, number> = {
@@ -33,13 +34,27 @@ const horaBonita = (h24?: string | null): string => {
   let h12 = h % 12; if (h12 === 0) h12 = 12;
   return `${h12}:${String(m ?? 0).padStart(2, "0")} ${ampm}`;
 };
+/** "2026-07-30" → "30/07/2026" (sin líos de zona horaria). */
+const fmtFecha = (ymd?: string | null): string => {
+  if (!ymd) return "";
+  const [y, m, d] = ymd.split("-");
+  return d && m && y ? `${d}/${m}/${y}` : ymd;
+};
+/** Hoy en Bogotá como "YYYY-MM-DD". */
+const hoyBogota = (): string =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 
 interface Estudiante { id: number; nombres: string; apellidos: string; grado: string; salon: string; }
 interface Registro {
-  id: number; estudiante_nombre: string | null; grado: string | null; salon: string | null;
-  hora_entrada: string | null; reportado_por_nombre: string | null; acudientes_notificados: number;
+  id: number; estudiante_id: string; estudiante_nombre: string | null; grado: string | null; salon: string | null;
+  fecha: string | null; hora_entrada: string | null; reportado_por_nombre: string | null; acudientes_notificados: number;
+}
+interface ResumenItem {
+  estudiante_id: string; estudiante_nombre: string | null; grado: string | null; salon: string | null;
+  total: number; ultima_fecha: string | null;
 }
 
+// ════════════════════════ REPORTAR ════════════════════════
 const PorteriaLlegadaTarde = () => {
   const navigate = useNavigate();
   const session = getSession();
@@ -53,12 +68,6 @@ const PorteriaLlegadaTarde = () => {
   const [filtroSalon, setFiltroSalon] = useState("");
   const [busqueda, setBusqueda] = useState("");
 
-  const [historial, setHistorial] = useState<Registro[]>([]);
-  const [cargandoHist, setCargandoHist] = useState(true);
-  const [eliminarReg, setEliminarReg] = useState<Registro | null>(null);
-  const [eliminando, setEliminando] = useState(false);
-
-  // Guard de acceso.
   useEffect(() => {
     if (!session.id) { navigate("/"); return; }
     if (!ROLES_OK.includes(session.cargo || "")) { navigate("/dashboard"); return; }
@@ -76,18 +85,8 @@ const PorteriaLlegadaTarde = () => {
       setLoading(false);
     };
     cargar();
-    cargarHistorial();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const cargarHistorial = async () => {
-    setCargandoHist(true);
-    try {
-      const r = await apiRequest<{ items: Registro[] }>("/api/porteria/historial");
-      setHistorial(r.items || []);
-    } catch { /* silencioso */ }
-    setCargandoHist(false);
-  };
 
   const gradosUnicos = useMemo(() => [...new Set(estudiantes.map(e => e.grado).filter(Boolean))]
     .sort((a, b) => (GRADO_ORDEN[a] ?? 99) - (GRADO_ORDEN[b] ?? 99) || a.localeCompare(b, "es")), [estudiantes]);
@@ -125,35 +124,18 @@ const PorteriaLlegadaTarde = () => {
         "/api/porteria/reportar-tarde",
         { method: "POST", body: JSON.stringify({ estudiante_ids: lista.map(e => e.id) }) },
       );
-      const sin = r.sin_acudiente?.length
-        ? ` Sin acudiente registrado: ${r.sin_acudiente.join(", ")}.`
-        : "";
+      const sin = r.sin_acudiente?.length ? ` Sin acudiente registrado: ${r.sin_acudiente.join(", ")}.` : "";
       toast({
         title: `Reporte enviado (${r.reportados} estudiante${r.reportados === 1 ? "" : "s"})`,
         description: `Se notificó a ${r.notificados} acudiente${r.notificados === 1 ? "" : "s"}.${sin}`,
         variant: "success" as any,
       });
       setSeleccionados({});
-      await cargarHistorial();
     } catch (e) {
       const detail = e instanceof ApiError ? ((e.body as any)?.detail || (e.body as any)?.error) : null;
       toast({ title: "No se pudo enviar el reporte", description: detail || "Intenta de nuevo.", variant: "destructive" });
     }
     setEnviando(false);
-  };
-
-  const confirmarEliminar = async () => {
-    if (!eliminarReg) return;
-    setEliminando(true);
-    try {
-      await apiRequest(`/api/porteria/historial/${eliminarReg.id}`, { method: "DELETE" });
-      setEliminarReg(null);
-      await cargarHistorial();
-    } catch (e) {
-      const detail = e instanceof ApiError ? ((e.body as any)?.detail || (e.body as any)?.error) : null;
-      toast({ title: "No se pudo eliminar", description: detail || "Intenta de nuevo.", variant: "destructive" });
-    }
-    setEliminando(false);
   };
 
   return (
@@ -166,14 +148,19 @@ const PorteriaLlegadaTarde = () => {
             <span className="text-muted-foreground">→</span>
             <button onClick={() => navigate("/porteria")} className="text-primary hover:underline">Portería</button>
             <span className="text-muted-foreground">→</span>
-            <span className="text-foreground font-medium">Llegada tarde</span>
+            <span className="text-foreground font-medium">Reportar llegada tarde</span>
           </div>
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-6 space-y-4">
-          <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-            <Clock className="w-6 h-6 text-orange-500" /> Reporte de llegada tarde
-          </h2>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+              <Clock className="w-6 h-6 text-orange-500" /> Reportar llegada tarde
+            </h2>
+            <button onClick={() => navigate("/porteria/registro")} className="text-sm text-primary hover:underline inline-flex items-center gap-1">
+              <ClipboardList className="w-4 h-4" /> Ver registro
+            </button>
+          </div>
           <p className="text-sm text-muted-foreground -mt-2">
             Selecciona los estudiantes que llegaron tarde y envía el reporte. Se notificará por WhatsApp
             a sus acudientes con la <strong>hora de entrada</strong> (la de este momento).
@@ -199,34 +186,30 @@ const PorteriaLlegadaTarde = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Lista de estudiantes */}
             <div className="lg:col-span-2 space-y-2">
               {loading ? (
                 <div className="text-center py-10 text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
               ) : estudiantesFiltrados.length === 0 ? (
                 <p className="text-center py-10 text-muted-foreground">No hay estudiantes con esos filtros.</p>
               ) : (
-                <>
-                  {estudiantesFiltrados.map(e => {
-                    const marcado = !!seleccionados[e.id];
-                    return (
-                      <label key={e.id} className={`w-full flex items-center gap-3 border rounded-lg p-3 cursor-pointer transition-colors ${marcado ? "border-primary bg-primary/5" : "border-border hover:bg-muted/30"}`}>
-                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${marcado ? "bg-primary border-primary" : "border-border"}`}>
-                          {marcado && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
-                        </div>
-                        <input type="checkbox" className="sr-only" checked={marcado} onChange={() => toggleSel(e)} />
-                        <div>
-                          <p className="font-semibold text-foreground text-sm">{e.apellidos} {e.nombres}</p>
-                          <p className="text-xs text-muted-foreground">{e.grado} {e.salon}</p>
-                        </div>
-                      </label>
-                    );
-                  })}
-                </>
+                estudiantesFiltrados.map(e => {
+                  const marcado = !!seleccionados[e.id];
+                  return (
+                    <label key={e.id} className={`w-full flex items-center gap-3 border rounded-lg p-3 cursor-pointer transition-colors ${marcado ? "border-primary bg-primary/5" : "border-border hover:bg-muted/30"}`}>
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${marcado ? "bg-primary border-primary" : "border-border"}`}>
+                        {marcado && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
+                      </div>
+                      <input type="checkbox" className="sr-only" checked={marcado} onChange={() => toggleSel(e)} />
+                      <div>
+                        <p className="font-semibold text-foreground text-sm">{e.apellidos} {e.nombres}</p>
+                        <p className="text-xs text-muted-foreground">{e.grado} {e.salon}</p>
+                      </div>
+                    </label>
+                  );
+                })
               )}
             </div>
 
-            {/* Panel de seleccionados + enviar */}
             <aside className="hidden lg:block lg:col-span-1">
               <div className="lg:sticky lg:top-4 border border-border rounded-lg p-3 bg-muted/10">
                 <div className="flex items-center justify-between mb-2">
@@ -258,41 +241,8 @@ const PorteriaLlegadaTarde = () => {
             </aside>
           </div>
         </div>
-
-        {/* Historial del día */}
-        <div className="bg-card rounded-lg shadow-soft p-6 mt-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-              <Clock className="w-5 h-5 text-primary" /> Reportados hoy ({historial.length})
-            </h3>
-            <button onClick={cargarHistorial} className="text-muted-foreground hover:text-primary p-1" title="Actualizar"><RefreshCw className="w-4 h-4" /></button>
-          </div>
-          {cargandoHist ? (
-            <div className="text-center py-6 text-muted-foreground"><Loader2 className="w-5 h-5 animate-spin mx-auto" /></div>
-          ) : historial.length === 0 ? (
-            <p className="text-center py-8 text-muted-foreground text-sm">Aún no hay reportes de llegada tarde hoy.</p>
-          ) : (
-            <div className="space-y-2">
-              {historial.map(r => (
-                <div key={r.id} className="flex items-center justify-between gap-3 border border-border rounded-lg px-3 py-2">
-                  <div className="min-w-0">
-                    <p className="font-medium text-foreground text-sm truncate">{r.estudiante_nombre}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {r.grado} {r.salon} · {horaBonita(r.hora_entrada)}
-                      {" · "}{r.acudientes_notificados} acudiente{r.acudientes_notificados === 1 ? "" : "s"} notificado{r.acudientes_notificados === 1 ? "" : "s"}
-                    </p>
-                  </div>
-                  <button onClick={() => setEliminarReg(r)} className="text-muted-foreground hover:text-destructive shrink-0 p-1" title="Corregir / eliminar reporte">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </main>
 
-      {/* Barra fija en MÓVIL */}
       {seleccionadosArr.length > 0 && (
         <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-card border-t border-border p-3 shadow-lg flex items-center justify-between gap-3">
           <span className="text-sm font-medium">{seleccionadosArr.length} seleccionado{seleccionadosArr.length === 1 ? "" : "s"}</span>
@@ -301,13 +251,230 @@ const PorteriaLlegadaTarde = () => {
           </Button>
         </div>
       )}
+    </div>
+  );
+};
 
-      {/* Confirmar corrección/eliminación de un reporte */}
+export default PorteriaLlegadaTarde;
+
+// ════════════════════════ REGISTRO ════════════════════════
+export const PorteriaRegistro = () => {
+  const navigate = useNavigate();
+  const session = getSession();
+
+  const [sub, setSub] = useState<"dia" | "estudiante">("dia");
+  const [eliminarReg, setEliminarReg] = useState<Registro | null>(null);
+  const [eliminando, setEliminando] = useState(false);
+
+  // Por día
+  const [fecha, setFecha] = useState(hoyBogota());
+  const [regsDia, setRegsDia] = useState<Registro[]>([]);
+  const [cargandoDia, setCargandoDia] = useState(true);
+
+  // Por estudiante
+  const [resumen, setResumen] = useState<ResumenItem[]>([]);
+  const [cargandoResumen, setCargandoResumen] = useState(false);
+  const [buscar, setBuscar] = useState("");
+  const [expandido, setExpandido] = useState<string | null>(null);
+  const [regsEst, setRegsEst] = useState<Registro[]>([]);
+  const [cargandoEst, setCargandoEst] = useState(false);
+
+  useEffect(() => {
+    if (!session.id) { navigate("/"); return; }
+    if (!ROLES_OK.includes(session.cargo || "")) { navigate("/dashboard"); return; }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const cargarDia = async (f: string) => {
+    setCargandoDia(true);
+    try {
+      const r = await apiRequest<{ items: Registro[] }>(`/api/porteria/historial?fecha=${encodeURIComponent(f)}`);
+      setRegsDia(r.items || []);
+    } catch { setRegsDia([]); }
+    setCargandoDia(false);
+  };
+  const cargarResumen = async () => {
+    setCargandoResumen(true);
+    try {
+      const r = await apiRequest<{ items: ResumenItem[] }>("/api/porteria/resumen");
+      setResumen(r.items || []);
+    } catch { setResumen([]); }
+    setCargandoResumen(false);
+  };
+  const abrirEstudiante = async (estId: string) => {
+    if (expandido === estId) { setExpandido(null); return; }
+    setExpandido(estId);
+    setCargandoEst(true);
+    try {
+      const r = await apiRequest<{ items: Registro[] }>(`/api/porteria/historial?estudiante_id=${encodeURIComponent(estId)}`);
+      setRegsEst(r.items || []);
+    } catch { setRegsEst([]); }
+    setCargandoEst(false);
+  };
+
+  useEffect(() => { cargarDia(fecha); /* eslint-disable-next-line */ }, [fecha]);
+  useEffect(() => { if (sub === "estudiante" && resumen.length === 0) cargarResumen(); /* eslint-disable-next-line */ }, [sub]);
+
+  const confirmarEliminar = async () => {
+    if (!eliminarReg) return;
+    setEliminando(true);
+    try {
+      await apiRequest(`/api/porteria/historial/${eliminarReg.id}`, { method: "DELETE" });
+      setEliminarReg(null);
+      // Refresca lo que esté visible.
+      await cargarDia(fecha);
+      if (sub === "estudiante") {
+        await cargarResumen();
+        if (expandido) {
+          const r = await apiRequest<{ items: Registro[] }>(`/api/porteria/historial?estudiante_id=${encodeURIComponent(expandido)}`);
+          setRegsEst(r.items || []);
+        }
+      }
+    } catch (e) {
+      const detail = e instanceof ApiError ? ((e.body as any)?.detail || (e.body as any)?.error) : null;
+      toast({ title: "No se pudo eliminar", description: detail || "Intenta de nuevo.", variant: "destructive" });
+    }
+    setEliminando(false);
+  };
+
+  const resumenFiltrado = useMemo(() => {
+    const tokens = norm(buscar.trim()).split(/\s+/).filter(Boolean);
+    if (!tokens.length) return resumen;
+    return resumen.filter(r => {
+      const full = norm(`${r.estudiante_nombre || ""} ${r.grado || ""} ${r.salon || ""}`);
+      return tokens.every(t => full.includes(t));
+    });
+  }, [resumen, buscar]);
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <HeaderNormi backLink="/porteria" />
+      <main className="flex-1 container mx-auto p-4 md:p-8">
+        <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
+          <div className="flex items-center gap-2 text-sm flex-wrap">
+            <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
+            <span className="text-muted-foreground">→</span>
+            <button onClick={() => navigate("/porteria")} className="text-primary hover:underline">Portería</button>
+            <span className="text-muted-foreground">→</span>
+            <span className="text-foreground font-medium">Registro de llegada tarde</span>
+          </div>
+        </div>
+
+        <div className="flex gap-2 mb-4">
+          <button onClick={() => setSub("dia")}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${sub === "dia" ? "bg-primary text-primary-foreground" : "bg-card text-foreground hover:bg-muted/50 border border-border"}`}>
+            Por día
+          </button>
+          <button onClick={() => setSub("estudiante")}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${sub === "estudiante" ? "bg-primary text-primary-foreground" : "bg-card text-foreground hover:bg-muted/50 border border-border"}`}>
+            Por estudiante
+          </button>
+        </div>
+
+        {/* ── POR DÍA ── */}
+        {sub === "dia" && (
+          <div className="bg-card rounded-lg shadow-soft p-6">
+            <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+              <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-primary" /> Llegadas tarde del día
+              </h3>
+              <div className="flex items-center gap-2">
+                <input type="date" value={fecha} max={hoyBogota()} onChange={e => setFecha(e.target.value || hoyBogota())}
+                  className="px-3 py-2 border border-input rounded-md text-sm bg-background" />
+                <button onClick={() => cargarDia(fecha)} className="text-muted-foreground hover:text-primary p-1" title="Actualizar"><RefreshCw className="w-4 h-4" /></button>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">{fmtFecha(fecha)} · {regsDia.length} reporte{regsDia.length === 1 ? "" : "s"}</p>
+            {cargandoDia ? (
+              <div className="text-center py-6 text-muted-foreground"><Loader2 className="w-5 h-5 animate-spin mx-auto" /></div>
+            ) : regsDia.length === 0 ? (
+              <p className="text-center py-8 text-muted-foreground text-sm">No hay reportes de llegada tarde en esta fecha.</p>
+            ) : (
+              <div className="space-y-2">
+                {regsDia.map(r => (
+                  <div key={r.id} className="flex items-center justify-between gap-3 border border-border rounded-lg px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground text-sm truncate">{r.estudiante_nombre}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {r.grado} {r.salon} · {horaBonita(r.hora_entrada)}
+                        {" · "}{r.acudientes_notificados} acudiente{r.acudientes_notificados === 1 ? "" : "s"} notificado{r.acudientes_notificados === 1 ? "" : "s"}
+                      </p>
+                    </div>
+                    <button onClick={() => setEliminarReg(r)} className="text-muted-foreground hover:text-destructive shrink-0 p-1" title="Corregir / eliminar reporte">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── POR ESTUDIANTE ── */}
+        {sub === "estudiante" && (
+          <div className="bg-card rounded-lg shadow-soft p-6">
+            <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+              <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                <ClipboardList className="w-5 h-5 text-primary" /> Cuántas veces ha llegado tarde cada estudiante
+              </h3>
+              <button onClick={cargarResumen} className="text-muted-foreground hover:text-primary p-1" title="Actualizar"><RefreshCw className="w-4 h-4" /></button>
+            </div>
+            <div className="relative mb-3">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input value={buscar} onChange={e => setBuscar(e.target.value)}
+                placeholder="Buscar estudiante..."
+                className="w-full pl-9 pr-3 py-2 border border-input rounded-md text-sm bg-background" />
+            </div>
+            {cargandoResumen ? (
+              <div className="text-center py-6 text-muted-foreground"><Loader2 className="w-5 h-5 animate-spin mx-auto" /></div>
+            ) : resumenFiltrado.length === 0 ? (
+              <p className="text-center py-8 text-muted-foreground text-sm">Aún no hay estudiantes con reportes de llegada tarde.</p>
+            ) : (
+              <div className="space-y-2">
+                {resumenFiltrado.map(r => (
+                  <div key={r.estudiante_id} className="border border-border rounded-lg">
+                    <button onClick={() => abrirEstudiante(r.estudiante_id)} className="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-muted/30 transition-colors rounded-lg">
+                      <div className="min-w-0">
+                        <p className="font-medium text-foreground text-sm truncate">{r.estudiante_nombre}</p>
+                        <p className="text-xs text-muted-foreground">{r.grado} {r.salon} · última: {fmtFecha(r.ultima_fecha)}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="inline-flex items-center justify-center min-w-[2rem] h-7 px-2 rounded-full bg-orange-100 text-orange-700 text-sm font-bold">{r.total}</span>
+                        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${expandido === r.estudiante_id ? "rotate-180" : ""}`} />
+                      </div>
+                    </button>
+                    {expandido === r.estudiante_id && (
+                      <div className="border-t border-border px-3 py-2 bg-muted/10">
+                        {cargandoEst ? (
+                          <div className="text-center py-3 text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin mx-auto" /></div>
+                        ) : (
+                          <ul className="space-y-1">
+                            {regsEst.map(x => (
+                              <li key={x.id} className="flex items-center justify-between gap-2 text-sm">
+                                <span className="text-foreground">{fmtFecha(x.fecha)} · {horaBonita(x.hora_entrada)}</span>
+                                <button onClick={() => setEliminarReg(x)} className="text-muted-foreground hover:text-destructive p-1" title="Corregir / eliminar">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+
       <Dialog open={!!eliminarReg} onOpenChange={(o) => { if (!o) setEliminarReg(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Corregir reporte</DialogTitle></DialogHeader>
           <p className="text-sm text-muted-foreground py-1">
-            Se eliminará el reporte de llegada tarde de <strong>{eliminarReg?.estudiante_nombre}</strong> del historial.
+            Se eliminará el reporte de llegada tarde de <strong>{eliminarReg?.estudiante_nombre}</strong>
+            {eliminarReg?.fecha ? ` (${fmtFecha(eliminarReg.fecha)})` : ""} del registro.
             <br /><br />
             Ten en cuenta que si el mensaje de WhatsApp al acudiente <strong>ya se envió, no se puede deshacer</strong>;
             esto solo corrige el registro.
@@ -315,7 +482,7 @@ const PorteriaLlegadaTarde = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setEliminarReg(null)} disabled={eliminando}>Cancelar</Button>
             <Button variant="destructive" onClick={confirmarEliminar} disabled={eliminando} className="gap-2">
-              {eliminando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Eliminar del historial
+              {eliminando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Eliminar del registro
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -324,8 +491,7 @@ const PorteriaLlegadaTarde = () => {
   );
 };
 
-export default PorteriaLlegadaTarde;
-
+// ════════════════════════ HUB ════════════════════════
 export const PorteriaHub = () => {
   const navigate = useNavigate();
   const session = getSession();
@@ -349,13 +515,13 @@ export const PorteriaHub = () => {
           <button onClick={() => navigate("/porteria/llegada-tarde")}
             className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-orange-100 hover:bg-orange-200 transition-all duration-200 hover:shadow-md">
             <Clock className="w-14 h-14 text-orange-600" strokeWidth={1.5} />
-            <span className="font-semibold text-foreground text-center">Reporte de llegada tarde</span>
+            <span className="font-semibold text-foreground text-center">Reportar llegada tarde</span>
           </button>
-          <div className="relative flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-muted/40 opacity-70 cursor-not-allowed">
-            <span className="absolute top-2 right-3 text-[11px] font-semibold text-muted-foreground bg-background/70 rounded-full px-2 py-0.5">Próximamente</span>
-            <DoorOpen className="w-14 h-14 text-muted-foreground" strokeWidth={1.5} />
-            <span className="font-semibold text-muted-foreground text-center">Reporte de entrada</span>
-          </div>
+          <button onClick={() => navigate("/porteria/registro")}
+            className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-sky-100 hover:bg-sky-200 transition-all duration-200 hover:shadow-md">
+            <ClipboardList className="w-14 h-14 text-sky-600" strokeWidth={1.5} />
+            <span className="font-semibold text-foreground text-center">Registro de llegada tarde</span>
+          </button>
         </div>
       </main>
     </div>
