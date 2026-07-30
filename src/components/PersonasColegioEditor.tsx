@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/apiClient";
+import { apiRequest, apiClient } from "@/lib/apiClient";
 import { getSession } from "@/hooks/useSession";
 import { rankGrado, NIVEL_DE_GRADO } from "@/utils/grados";
 import PanelControl from "@/pages/rector/PanelControl";
@@ -104,6 +104,9 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   // (decisión 2026-07-09); el server aplica la jerarquía (nadie edita a un
   // rango igual o superior). El profesor director no gestiona internos.
   const esAdminUsuarios = !!colegioId || cargoSesion !== "Profesor(a)";
+  // Cambiar la cédula (migración global) SOLO lo permite el Administrador (igual
+  // que el endpoint /auth/cambiar-cedula del server).
+  const esAdmin = cargoSesion === "Administrador";
   // Busqueda flexible dentro del cargo (nombre, apellido o cedula; sin tildes).
   const [busqueda, setBusqueda] = useState("");
   const [cedula, setCedula] = useState("");
@@ -426,10 +429,23 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
     }
     setGuardando(true);
     try {
+      // Corrección de identificación: si cambió la cédula, migrarla en TODO el
+      // sistema (notas, asistencia, vínculos, comunicados…) ANTES de guardar el
+      // resto. Reusa la migración atómica del server (RPC cambiar_cedula).
+      let cedulaActual = editando!;
+      const cedNueva = cedula.trim();
+      if (esAdmin && cedNueva && cedNueva !== cedulaActual) {
+        if (!/^\d{3,15}$/.test(cedNueva)) {
+          toast({ title: "Cédula inválida", description: "Solo números (3 a 15 dígitos).", variant: "destructive" });
+          setGuardando(false); return;
+        }
+        await apiClient.auth.cambiarCedula(cedulaActual, cedNueva);
+        cedulaActual = cedNueva;
+      }
       await apiRequest("/api/institucion/interno", {
         method: "PATCH",
         body: JSON.stringify(withCid({
-          cedula: editando, cargo: rol!,
+          cedula: cedulaActual, cargo: rol!,
           ...(esAdminUsuarios ? {
             nombres: nombres.trim(), apellidos: apellidos.trim(), telefono: telefono.trim(),
             genero: genero || undefined, fecha_de_nacimiento: fechaNac,
@@ -690,13 +706,16 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>{editando ? "Editar" : "Agregar"} — {labelRol}</DialogTitle>
-            <DialogDescription>{editando ? "La cédula no se cambia desde aquí." : "Al escribir una cédula ya registrada, los datos se autocompletan."}</DialogDescription>
+            <DialogDescription>{editando ? (esAdmin ? "Puedes corregir la cédula; se migra en todo el sistema." : "La cédula no se cambia desde aquí.") : "Al escribir una cédula ya registrada, los datos se autocompletan."}</DialogDescription>
           </DialogHeader>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label className="text-sm">Cédula *</Label>
-              <Input value={cedula} onChange={(e) => setCedula(e.target.value.replace(/\D/g, ""))} placeholder="Solo números" readOnly={!!editando} className={`mt-1 ${editando ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} />
+              <Input value={cedula} onChange={(e) => setCedula(e.target.value.replace(/\D/g, ""))} placeholder="Solo números" readOnly={!!editando && !esAdmin} className={`mt-1 ${(!!editando && !esAdmin) ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} />
+              {editando && esAdmin && (
+                <p className="text-xs text-amber-600 mt-1">Cambiar la cédula la migra en todo el sistema (notas, asistencia, vínculos, comunicados…).</p>
+              )}
               {buscando && <p className="text-xs text-muted-foreground mt-1">Buscando…</p>}
             </div>
             {/* Espaciador: la cédula va sola en su fila; Apellidos + Nombres comparten la siguiente */}
