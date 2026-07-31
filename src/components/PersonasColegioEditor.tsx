@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useLayoutEffect } from "react";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import {
   GraduationCap, Users, ShieldCheck, Briefcase, HeartHandshake, BookOpen,
   Backpack, UsersRound, Plus, Check, Loader2, Search, ClipboardList, Pencil, Trash2, X, DoorOpen,
@@ -519,6 +520,25 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   const listaActual = rol === "Profesor(a)" && !colegioId
     ? listaBuscada.filter(profMatchFiltros)
     : listaBuscada;
+
+  // Virtualización de la tabla de personas (contra el scroll de la página).
+  const listRef = useRef<HTMLDivElement>(null);
+  const [listOffset, setListOffset] = useState(0);
+  useLayoutEffect(() => {
+    const medir = () => { if (listRef.current) setListOffset(listRef.current.getBoundingClientRect().top + window.scrollY); };
+    medir();
+    window.addEventListener("resize", medir);
+    return () => window.removeEventListener("resize", medir);
+  }, [listaActual.length]);
+  const rowVirtualizer = useWindowVirtualizer({
+    count: listaActual.length,
+    estimateSize: () => 53,
+    overscan: 12,
+    scrollMargin: listOffset,
+  });
+  const vItems = rowVirtualizer.getVirtualItems();
+  const padTop = vItems.length ? vItems[0].start - listOffset : 0;
+  const padBottom = vItems.length ? rowVirtualizer.getTotalSize() - (vItems[vItems.length - 1].end - listOffset) : 0;
   const labelActual = esStaff ? labelRol : rol === "estudiante" ? "Estudiantes" : rol === "acudiente" ? "Acudientes" : "";
   // Estudiantes/Acudientes: se incrusta el Panel de Control (mismo CRUD, misma
   // data → lo que se haga aquí o allá es idéntico). Solo en el colegio propio:
@@ -632,7 +652,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
         // Tabla al estilo de la pestaña Internos del Panel de Control (pedido
         // de Juan 2026-07-15). Teléfono/contraseña solo llegan del server para
         // roles del panel. El detalle (género, carga académica) vive en Editar.
-        <div className="overflow-x-auto border border-border rounded-lg bg-card">
+        <div ref={listRef} className="overflow-x-auto border border-border rounded-lg bg-card">
           <Table>
             <TableHeader>
               <TableRow>
@@ -649,7 +669,10 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
               </TableRow>
             </TableHeader>
             <TableBody>
-              {listaActual.map((p) => (
+              {padTop > 0 && <tr aria-hidden style={{ height: padTop }}><td colSpan={8} className="p-0 border-0" /></tr>}
+              {vItems.map((vi) => {
+                const p: any = listaActual[vi.index];
+                return (
                 <TableRow key={p.id}>
                   <TableCell className="py-2">
                     {p.avatar_url ? (
@@ -684,7 +707,9 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
                     </TableCell>
                   )}
                 </TableRow>
-              ))}
+                );
+              })}
+              {padBottom > 0 && <tr aria-hidden style={{ height: padBottom }}><td colSpan={8} className="p-0 border-0" /></tr>}
             </TableBody>
           </Table>
         </div>
