@@ -71,8 +71,12 @@ const ComunicadosEstudiante = () => {
               !c.nivel && !grados && !salones;
             if (!noHayFiltros) return false;
 
-            const destLower = (c.destinatarios || "").trim().toLowerCase();
-            if (destLower === "estudiantes") return true;
+            // Difusión a TODOS los estudiantes: el label los lista como grupo,
+            // ya sea "Estudiantes" solo o dentro de "Estudiantes, Acudientes, …"
+            // (toda la comunidad / varios perfiles). Se distingue de un envío a un
+            // estudiante puntual por nombre, que se resuelve por match abajo.
+            const partesDest = (c.destinatarios || "").split(",").map(s => s.trim().toLowerCase());
+            if (partesDest.includes("estudiantes")) return true;
             const destNorm = norm(c.destinatarios || "");
             const hasNombre = nombreNorm.length > 0 && destNorm.includes(nombreNorm);
             const hasApellido = apellidosParts.some(p => destNorm.includes(p));

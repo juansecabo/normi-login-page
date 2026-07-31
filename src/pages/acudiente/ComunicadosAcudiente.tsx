@@ -81,8 +81,13 @@ const ComunicadosAcudiente = () => {
               !c.nivel && !grados && !salones;
             if (!noHayFiltros) return false;
 
-            const destLower = (c.destinatarios || "").trim().toLowerCase();
-            if (destLower === "acudientes") return true;
+            // Difusión a TODOS los acudientes: el label los lista como grupo,
+            // ya sea "Acudientes" solo o dentro de "Estudiantes, Acudientes, …"
+            // (toda la comunidad / varios perfiles). Se distingue de "Acudientes
+            // del estudiante X" (una sola parte con nombre) que NO es difusión y
+            // se resuelve por match de nombre abajo.
+            const partesDest = (c.destinatarios || "").split(",").map(s => s.trim().toLowerCase());
+            if (partesDest.includes("acudientes")) return true;
             const destNorm = norm(c.destinatarios || "");
             return acudidos.some(h => {
               if (!h.nombre || !h.apellidos) return false;
