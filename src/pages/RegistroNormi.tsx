@@ -1,5 +1,6 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useLayoutEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { formatTelefono } from "@/utils/telefono";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, isProfesor, puedeAccederDashboard, isAdmin } from "@/hooks/useSession";
@@ -16,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Search, Download } from "lucide-react";
+import { Loader2, Search, Download, X } from "lucide-react";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -393,7 +394,7 @@ const RegistroNormi = () => {
         { header: "Nombres estudiante", key: "nombres", width: 28 },
         { header: "Grado", key: "grado", width: 14 },
         { header: "Salón", key: "salon", width: 10 },
-        { header: "Estado padre", key: "estado", width: 18 },
+        { header: "Estado acudiente", key: "estado", width: 18 },
         { header: "Nombre del acudiente", key: "padre", width: 30 },
         { header: "Teléfono", key: "telefono", width: 18 },
       ];
@@ -426,7 +427,7 @@ const RegistroNormi = () => {
           }
         }
       }
-      buildSheet("Padres", "Registro en Normi — Padres", cols, rows, "estado");
+      buildSheet("Acudientes", "Registro en Normi — Acudientes", cols, rows, "estado");
     }
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -436,12 +437,28 @@ const RegistroNormi = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `Registro-Normi-${activeTab === "estudiantes" ? "Estudiantes" : "Padres"}-${fileFilterSuffix}.xlsx`;
+    a.download = `Registro-Normi-${activeTab === "estudiantes" ? "Estudiantes" : "Acudientes"}-${fileFilterSuffix}.xlsx`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
+
+  // Virtualización de la tabla visible (la lista puede tener miles de filas).
+  // Solo se monta el tab activo, así que un único virtualizer + ref compartido basta.
+  const activeList = activeTab === "estudiantes" ? displayedEstudiantes : displayedPadres;
+  const listRef = useRef<HTMLDivElement>(null);
+  const [listOffset, setListOffset] = useState(0);
+  useLayoutEffect(() => {
+    const medir = () => { if (listRef.current) setListOffset(listRef.current.getBoundingClientRect().top + window.scrollY); };
+    medir();
+    window.addEventListener("resize", medir);
+    return () => window.removeEventListener("resize", medir);
+  }, [activeList.length, activeTab, loading]);
+  const rowVirt = useWindowVirtualizer({ count: activeList.length, estimateSize: () => 72, overscan: 12, scrollMargin: listOffset });
+  const virtItems = rowVirt.getVirtualItems();
+  const padTop = virtItems.length ? virtItems[0].start - listOffset : 0;
+  const padBottom = virtItems.length ? rowVirt.getTotalSize() - (virtItems[virtItems.length - 1].end - listOffset) : 0;
 
   const total = filtered.length;
   const estPct = total > 0 ? Math.round((estRegistrados / total) * 100) : 0;
@@ -470,7 +487,7 @@ const RegistroNormi = () => {
             <span className="text-foreground font-medium">Registro en Normi</span>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground max-w-4xl mx-auto mb-6 text-center">Revisa qué estudiantes y padres están registrados o no con Normi.</p>
+        <p className="text-sm text-muted-foreground max-w-4xl mx-auto mb-6 text-center">Revisa qué estudiantes y acudientes están registrados o no con Normi.</p>
 
         <h2 className="text-2xl font-bold text-foreground text-center mb-6">
           Registro en Normi
@@ -479,7 +496,7 @@ const RegistroNormi = () => {
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6 max-w-4xl mx-auto">
           <Select value={gradoFilter} onValueChange={(v) => { setGradoFilter(v); setSalonFilter("todos"); }}>
-            <SelectTrigger className="w-full sm:w-48">
+            <SelectTrigger className="w-full sm:w-48 bg-muted">
               <SelectValue placeholder="Grado" />
             </SelectTrigger>
             <SelectContent>
@@ -491,7 +508,7 @@ const RegistroNormi = () => {
           </Select>
 
           <Select value={salonFilter} onValueChange={setSalonFilter}>
-            <SelectTrigger className="w-full sm:w-40">
+            <SelectTrigger className="w-full sm:w-40 bg-muted">
               <SelectValue placeholder="Salón" />
             </SelectTrigger>
             <SelectContent>
@@ -503,7 +520,7 @@ const RegistroNormi = () => {
           </Select>
 
           <Select value={estadoFilter} onValueChange={setEstadoFilter}>
-            <SelectTrigger className="w-full sm:w-48">
+            <SelectTrigger className="w-full sm:w-48 bg-muted">
               <SelectValue placeholder="Estado" />
             </SelectTrigger>
             <SelectContent>
@@ -519,8 +536,19 @@ const RegistroNormi = () => {
               placeholder="Buscar por nombre o id..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
+              className="pl-9 pr-9 bg-card"
             />
+            {search && (
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setSearch("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label="Limpiar búsqueda"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -550,7 +578,7 @@ const RegistroNormi = () => {
               value="padres"
               className="data-[state=active]:bg-green-600 data-[state=active]:text-white data-[state=active]:shadow-sm font-medium"
             >
-              Padres
+              Acudientes
             </TabsTrigger>
           </TabsList>
 
@@ -570,7 +598,7 @@ const RegistroNormi = () => {
                 {estadoFilter === "todos" && <Progress value={estPct} className="h-3" />}
               </div>
 
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" ref={activeTab === "estudiantes" ? listRef : undefined}>
                 <Table style={{ tableLayout: "auto" }}>
                   <TableHeader>
                     <TableRow>
@@ -589,27 +617,32 @@ const RegistroNormi = () => {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      displayedEstudiantes.map((e, i) => {
-                        const registrado = estudianteIdsRegistrados.has(e.id);
-                        return (
-                          <TableRow key={e.id}>
-                            <TableCell className="text-muted-foreground">{i + 1}</TableCell>
-                            <TableCell className="font-medium whitespace-nowrap">
-                              {e.apellidos}, {e.nombres}
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap">{e.grado}</TableCell>
-                            <TableCell>{e.salon}</TableCell>
-                            <TableCell className="text-center">
-                              <Badge className={`w-20 justify-center ${registrado
-                                ? "bg-green-500 hover:bg-green-600 text-white"
-                                : "bg-red-500 hover:bg-red-600 text-white"
-                              }`}>
-                                {registrado ? "Registrado" : "No registrado"}
-                              </Badge>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
+                      <>
+                        {padTop > 0 && <tr aria-hidden><td colSpan={5} style={{ height: padTop }} /></tr>}
+                        {virtItems.map((vi) => {
+                          const e = displayedEstudiantes[vi.index];
+                          const registrado = estudianteIdsRegistrados.has(e.id);
+                          return (
+                            <TableRow key={e.id}>
+                              <TableCell className="text-muted-foreground">{vi.index + 1}</TableCell>
+                              <TableCell className="font-medium whitespace-nowrap">
+                                {e.apellidos} {e.nombres}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap">{e.grado}</TableCell>
+                              <TableCell>{e.salon}</TableCell>
+                              <TableCell className="text-center">
+                                <Badge className={`w-20 justify-center ${registrado
+                                  ? "bg-green-500 hover:bg-green-600 text-white"
+                                  : "bg-red-500 hover:bg-red-600 text-white"
+                                }`}>
+                                  {registrado ? "Registrado" : "No registrado"}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                        {padBottom > 0 && <tr aria-hidden><td colSpan={5} style={{ height: padBottom }} /></tr>}
+                      </>
                     )}
                   </TableBody>
                 </Table>
@@ -624,16 +657,16 @@ const RegistroNormi = () => {
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-foreground">
                     {estadoFilter === "todos"
-                      ? `${padRegistrados} de ${total} con padre registrado (${padPct}%)`
+                      ? `${padRegistrados} de ${total} con acudiente registrado (${padPct}%)`
                       : estadoFilter === "registrados"
-                        ? `Mostrando ${displayedPadres.length} con padre registrado de ${total}`
-                        : `Mostrando ${displayedPadres.length} sin padre registrado de ${total}`}
+                        ? `Mostrando ${displayedPadres.length} con acudiente registrado de ${total}`
+                        : `Mostrando ${displayedPadres.length} sin acudiente registrado de ${total}`}
                   </span>
                 </div>
                 {estadoFilter === "todos" && <Progress value={padPct} className="h-3" />}
               </div>
 
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" ref={activeTab === "padres" ? listRef : undefined}>
                 <Table style={{ tableLayout: "auto" }}>
                   <TableHeader>
                     <TableRow>
@@ -652,38 +685,43 @@ const RegistroNormi = () => {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      displayedPadres.map((e, i) => {
-                        const parentInfo = padreInfoPorId.get(e.id);
-                        return (
-                          <TableRow key={e.id}>
-                            <TableCell className="text-muted-foreground">{i + 1}</TableCell>
-                            <TableCell className="font-medium whitespace-nowrap">
-                              {e.apellidos}, {e.nombres}
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap">{e.grado}</TableCell>
-                            <TableCell>{e.salon}</TableCell>
-                            <TableCell>
-                              <Badge className={`w-20 justify-center text-center ${parentInfo
-                                ? "bg-green-500 hover:bg-green-600 text-white"
-                                : "bg-red-500 hover:bg-red-600 text-white"
-                              }`}>
-                                {parentInfo ? "Registrado" : "No registrado"}
-                              </Badge>
-                              {parentInfo && (
-                                <button
-                                  onClick={() => setSelectedParents({
-                                    padres: parentInfo,
-                                    estudiante: `${e.apellidos}, ${e.nombres}`,
-                                  })}
-                                  className="ml-2 text-xs text-primary hover:underline font-medium"
-                                >
-                                  Ver info
-                                </button>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
+                      <>
+                        {padTop > 0 && <tr aria-hidden><td colSpan={5} style={{ height: padTop }} /></tr>}
+                        {virtItems.map((vi) => {
+                          const e = displayedPadres[vi.index];
+                          const parentInfo = padreInfoPorId.get(e.id);
+                          return (
+                            <TableRow key={e.id}>
+                              <TableCell className="text-muted-foreground">{vi.index + 1}</TableCell>
+                              <TableCell className="font-medium whitespace-nowrap">
+                                {e.apellidos} {e.nombres}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap">{e.grado}</TableCell>
+                              <TableCell>{e.salon}</TableCell>
+                              <TableCell>
+                                <Badge className={`w-20 justify-center text-center ${parentInfo
+                                  ? "bg-green-500 hover:bg-green-600 text-white"
+                                  : "bg-red-500 hover:bg-red-600 text-white"
+                                }`}>
+                                  {parentInfo ? "Registrado" : "No registrado"}
+                                </Badge>
+                                {parentInfo && (
+                                  <button
+                                    onClick={() => setSelectedParents({
+                                      padres: parentInfo,
+                                      estudiante: `${e.apellidos} ${e.nombres}`,
+                                    })}
+                                    className="ml-2 text-xs text-primary hover:underline font-medium"
+                                  >
+                                    Ver info
+                                  </button>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                        {padBottom > 0 && <tr aria-hidden><td colSpan={5} style={{ height: padBottom }} /></tr>}
+                      </>
                     )}
                   </TableBody>
                 </Table>
