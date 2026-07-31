@@ -168,7 +168,13 @@ const PorteriaLlegadaTarde = () => {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input value={busqueda} onChange={e => setBusqueda(e.target.value)}
                 placeholder="Buscar estudiante por nombre..."
-                className="w-full pl-9 pr-3 py-2 border border-input rounded-md text-sm bg-background" />
+                className="w-full pl-9 pr-9 py-2 border border-input rounded-md text-sm bg-background" />
+              {busqueda && (
+                <button type="button" onClick={() => setBusqueda("")} title="Limpiar"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground">
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
             <select value={filtroGrado} onChange={e => { setFiltroGrado(e.target.value); setFiltroSalon(""); }}
               className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
@@ -432,7 +438,13 @@ export const PorteriaRegistro = () => {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input value={buscar} onChange={e => setBuscar(e.target.value)}
                 placeholder="Buscar estudiante..."
-                className="w-full pl-9 pr-3 py-2 border border-input rounded-md text-sm bg-background" />
+                className="w-full pl-9 pr-9 py-2 border border-input rounded-md text-sm bg-background" />
+              {buscar && (
+                <button type="button" onClick={() => setBuscar("")} title="Limpiar"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground">
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
             {cargandoResumen ? (
               <div className="text-center py-6 text-muted-foreground"><Loader2 className="w-5 h-5 animate-spin mx-auto" /></div>
