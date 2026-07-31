@@ -1577,6 +1577,28 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
     && (filtroFotoPerf === "todos" || (filtroFotoPerf === "con" ? !!p.avatar_url : !p.avatar_url))
   );
 
+  // Virtualización de la tabla de Acudientes (mismo patrón que Estudiantes,
+  // contra el scroll de la página → sin doble barra).
+  const perfListRef = useRef<HTMLDivElement>(null);
+  const [perfListOffset, setPerfListOffset] = useState(0);
+  useLayoutEffect(() => {
+    const medir = () => {
+      if (perfListRef.current) setPerfListOffset(perfListRef.current.getBoundingClientRect().top + window.scrollY);
+    };
+    medir();
+    window.addEventListener("resize", medir);
+    return () => window.removeEventListener("resize", medir);
+  }, [filteredPerf.length]);
+  const perfVirtualizer = useWindowVirtualizer({
+    count: filteredPerf.length,
+    estimateSize: () => 53,
+    overscan: 12,
+    scrollMargin: perfListOffset,
+  });
+  const perfVItems = perfVirtualizer.getVirtualItems();
+  const perfPadTop = perfVItems.length ? perfVItems[0].start - perfListOffset : 0;
+  const perfPadBottom = perfVItems.length ? perfVirtualizer.getTotalSize() - (perfVItems[perfVItems.length - 1].end - perfListOffset) : 0;
+
   // Helper: render acudido fields for Asignacion dialog
   // Slot de acudido: se escribe el ID; el nombre/grado/salón se autocompletan
   // SOLO si ese id es un estudiante de este colegio (read-only). Si no matchea,
@@ -1667,31 +1689,6 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
 
             {/* ════════════════ TAB: ESTUDIANTES ════════════════ */}
             <TabsContent value="estudiantes">
-              <div className="flex flex-col sm:flex-row gap-4 mb-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar por nombre, id, grado..."
-                    value={searchEst}
-                    onChange={(e) => setSearchEst(e.target.value)}
-                    className="pl-9 pr-9"
-                  />
-                  {searchEst && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchEst("")}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      aria-label="Limpiar búsqueda"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-                <Button onClick={() => openEstDialog()}>
-                  <Plus className="w-4 h-4 mr-2" /> Agregar
-                </Button>
-              </div>
-
               <div className="flex flex-col sm:flex-row gap-3 mb-4">
                 <Select value={filtroGradoEst} onValueChange={(v) => { setFiltroGradoEst(v); setFiltroSalonEst("todos"); }}>
                   <SelectTrigger className="sm:w-52"><SelectValue placeholder="Grado" /></SelectTrigger>
@@ -1717,6 +1714,26 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                     </SelectContent>
                   </Select>
                 )}
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por nombre, id, grado..."
+                    value={searchEst}
+                    onChange={(e) => setSearchEst(e.target.value)}
+                    className="pl-9 pr-9"
+                  />
+                  {searchEst && (
+                    <button type="button" onClick={() => setSearchEst("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label="Limpiar búsqueda">
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                <Button onClick={() => openEstDialog()}>
+                  <Plus className="w-4 h-4 mr-2" /> Agregar
+                </Button>
               </div>
 
               {loadingEst ? (
@@ -1783,31 +1800,6 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
 
             {/* ════════════════ TAB: PERFILES ════════════════ */}
             <TabsContent value="perfiles">
-              <div className="flex flex-col sm:flex-row gap-4 mb-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar por nombre, id, tipo..."
-                    value={searchPerf}
-                    onChange={(e) => setSearchPerf(e.target.value)}
-                    className="pl-9 pr-9"
-                  />
-                  {searchPerf && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchPerf("")}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      aria-label="Limpiar búsqueda"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-                <Button onClick={() => openPerfDialog()}>
-                  <Plus className="w-4 h-4 mr-2" /> Agregar
-                </Button>
-              </div>
-
               <div className="flex flex-col sm:flex-row gap-3 mb-4">
                 <Select value={filtroGradoPerf} onValueChange={(v) => { setFiltroGradoPerf(v); setFiltroSalonPerf("todos"); }}>
                   <SelectTrigger className="sm:w-52"><SelectValue placeholder="Grado del acudido" /></SelectTrigger>
@@ -1835,12 +1827,32 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                 )}
               </div>
 
+              <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por nombre, id, tipo..."
+                    value={searchPerf}
+                    onChange={(e) => setSearchPerf(e.target.value)}
+                    className="pl-9 pr-9"
+                  />
+                  {searchPerf && (
+                    <button type="button" onClick={() => setSearchPerf("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label="Limpiar búsqueda">
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                <Button onClick={() => openPerfDialog()}>
+                  <Plus className="w-4 h-4 mr-2" /> Agregar
+                </Button>
+              </div>
+
               {loadingPerf ? (
                 <div className="flex justify-center py-8">
                   <Loader2 className="w-6 h-6 animate-spin" />
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div ref={perfListRef} className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -1862,7 +1874,11 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                           </TableCell>
                         </TableRow>
                       ) : (
-                        filteredPerf.map((p: any) => (
+                        <>
+                          {perfPadTop > 0 && <tr aria-hidden style={{ height: perfPadTop }}><td colSpan={8} className="p-0 border-0" /></tr>}
+                          {perfVItems.map((vi) => {
+                          const p: any = filteredPerf[vi.index];
+                          return (
                           <TableRow key={p.padre_id || p.numero_de_telefono}>
                             {renderFotoCell(p.avatar_url, `${p.acudiente_nombres_only || ""} ${p.padre_apellidos_only || ""}`)}
                             <TableCell className="font-mono">{p.padre_id || "—"}</TableCell>
@@ -1887,7 +1903,10 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                               </Button>
                             </TableCell>
                           </TableRow>
-                        ))
+                          );
+                          })}
+                          {perfPadBottom > 0 && <tr aria-hidden style={{ height: perfPadBottom }}><td colSpan={8} className="p-0 border-0" /></tr>}
+                        </>
                       )}
                     </TableBody>
                   </Table>
