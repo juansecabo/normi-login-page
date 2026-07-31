@@ -581,27 +581,6 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
           <PanelControl embedded tabFija={rol === "estudiante" ? "estudiantes" : "perfiles"} soloGrupo={grupoDirector || undefined} />
         )
       ) : (<>
-      {/* Busqueda flexible (como la del Panel de Control) */}
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          placeholder={`Buscar en ${labelActual.toLowerCase()} por nombre, apellido, cédula o celular…`}
-          className="pl-9 pr-9"
-        />
-        {busqueda && (
-          <button
-            type="button"
-            onClick={() => setBusqueda("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-            title="Borrar búsqueda"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-
       {/* Filtros de profesores por carga académica / dirección de grupo.
           En cascada: con un nivel elegido, solo se ofrecen los grados de ese nivel. */}
       {rol === "Profesor(a)" && !colegioId && (
@@ -622,6 +601,28 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
           </select>
         </div>
       )}
+
+      {/* Busqueda flexible (como la del Panel de Control) */}
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          placeholder={`Buscar en ${labelActual.toLowerCase()} por nombre, apellido, cédula o celular…`}
+          className="pl-9 pr-9"
+        />
+        {busqueda && (
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => setBusqueda("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            title="Borrar búsqueda"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
 
       {listaActual.length === 0 ? (
         <p className="text-sm text-muted-foreground border border-dashed rounded-lg p-6 text-center bg-card">
