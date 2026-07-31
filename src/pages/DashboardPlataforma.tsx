@@ -73,7 +73,12 @@ const DashboardPlataforma = () => {
         sa.avatar_url || null,
         c.id, c.nombre, c.logo_url, c.slug,
       );
-      navigate("/dashboard");
+      // Recarga real: la sesión pasó a Administrador, pero ya estamos en
+      // /dashboard (aquí vive el Panel de Plataforma), así que un navigate al
+      // mismo path NO re-monta el despachador y se quedaba con el spinner. Un
+      // hard reload garantiza que /dashboard vuelva a decidir y monte el
+      // dashboard del colegio (además limpia cualquier estado del SuperAdmin).
+      window.location.assign("/dashboard");
     } catch (err: any) {
       toast({
         title: "No se pudo entrar al colegio",
