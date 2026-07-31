@@ -655,7 +655,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
         <div ref={listRef} className="overflow-x-auto border border-border rounded-lg bg-card">
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="bg-muted/60 hover:bg-muted/60">
                 <TableHead className="w-10"></TableHead>
                 <TableHead>ID</TableHead>
                 <TableHead>Apellidos</TableHead>
