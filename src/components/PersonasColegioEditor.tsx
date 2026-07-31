@@ -629,7 +629,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           placeholder={`Buscar en ${labelActual.toLowerCase()} por nombre, apellido, cédula o celular…`}
-          className="pl-9 pr-9"
+          className="pl-9 pr-9 bg-card"
         />
         {busqueda && (
           <button
