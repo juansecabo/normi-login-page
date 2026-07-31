@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, puedeAccederDashboard, isAdmin } from "@/hooks/useSession";
@@ -1481,6 +1482,20 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
     && (filtroFotoEst === "todos" || (filtroFotoEst === "con" ? !!e.avatar_url : !e.avatar_url))
   );
 
+  // Virtualización de la tabla de estudiantes: solo se dibujan en el DOM las ~15
+  // filas visibles (más un colchón), aunque la lista tenga miles. Evita el tirón
+  // al escribir/limpiar y al hacer scroll con colegios grandes.
+  const estScrollRef = useRef<HTMLDivElement>(null);
+  const estVirtualizer = useVirtualizer({
+    count: filteredEst.length,
+    getScrollElement: () => estScrollRef.current,
+    estimateSize: () => 53,
+    overscan: 12,
+  });
+  const estVItems = estVirtualizer.getVirtualItems();
+  const estPadTop = estVItems.length ? estVItems[0].start : 0;
+  const estPadBottom = estVItems.length ? estVirtualizer.getTotalSize() - estVItems[estVItems.length - 1].end : 0;
+
   // Un acudiente pasa el filtro si tiene AL MENOS un acudido que cumpla el
   // grado y/o salón escogido (el mismo acudido cumple ambos si ambos están).
   const perfAcudidoMatch = (p: Perfil, grado: string, salon: string): boolean => {
@@ -1698,9 +1713,9 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                   <Loader2 className="w-6 h-6 animate-spin" />
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div ref={estScrollRef} className="overflow-auto max-h-[65vh]">
                   <Table>
-                    <TableHeader>
+                    <TableHeader className="sticky top-0 z-10 bg-card">
                       <TableRow>
                         <TableHead>Foto</TableHead>
                         <TableHead>ID</TableHead>
@@ -1721,26 +1736,33 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                           </TableCell>
                         </TableRow>
                       ) : (
-                        filteredEst.map((e: any) => (
-                          <TableRow key={e.id}>
-                            {renderFotoCell(e.avatar_url, `${e.nombres || ""} ${e.apellidos || ""}`)}
-                            <TableCell className="font-mono">{e.id}</TableCell>
-                            <TableCell>{e.apellidos}</TableCell>
-                            <TableCell>{e.nombres}</TableCell>
-                            <TableCell>{e.grado}</TableCell>
-                            <TableCell>{e.salon}</TableCell>
-                            <TableCell className="font-mono text-xs whitespace-nowrap">{formatTelefono(e.numero_de_telefono) || "—"}</TableCell>
-                            <TableCell className="text-muted-foreground">{e.contrasena || "—"}</TableCell>
-                            <TableCell className="text-right space-x-1">
-                              <Button variant="ghost" size="sm" onClick={() => openEstDialog(e)}>
-                                <Pencil className="w-4 h-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm" onClick={() => setShowDeleteEst(e)}>
-                                <Trash2 className="w-4 h-4 text-destructive" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))
+                        <>
+                          {estPadTop > 0 && <tr aria-hidden style={{ height: estPadTop }}><td colSpan={9} className="p-0 border-0" /></tr>}
+                          {estVItems.map((vi) => {
+                            const e: any = filteredEst[vi.index];
+                            return (
+                              <TableRow key={e.id}>
+                                {renderFotoCell(e.avatar_url, `${e.nombres || ""} ${e.apellidos || ""}`)}
+                                <TableCell className="font-mono">{e.id}</TableCell>
+                                <TableCell>{e.apellidos}</TableCell>
+                                <TableCell>{e.nombres}</TableCell>
+                                <TableCell>{e.grado}</TableCell>
+                                <TableCell>{e.salon}</TableCell>
+                                <TableCell className="font-mono text-xs whitespace-nowrap">{formatTelefono(e.numero_de_telefono) || "—"}</TableCell>
+                                <TableCell className="text-muted-foreground">{e.contrasena || "—"}</TableCell>
+                                <TableCell className="text-right space-x-1">
+                                  <Button variant="ghost" size="sm" onClick={() => openEstDialog(e)}>
+                                    <Pencil className="w-4 h-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="sm" onClick={() => setShowDeleteEst(e)}>
+                                    <Trash2 className="w-4 h-4 text-destructive" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                          {estPadBottom > 0 && <tr aria-hidden style={{ height: estPadBottom }}><td colSpan={9} className="p-0 border-0" /></tr>}
+                        </>
                       )}
                     </TableBody>
                   </Table>
