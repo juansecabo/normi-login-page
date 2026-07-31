@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo, useRef } from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import { useEffect, useState, useMemo, useRef, useLayoutEffect } from "react";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, puedeAccederDashboard, isAdmin } from "@/hooks/useSession";
@@ -1483,18 +1483,29 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
   );
 
   // Virtualización de la tabla de estudiantes: solo se dibujan en el DOM las ~15
-  // filas visibles (más un colchón), aunque la lista tenga miles. Evita el tirón
-  // al escribir/limpiar y al hacer scroll con colegios grandes.
-  const estScrollRef = useRef<HTMLDivElement>(null);
-  const estVirtualizer = useVirtualizer({
+  // filas visibles (más un colchón), aunque la lista tenga miles. Virtualiza
+  // contra el scroll de la PÁGINA (useWindowVirtualizer), así NO hay una segunda
+  // barra de scroll interna. Evita el tirón al escribir/limpiar y al hacer scroll.
+  const estListRef = useRef<HTMLDivElement>(null);
+  const [estListOffset, setEstListOffset] = useState(0);
+  useLayoutEffect(() => {
+    const medir = () => {
+      if (estListRef.current) setEstListOffset(estListRef.current.getBoundingClientRect().top + window.scrollY);
+    };
+    medir();
+    window.addEventListener("resize", medir);
+    return () => window.removeEventListener("resize", medir);
+  }, [filteredEst.length]);
+  const estVirtualizer = useWindowVirtualizer({
     count: filteredEst.length,
-    getScrollElement: () => estScrollRef.current,
     estimateSize: () => 53,
     overscan: 12,
+    scrollMargin: estListOffset,
   });
   const estVItems = estVirtualizer.getVirtualItems();
-  const estPadTop = estVItems.length ? estVItems[0].start : 0;
-  const estPadBottom = estVItems.length ? estVirtualizer.getTotalSize() - estVItems[estVItems.length - 1].end : 0;
+  const estSM = estListOffset;
+  const estPadTop = estVItems.length ? estVItems[0].start - estSM : 0;
+  const estPadBottom = estVItems.length ? estVirtualizer.getTotalSize() - (estVItems[estVItems.length - 1].end - estSM) : 0;
 
   // Un acudiente pasa el filtro si tiene AL MENOS un acudido que cumpla el
   // grado y/o salón escogido (el mismo acudido cumple ambos si ambos están).
@@ -1713,9 +1724,9 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                   <Loader2 className="w-6 h-6 animate-spin" />
                 </div>
               ) : (
-                <div ref={estScrollRef} className="overflow-auto max-h-[65vh]">
+                <div ref={estListRef} className="overflow-x-auto">
                   <Table>
-                    <TableHeader className="sticky top-0 z-10 bg-card">
+                    <TableHeader>
                       <TableRow>
                         <TableHead>Foto</TableHead>
                         <TableHead>ID</TableHead>
