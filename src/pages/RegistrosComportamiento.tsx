@@ -1,12 +1,11 @@
-import { useEffect, useState, useMemo, useRef, useLayoutEffect } from "react";
-import { useWindowVirtualizer } from "@tanstack/react-virtual";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getSession, isProfesor, isOrientador, isAdmin, isRectorOrCoordinador } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ChevronDown, Plus, Search, Calendar as CalendarIcon, Download, Trash2,
-  ClipboardList, FileText, Check, Pencil, X,
+  ClipboardList, FileText, Check, Pencil,
 } from "lucide-react";
 import iconRegistros from "@/assets/icons/registros-comportamiento.png";
 import { Calendar } from "@/components/ui/calendar";
@@ -425,20 +424,6 @@ const RegistrosComportamiento = () => {
     });
   }, [estudiantesConRegistros, filtroGrado, filtroSalon, histBusqueda]);
 
-  // Virtualización de la lista del historial (contra el scroll de la página).
-  const histListRef = useRef<HTMLDivElement>(null);
-  const [histOffset, setHistOffset] = useState(0);
-  useLayoutEffect(() => {
-    const medir = () => { if (histListRef.current) setHistOffset(histListRef.current.getBoundingClientRect().top + window.scrollY); };
-    medir();
-    window.addEventListener("resize", medir);
-    return () => window.removeEventListener("resize", medir);
-  }, [estudiantesHistorial.length]);
-  const histVirt = useWindowVirtualizer({ count: estudiantesHistorial.length, estimateSize: () => 74, overscan: 10, scrollMargin: histOffset });
-  const histItems = histVirt.getVirtualItems();
-  const histPadTop = histItems.length ? histItems[0].start - histOffset : 0;
-  const histPadBottom = histItems.length ? histVirt.getTotalSize() - (histItems[histItems.length - 1].end - histOffset) : 0;
-
   const estVista = useMemo(() => estudiantesConRegistros.find(e => e.id === estVistaId) || null, [estudiantesConRegistros, estVistaId]);
 
   // Nivel 2: registros del estudiante elegido, ordenables por fecha/tipo/profesor.
@@ -854,30 +839,24 @@ const RegistrosComportamiento = () => {
             <div className="text-center py-8 text-muted-foreground">Cargando...</div>
           ) : estVistaId == null ? (
             <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <select value={filtroGrado} onChange={e => { setFiltroGrado(e.target.value); setFiltroSalon(""); }} className="px-3 py-2 border border-input rounded-md text-sm bg-card cursor-pointer">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    value={histBusqueda}
+                    onChange={e => setHistBusqueda(e.target.value)}
+                    placeholder="Buscar estudiante por nombre..."
+                    className="w-full pl-9 pr-3 py-2 border border-input rounded-md text-sm bg-background"
+                  />
+                </div>
+                <select value={filtroGrado} onChange={e => { setFiltroGrado(e.target.value); setFiltroSalon(""); }} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                   <option value="">Todos los grados</option>
                   {gradosUnicos.map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
-                <select value={filtroSalon} onChange={e => setFiltroSalon(e.target.value)} className="px-3 py-2 border border-input rounded-md text-sm bg-card cursor-pointer">
+                <select value={filtroSalon} onChange={e => setFiltroSalon(e.target.value)} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                   <option value="">Todos los salones</option>
                   {salonesUnicos.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
-              </div>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
-                  value={histBusqueda}
-                  onChange={e => setHistBusqueda(e.target.value)}
-                  placeholder="Buscar estudiante por nombre..."
-                  className="w-full pl-9 pr-9 py-2 border border-input rounded-md text-sm bg-card"
-                />
-                {histBusqueda && (
-                  <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setHistBusqueda("")} title="Limpiar"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground">
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
               </div>
 
               {estudiantesHistorial.length === 0 ? (
@@ -886,15 +865,12 @@ const RegistrosComportamiento = () => {
                   <p>No hay estudiantes con registros para estos filtros.</p>
                 </div>
               ) : (
-                <div ref={histListRef}>
-                  {histPadTop > 0 && <div style={{ height: histPadTop }} />}
-                  {histItems.map(vi => {
-                    const e = estudiantesHistorial[vi.index];
-                    return (
+                <div className="space-y-2">
+                  {estudiantesHistorial.map(e => (
                     <button
                       key={e.id}
                       onClick={() => { setEstVistaId(e.id); setOrdenarPor("fecha"); setExpandedIds(new Set()); }}
-                      className="w-full flex items-center justify-between border border-border rounded-lg p-4 mb-2 text-left hover:bg-muted/30 transition-colors cursor-pointer"
+                      className="w-full flex items-center justify-between border border-border rounded-lg p-4 text-left hover:bg-muted/30 transition-colors cursor-pointer"
                     >
                       <div className="min-w-0 pr-2">
                         <p className="font-semibold text-foreground text-sm">{e.apellidos} {e.nombres}</p>
@@ -907,9 +883,7 @@ const RegistrosComportamiento = () => {
                         <ChevronDown className="w-5 h-5 -rotate-90 text-muted-foreground shrink-0" />
                       </div>
                     </button>
-                    );
-                  })}
-                  {histPadBottom > 0 && <div style={{ height: histPadBottom }} />}
+                  ))}
                 </div>
               )}
             </div>
