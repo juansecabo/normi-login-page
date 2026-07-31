@@ -19,7 +19,6 @@ interface Comunicado {
   salon: string | null;
   grados: string[] | null;
   salones: string[] | null;
-  id_estudiantil: string | null;
   id_destinatarios: string[] | null;
   grupo_comunicado_id: number | null;
 }
@@ -72,7 +71,6 @@ const ComunicadosProfesor = () => {
             if (c.id_destinatarios && c.id_destinatarios.length > 0) {
               return c.id_destinatarios.includes(String(session.id));
             }
-            if (c.id_estudiantil && c.id_estudiantil !== session.id) return false;
             // Normalizar a arrays (preferir nuevas columnas grados/salones)
             const grados = c.grados ?? (c.grado ? [c.grado] : null);
             const salones = c.salones ?? (c.salon ? [c.salon] : null);
