@@ -46,11 +46,7 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
 
   const handleVolverPlataforma = () => {
     if (restaurarSesionSuperAdmin()) {
-      // Recarga real: la sesión volvió a SuperAdmin, pero seguimos en /dashboard
-      // (misma ruta), así que un navigate NO re-monta el despachador y el cuerpo
-      // se quedaba en el dashboard del colegio. El hard reload garantiza que
-      // /dashboard vuelva a decidir y monte el Panel de Plataforma.
-      window.location.assign("/dashboard");
+      navigate("/dashboard", { replace: true });
     } else {
       // Si por alguna razón el backup se perdió (cerraste pestaña, etc),
       // cerramos sesión para no quedar atrapados.
