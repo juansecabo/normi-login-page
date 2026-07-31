@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useLayoutEffect } from "react";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { useNavigate } from "react-router-dom";
 import { getSession } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
@@ -104,6 +105,21 @@ const PorteriaLlegadaTarde = () => {
     });
   }, [estudiantes, filtroGrado, filtroSalon, busqueda]);
 
+  // Virtualización de la lista de estudiantes (contra el scroll de la página):
+  // solo dibuja las tarjetas visibles aunque haya miles.
+  const listaRef = useRef<HTMLDivElement>(null);
+  const [listaOffset, setListaOffset] = useState(0);
+  useLayoutEffect(() => {
+    const medir = () => { if (listaRef.current) setListaOffset(listaRef.current.getBoundingClientRect().top + window.scrollY); };
+    medir();
+    window.addEventListener("resize", medir);
+    return () => window.removeEventListener("resize", medir);
+  }, [estudiantesFiltrados.length]);
+  const rowVirt = useWindowVirtualizer({ count: estudiantesFiltrados.length, estimateSize: () => 68, overscan: 10, scrollMargin: listaOffset });
+  const vItems = rowVirt.getVirtualItems();
+  const padTop = vItems.length ? vItems[0].start - listaOffset : 0;
+  const padBottom = vItems.length ? rowVirt.getTotalSize() - (vItems[vItems.length - 1].end - listaOffset) : 0;
+
   const seleccionadosArr = Object.values(seleccionados);
   const toggleSel = (e: Estudiante) => setSeleccionados(prev => {
     const next = { ...prev };
@@ -163,53 +179,58 @@ const PorteriaLlegadaTarde = () => {
             a sus acudientes con la <strong>hora de entrada</strong> (la de este momento).
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input value={busqueda} onChange={e => setBusqueda(e.target.value)}
-                placeholder="Buscar estudiante por nombre..."
-                className="w-full pl-9 pr-9 py-2 border border-input rounded-md text-sm bg-background" />
-              {busqueda && (
-                <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setBusqueda("")} title="Limpiar"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground">
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <select value={filtroGrado} onChange={e => { setFiltroGrado(e.target.value); setFiltroSalon(""); }}
-              className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+              className="px-3 py-2 border border-input rounded-md text-sm bg-card cursor-pointer">
               <option value="">Todos los grados</option>
               {gradosUnicos.map(g => <option key={g} value={g}>{g}</option>)}
             </select>
             <select value={filtroSalon} onChange={e => setFiltroSalon(e.target.value)}
-              className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+              className="px-3 py-2 border border-input rounded-md text-sm bg-card cursor-pointer">
               <option value="">Todos los salones</option>
               {salonesUnicos.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input value={busqueda} onChange={e => setBusqueda(e.target.value)}
+              placeholder="Buscar estudiante por nombre..."
+              className="w-full pl-9 pr-9 py-2 border border-input rounded-md text-sm bg-card" />
+            {busqueda && (
+              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setBusqueda("")} title="Limpiar"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground">
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-2 space-y-2">
+            <div ref={listaRef} className="lg:col-span-2">
               {loading ? (
                 <div className="text-center py-10 text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
               ) : estudiantesFiltrados.length === 0 ? (
                 <p className="text-center py-10 text-muted-foreground">No hay estudiantes con esos filtros.</p>
               ) : (
-                estudiantesFiltrados.map(e => {
-                  const marcado = !!seleccionados[e.id];
-                  return (
-                    <label key={e.id} className={`w-full flex items-center gap-3 border rounded-lg p-3 cursor-pointer transition-colors ${marcado ? "border-primary bg-primary/5" : "border-border hover:bg-muted/30"}`}>
-                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${marcado ? "bg-primary border-primary" : "border-border"}`}>
-                        {marcado && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
-                      </div>
-                      <input type="checkbox" className="sr-only" checked={marcado} onChange={() => toggleSel(e)} />
-                      <div>
-                        <p className="font-semibold text-foreground text-sm">{e.apellidos} {e.nombres}</p>
-                        <p className="text-xs text-muted-foreground">{e.grado} {e.salon}</p>
-                      </div>
-                    </label>
-                  );
-                })
+                <>
+                  {padTop > 0 && <div style={{ height: padTop }} />}
+                  {vItems.map(vi => {
+                    const e = estudiantesFiltrados[vi.index];
+                    const marcado = !!seleccionados[e.id];
+                    return (
+                      <label key={e.id} className={`w-full flex items-center gap-3 border rounded-lg p-3 mb-2 cursor-pointer transition-colors ${marcado ? "border-primary bg-primary/5" : "border-border hover:bg-muted/30"}`}>
+                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${marcado ? "bg-primary border-primary" : "border-border"}`}>
+                          {marcado && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
+                        </div>
+                        <input type="checkbox" className="sr-only" checked={marcado} onChange={() => toggleSel(e)} />
+                        <div>
+                          <p className="font-semibold text-foreground text-sm">{e.apellidos} {e.nombres}</p>
+                          <p className="text-xs text-muted-foreground">{e.grado} {e.salon}</p>
+                        </div>
+                      </label>
+                    );
+                  })}
+                  {padBottom > 0 && <div style={{ height: padBottom }} />}
+                </>
               )}
             </div>
 

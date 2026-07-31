@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useLayoutEffect } from "react";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   getSession, isAdmin, isProfesor, isPadreDeFamilia, isEstudiante,
@@ -201,6 +202,20 @@ const ObservadorEstudiantil = () => {
     });
   }, [estudiantes, filtroGrado, filtroSalon, busqueda, filtroConObs, conObs]);
 
+  // Virtualización de la lista de estudiantes (contra el scroll de la página).
+  const listaRef = useRef<HTMLDivElement>(null);
+  const [listaOffset, setListaOffset] = useState(0);
+  useLayoutEffect(() => {
+    const medir = () => { if (listaRef.current) setListaOffset(listaRef.current.getBoundingClientRect().top + window.scrollY); };
+    medir();
+    window.addEventListener("resize", medir);
+    return () => window.removeEventListener("resize", medir);
+  }, [estudiantesFiltrados.length, modoSeleccion]);
+  const rowVirt = useWindowVirtualizer({ count: estudiantesFiltrados.length, estimateSize: () => 72, overscan: 10, scrollMargin: listaOffset });
+  const vItems = rowVirt.getVirtualItems();
+  const padTop = vItems.length ? vItems[0].start - listaOffset : 0;
+  const padBottom = vItems.length ? rowVirt.getTotalSize() - (vItems[vItems.length - 1].end - listaOffset) : 0;
+
   const abrirNuevo = () => { setMulti(false); setEditandoId(null); setTexto(""); setModalOpen(true); };
   const abrirEditar = (o: Observacion) => { setMulti(false); setEditandoId(o.id); setTexto(o.comentario); setModalOpen(true); };
 
@@ -396,68 +411,80 @@ const ObservadorEstudiantil = () => {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input value={busqueda} onChange={e => setBusqueda(e.target.value)}
-                    placeholder="Buscar estudiante por nombre..."
-                    className="w-full pl-9 pr-3 py-2 border border-input rounded-md text-sm bg-background" />
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <select value={filtroGrado} onChange={e => { setFiltroGrado(e.target.value); setFiltroSalon(""); }}
-                  className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                  className="px-3 py-2 border border-input rounded-md text-sm bg-card cursor-pointer">
                   <option value="">Todos los grados</option>
                   {gradosUnicos.map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
                 <select value={filtroSalon} onChange={e => setFiltroSalon(e.target.value)}
-                  className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                  className="px-3 py-2 border border-input rounded-md text-sm bg-card cursor-pointer">
                   <option value="">Todos los salones</option>
                   {salonesUnicos.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input value={busqueda} onChange={e => setBusqueda(e.target.value)}
+                  placeholder="Buscar estudiante por nombre..."
+                  className="w-full pl-9 pr-9 py-2 border border-input rounded-md text-sm bg-card" />
+                {busqueda && (
+                  <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setBusqueda("")} title="Limpiar"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground">
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
 
               {/* Layout: lista + (en modo selección) panel lateral de elegidos */}
               <div className={modoSeleccion ? "grid grid-cols-1 lg:grid-cols-3 gap-4" : ""}>
-                <div className={modoSeleccion ? "lg:col-span-2 space-y-2" : "space-y-2"}>
+                <div className={modoSeleccion ? "lg:col-span-2" : ""}>
                   {modoSeleccion && estudiantesFiltrados.length > 0 && (
-                    <button onClick={seleccionarFiltrados} className="text-xs text-primary hover:underline">
+                    <button onClick={seleccionarFiltrados} className="text-xs text-primary hover:underline mb-2 inline-block">
                       Seleccionar todos ({estudiantesFiltrados.length})
                     </button>
                   )}
                   {estudiantesFiltrados.length === 0 ? (
                     <p className="text-center py-10 text-muted-foreground">No hay estudiantes con esos filtros.</p>
-                  ) : modoSeleccion ? (
-                    estudiantesFiltrados.map(e => {
-                      const marcado = !!seleccionados[e.id];
-                      return (
-                        <label key={e.id} className={`w-full flex items-center gap-3 border rounded-lg p-3 cursor-pointer transition-colors ${marcado ? "border-primary bg-primary/5" : "border-border hover:bg-muted/30"}`}>
-                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${marcado ? "bg-primary border-primary" : "border-border"}`}>
-                            {marcado && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
-                          </div>
-                          <input type="checkbox" className="sr-only" checked={marcado} onChange={() => toggleSel(e)} />
-                          <div>
-                            <p className="font-semibold text-foreground text-sm flex items-center gap-1.5">
-                              {e.apellidos} {e.nombres}
-                              {conObs.has(e.id) && <NotebookPen className="w-3.5 h-3.5 text-orange-500 shrink-0" title="Tiene observaciones" />}
-                            </p>
-                            <p className="text-xs text-muted-foreground">{e.grado} {e.salon}</p>
-                          </div>
-                        </label>
-                      );
-                    })
                   ) : (
-                    estudiantesFiltrados.map(e => (
-                      <button key={e.id} onClick={() => abrirEstudiante(e)}
-                        className="w-full flex items-center justify-between border border-border rounded-lg p-4 text-left hover:bg-muted/30 transition-colors">
-                        <div>
-                          <p className="font-semibold text-foreground text-sm flex items-center gap-1.5">
-                            {e.apellidos} {e.nombres}
-                            {conObs.has(e.id) && <NotebookPen className="w-3.5 h-3.5 text-orange-500 shrink-0" title="Tiene observaciones" />}
-                          </p>
-                          <p className="text-xs text-muted-foreground">{e.grado} {e.salon}</p>
-                        </div>
-                        <ChevronDown className="w-5 h-5 -rotate-90 text-muted-foreground" />
-                      </button>
-                    ))
+                    <div ref={listaRef}>
+                      {padTop > 0 && <div style={{ height: padTop }} />}
+                      {vItems.map(vi => {
+                        const e = estudiantesFiltrados[vi.index];
+                        if (modoSeleccion) {
+                          const marcado = !!seleccionados[e.id];
+                          return (
+                            <label key={e.id} className={`w-full flex items-center gap-3 border rounded-lg p-3 mb-2 cursor-pointer transition-colors ${marcado ? "border-primary bg-primary/5" : "border-border hover:bg-muted/30"}`}>
+                              <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${marcado ? "bg-primary border-primary" : "border-border"}`}>
+                                {marcado && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
+                              </div>
+                              <input type="checkbox" className="sr-only" checked={marcado} onChange={() => toggleSel(e)} />
+                              <div>
+                                <p className="font-semibold text-foreground text-sm flex items-center gap-1.5">
+                                  {e.apellidos} {e.nombres}
+                                  {conObs.has(e.id) && <NotebookPen className="w-3.5 h-3.5 text-orange-500 shrink-0" title="Tiene observaciones" />}
+                                </p>
+                                <p className="text-xs text-muted-foreground">{e.grado} {e.salon}</p>
+                              </div>
+                            </label>
+                          );
+                        }
+                        return (
+                          <button key={e.id} onClick={() => abrirEstudiante(e)}
+                            className="w-full flex items-center justify-between border border-border rounded-lg p-4 mb-2 text-left hover:bg-muted/30 transition-colors">
+                            <div>
+                              <p className="font-semibold text-foreground text-sm flex items-center gap-1.5">
+                                {e.apellidos} {e.nombres}
+                                {conObs.has(e.id) && <NotebookPen className="w-3.5 h-3.5 text-orange-500 shrink-0" title="Tiene observaciones" />}
+                              </p>
+                              <p className="text-xs text-muted-foreground">{e.grado} {e.salon}</p>
+                            </div>
+                            <ChevronDown className="w-5 h-5 -rotate-90 text-muted-foreground" />
+                          </button>
+                        );
+                      })}
+                      {padBottom > 0 && <div style={{ height: padBottom }} />}
+                    </div>
                   )}
                 </div>
 
