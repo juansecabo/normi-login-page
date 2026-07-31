@@ -553,16 +553,18 @@ export const PorteriaHub = () => {
             <span className="text-foreground font-medium">Portería</span>
           </div>
         </div>
-        <div className="max-w-2xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button onClick={() => navigate("/porteria/llegada-tarde")}
-            className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-orange-100 hover:bg-orange-200 transition-all duration-200 hover:shadow-md">
-            <Clock className="w-14 h-14 text-orange-600" strokeWidth={1.5} />
-            <span className="font-semibold text-foreground text-center">Reportar llegada tarde</span>
+            className="bg-card rounded-lg shadow-soft p-8 flex flex-col items-center justify-center gap-3 text-center transition-all hover:shadow-md hover:bg-orange-50 border-2 border-transparent hover:border-orange-200">
+            <Clock className="h-10 w-10 text-orange-500" />
+            <span className="text-lg font-bold text-foreground">Reportar llegada tarde</span>
+            <span className="text-sm text-muted-foreground">Avisa a los acudientes de quienes llegaron tarde</span>
           </button>
           <button onClick={() => navigate("/porteria/registro")}
-            className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg bg-sky-100 hover:bg-sky-200 transition-all duration-200 hover:shadow-md">
-            <ClipboardList className="w-14 h-14 text-sky-600" strokeWidth={1.5} />
-            <span className="font-semibold text-foreground text-center">Registro de llegada tarde</span>
+            className="bg-card rounded-lg shadow-soft p-8 flex flex-col items-center justify-center gap-3 text-center transition-all hover:shadow-md hover:bg-sky-50 border-2 border-transparent hover:border-sky-200">
+            <ClipboardList className="h-10 w-10 text-sky-600" />
+            <span className="text-lg font-bold text-foreground">Registro de llegada tarde</span>
+            <span className="text-sm text-muted-foreground">Consulta el historial de llegadas tarde</span>
           </button>
         </div>
       </main>
