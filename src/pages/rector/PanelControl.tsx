@@ -1726,7 +1726,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                     className="pl-9 pr-9"
                   />
                   {searchEst && (
-                    <button type="button" onClick={() => setSearchEst("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label="Limpiar búsqueda">
+                    <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setSearchEst("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label="Limpiar búsqueda">
                       <X className="w-4 h-4" />
                     </button>
                   )}
@@ -1837,7 +1837,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                     className="pl-9 pr-9"
                   />
                   {searchPerf && (
-                    <button type="button" onClick={() => setSearchPerf("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label="Limpiar búsqueda">
+                    <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setSearchPerf("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label="Limpiar búsqueda">
                       <X className="w-4 h-4" />
                     </button>
                   )}

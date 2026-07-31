@@ -170,7 +170,7 @@ const PorteriaLlegadaTarde = () => {
                 placeholder="Buscar estudiante por nombre..."
                 className="w-full pl-9 pr-9 py-2 border border-input rounded-md text-sm bg-background" />
               {busqueda && (
-                <button type="button" onClick={() => setBusqueda("")} title="Limpiar"
+                <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setBusqueda("")} title="Limpiar"
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground">
                   <X className="w-4 h-4" />
                 </button>
@@ -440,7 +440,7 @@ export const PorteriaRegistro = () => {
                 placeholder="Buscar estudiante..."
                 className="w-full pl-9 pr-9 py-2 border border-input rounded-md text-sm bg-background" />
               {buscar && (
-                <button type="button" onClick={() => setBuscar("")} title="Limpiar"
+                <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setBuscar("")} title="Limpiar"
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground">
                   <X className="w-4 h-4" />
                 </button>
