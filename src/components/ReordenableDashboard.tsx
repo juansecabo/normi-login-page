@@ -18,14 +18,26 @@ export interface ReordItem {
   id: string;
   /** Contenido de la tarjeta (su <button> tal cual, con su estilo propio). */
   render: ReactNode;
+  /** Ruta interna de la ficha (ej. "/estadisticas"). Si viene, la ficha se envuelve
+   *  en un enlace real → clic medio / Ctrl+clic abren en pestaña nueva, sin perder
+   *  el arrastre para reordenar ni el clic normal. */
+  href?: string;
 }
 
 /** Una tarjeta arrastrable. El arrastre se activa con long-press (~0.5s); mientras
  *  `jiggling` está activo TODAS vibran menos la que se arrastra. La vibración va en
  *  un div interno para NO chocar con el transform de dnd-kit (que acomoda/mueve). */
-function SortableCard({ id, jiggling, index, children }: { id: string; jiggling: boolean; index: number; children: ReactNode }) {
+function SortableCard({ id, jiggling, index, href, children }: { id: string; jiggling: boolean; index: number; href?: string; children: ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const vibra = jiggling && !isDragging;
+  const contenido = (
+    <div
+      className={`h-full ${vibra ? "normi-jiggle" : ""}`}
+      style={vibra ? { animationDelay: index % 2 === 0 ? "0s" : "-0.13s" } : undefined}
+    >
+      {children}
+    </div>
+  );
   return (
     <div
       ref={setNodeRef}
@@ -39,12 +51,26 @@ function SortableCard({ id, jiggling, index, children }: { id: string; jiggling:
       {...attributes}
       {...listeners}
     >
-      <div
-        className={`h-full ${vibra ? "normi-jiggle" : ""}`}
-        style={vibra ? { animationDelay: index % 2 === 0 ? "0s" : "-0.13s" } : undefined}
-      >
-        {children}
-      </div>
+      {href ? (
+        // Enlace real (para abrir en pestaña nueva) SIN perder el arrastre:
+        //  - clic medio (rueda) / clic derecho → el navegador abre `href` en pestaña nueva (nativo).
+        //  - Ctrl/Cmd+clic → pestaña nueva; cortamos la nav interna de la pestaña actual.
+        //  - clic normal → evitamos la recarga del <a>; el botón interno hace la nav SPA.
+        //  - `draggable={false}` apaga el arrastre nativo del enlace para que mande dnd-kit.
+        <a
+          href={href}
+          draggable={false}
+          tabIndex={-1}
+          className="block h-full"
+          style={{ color: "inherit", textDecoration: "none" }}
+          onClickCapture={(e) => {
+            if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) { e.stopPropagation(); return; }
+            e.preventDefault();
+          }}
+        >
+          {contenido}
+        </a>
+      ) : contenido}
     </div>
   );
 }
@@ -83,6 +109,9 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
     return [];
   });
   const [jiggling, setJiggling] = useState(false);
+  // PILOTO (solo Cailico): envolver las fichas con `href` en un enlace real para
+  // poder abrirlas en pestaña nueva (rueda / Ctrl+clic) sin perder el reordenamiento.
+  const permitirEnlace = getSession().colegio_slug === "cailico";
 
   useEffect(() => {
     const session = getSession();
@@ -162,7 +191,7 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
         <SortableContext items={ordenadas.map((c) => c.id)} strategy={rectSortingStrategy}>
           <div className={gridClassName}>
             {ordenadas.map((item, idx) => (
-              <SortableCard key={item.id} id={item.id} jiggling={jiggling} index={idx}>
+              <SortableCard key={item.id} id={item.id} jiggling={jiggling} index={idx} href={permitirEnlace ? item.href : undefined}>
                 {item.render}
               </SortableCard>
             ))}
