@@ -35,6 +35,7 @@ const DashboardPlataforma = () => {
     try {
       await apiClient.plataforma.ejecutarRespaldo(tipo === "plataforma" ? { plataforma: true } : {});
       toast({
+        variant: "success",
         title: "Respaldo en proceso",
         description: tipo === "plataforma"
           ? "La copia completa de la plataforma llegará a tu correo en unos minutos."
