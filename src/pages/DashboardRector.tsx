@@ -335,6 +335,23 @@ const DashboardRector = () => {
     ? (FICHAS_PORTERO.map(fid => items.find(i => i.id === fid)).filter(Boolean) as ReordItem[])
     : items;
 
+  // Rutas de cada ficha → permiten abrirlas en pestaña nueva (rueda / Ctrl+clic).
+  // 'conversaciones' se omite (abre Chatwoot externo, no es navegación interna).
+  const RUTAS_RECTOR: Record<string, string> = {
+    casos: "/orientador/casos", citas: "/orientador/citas", remisiones: "/orientador/remisiones",
+    notas: "/seleccionar-grado", "enviar-comunicado": "/enviar-comunicado",
+    "comunicados-firma": "/comunicados-firma", "comunicados-recibidos": "/comunicados-recibidos",
+    "documentos-recibidos": "/documentos-recibidos", "permisos-excusas": "/permisos-excusas",
+    "solicitud-entrevista": "/solicitud-entrevista-staff", estadisticas: "/estadisticas",
+    boletines: "/boletines", consultas: "/consultas", formatos: "/formatos", porteria: "/porteria",
+    "registros-comportamiento": "/registros-comportamiento", "remitir-orientacion": "/remitir-orientacion",
+    "panel-control": "/panel-control", observador: "/observador-estudiantil",
+    "construye-institucion": "/construye-institucion", "uso-normi": "/uso-normi",
+    "registro-normi": "/registro-normi", asistencia: "/asistencia",
+    "programar-actividad": "/profesor/programar-actividad", perfil: "/perfil",
+  };
+  const itemsConHref = itemsVisibles.map((it) => (RUTAS_RECTOR[it.id] ? { ...it, href: RUTAS_RECTOR[it.id] } : it));
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <HeaderNormi backLink="/dashboard" />
@@ -372,7 +389,7 @@ const DashboardRector = () => {
           <ReordenableDashboard
             dashboardKey="rector"
             gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6"
-            items={itemsVisibles}
+            items={itemsConHref}
           />
         </div>
 
