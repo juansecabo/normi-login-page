@@ -617,6 +617,11 @@ export const apiClient = {
     entrarComoAdmin(colegio_id: string): Promise<{ ok: true; token: string; colegio: { id: string; nombre: string; slug: string } }> {
       return request(`/api/plataforma/entrar-como-admin/${colegio_id}`, { method: 'POST' });
     },
+    /** Genera un respaldo bajo demanda. `plataforma:true` → copia completa al admin;
+     *  sin body → a cada rector su colegio; `colegio_id` → solo ese colegio. */
+    ejecutarRespaldo(opts: { plataforma?: boolean; colegio_id?: string } = {}): Promise<any> {
+      return request('/api/plataforma/respaldo/ejecutar', { method: 'POST', body: JSON.stringify(opts) });
+    },
 
     // ─── Crear Institución (wizard SuperAdmin) ───
     /** Crea un borrador (estado oculto). Devuelve el colegio creado. */

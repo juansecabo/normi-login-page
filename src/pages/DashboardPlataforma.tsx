@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, Users, GraduationCap, UserCheck, Loader2, Pencil, LogIn, Search, Plus } from "lucide-react";
+import { Building2, Users, GraduationCap, UserCheck, Loader2, Pencil, LogIn, Search, Plus, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -28,6 +28,24 @@ const DashboardPlataforma = () => {
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [entrandoId, setEntrandoId] = useState<string | null>(null);
   const [creando, setCreando] = useState(false);
+  const [respaldando, setRespaldando] = useState<null | "plataforma" | "rectores">(null);
+
+  const generarRespaldo = async (tipo: "plataforma" | "rectores") => {
+    setRespaldando(tipo);
+    try {
+      await apiClient.plataforma.ejecutarRespaldo(tipo === "plataforma" ? { plataforma: true } : {});
+      toast({
+        title: "Respaldo en proceso",
+        description: tipo === "plataforma"
+          ? "La copia completa de la plataforma llegará a tu correo en unos minutos."
+          : "A cada rector le llegará por correo la copia de su colegio en unos minutos.",
+      });
+    } catch (err: any) {
+      toast({ title: "No se pudo generar", description: err?.message || "Intenta de nuevo.", variant: "destructive" });
+    } finally {
+      setRespaldando(null);
+    }
+  };
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const pendingColegioId = useRef<string | null>(null);
 
@@ -185,6 +203,28 @@ const DashboardPlataforma = () => {
               Gestiona los colegios y administradores de Notas Normi.
             </p>
           </div>
+
+          <section className="bg-card rounded-lg shadow-soft p-6 mb-6">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3">
+                <Database className="w-5 h-5 text-primary flex-shrink-0" />
+                <div>
+                  <h2 className="text-lg font-semibold text-foreground">Copias de seguridad</h2>
+                  <p className="text-sm text-muted-foreground">Se generan solas cada semana. También puedes generar una ahora.</p>
+                </div>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <Button onClick={() => generarRespaldo("rectores")} disabled={!!respaldando} variant="outline" size="sm" className="gap-2">
+                  {respaldando === "rectores" ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                  A cada rector
+                </Button>
+                <Button onClick={() => generarRespaldo("plataforma")} disabled={!!respaldando} size="sm" className="gap-2">
+                  {respaldando === "plataforma" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
+                  Respaldo completo a mi correo
+                </Button>
+              </div>
+            </div>
+          </section>
 
           <section className="bg-card rounded-lg shadow-soft p-6">
             <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
