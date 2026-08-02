@@ -125,6 +125,22 @@ const DashboardAdmin = () => {
     { id: 'perfil', render: <Card bg="bg-sky-100 hover:bg-sky-200" icon={<img src={iconPerfil} alt="" className="w-16 h-16 object-contain" />} label="Perfil" onClick={() => navigate("/perfil")} /> },
   ];
 
+  // Rutas de cada ficha → permiten abrirlas en pestaña nueva (rueda / Ctrl+clic).
+  // Se omite 'conversaciones' (abre Chatwoot externo, no es navegación interna).
+  const RUTAS_ADMIN: Record<string, string> = {
+    notas: "/seleccionar-grado", estadisticas: "/estadisticas", boletines: "/boletines",
+    formatos: "/formatos", "enviar-comunicado": "/enviar-comunicado-admin",
+    "comunicados-firma": "/comunicados-firma", "todas-actividades": "/admin/todas-actividades",
+    "panel-control": "/panel-control", "construye-institucion": "/construye-institucion",
+    sugerencias: "/admin/sugerencias", "uso-normi": "/uso-normi", "registro-normi": "/registro-normi",
+    "permisos-excusas": "/permisos-excusas", "solicitud-entrevista": "/solicitud-entrevista-staff",
+    consultas: "/consultas", "registros-comportamiento": "/registros-comportamiento",
+    observador: "/observador-estudiantil", porteria: "/porteria",
+    "solicitudes-registro": "/admin/correcciones-registro", "dudas-personal": "/admin/dudas",
+    asistencia: "/asistencia", perfil: "/perfil",
+  };
+  const itemsConHref = items.map((it) => (RUTAS_ADMIN[it.id] ? { ...it, href: RUTAS_ADMIN[it.id] } : it));
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <HeaderNormi backLink="/dashboard" />
@@ -159,7 +175,7 @@ const DashboardAdmin = () => {
           <ReordenableDashboard
             dashboardKey="admin"
             gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6"
-            items={items}
+            items={itemsConHref}
           />
         </div>
 
