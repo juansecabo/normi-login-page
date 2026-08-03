@@ -731,6 +731,11 @@ export const apiClient = {
     clases(): Promise<{ clases: { asignatura: string; grado: string; salon: string }[] }> {
       return request('/api/asistencia/clases');
     },
+    // Corrige retroactivamente a 'excusa' las inasistencias ya registradas del
+    // estudiante dentro del rango de una excusa recién creada (y notifica).
+    aplicarExcusa(body: { estudiante_id: string; fecha_inicio: string; fecha_fin: string }): Promise<{ ok: true; corregidas: number }> {
+      return request('/api/asistencia/aplicar-excusa', { method: 'POST', body: JSON.stringify(body) });
+    },
   },
 
   estadisticas: {

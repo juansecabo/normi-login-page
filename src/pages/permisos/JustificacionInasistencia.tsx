@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, Check, ChevronDown, Paperclip, X, Eye, Download, Camera, Upload } from "lucide-react";
 import { getCleanFilename, handleVerArchivo, handleDescargarArchivo } from "@/utils/archivoUtils";
 import { notifyRectorCoord } from "@/lib/notifyStaff";
+import { apiClient } from "@/lib/apiClient";
 import FirmaImage from "@/components/FirmaImage";
 import { es } from "date-fns/locale";
 import {
@@ -201,6 +202,14 @@ const JustificacionInasistencia = () => {
         grado: acudidoSeleccionado.grado,
         salon: acudidoSeleccionado.salon,
       }, "inasistencia");
+
+      // Corregir retroactivamente a "excusa" las inasistencias ya registradas en
+      // esas fechas (y avisar la corrección). No bloquea el flujo de éxito.
+      apiClient.asistencia.aplicarExcusa({
+        estudiante_id: String(acudidoSeleccionado.id),
+        fecha_inicio: payload.fecha_inicio,
+        fecha_fin: payload.fecha_fin,
+      }).catch(() => null);
 
       setTipoRango(""); setFechaUnica(undefined); setFechaInicio(undefined); setFechaFin(undefined);
       setAcudidoSeleccionado(null); setMotivoTipo(""); setMotivoOtro(""); setMotivoDescripcion("");
