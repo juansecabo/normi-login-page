@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getSession, isProfesor, puedeAccederDashboard, isAdmin } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
+import { formatTelefono } from "@/utils/telefono";
 import { LogOut, ChevronDown, Check, Paperclip, Eye, Download, Search, X } from "lucide-react";
 import { coincideBusqueda } from "@/utils/busqueda";
 import { getCleanFilename, handleVerArchivo, handleDescargarArchivo } from "@/utils/archivoUtils";
@@ -170,7 +171,7 @@ const RetiroEstudiantesStaff = () => {
             ],
             [
               { label: "Acudiente:", value: `${[auth.acudiente_nombres, auth.acudiente_apellidos].filter(Boolean).join(" ")} — C.C. ${auth.acudiente_id}` },
-              { label: "Teléfono:", value: auth.acudiente_telefono },
+              { label: "Teléfono:", value: formatTelefono(auth.acudiente_telefono) },
             ],
           ],
           firmaUrl: auth.firma_url,
@@ -309,7 +310,7 @@ const RetiroEstudiantesStaff = () => {
                             {auth.acudiente_correo && (
                               <p>Correo electrónico: <span className="text-primary font-medium">{auth.acudiente_correo}</span></p>
                             )}
-                            <p>Teléfono: <span className="text-primary font-medium">{auth.acudiente_telefono}</span></p>
+                            <p>Teléfono: <span className="text-primary font-medium">{formatTelefono(auth.acudiente_telefono)}</span></p>
                           </div>
                         )}
                       </div>

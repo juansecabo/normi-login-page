@@ -640,7 +640,7 @@ const RetiroEstudiantes = () => {
                               <p>Correo electrónico: <span className="text-primary font-medium">{auth.acudiente_correo}</span></p>
                             )}
 
-                            <p>Teléfono: <span className="text-primary font-medium">{auth.acudiente_telefono}</span></p>
+                            <p>Teléfono: <span className="text-primary font-medium">{formatTelefono(auth.acudiente_telefono)}</span></p>
                           </div>
                         </div>
                       )}
