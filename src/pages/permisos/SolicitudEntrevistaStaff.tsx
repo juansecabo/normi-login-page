@@ -59,7 +59,7 @@ const SolicitudEntrevistaStaff = () => {
   // Salones reales del grado elegido (cada colegio tiene distinta cantidad).
   const [salonesDelGrado, setSalonesDelGrado] = useState<string[]>([]);
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
-  const [estudiantesSeleccionados, setEstudiantesSeleccionados] = useState<Estudiante[]>([]);
+  const [estudianteSeleccionado, setEstudianteSeleccionado] = useState<Estudiante | null>(null);
   const [internos, setInternos] = useState<Interno[]>([]);
   const [fechaEntrevista, setFechaEntrevista] = useState<Date | undefined>(undefined);
   const [horaH, setHoraH] = useState("");
@@ -141,13 +141,13 @@ const SolicitudEntrevistaStaff = () => {
 
   // Fetch students when grado/salon changes
   useEffect(() => {
-    if (!grado || !salon) { setEstudiantes([]); setEstudiantesSeleccionados([]); return; }
+    if (!grado || !salon) { setEstudiantes([]); setEstudianteSeleccionado(null); return; }
     (async () => {
       const { data } = await supabase.from("Estudiantes").select("id, grado, salon")
         .eq("grado", grado).eq("salon", salon);
       const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
       setEstudiantes(sortByApellidosNombres(await enrichWithNombres((data || []) as any)) as any);
-      setEstudiantesSeleccionados([]);
+      setEstudianteSeleccionado(null);
     })();
   }, [grado, salon]);
 
@@ -282,7 +282,7 @@ const SolicitudEntrevistaStaff = () => {
   const horaEntrevista = `${horaH}:${horaM} ${horaAP}`;
   const cargosUnicos = [...new Set(internos.map(i => i.cargo))].sort();
   const internosFiltrados = internos.filter(i => !cargoEntrevista || i.cargo === cargoEntrevista);
-  const camposCompletos = estudiantesSeleccionados.length > 0 && fechaEntrevista && horaH && horaM && horaAP && entrevistadores.length > 0 && firma;
+  const camposCompletos = estudianteSeleccionado && fechaEntrevista && horaH && horaM && horaAP && entrevistadores.length > 0 && firma;
 
   const agregarEntrevistador = () => {
     if (!internoPick || entrevistadores.some(e => e.id === internoPick.id)) return;
@@ -290,14 +290,11 @@ const SolicitudEntrevistaStaff = () => {
     setCargoEntrevista(""); setInternoPick(null);
   };
   const quitarEntrevistador = (id: number) => setEntrevistadores(prev => prev.filter(e => e.id !== id));
-  const agregarEstudiante = (est: Estudiante) => setEstudiantesSeleccionados(prev => prev.some(x => x.id === est.id) ? prev : [...prev, est]);
-  const quitarEstudiante = (id: string) => setEstudiantesSeleccionados(prev => prev.filter(x => x.id !== id));
 
   const handleCrear = async () => {
-    if (!camposCompletos || estudiantesSeleccionados.length === 0 || !fechaEntrevista || !firma || entrevistadores.length === 0) return;
+    if (!camposCompletos || !estudianteSeleccionado || !fechaEntrevista || !firma || entrevistadores.length === 0) return;
     setSaving(true);
 
-    // Subir la firma UNA vez (misma firma del solicitante para todas las citaciones).
     let firmaUrl: string | null = null;
     try {
       const base64Data = firma.split(",")[1];
@@ -313,60 +310,50 @@ const SolicitudEntrevistaStaff = () => {
     }
 
     const fmtLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    const fechaEntrevistaTexto = fechaEntrevista.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-    const entrevistaConNombre = joinEntrevistadores(entrevistadores);
-    const bloqueMensaje = mensajeAdicional.trim() ? `\n\nMensaje:\n${mensajeAdicional.trim()}` : "";
+    const sessionNombre = [session.nombres, session.apellidos].filter(Boolean).join(" ");
 
-    // Una solicitud (fila + citación individual al acudiente) POR estudiante elegido.
-    let creadas = 0;
-    const fallidas: string[] = [];
-    for (const est of estudiantesSeleccionados) {
-      const { error } = await supabase.from("Solicitudes_Entrevista").insert({
-        fecha_solicitud: fmtLocal(hoy),
-        fecha_entrevista: fmtLocal(fechaEntrevista),
-        hora_entrevista: horaEntrevista,
-        estudiante_nombre: est.nombres,
-        estudiante_apellidos: est.apellidos,
-        estudiante_grado: est.grado,
-        estudiante_salon: est.salon,
-        estudiante_id: Number(est.id),
-        solicitante_nombre: [entrevistadores[0].nombres, entrevistadores[0].apellidos].filter(Boolean).join(" "),
-        solicitante_cargo: entrevistadores[0].cargo,
-        solicitante_id: entrevistadores[0].id,
-        entrevistadores: entrevistadores.map(e => ({ id: e.id, cargo: e.cargo, nombres: e.nombres, apellidos: e.apellidos, genero: e.genero ?? null })),
-        creado_por: Number(session.id),
-        creado_por_nombre: [session.cargo, session.nombres, session.apellidos].filter(Boolean).join(" "),
-        firma_url: firmaUrl,
-        mensaje: mensajeAdicional.trim() || null,
-      });
-      if (error) { fallidas.push(`${est.apellidos} ${est.nombres}`); continue; }
-      creadas++;
-      // Notificar SOLO a los acudientes de ESTE estudiante → cada padre recibe su
-      // propia citación, sin ver a los demás. El remitente lo arma el server.
-      const mensaje = `Se le informa que se ha solicitado una entrevista para el acudiente del estudiante ${est.nombres} ${est.apellidos} de ${est.grado} ${est.salon}.\n\nFecha: ${fechaEntrevistaTexto}\nHora: ${horaEntrevista}\nCon: ${entrevistaConNombre}${bloqueMensaje}\n\nPor favor ingrese a notasnormi.com y en el inicio haga click en la ficha "Solicitud de Entrevista", busque el día indicado, haga click sobre la citación y confirme su asistencia.`;
+    const { error } = await supabase.from("Solicitudes_Entrevista").insert({
+      fecha_solicitud: fmtLocal(hoy),
+      fecha_entrevista: fmtLocal(fechaEntrevista),
+      hora_entrevista: horaEntrevista,
+      estudiante_nombre: estudianteSeleccionado.nombres,
+      estudiante_apellidos: estudianteSeleccionado.apellidos,
+      estudiante_grado: estudianteSeleccionado.grado,
+      estudiante_salon: estudianteSeleccionado.salon,
+      estudiante_id: Number(estudianteSeleccionado.id),
+      solicitante_nombre: [entrevistadores[0].nombres, entrevistadores[0].apellidos].filter(Boolean).join(" "),
+      solicitante_cargo: entrevistadores[0].cargo,
+      solicitante_id: entrevistadores[0].id,
+      entrevistadores: entrevistadores.map(e => ({ id: e.id, cargo: e.cargo, nombres: e.nombres, apellidos: e.apellidos, genero: e.genero ?? null })),
+      creado_por: Number(session.id),
+      creado_por_nombre: [session.cargo, session.nombres, session.apellidos].filter(Boolean).join(" "),
+      firma_url: firmaUrl,
+      mensaje: mensajeAdicional.trim() || null,
+    });
+
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      // Notificar al acudiente del estudiante vía server (multi-tenant via JWT).
+      // El remitente lo arma el server según el rol del usuario logueado.
+      const fechaEntrevistaTexto = fechaEntrevista.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+      const entrevistaConNombre = joinEntrevistadores(entrevistadores);
+      const bloqueMensaje = mensajeAdicional.trim() ? `\n\nMensaje:\n${mensajeAdicional.trim()}` : "";
+      const mensaje = `Se le informa que se ha solicitado una entrevista para el acudiente del estudiante ${estudianteSeleccionado.nombres} ${estudianteSeleccionado.apellidos} de ${estudianteSeleccionado.grado} ${estudianteSeleccionado.salon}.\n\nFecha: ${fechaEntrevistaTexto}\nHora: ${horaEntrevista}\nCon: ${entrevistaConNombre}${bloqueMensaje}\n\nPor favor ingrese a notasnormi.com y en el inicio haga click en la ficha "Solicitud de Entrevista", busque el día indicado, haga click sobre la citación y confirme su asistencia.`;
       apiRequest('/api/comunicados/enviar', {
         method: 'POST',
         body: JSON.stringify({
-          destinatarios_label: `Acudiente del estudiante con id ${est.id}`,
+          destinatarios_label: `Acudiente del estudiante con id ${estudianteSeleccionado.id}`,
           mensaje,
-          segmentos: [{ perfil: ["Acudientes"], id_destinatarios: [String(est.id)] }],
+          segmentos: [{ perfil: ["Acudientes"], id_destinatarios: [String(estudianteSeleccionado.id)] }],
         }),
       }).catch(e => console.error("Notificación entrevista error:", e));
-    }
 
-    if (creadas === 0) {
-      toast({ title: "Error", description: "No se pudo crear ninguna solicitud. Intenta de nuevo.", variant: "destructive" });
-      setSaving(false); setShowConfirm(false); return;
+      toast({ title: "Solicitud creada", description: "La solicitud de entrevista fue registrada y se notificó al acudiente." });
+      setGrado(""); setSalon(""); setEstudianteSeleccionado(null); setFechaEntrevista(undefined);
+      setHoraH(""); setHoraM(""); setHoraAP(""); setCargoEntrevista(""); setInternoPick(null); setEntrevistadores([]);
+      setFirma(null); sigCanvas.current?.clear(); setAceptoTerminos(false); setMensajeAdicional("");
     }
-
-    const resumen = creadas === 1
-      ? "La solicitud de entrevista fue registrada y se notificó al acudiente."
-      : `Se crearon ${creadas} solicitudes y se notificó individualmente a cada acudiente.`;
-    const conFallas = fallidas.length > 0 ? ` No se pudo con: ${fallidas.join(", ")}.` : "";
-    toast({ title: "Solicitud creada", description: resumen + conFallas });
-    setGrado(""); setSalon(""); setEstudiantesSeleccionados([]); setFechaEntrevista(undefined);
-    setHoraH(""); setHoraM(""); setHoraAP(""); setCargoEntrevista(""); setInternoPick(null); setEntrevistadores([]);
-    setFirma(null); sigCanvas.current?.clear(); setAceptoTerminos(false); setMensajeAdicional("");
     setSaving(false); setShowConfirm(false);
   };
 
@@ -445,31 +432,15 @@ const SolicitudEntrevistaStaff = () => {
                 </div>
               </div>
 
-              {/* Estudiantes (varios). A cada acudiente le llega su citación individual. */}
-              <div className="space-y-2">
-                <p className="font-medium">ACUDIENTES DE LOS ESTUDIANTES:</p>
-                {estudiantesSeleccionados.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {estudiantesSeleccionados.map(est => (
-                      <span key={est.id} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                        {est.apellidos} {est.nombres}
-                        <button type="button" onClick={() => quitarEstudiante(est.id)} className="text-primary/70 hover:text-primary cursor-pointer" title="Quitar">
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <select
-                  value=""
-                  disabled={!salon}
-                  onChange={(e) => { const est = estudiantes.find(x => String(x.id) === e.target.value); if (est) agregarEstudiante(est); }}
-                  className="px-3 py-2 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm min-w-[220px] cursor-pointer outline-none disabled:opacity-50 disabled:cursor-not-allowed">
-                  <option value="">{salon ? "Agregar estudiante…" : "Elige grado y salón primero"}</option>
-                  {estudiantes.filter(e => !estudiantesSeleccionados.some(s => s.id === e.id)).map(e => <option key={e.id} value={String(e.id)}>{e.apellidos} {e.nombres}</option>)}
+              {/* Estudiante */}
+              <p>
+                ACUDIENTE DEL ESTUDIANTE: {" "}
+                <select value={String(estudianteSeleccionado?.id || "")} onChange={(e) => setEstudianteSeleccionado(estudiantes.find(est => String(est.id) === e.target.value) || null)}
+                  className="inline px-2 py-1 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm min-w-[200px] cursor-pointer outline-none">
+                  <option value="">Seleccionar</option>
+                  {estudiantes.map(e => <option key={e.id} value={String(e.id)}>{e.apellidos} {e.nombres}</option>)}
                 </select>
-                <p className="text-xs text-muted-foreground">Puedes elegir varios estudiantes. A cada acudiente le llegará su propia citación individual (no ven a los demás).</p>
-              </div>
+              </p>
 
               <p>Cordial Saludo,</p>
 
@@ -746,11 +717,7 @@ const SolicitudEntrevistaStaff = () => {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar solicitud</AlertDialogTitle>
-            <AlertDialogDescription>
-              {estudiantesSeleccionados.length > 1
-                ? `Se crearán ${estudiantesSeleccionados.length} solicitudes y se notificará individualmente al acudiente de cada estudiante.`
-                : "¿Está seguro de que desea enviar esta solicitud de entrevista?"}
-            </AlertDialogDescription>
+            <AlertDialogDescription>¿Está seguro de que desea enviar esta solicitud de entrevista?</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="cursor-pointer">Cancelar</AlertDialogCancel>
