@@ -91,6 +91,12 @@ const Index = () => {
     }
   };
 
+  // Si llegan desde el correo de campaña (notasnormi.com/?interes=1), abrir directo
+  // el formulario "Quiero Notas Normi en mi institución".
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("interes")) setContactoOpen(true);
+  }, []);
+
   const cerrarContacto = () => {
     setContactoOpen(false);
     setTimeout(() => {
