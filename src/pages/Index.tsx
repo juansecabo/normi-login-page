@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { saveSession, getSession, clearSession, AcudidoData } from "@/hooks/useSession";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
-import { apiClient, ApiError, isMultiMembership, type AuthUser, type MembershipChoice } from "@/lib/apiClient";
+import { apiClient, apiRequest, ApiError, isMultiMembership, type AuthUser, type MembershipChoice } from "@/lib/apiClient";
 import EscudoColegio from "@/components/EscudoColegio";
 
 // Si viene con ?redirect=/alguna-ruta válida, usamos esa; si no, el default.
@@ -53,6 +53,52 @@ const Index = () => {
   };
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // "Quiero Notas Normi en mi institución": formulario de contacto de la landing.
+  // Al enviar, el server manda un correo a Juan (juansecabo14@gmail.com).
+  const [contactoOpen, setContactoOpen] = useState(false);
+  const [contactoLoading, setContactoLoading] = useState(false);
+  const [contactoDone, setContactoDone] = useState(false);
+  const [cNombre, setCNombre] = useState("");
+  const [cInstitucion, setCInstitucion] = useState("");
+  const [cCargo, setCCargo] = useState("");
+  const [cCiudad, setCCiudad] = useState("");
+  const [cTelefono, setCTelefono] = useState("");
+  const [cCorreo, setCCorreo] = useState("");
+  const [cMensaje, setCMensaje] = useState("");
+  const [cWebsite, setCWebsite] = useState(""); // honeypot anti-bot (oculto)
+
+  const enviarContacto = async () => {
+    if (!cNombre.trim() || !cInstitucion.trim() || (!cTelefono.trim() && !cCorreo.trim())) {
+      toast({ title: "Faltan datos", description: "Escribe tu nombre, la institución y al menos un contacto (teléfono o correo).", variant: "destructive" });
+      return;
+    }
+    setContactoLoading(true);
+    try {
+      await apiRequest("/api/contacto/institucion", {
+        method: "POST",
+        body: JSON.stringify({
+          nombre: cNombre.trim(), institucion: cInstitucion.trim(), cargo: cCargo.trim(),
+          ciudad: cCiudad.trim(), telefono: cTelefono.trim(), correo: cCorreo.trim(),
+          mensaje: cMensaje.trim(), website: cWebsite,
+        }),
+      });
+      setContactoDone(true);
+    } catch (e: any) {
+      toast({ title: "No se pudo enviar", description: e?.message || "Intenta de nuevo en un momento.", variant: "destructive" });
+    } finally {
+      setContactoLoading(false);
+    }
+  };
+
+  const cerrarContacto = () => {
+    setContactoOpen(false);
+    setTimeout(() => {
+      setContactoDone(false);
+      setCNombre(""); setCInstitucion(""); setCCargo(""); setCCiudad("");
+      setCTelefono(""); setCCorreo(""); setCMensaje(""); setCWebsite("");
+    }, 200);
+  };
   const { canInstall, isIOS, installApp } = useInstallPrompt();
 
   // Si llegamos acá porque la sesión expiró (apiClient redirige con ?expired=1),
@@ -400,6 +446,13 @@ const Index = () => {
                 Soy acudiente y quiero registrarme
               </button>
             </div>
+
+            {/* Interesados en llevar Notas Normi a su colegio (deja sus datos → correo a Juan) */}
+            <div className="text-center">
+              <button type="button" onClick={() => setContactoOpen(true)} className="text-sm font-semibold text-primary hover:underline">
+                Quiero Notas Normi en mi institución
+              </button>
+            </div>
           </form>
           )}
 
@@ -453,6 +506,63 @@ const Index = () => {
           <DialogFooter>
             <Button onClick={() => setUserError(null)}>Entendido</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* "Quiero Notas Normi en mi institución" — deja tus datos → correo a Juan */}
+      <Dialog open={contactoOpen} onOpenChange={(o) => { if (!o) cerrarContacto(); else setContactoOpen(true); }}>
+        <DialogContent className="max-w-md">
+          {contactoDone ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>¡Gracias por tu interés! 🎉</DialogTitle>
+                <DialogDescription className="pt-2 text-base text-foreground">
+                  Recibimos tus datos. Nos pondremos en contacto contigo muy pronto para mostrarte Notas Normi.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button onClick={cerrarContacto}>Cerrar</Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>Quiero Notas Normi en mi institución</DialogTitle>
+                <DialogDescription>
+                  Déjanos tus datos y te contactamos para mostrarte cómo funciona.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3 py-1">
+                <Input placeholder="Tu nombre *" value={cNombre} onChange={(e) => setCNombre(e.target.value)} />
+                <Input placeholder="Nombre de la institución *" value={cInstitucion} onChange={(e) => setCInstitucion(e.target.value)} />
+                <div className="grid grid-cols-2 gap-3">
+                  <Input placeholder="Cargo (opcional)" value={cCargo} onChange={(e) => setCCargo(e.target.value)} />
+                  <Input placeholder="Ciudad (opcional)" value={cCiudad} onChange={(e) => setCCiudad(e.target.value)} />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Input placeholder="Teléfono" value={cTelefono} onChange={(e) => setCTelefono(e.target.value)} />
+                  <Input type="email" placeholder="Correo" value={cCorreo} onChange={(e) => setCCorreo(e.target.value)} />
+                </div>
+                <textarea
+                  placeholder="Mensaje (opcional)"
+                  value={cMensaje}
+                  onChange={(e) => setCMensaje(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background resize-y"
+                />
+                {/* Honeypot: oculto para humanos; si un bot lo llena, lo ignoramos en el server */}
+                <input type="text" tabIndex={-1} autoComplete="off" value={cWebsite} onChange={(e) => setCWebsite(e.target.value)}
+                  className="hidden" aria-hidden="true" />
+                <p className="text-xs text-muted-foreground">* Obligatorio. Deja al menos un teléfono o correo.</p>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={cerrarContacto} disabled={contactoLoading}>Cancelar</Button>
+                <Button type="button" onClick={enviarContacto} disabled={contactoLoading}>
+                  {contactoLoading ? "Enviando…" : "Enviar"}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>
