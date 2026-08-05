@@ -5,6 +5,7 @@ import { getSession, puedeAccederDashboard, isAdmin, isProfesor } from "@/hooks/
 import { FolderOpen, FileText, ClipboardList, CalendarClock, ChevronRight } from "lucide-react";
 
 const PESTA_ID = "94c1414b-22d1-40dd-945a-5857b62e5f6c";
+const CAILICO_ID = "2f96f076-83df-4b84-8bbc-9c1df79a372b"; // demo, para revisión
 
 const Formatos = () => {
   const navigate = useNavigate();
@@ -14,7 +15,7 @@ const Formatos = () => {
     if (!s.id || (!puedeAccederDashboard() && !isAdmin() && !isProfesor())) { navigate("/"); return; }
   }, [navigate]);
 
-  const esPesta = s.colegio_id === PESTA_ID;
+  const esPesta = s.colegio_id === PESTA_ID || s.colegio_id === CAILICO_ID;
 
   const formatos = [
     { id: "permiso-docente", titulo: "Solicitud de permiso docente", desc: "El docente solicita permiso, firma y descarga el PDF.", icon: FileText, ruta: "/formatos/permiso-docente", listo: true },

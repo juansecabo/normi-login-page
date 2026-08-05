@@ -9,6 +9,7 @@ import { Plus, X, Download, Save } from "lucide-react";
 
 // Formato de solicitud de permiso docente (por ahora exclusivo del Pestalozziano).
 const PESTA_ID = "94c1414b-22d1-40dd-945a-5857b62e5f6c";
+const CAILICO_ID = "2f96f076-83df-4b84-8bbc-9c1df79a372b"; // demo, para revisión
 
 interface Cargo { hora: string; grado: string; asignatura: string; docente: string; }
 
@@ -30,7 +31,7 @@ const PermisoDocente = () => {
 
   useEffect(() => {
     if (!s.id || (!puedeAccederDashboard() && !isAdmin() && !isProfesor())) { navigate("/"); return; }
-    if (s.colegio_id !== PESTA_ID) { navigate("/formatos"); return; }
+    if (s.colegio_id !== PESTA_ID && s.colegio_id !== CAILICO_ID) { navigate("/formatos"); return; }
   }, []);
 
   const addCargo = () => setCargos((c) => [...c, { hora: "", grado: "", asignatura: "", docente: "" }]);
