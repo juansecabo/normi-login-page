@@ -8,7 +8,6 @@ import { rankGrado } from "@/utils/grados";
 import SignatureCanvas from "react-signature-canvas";
 import { Save, Download, Plus, X } from "lucide-react";
 
-// Planilla de control — Plan de Nivelación por período (exclusivo del Pestalozziano; Cailico demo).
 const PESTA_ID = "94c1414b-22d1-40dd-945a-5857b62e5f6c";
 const CAILICO_ID = "2f96f076-83df-4b84-8bbc-9c1df79a372b"; // demo, para revisión
 
