@@ -18,6 +18,7 @@ import iconFotosGrupo from "@/assets/icons/fotos-grupo.webp";
 import iconConfigurarInstitucion from "@/assets/icons/configurar-institucion.webp";
 import iconDireccionGrupo from "@/assets/icons/direccion-grupo.webp";
 import iconObservador from "@/assets/icons/observador.webp";
+import iconFormatos from "@/assets/icons/formatos.webp";
 import { Users } from "lucide-react";
 import { useBienvenida, getSession, isProfesor, isAdmin, isRectorOrCoordinador, isEstudiante, isPadreDeFamilia } from "@/hooks/useSession";
 import { usePendientesFirma } from "@/hooks/usePendientesFirma";
@@ -308,6 +309,13 @@ const Dashboard = () => {
         <span className="font-semibold text-foreground text-center">Observador Estudiantil</span>
       </button>
     ) },
+    // Formatos (Pestalozziano; también Cailico como demo).
+    ...((getSession().colegio_id === "94c1414b-22d1-40dd-945a-5857b62e5f6c" || getSession().colegio_id === "2f96f076-83df-4b84-8bbc-9c1df79a372b") ? [{ id: 'formatos', render: (
+      <button onClick={() => navigate("/formatos")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-orange-100 transition-all duration-200 hover:shadow-md hover:bg-orange-200">
+        <img src={iconFormatos} alt="" className="w-16 h-16 object-contain" />
+        <span className="font-semibold text-foreground text-center">Formatos</span>
+      </button>
+    ) }] : []),
   ];
 
   return (
