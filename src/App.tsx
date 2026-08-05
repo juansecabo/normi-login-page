@@ -31,6 +31,8 @@ import LogrosProfesor from "./pages/profesor/LogrosProfesor";
 import Boletines from "./pages/rector/Boletines";
 import Formatos from "./pages/rector/Formatos";
 import PermisoDocente from "./pages/formatos/PermisoDocente";
+import NivelacionPlanilla from "./pages/formatos/NivelacionPlanilla";
+import ApoyoPlanilla from "./pages/formatos/ApoyoPlanilla";
 import ComunicadosRecibidos from "./pages/rector/ComunicadosRecibidos";
 import DocumentosRecibidos from "./pages/rector/DocumentosRecibidos";
 
@@ -150,6 +152,8 @@ const App = () => (
           <Route path="/boletines" element={<Boletines />} />
           <Route path="/formatos" element={<Formatos />} />
           <Route path="/formatos/permiso-docente" element={<PermisoDocente />} />
+          <Route path="/formatos/nivelacion" element={<NivelacionPlanilla />} />
+          <Route path="/formatos/apoyo" element={<ApoyoPlanilla />} />
           <Route path="/estudiantes-riesgo" element={<EstudiantesEnRiesgo />} />
           <Route path="/panel-control" element={<PanelControl />} />
           <Route path="/horarios-avisos" element={<HorariosAvisos />} />

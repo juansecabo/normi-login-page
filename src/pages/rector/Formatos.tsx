@@ -18,8 +18,8 @@ const Formatos = () => {
 
   const formatos = [
     { id: "permiso-docente", titulo: "Solicitud de permiso docente", desc: "El docente solicita permiso, firma y descarga el PDF.", icon: FileText, ruta: "/formatos/permiso-docente", listo: true },
-    { id: "nivelacion", titulo: "Plan de Nivelación por período", desc: "Planilla por estudiante con la nota definitiva del período.", icon: ClipboardList, ruta: "/formatos/nivelacion", listo: false },
-    { id: "apoyo", titulo: "Plan de Apoyo al Mejoramiento", desc: "Taller 40% + Sustentación 60% = definitiva (cálculo automático).", icon: CalendarClock, ruta: "/formatos/apoyo", listo: false },
+    { id: "nivelacion", titulo: "Plan de Nivelación por período", desc: "Planilla por estudiante con la nota definitiva del período.", icon: ClipboardList, ruta: "/formatos/nivelacion", listo: true },
+    { id: "apoyo", titulo: "Plan de Apoyo al Mejoramiento", desc: "Taller 40% + Sustentación 60% = definitiva (cálculo automático).", icon: CalendarClock, ruta: "/formatos/apoyo", listo: true },
   ];
 
   return (
