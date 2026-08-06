@@ -6,7 +6,6 @@ import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SignatureCanvas from "react-signature-canvas";
-import { useBlurCuandoVisible } from "@/hooks/useBlurCuandoVisible";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, ChevronDown, Check, FileText, Paperclip, X, Eye, Download, Camera, Upload } from "lucide-react";
@@ -46,8 +45,6 @@ const RetiroEstudiantes = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const sigCanvas = useRef<SignatureCanvas>(null);
-  const sigWrap = useRef<HTMLDivElement>(null);
-  useBlurCuandoVisible(sigWrap);
 
   const [tab, setTab] = useState<Tab>("crear");
   const [aceptoTerminos, setAceptoTerminos] = useState(false);
@@ -498,7 +495,7 @@ const RetiroEstudiantes = () => {
               {/* Firma */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Firma del acudiente</label>
-                <div ref={sigWrap} className="border-2 border-dashed border-border rounded-lg bg-white">
+                <div className="border-2 border-dashed border-border rounded-lg bg-white">
                   <SignatureCanvas
                     ref={sigCanvas}
                     penColor="black"

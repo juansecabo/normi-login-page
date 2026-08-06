@@ -6,7 +6,6 @@ import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SignatureCanvas from "react-signature-canvas";
-import { useBlurCuandoVisible } from "@/hooks/useBlurCuandoVisible";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, ChevronDown } from "lucide-react";
@@ -24,8 +23,6 @@ const JustificacionUniforme = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const sigCanvas = useRef<SignatureCanvas>(null);
-  const sigWrap = useRef<HTMLDivElement>(null);
-  useBlurCuandoVisible(sigWrap);
 
   const [tab, setTab] = useState<Tab>("crear");
 
@@ -221,7 +218,7 @@ const JustificacionUniforme = () => {
               {/* Firma */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Firma del acudiente</label>
-                <div ref={sigWrap} className="border-2 border-dashed border-border rounded-lg bg-white">
+                <div className="border-2 border-dashed border-border rounded-lg bg-white">
                   <SignatureCanvas ref={sigCanvas} penColor="black" canvasProps={{ className: "w-full", style: { width: "100%", height: "160px" } }} onEnd={handleFirmaEnd} />
                 </div>
                 <div className="flex gap-2 items-center">
