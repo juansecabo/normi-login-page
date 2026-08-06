@@ -212,26 +212,25 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
     [niveles],
   );
 
-  // Reordenar arrastrando (dnd-kit). Al soltar, reasigna `orden` secuencial (0..n)
-  // y guarda solo los que cambian. Se arrastra desde el asa (grip).
-  const [, setReordenando] = useState(false);
+  // Reordenar arrastrando (dnd-kit). Se pinta al INSTANTE (optimista) y se guarda
+  // en segundo plano; así no hay parpadeo/rebote al soltar. Se arrastra por el asa.
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
-  const persistOrden = async (endpoint: string, arr: { id: number; orden: number | null }[]) => {
-    setReordenando(true);
+  const persistOrden = async (endpoint: string, patches: { id: number; orden: number }[]) => {
     try {
-      await Promise.all(
-        arr.flatMap((x, idx) => (x.orden === idx ? [] : [apiRequest(`${endpoint}/${x.id}`, { method: "PATCH", body: JSON.stringify(withCid({ orden: idx })) })])),
-      );
-      await cargar();
-    } catch (e) { err(e, "No se pudo reordenar."); }
-    setReordenando(false);
+      await Promise.all(patches.map((p) => apiRequest(`${endpoint}/${p.id}`, { method: "PATCH", body: JSON.stringify(withCid({ orden: p.orden })) })));
+    } catch (e) { err(e, "No se pudo reordenar."); cargar(); }
   };
-  const onDrag = (endpoint: string, arr: { id: number; orden: number | null }[]) => (e: DragEndEvent) => {
-    const { active, over } = e;
-    if (!over || active.id === over.id) return;
-    const ids = arr.map((x) => String(x.id));
-    persistOrden(endpoint, arrayMove(arr, ids.indexOf(String(active.id)), ids.indexOf(String(over.id))));
-  };
+  function onDrag<T extends { id: number; orden: number | null }>(endpoint: string, arr: T[], applyOptimistic: (next: T[]) => void) {
+    return (e: DragEndEvent) => {
+      const { active, over } = e;
+      if (!over || active.id === over.id) return;
+      const ids = arr.map((x) => String(x.id));
+      const nuevo = arrayMove(arr, ids.indexOf(String(active.id)), ids.indexOf(String(over.id)));
+      const patches = nuevo.flatMap((x, idx) => (x.orden === idx ? [] : [{ id: x.id, orden: idx }]));
+      applyOptimistic(nuevo.map((x, idx) => ({ ...x, orden: idx })));   // UI al instante
+      persistOrden(endpoint, patches);                                   // guarda en bg
+    };
+  }
   const [nivNombre, setNivNombre] = useState("");
   const crearNivelNombre = async (nombre: string) => {
     if (!nombre.trim()) return;
@@ -407,7 +406,7 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
         </CardHeader>
         <CardContent className="space-y-3">
           {nivelesOrdenados.length > 0 && (
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDrag("/api/institucion/niveles", nivelesOrdenados)}>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDrag("/api/institucion/niveles", nivelesOrdenados, setNiveles)}>
               <SortableContext items={nivelesOrdenados.map((n) => String(n.id))} strategy={horizontalListSortingStrategy}>
                 <div className="flex flex-wrap gap-2">
                   {nivelesOrdenados.map((n) => (
@@ -491,7 +490,7 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
           {gradosOrdenados.length > 0 && (
             <div className="border-t border-border pt-3 space-y-2">
               <p className="text-xs text-muted-foreground">Grados del colegio ({gradosOrdenados.length}) — arrástralos por el asa para ordenarlos:</p>
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDrag("/api/institucion/grados", gradosOrdenados)}>
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDrag("/api/institucion/grados", gradosOrdenados, setGrados)}>
                 <SortableContext items={gradosOrdenados.map((g) => String(g.id))} strategy={verticalListSortingStrategy}>
                   <div className="space-y-2">
                     {gradosOrdenados.map((g) => (
