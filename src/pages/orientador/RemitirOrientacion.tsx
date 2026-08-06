@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import SignatureCanvas from "react-signature-canvas";
 import { Search } from "lucide-react";
 import iconEntrevista from "@/assets/icons/entrevista.webp";
-import { notifyOrientadora } from "@/lib/notifyStaff";
+import { notifyOrientadora, notifyRectorCoord } from "@/lib/notifyStaff";
 
 interface Estudiante {
   id: number;
@@ -271,14 +271,25 @@ const RemitirOrientacion = () => {
         ? motivo.trim().slice(0, 200) + "..."
         : motivo.trim();
       const remitente = [autor.cargo, autor.nombres, autor.apellidos].filter(Boolean).join(" ");
+      const destLabels = [
+        destinos.orientacion && "Orientación Escolar",
+        destinos.director_grupo && "Director de Grupo",
+        destinos.coordinador && "Coordinador",
+      ].filter(Boolean).join(", ");
+      const mensaje =
+        `Nueva remisión (Formato 005).\n` +
+        `Estudiante: ${estLabel} (${grupo}).\n` +
+        `Dirigida a: ${destLabels}.\n` +
+        `Motivo: ${motivoCorto}\n` +
+        `Remitido por: ${remitente}.`;
       if (destinos.orientacion) {
-        const mensaje =
-          `Nueva remisión a orientación escolar.\n` +
-          `Estudiante: ${estLabel} (${grupo}).\n` +
-          `Motivo: ${motivoCorto}\n` +
-          `Remitido por: ${remitente}.\n\n` +
-          `Pueden consultarla entrando a notasnormi.com → Remisiones.`;
-        await notifyOrientadora(mensaje, remitente || "Sistema Normi");
+        await notifyOrientadora(mensaje + `\n\nConsúltala en notasnormi.com → Remisiones.`, remitente || "Sistema Normi");
+      }
+      // Director de grupo y/o coordinador: notifyRectorCoord con el aula avisa al
+      // coordinador correcto (por nivel) y a los docentes del aula (incluye al
+      // director de grupo). Solo cuando alguno de esos dos fue elegido.
+      if ((destinos.director_grupo || destinos.coordinador) && estSeleccionado.salon) {
+        await notifyRectorCoord(mensaje, `Sistema Normi (Remisión)`, { grado: estSeleccionado.grado, salon: estSeleccionado.salon }, "remision");
       }
     } catch (e) {
       console.warn("notificar remisión:", e);
