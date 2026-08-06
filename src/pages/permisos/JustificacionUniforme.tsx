@@ -6,6 +6,7 @@ import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SignatureCanvas from "react-signature-canvas";
+import { usePreservarFirma } from "@/hooks/usePreservarFirma";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, ChevronDown } from "lucide-react";
@@ -32,6 +33,7 @@ const JustificacionUniforme = () => {
   const [acudidoSeleccionado, setAcudidoSeleccionado] = useState<AcudidoData | null>(null);
   const [justificacion, setJustificacion] = useState("");
   const [firma, setFirma] = useState<string | null>(null);
+  usePreservarFirma(sigCanvas, firma);
 
   // Session
   const [acudidos, setAcudidos] = useState<AcudidoData[]>([]);

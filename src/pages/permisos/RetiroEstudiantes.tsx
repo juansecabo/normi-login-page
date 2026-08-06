@@ -6,6 +6,7 @@ import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SignatureCanvas from "react-signature-canvas";
+import { usePreservarFirma } from "@/hooks/usePreservarFirma";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, ChevronDown, Check, FileText, Paperclip, X, Eye, Download, Camera, Upload } from "lucide-react";
@@ -62,6 +63,7 @@ const RetiroEstudiantes = () => {
   const [correo, setCorreo] = useState("");
   const [firma, setFirma] = useState<string | null>(null);
   const [archivos, setArchivos] = useState<File[]>([]);
+  usePreservarFirma(sigCanvas, firma);
 
   // Session data
   const [acudidos, setAcudidos] = useState<AcudidoData[]>([]);
