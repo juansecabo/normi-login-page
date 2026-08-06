@@ -495,7 +495,7 @@ const RetiroEstudiantes = () => {
               {/* Firma */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Firma del acudiente</label>
-                <div className="border-2 border-dashed border-border rounded-lg bg-white" onPointerDown={() => (document.activeElement as HTMLElement | null)?.blur()}>
+                <div className="border-2 border-dashed border-border rounded-lg bg-white">
                   <SignatureCanvas
                     ref={sigCanvas}
                     penColor="black"

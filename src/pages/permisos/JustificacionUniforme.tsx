@@ -218,7 +218,7 @@ const JustificacionUniforme = () => {
               {/* Firma */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Firma del acudiente</label>
-                <div className="border-2 border-dashed border-border rounded-lg bg-white" onPointerDown={() => (document.activeElement as HTMLElement | null)?.blur()}>
+                <div className="border-2 border-dashed border-border rounded-lg bg-white">
                   <SignatureCanvas ref={sigCanvas} penColor="black" canvasProps={{ className: "w-full", style: { width: "100%", height: "160px" } }} onEnd={handleFirmaEnd} />
                 </div>
                 <div className="flex gap-2 items-center">
