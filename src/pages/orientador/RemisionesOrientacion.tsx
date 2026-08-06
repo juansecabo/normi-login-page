@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ChevronDown, Download, Check, Search, CalendarPlus, Phone } from "lucide-react";
 import iconCasos from "@/assets/icons/casos.png";
 import { markLastSeen } from "@/utils/notificaciones";
-import { apiClient } from "@/lib/apiClient";
+import { apiClient, apiRequest } from "@/lib/apiClient";
 
 interface Remision {
   id: number;
@@ -26,6 +26,10 @@ interface Remision {
   recibido_por_nombre: string | null;
   fecha_recibido: string | null;
   created_at: string;
+  destinos: string[] | null;
+  tipo_documento: string | null;
+  especificacion_conducta: string | null;
+  medidas_previas: string | null;
 }
 
 const GRADO_ORDEN: Record<string, number> = {
@@ -50,11 +54,153 @@ const loadBinary = (url: string): Promise<ArrayBuffer> => new Promise((resolve, 
   xhr.send();
 });
 
-// Inline drawing XML para insertar la imagen de la firma. Mismo helper que en Registros.
-const drawingXmlForImage = (rId: string, widthPx: number, heightPx: number): string => {
+// Inline drawing XML para insertar una imagen (firma / escudo).
+const drawingXmlForImage = (rId: string, widthPx: number, heightPx: number, id = 100, name = "Imagen"): string => {
   const cx = widthPx * 9525;
   const cy = heightPx * 9525;
-  return `<w:drawing><wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:docPr id="100" name="Firma"/><wp:cNvGraphicFramePr><a:graphicFrameLocks xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" noChangeAspect="1"/></wp:cNvGraphicFramePr><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="100" name="Firma"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="${rId}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing>`;
+  return `<w:drawing><wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:docPr id="${id}" name="${name}"/><wp:cNvGraphicFramePr><a:graphicFrameLocks xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" noChangeAspect="1"/></wp:cNvGraphicFramePr><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="${id}" name="${name}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="${rId}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing>`;
+};
+
+// Convierte cualquier imagen (incl. WebP) a PNG (ArrayBuffer) usando canvas.
+const imgToPng = (url: string): Promise<ArrayBuffer | null> => new Promise((resolve) => {
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.onload = () => {
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth || 200; canvas.height = img.naturalHeight || 200;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return resolve(null);
+      ctx.drawImage(img, 0, 0);
+      canvas.toBlob((blob) => blob ? blob.arrayBuffer().then(resolve).catch(() => resolve(null)) : resolve(null), "image/png");
+    } catch { resolve(null); }
+  };
+  img.onerror = () => resolve(null);
+  img.src = url;
+});
+
+const edadDesde = (fechaNac?: string | null): string => {
+  if (!fechaNac) return "";
+  const d = new Date(fechaNac); if (isNaN(d.getTime())) return "";
+  const hoy = new Date();
+  let e = hoy.getFullYear() - d.getFullYear();
+  const m = hoy.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && hoy.getDate() < d.getDate())) e--;
+  return e >= 0 && e < 120 ? String(e) : "";
+};
+
+const descargarWord = async (r: Remision) => {
+  try {
+    const { default: PizZip } = await import("pizzip");
+    const { default: Docxtemplater } = await import("docxtemplater");
+
+    const templateBuf = await loadBinary("/remision_005_template.docx");
+
+    // Datos del colegio (membrete) + escudo, identidad y contacto del estudiante.
+    let colegioNombre = "", dane = "", nit = "", ciudad = "", logoUrl: string | null = null;
+    try {
+      const cc = await apiRequest<{ nombre: string; logo_url: string | null; config: any }>("/api/colegio/config");
+      colegioNombre = cc.nombre || "";
+      logoUrl = cc.logo_url || null;
+      dane = cc.config?.dane || ""; nit = cc.config?.nit || ""; ciudad = cc.config?.ciudad || "";
+    } catch (e) { console.warn("config colegio:", e); }
+
+    let telEst = "", acuStr = "";
+    try {
+      const c = await apiClient.orientacion.contactoEstudiante(r.estudiante_id);
+      telEst = c.estudiante_telefono || "";
+      if (c.acudientes.length > 0) acuStr = c.acudientes.map(a => `${a.nombre}${a.telefono ? ` (${a.telefono})` : ""}`).join("\n");
+    } catch (e) { console.warn("Contacto:", e); }
+
+    let fechaNac = "";
+    try {
+      const { data } = await supabase.from("Usuarios").select("fecha_de_nacimiento").eq("id", String(r.estudiante_id)).maybeSingle();
+      fechaNac = (data as any)?.fecha_de_nacimiento || "";
+    } catch { /* ignore */ }
+
+    const [firmaBuf, escudoBuf] = await Promise.all([
+      r.firma_url ? loadBinary(r.firma_url).catch(() => null) : Promise.resolve(null),
+      logoUrl ? imgToPng(logoUrl) : Promise.resolve(null),
+    ]);
+
+    const zip = new PizZip(templateBuf);
+    const doc = new Docxtemplater(zip, {
+      paragraphLoop: true, linebreaks: true,
+      delimiters: { start: "{", end: "}" }, nullGetter: () => "",
+    });
+
+    const grupo = r.estudiante_salon ? `${r.estudiante_grado} ${r.estudiante_salon}` : r.estudiante_grado;
+    const destinos = r.destinos || [];
+    const td = (r.tipo_documento || "").toUpperCase();
+    const X = "X";
+    const recibidoFecha = r.fecha_recibido ? new Date(r.fecha_recibido).toLocaleString("es-CO") : "";
+
+    doc.render({
+      COLEGIO: colegioNombre, DANE: dane, NIT: nit, CIUDAD: ciudad,
+      NOMBRE_ESTUDIANTE: `${r.estudiante_nombre} ${r.estudiante_apellidos}`,
+      GRADO: grupo,
+      DOCUMENTO: String(r.estudiante_id),
+      X_RC: td === "RC" ? X : "", X_TI: td === "TI" ? X : "", X_CC: td === "CC" ? X : "",
+      FECHA_NAC: fechaNac ? fmtFecha(fechaNac) : "", EDAD: edadDesde(fechaNac),
+      ACUDIENTE: acuStr, TELEFONO: telEst, FECHA: fmtFecha(r.fecha),
+      X_DG: destinos.includes("director_grupo") ? X : "",
+      X_ORIENT: destinos.includes("orientacion") ? X : "",
+      X_DOC: "",
+      X_OTRO: destinos.includes("coordinador") ? X : "",
+      OTRO_CUAL: destinos.includes("coordinador") ? "Coordinador" : "",
+      MOTIVO: r.motivo || "",
+      ESPECIFICACION: r.especificacion_conducta || "",
+      MEDIDAS: r.medidas_previas || "",
+      DOCENTE: [r.docente_cargo, r.docente_nombre].filter(Boolean).join(" "),
+      ROL: r.docente_cargo || "",
+      RECIBIDO_POR: r.recibido_por_nombre || "",
+      RECIBIDO_CARGO: "",
+      RECIBIDO_FECHA: recibidoFecha,
+    });
+
+    const renderedZip = doc.getZip();
+    let docXml = renderedZip.file("word/document.xml")?.asText() || "";
+
+    const inyectar = (buf: ArrayBuffer, placeholder: string, filename: string, wPx: number, hPx: number, id: number, name: string) => {
+      renderedZip.file(`word/media/${filename}`, buf, { binary: true });
+      let ctXml = renderedZip.file("[Content_Types].xml")?.asText() || "";
+      if (!/Extension="png"/.test(ctXml)) {
+        ctXml = ctXml.replace("</Types>", '<Default Extension="png" ContentType="image/png"/></Types>');
+        renderedZip.file("[Content_Types].xml", ctXml);
+      }
+      const relsPath = "word/_rels/document.xml.rels";
+      let relsXml = renderedZip.file(relsPath)?.asText() || "";
+      const ids = Array.from(relsXml.matchAll(/Id="rId(\d+)"/g)).map(m => parseInt(m[1]));
+      const newRid = `rId${(ids.length ? Math.max(...ids) : 0) + 1}`;
+      relsXml = relsXml.replace("</Relationships>", `<Relationship Id="${newRid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${filename}"/></Relationships>`);
+      renderedZip.file(relsPath, relsXml);
+      const drawing = drawingXmlForImage(newRid, wPx, hPx, id, name);
+      docXml = docXml.replace(new RegExp(`<w:r[^>]*>\\s*<w:t[^>]*>${placeholder}</w:t>\\s*</w:r>`), `<w:r>${drawing}</w:r>`);
+    };
+
+    if (escudoBuf) inyectar(escudoBuf, "__ESCUDO_PLACEHOLDER__", "escudo_remision.png", 70, 70, 101, "Escudo");
+    else docXml = docXml.replace("__ESCUDO_PLACEHOLDER__", "");
+    if (firmaBuf) inyectar(firmaBuf, "__FIRMA_PLACEHOLDER__", "firma_remision.png", 180, 60, 100, "Firma");
+    else docXml = docXml.replace("__FIRMA_PLACEHOLDER__", "_________________________");
+
+    renderedZip.file("word/document.xml", docXml);
+
+    const out = renderedZip.generate({
+      type: "blob",
+      mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(out);
+    a.download = `Remision_005_${sanitizeFilename(r.estudiante_apellidos + "_" + r.estudiante_nombre)}_${r.fecha}.docx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  } catch (err: any) {
+    console.error("Descargar Word:", err);
+    const detalle = err?.properties?.errors?.[0]?.message || err?.message || String(err);
+    alert(`No se pudo generar el documento: ${detalle}`);
+  }
 };
 
 const descargarWord = async (r: Remision) => {
