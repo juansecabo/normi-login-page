@@ -102,6 +102,9 @@ const JustificacionInasistencia = () => {
   };
 
   const handleFirmaEnd = () => {
+    // Al terminar el trazo, quitar el foco del campo de texto para que la pantalla NO
+    // vuelva a subir a la descripción (el teclado se mantiene mientras se firma).
+    (document.activeElement as HTMLElement | null)?.blur();
     if (sigCanvas.current && !sigCanvas.current.isEmpty()) setFirma(sigCanvas.current.toDataURL("image/png"));
   };
 
@@ -439,7 +442,7 @@ const JustificacionInasistencia = () => {
               {/* Firma */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Firma del acudiente</label>
-                <div className="border-2 border-dashed border-border rounded-lg bg-white" onPointerDown={() => (document.activeElement as HTMLElement | null)?.blur()}>
+                <div className="border-2 border-dashed border-border rounded-lg bg-white">
                   <SignatureCanvas ref={sigCanvas} penColor="black" canvasProps={{ className: "w-full", style: { width: "100%", height: "160px" } }} onEnd={handleFirmaEnd} />
                 </div>
                 <div className="flex gap-2 items-center">
