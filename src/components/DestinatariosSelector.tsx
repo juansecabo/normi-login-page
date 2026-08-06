@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronDown } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { useGradosColegio, ORDEN_GRADOS, NIVEL_DE_GRADO } from "@/utils/grados";
 
 /**
  * Selector reusable de destinatarios para Consultas y similares.
@@ -13,17 +14,11 @@ import { Label } from "@/components/ui/label";
  * padre no replique la lógica.
  */
 
-const GRADOS_ORDEN = [
-  "Párvulo", "Prejardín", "Jardín", "Transición",
-  "Primero", "Segundo", "Tercero", "Cuarto", "Quinto",
-  "Sexto", "Séptimo", "Octavo", "Noveno", "Décimo", "Undécimo",
-];
-const NIVELES_GRADOS: Record<string, string[]> = {
-  Preescolar: ["Párvulo", "Prejardín", "Jardín", "Transición"],
-  Primaria: ["Primero", "Segundo", "Tercero", "Cuarto", "Quinto"],
-  Secundaria: ["Sexto", "Séptimo", "Octavo", "Noveno"],
-  Media: ["Décimo", "Undécimo"],
-};
+const NIVEL_ORDEN = ["Preescolar", "Primaria", "Secundaria", "Media"];
+// Mapa canónico nivel→grados (solo para INFERIR el nivel marcado desde los grados
+// guardados). Las OPCIONES visibles se derivan del colegio real (useGradosColegio).
+const NIVELES_GRADOS_CANON: Record<string, string[]> = {};
+for (const g of ORDEN_GRADOS) (NIVELES_GRADOS_CANON[NIVEL_DE_GRADO[g] || "Otros"] ||= []).push(g);
 
 export type PerfilKey =
   | "Estudiantes" | "Padres" | "Profesores" | "Coordinadores"
@@ -128,7 +123,7 @@ export function destinatariosFromConsulta(c: {
   v.secretariasIds = internosPorCargo.secretarias.filter((id) => (c.internos_objetivo || []).includes(id));
   v.orientadoresIds = internosPorCargo.orientadores.filter((id) => (c.internos_objetivo || []).includes(id));
   // Inferir niveles marcados a partir de grados
-  for (const [nivel, gr] of Object.entries(NIVELES_GRADOS)) {
+  for (const [nivel, gr] of Object.entries(NIVELES_GRADOS_CANON)) {
     if (gr.every((g) => v.grados[g])) v.niveles[nivel] = true;
   }
   return v;
@@ -157,6 +152,19 @@ export default function DestinatariosSelector({ initial, onChange }: Destinatari
   const [administrativosSeleccionados, setAdministrativosSeleccionados] = useState<string[]>(initial.administrativosIds);
   const [secretariasSeleccionadas, setSecretariasSeleccionadas] = useState<string[]>(initial.secretariasIds);
   const [orientadoresSeleccionados, setOrientadoresSeleccionados] = useState<string[]>(initial.orientadoresIds);
+
+  // Grados y niveles REALES del colegio (no hardcodeados).
+  const { grados: gradosColegio } = useGradosColegio();
+  const nivelesGrados = useMemo(() => {
+    const m: Record<string, string[]> = {};
+    for (const g of gradosColegio) (m[NIVEL_DE_GRADO[g] || "Otros"] ||= []).push(g);
+    return Object.fromEntries(
+      Object.entries(m).sort(([a], [b]) => {
+        const ia = NIVEL_ORDEN.indexOf(a), ib = NIVEL_ORDEN.indexOf(b);
+        return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+      })
+    ) as Record<string, string[]>;
+  }, [gradosColegio]);
 
   const [listaCoordinadores, setListaCoordinadores] = useState<InternoSimple[]>([]);
   const [listaAdministrativos, setListaAdministrativos] = useState<InternoSimple[]>([]);
@@ -501,7 +509,7 @@ export default function DestinatariosSelector({ initial, onChange }: Destinatari
           <div>
             <Label className="font-medium">Nivel(es) (opcional)</Label>
             <div className="flex flex-wrap gap-3 mt-2">
-              {Object.keys(NIVELES_GRADOS).map((n) => (
+              {Object.keys(nivelesGrados).map((n) => (
                 <label key={n} className="flex items-center gap-2 text-sm cursor-pointer">
                   <input
                     type="checkbox"
@@ -509,7 +517,7 @@ export default function DestinatariosSelector({ initial, onChange }: Destinatari
                     onChange={(e) => {
                       const checked = e.target.checked;
                       setNivelesMarcados({ ...nivelesMarcados, [n]: checked });
-                      const gradosDelNivel = NIVELES_GRADOS[n] || [];
+                      const gradosDelNivel = nivelesGrados[n] || [];
                       setGradosMarcados((prev) => {
                         const next = { ...prev };
                         for (const g of gradosDelNivel) next[g] = checked;
@@ -526,7 +534,7 @@ export default function DestinatariosSelector({ initial, onChange }: Destinatari
           <div>
             <Label className="font-medium">Grados</Label>
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mt-2">
-              {GRADOS_ORDEN.map((g) => (
+              {gradosColegio.map((g) => (
                 <label key={g} className="flex items-center gap-2 text-sm cursor-pointer">
                   <input
                     type="checkbox"

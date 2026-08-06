@@ -5,6 +5,7 @@ import { getSession, isProfesor } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import ListaComunicados from "@/components/ListaComunicados";
 import { markLastSeen } from "@/utils/notificaciones";
+import { NIVEL_DE_GRADO } from "@/utils/grados";
 
 interface Comunicado {
   id: number;
@@ -23,13 +24,6 @@ interface Comunicado {
   id_destinatarios: string[] | null;
   grupo_comunicado_id: number | null;
 }
-
-const NIVELES_GRADOS: Record<string, string[]> = {
-  Preescolar: ["Párvulo", "Prejardín", "Jardín", "Transición"],
-  Primaria: ["Primero", "Segundo", "Tercero", "Cuarto", "Quinto"],
-  Secundaria: ["Sexto", "Séptimo", "Octavo", "Noveno"],
-  Media: ["Décimo", "Undécimo"],
-};
 
 const DocumentosProfesor = () => {
   const navigate = useNavigate();
@@ -77,8 +71,7 @@ const DocumentosProfesor = () => {
                 if (grados && !grados.some(g => r.grados.includes(g))) return false;
                 if (salones && !salones.some(s => r.salones.includes(s))) return false;
                 if (c.nivel) {
-                  const gradosDelNivel = NIVELES_GRADOS[c.nivel] || [];
-                  if (!r.grados.some(g => gradosDelNivel.includes(g))) return false;
+                  if (!r.grados.some(g => NIVEL_DE_GRADO[g] === c.nivel)) return false;
                 }
                 return true;
               });

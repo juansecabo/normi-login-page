@@ -13,6 +13,10 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { ChevronDown, Plus, Trash2, Users, Send, FileBarChart2, X } from "lucide-react";
 import { apiRequest } from "@/lib/apiClient";
+import { useGradosColegio, NIVEL_DE_GRADO } from "@/utils/grados";
+
+// Orden de niveles para mostrarlos de menor a mayor.
+const NIVEL_ORDEN = ["Preescolar", "Primaria", "Secundaria", "Media"];
 
 interface ConsultaRow {
   id: number;
@@ -40,32 +44,6 @@ interface EstudianteRow {
   salon: string | null;
   nivel: string | null;
 }
-
-const GRADOS_ORDEN = [
-  "Párvulo",
-  "Prejardín",
-  "Jardín",
-  "Transición",
-  "Primero",
-  "Segundo",
-  "Tercero",
-  "Cuarto",
-  "Quinto",
-  "Sexto",
-  "Séptimo",
-  "Octavo",
-  "Noveno",
-  "Décimo",
-  "Undécimo",
-];
-
-
-const NIVELES_GRADOS: Record<string, string[]> = {
-  Preescolar: ["Párvulo", "Prejardín", "Jardín", "Transición"],
-  Primaria: ["Primero", "Segundo", "Tercero", "Cuarto", "Quinto"],
-  Secundaria: ["Sexto", "Séptimo", "Octavo", "Noveno"],
-  Media: ["Décimo", "Undécimo"],
-};
 
 type PerfilKey =
   | "Estudiantes"
@@ -429,6 +407,22 @@ export default function Consultas() {
     () => Object.keys(nivelesMarcados).filter((n) => nivelesMarcados[n]),
     [nivelesMarcados]
   );
+  // Grados y niveles REALES del colegio (no hardcodeados): cada institución ve solo los suyos.
+  const { grados: gradosColegio } = useGradosColegio();
+  const nivelesGrados = useMemo(() => {
+    const m: Record<string, string[]> = {};
+    for (const g of gradosColegio) {
+      const nivel = NIVEL_DE_GRADO[g] || "Otros";
+      (m[nivel] ||= []).push(g);
+    }
+    // Ordenar las claves por NIVEL_ORDEN (los desconocidos al final).
+    return Object.fromEntries(
+      Object.entries(m).sort(([a], [b]) => {
+        const ia = NIVEL_ORDEN.indexOf(a), ib = NIVEL_ORDEN.indexOf(b);
+        return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+      })
+    ) as Record<string, string[]>;
+  }, [gradosColegio]);
   const estudiantesSeleccionados = useMemo(
     () => Object.keys(estudiantesMarcados).filter((id) => estudiantesMarcados[Number(id)]).map(Number),
     [estudiantesMarcados]
@@ -900,7 +894,7 @@ export default function Consultas() {
                     <div>
                       <Label className="font-medium">Nivel(es) (opcional)</Label>
                       <div className="flex flex-wrap gap-3 mt-2">
-                        {Object.keys(NIVELES_GRADOS).map((n) => (
+                        {Object.keys(nivelesGrados).map((n) => (
                           <label key={n} className="flex items-center gap-2 text-sm cursor-pointer">
                             <input
                               type="checkbox"
@@ -926,7 +920,7 @@ export default function Consultas() {
                     <div>
                       <Label className="font-medium">Grados</Label>
                       <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mt-2">
-                        {GRADOS_ORDEN.map((g) => (
+                        {gradosColegio.map((g) => (
                           <label key={g} className="flex items-center gap-2 text-sm cursor-pointer">
                             <input
                               type="checkbox"

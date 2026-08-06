@@ -21,6 +21,7 @@ import iconObservador from "@/assets/icons/observador.webp";
 import iconFormatos from "@/assets/icons/formatos.webp";
 import { Users } from "lucide-react";
 import { useBienvenida, getSession, isProfesor, isAdmin, isRectorOrCoordinador, isEstudiante, isPadreDeFamilia } from "@/hooks/useSession";
+import { NIVEL_DE_GRADO } from "@/utils/grados";
 import { usePendientesFirma } from "@/hooks/usePendientesFirma";
 import HeaderNormi from "@/components/HeaderNormi";
 import EncabezadoColegio from "@/components/EncabezadoColegio";
@@ -95,12 +96,6 @@ const Dashboard = () => {
           supabase.from('Solicitudes_Entrevista').select('*', { count: 'exact', head: true }).eq('creado_por', parseInt(session.id!)).eq('respuesta_vista', false),
         ]);
 
-        const NIVELES_GRADOS: Record<string, string[]> = {
-          Preescolar: ["Párvulo", "Prejardín", "Jardín", "Transición"],
-          Primaria: ["Primero", "Segundo", "Tercero", "Cuarto", "Quinto"],
-          Secundaria: ["Sexto", "Séptimo", "Octavo", "Noveno"],
-          Media: ["Décimo", "Undécimo"],
-        };
         const rows = (asignacionesRes.data || []).map((row: any) => ({
           grados: ((row["Grado(s)"] as string[] | null) || []),
           salones: ((row["Salon(es)"] as string[] | null) || []),
@@ -120,8 +115,7 @@ const Dashboard = () => {
                 if (grados && !grados.some((g: string) => r.grados.includes(g))) return false;
                 if (salones && !salones.some((s: string) => r.salones.includes(s))) return false;
                 if (c.nivel) {
-                  const gradosDelNivel = NIVELES_GRADOS[c.nivel] || [];
-                  if (!r.grados.some(g => gradosDelNivel.includes(g))) return false;
+                  if (!r.grados.some(g => NIVEL_DE_GRADO[g] === c.nivel)) return false;
                 }
                 return true;
               });
