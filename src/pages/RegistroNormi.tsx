@@ -494,7 +494,7 @@ const RegistroNormi = () => {
         </h2>
 
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-6 max-w-4xl mx-auto">
+        <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 sm:gap-3 mb-6 max-w-4xl mx-auto">
           <Select value={gradoFilter} onValueChange={(v) => { setGradoFilter(v); setSalonFilter("todos"); }}>
             <SelectTrigger className="w-full sm:w-48 bg-muted">
               <SelectValue placeholder="Grado" />

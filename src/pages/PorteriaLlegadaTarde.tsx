@@ -179,7 +179,7 @@ const PorteriaLlegadaTarde = () => {
             a sus acudientes con la <strong>hora de entrada</strong> (la de este momento).
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <select value={filtroGrado} onChange={e => { setFiltroGrado(e.target.value); setFiltroSalon(""); }}
               className="px-3 py-2 border border-input rounded-md text-sm bg-card cursor-pointer">
               <option value="">Todos los grados</option>

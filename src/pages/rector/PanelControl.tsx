@@ -1689,7 +1689,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
 
             {/* ════════════════ TAB: ESTUDIANTES ════════════════ */}
             <TabsContent value="estudiantes">
-              <div className="flex flex-col sm:flex-row gap-3 mb-4">
+              <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 sm:gap-3 mb-4">
                 <Select value={filtroGradoEst} onValueChange={(v) => { setFiltroGradoEst(v); setFiltroSalonEst("todos"); }}>
                   <SelectTrigger className="sm:w-52"><SelectValue placeholder="Grado" /></SelectTrigger>
                   <SelectContent>
@@ -1706,7 +1706,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                 </Select>
                 {(
                   <Select value={filtroFotoEst} onValueChange={setFiltroFotoEst}>
-                    <SelectTrigger className="sm:w-52"><SelectValue placeholder="Foto" /></SelectTrigger>
+                    <SelectTrigger className="col-span-2 sm:w-52"><SelectValue placeholder="Foto" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="todos">Todos</SelectItem>
                       <SelectItem value="con">Con foto</SelectItem>
@@ -1800,7 +1800,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
 
             {/* ════════════════ TAB: PERFILES ════════════════ */}
             <TabsContent value="perfiles">
-              <div className="flex flex-col sm:flex-row gap-3 mb-4">
+              <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 sm:gap-3 mb-4">
                 <Select value={filtroGradoPerf} onValueChange={(v) => { setFiltroGradoPerf(v); setFiltroSalonPerf("todos"); }}>
                   <SelectTrigger className="sm:w-52"><SelectValue placeholder="Grado del acudido" /></SelectTrigger>
                   <SelectContent>
@@ -1817,7 +1817,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                 </Select>
                 {(
                   <Select value={filtroFotoPerf} onValueChange={setFiltroFotoPerf}>
-                    <SelectTrigger className="sm:w-52"><SelectValue placeholder="Foto" /></SelectTrigger>
+                    <SelectTrigger className="col-span-2 sm:w-52"><SelectValue placeholder="Foto" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="todos">Todos</SelectItem>
                       <SelectItem value="con">Con foto</SelectItem>

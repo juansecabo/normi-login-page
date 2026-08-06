@@ -280,8 +280,8 @@ const RemisionesOrientacion = () => {
           </h2>
 
           {/* Filtros */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-4">
-            <div className="relative">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+            <div className="relative col-span-2 md:col-span-1">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <input
                 value={busqueda}

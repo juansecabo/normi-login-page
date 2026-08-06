@@ -728,7 +728,7 @@ const RegistrosComportamiento = () => {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-2">
                       <select value={formFiltroGrado} onChange={e => { setFormFiltroGrado(e.target.value); setFormFiltroSalon(""); }} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                         <option value="">Todos los grados</option>
                         {gradosFormUnicos.map(g => <option key={g} value={g}>{g}</option>)}
@@ -854,7 +854,7 @@ const RegistrosComportamiento = () => {
             <div className="text-center py-8 text-muted-foreground">Cargando...</div>
           ) : estVistaId == null ? (
             <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <select value={filtroGrado} onChange={e => { setFiltroGrado(e.target.value); setFiltroSalon(""); }} className="px-3 py-2 border border-input rounded-md text-sm bg-card cursor-pointer">
                   <option value="">Todos los grados</option>
                   {gradosUnicos.map(g => <option key={g} value={g}>{g}</option>)}

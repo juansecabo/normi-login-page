@@ -429,7 +429,7 @@ const Casos = () => {
                   className="w-full pl-9 pr-3 py-2 border border-input rounded-md text-sm bg-background"
                 />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                 <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                   <option value="">Todos los estados</option>
                   {ESTADOS.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
