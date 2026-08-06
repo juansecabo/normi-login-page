@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronDown } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { useGradosColegio, ORDEN_GRADOS, NIVEL_DE_GRADO } from "@/utils/grados";
+import { rankGrado, ORDEN_GRADOS, NIVEL_DE_GRADO } from "@/utils/grados";
 
 /**
  * Selector reusable de destinatarios para Consultas y similares.
@@ -153,18 +153,26 @@ export default function DestinatariosSelector({ initial, onChange }: Destinatari
   const [secretariasSeleccionadas, setSecretariasSeleccionadas] = useState<string[]>(initial.secretariasIds);
   const [orientadoresSeleccionados, setOrientadoresSeleccionados] = useState<string[]>(initial.orientadoresIds);
 
-  // Grados y niveles REALES del colegio (no hardcodeados).
-  const { grados: gradosColegio } = useGradosColegio();
-  const nivelesGrados = useMemo(() => {
-    const m: Record<string, string[]> = {};
-    for (const g of gradosColegio) (m[NIVEL_DE_GRADO[g] || "Otros"] ||= []).push(g);
-    return Object.fromEntries(
-      Object.entries(m).sort(([a], [b]) => {
-        const ia = NIVEL_ORDEN.indexOf(a), ib = NIVEL_ORDEN.indexOf(b);
-        return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
-      })
-    ) as Record<string, string[]>;
-  }, [gradosColegio]);
+  // Niveles/grados REALES del colegio, leídos de los estudiantes: refleja niveles
+  // y grados personalizados (no solo los estándar). Los estándar solo ordenan.
+  const [nivelesGrados, setNivelesGrados] = useState<Record<string, string[]>>({});
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("Estudiantes").select("nivel, grado");
+      const rankNivel = (n: string) => { const i = NIVEL_ORDEN.indexOf(n); return i < 0 ? 999 : i; };
+      const porNivel: Record<string, Set<string>> = {};
+      for (const r of (data as { nivel: string | null; grado: string | null }[] | null) || []) {
+        if (!r.nivel || !r.grado) continue;
+        (porNivel[r.nivel] ||= new Set()).add(r.grado);
+      }
+      const mapa: Record<string, string[]> = {};
+      for (const niv of Object.keys(porNivel).sort((a, b) => rankNivel(a) - rankNivel(b))) {
+        mapa[niv] = [...porNivel[niv]].sort((a, b) => rankGrado(a) - rankGrado(b));
+      }
+      setNivelesGrados(mapa);
+    })();
+  }, []);
+  const gradosColegio = useMemo(() => Object.values(nivelesGrados).flat(), [nivelesGrados]);
 
   const [listaCoordinadores, setListaCoordinadores] = useState<InternoSimple[]>([]);
   const [listaAdministrativos, setListaAdministrativos] = useState<InternoSimple[]>([]);

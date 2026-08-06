@@ -13,9 +13,10 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { ChevronDown, Plus, Trash2, Users, Send, FileBarChart2, X } from "lucide-react";
 import { apiRequest } from "@/lib/apiClient";
-import { useGradosColegio, NIVEL_DE_GRADO } from "@/utils/grados";
+import { rankGrado } from "@/utils/grados";
 
-// Orden de niveles para mostrarlos de menor a mayor.
+// Orden de niveles ESTÁNDAR (solo para ordenar; los niveles personalizados
+// igual se muestran, al final).
 const NIVEL_ORDEN = ["Preescolar", "Primaria", "Secundaria", "Media"];
 
 interface ConsultaRow {
@@ -407,22 +408,27 @@ export default function Consultas() {
     () => Object.keys(nivelesMarcados).filter((n) => nivelesMarcados[n]),
     [nivelesMarcados]
   );
-  // Grados y niveles REALES del colegio (no hardcodeados): cada institución ve solo los suyos.
-  const { grados: gradosColegio } = useGradosColegio();
-  const nivelesGrados = useMemo(() => {
-    const m: Record<string, string[]> = {};
-    for (const g of gradosColegio) {
-      const nivel = NIVEL_DE_GRADO[g] || "Otros";
-      (m[nivel] ||= []).push(g);
-    }
-    // Ordenar las claves por NIVEL_ORDEN (los desconocidos al final).
-    return Object.fromEntries(
-      Object.entries(m).sort(([a], [b]) => {
-        const ia = NIVEL_ORDEN.indexOf(a), ib = NIVEL_ORDEN.indexOf(b);
-        return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
-      })
-    ) as Record<string, string[]>;
-  }, [gradosColegio]);
+  // Niveles/grados REALES del colegio: se leen de los estudiantes, así que refleja
+  // niveles y grados personalizados (no solo los estándar). Los estándar solo se
+  // usan para ordenar; lo nuevo aparece igual, al final.
+  const [nivelesGrados, setNivelesGrados] = useState<Record<string, string[]>>({});
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("Estudiantes").select("nivel, grado");
+      const rankNivel = (n: string) => { const i = NIVEL_ORDEN.indexOf(n); return i < 0 ? 999 : i; };
+      const porNivel: Record<string, Set<string>> = {};
+      for (const r of (data as { nivel: string | null; grado: string | null }[] | null) || []) {
+        if (!r.nivel || !r.grado) continue;
+        (porNivel[r.nivel] ||= new Set()).add(r.grado);
+      }
+      const mapa: Record<string, string[]> = {};
+      for (const niv of Object.keys(porNivel).sort((a, b) => rankNivel(a) - rankNivel(b))) {
+        mapa[niv] = [...porNivel[niv]].sort((a, b) => rankGrado(a) - rankGrado(b));
+      }
+      setNivelesGrados(mapa);
+    })();
+  }, []);
+  const gradosColegio = useMemo(() => Object.values(nivelesGrados).flat(), [nivelesGrados]);
   const estudiantesSeleccionados = useMemo(
     () => Object.keys(estudiantesMarcados).filter((id) => estudiantesMarcados[Number(id)]).map(Number),
     [estudiantesMarcados]
