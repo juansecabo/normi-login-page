@@ -6,7 +6,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Clock, Plus, Trash2, GraduationCap, DoorOpen, Loader2, Layers, Pencil, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Clock, Plus, Trash2, GraduationCap, DoorOpen, Loader2, Layers, Pencil, GripVertical } from "lucide-react";
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, horizontalListSortingStrategy, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { type ReactNode } from "react";
 import { apiRequest, ApiError } from "@/lib/apiClient";
 import { ORDEN_GRADOS, rankGrado } from "@/utils/grados";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,6 +36,17 @@ const JORNADAS_ESTANDAR = ["Matutina", "Vespertina", "Nocturna"];
 /** Niveles estándar que se ofrecen de un tap. */
 const NIVELES_ESTANDAR = ["Preescolar", "Primaria", "Secundaria", "Media"];
 const SIN_NIVEL = "__sin__";
+
+/** Fila/chip arrastrable con asa (grip). El asa recibe los listeners para no
+ *  interferir con los controles internos (selects, botones de la fila). */
+function Sortable({ id, children }: { id: string; children: (handle: Record<string, unknown>) => ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  return (
+    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1, zIndex: isDragging ? 50 : undefined }} className={isDragging ? "relative" : undefined}>
+      {children({ ...attributes, ...listeners })}
+    </div>
+  );
+}
 
 // ── Conversión 24h ⇄ 12h (AM/PM) para el selector de hora ──
 const a24 = (h12: number, min: number, ampm: "AM" | "PM"): string => {
@@ -197,26 +212,26 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
     [niveles],
   );
 
-  // Reordenar: intercambia con el vecino y reasigna `orden` secuencial (0..n),
-  // guardando solo los que cambian. Sirve para grados y niveles.
-  const [reordenando, setReordenando] = useState(false);
-  const reordenar = async (endpoint: string, arr: { id: number; orden: number | null }[], id: number, delta: number) => {
-    const i = arr.findIndex((x) => x.id === id);
-    const j = i + delta;
-    if (i < 0 || j < 0 || j >= arr.length) return;
-    const next = [...arr];
-    [next[i], next[j]] = [next[j], next[i]];
+  // Reordenar arrastrando (dnd-kit). Al soltar, reasigna `orden` secuencial (0..n)
+  // y guarda solo los que cambian. Se arrastra desde el asa (grip).
+  const [, setReordenando] = useState(false);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  const persistOrden = async (endpoint: string, arr: { id: number; orden: number | null }[]) => {
     setReordenando(true);
     try {
       await Promise.all(
-        next.flatMap((x, idx) => (x.orden === idx ? [] : [apiRequest(`${endpoint}/${x.id}`, { method: "PATCH", body: JSON.stringify(withCid({ orden: idx })) })])),
+        arr.flatMap((x, idx) => (x.orden === idx ? [] : [apiRequest(`${endpoint}/${x.id}`, { method: "PATCH", body: JSON.stringify(withCid({ orden: idx })) })])),
       );
       await cargar();
     } catch (e) { err(e, "No se pudo reordenar."); }
     setReordenando(false);
   };
-  const moverNivel = (id: number, delta: number) => reordenar("/api/institucion/niveles", nivelesOrdenados, id, delta);
-  const moverGrado = (id: number, delta: number) => reordenar("/api/institucion/grados", gradosOrdenados, id, delta);
+  const onDrag = (endpoint: string, arr: { id: number; orden: number | null }[]) => (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const ids = arr.map((x) => String(x.id));
+    persistOrden(endpoint, arrayMove(arr, ids.indexOf(String(active.id)), ids.indexOf(String(over.id))));
+  };
   const [nivNombre, setNivNombre] = useState("");
   const crearNivelNombre = async (nombre: string) => {
     if (!nombre.trim()) return;
@@ -392,17 +407,24 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
         </CardHeader>
         <CardContent className="space-y-3">
           {nivelesOrdenados.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {nivelesOrdenados.map((n, idx) => (
-                <div key={n.id} className="flex items-center gap-1.5 pl-2 pr-1.5 py-1 rounded-full border border-primary/40 bg-primary/5 text-sm">
-                  <button onClick={() => moverNivel(n.id, -1)} disabled={idx === 0 || reordenando} className="text-muted-foreground hover:text-primary p-0.5 disabled:opacity-30" title="Mover antes"><ChevronLeft className="w-3.5 h-3.5" /></button>
-                  <button onClick={() => moverNivel(n.id, 1)} disabled={idx === nivelesOrdenados.length - 1 || reordenando} className="text-muted-foreground hover:text-primary p-0.5 disabled:opacity-30" title="Mover después"><ChevronRight className="w-3.5 h-3.5" /></button>
-                  <span className="font-medium">{n.nombre}</span>
-                  <button onClick={() => setEditNivel({ id: n.id, nombre: n.nombre })} className="text-muted-foreground hover:text-primary p-0.5" title="Renombrar nivel"><Pencil className="w-3.5 h-3.5" /></button>
-                  <button onClick={() => borrarNivel(n.id)} className="text-muted-foreground hover:text-destructive p-0.5" title="Eliminar nivel"><Trash2 className="w-3.5 h-3.5" /></button>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDrag("/api/institucion/niveles", nivelesOrdenados)}>
+              <SortableContext items={nivelesOrdenados.map((n) => String(n.id))} strategy={horizontalListSortingStrategy}>
+                <div className="flex flex-wrap gap-2">
+                  {nivelesOrdenados.map((n) => (
+                    <Sortable key={n.id} id={String(n.id)}>
+                      {(handle) => (
+                        <div className="flex items-center gap-1 pl-1.5 pr-1.5 py-1 rounded-full border border-primary/40 bg-primary/5 text-sm">
+                          <button {...handle} className="text-muted-foreground hover:text-primary p-0.5 cursor-grab active:cursor-grabbing touch-none" title="Arrastrar para reordenar"><GripVertical className="w-3.5 h-3.5" /></button>
+                          <span className="font-medium">{n.nombre}</span>
+                          <button onClick={() => setEditNivel({ id: n.id, nombre: n.nombre })} className="text-muted-foreground hover:text-primary p-0.5" title="Renombrar nivel"><Pencil className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => borrarNivel(n.id)} className="text-muted-foreground hover:text-destructive p-0.5" title="Eliminar nivel"><Trash2 className="w-3.5 h-3.5" /></button>
+                        </div>
+                      )}
+                    </Sortable>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </SortableContext>
+            </DndContext>
           )}
           {/* Niveles estándar de un tap */}
           {NIVELES_ESTANDAR.some((n) => !niveles.some((x) => x.nombre.toLowerCase() === n.toLowerCase())) && (
@@ -468,26 +490,33 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
           {/* Lista de grados declarados: nivel + renombrar + borrar. */}
           {gradosOrdenados.length > 0 && (
             <div className="border-t border-border pt-3 space-y-2">
-              <p className="text-xs text-muted-foreground">Grados del colegio ({gradosOrdenados.length}):</p>
-              {gradosOrdenados.map((g, idx) => (
-                <div key={g.id} className="flex items-center gap-2 flex-wrap border border-border rounded-md px-3 py-2">
-                  <div className="flex flex-col -my-1">
-                    <button onClick={() => moverGrado(g.id, -1)} disabled={idx === 0 || reordenando} className="text-muted-foreground hover:text-primary disabled:opacity-30" title="Subir"><ChevronUp className="w-4 h-4" /></button>
-                    <button onClick={() => moverGrado(g.id, 1)} disabled={idx === gradosOrdenados.length - 1 || reordenando} className="text-muted-foreground hover:text-primary disabled:opacity-30" title="Bajar"><ChevronDown className="w-4 h-4" /></button>
+              <p className="text-xs text-muted-foreground">Grados del colegio ({gradosOrdenados.length}) — arrástralos por el asa para ordenarlos:</p>
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDrag("/api/institucion/grados", gradosOrdenados)}>
+                <SortableContext items={gradosOrdenados.map((g) => String(g.id))} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-2">
+                    {gradosOrdenados.map((g) => (
+                      <Sortable key={g.id} id={String(g.id)}>
+                        {(handle) => (
+                          <div className="flex items-center gap-2 flex-wrap border border-border rounded-md px-3 py-2 bg-card">
+                            <button {...handle} className="text-muted-foreground hover:text-primary cursor-grab active:cursor-grabbing touch-none shrink-0" title="Arrastrar para reordenar"><GripVertical className="w-4 h-4" /></button>
+                            <span className="font-medium flex-1 min-w-[90px]">{g.grado}</span>
+                            <label className="text-xs text-muted-foreground">Nivel</label>
+                            <Select value={g.nivel ?? SIN_NIVEL} onValueChange={(v) => setNivelGrado(g.id, v === SIN_NIVEL ? null : v)}>
+                              <SelectTrigger className="w-44"><SelectValue placeholder="Sin nivel" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value={SIN_NIVEL}>Sin nivel</SelectItem>
+                                {nivelesOrdenados.map((n) => <SelectItem key={n.id} value={n.nombre}>{n.nombre}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                            <button onClick={() => setEditGrado({ id: g.id, grado: g.grado })} className="text-muted-foreground hover:text-primary p-1" title="Renombrar grado"><Pencil className="w-4 h-4" /></button>
+                            <button onClick={() => toggleGrado(g.grado)} className="text-muted-foreground hover:text-destructive p-1" title="Eliminar grado"><Trash2 className="w-4 h-4" /></button>
+                          </div>
+                        )}
+                      </Sortable>
+                    ))}
                   </div>
-                  <span className="font-medium flex-1 min-w-[90px]">{g.grado}</span>
-                  <label className="text-xs text-muted-foreground">Nivel</label>
-                  <Select value={g.nivel ?? SIN_NIVEL} onValueChange={(v) => setNivelGrado(g.id, v === SIN_NIVEL ? null : v)}>
-                    <SelectTrigger className="w-44"><SelectValue placeholder="Sin nivel" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={SIN_NIVEL}>Sin nivel</SelectItem>
-                      {nivelesOrdenados.map((n) => <SelectItem key={n.id} value={n.nombre}>{n.nombre}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <button onClick={() => setEditGrado({ id: g.id, grado: g.grado })} className="text-muted-foreground hover:text-primary p-1" title="Renombrar grado"><Pencil className="w-4 h-4" /></button>
-                  <button onClick={() => toggleGrado(g.grado)} className="text-muted-foreground hover:text-destructive p-1" title="Eliminar grado"><Trash2 className="w-4 h-4" /></button>
-                </div>
-              ))}
+                </SortableContext>
+              </DndContext>
               {niveles.length === 0 && (
                 <p className="text-xs text-amber-700">Tip: crea niveles arriba para poder asignarlos a los grados.</p>
               )}
