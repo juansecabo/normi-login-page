@@ -425,6 +425,10 @@ export default function Consultas() {
     () => Object.keys(salonesMarcados).filter((s) => salonesMarcados[s]),
     [salonesMarcados]
   );
+  const nivelesSeleccionados = useMemo(
+    () => Object.keys(nivelesMarcados).filter((n) => nivelesMarcados[n]),
+    [nivelesMarcados]
+  );
   const estudiantesSeleccionados = useMemo(
     () => Object.keys(estudiantesMarcados).filter((id) => estudiantesMarcados[Number(id)]).map(Number),
     [estudiantesMarcados]
