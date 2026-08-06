@@ -6,7 +6,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Clock, Plus, Trash2, GraduationCap, DoorOpen, Loader2, Layers, Pencil } from "lucide-react";
+import { Clock, Plus, Trash2, GraduationCap, DoorOpen, Loader2, Layers, Pencil, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { apiRequest, ApiError } from "@/lib/apiClient";
 import { ORDEN_GRADOS, rankGrado } from "@/utils/grados";
 import { supabase } from "@/integrations/supabase/client";
@@ -175,11 +175,10 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
     } catch (e) { err(e, "No se pudo actualizar el grado. (Si tiene salones, quítalos primero.)"); }
   };
   const gradosOrdenados = useMemo(
-    () => [...grados].sort((a, b) => {
-      const ra = rankGrado(a.grado), rb = rankGrado(b.grado);
-      if (ra !== rb) return ra - rb;                       // canónicos primero, en su orden
-      return a.grado.localeCompare(b.grado, "es");         // custom (rank alto) alfabéticos
-    }),
+    () => [...grados].sort((a, b) =>
+      (a.orden ?? 999) - (b.orden ?? 999)                  // orden configurado por el colegio
+      || rankGrado(a.grado) - rankGrado(b.grado)           // respaldo: posición canónica
+      || a.grado.localeCompare(b.grado, "es")),
     [grados],
   );
 
@@ -197,6 +196,27 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
     () => [...niveles].sort((a, b) => (a.orden ?? 999) - (b.orden ?? 999) || a.nombre.localeCompare(b.nombre, "es")),
     [niveles],
   );
+
+  // Reordenar: intercambia con el vecino y reasigna `orden` secuencial (0..n),
+  // guardando solo los que cambian. Sirve para grados y niveles.
+  const [reordenando, setReordenando] = useState(false);
+  const reordenar = async (endpoint: string, arr: { id: number; orden: number | null }[], id: number, delta: number) => {
+    const i = arr.findIndex((x) => x.id === id);
+    const j = i + delta;
+    if (i < 0 || j < 0 || j >= arr.length) return;
+    const next = [...arr];
+    [next[i], next[j]] = [next[j], next[i]];
+    setReordenando(true);
+    try {
+      await Promise.all(
+        next.flatMap((x, idx) => (x.orden === idx ? [] : [apiRequest(`${endpoint}/${x.id}`, { method: "PATCH", body: JSON.stringify(withCid({ orden: idx })) })])),
+      );
+      await cargar();
+    } catch (e) { err(e, "No se pudo reordenar."); }
+    setReordenando(false);
+  };
+  const moverNivel = (id: number, delta: number) => reordenar("/api/institucion/niveles", nivelesOrdenados, id, delta);
+  const moverGrado = (id: number, delta: number) => reordenar("/api/institucion/grados", gradosOrdenados, id, delta);
   const [nivNombre, setNivNombre] = useState("");
   const crearNivelNombre = async (nombre: string) => {
     if (!nombre.trim()) return;
@@ -373,8 +393,10 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
         <CardContent className="space-y-3">
           {nivelesOrdenados.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {nivelesOrdenados.map((n) => (
-                <div key={n.id} className="flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-full border border-primary/40 bg-primary/5 text-sm">
+              {nivelesOrdenados.map((n, idx) => (
+                <div key={n.id} className="flex items-center gap-1.5 pl-2 pr-1.5 py-1 rounded-full border border-primary/40 bg-primary/5 text-sm">
+                  <button onClick={() => moverNivel(n.id, -1)} disabled={idx === 0 || reordenando} className="text-muted-foreground hover:text-primary p-0.5 disabled:opacity-30" title="Mover antes"><ChevronLeft className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => moverNivel(n.id, 1)} disabled={idx === nivelesOrdenados.length - 1 || reordenando} className="text-muted-foreground hover:text-primary p-0.5 disabled:opacity-30" title="Mover después"><ChevronRight className="w-3.5 h-3.5" /></button>
                   <span className="font-medium">{n.nombre}</span>
                   <button onClick={() => setEditNivel({ id: n.id, nombre: n.nombre })} className="text-muted-foreground hover:text-primary p-0.5" title="Renombrar nivel"><Pencil className="w-3.5 h-3.5" /></button>
                   <button onClick={() => borrarNivel(n.id)} className="text-muted-foreground hover:text-destructive p-0.5" title="Eliminar nivel"><Trash2 className="w-3.5 h-3.5" /></button>
@@ -447,8 +469,12 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
           {gradosOrdenados.length > 0 && (
             <div className="border-t border-border pt-3 space-y-2">
               <p className="text-xs text-muted-foreground">Grados del colegio ({gradosOrdenados.length}):</p>
-              {gradosOrdenados.map((g) => (
+              {gradosOrdenados.map((g, idx) => (
                 <div key={g.id} className="flex items-center gap-2 flex-wrap border border-border rounded-md px-3 py-2">
+                  <div className="flex flex-col -my-1">
+                    <button onClick={() => moverGrado(g.id, -1)} disabled={idx === 0 || reordenando} className="text-muted-foreground hover:text-primary disabled:opacity-30" title="Subir"><ChevronUp className="w-4 h-4" /></button>
+                    <button onClick={() => moverGrado(g.id, 1)} disabled={idx === gradosOrdenados.length - 1 || reordenando} className="text-muted-foreground hover:text-primary disabled:opacity-30" title="Bajar"><ChevronDown className="w-4 h-4" /></button>
+                  </div>
                   <span className="font-medium flex-1 min-w-[90px]">{g.grado}</span>
                   <label className="text-xs text-muted-foreground">Nivel</label>
                   <Select value={g.nivel ?? SIN_NIVEL} onValueChange={(v) => setNivelGrado(g.id, v === SIN_NIVEL ? null : v)}>

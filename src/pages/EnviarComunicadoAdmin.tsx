@@ -1,5 +1,6 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useEstructuraOrden } from "@/utils/estructuraOrden";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -30,17 +31,6 @@ import { buildAdminBodyPreview, MAX_WA_TEMPLATE_BODY, WA_TEMPLATE_OVERHEAD } fro
 // El envío masivo personalizado ahora vive en el server:
 // POST /api/comunicados/enviar-masivo con como_normi=true (anonimato admin).
 
-// Orden canónico de referencia. La lista REAL de grados/niveles disponibles se
-// deriva por colegio desde la tabla Estudiantes (ver estado `nivelesGrados`),
-// para que cada colegio vea solo sus grados ("Párvulo" existe en el
-// Pestalozziano pero no en la Normal). Esto solo fija el ORDEN de presentación.
-const ORDEN_NIVELES = ["Preescolar", "Primaria", "Secundaria", "Media"];
-const NIVELES_GRADOS_REF: Record<string, string[]> = {
-  Preescolar: ["Párvulo", "Prejardín", "Jardín", "Transición"],
-  Primaria: ["Primero", "Segundo", "Tercero", "Cuarto", "Quinto"],
-  Secundaria: ["Sexto", "Séptimo", "Octavo", "Noveno"],
-  Media: ["Décimo", "Undécimo"],
-};
 
 
 type PerfilKey = 'Estudiantes' | 'Padres' | 'Profesores' | 'Coordinadores' | 'Rector' | 'Administrativos' | 'Secretaria' | 'Orientador';
@@ -122,24 +112,24 @@ const EnviarComunicadoAdmin = () => {
   // Estudiantes (RLS filtra por colegio). Reemplaza la lista hardcodeada que era
   // igual para todos: así "Párvulo" aparece en el Pestalozziano pero no en la
   // Normal, y cualquier colegio nuevo muestra solo los grados que de verdad tiene.
-  const [nivelesGrados, setNivelesGrados] = useState<Record<string, string[]>>({});
+  const orden = useEstructuraOrden();
+  const [estructuraRaw, setEstructuraRaw] = useState<{ nivel: string; grado: string }[]>([]);
   useEffect(() => {
     (async () => {
       const { data } = await supabase.from("Estudiantes").select("nivel, grado");
-      const rankNivel = (n: string) => { const i = ORDEN_NIVELES.indexOf(n); return i < 0 ? 999 : i; };
-      const rankGrado = (niv: string, g: string) => { const i = (NIVELES_GRADOS_REF[niv] || []).indexOf(g); return i < 0 ? 999 : i; };
-      const porNivel: Record<string, Set<string>> = {};
-      for (const r of (data as { nivel: string | null; grado: string | null }[] | null) || []) {
-        if (!r.nivel || !r.grado) continue;
-        (porNivel[r.nivel] ||= new Set()).add(r.grado);
-      }
-      const mapa: Record<string, string[]> = {};
-      for (const niv of Object.keys(porNivel).sort((a, b) => rankNivel(a) - rankNivel(b))) {
-        mapa[niv] = [...porNivel[niv]].sort((a, b) => rankGrado(niv, a) - rankGrado(niv, b));
-      }
-      setNivelesGrados(mapa);
+      setEstructuraRaw((((data as { nivel: string | null; grado: string | null }[] | null) || [])
+        .filter((r) => r.nivel && r.grado)) as { nivel: string; grado: string }[]);
     })();
   }, []);
+  const nivelesGrados = useMemo(() => {
+    const porNivel: Record<string, Set<string>> = {};
+    for (const r of estructuraRaw) (porNivel[r.nivel] ||= new Set()).add(r.grado);
+    const mapa: Record<string, string[]> = {};
+    for (const niv of Object.keys(porNivel).sort((a, b) => orden.nivelRank(a) - orden.nivelRank(b))) {
+      mapa[niv] = [...porNivel[niv]].sort((a, b) => orden.gradoRank(a) - orden.gradoRank(b));
+    }
+    return mapa;
+  }, [estructuraRaw, orden.nivelRank, orden.gradoRank]);
 
   const [nivelesMarcados, setNivelesMarcados] = useState<Record<string, boolean>>({});
   const [gradosMarcados, setGradosMarcados] = useState<Record<string, boolean>>({});
