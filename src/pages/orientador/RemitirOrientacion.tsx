@@ -62,6 +62,13 @@ const RemitirOrientacion = () => {
   const [motivo, setMotivo] = useState("");
   const [firmaData, setFirmaData] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
+  // FORMATO 005: destino (uno o varios), tipo de documento y campos ampliados.
+  const [destinos, setDestinos] = useState<{ orientacion: boolean; director_grupo: boolean; coordinador: boolean }>({
+    orientacion: false, director_grupo: false, coordinador: false,
+  });
+  const [tipoDoc, setTipoDoc] = useState<"RC" | "TI" | "CC">("TI");
+  const [especificacion, setEspecificacion] = useState("");
+  const [medidas, setMedidas] = useState("");
 
   const backLink = isProfesor() ? "/dashboard" : "/dashboard";
 
@@ -172,9 +179,19 @@ const RemitirOrientacion = () => {
     }
   };
 
+  const destinosSel = useMemo(
+    () => (Object.keys(destinos) as (keyof typeof destinos)[]).filter((k) => destinos[k]),
+    [destinos],
+  );
   const tieneFirma = !!firmaData;
-  const motivoOk = motivo.trim().length >= 10;
-  const camposCompletos = !!(estSeleccionado && motivoOk && tieneFirma);
+  const camposCompletos = !!(
+    estSeleccionado &&
+    destinosSel.length > 0 &&
+    motivo.trim().length >= 10 &&
+    especificacion.trim().length >= 10 &&
+    medidas.trim().length >= 10 &&
+    tieneFirma
+  );
 
   const resetForm = () => {
     setEstSeleccionado(null);
@@ -182,6 +199,10 @@ const RemitirOrientacion = () => {
     setFiltroGrado("");
     setFiltroSalon("");
     setMotivo("");
+    setEspecificacion("");
+    setMedidas("");
+    setDestinos({ orientacion: false, director_grupo: false, coordinador: false });
+    setTipoDoc("TI");
     setFirmaData(null);
     sigRef.current?.clear();
   };
@@ -218,6 +239,10 @@ const RemitirOrientacion = () => {
       estudiante_grado: estSeleccionado.grado,
       estudiante_salon: estSeleccionado.salon,
       motivo: motivo.trim(),
+      especificacion_conducta: especificacion.trim(),
+      medidas_previas: medidas.trim(),
+      destinos: destinosSel,
+      tipo_documento: tipoDoc,
       docente_id: autor.id,
       docente_nombre: docenteNombre,
       docente_cargo: autor.cargo || null,
@@ -235,7 +260,8 @@ const RemitirOrientacion = () => {
       return;
     }
 
-    // 3) Notificar orientadora (horario silencioso + cola)
+    // 3) Notificar a los destinos elegidos. (Director de grupo / coordinador se
+    //    resuelven y notifican en el server — Fase 2. Aquí, orientación por ahora.)
     try {
       const grupo = estSeleccionado.salon
         ? `${estSeleccionado.grado} ${estSeleccionado.salon}`
@@ -245,18 +271,20 @@ const RemitirOrientacion = () => {
         ? motivo.trim().slice(0, 200) + "..."
         : motivo.trim();
       const remitente = [autor.cargo, autor.nombres, autor.apellidos].filter(Boolean).join(" ");
-      const mensaje =
-        `Nueva remisión a orientación escolar.\n` +
-        `Estudiante: ${estLabel} (${grupo}).\n` +
-        `Motivo: ${motivoCorto}\n` +
-        `Remitido por: ${remitente}.\n\n` +
-        `Pueden consultarla entrando a notasnormi.com → Remisiones a Orientación.`;
-      await notifyOrientadora(mensaje, remitente || "Sistema Normi");
+      if (destinos.orientacion) {
+        const mensaje =
+          `Nueva remisión a orientación escolar.\n` +
+          `Estudiante: ${estLabel} (${grupo}).\n` +
+          `Motivo: ${motivoCorto}\n` +
+          `Remitido por: ${remitente}.\n\n` +
+          `Pueden consultarla entrando a notasnormi.com → Remisiones.`;
+        await notifyOrientadora(mensaje, remitente || "Sistema Normi");
+      }
     } catch (e) {
-      console.warn("notifyOrientadora:", e);
+      console.warn("notificar remisión:", e);
     }
 
-    toast({ title: "Remisión enviada", description: "Se notificó a la orientadora." });
+    toast({ title: "Remisión enviada", description: "Quedó registrada y se notificó a los destinos." });
     resetForm();
     setGuardando(false);
   };
@@ -384,16 +412,80 @@ const RemitirOrientacion = () => {
                 </div>
               )}
 
+              {/* Tipo de documento (datos de identificación) */}
+              {estSeleccionado && (
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">Documento de identidad</label>
+                  <div className="flex flex-wrap items-center gap-4 border rounded px-3 py-2 bg-muted/20">
+                    {(["RC", "TI", "CC"] as const).map((t) => (
+                      <label key={t} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                        <input type="radio" name="tipoDoc" checked={tipoDoc === t} onChange={() => setTipoDoc(t)} className="accent-primary" /> {t}
+                      </label>
+                    ))}
+                    <span className="text-sm text-muted-foreground ml-auto">N.º: {estSeleccionado.id}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Remitir a (uno o varios) */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Remitir a <span className="text-muted-foreground text-xs">(marca uno o varios)</span>
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <label className="flex items-center gap-2 text-sm border rounded px-3 py-2 cursor-pointer hover:bg-accent">
+                    <input type="checkbox" checked={destinos.orientacion} onChange={(e) => setDestinos((d) => ({ ...d, orientacion: e.target.checked }))} className="accent-primary" />
+                    Orientación Escolar
+                  </label>
+                  <label className="flex items-center gap-2 text-sm border rounded px-3 py-2 cursor-pointer hover:bg-accent">
+                    <input type="checkbox" checked={destinos.director_grupo} onChange={(e) => setDestinos((d) => ({ ...d, director_grupo: e.target.checked }))} className="accent-primary" />
+                    Director de Grupo
+                  </label>
+                  <label className="flex items-center gap-2 text-sm border rounded px-3 py-2 cursor-pointer hover:bg-accent">
+                    <input type="checkbox" checked={destinos.coordinador} onChange={(e) => setDestinos((d) => ({ ...d, coordinador: e.target.checked }))} className="accent-primary" />
+                    Coordinador
+                  </label>
+                </div>
+              </div>
+
               {/* Motivo */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
-                  Motivo de remisión <span className="text-muted-foreground text-xs">(mínimo 10 caracteres)</span>
+                  Motivo de la remisión <span className="text-muted-foreground text-xs">(mínimo 10 caracteres)</span>
                 </label>
                 <textarea
                   value={motivo}
                   onChange={e => setMotivo(e.target.value)}
-                  rows={5}
-                  placeholder="Describa con claridad la situación que motiva esta remisión..."
+                  rows={4}
+                  placeholder="¿Por qué se remite al estudiante?"
+                  className="w-full border rounded px-3 py-2 text-sm bg-background resize-y"
+                />
+              </div>
+
+              {/* Especificación de la conducta o dificultad */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Especificación de la conducta o dificultad <span className="text-muted-foreground text-xs">(mínimo 10 caracteres)</span>
+                </label>
+                <textarea
+                  value={especificacion}
+                  onChange={e => setEspecificacion(e.target.value)}
+                  rows={4}
+                  placeholder="Describa con detalle la conducta o dificultad observada..."
+                  className="w-full border rounded px-3 py-2 text-sm bg-background resize-y"
+                />
+              </div>
+
+              {/* Medidas pedagógicas aplicadas previamente */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Medidas pedagógicas aplicadas previamente <span className="text-muted-foreground text-xs">(mínimo 10 caracteres)</span>
+                </label>
+                <textarea
+                  value={medidas}
+                  onChange={e => setMedidas(e.target.value)}
+                  rows={4}
+                  placeholder="¿Qué acciones se intentaron antes de remitir?"
                   className="w-full border rounded px-3 py-2 text-sm bg-background resize-y"
                 />
               </div>
