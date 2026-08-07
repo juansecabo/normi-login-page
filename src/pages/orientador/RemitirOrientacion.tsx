@@ -187,9 +187,9 @@ const RemitirOrientacion = () => {
   const camposCompletos = !!(
     estSeleccionado &&
     destinosSel.length > 0 &&
-    motivo.trim().length >= 10 &&
-    especificacion.trim().length >= 10 &&
-    medidas.trim().length >= 10 &&
+    motivo.trim() &&
+    especificacion.trim() &&
+    medidas.trim() &&
     tieneFirma
   );
 
@@ -450,11 +450,11 @@ const RemitirOrientacion = () => {
                   </label>
                   <label className="flex items-center gap-2 text-sm border rounded px-3 py-2 cursor-pointer hover:bg-accent">
                     <input type="checkbox" checked={destinos.director_grupo} onChange={(e) => setDestinos((d) => ({ ...d, director_grupo: e.target.checked }))} className="accent-primary" />
-                    Director de Grupo
+                    Director(a) de grupo
                   </label>
                   <label className="flex items-center gap-2 text-sm border rounded px-3 py-2 cursor-pointer hover:bg-accent">
                     <input type="checkbox" checked={destinos.coordinador} onChange={(e) => setDestinos((d) => ({ ...d, coordinador: e.target.checked }))} className="accent-primary" />
-                    Coordinador
+                    Coordinador(a)
                   </label>
                 </div>
               </div>
@@ -462,7 +462,7 @@ const RemitirOrientacion = () => {
               {/* Motivo */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
-                  Motivo de la remisión <span className="text-muted-foreground text-xs">(mínimo 10 caracteres)</span>
+                  Motivo de la remisión
                 </label>
                 <textarea
                   value={motivo}
@@ -476,7 +476,7 @@ const RemitirOrientacion = () => {
               {/* Especificación de la conducta o dificultad */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
-                  Especificación de la conducta o dificultad <span className="text-muted-foreground text-xs">(mínimo 10 caracteres)</span>
+                  Especificación de la conducta o dificultad
                 </label>
                 <textarea
                   value={especificacion}
@@ -490,7 +490,7 @@ const RemitirOrientacion = () => {
               {/* Medidas pedagógicas aplicadas previamente */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
-                  Medidas pedagógicas aplicadas previamente <span className="text-muted-foreground text-xs">(mínimo 10 caracteres)</span>
+                  Medidas pedagógicas aplicadas previamente
                 </label>
                 <textarea
                   value={medidas}
