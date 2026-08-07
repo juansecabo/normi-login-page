@@ -440,20 +440,18 @@ const RemitirOrientacion = () => {
 
               {/* Remitir a (uno o varios) */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Remitir a <span className="text-muted-foreground text-xs">(marca uno o varios)</span>
-                </label>
+                <label className="block text-sm font-medium text-foreground mb-1">Remitir a</label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <label className="flex items-center gap-2 text-sm border rounded px-3 py-2 cursor-pointer hover:bg-accent">
-                    <input type="checkbox" checked={destinos.orientacion} onChange={(e) => setDestinos((d) => ({ ...d, orientacion: e.target.checked }))} className="accent-primary" />
+                    <input type="radio" name="destino" checked={destinos.orientacion} onChange={() => setDestinos({ orientacion: true, director_grupo: false, coordinador: false })} className="accent-primary" />
                     Orientación Escolar
                   </label>
                   <label className="flex items-center gap-2 text-sm border rounded px-3 py-2 cursor-pointer hover:bg-accent">
-                    <input type="checkbox" checked={destinos.director_grupo} onChange={(e) => setDestinos((d) => ({ ...d, director_grupo: e.target.checked }))} className="accent-primary" />
+                    <input type="radio" name="destino" checked={destinos.director_grupo} onChange={() => setDestinos({ orientacion: false, director_grupo: true, coordinador: false })} className="accent-primary" />
                     Director(a) de grupo
                   </label>
                   <label className="flex items-center gap-2 text-sm border rounded px-3 py-2 cursor-pointer hover:bg-accent">
-                    <input type="checkbox" checked={destinos.coordinador} onChange={(e) => setDestinos((d) => ({ ...d, coordinador: e.target.checked }))} className="accent-primary" />
+                    <input type="radio" name="destino" checked={destinos.coordinador} onChange={() => setDestinos({ orientacion: false, director_grupo: false, coordinador: true })} className="accent-primary" />
                     Coordinador(a)
                   </label>
                 </div>
