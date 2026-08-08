@@ -69,8 +69,8 @@ const Index = () => {
   const [cWebsite, setCWebsite] = useState(""); // honeypot anti-bot (oculto)
 
   const enviarContacto = async () => {
-    if (!cNombre.trim() || !cInstitucion.trim() || (!cTelefono.trim() && !cCorreo.trim())) {
-      toast({ title: "Faltan datos", description: "Escribe tu nombre, la institución y al menos un contacto (teléfono o correo).", variant: "destructive" });
+    if (!cNombre.trim() || !cInstitucion.trim() || !cCargo.trim() || !cCiudad.trim() || (!cTelefono.trim() && !cCorreo.trim())) {
+      toast({ title: "Faltan datos", description: "Escribe tu nombre, la institución, tu cargo, la ciudad y al menos un contacto (teléfono o correo).", variant: "destructive" });
       return;
     }
     setContactoLoading(true);
@@ -542,8 +542,8 @@ const Index = () => {
                 <Input placeholder="Tu nombre *" value={cNombre} onChange={(e) => setCNombre(e.target.value)} />
                 <Input placeholder="Nombre de la institución *" value={cInstitucion} onChange={(e) => setCInstitucion(e.target.value)} />
                 <div className="grid grid-cols-2 gap-3">
-                  <Input placeholder="Cargo (opcional)" value={cCargo} onChange={(e) => setCCargo(e.target.value)} />
-                  <Input placeholder="Ciudad (opcional)" value={cCiudad} onChange={(e) => setCCiudad(e.target.value)} />
+                  <Input placeholder="Cargo *" value={cCargo} onChange={(e) => setCCargo(e.target.value)} />
+                  <Input placeholder="Ciudad *" value={cCiudad} onChange={(e) => setCCiudad(e.target.value)} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <Input placeholder="Teléfono" value={cTelefono} onChange={(e) => setCTelefono(e.target.value)} />
