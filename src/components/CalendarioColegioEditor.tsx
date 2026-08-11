@@ -285,7 +285,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
     const ev = eventos.find((e) => e.fecha_inicio <= f && f <= e.fecha_fin);
     if (ev) return { cls: `${base} bg-indigo-200 hover:bg-indigo-300 text-indigo-900`, title: ev.nombre };
     const nombreFestivo = festivos.get(f);
-    if (nombreFestivo) return { cls: `${base} bg-stone-400 text-white`, title: `${nombreFestivo} (festivo automático)` };
+    if (nombreFestivo) return { cls: `${base} bg-fuchsia-300 text-fuchsia-900`, title: `${nombreFestivo} (festivo automático)` };
     const per = periodos.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin);
     if (per) return { cls: `${base} ${PERIODO_ESTILO[per.periodo].fondo}`, title: PERIODO_ESTILO[per.periodo].nombre };
     if (dow >= 5) return { cls: `${base} text-muted-foreground/50`, title: "" };
@@ -354,7 +354,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
             ))}
             <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-red-200 border border-red-400" /> Sin clases</span>
             <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-indigo-200 border border-indigo-400" /> Evento (con clases)</span>
-            <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-stone-400" /> Festivo (automático)</span>
+            <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-fuchsia-300 border border-fuchsia-400" /> Festivo (automático)</span>
           </div>
           )}
 
@@ -401,7 +401,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
             })}
             <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-red-200 border border-red-400" /> Sin clases</span>
             <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-indigo-200 border border-indigo-400" /> Evento (con clases)</span>
-            <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-stone-400" /> Festivo (automático)</span>
+            <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-fuchsia-300 border border-fuchsia-400" /> Festivo (automático)</span>
           </div>
         </CardContent>
       </Card>
