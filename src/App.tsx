@@ -27,6 +27,7 @@ import ConstruyeInstitucion from "./pages/rector/ConstruyeInstitucion";
 import CrearInstitucion from "./pages/CrearInstitucion";
 import UsoNormi from "./pages/rector/UsoNormi";
 import AprendeNormi from "./pages/AprendeNormi";
+import CalendarioEscolar from "./pages/CalendarioEscolar";
 import LogrosProfesor from "./pages/profesor/LogrosProfesor";
 import Boletines from "./pages/rector/Boletines";
 import Formatos from "./pages/rector/Formatos";
@@ -195,6 +196,7 @@ const App = () => (
           <Route path="/construye-institucion" element={<ConstruyeInstitucion />} />
           <Route path="/crear-institucion/:id" element={<CrearInstitucion />} />
           <Route path="/aprende-normi" element={<AprendeNormi />} />
+          <Route path="/calendario-escolar" element={<CalendarioEscolar />} />
           <Route path="/profesor/logros" element={<LogrosProfesor />} />
 
           {/* Rutas para Admin */}

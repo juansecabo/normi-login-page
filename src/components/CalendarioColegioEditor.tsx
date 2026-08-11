@@ -40,9 +40,14 @@ const PERIODO_ESTILO: Record<number, { fondo: string; chip: string; nombre: stri
   4: { fondo: "bg-violet-200 hover:bg-violet-300", chip: "bg-violet-200 border-violet-400", nombre: "Periodo 4" },
 };
 
-interface Props { colegioId?: string }
+interface Props {
+  colegioId?: string;
+  /** Solo visualización (ficha "Calendario" de todos los dashboards): sin
+   *  herramientas, sin editar ni eliminar; el clic sobre un día solo informa. */
+  soloLectura?: boolean;
+}
 
-const CalendarioColegioEditor = ({ colegioId }: Props) => {
+const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
   const { toast } = useToast();
   const qCid = colegioId ? `?colegio_id=${colegioId}` : "";
   const withCid = (body: Record<string, unknown>) => (colegioId ? { ...body, colegio_id: colegioId } : body);
@@ -293,16 +298,25 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg"><CalendarDays className="h-5 w-5 text-primary" /> Calendario {anoEscolar}</CardTitle>
+          {soloLectura ? (
+            <p className="text-sm text-muted-foreground">
+              Calendario del año escolar: periodos académicos, días sin clases, <strong>Eventos</strong> (entrega de boletines,
+              día deportivo…) y festivos de Colombia. Haz clic sobre un día pintado para ver su detalle.
+            </p>
+          ) : (
           <p className="text-sm text-muted-foreground">
             Elige una herramienta y <strong>haz clic</strong> en un día para marcarlo, o <strong>mantén presionado y arrastra</strong> para
             pintar un rango. Clic de nuevo sobre la herramienta para soltarla: sin herramienta, el clic sobre un día pintado
             muestra qué es y permite editarlo. Los fines de semana y festivos de Colombia ya se tienen en cuenta solos.
             Los avisos automáticos no se envían los días sin clases, y Normi responde con estas fechas. Los <strong>Eventos</strong> (entrega de boletines, día deportivo…) son días CON clases donde además pasa algo — Normi también los informa.
           </p>
+          )}
         </CardHeader>
         <CardContent className="space-y-4">
           {/* ── Herramientas (barra fija al hacer scroll: no hay que subir a
-                marcar/desmarcar mientras se recorren los 12 meses) ── */}
+                marcar/desmarcar mientras se recorren los 12 meses). En solo
+                lectura no hay herramientas. ── */}
+          {!soloLectura && (
           <div className="sticky top-2 z-30 flex flex-wrap items-center gap-2 bg-card/95 backdrop-blur-sm border border-border rounded-xl shadow-md px-3 py-2 -mx-1">
             {[1, 2, 3, 4].map((n) => (
               <button key={n} onClick={(e) => toggleHerramienta(`p${n}` as Herramienta, e)}
@@ -324,6 +338,7 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
             </button>
             {guardando && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
           </div>
+          )}
           {herramienta === "quitar" && (
             <p className="text-sm text-muted-foreground">Haz clic sobre un periodo, un día sin clases o un evento para quitarlo.</p>
           )}
@@ -392,9 +407,11 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
                     </p>
                     <p className="text-xs text-muted-foreground">{d.motivo || "Sin motivo"}</p>
                   </div>
+                  {!soloLectura && (
                   <button onClick={() => setConfirmDia(d)} className="text-muted-foreground hover:text-destructive cursor-pointer" title="Eliminar">
                     <Trash2 className="w-4 h-4" />
                   </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -418,9 +435,11 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
                     </p>
                     <p className="text-xs text-muted-foreground">{ev.nombre}</p>
                   </div>
+                  {!soloLectura && (
                   <button onClick={() => setConfirmEvento(ev)} className="text-muted-foreground hover:text-destructive cursor-pointer" title="Eliminar">
                     <Trash2 className="w-4 h-4" />
                   </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -488,6 +507,9 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
                   : `${fechaLinda(detalle.dia.fecha_inicio)} — ${fechaLinda(detalle.dia.fecha_fin)}`}
               </DialogDescription>
             </DialogHeader>
+            {soloLectura ? (
+              <p className="text-sm text-muted-foreground">{detalle.dia.motivo || "Sin motivo"}</p>
+            ) : (<>
             <Input value={motivoEdit} onChange={(e) => setMotivoEdit(e.target.value)} placeholder="Motivo: semana de receso, jornada pedagógica…" maxLength={80}
               onKeyDown={(e) => { if (e.key === "Enter") guardarMotivo(); }} />
             <DialogFooter>
@@ -498,6 +520,7 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
                 {guardando && <Loader2 className="w-4 h-4 animate-spin" />} Guardar
               </Button>
             </DialogFooter>
+            </>)}
           </>)}
           {detalle?.tipo === "evento" && (<>
             <DialogHeader>
@@ -508,6 +531,9 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
                   : `${fechaLinda(detalle.evento.fecha_inicio)} — ${fechaLinda(detalle.evento.fecha_fin)}`} · Hay clases ese día.
               </DialogDescription>
             </DialogHeader>
+            {soloLectura ? (
+              <p className="text-sm text-muted-foreground">{detalle.evento.nombre}</p>
+            ) : (<>
             <Input value={eventoEdit} onChange={(e) => setEventoEdit(e.target.value)} placeholder="Nombre del evento" maxLength={80}
               onKeyDown={(e) => { if (e.key === "Enter") guardarNombreEvento(); }} />
             <DialogFooter>
@@ -518,6 +544,7 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
                 {guardando && <Loader2 className="w-4 h-4 animate-spin" />} Guardar
               </Button>
             </DialogFooter>
+            </>)}
           </>)}
           {detalle?.tipo === "festivo" && (<>
             <DialogHeader>
@@ -533,12 +560,14 @@ const CalendarioColegioEditor = ({ colegioId }: Props) => {
                 Del {fechaLinda(detalle.periodo.fecha_inicio)} al {fechaLinda(detalle.periodo.fecha_fin)}
               </DialogDescription>
             </DialogHeader>
+            {!soloLectura && (<>
             <p className="text-sm text-muted-foreground">Para cambiar sus fechas, elige la herramienta "{PERIODO_ESTILO[detalle.periodo.periodo].nombre}" y pinta el nuevo rango.</p>
             <DialogFooter>
               <Button variant="destructive" onClick={() => { const n = detalle.periodo.periodo; setDetalle(null); setConfirmPeriodo(n); }} disabled={guardando} className="gap-2">
                 <Eraser className="w-4 h-4" /> Quitar periodo
               </Button>
             </DialogFooter>
+            </>)}
           </>)}
         </DialogContent>
       </Dialog>

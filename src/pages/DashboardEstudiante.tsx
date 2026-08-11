@@ -176,6 +176,12 @@ const DashboardEstudiante = () => {
         <span className="font-semibold text-foreground text-center">Actividades</span>
       </button>
     ) },
+    { id: 'calendario-escolar', render: (
+      <button onClick={() => navigate("/calendario-escolar")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-indigo-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-indigo-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-indigo-200">
+        <span className="text-5xl leading-none">📅</span>
+        <span className="font-semibold text-foreground text-center">Calendario</span>
+      </button>
+    ) },
     { id: 'comunicados', render: (
       <button onClick={() => navigate("/estudiante/comunicados")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-lime-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-lime-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-lime-200">
         <Badge count={badges.comunicados} />

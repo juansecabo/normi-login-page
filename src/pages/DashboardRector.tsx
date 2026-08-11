@@ -291,6 +291,12 @@ const DashboardRector = () => {
         <span className="font-semibold text-foreground text-center">Observador Estudiantil</span>
       </button>
     ) },
+    { id: 'calendario-escolar', render: (
+      <button onClick={() => navigate("/calendario-escolar")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-indigo-100 transition-all duration-200 hover:shadow-md hover:bg-indigo-200">
+        <span className="text-5xl leading-none">📅</span>
+        <span className="font-semibold text-foreground text-center">Calendario</span>
+      </button>
+    ) },
     ...(cargo === "Rector" || cargo === "Administrador" || cargo === "Secretaria General" || cargo === "Coordinador(a)" || cargo === "Administrativo(a)" ? [{ id: 'construye-institucion', render: (
       <button onClick={() => navigate("/construye-institucion")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 transition-all duration-200 hover:shadow-md hover:bg-teal-200">
         <img src={iconConfigurarInstitucion} alt="" className="w-16 h-16 object-contain" />
@@ -330,7 +336,7 @@ const DashboardRector = () => {
   );
 
   // El Portero(a) solo ve un conjunto acotado de fichas (en este orden).
-  const FICHAS_PORTERO = ['porteria', 'enviar-comunicado', 'comunicados-recibidos', 'documentos-recibidos', 'consultas'];
+  const FICHAS_PORTERO = ['porteria', 'enviar-comunicado', 'comunicados-recibidos', 'documentos-recibidos', 'consultas', 'calendario-escolar'];
   const itemsVisibles = cargo === 'Portero'
     ? (FICHAS_PORTERO.map(fid => items.find(i => i.id === fid)).filter(Boolean) as ReordItem[])
     : items;
