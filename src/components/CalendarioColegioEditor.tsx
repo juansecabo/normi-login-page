@@ -497,7 +497,9 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
             </DialogDescription>
           </DialogHeader>
           <div>
-            <Textarea value={eventoNombre} onChange={(e) => setEventoNombre(e.target.value)} placeholder="Nombre: entrega de boletines, día deportivo, izada de bandera…" maxLength={80} autoFocus rows={3} className="resize-none" />
+            {/* 889 = lo que cabe en la plantilla de WhatsApp del aviso diario fuera de ventana de 24h. */}
+            <Textarea value={eventoNombre} onChange={(e) => setEventoNombre(e.target.value)} placeholder="Nombre: entrega de boletines, día deportivo, izada de bandera…" maxLength={889} autoFocus rows={4} className="resize-none" />
+            <p className="text-xs text-muted-foreground text-right">{eventoNombre.length}/889</p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEventoDialog(null)} disabled={guardando}>Cancelar</Button>
@@ -546,7 +548,8 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
             {soloLectura ? (
               <p className="text-sm text-muted-foreground">{detalle.evento.nombre}</p>
             ) : (<>
-            <Textarea value={eventoEdit} onChange={(e) => setEventoEdit(e.target.value)} placeholder="Nombre del evento" maxLength={80} rows={3} className="resize-none" />
+            <Textarea value={eventoEdit} onChange={(e) => setEventoEdit(e.target.value)} placeholder="Nombre del evento" maxLength={889} rows={4} className="resize-none" />
+            <p className="text-xs text-muted-foreground text-right">{eventoEdit.length}/889</p>
             <DialogFooter>
               <Button variant="destructive" onClick={() => { const ev = detalle.evento; setDetalle(null); setConfirmEvento(ev); }} disabled={guardando} className="gap-2">
                 <Trash2 className="w-4 h-4" /> Eliminar
