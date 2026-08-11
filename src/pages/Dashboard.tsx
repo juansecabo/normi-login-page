@@ -16,6 +16,7 @@ import iconRegistros from "@/assets/icons/registros-comportamiento.png";
 import iconAsistencia from "@/assets/icons/asistencia.webp";
 import iconFotosGrupo from "@/assets/icons/fotos-grupo.webp";
 import iconConfigurarInstitucion from "@/assets/icons/configurar-institucion.webp";
+import iconCalendario from "@/assets/icons/calendario.webp";
 import iconDireccionGrupo from "@/assets/icons/direccion-grupo.webp";
 import iconObservador from "@/assets/icons/observador.webp";
 import iconFormatos from "@/assets/icons/formatos.webp";
@@ -285,7 +286,7 @@ const Dashboard = () => {
     ) },
     { id: 'calendario-escolar', render: (
       <button onClick={() => navigate("/calendario-escolar")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-indigo-100 transition-all duration-200 hover:shadow-md hover:bg-indigo-200">
-        <span className="text-5xl leading-none">📅</span>
+        <img src={iconCalendario} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground text-center">Calendario</span>
       </button>
     ) },

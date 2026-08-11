@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/apiClient";
@@ -284,7 +285,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
     const ev = eventos.find((e) => e.fecha_inicio <= f && f <= e.fecha_fin);
     if (ev) return { cls: `${base} bg-indigo-200 hover:bg-indigo-300 text-indigo-900`, title: ev.nombre };
     const nombreFestivo = festivos.get(f);
-    if (nombreFestivo) return { cls: `${base} bg-stone-300 text-stone-600`, title: `${nombreFestivo} (festivo automático)` };
+    if (nombreFestivo) return { cls: `${base} bg-stone-400 text-white`, title: `${nombreFestivo} (festivo automático)` };
     const per = periodos.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin);
     if (per) return { cls: `${base} ${PERIODO_ESTILO[per.periodo].fondo}`, title: PERIODO_ESTILO[per.periodo].nombre };
     if (dow >= 5) return { cls: `${base} text-muted-foreground/50`, title: "" };
@@ -343,6 +344,20 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
             <p className="text-sm text-muted-foreground">Haz clic sobre un periodo, un día sin clases o un evento para quitarlo.</p>
           )}
 
+          {/* ── Leyenda arriba (solo lectura: que se vea sin hacer scroll) ── */}
+          {soloLectura && (
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground border border-border rounded-lg px-3 py-2 bg-muted/40">
+            {[1, 2, 3, 4].map((n) => (
+              <span key={n} className="inline-flex items-center gap-1.5">
+                <span className={`w-3 h-3 rounded-sm ${PERIODO_ESTILO[n].chip}`} /> {PERIODO_ESTILO[n].nombre}
+              </span>
+            ))}
+            <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-red-200 border border-red-400" /> Sin clases</span>
+            <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-indigo-200 border border-indigo-400" /> Evento (con clases)</span>
+            <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-stone-400" /> Festivo (automático)</span>
+          </div>
+          )}
+
           {/* ── Los 12 meses ── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-5">
             {MESES.map((mes, m) => {
@@ -373,7 +388,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
             })}
           </div>
 
-          {/* ── Leyenda ── */}
+          {/* ── Leyenda (abajo siempre) ── */}
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground pt-1">
             {[1, 2, 3, 4].map((n) => {
               const p = periodos.find((x) => x.periodo === n);
@@ -386,7 +401,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
             })}
             <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-red-200 border border-red-400" /> Sin clases</span>
             <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-indigo-200 border border-indigo-400" /> Evento (con clases)</span>
-            <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-stone-300" /> Festivo (automático)</span>
+            <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-stone-400" /> Festivo (automático)</span>
           </div>
         </CardContent>
       </Card>
@@ -459,8 +474,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
             </DialogDescription>
           </DialogHeader>
           <div>
-            <Input value={motivoTexto} onChange={(e) => setMotivoTexto(e.target.value)} placeholder="Motivo: semana de receso, jornada pedagógica…" maxLength={80} autoFocus
-              onKeyDown={(e) => { if (e.key === "Enter") crearDiaSinClases(); }} />
+            <Textarea value={motivoTexto} onChange={(e) => setMotivoTexto(e.target.value)} placeholder="Motivo: semana de receso, jornada pedagógica…" maxLength={80} autoFocus rows={3} className="resize-none" />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setMotivoDialog(null)} disabled={guardando}>Cancelar</Button>
@@ -483,8 +497,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
             </DialogDescription>
           </DialogHeader>
           <div>
-            <Input value={eventoNombre} onChange={(e) => setEventoNombre(e.target.value)} placeholder="Nombre: entrega de boletines, día deportivo, izada de bandera…" maxLength={80} autoFocus
-              onKeyDown={(e) => { if (e.key === "Enter") crearEvento(); }} />
+            <Textarea value={eventoNombre} onChange={(e) => setEventoNombre(e.target.value)} placeholder="Nombre: entrega de boletines, día deportivo, izada de bandera…" maxLength={80} autoFocus rows={3} className="resize-none" />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEventoDialog(null)} disabled={guardando}>Cancelar</Button>
@@ -510,8 +523,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
             {soloLectura ? (
               <p className="text-sm text-muted-foreground">{detalle.dia.motivo || "Sin motivo"}</p>
             ) : (<>
-            <Input value={motivoEdit} onChange={(e) => setMotivoEdit(e.target.value)} placeholder="Motivo: semana de receso, jornada pedagógica…" maxLength={80}
-              onKeyDown={(e) => { if (e.key === "Enter") guardarMotivo(); }} />
+            <Textarea value={motivoEdit} onChange={(e) => setMotivoEdit(e.target.value)} placeholder="Motivo: semana de receso, jornada pedagógica…" maxLength={80} rows={3} className="resize-none" />
             <DialogFooter>
               <Button variant="destructive" onClick={() => { const d = detalle.dia; setDetalle(null); setConfirmDia(d); }} disabled={guardando} className="gap-2">
                 <Trash2 className="w-4 h-4" /> Eliminar
@@ -534,8 +546,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
             {soloLectura ? (
               <p className="text-sm text-muted-foreground">{detalle.evento.nombre}</p>
             ) : (<>
-            <Input value={eventoEdit} onChange={(e) => setEventoEdit(e.target.value)} placeholder="Nombre del evento" maxLength={80}
-              onKeyDown={(e) => { if (e.key === "Enter") guardarNombreEvento(); }} />
+            <Textarea value={eventoEdit} onChange={(e) => setEventoEdit(e.target.value)} placeholder="Nombre del evento" maxLength={80} rows={3} className="resize-none" />
             <DialogFooter>
               <Button variant="destructive" onClick={() => { const ev = detalle.evento; setDetalle(null); setConfirmEvento(ev); }} disabled={guardando} className="gap-2">
                 <Trash2 className="w-4 h-4" /> Eliminar
