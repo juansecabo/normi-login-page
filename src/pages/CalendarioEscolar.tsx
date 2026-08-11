@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
 import HeaderNormi from "@/components/HeaderNormi";
 import CalendarioColegioEditor from "@/components/CalendarioColegioEditor";
 
@@ -14,9 +13,13 @@ const CalendarioEscolar = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <HeaderNormi />
       <main className="flex-1 container mx-auto p-4 md:p-8 max-w-5xl">
-        <button onClick={() => navigate("/dashboard")} className="inline-flex items-center gap-1 text-sm text-primary hover:underline mb-4">
-          <ArrowLeft className="w-4 h-4" /> Volver
-        </button>
+        <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
+          <div className="flex items-center gap-2 text-sm flex-wrap">
+            <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
+            <span className="text-muted-foreground">&rarr;</span>
+            <span className="text-foreground font-medium">Calendario</span>
+          </div>
+        </div>
         <CalendarioColegioEditor soloLectura />
       </main>
     </div>
