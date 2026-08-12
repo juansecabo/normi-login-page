@@ -385,9 +385,11 @@ export const useCompletitud = () => {
       estudiantesPorSalon.get(key)!.push(e);
     }
 
+    // Las actividades pertenecen al aula (asignatura+grado+salón), no a quien las creó:
+    // el responsable de completarlas es quien dicta ahí según Asignación Profesores.
     const actividadesIndex = new Map<string, ActividadRegistrada[]>();
     for (const a of actividades) {
-      const key = `${a.id_profesor}|${normalize(a.asignatura)}|${normalize(a.grado)}|${normalize(a.salon)}|${a.periodo}`;
+      const key = `${normalize(a.asignatura)}|${normalize(a.grado)}|${normalize(a.salon)}|${a.periodo}`;
       if (!actividadesIndex.has(key)) actividadesIndex.set(key, []);
       actividadesIndex.get(key)!.push(a);
     }
@@ -427,7 +429,7 @@ export const useCompletitud = () => {
       let profPendiente = false;
 
       for (const per of periodosAVerificar) {
-        const actKey = `${combo.idProfesor}|${normalize(combo.asignatura)}|${normalize(combo.grado)}|${normalize(combo.salon)}|${per}`;
+        const actKey = `${normalize(combo.asignatura)}|${normalize(combo.grado)}|${normalize(combo.salon)}|${per}`;
         const actsAll = actividadesIndex.get(actKey) || [];
 
         // Actividades con peso
