@@ -25,6 +25,19 @@ interface HeaderNormiProps {
 // que rompía la carga de la foto de perfil.
 export const computeBackLinkFromSession = (): string => "/dashboard";
 
+/**
+ * Formatea un número de WhatsApp para mostrarlo con indicativo y separado.
+ * Colombia (57 + 10 dígitos) → "+57 302 448 7075". Otros países: "+<dígitos>".
+ */
+function formatearNumeroWa(digitos: string, crudo: string): string {
+  if (!digitos) return crudo;
+  if (digitos.length === 12 && digitos.startsWith("57")) {
+    const n = digitos.slice(2); // 10 dígitos nacionales
+    return `+57 ${n.slice(0, 3)} ${n.slice(3, 6)} ${n.slice(6)}`;
+  }
+  return crudo.startsWith("+") ? crudo : `+${digitos}`;
+}
+
 const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -40,9 +53,11 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
   const esPlataforma = getSession().cargo === "SuperAdmin" && !enImpersonacion;
 
   // Número de WhatsApp de Normi de ESTE colegio (viene de la config, sin el token).
-  // El texto se muestra tal cual; el enlace wa.me usa solo los dígitos.
-  const waNumeroTexto = ((colegioConfig as any)?.whatsapp_numero as string | undefined)?.trim() || "";
-  const waDigitos = waNumeroTexto.replace(/\D/g, "");
+  // Guardamos solo dígitos; el enlace wa.me usa esos, y para mostrar formateamos
+  // con indicativo (+57 302 448 7075).
+  const waCrudo = ((colegioConfig as any)?.whatsapp_numero as string | undefined)?.trim() || "";
+  const waDigitos = waCrudo.replace(/\D/g, "");
+  const waNumeroTexto = formatearNumeroWa(waDigitos, waCrudo);
 
   const handleLogout = () => {
     clearSession();
