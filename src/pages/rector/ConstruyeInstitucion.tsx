@@ -11,13 +11,14 @@ import { getSession } from "@/hooks/useSession";
 import EscudoColegio from "@/components/EscudoColegio";
 import { supabase } from "@/integrations/supabase/client";
 import EstructuraColegioEditor from "@/components/EstructuraColegioEditor";
-import { Building, Image as ImageIcon, ArrowLeft, BookOpen, CalendarDays, FileText, ExternalLink, Pencil, Trash2, Users } from "lucide-react";
+import { Building, Image as ImageIcon, ArrowLeft, BookOpen, CalendarDays, FileText, ExternalLink, Pencil, Trash2, Users, MessageCircle } from "lucide-react";
 import { useRef } from "react";
 import EscalaColegioEditor from "@/components/EscalaColegioEditor";
 import CalendarioColegioEditor from "@/components/CalendarioColegioEditor";
 import AsignaturasColegioEditor from "@/components/AsignaturasColegioEditor";
 import AreasColegioEditor from "@/components/AreasColegioEditor";
 import PersonasColegioEditor from "@/components/PersonasColegioEditor";
+import ChatwootColegioEditor from "@/components/ChatwootColegioEditor";
 import ArmarSalon from "@/components/ArmarSalon";
 
 /**
@@ -111,8 +112,8 @@ const ConstruyeInstitucion = () => {
   // La vista y el rol elegido (dentro de Personas) viven en la URL para que un
   // F5 no devuelva al menú. PUSH (no replace) → el botón atrás baja un nivel.
   const [searchParams, setSearchParams] = useSearchParams();
-  type VistaCI = 'menu' | 'info' | 'escudo' | 'escala' | 'estructura' | 'asignaturas' | 'calendario' | 'manual' | 'personas' | 'armar-salon';
-  const VISTAS: VistaCI[] = ['menu', 'info', 'escudo', 'escala', 'estructura', 'asignaturas', 'calendario', 'manual', 'personas', 'armar-salon'];
+  type VistaCI = 'menu' | 'info' | 'escudo' | 'escala' | 'estructura' | 'asignaturas' | 'calendario' | 'manual' | 'personas' | 'armar-salon' | 'chatwoot';
+  const VISTAS: VistaCI[] = ['menu', 'info', 'escudo', 'escala', 'estructura', 'asignaturas', 'calendario', 'manual', 'personas', 'armar-salon', 'chatwoot'];
   const vistaUrl = searchParams.get('vista') as VistaCI | null;
   // El profesor (director de grupo) solo tiene Personas y Armar salón — también por URL.
   const vistaValida = (v: VistaCI) => VISTAS.includes(v) && (cargo !== "Profesor(a)" || v === 'personas' || v === 'armar-salon');
@@ -221,7 +222,7 @@ const ConstruyeInstitucion = () => {
               {vista === "personas" && rolPersonas ? (
                 <button onClick={() => setRolPersonas(null)} className="text-primary hover:underline">Personas</button>
               ) : (
-                <span className="text-foreground font-medium">{({ info: "Información del colegio", escudo: "Escudo", escala: "Escala de calificación", estructura: "Jornadas, grados y salones", asignaturas: "Asignaturas", calendario: "Calendario", manual: "Manual de Convivencia", personas: "Personas", "armar-salon": "Armar salón" } as Record<string, string>)[vista]}</span>
+                <span className="text-foreground font-medium">{({ info: "Información del colegio", escudo: "Escudo", escala: "Escala de calificación", estructura: "Jornadas, grados y salones", asignaturas: "Asignaturas", calendario: "Calendario", manual: "Manual de Convivencia", personas: "Personas", "armar-salon": "Armar salón", chatwoot: "Bandeja de conversaciones" } as Record<string, string>)[vista]}</span>
               )}
               {vista === "personas" && rolPersonas && (<>
                 <span className="text-muted-foreground">&rarr;</span>
@@ -249,8 +250,9 @@ const ConstruyeInstitucion = () => {
               { id: "manual", label: "Manual de Convivencia", desc: cfgColegio.manual_url ? "PDF cargado" : "Sube el PDF (opcional)", Icon: FileText },
               { id: "personas", label: "Personas", desc: "Administradores, rectores, profesores, estudiantes…", Icon: GraduationCap },
               { id: "armar-salon", label: "Armar salón", desc: "Arma cada salón de forma visual: director(a) y estudiantes", Icon: Users },
+              { id: "chatwoot", label: "Bandeja de conversaciones", desc: "Correo y contraseña para ver los chats en chat.notasnormi.com", Icon: MessageCircle },
               // El profesor director de grupo solo gestiona Personas y su salón.
-            ].filter((f) => cargo !== "Profesor(a)" || f.id === "personas" || f.id === "armar-salon").map((f) => (
+            ].filter((f) => (cargo !== "Profesor(a)" || f.id === "personas" || f.id === "armar-salon") && (f.id !== "chatwoot" || cargo === "Administrador")).map((f) => (
               <button key={f.id} onClick={() => setVista(f.id as typeof vista)}
                 className="flex items-start gap-4 p-6 rounded-lg border text-left transition-colors bg-card hover:bg-muted cursor-pointer">
                 <f.Icon className="h-8 w-8 text-primary shrink-0" />
@@ -338,6 +340,7 @@ const ConstruyeInstitucion = () => {
               </div>
             )}
             {vista === "personas" && <PersonasColegioEditor rol={rolPersonas} setRol={setRolPersonas} />}
+            {vista === "chatwoot" && <ChatwootColegioEditor />}
           </div>
         )}
       </main>

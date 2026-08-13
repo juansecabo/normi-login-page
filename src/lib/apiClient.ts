@@ -709,6 +709,18 @@ export const apiClient = {
       const q = colegioId ? `?colegio_id=${encodeURIComponent(colegioId)}` : '';
       return request(`/api/institucion/manual${q}`, { method: 'DELETE' });
     },
+    /** Estado de la bandeja de Chatwoot del colegio (si tiene login y con qué correo). */
+    getChatwoot(colegioId?: string): Promise<{ provisionado: boolean; email: string | null }> {
+      const q = colegioId ? `?colegio_id=${encodeURIComponent(colegioId)}` : '';
+      return request(`/api/institucion/chatwoot${q}`);
+    },
+    /** Fija/actualiza correo (+ opcional contraseña) de la bandeja. Password vacío = no cambiar. */
+    setChatwoot(email: string, password?: string, colegioId?: string): Promise<{ ok: true; email: string; creado: boolean }> {
+      return request('/api/institucion/chatwoot', {
+        method: 'POST',
+        body: JSON.stringify({ email, ...(password ? { password } : {}), ...(colegioId ? { colegio_id: colegioId } : {}) }),
+      });
+    },
   },
 
   gruposNotas: {
