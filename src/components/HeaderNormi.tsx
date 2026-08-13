@@ -110,41 +110,25 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
       <header className="shadow-md">
         <div className="bg-primary text-primary-foreground py-2 md:py-3 px-3 md:px-4">
           <div className="container mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-2 md:gap-4 min-w-0">
-              <Link to={finalBackLink} className="flex items-center gap-2 md:gap-3 hover:opacity-80 transition-opacity cursor-pointer">
-                {esPlataforma ? (
-                  <img
-                    src="/cailico-logo.webp"
-                    alt="Cailico"
-                    className="h-10 w-10 md:h-14 md:w-14 rounded-full object-contain bg-white shrink-0"
-                  />
-                ) : (
-                  <>
-                    <div className="hidden md:block">
-                      <EscudoColegio logoUrl={colegioLogoUrl} nombre={colegioNombre} size={56} />
-                    </div>
-                    <div className="md:hidden">
-                      <EscudoColegio logoUrl={colegioLogoUrl} nombre={colegioNombre} size={40} />
-                    </div>
-                  </>
-                )}
-                <h1 className="text-base md:text-xl font-bold whitespace-nowrap">Notas Normi</h1>
-              </Link>
-              {!esPlataforma && waDigitos && (
-                <a
-                  href={`https://wa.me/${waDigitos}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title={`Escríbele a Normi por WhatsApp${waNumeroTexto ? `: ${waNumeroTexto}` : ""}`}
-                  className="flex items-center gap-1.5 px-2 py-1.5 sm:px-2.5 rounded-lg bg-primary-foreground/15 hover:bg-primary-foreground/25 text-primary-foreground transition-colors text-xs md:text-sm whitespace-nowrap shrink-0"
-                >
-                  <MessageCircle className="w-4 h-4 shrink-0" />
-                  {/* Móvil: solo "WhatsApp" (botón compacto). Escritorio: con el número. */}
-                  <span className="font-medium">WhatsApp</span>
-                  <span className="hidden md:inline">: {waNumeroTexto}</span>
-                </a>
+            <Link to={finalBackLink} className="flex items-center gap-2 md:gap-3 hover:opacity-80 transition-opacity cursor-pointer">
+              {esPlataforma ? (
+                <img
+                  src="/cailico-logo.webp"
+                  alt="Cailico"
+                  className="h-10 w-10 md:h-14 md:w-14 rounded-full object-contain bg-white shrink-0"
+                />
+              ) : (
+                <>
+                  <div className="hidden md:block">
+                    <EscudoColegio logoUrl={colegioLogoUrl} nombre={colegioNombre} size={56} />
+                  </div>
+                  <div className="md:hidden">
+                    <EscudoColegio logoUrl={colegioLogoUrl} nombre={colegioNombre} size={40} />
+                  </div>
+                </>
               )}
-            </div>
+              <h1 className="text-base md:text-xl font-bold whitespace-nowrap">Notas Normi</h1>
+            </Link>
             <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
               {canInstall && (
                 <button
@@ -176,6 +160,18 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
                   <Repeat className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                   <span className="hidden sm:inline">Cambiar perfil</span>
                 </button>
+              )}
+              {!esPlataforma && waDigitos && (
+                <a
+                  href={`https://wa.me/${waDigitos}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={`Escríbele a Normi por WhatsApp${waNumeroTexto ? `: ${waNumeroTexto}` : ""}`}
+                  className="p-2 sm:px-3 sm:py-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground font-medium rounded-lg transition-all duration-200 text-sm flex items-center gap-1.5 whitespace-nowrap"
+                >
+                  <MessageCircle className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                  <span className="hidden sm:inline">WhatsApp</span>
+                </a>
               )}
               <button
                 onClick={() => setShowCambiarContrasena(true)}
