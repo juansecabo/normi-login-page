@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Download, Repeat, KeyRound, LogOut, MessageCircle, Menu, ChevronDown } from "lucide-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -44,6 +44,12 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
   const { toast } = useToast();
   const [showCambiarContrasena, setShowCambiarContrasena] = useState(false);
   const [switching, setSwitching] = useState(false);
+  // El menú cae justo debajo de la barra: medimos la distancia real entre el
+  // botón y el borde inferior de la barra para que quede pegado, sin importar
+  // el tamaño del escudo.
+  const barRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [menuOffset, setMenuOffset] = useState(8);
   const { canInstall, installApp } = useInstallPrompt();
   const { nombre: colegioNombre, logoUrl: colegioLogoUrl, config: colegioConfig } = useColegioConfig();
 
@@ -109,7 +115,7 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
   return (
     <>
       <header className="shadow-md">
-        <div className="bg-primary text-primary-foreground py-2 md:py-3 px-3 md:px-4">
+        <div ref={barRef} className="bg-primary text-primary-foreground py-2 md:py-3 px-3 md:px-4">
           <div className="container mx-auto flex items-center justify-between">
             <Link to={finalBackLink} className="flex items-center gap-2 md:gap-3 hover:opacity-80 transition-opacity cursor-pointer">
               {esPlataforma ? (
@@ -132,9 +138,18 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
             </Link>
             {/* Todas las acciones viven en un menú desplegable (mismo en PC y
                 celular), en el mismo orden, con el texto completo. */}
-            <DropdownMenu>
+            <DropdownMenu
+              modal={false}
+              onOpenChange={(open) => {
+                if (open && barRef.current && triggerRef.current) {
+                  const d = barRef.current.getBoundingClientRect().bottom - triggerRef.current.getBoundingClientRect().bottom;
+                  setMenuOffset(Math.max(0, Math.round(d)));
+                }
+              }}
+            >
               <DropdownMenuTrigger asChild>
                 <button
+                  ref={triggerRef}
                   title="Menú"
                   className="px-3 py-2 md:px-5 md:py-2.5 md:text-base bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground font-medium rounded-lg transition-all duration-200 text-sm flex items-center gap-1.5 md:gap-2 whitespace-nowrap flex-shrink-0 outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0"
                 >
@@ -143,39 +158,33 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
                   <ChevronDown className="w-4 h-4 opacity-70" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                sideOffset={0}
-                alignOffset={-16}
-                collisionPadding={0}
-                className="w-72 rounded-none border border-emerald-200 bg-emerald-50 text-emerald-950 shadow-lg"
-              >
+              <DropdownMenuContent align="end" sideOffset={menuOffset} className="w-72 rounded-xl shadow-xl">
                 {canInstall && (
-                  <DropdownMenuItem onClick={installApp} className="gap-2 cursor-pointer whitespace-nowrap focus:bg-emerald-100">
+                  <DropdownMenuItem onClick={installApp} className="gap-2 cursor-pointer whitespace-nowrap py-2.5">
                     <Download className="w-4 h-4" /> Descargar App
                   </DropdownMenuItem>
                 )}
                 {enImpersonacion && (
-                  <DropdownMenuItem onClick={handleVolverPlataforma} className="gap-2 cursor-pointer whitespace-nowrap focus:bg-emerald-100">
+                  <DropdownMenuItem onClick={handleVolverPlataforma} className="gap-2 cursor-pointer whitespace-nowrap py-2.5">
                     <Repeat className="w-4 h-4" /> Cambiar institución
                   </DropdownMenuItem>
                 )}
                 {!enImpersonacion && getSession().multi_membership && (
-                  <DropdownMenuItem onClick={handleSwitchProfile} disabled={switching} className="gap-2 cursor-pointer whitespace-nowrap focus:bg-emerald-100">
+                  <DropdownMenuItem onClick={handleSwitchProfile} disabled={switching} className="gap-2 cursor-pointer whitespace-nowrap py-2.5">
                     <Repeat className="w-4 h-4" /> Cambiar perfil
                   </DropdownMenuItem>
                 )}
                 {!esPlataforma && waDigitos && (
-                  <DropdownMenuItem asChild className="gap-2 cursor-pointer whitespace-nowrap focus:bg-emerald-100">
+                  <DropdownMenuItem asChild className="gap-2 cursor-pointer whitespace-nowrap py-2.5">
                     <a href={`https://wa.me/${waDigitos}`} target="_blank" rel="noopener noreferrer">
                       <MessageCircle className="w-4 h-4 shrink-0" /> WhatsApp{waNumeroTexto ? `: ${waNumeroTexto}` : ""}
                     </a>
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={() => setShowCambiarContrasena(true)} className="gap-2 cursor-pointer whitespace-nowrap focus:bg-emerald-100">
+                <DropdownMenuItem onClick={() => setShowCambiarContrasena(true)} className="gap-2 cursor-pointer whitespace-nowrap py-2.5">
                   <KeyRound className="w-4 h-4" /> {((getSession() as any).sin_contrasena) ? "Crear contraseña" : "Cambiar contraseña"}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleLogout} className="gap-2 cursor-pointer whitespace-nowrap text-destructive focus:text-destructive focus:bg-red-50">
+                <DropdownMenuItem onClick={handleLogout} className="gap-2 cursor-pointer whitespace-nowrap py-2.5 text-destructive focus:text-destructive">
                   <LogOut className="w-4 h-4" /> Cerrar sesión
                 </DropdownMenuItem>
               </DropdownMenuContent>
