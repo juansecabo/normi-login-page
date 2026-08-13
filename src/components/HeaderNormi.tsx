@@ -170,8 +170,8 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
                   className="p-2 sm:px-3 sm:py-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground font-medium rounded-lg transition-all duration-200 text-sm flex items-center gap-1.5 whitespace-nowrap"
                 >
                   <MessageCircle className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-                  <span>WhatsApp</span>
-                  {/* En PC (md+) se muestra también el número; en celular solo "WhatsApp". */}
+                  {/* En PC (md+) se muestra "WhatsApp: <número>"; en celular solo "WhatsApp". */}
+                  <span>WhatsApp{waNumeroTexto && <span className="hidden md:inline">:</span>}</span>
                   {waNumeroTexto && <span className="hidden md:inline">{waNumeroTexto}</span>}
                 </a>
               )}
