@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Download, Repeat, KeyRound, LogOut } from "lucide-react";
+import { Download, Repeat, KeyRound, LogOut, MessageCircle } from "lucide-react";
 import { clearSession, getSession, haySesionSuperAdminRespaldada, restaurarSesionSuperAdmin } from "@/hooks/useSession";
 import { useColegioConfig } from "@/hooks/useColegioConfig";
 import EscudoColegio from "@/components/EscudoColegio";
@@ -31,13 +31,18 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
   const [showCambiarContrasena, setShowCambiarContrasena] = useState(false);
   const [switching, setSwitching] = useState(false);
   const { canInstall, installApp } = useInstallPrompt();
-  const { nombre: colegioNombre, logoUrl: colegioLogoUrl } = useColegioConfig();
+  const { nombre: colegioNombre, logoUrl: colegioLogoUrl, config: colegioConfig } = useColegioConfig();
 
   const finalBackLink = backLink || computeBackLinkFromSession();
   const enImpersonacion = haySesionSuperAdminRespaldada();
   // Perfil de la plataforma (SuperAdmin sin estar dentro de un colegio):
   // mostramos el logo de Cailico en vez del escudo de un colegio.
   const esPlataforma = getSession().cargo === "SuperAdmin" && !enImpersonacion;
+
+  // Número de WhatsApp de Normi de ESTE colegio (viene de la config, sin el token).
+  // El texto se muestra tal cual; el enlace wa.me usa solo los dígitos.
+  const waNumeroTexto = ((colegioConfig as any)?.whatsapp_numero as string | undefined)?.trim() || "";
+  const waDigitos = waNumeroTexto.replace(/\D/g, "");
 
   const handleLogout = () => {
     clearSession();
@@ -90,25 +95,39 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
       <header className="shadow-md">
         <div className="bg-primary text-primary-foreground py-2 md:py-3 px-3 md:px-4">
           <div className="container mx-auto flex items-center justify-between">
-            <Link to={finalBackLink} className="flex items-center gap-2 md:gap-3 hover:opacity-80 transition-opacity cursor-pointer">
-              {esPlataforma ? (
-                <img
-                  src="/cailico-logo.webp"
-                  alt="Cailico"
-                  className="h-10 w-10 md:h-14 md:w-14 rounded-full object-contain bg-white shrink-0"
-                />
-              ) : (
-                <>
-                  <div className="hidden md:block">
-                    <EscudoColegio logoUrl={colegioLogoUrl} nombre={colegioNombre} size={56} />
-                  </div>
-                  <div className="md:hidden">
-                    <EscudoColegio logoUrl={colegioLogoUrl} nombre={colegioNombre} size={40} />
-                  </div>
-                </>
+            <div className="flex items-center gap-2 md:gap-4 min-w-0">
+              <Link to={finalBackLink} className="flex items-center gap-2 md:gap-3 hover:opacity-80 transition-opacity cursor-pointer">
+                {esPlataforma ? (
+                  <img
+                    src="/cailico-logo.webp"
+                    alt="Cailico"
+                    className="h-10 w-10 md:h-14 md:w-14 rounded-full object-contain bg-white shrink-0"
+                  />
+                ) : (
+                  <>
+                    <div className="hidden md:block">
+                      <EscudoColegio logoUrl={colegioLogoUrl} nombre={colegioNombre} size={56} />
+                    </div>
+                    <div className="md:hidden">
+                      <EscudoColegio logoUrl={colegioLogoUrl} nombre={colegioNombre} size={40} />
+                    </div>
+                  </>
+                )}
+                <h1 className="text-base md:text-xl font-bold whitespace-nowrap">Notas Normi</h1>
+              </Link>
+              {!esPlataforma && waNumeroTexto && (
+                <a
+                  href={`https://wa.me/${waDigitos}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Escríbele a Normi por WhatsApp"
+                  className="flex items-center gap-1.5 text-primary-foreground/90 hover:text-primary-foreground transition-colors text-xs md:text-sm whitespace-nowrap"
+                >
+                  <MessageCircle className="w-4 h-4 shrink-0" />
+                  <span><span className="font-medium">WhatsApp:</span> {waNumeroTexto}</span>
+                </a>
               )}
-              <h1 className="text-base md:text-xl font-bold whitespace-nowrap">Notas Normi</h1>
-            </Link>
+            </div>
             <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
               {canInstall && (
                 <button
