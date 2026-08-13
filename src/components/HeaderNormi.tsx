@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Download, Repeat, KeyRound, LogOut, MessageCircle } from "lucide-react";
+import { Download, Repeat, KeyRound, LogOut, MessageCircle, Menu, ChevronDown } from "lucide-react";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { clearSession, getSession, haySesionSuperAdminRespaldada, restaurarSesionSuperAdmin } from "@/hooks/useSession";
 import { useColegioConfig } from "@/hooks/useColegioConfig";
 import EscudoColegio from "@/components/EscudoColegio";
@@ -129,69 +130,50 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
               )}
               <h1 className="text-base md:text-xl font-bold whitespace-nowrap">Notas Normi</h1>
             </Link>
-            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-              {canInstall && (
+            {/* Todas las acciones viven en un menú desplegable (mismo en PC y
+                celular), en el mismo orden, con el texto completo. */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <button
-                  onClick={installApp}
-                  title="Descargar App"
-                  className="p-2 sm:px-3 sm:py-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground font-medium rounded-lg transition-all duration-200 text-sm flex items-center gap-1.5 whitespace-nowrap"
+                  title="Menú"
+                  className="px-3 py-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground font-medium rounded-lg transition-all duration-200 text-sm flex items-center gap-1.5 whitespace-nowrap flex-shrink-0"
                 >
-                  <Download className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-                  <span className="hidden sm:inline">Descargar App</span>
+                  <Menu className="w-4 h-4" />
+                  <span>Menú</span>
+                  <ChevronDown className="w-4 h-4 opacity-70" />
                 </button>
-              )}
-              {enImpersonacion && (
-                <button
-                  onClick={handleVolverPlataforma}
-                  title="Cambiar institución"
-                  className="p-2 sm:px-3 sm:py-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground font-medium rounded-lg transition-all duration-200 text-sm flex items-center gap-1.5 whitespace-nowrap"
-                >
-                  <Repeat className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-                  <span className="hidden sm:inline">Cambiar institución</span>
-                </button>
-              )}
-              {!enImpersonacion && getSession().multi_membership && (
-                <button
-                  onClick={handleSwitchProfile}
-                  disabled={switching}
-                  title="Cambiar perfil"
-                  className="p-2 sm:px-3 sm:py-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground font-medium rounded-lg transition-all duration-200 text-sm flex items-center gap-1.5 whitespace-nowrap disabled:opacity-50"
-                >
-                  <Repeat className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-                  <span className="hidden sm:inline">Cambiar perfil</span>
-                </button>
-              )}
-              {!esPlataforma && waDigitos && (
-                <a
-                  href={`https://wa.me/${waDigitos}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title={`Escríbele a Normi por WhatsApp${waNumeroTexto ? `: ${waNumeroTexto}` : ""}`}
-                  className="p-2 sm:px-3 sm:py-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground font-medium rounded-lg transition-all duration-200 text-sm flex items-center gap-1.5 whitespace-nowrap"
-                >
-                  <MessageCircle className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-                  {/* En PC (md+) se muestra "WhatsApp: <número>"; en celular solo "WhatsApp". */}
-                  <span>WhatsApp{waNumeroTexto && <span className="hidden md:inline">:</span>}</span>
-                  {waNumeroTexto && <span className="hidden md:inline">{waNumeroTexto}</span>}
-                </a>
-              )}
-              <button
-                onClick={() => setShowCambiarContrasena(true)}
-                title={((getSession() as any).sin_contrasena) ? "Crear contraseña" : "Cambiar contraseña"}
-                className="p-2 sm:px-3 sm:py-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground font-medium rounded-lg transition-all duration-200 text-sm flex items-center gap-1.5 whitespace-nowrap"
-              >
-                <KeyRound className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-                <span className="hidden sm:inline">{((getSession() as any).sin_contrasena) ? "Crear contraseña" : "Cambiar contraseña"}</span>
-              </button>
-              <button
-                onClick={handleLogout}
-                title="Cerrar sesión"
-                className="p-2 sm:px-3 sm:py-2 bg-background text-foreground hover:bg-background/90 font-medium rounded-lg transition-all duration-200 text-sm flex items-center gap-1.5 whitespace-nowrap"
-              >
-                <LogOut className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-                <span className="hidden sm:inline">Cerrar sesión</span>
-              </button>
-            </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-60">
+                {canInstall && (
+                  <DropdownMenuItem onClick={installApp} className="gap-2 cursor-pointer">
+                    <Download className="w-4 h-4" /> Descargar App
+                  </DropdownMenuItem>
+                )}
+                {enImpersonacion && (
+                  <DropdownMenuItem onClick={handleVolverPlataforma} className="gap-2 cursor-pointer">
+                    <Repeat className="w-4 h-4" /> Cambiar institución
+                  </DropdownMenuItem>
+                )}
+                {!enImpersonacion && getSession().multi_membership && (
+                  <DropdownMenuItem onClick={handleSwitchProfile} disabled={switching} className="gap-2 cursor-pointer">
+                    <Repeat className="w-4 h-4" /> Cambiar perfil
+                  </DropdownMenuItem>
+                )}
+                {!esPlataforma && waDigitos && (
+                  <DropdownMenuItem asChild className="gap-2 cursor-pointer">
+                    <a href={`https://wa.me/${waDigitos}`} target="_blank" rel="noopener noreferrer">
+                      <MessageCircle className="w-4 h-4" /> WhatsApp{waNumeroTexto ? `: ${waNumeroTexto}` : ""}
+                    </a>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => setShowCambiarContrasena(true)} className="gap-2 cursor-pointer">
+                  <KeyRound className="w-4 h-4" /> {((getSession() as any).sin_contrasena) ? "Crear contraseña" : "Cambiar contraseña"}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout} className="gap-2 cursor-pointer text-destructive focus:text-destructive">
+                  <LogOut className="w-4 h-4" /> Cerrar sesión
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
         <UpdateBanner />
