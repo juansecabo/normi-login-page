@@ -171,6 +171,8 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
                 >
                   <MessageCircle className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                   <span>WhatsApp</span>
+                  {/* En PC (md+) se muestra también el número; en celular solo "WhatsApp". */}
+                  {waNumeroTexto && <span className="hidden md:inline">{waNumeroTexto}</span>}
                 </a>
               )}
               <button
