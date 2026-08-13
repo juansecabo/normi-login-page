@@ -17,7 +17,7 @@ type Numero = { id: string; display_phone_number: string; verified_name?: string
 
 const WhatsAppColegioEditor = ({ colegioId }: { colegioId?: string }) => {
   const [cargando, setCargando] = useState(true);
-  const [estado, setEstado] = useState<{ configurado: boolean; numero: string | null; template_name: string | null; language_code: string | null } | null>(null);
+  const [estado, setEstado] = useState<{ configurado: boolean; numero: string | null; waba_id: string | null; phone_number_id: string | null; template_name: string | null; language_code: string | null } | null>(null);
 
   const [wabaId, setWabaId] = useState("");
   const [token, setToken] = useState("");
@@ -31,12 +31,17 @@ const WhatsAppColegioEditor = ({ colegioId }: { colegioId?: string }) => {
   const [guardando, setGuardando] = useState(false);
   const [ok, setOk] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Anti-autocompletado del navegador: los campos arrancan de solo-lectura y se
+  // desbloquean al primer clic, así Chrome no puede rellenarlos al cargar.
+  const [editable, setEditable] = useState(false);
+  const desbloquear = () => setEditable(true);
 
   const cargar = async () => {
     setCargando(true);
     try {
       const r = await apiClient.institucion.getWhatsapp(colegioId);
       setEstado(r);
+      if (r.waba_id) setWabaId(r.waba_id); // no es secreto: se precarga por comodidad
       if (r.template_name) setTemplateName(r.template_name);
       if (r.language_code) setLanguageCode(r.language_code);
     } catch {
@@ -99,22 +104,27 @@ const WhatsAppColegioEditor = ({ colegioId }: { colegioId?: string }) => {
           <div className="py-6 text-center text-muted-foreground"><Loader2 className="w-5 h-5 animate-spin mx-auto" /></div>
         ) : (
           <>
-            <div className="text-xs">
-              {estado?.configurado
-                ? <span className="inline-flex items-center gap-1 text-emerald-600"><CheckCircle2 className="h-3.5 w-3.5" /> Configurado{estado.numero ? ` · ${estado.numero}` : ""}</span>
-                : <span className="inline-flex items-center gap-1 text-amber-600"><AlertCircle className="h-3.5 w-3.5" /> Sin número configurado</span>}
-            </div>
+            {estado?.configurado ? (
+              <div className="rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs px-3 py-2 space-y-0.5">
+                <div className="flex items-center gap-1 font-medium"><CheckCircle2 className="h-3.5 w-3.5" /> Configurado actualmente</div>
+                {estado.numero && <div>Número: <span className="font-semibold">{estado.numero}</span></div>}
+                {estado.waba_id && <div>WABA: <span className="font-mono">{estado.waba_id}</span></div>}
+                <div className="text-emerald-700/80">Token: guardado y oculto por seguridad · déjalo vacío si no lo vas a cambiar.</div>
+              </div>
+            ) : (
+              <div className="text-xs"><span className="inline-flex items-center gap-1 text-amber-600"><AlertCircle className="h-3.5 w-3.5" /> Sin número configurado</span></div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-sm font-medium block mb-1">Id de la WABA</label>
-                <Input value={wabaId} onChange={(e) => setWabaId(e.target.value)} placeholder="Ej: 1845618089735128" autoComplete="off" />
+                <Input value={wabaId} onChange={(e) => setWabaId(e.target.value)} placeholder="Ej: 1845618089735128" autoComplete="off" readOnly={!editable} onFocus={desbloquear} />
               </div>
               <div>
                 <label className="text-sm font-medium block mb-1">Token de la WABA</label>
                 <div className="relative">
                   <Input type={verToken ? "text" : "password"} value={token} onChange={(e) => setToken(e.target.value)}
-                    placeholder="Token permanente de Meta" autoComplete="off" className="pr-10" />
+                    placeholder="Token permanente de Meta" autoComplete="new-password" readOnly={!editable} onFocus={desbloquear} className="pr-10" />
                   <button type="button" onClick={() => setVerToken((v) => !v)} tabIndex={-1}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                     {verToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}

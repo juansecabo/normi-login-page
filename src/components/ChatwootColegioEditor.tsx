@@ -22,6 +22,9 @@ const ChatwootColegioEditor = ({ colegioId }: { colegioId?: string }) => {
   const [verPass, setVerPass] = useState(false);
   const [ok, setOk] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Anti-autocompletado del navegador (arrancan de solo-lectura, se desbloquean al hacer clic).
+  const [editable, setEditable] = useState(false);
+  const desbloquear = () => setEditable(true);
 
   const cargar = async () => {
     setCargando(true);
@@ -86,7 +89,7 @@ const ChatwootColegioEditor = ({ colegioId }: { colegioId?: string }) => {
 
             <div>
               <label className="text-sm font-medium block mb-1">Correo de ingreso</label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="correo@colegio.edu.co" autoComplete="off" />
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="correo@colegio.edu.co" autoComplete="off" readOnly={!editable} onFocus={desbloquear} />
             </div>
 
             <div>
@@ -95,7 +98,7 @@ const ChatwootColegioEditor = ({ colegioId }: { colegioId?: string }) => {
               </label>
               <div className="relative">
                 <Input type={verPass ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)}
-                  placeholder={provisionado ? "••••••••" : "Mínimo 6 caracteres"} autoComplete="new-password" className="pr-10" />
+                  placeholder={provisionado ? "••••••••" : "Mínimo 6 caracteres"} autoComplete="new-password" readOnly={!editable} onFocus={desbloquear} className="pr-10" />
                 <button type="button" onClick={() => setVerPass((v) => !v)} tabIndex={-1}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                   {verPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
