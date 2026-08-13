@@ -721,6 +721,19 @@ export const apiClient = {
         body: JSON.stringify({ email, ...(password ? { password } : {}), ...(colegioId ? { colegio_id: colegioId } : {}) }),
       });
     },
+    /** Estado del número de WhatsApp del Agente para el colegio. */
+    getWhatsapp(colegioId?: string): Promise<{ configurado: boolean; numero: string | null; phone_number_id: string | null; waba_id: string | null; template_name: string | null; language_code: string | null }> {
+      const q = colegioId ? `?colegio_id=${encodeURIComponent(colegioId)}` : '';
+      return request(`/api/institucion/whatsapp${q}`);
+    },
+    /** Paso 1: lista los números de una WABA (valida token contra Meta). */
+    listarNumerosWaba(waba_id: string, token: string): Promise<{ numeros: { id: string; display_phone_number: string; verified_name?: string; code_verification_status?: string }[] }> {
+      return request('/api/institucion/whatsapp/numeros', { method: 'POST', body: JSON.stringify({ waba_id, token }) });
+    },
+    /** Paso 2: valida contra Meta, suscribe la app y guarda. */
+    setWhatsapp(data: { waba_id: string; token: string; phone_number_id: string; template_name?: string; language_code?: string }, colegioId?: string): Promise<{ ok: true; numero: string; phone_number_id: string }> {
+      return request('/api/institucion/whatsapp', { method: 'POST', body: JSON.stringify({ ...data, ...(colegioId ? { colegio_id: colegioId } : {}) }) });
+    },
   },
 
   gruposNotas: {
