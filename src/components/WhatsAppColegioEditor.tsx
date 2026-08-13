@@ -24,8 +24,6 @@ const WhatsAppColegioEditor = ({ colegioId }: { colegioId?: string }) => {
   const [verToken, setVerToken] = useState(false);
   const [numeros, setNumeros] = useState<Numero[] | null>(null);
   const [elegido, setElegido] = useState<string>("");
-  const [templateName, setTemplateName] = useState("notificacion_academica");
-  const [languageCode, setLanguageCode] = useState("es_CO");
 
   const [buscando, setBuscando] = useState(false);
   const [guardando, setGuardando] = useState(false);
@@ -42,8 +40,6 @@ const WhatsAppColegioEditor = ({ colegioId }: { colegioId?: string }) => {
       const r = await apiClient.institucion.getWhatsapp(colegioId);
       setEstado(r);
       if (r.waba_id) setWabaId(r.waba_id); // no es secreto: se precarga por comodidad
-      if (r.template_name) setTemplateName(r.template_name);
-      if (r.language_code) setLanguageCode(r.language_code);
     } catch {
       setError("No se pudo cargar el estado del número.");
     } finally {
@@ -74,7 +70,7 @@ const WhatsAppColegioEditor = ({ colegioId }: { colegioId?: string }) => {
     setGuardando(true);
     try {
       const r = await apiClient.institucion.setWhatsapp(
-        { waba_id: wabaId.trim(), token: token.trim(), phone_number_id: elegido, template_name: templateName.trim() || undefined, language_code: languageCode.trim() || undefined },
+        { waba_id: wabaId.trim(), token: token.trim(), phone_number_id: elegido },
         colegioId,
       );
       setOk(`Número configurado: ${r.numero}. El Agente ya responde y envía por ese WhatsApp.`);
@@ -151,17 +147,6 @@ const WhatsAppColegioEditor = ({ colegioId }: { colegioId?: string }) => {
                     </label>
                   ))}
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                  <div>
-                    <label className="text-sm font-medium block mb-1">Plantilla (avisos fuera de horario)</label>
-                    <Input value={templateName} onChange={(e) => setTemplateName(e.target.value)} placeholder="notificacion_academica" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium block mb-1">Idioma de la plantilla</label>
-                    <Input value={languageCode} onChange={(e) => setLanguageCode(e.target.value)} placeholder="es_CO" />
-                  </div>
-                </div>
-                <p className="text-[11px] text-muted-foreground">La plantilla y el idioma deben coincidir con lo aprobado en Meta.</p>
               </div>
             )}
 
