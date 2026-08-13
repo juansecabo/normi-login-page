@@ -33,7 +33,7 @@ function formatearNumeroWa(digitos: string, crudo: string): string {
   if (!digitos) return crudo;
   if (digitos.length === 12 && digitos.startsWith("57")) {
     const n = digitos.slice(2); // 10 dígitos nacionales
-    return `+57 ${n.slice(0, 3)} ${n.slice(3, 6)} ${n.slice(6)}`;
+    return `(+57) ${n.slice(0, 3)} ${n.slice(3, 6)} ${n.slice(6)}`;
   }
   return crudo.startsWith("+") ? crudo : `+${digitos}`;
 }
