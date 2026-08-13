@@ -459,6 +459,17 @@ export const apiClient = {
       return res;
     },
 
+    // Presentación pública (/demo): entra a un perfil del colegio de prueba.
+    async demoLoginAs(perfil: 'rector' | 'profesor' | 'estudiante' | 'acudiente'): Promise<FinalLoginResponse> {
+      const res = await request<FinalLoginResponse>('/api/demo/login', {
+        method: 'POST',
+        body: JSON.stringify({ perfil }),
+      });
+      setToken(res.token);
+      setTempToken(null);
+      return res;
+    },
+
     async selectColegio(colegio_id: string, rol?: string): Promise<FinalLoginResponse> {
       const res = await request<FinalLoginResponse>(
         '/auth/select-colegio',
