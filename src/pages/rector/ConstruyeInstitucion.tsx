@@ -251,8 +251,8 @@ const ConstruyeInstitucion = () => {
               { id: "manual", label: "Manual de Convivencia", desc: cfgColegio.manual_url ? "PDF cargado" : "Sube el PDF (opcional)", Icon: FileText },
               { id: "personas", label: "Personas", desc: "Administradores, rectores, profesores, estudiantes…", Icon: GraduationCap },
               { id: "armar-salon", label: "Armar salón", desc: "Arma cada salón de forma visual: director(a) y estudiantes", Icon: Users },
-              { id: "chatwoot", label: "Bandeja de conversaciones", desc: "Correo y contraseña para ver los chats en chat.notasnormi.com", Icon: MessageCircle },
               { id: "whatsapp", label: "Número de WhatsApp", desc: "El número por el que Normi responde y envía a este colegio", Icon: Phone },
+              { id: "chatwoot", label: "Bandeja de conversaciones", desc: "Correo y contraseña para ver los chats en chat.notasnormi.com", Icon: MessageCircle },
               // El profesor director de grupo solo gestiona Personas y su salón.
             ].filter((f) => (cargo !== "Profesor(a)" || f.id === "personas" || f.id === "armar-salon") && ((f.id !== "chatwoot" && f.id !== "whatsapp") || cargo === "Administrador")).map((f) => (
               <button key={f.id} onClick={() => setVista(f.id as typeof vista)}
