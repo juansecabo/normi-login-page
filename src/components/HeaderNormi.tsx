@@ -136,40 +136,46 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
               <DropdownMenuTrigger asChild>
                 <button
                   title="Menú"
-                  className="px-3 py-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground font-medium rounded-lg transition-all duration-200 text-sm flex items-center gap-1.5 whitespace-nowrap flex-shrink-0"
+                  className="px-3 py-2 md:px-5 md:py-2.5 md:text-base bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground font-medium rounded-lg transition-all duration-200 text-sm flex items-center gap-1.5 md:gap-2 whitespace-nowrap flex-shrink-0 outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0"
                 >
-                  <Menu className="w-4 h-4" />
+                  <Menu className="w-4 h-4 md:w-5 md:h-5" />
                   <span>Menú</span>
                   <ChevronDown className="w-4 h-4 opacity-70" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-60">
+              <DropdownMenuContent
+                align="end"
+                sideOffset={0}
+                alignOffset={-16}
+                collisionPadding={0}
+                className="w-72 rounded-none border border-emerald-200 bg-emerald-50 text-emerald-950 shadow-lg"
+              >
                 {canInstall && (
-                  <DropdownMenuItem onClick={installApp} className="gap-2 cursor-pointer">
+                  <DropdownMenuItem onClick={installApp} className="gap-2 cursor-pointer whitespace-nowrap focus:bg-emerald-100">
                     <Download className="w-4 h-4" /> Descargar App
                   </DropdownMenuItem>
                 )}
                 {enImpersonacion && (
-                  <DropdownMenuItem onClick={handleVolverPlataforma} className="gap-2 cursor-pointer">
+                  <DropdownMenuItem onClick={handleVolverPlataforma} className="gap-2 cursor-pointer whitespace-nowrap focus:bg-emerald-100">
                     <Repeat className="w-4 h-4" /> Cambiar institución
                   </DropdownMenuItem>
                 )}
                 {!enImpersonacion && getSession().multi_membership && (
-                  <DropdownMenuItem onClick={handleSwitchProfile} disabled={switching} className="gap-2 cursor-pointer">
+                  <DropdownMenuItem onClick={handleSwitchProfile} disabled={switching} className="gap-2 cursor-pointer whitespace-nowrap focus:bg-emerald-100">
                     <Repeat className="w-4 h-4" /> Cambiar perfil
                   </DropdownMenuItem>
                 )}
                 {!esPlataforma && waDigitos && (
-                  <DropdownMenuItem asChild className="gap-2 cursor-pointer">
+                  <DropdownMenuItem asChild className="gap-2 cursor-pointer whitespace-nowrap focus:bg-emerald-100">
                     <a href={`https://wa.me/${waDigitos}`} target="_blank" rel="noopener noreferrer">
-                      <MessageCircle className="w-4 h-4" /> WhatsApp{waNumeroTexto ? `: ${waNumeroTexto}` : ""}
+                      <MessageCircle className="w-4 h-4 shrink-0" /> WhatsApp{waNumeroTexto ? `: ${waNumeroTexto}` : ""}
                     </a>
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={() => setShowCambiarContrasena(true)} className="gap-2 cursor-pointer">
+                <DropdownMenuItem onClick={() => setShowCambiarContrasena(true)} className="gap-2 cursor-pointer whitespace-nowrap focus:bg-emerald-100">
                   <KeyRound className="w-4 h-4" /> {((getSession() as any).sin_contrasena) ? "Crear contraseña" : "Cambiar contraseña"}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleLogout} className="gap-2 cursor-pointer text-destructive focus:text-destructive">
+                <DropdownMenuItem onClick={handleLogout} className="gap-2 cursor-pointer whitespace-nowrap text-destructive focus:text-destructive focus:bg-red-50">
                   <LogOut className="w-4 h-4" /> Cerrar sesión
                 </DropdownMenuItem>
               </DropdownMenuContent>
