@@ -130,16 +130,18 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
                 )}
                 <h1 className="text-base md:text-xl font-bold whitespace-nowrap">Notas Normi</h1>
               </Link>
-              {!esPlataforma && waNumeroTexto && (
+              {!esPlataforma && waDigitos && (
                 <a
                   href={`https://wa.me/${waDigitos}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  title="Escríbele a Normi por WhatsApp"
-                  className="flex items-center gap-1.5 text-primary-foreground/90 hover:text-primary-foreground transition-colors text-xs md:text-sm whitespace-nowrap"
+                  title={`Escríbele a Normi por WhatsApp${waNumeroTexto ? `: ${waNumeroTexto}` : ""}`}
+                  className="flex items-center gap-1.5 px-2 py-1.5 sm:px-2.5 rounded-lg bg-primary-foreground/15 hover:bg-primary-foreground/25 text-primary-foreground transition-colors text-xs md:text-sm whitespace-nowrap shrink-0"
                 >
                   <MessageCircle className="w-4 h-4 shrink-0" />
-                  <span><span className="font-medium">WhatsApp:</span> {waNumeroTexto}</span>
+                  {/* Móvil: solo "WhatsApp" (botón compacto). Escritorio: con el número. */}
+                  <span className="font-medium">WhatsApp</span>
+                  <span className="hidden md:inline">: {waNumeroTexto}</span>
                 </a>
               )}
             </div>
