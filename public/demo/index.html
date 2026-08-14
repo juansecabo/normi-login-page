@@ -280,7 +280,7 @@ button{font-family:inherit}
 <section data-screen-label="10" style="position:absolute;inset:0;background:radial-gradient(85% 70% at 50% 102%,#1B6A41 0%,#0B2C1D 42%,#040F0A 100%);display:flex;flex-direction:column;justify-content:safe center;align-items:center;text-align:center;gap:clamp(16px,2.6vh,32px);padding:clamp(78px,10vh,108px) clamp(22px,6vw,110px) clamp(88px,11vh,112px);overflow-y:auto">
   <div style="font:600 clamp(10px,1vw,13px)/1 'JetBrains Mono',monospace;letter-spacing:.28em;text-transform:uppercase;color:#A3E635;animation:up .7s both">07 — La oportunidad para Bogotá</div>
   <h2 style="font:800 clamp(32px,6.4vw,90px)/.98 'Bricolage Grotesque',sans-serif;letter-spacing:-.04em;margin:0;color:#fff;max-width:20ch;text-wrap:balance;animation:pop 1s cubic-bezier(.22,.75,.2,1) both;animation-delay:.1s">El Distrito, <span style="color:#A3E635">por delante de los privados.</span></h2>
-  <p style="font:400 clamp(15px,1.6vw,23px)/1.55 'Instrument Sans',sans-serif;color:rgba(255,255,255,.82);max-width:56ch;margin:0;text-wrap:pretty;animation:up .9s both;animation-delay:.34s">Implementar Notas Normi en los colegios públicos de Bogotá los colocaría en una posición tecnológica <b style="color:#fff">por encima de la de muchos colegios privados</b>. Sería el primer sistema educativo público del país y de Latinoamérica con una inteligencia artificial atendiendo a cada familia.</p>
+  <p style="font:400 clamp(15px,1.6vw,23px)/1.55 'Instrument Sans',sans-serif;color:rgba(255,255,255,.82);max-width:56ch;margin:0;text-wrap:pretty;animation:up .9s both;animation-delay:.34s">Implementar Notas Normi en los colegios públicos de Bogotá los colocaría en una posición tecnológica <b style="color:#fff">por encima de la de los colegios privados</b>. Sería el primer sistema educativo público del país y de Latinoamérica con una inteligencia artificial atendiendo a cada familia.</p>
   <div style="font:800 clamp(20px,2.8vw,40px)/1.1 'Bricolage Grotesque',sans-serif;letter-spacing:-.02em;color:#A3E635;animation:up .9s both;animation-delay:.55s">Un salto, no un paso.</div>
 </section>
 </sc-if>
@@ -289,12 +289,14 @@ button{font-family:inherit}
 <section data-screen-label="11" style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:safe center;gap:clamp(10px,1.5vh,22px);padding:clamp(70px,8.5vh,98px) clamp(22px,5.5vw,90px) clamp(82px,10vh,102px);overflow-y:auto">
   <div style="font:600 clamp(10px,1vw,13px)/1 'JetBrains Mono',monospace;letter-spacing:.24em;text-transform:uppercase;color:#A3E635;animation:up .7s both">08 — Demo en vivo</div>
   <h2 style="font:800 clamp(26px,4.6vw,60px)/1.02 'Bricolage Grotesque',sans-serif;letter-spacing:-.03em;margin:0;color:#fff;animation:up .8s cubic-bezier(.22,.75,.2,1) both;animation-delay:.08s"><span style="color:#A3E635">Entra y pruébalo.</span></h2>
+  <div style="font:500 clamp(12px,1.15vw,16px)/1.4 'Instrument Sans',sans-serif;color:rgba(255,255,255,.72);animation:up .8s both;animation-delay:.16s">Ingresa en <span style="color:#A3E635;font-weight:700">notasnormi.com</span> con estos datos, o entra directo con un clic:</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:clamp(8px,1vw,14px)">
     <sc-for list="{{ perfiles }}" as="p" hint-placeholder-count="4">
       <div style="background:rgba(255,255,255,.05);border:1px solid rgba(163,230,53,.18);border-radius:18px;padding:clamp(12px,1.3vw,18px);display:flex;flex-direction:column;gap:8px;animation:up .7s cubic-bezier(.22,.75,.2,1) both">
         <div style="font:500 10px/1 'JetBrains Mono',monospace;letter-spacing:.18em;text-transform:uppercase;color:#A3E635">{{ p.rol }}</div>
         <div style="font:700 clamp(17px,1.7vw,24px)/1.15 'Bricolage Grotesque',sans-serif;color:#fff">{{ p.nombre }}</div>
         <div style="font:400 clamp(12.5px,1.05vw,14.5px)/1.45 'Instrument Sans',sans-serif;color:rgba(255,255,255,.58);margin-bottom:2px">{{ p.desc }}</div>
+        <div style="font:600 clamp(10px,.92vw,12px)/1.3 'JetBrains Mono',monospace;letter-spacing:.04em;color:#A3E635;background:rgba(163,230,53,.1);border:1px solid rgba(163,230,53,.22);border-radius:8px;padding:5px 8px;align-self:flex-start">Usuario y clave: {{ p.id }}</div>
         <button onClick="{{ p.entrar }}" style="margin-top:auto;min-height:46px;border-radius:12px;border:none;background:#A3E635;color:#0A3123;font:600 clamp(13px,1.15vw,15px)/1 'Instrument Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;transition:transform .18s,background .18s" style-hover="background:#BEF264;transform:translateY(-2px)">
           <sc-if value="{{ p.cargando }}" hint-placeholder-val="{{ false }}"><span style="width:15px;height:15px;border:2px solid rgba(10,49,35,.3);border-top-color:#0A3123;border-radius:50%;animation:spin .7s linear infinite"></span></sc-if>
           {{ p.label }}
@@ -378,10 +380,10 @@ class Component extends DCLogic {
   ];
 
   perfilesData = [
-    { rol: 'Rectoría / Dirección', nombre: 'Simón Cardona', desc: 'Panorama del colegio y alertas.' },
-    { rol: 'Profesor', nombre: 'Lucía Mendoza', desc: 'Notas, asistencia y evaluaciones.' },
-    { rol: 'Estudiante', nombre: 'Salomé García', desc: 'Sus notas y tareas del día.' },
-    { rol: 'Acudiente', nombre: 'Cristian Gil', desc: 'El rendimiento de su hijo, por WhatsApp.' }
+    { rol: 'Rectoría / Dirección', nombre: 'Simón Cardona', desc: 'Panorama del colegio y alertas.', id: '1001' },
+    { rol: 'Profesor', nombre: 'Lucía Mendoza', desc: 'Notas, asistencia y evaluaciones.', id: '1002' },
+    { rol: 'Estudiante', nombre: 'Salomé García', desc: 'Sus notas y tareas del día.', id: '1003' },
+    { rol: 'Acudiente', nombre: 'Cristian Gil', desc: 'El rendimiento de su hijo, por WhatsApp.', id: '1004' }
   ];
 
   componentDidMount() {
