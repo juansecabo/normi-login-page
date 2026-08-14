@@ -302,8 +302,12 @@ const RegistroAcudiente = () => {
                 <p className="text-sm text-muted-foreground mt-1">Revisa que todo esté correcto</p>
               </div>
               <div className="border border-border rounded-lg p-4 text-sm space-y-1">
-                <p><span className="text-muted-foreground">Acudiente:</span> {apellidos} {nombres} (doc. {soloDigitos(cedula)})</p>
-                <p><span className="text-muted-foreground">Celular:</span> +{soloDigitos(telefono)}</p>
+                {usuarioExiste ? (
+                  <p><span className="text-muted-foreground">Acudiente:</span> doc. {soloDigitos(cedula)} <span className="text-muted-foreground">— usaremos los datos de tu cuenta (nombre y celular ya registrados)</span></p>
+                ) : (<>
+                  <p><span className="text-muted-foreground">Acudiente:</span> {apellidos} {nombres} (doc. {soloDigitos(cedula)})</p>
+                  <p><span className="text-muted-foreground">Celular:</span> +{soloDigitos(telefono)}</p>
+                </>)}
                 <p><span className="text-muted-foreground">Colegio:</span> {acudidos[0]?.colegio_nombre}</p>
                 <p className="text-muted-foreground pt-1">Estudiantes a cargo:</p>
                 {acudidos.map((a) => <p key={a.id}>• {a.apellidos} {a.nombres} — {a.grado} {a.salon}</p>)}
