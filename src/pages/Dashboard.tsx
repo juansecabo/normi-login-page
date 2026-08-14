@@ -22,6 +22,7 @@ import iconObservador from "@/assets/icons/observador.webp";
 import iconFormatos from "@/assets/icons/formatos.webp";
 import { Users } from "lucide-react";
 import { useBienvenida, getSession, isProfesor, isAdmin, isRectorOrCoordinador, isEstudiante, isPadreDeFamilia } from "@/hooks/useSession";
+import { cargoSegunGenero } from "@/lib/entrevistadores";
 import { NIVEL_DE_GRADO } from "@/utils/grados";
 import { usePendientesFirma } from "@/hooks/usePendientesFirma";
 import HeaderNormi from "@/components/HeaderNormi";
@@ -335,7 +336,7 @@ const Dashboard = () => {
               {nombres} {apellidos}
             </p>
             <p className="text-muted-foreground mt-2">
-              Sistema de gestión de calificaciones
+              {cargoSegunGenero(getSession().cargo, (getSession() as any).genero) || "Sistema de gestión de calificaciones"}
             </p>
           </div>
           <div className="hidden xl:block absolute inset-y-0 left-full ml-10">
