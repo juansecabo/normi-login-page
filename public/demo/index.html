@@ -395,14 +395,10 @@ class Component extends DCLogic {
       else if (e.key === 'End') this.go(11);
     };
     window.addEventListener('keydown', this.onKey);
-    // Al volver con "atrás" (bfcache restaura la página congelada), resetear el
-    // estado de carga para que el botón no se quede en "Conectando…".
-    this.onShow = () => { this.setState({ cargando: null }); };
-    window.addEventListener('pageshow', this.onShow);
     const h = location.hash.match(/^#(\d+)$/);
     if (h) this.go(parseInt(h[1], 10) - 1);
   }
-  componentWillUnmount() { window.removeEventListener('keydown', this.onKey); window.removeEventListener('pageshow', this.onShow); }
+  componentWillUnmount() { window.removeEventListener('keydown', this.onKey); }
 
   go = (n) => {
     const i = Math.max(0, Math.min(11, n));
