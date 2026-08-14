@@ -248,14 +248,38 @@ const AvatarUploader = ({ width = 110, height = 140, fill = false, target }: Ava
   const handleCapture = () => {
     const video = videoRef.current;
     if (!video || !video.videoWidth) return;
+    const vW = video.videoWidth;
+    const vH = video.videoHeight;
+    // WYSIWYG: la previa muestra el video con object-cover dentro de la caja,
+    // así que recortamos el frame al MISMO encuadre visible (recorte centrado
+    // según el aspecto de la caja). Antes se guardaba el frame completo → se
+    // "alejaba" y aparecían barras negras.
+    const boxW = video.clientWidth || vW;
+    const boxH = video.clientHeight || vH;
+    const boxAspect = boxW / boxH;
+    const vAspect = vW / vH;
+    let cropW: number, cropH: number, cropX: number, cropY: number;
+    if (vAspect > boxAspect) {
+      cropH = vH;
+      cropW = vH * boxAspect;
+      cropX = (vW - cropW) / 2;
+      cropY = 0;
+    } else {
+      cropW = vW;
+      cropH = vW / boxAspect;
+      cropX = 0;
+      cropY = (vH - cropH) / 2;
+    }
     const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = Math.round(cropW);
+    canvas.height = Math.round(cropH);
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    // Mirror horizontal: el preview se muestra invertido para que sea "espejo",
-    // pero el frame real NO está espejado. Lo guardamos sin mirror.
-    ctx.drawImage(video, 0, 0);
+    // La previa está espejada (scaleX(-1)); espejamos también la captura para
+    // que la foto quede EXACTAMENTE como la persona se vio al encuadrarse.
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
     setCameraSnapshot(canvas.toDataURL("image/jpeg", 0.9));
     stopCamera();
   };
@@ -431,7 +455,7 @@ const AvatarUploader = ({ width = 110, height = 140, fill = false, target }: Ava
                 />
               )}
               {!cameraError && cameraSnapshot && (
-                <img src={cameraSnapshot} alt="Captura" className="w-full h-full object-contain" />
+                <img src={cameraSnapshot} alt="Captura" className="w-full h-full object-cover" />
               )}
             </div>
             <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2">
