@@ -160,31 +160,31 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" sideOffset={menuOffset} className="w-72 rounded-xl shadow-xl">
                 {canInstall && (
-                  <DropdownMenuItem onClick={installApp} className="gap-2 cursor-pointer whitespace-nowrap py-2.5">
+                  <DropdownMenuItem onClick={installApp} className="gap-2 cursor-pointer whitespace-nowrap py-2.5 text-base">
                     <Download className="w-4 h-4" /> Descargar App
                   </DropdownMenuItem>
                 )}
                 {enImpersonacion && (
-                  <DropdownMenuItem onClick={handleVolverPlataforma} className="gap-2 cursor-pointer whitespace-nowrap py-2.5">
+                  <DropdownMenuItem onClick={handleVolverPlataforma} className="gap-2 cursor-pointer whitespace-nowrap py-2.5 text-base">
                     <Repeat className="w-4 h-4" /> Cambiar institución
                   </DropdownMenuItem>
                 )}
                 {!enImpersonacion && getSession().multi_membership && (
-                  <DropdownMenuItem onClick={handleSwitchProfile} disabled={switching} className="gap-2 cursor-pointer whitespace-nowrap py-2.5">
+                  <DropdownMenuItem onClick={handleSwitchProfile} disabled={switching} className="gap-2 cursor-pointer whitespace-nowrap py-2.5 text-base">
                     <Repeat className="w-4 h-4" /> Cambiar perfil
                   </DropdownMenuItem>
                 )}
                 {!esPlataforma && waDigitos && (
-                  <DropdownMenuItem asChild className="gap-2 cursor-pointer whitespace-nowrap py-2.5">
+                  <DropdownMenuItem asChild className="gap-2 cursor-pointer whitespace-nowrap py-2.5 text-base">
                     <a href={`https://wa.me/${waDigitos}`} target="_blank" rel="noopener noreferrer">
                       <MessageCircle className="w-4 h-4 shrink-0" /> WhatsApp{waNumeroTexto ? `: ${waNumeroTexto}` : ""}
                     </a>
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={() => setShowCambiarContrasena(true)} className="gap-2 cursor-pointer whitespace-nowrap py-2.5">
+                <DropdownMenuItem onClick={() => setShowCambiarContrasena(true)} className="gap-2 cursor-pointer whitespace-nowrap py-2.5 text-base">
                   <KeyRound className="w-4 h-4" /> {((getSession() as any).sin_contrasena) ? "Crear contraseña" : "Cambiar contraseña"}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleLogout} className="gap-2 cursor-pointer whitespace-nowrap py-2.5 text-destructive focus:text-destructive">
+                <DropdownMenuItem onClick={handleLogout} className="gap-2 cursor-pointer whitespace-nowrap py-2.5 text-base text-destructive focus:text-destructive">
                   <LogOut className="w-4 h-4" /> Cerrar sesión
                 </DropdownMenuItem>
               </DropdownMenuContent>
