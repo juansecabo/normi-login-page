@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Camera, CameraOff, Loader2, RotateCcw, Trash2, Upload, X } from "lucide-react";
+import { Camera, CameraOff, Loader2, RotateCcw, Trash2, Upload, X, SwitchCamera } from "lucide-react";
 import Cropper, { type Area } from "react-easy-crop";
 import { apiClient } from "@/lib/apiClient";
 import { updateSessionAvatar, getSession } from "@/hooks/useSession";
@@ -135,6 +135,10 @@ const AvatarUploader = ({ width = 110, height = 140, fill = false, target }: Ava
   const [uploading, setUploading] = useState(false);
   const [cameraSnapshot, setCameraSnapshot] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  // Cámara frontal ("user") o trasera ("environment"). El profesor necesita la
+  // trasera para tomarle la foto a los estudiantes.
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
+  const [tieneVariasCamaras, setTieneVariasCamaras] = useState(false);
 
   const inputRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -161,7 +165,7 @@ const AvatarUploader = ({ width = 110, height = 140, fill = false, target }: Ava
     let cancelled = false;
     setCameraError(null);
     navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 1280 } }, audio: false })
+      .getUserMedia({ video: { facingMode: { ideal: facingMode }, width: { ideal: 1280 }, height: { ideal: 1280 } }, audio: false })
       .then((stream) => {
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
@@ -172,6 +176,11 @@ const AvatarUploader = ({ width = 110, height = 140, fill = false, target }: Ava
           videoRef.current.srcObject = stream;
           videoRef.current.play().catch(() => null);
         }
+        // ¿Hay más de una cámara? (para mostrar el botón de girar). Se sabe con
+        // certeza solo tras dar permiso.
+        navigator.mediaDevices.enumerateDevices()
+          .then((devs) => { if (!cancelled) setTieneVariasCamaras(devs.filter((d) => d.kind === "videoinput").length > 1); })
+          .catch(() => null);
       })
       .catch((err: any) => {
         if (cancelled) return;
@@ -187,7 +196,13 @@ const AvatarUploader = ({ width = 110, height = 140, fill = false, target }: Ava
       stopCamera();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stage, cameraSnapshot]);
+  }, [stage, cameraSnapshot, facingMode]);
+
+  // Girar entre cámara frontal y trasera (el efecto de arriba reinicia el stream).
+  const girarCamara = () => {
+    stopCamera();
+    setFacingMode((m) => (m === "user" ? "environment" : "user"));
+  };
 
   const closeDialog = () => {
     stopCamera();
@@ -198,6 +213,7 @@ const AvatarUploader = ({ width = 110, height = 140, fill = false, target }: Ava
     setCroppedArea(null);
     setCameraSnapshot(null);
     setCameraError(null);
+    setFacingMode("user");
   };
 
   const openInstructions = () => setStage("instructions");
@@ -275,10 +291,13 @@ const AvatarUploader = ({ width = 110, height = 140, fill = false, target }: Ava
     canvas.height = Math.round(cropH);
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    // La previa está espejada (scaleX(-1)); espejamos también la captura para
-    // que la foto quede EXACTAMENTE como la persona se vio al encuadrarse.
-    ctx.translate(canvas.width, 0);
-    ctx.scale(-1, 1);
+    // La cámara FRONTAL se muestra espejada (scaleX(-1)); espejamos también la
+    // captura para que quede como la persona se vio. La TRASERA NO se espeja
+    // (es como una cámara normal apuntando al estudiante).
+    if (facingMode === "user") {
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+    }
     ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
     setCameraSnapshot(canvas.toDataURL("image/jpeg", 0.9));
     stopCamera();
@@ -451,11 +470,24 @@ const AvatarUploader = ({ width = 110, height = 140, fill = false, target }: Ava
                   playsInline
                   muted
                   className="w-full h-full object-cover"
-                  style={{ transform: "scaleX(-1)" }}
+                  style={{ transform: facingMode === "user" ? "scaleX(-1)" : "none" }}
                 />
               )}
               {!cameraError && cameraSnapshot && (
                 <img src={cameraSnapshot} alt="Captura" className="w-full h-full object-cover" />
+              )}
+              {/* Botón para girar entre cámara frontal y trasera (celulares/tablets
+                  con más de una cámara). Clave para que el profesor le tome la
+                  foto a los estudiantes con la trasera. */}
+              {!cameraError && !cameraSnapshot && tieneVariasCamaras && (
+                <button
+                  type="button"
+                  onClick={girarCamara}
+                  title="Girar cámara (frontal/trasera)"
+                  className="absolute top-2 right-2 bg-black/55 hover:bg-black/75 text-white rounded-full p-2.5 backdrop-blur-sm transition-colors"
+                >
+                  <SwitchCamera className="w-5 h-5" />
+                </button>
               )}
             </div>
             <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2">
