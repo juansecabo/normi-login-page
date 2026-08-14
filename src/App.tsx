@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import Index from "./pages/Index";
-import DemoPresentacion from "./pages/DemoPresentacion";
+import EntrarDemo from "./pages/EntrarDemo";
 import DashboardHome from "./pages/DashboardHome";
 import SeleccionarGradoPorRol from "./pages/SeleccionarGradoPorRol";
 import SeleccionarSalonPorRol from "./pages/SeleccionarSalonPorRol";
@@ -127,7 +127,9 @@ const App = () => (
         <NormiRecordatorioRecuperacion />
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/demo" element={<DemoPresentacion />} />
+          {/* /demo lo sirve nginx como HTML estático (deck de Claude Design en
+              public/demo/). Aquí solo vive el aterrizaje de login de sus botones. */}
+          <Route path="/entrar-demo" element={<EntrarDemo />} />
           <Route path="/registro-acudiente" element={<RegistroAcudiente />} />
           {/* Home ÚNICO: /dashboard despacha al dashboard segun el rol (DashboardHome). */}
           <Route path="/dashboard" element={<DashboardHome />} />
