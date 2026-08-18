@@ -39,7 +39,6 @@ const Formatos = () => {
     );
   };
 
-  // Disponibles para todos los colegios.
   const formatosGenerales: Formato[] = [
     { id: "permiso-docente", titulo: "Solicitud de permiso docente", desc: "Solicita tu permiso, firma con el dedo; se notifica a rectoría y coordinación.", icon: FileText, ruta: "/formatos/permiso-docente", listo: true },
     { id: "permisos-docentes-registro", titulo: "Permisos docentes (registro)", desc: isProfesor() ? "Consulta tus solicitudes de permiso." : "Consulta las solicitudes de permiso de los docentes.", icon: ClipboardList, ruta: "/formatos/permisos-docentes", listo: true },
