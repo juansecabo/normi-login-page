@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import HeaderNormi from "@/components/HeaderNormi";
 import { getSession, puedeAccederDashboard, isAdmin, isProfesor } from "@/hooks/useSession";
 import { supabase } from "@/integrations/supabase/client";
+import { apiRequest } from "@/lib/apiClient";
 import { useToast } from "@/hooks/use-toast";
 import { rankGrado } from "@/utils/grados";
 import SignatureCanvas from "react-signature-canvas";
@@ -129,13 +130,25 @@ const NivelacionPlanilla = () => {
     }
     if (filas.length === 0) { toast({ title: "Sin estudiantes", description: "Agrega al menos un estudiante a la planilla.", variant: "destructive" }); return false; }
     setSaving(true);
-    const { error } = await supabase.from("Formatos_Diligenciados").insert({
-      tipo: "nivelacion", titulo: `Nivelación — ${grado} ${salon} · ${asignatura}`,
-      datos: armarDatos(), creado_por: s.id, creado_por_nombre: [s.cargo, docente].filter(Boolean).join(" "),
-    });
-    setSaving(false);
-    if (error) { toast({ title: "No se pudo guardar", description: error.message, variant: "destructive" }); return false; }
-    toast({ title: "Formato guardado", description: "Quedó registrado en la plataforma.", variant: "success" }); return true;
+    try {
+      await apiRequest("/api/formatos", {
+        method: "POST",
+        body: JSON.stringify({
+          tipo: "nivelacion",
+          titulo: `Nivelación — ${grado} ${salon} · ${asignatura}`,
+          datos: armarDatos(),
+          grado,
+          notificar: true,
+        }),
+      });
+      toast({ title: "Formato guardado", description: "Quedó registrado y se notificó al rector y a tu coordinador.", variant: "success" });
+      return true;
+    } catch (e: any) {
+      toast({ title: "No se pudo guardar", description: e?.body?.detail || e?.message || "Intenta de nuevo.", variant: "destructive" });
+      return false;
+    } finally {
+      setSaving(false);
+    }
   };
 
   const descargarPDF = async () => {

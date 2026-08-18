@@ -51,6 +51,7 @@ const Formatos = () => {
   const formatosPesta: Formato[] = [
     { id: "nivelacion", titulo: "Plan de Nivelación por período", desc: "Planilla por estudiante con la nota definitiva del período.", icon: ClipboardList, ruta: "/formatos/nivelacion", listo: true },
     { id: "apoyo", titulo: "Plan de Apoyo al Mejoramiento", desc: "Taller 40% + Sustentación 60% = definitiva (cálculo automático).", icon: CalendarClock, ruta: "/formatos/apoyo", listo: true },
+    { id: "planillas-registro", titulo: "Planillas diligenciadas (registro)", desc: isProfesor() ? "Consulta tus planillas de nivelación y apoyo." : "Consulta las planillas de nivelación y apoyo de los docentes.", icon: ClipboardList, ruta: "/formatos/planillas", listo: true },
   ];
 
   return (

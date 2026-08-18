@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import HeaderNormi from "@/components/HeaderNormi";
 import { getSession, puedeAccederDashboard, isAdmin, isProfesor } from "@/hooks/useSession";
 import { supabase } from "@/integrations/supabase/client";
+import { apiRequest } from "@/lib/apiClient";
 import { useToast } from "@/hooks/use-toast";
 import { useGradosColegio } from "@/utils/grados";
 import SignatureCanvas from "react-signature-canvas";
@@ -82,13 +83,25 @@ const ApoyoPlanilla = () => {
     }
     if (filas.length === 0) { toast({ title: "Sin estudiantes", description: "Elige un grado y salón con estudiantes.", variant: "destructive" }); return false; }
     setSaving(true);
-    const { error } = await supabase.from("Formatos_Diligenciados").insert({
-      tipo: "apoyo", titulo: `Apoyo — ${grado} ${salon} · ${asignatura}`,
-      datos: armarDatos(), creado_por: s.id, creado_por_nombre: [s.cargo, s.nombres, s.apellidos].filter(Boolean).join(" "),
-    });
-    setSaving(false);
-    if (error) { toast({ title: "No se pudo guardar", description: error.message, variant: "destructive" }); return false; }
-    toast({ title: "Formato guardado", description: "Quedó registrado en la plataforma.", variant: "success" }); return true;
+    try {
+      await apiRequest("/api/formatos", {
+        method: "POST",
+        body: JSON.stringify({
+          tipo: "apoyo",
+          titulo: `Apoyo — ${grado} ${salon} · ${asignatura}`,
+          datos: armarDatos(),
+          grado,
+          notificar: true,
+        }),
+      });
+      toast({ title: "Formato guardado", description: "Quedó registrado y se notificó al rector y a tu coordinador.", variant: "success" });
+      return true;
+    } catch (e: any) {
+      toast({ title: "No se pudo guardar", description: e?.body?.detail || e?.message || "Intenta de nuevo.", variant: "destructive" });
+      return false;
+    } finally {
+      setSaving(false);
+    }
   };
 
   const descargarPDF = async () => {
@@ -134,6 +147,16 @@ const ApoyoPlanilla = () => {
     <div className="min-h-screen bg-background">
       <HeaderNormi backLink="/formatos" />
       <div className="max-w-5xl mx-auto px-4 py-8">
+        {/* Breadcrumb */}
+        <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
+          <div className="flex items-center gap-2 text-sm flex-wrap">
+            <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
+            <span className="text-muted-foreground">→</span>
+            <button onClick={() => navigate("/formatos")} className="text-primary hover:underline">Formatos</button>
+            <span className="text-muted-foreground">→</span>
+            <span className="text-foreground font-medium">Plan de Apoyo al Mejoramiento</span>
+          </div>
+        </div>
         <h1 className="text-2xl font-bold text-foreground">Plan de Apoyo al Mejoramiento</h1>
         <p className="text-muted-foreground mt-1 text-sm">La definitiva se calcula sola: Taller 40% + Sustentación 60%.</p>
 

@@ -36,6 +36,7 @@ import PermisoDocente from "./pages/formatos/PermisoDocente";
 import PermisosDocentesConsulta from "./pages/permisos/PermisosDocentesConsulta";
 import NivelacionPlanilla from "./pages/formatos/NivelacionPlanilla";
 import ApoyoPlanilla from "./pages/formatos/ApoyoPlanilla";
+import PlanillasConsulta from "./pages/formatos/PlanillasConsulta";
 import ComunicadosRecibidos from "./pages/rector/ComunicadosRecibidos";
 import DocumentosRecibidos from "./pages/rector/DocumentosRecibidos";
 
@@ -161,6 +162,7 @@ const App = () => (
           <Route path="/formatos/permisos-docentes" element={<PermisosDocentesConsulta />} />
           <Route path="/formatos/nivelacion" element={<NivelacionPlanilla />} />
           <Route path="/formatos/apoyo" element={<ApoyoPlanilla />} />
+          <Route path="/formatos/planillas" element={<PlanillasConsulta />} />
           <Route path="/estudiantes-riesgo" element={<EstudiantesEnRiesgo />} />
           <Route path="/panel-control" element={<PanelControl />} />
           <Route path="/horarios-avisos" element={<HorariosAvisos />} />
