@@ -25,7 +25,7 @@ const Formatos = () => {
         key={f.id}
         onClick={() => f.listo && navigate(f.ruta)}
         disabled={!f.listo}
-        className={`w-full flex items-center gap-4 p-4 rounded-xl border text-left transition-colors ${f.listo ? "border-border bg-card hover:border-primary hover:bg-primary/5 cursor-pointer" : "border-dashed border-border bg-muted/30 cursor-not-allowed opacity-70"}`}
+        className={`w-full flex items-center gap-4 p-4 rounded-xl border text-left transition-colors ${f.listo ? "border-border bg-card hover:border-primary cursor-pointer" : "border-dashed border-border bg-muted/30 cursor-not-allowed opacity-70"}`}
       >
         <div className="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
           <Icon className="w-6 h-6 text-primary" />
@@ -57,6 +57,14 @@ const Formatos = () => {
     <div className="min-h-screen bg-background">
       <HeaderNormi backLink="/dashboard" />
       <div className="max-w-3xl mx-auto px-4 py-8">
+        {/* Breadcrumb */}
+        <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
+          <div className="flex items-center gap-2 text-sm flex-wrap">
+            <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
+            <span className="text-muted-foreground">→</span>
+            <span className="text-foreground font-medium">Formatos</span>
+          </div>
+        </div>
         <h1 className="text-2xl font-bold text-foreground">Formatos</h1>
         <p className="text-muted-foreground mt-1">Formatos de la institución: se llenan aquí, se firman y se descargan.</p>
 
