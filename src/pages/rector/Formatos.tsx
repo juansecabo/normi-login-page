@@ -39,11 +39,14 @@ const Formatos = () => {
     );
   };
 
-  // Disponibles para todos los colegios.
+  // Disponibles para todos los colegios. El REGISTRO lo ve todo el personal; la
+  // SOLICITUD solo la crean los docentes (rector/coordinador no son docentes).
   const formatosGenerales: Formato[] = [
-    { id: "permiso-docente", titulo: "Solicitud de permiso docente", desc: "Solicita tu permiso, firma con el dedo; se notifica a rectoría y coordinación.", icon: FileText, ruta: "/formatos/permiso-docente", listo: true },
     { id: "permisos-docentes-registro", titulo: "Permisos docentes (registro)", desc: isProfesor() ? "Consulta tus solicitudes de permiso." : "Consulta las solicitudes de permiso de los docentes.", icon: ClipboardList, ruta: "/formatos/permisos-docentes", listo: true },
   ];
+  if (isProfesor()) {
+    formatosGenerales.unshift({ id: "permiso-docente", titulo: "Solicitud de permiso docente", desc: "Solicita tu permiso, firma con el dedo; se notifica a rectoría y coordinación.", icon: FileText, ruta: "/formatos/permiso-docente", listo: true });
+  }
   // Formatos específicos del Pestalozziano por ahora.
   const formatosPesta: Formato[] = [
     { id: "nivelacion", titulo: "Plan de Nivelación por período", desc: "Planilla por estudiante con la nota definitiva del período.", icon: ClipboardList, ruta: "/formatos/nivelacion", listo: true },
