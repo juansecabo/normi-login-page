@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,9 @@ interface ComunicadoEnviadoDialogProps {
   jobId?: string | null;
   /** Total inicial de destinatarios (solo cuando hay jobId). */
   total?: number;
+  /** Se llama UNA sola vez cuando el envío se completa CON ÉXITO (no cuando se cancela).
+   *  El formulario (mensaje/archivos) solo se limpia aquí; si se cancela, se conserva. */
+  onCompleted?: () => void;
 }
 
 interface Progress {
@@ -23,17 +26,28 @@ interface Progress {
   fallos_detalle?: Array<{ nombre: string; telefono: string }>;
 }
 
-const ComunicadoEnviadoDialog = ({ open, onOpenChange, jobId, total }: ComunicadoEnviadoDialogProps) => {
+const ComunicadoEnviadoDialog = ({ open, onOpenChange, jobId, total, onCompleted }: ComunicadoEnviadoDialogProps) => {
   const [progress, setProgress] = useState<Progress | null>(null);
   const [cancelando, setCancelando] = useState(false);
   const [verFallos, setVerFallos] = useState(false);
+  const completedFiredRef = useRef(false);
 
   // Reset state cuando se abre con un job nuevo o el modal se cierra,
   // para que el "Cancelando..." de un envio anterior no quede pegado.
   useEffect(() => {
     setCancelando(false);
     setVerFallos(false);
+    completedFiredRef.current = false;
   }, [jobId, open]);
+
+  // Limpiar el formulario SOLO cuando el envío se completa con éxito (una vez).
+  // Si se cancela, no se dispara → el mensaje y destinatarios se conservan.
+  useEffect(() => {
+    if (progress?.completado && !progress?.cancelado && !completedFiredRef.current) {
+      completedFiredRef.current = true;
+      onCompleted?.();
+    }
+  }, [progress, onCompleted]);
 
   const handleCancelar = async () => {
     if (!jobId) return;

@@ -753,11 +753,8 @@ const EnviarComunicado = () => {
 
       setSentInfo({ jobId: response.job_id, total: response.total });
       setShowSentDialog(true);
-
-      // Limpiar mensaje y archivos, mantener destinatarios
-      setMensaje("");
-      setArchivosSeleccionados([]);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      // El mensaje y los archivos se limpian SOLO cuando el envío se completa
+      // (ver onCompleted del diálogo). Si se cancela, se conservan para corregir.
     } catch (error) {
       console.error("Error enviando comunicado:", error);
       const errorMsg = error instanceof Error ? error.message : "No se pudo enviar el comunicado. Intenta de nuevo.";
@@ -1715,6 +1712,11 @@ const EnviarComunicado = () => {
         onOpenChange={setShowSentDialog}
         jobId={sentInfo.jobId}
         total={sentInfo.total}
+        onCompleted={() => {
+          setMensaje("");
+          setArchivosSeleccionados([]);
+          if (fileInputRef.current) fileInputRef.current.value = "";
+        }}
       />
     </div>
   );
