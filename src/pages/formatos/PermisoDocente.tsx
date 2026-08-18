@@ -2,15 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import HeaderNormi from "@/components/HeaderNormi";
 import { getSession, puedeAccederDashboard, isAdmin, isProfesor } from "@/hooks/useSession";
-import { supabase } from "@/integrations/supabase/client";
+import { apiRequest } from "@/lib/apiClient";
 import { useToast } from "@/hooks/use-toast";
 import SignatureCanvas from "react-signature-canvas";
 import { Plus, X, Download, Save } from "lucide-react";
 
-// Formato de solicitud de permiso docente (por ahora exclusivo del Pestalozziano).
-const PESTA_ID = "94c1414b-22d1-40dd-945a-5857b62e5f6c";
-const CAILICO_ID = "2f96f076-83df-4b84-8bbc-9c1df79a372b"; // demo, para revisión
-
+// Formato de solicitud de permiso docente (todos los colegios).
 interface Cargo { hora: string; grado: string; asignatura: string; docente: string; }
 
 const PermisoDocente = () => {
@@ -31,7 +28,6 @@ const PermisoDocente = () => {
 
   useEffect(() => {
     if (!s.id || (!puedeAccederDashboard() && !isAdmin() && !isProfesor())) { navigate("/"); return; }
-    if (s.colegio_id !== PESTA_ID && s.colegio_id !== CAILICO_ID) { navigate("/formatos"); return; }
   }, []);
 
   const addCargo = () => setCargos((c) => [...c, { hora: "", grado: "", asignatura: "", docente: "" }]);
@@ -52,17 +48,28 @@ const PermisoDocente = () => {
       return false;
     }
     setSaving(true);
-    const { error } = await supabase.from("Formatos_Diligenciados").insert({
-      tipo: "permiso_docente",
-      titulo: `Solicitud de permiso — ${nombreDocente}`,
-      datos: armarDatos(),
-      creado_por: s.id,
-      creado_por_nombre: [s.cargo, s.nombres, s.apellidos].filter(Boolean).join(" "),
-    });
-    setSaving(false);
-    if (error) { toast({ title: "No se pudo guardar", description: error.message, variant: "destructive" }); return false; }
-    toast({ title: "Formato guardado", description: "Quedó registrado en la plataforma.", variant: "success" });
-    return true;
+    try {
+      await apiRequest("/api/permisos/docente", {
+        method: "POST",
+        body: JSON.stringify({
+          fecha_solicitud: fechaSolicitud,
+          fecha_permiso: fechaPermiso,
+          total_horas: totalHoras,
+          motivo: motivo.trim(),
+          nombre_docente: nombreDocente.trim(),
+          docentes_a_cargo: cargos.filter((c) => c.hora || c.grado || c.asignatura || c.docente),
+          zona_apoyo: zonaApoyo,
+          firma,
+        }),
+      });
+      toast({ title: "Permiso enviado", description: "Quedó registrado y se notificó al rector y a tu coordinador.", variant: "success" });
+      return true;
+    } catch (e: any) {
+      toast({ title: "No se pudo guardar", description: e?.body?.detail || e?.message || "Intenta de nuevo.", variant: "destructive" });
+      return false;
+    } finally {
+      setSaving(false);
+    }
   };
 
   const descargarPDF = async () => {
@@ -70,8 +77,7 @@ const PermisoDocente = () => {
     const d = new jsPDF("p", "mm", "a4");
     const W = 210, M = 15;
     let y = 16;
-    d.setFont("helvetica", "bold"); d.setFontSize(13); d.text("COLEGIO PESTALOZZIANO", W / 2, y, { align: "center" }); y += 5;
-    d.setFont("helvetica", "normal"); d.setFontSize(9); d.text("Coordinación Académica y de Disciplina", W / 2, y, { align: "center" }); y += 8;
+    d.setFont("helvetica", "bold"); d.setFontSize(13); d.text((s.colegio_nombre || "Institución Educativa").toUpperCase(), W / 2, y, { align: "center" }); y += 8;
     d.setFont("helvetica", "bold"); d.setFontSize(12); d.text("SOLICITUD PERMISO DOCENTE", W / 2, y, { align: "center" }); y += 10;
     d.setFontSize(10);
     const fld = (label: string, val: string) => {
