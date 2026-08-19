@@ -92,8 +92,10 @@ const SolicitudEntrevistaAcudiente = () => {
   const [reCalOpen, setReCalOpen] = useState(false);
   const [reH, setReH] = useState(""); const [reM, setReM] = useState(""); const [reAP, setReAP] = useState("");
   const [reGuardando, setReGuardando] = useState(false);
+  const [reError, setReError] = useState("");
 
   const abrirReprogramar = (s: any) => {
+    setReError("");
     setReFecha(s.fecha_entrevista ? new Date(s.fecha_entrevista + "T12:00:00") : undefined);
     const m = String(s.hora_entrevista || "").match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
     setReH(m?.[1] || ""); setReM(m?.[2] || ""); setReAP((m?.[3] || "").toUpperCase());
@@ -102,10 +104,16 @@ const SolicitudEntrevistaAcudiente = () => {
 
   const confirmarReprogramar = async () => {
     if (!reSol || !reFecha || !reH || !reM || !reAP) return;
-    setReGuardando(true);
     const fmtLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     const nuevaFecha = fmtLocal(reFecha);
     const nuevaHora = `${reH}:${reM} ${reAP}`;
+    // Reprogramar exige un día u hora DISTINTOS: si es el mismo, no es reprogramar.
+    if (nuevaFecha === reSol.fecha_entrevista && nuevaHora === reSol.hora_entrevista) {
+      setReError("Debes escoger un día y/o una hora diferente para reprogramar la entrevista.");
+      return;
+    }
+    setReError("");
+    setReGuardando(true);
     const fechaTexto = reFecha.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
     try {
       // El server actualiza la solicitud Y notifica por WhatsApp al creador.
@@ -249,7 +257,7 @@ const SolicitudEntrevistaAcudiente = () => {
       </main>
 
       {/* Reprogramar entrevista: el acudiente propone nueva fecha y hora */}
-      <AlertDialog open={!!reSol} onOpenChange={(o) => { if (!o) setReSol(null); }}>
+      <AlertDialog open={!!reSol} onOpenChange={(o) => { if (!o) { setReSol(null); setReError(""); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Reprogramar entrevista</AlertDialogTitle>
@@ -269,23 +277,23 @@ const SolicitudEntrevistaAcudiente = () => {
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={reFecha} onSelect={(d) => { setReFecha(d); setReCalOpen(false); }} locale={es} disabled={(d) => d < new Date(new Date().setHours(0,0,0,0))} />
+                  <Calendar mode="single" selected={reFecha} onSelect={(d) => { setReFecha(d); setReError(""); setReCalOpen(false); }} locale={es} disabled={(d) => d < new Date(new Date().setHours(0,0,0,0))} />
                 </PopoverContent>
               </Popover>
             </div>
             <div>
               <p className="text-sm font-medium mb-1">Nueva hora:</p>
               <div className="flex items-center gap-1">
-                <select value={reH} onChange={e => setReH(e.target.value)} className="px-1 py-1 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm cursor-pointer outline-none">
+                <select value={reH} onChange={e => { setReH(e.target.value); setReError(""); }} className="px-1 py-1 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm cursor-pointer outline-none">
                   <option value="">--</option>
                   {Array.from({ length: 12 }, (_, i) => i + 1).map(h => <option key={h} value={String(h)}>{h}</option>)}
                 </select>
                 <span>:</span>
-                <select value={reM} onChange={e => setReM(e.target.value)} className="px-1 py-1 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm cursor-pointer outline-none">
+                <select value={reM} onChange={e => { setReM(e.target.value); setReError(""); }} className="px-1 py-1 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm cursor-pointer outline-none">
                   <option value="">--</option>
                   {["00","05","10","15","20","25","30","35","40","45","50","55"].map(m => <option key={m} value={m}>{m}</option>)}
                 </select>
-                <select value={reAP} onChange={e => setReAP(e.target.value)} className="px-1 py-1 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm cursor-pointer outline-none">
+                <select value={reAP} onChange={e => { setReAP(e.target.value); setReError(""); }} className="px-1 py-1 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm cursor-pointer outline-none">
                   <option value="">--</option>
                   <option value="AM">AM</option>
                   <option value="PM">PM</option>
@@ -293,6 +301,12 @@ const SolicitudEntrevistaAcudiente = () => {
               </div>
             </div>
           </div>
+
+          {reError && (
+            <div className="rounded-md border border-red-300 bg-red-50 text-red-700 text-sm px-3 py-2">
+              {reError}
+            </div>
+          )}
 
           <AlertDialogFooter>
             <AlertDialogCancel className="cursor-pointer" disabled={reGuardando}>Cancelar</AlertDialogCancel>

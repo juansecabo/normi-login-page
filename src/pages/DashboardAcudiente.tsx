@@ -38,7 +38,7 @@ const DashboardAcudiente = () => {
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [acudidos, setAcudidos] = useState<AcudidoData[]>([]);
-  const [badges, setBadges] = useState({ notas: 0, actividades: 0, comunicados: 0, documentos: 0, observador: 0 });
+  const [badges, setBadges] = useState({ notas: 0, actividades: 0, comunicados: 0, documentos: 0, observador: 0, entrevistas: 0 });
   const pendFirma = usePendientesFirma();
 
   // Badge del Observador Estudiantil: nº de observaciones nuevas desde la última
@@ -55,6 +55,23 @@ const DashboardAcudiente = () => {
       (lecs || []).forEach((l: any) => { lastByEst[Number(l.estudiante_id)] = new Date(l.ultima_lectura).getTime(); });
       const count = (obs || []).filter((o: any) => new Date(o.created_at).getTime() > (lastByEst[Number(o.estudiante_id)] || 0)).length;
       setBadges(b => ({ ...b, observador: count }));
+    })();
+  }, []);
+
+  // Badge de Solicitud de Entrevista: nº de entrevistas de los acudidos que aún
+  // están pendientes de responder (confirmado = null).
+  useEffect(() => {
+    const s = getSession();
+    if (!s.id) return;
+    const ids = (s.acudidos || []).map(h => Number(h.id)).filter(Boolean);
+    if (ids.length === 0) return;
+    (async () => {
+      const { data } = await supabase
+        .from("Solicitudes_Entrevista")
+        .select("estudiante_id, confirmado")
+        .in("estudiante_id", ids)
+        .is("confirmado", null);
+      setBadges(b => ({ ...b, entrevistas: (data || []).length }));
     })();
   }, []);
 
@@ -257,7 +274,8 @@ const DashboardAcudiente = () => {
       </button>
     ) },
     { id: 'solicitud-entrevista', render: (
-      <button onClick={() => navigate("/solicitud-entrevista")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-indigo-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-indigo-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-indigo-200">
+      <button onClick={() => navigate("/solicitud-entrevista")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-indigo-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-indigo-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-indigo-200">
+        <Badge count={badges.entrevistas} />
         <img src={iconEntrevista} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground text-center">Solicitud de Entrevista</span>
       </button>
