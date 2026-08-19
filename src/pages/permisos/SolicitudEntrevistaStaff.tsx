@@ -80,6 +80,9 @@ const SolicitudEntrevistaStaff = () => {
   const [historial, setHistorial] = useState<any[]>([]);
   const [loadingHistorial, setLoadingHistorial] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  // Calendario de "Solicitudes creadas": ubica cada entrevista por su fecha.
+  const [mesStaff, setMesStaff] = useState(new Date());
+  const [diaStaff, setDiaStaff] = useState<Date | undefined>(undefined);
 
   // Filtros del historial (nombre del estudiante, grado, salón)
   const [fNombre, setFNombre] = useState("");
@@ -103,6 +106,32 @@ const SolicitudEntrevistaStaff = () => {
       return true;
     });
   }, [historial, fNombre, fGrado, fSalon]);
+
+  // Calendario: mapea cada día (fecha_entrevista) a los tipos que tiene ese día.
+  // 'entrevistador' manda sobre 'creador'; si el día tiene de ambos → diagonal.
+  const fechaKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const { diasCreador, diasEntrev, diasAmbos } = useMemo(() => {
+    const porDia: Record<string, Set<string>> = {};
+    for (const s of historialFiltrado) {
+      if (!s.fecha_entrevista) continue;
+      (porDia[s.fecha_entrevista] ||= new Set()).add(s._tipo);
+    }
+    const cre: Date[] = [], ent: Date[] = [], amb: Date[] = [];
+    for (const [k, set] of Object.entries(porDia)) {
+      const d = new Date(k + "T12:00:00");
+      if (set.has("entrevistador") && set.has("creador")) amb.push(d);
+      else if (set.has("entrevistador")) ent.push(d);
+      else cre.push(d);
+    }
+    return { diasCreador: cre, diasEntrev: ent, diasAmbos: amb };
+  }, [historialFiltrado]);
+  const solDelDia = useMemo(() => {
+    if (!diaStaff) return [];
+    const k = fechaKey(diaStaff);
+    return historialFiltrado
+      .filter(s => s.fecha_entrevista === k)
+      .sort((a, b) => String(a.hora_entrevista || "").localeCompare(String(b.hora_entrevista || "")));
+  }, [historialFiltrado, diaStaff]);
 
   const backLink = isAdmin() ? "/dashboard" : puedeAccederDashboard() ? "/dashboard" : "/dashboard";
   const session = getSession();
@@ -155,9 +184,22 @@ const SolicitudEntrevistaStaff = () => {
 
   const fetchHistorial = async () => {
     setLoadingHistorial(true);
-    const { data } = await supabase.from("Solicitudes_Entrevista").select("*")
-      .eq("creado_por", session.id).order("created_at", { ascending: false });
-    setHistorial(data || []);
+    const idNum = Number(session.id);
+    // Trae tanto las que ESTE interno creó como en las que figura de
+    // entrevistador (aunque las haya creado otra persona).
+    const [creadasRes, comoEntrevRes] = await Promise.all([
+      supabase.from("Solicitudes_Entrevista").select("*").eq("creado_por", session.id),
+      supabase.from("Solicitudes_Entrevista").select("*").contains("entrevistadores", [{ id: idNum }]),
+    ]);
+    const map = new Map<number, any>();
+    for (const s of (creadasRes.data || [])) map.set(s.id, s);
+    for (const s of (comoEntrevRes.data || [])) if (!map.has(s.id)) map.set(s.id, s);
+    // _tipo: 'entrevistador' tiene prioridad sobre 'creador'.
+    const merged = [...map.values()].map((s) => {
+      const soyEntrev = Array.isArray(s.entrevistadores) && s.entrevistadores.some((e: any) => Number(e.id) === idNum);
+      return { ...s, _tipo: soyEntrev ? "entrevistador" : "creador" };
+    });
+    setHistorial(merged);
     setLoadingHistorial(false);
     // Ver el historial apaga el numerito del dashboard (respuestas ya vistas).
     supabase.from("Solicitudes_Entrevista").update({ respuesta_vista: true })
@@ -621,17 +663,60 @@ const SolicitudEntrevistaStaff = () => {
 
             {loadingHistorial ? <p className="text-muted-foreground text-center py-8">Cargando...</p>
             : historial.length === 0 ? <p className="text-muted-foreground text-center py-8">No hay solicitudes registradas</p>
-            : historialFiltrado.length === 0 ? <p className="text-muted-foreground text-center py-8">Ninguna solicitud coincide con el filtro.</p>
             : (
-              <div className="space-y-3">
-                {historialFiltrado.map(s => {
+              <div className="flex flex-col lg:flex-row lg:items-start gap-6">
+                {/* Calendario: ubica cada entrevista por su fecha; color por tipo. */}
+                <div className="flex flex-col items-center lg:sticky lg:top-4 shrink-0 gap-3">
+                  <Calendar mode="single" selected={diaStaff} onSelect={(d) => { setDiaStaff(d); setExpandedId(null); }} month={mesStaff} onMonthChange={setMesStaff} locale={es}
+                    modifiers={{
+                      creador: diasCreador.filter(d => !diaStaff || fechaKey(d) !== fechaKey(diaStaff)),
+                      entrevistador: diasEntrev.filter(d => !diaStaff || fechaKey(d) !== fechaKey(diaStaff)),
+                      ambos: diasAmbos.filter(d => !diaStaff || fechaKey(d) !== fechaKey(diaStaff)),
+                    }}
+                    modifiersStyles={{
+                      creador: { backgroundColor: "#f59e0b", color: "white", borderRadius: "6px" },
+                      entrevistador: { backgroundColor: "#4f46e5", color: "white", borderRadius: "6px" },
+                      ambos: { background: "linear-gradient(135deg,#4f46e5 0 50%,#f59e0b 50% 100%)", color: "white", borderRadius: "6px" },
+                    }}
+                    className="rounded-md border shadow-sm" />
+                  <div className="flex flex-col gap-1 text-xs text-muted-foreground self-start">
+                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-3.5 rounded" style={{ backgroundColor: "#4f46e5" }} /> Serás entrevistador</span>
+                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-3.5 rounded" style={{ backgroundColor: "#f59e0b" }} /> Solo la creaste</span>
+                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-3.5 rounded" style={{ background: "linear-gradient(135deg,#4f46e5 0 50%,#f59e0b 50% 100%)" }} /> Ambos ese día</span>
+                  </div>
+                </div>
+
+                {/* Lista de entrevistas del día seleccionado */}
+                <div className="flex-1 min-w-0 lg:max-h-[560px] lg:overflow-y-auto">
+                {!diaStaff ? (
+                  <div className="flex flex-col items-center justify-center h-full py-10 text-muted-foreground text-center">
+                    <UserRound className="h-10 w-10 mb-2 opacity-50" />
+                    <p className="font-medium">Selecciona un día</p>
+                    <p className="text-sm">Los días con entrevistas están coloreados según el calendario.</p>
+                  </div>
+                ) : solDelDia.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full py-10 text-muted-foreground text-center">
+                    <UserRound className="h-10 w-10 mb-2 opacity-50" />
+                    <p className="font-medium">Sin entrevistas</p>
+                    <p className="text-sm">No hay entrevistas para este día.</p>
+                  </div>
+                ) : (
+                <div className="space-y-3">
+                <div className="flex items-center justify-between mb-1">
+                  <h4 className="text-base font-semibold text-foreground capitalize">{diaStaff.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</h4>
+                  <button onClick={() => { setDiaStaff(undefined); setExpandedId(null); }} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
+                </div>
+                {solDelDia.map(s => {
                   const isExp = expandedId === s.id;
+                  const esEntrev = s._tipo === "entrevistador";
+                  const acento = esEntrev ? "#4f46e5" : "#f59e0b";
                   return (
-                    <div key={s.id} className="border border-border rounded-lg overflow-hidden">
+                    <div key={s.id} className="border border-border rounded-lg overflow-hidden border-l-4" style={{ borderLeftColor: acento }}>
                       <button onClick={() => setExpandedId(isExp ? null : s.id)} className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors cursor-pointer">
                         <div>
                           <p className="font-semibold text-foreground text-base">{s.estudiante_apellidos} {s.estudiante_nombre}</p>
                           <p className="text-sm text-muted-foreground">{s.estudiante_grado} {s.estudiante_salon} — Entrevista: {fmtFecha(s.fecha_entrevista)} a las {s.hora_entrevista}</p>
+                          <span className="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full mt-1" style={{ backgroundColor: esEntrev ? "#e0e7ff" : "#fef3c7", color: acento }}>{esEntrev ? "Serás entrevistador" : "Solo la creaste"}</span>
                           <p className="text-lg font-bold mt-1">
                             {s.confirmado === true ? <span className="text-green-600">✓ Asistirá</span> : s.confirmado === false ? <span className="text-red-600">✗ No asistirá</span> : <span className="text-amber-600">Pendiente</span>}
                             {s.reprogramada && <span className="ml-2 text-sm font-semibold text-blue-700">· Reprogramada</span>}
@@ -736,6 +821,9 @@ const SolicitudEntrevistaStaff = () => {
                     </div>
                   );
                 })}
+                </div>
+                )}
+                </div>
               </div>
             )}
           </div>
