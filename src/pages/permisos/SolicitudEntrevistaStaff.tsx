@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import SignatureCanvas from "react-signature-canvas";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Check, ChevronDown, UserRound, Plus, X, XCircle, RefreshCw, ClipboardList, Download } from "lucide-react";
+import { CalendarIcon, Check, ChevronDown, UserRound, Plus, X, XCircle, RefreshCw, ClipboardList, Download, Pencil } from "lucide-react";
 import { descargarCitacionEntrevista } from "@/utils/citacionEntrevistaPdf";
 import FirmaImage from "@/components/FirmaImage";
 import { apiRequest } from "@/lib/apiClient";
@@ -312,6 +312,58 @@ const SolicitudEntrevistaStaff = () => {
       toast({ title: "Error al reenviar", description: e?.message || "Intenta de nuevo.", variant: "destructive" });
     } finally {
       setReenviando(false);
+    }
+  };
+
+  // ── Editar una solicitud ya creada (solo el creador) ──────────────────────
+  // Permite corregir entrevistadores, mensaje y fecha/hora sin borrar y recrear.
+  const [edSol, setEdSol] = useState<any | null>(null);
+  const [edFecha, setEdFecha] = useState<Date | undefined>(undefined);
+  const [edCalOpen, setEdCalOpen] = useState(false);
+  const [edH, setEdH] = useState(""); const [edM, setEdM] = useState(""); const [edAP, setEdAP] = useState("");
+  const [edMensaje, setEdMensaje] = useState("");
+  const [edEntrev, setEdEntrev] = useState<Interno[]>([]);
+  const [edCargo, setEdCargo] = useState(""); const [edPick, setEdPick] = useState<Interno | null>(null);
+  const [edGuardando, setEdGuardando] = useState(false);
+  const edInternosFiltrados = internos.filter(i => !edCargo || i.cargo === edCargo);
+
+  const abrirEditar = (s: any) => {
+    setEdFecha(s.fecha_entrevista ? new Date(s.fecha_entrevista + "T12:00:00") : undefined);
+    const m = String(s.hora_entrevista || "").match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+    setEdH(m?.[1] || ""); setEdM(m?.[2] || ""); setEdAP((m?.[3] || "").toUpperCase());
+    setEdMensaje(s.mensaje || "");
+    setEdEntrev((s.entrevistadores || []).map((e: any) => ({ id: Number(e.id), cargo: e.cargo, nombres: e.nombres, apellidos: e.apellidos, genero: e.genero ?? null })));
+    setEdCargo(""); setEdPick(null);
+    setEdSol(s);
+  };
+  const agregarEdEntrev = () => { if (!edPick || edEntrev.some(e => e.id === edPick.id)) return; setEdEntrev(prev => [...prev, edPick]); setEdPick(null); };
+  const quitarEdEntrev = (id: number) => setEdEntrev(prev => prev.filter(e => e.id !== id));
+
+  const guardarEdicion = async () => {
+    if (!edSol || !edFecha || !edH || !edM || !edAP) return;
+    if (edEntrev.length === 0) { toast({ title: "Faltan entrevistadores", description: "Agrega al menos un entrevistador.", variant: "destructive" }); return; }
+    setEdGuardando(true);
+    try {
+      const fmtLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const nuevaFechaISO = fmtLocal(edFecha);
+      const nuevaHora = `${edH}:${edM} ${edAP}`;
+      const entrevPayload = edEntrev.map(e => ({ id: e.id, cargo: e.cargo, nombres: e.nombres, apellidos: e.apellidos, genero: e.genero ?? null }));
+      const { error } = await supabase.from("Solicitudes_Entrevista")
+        .update({ fecha_entrevista: nuevaFechaISO, hora_entrevista: nuevaHora, entrevistadores: entrevPayload, mensaje: edMensaje.trim() || null })
+        .eq("id", edSol.id);
+      if (error) throw error;
+      // Recalcula _tipo por si se agregó/quitó a sí mismo como entrevistador.
+      const idNum = Number(session.id);
+      const soyEntrev = entrevPayload.some(e => Number(e.id) === idNum);
+      setHistorial(prev => prev.map(x => x.id === edSol.id
+        ? { ...x, fecha_entrevista: nuevaFechaISO, hora_entrevista: nuevaHora, entrevistadores: entrevPayload, mensaje: edMensaje.trim() || null, _tipo: soyEntrev ? "entrevistador" : "creador" }
+        : x));
+      toast({ title: "Solicitud actualizada", description: "Se guardaron los cambios." });
+      setEdSol(null);
+    } catch (e: any) {
+      toast({ title: "No se pudo editar", description: e?.message || "Intenta de nuevo.", variant: "destructive" });
+    } finally {
+      setEdGuardando(false);
     }
   };
 
@@ -681,7 +733,7 @@ const SolicitudEntrevistaStaff = () => {
                     className="rounded-md border shadow-sm" />
                   <div className="flex flex-col gap-1 text-xs text-muted-foreground self-start">
                     <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-3.5 rounded" style={{ backgroundColor: "#4f46e5" }} /> Serás entrevistador</span>
-                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-3.5 rounded" style={{ backgroundColor: "#f59e0b" }} /> Solo la creaste</span>
+                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-3.5 rounded" style={{ backgroundColor: "#f59e0b" }} /> Creada por ti</span>
                     <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-3.5 rounded" style={{ background: "linear-gradient(135deg,#4f46e5 0 50%,#f59e0b 50% 100%)" }} /> Ambos ese día</span>
                   </div>
                 </div>
@@ -716,7 +768,7 @@ const SolicitudEntrevistaStaff = () => {
                         <div>
                           <p className="font-semibold text-foreground text-base">{s.estudiante_apellidos} {s.estudiante_nombre}</p>
                           <p className="text-sm text-muted-foreground">{s.estudiante_grado} {s.estudiante_salon} — Entrevista: {fmtFecha(s.fecha_entrevista)} a las {s.hora_entrevista}</p>
-                          <span className="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full mt-1" style={{ backgroundColor: esEntrev ? "#e0e7ff" : "#fef3c7", color: acento }}>{esEntrev ? "Serás entrevistador" : "Solo la creaste"}</span>
+                          <span className="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full mt-1" style={{ backgroundColor: esEntrev ? "#e0e7ff" : "#fef3c7", color: acento }}>{esEntrev ? "Serás entrevistador" : "Creada por ti"}</span>
                           <p className="text-lg font-bold mt-1">
                             {s.confirmado === true ? <span className="text-green-600">✓ Asistirá</span> : s.confirmado === false ? <span className="text-red-600">✗ No asistirá</span> : <span className="text-amber-600">Pendiente</span>}
                             {s.reprogramada && <span className="ml-2 text-sm font-semibold text-blue-700">· Reprogramada</span>}
@@ -761,6 +813,19 @@ const SolicitudEntrevistaStaff = () => {
                             </div>
                             <p className="text-xs text-muted-foreground mt-2">Toca de nuevo para volver a "Pendiente".</p>
                           </div>
+
+                          {/* Editar la solicitud (solo el creador): entrevistadores, mensaje y fecha/hora */}
+                          {String(s.creado_por) === String(session.id) && (
+                            <div className="border-t border-border pt-3 mt-1">
+                              <button
+                                onClick={() => abrirEditar(s)}
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-border font-medium text-sm hover:border-primary cursor-pointer"
+                              >
+                                <Pencil className="w-4 h-4" /> Editar solicitud
+                              </button>
+                              <p className="text-xs text-muted-foreground mt-2">Corrige entrevistadores, mensaje o fecha/hora sin borrar y volver a crear.</p>
+                            </div>
+                          )}
 
                           {/* Reprogramar: solo si el acudiente respondió "No asistiré" o no marcó nada */}
                           {s.confirmado !== true && (
@@ -897,6 +962,95 @@ const SolicitudEntrevistaStaff = () => {
             <AlertDialogCancel className="cursor-pointer" disabled={reenviando}>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={(e) => { e.preventDefault(); confirmarReenvio(); }} disabled={reenviando || !reFecha || !reH || !reM || !reAP} className="cursor-pointer">
               {reenviando ? "Reenviando…" : "Reenviar citación"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Editar solicitud: entrevistadores, mensaje y fecha/hora */}
+      <AlertDialog open={!!edSol} onOpenChange={(o) => { if (!o) setEdSol(null); }}>
+        <AlertDialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Editar solicitud</AlertDialogTitle>
+            <AlertDialogDescription>
+              {edSol && <>Entrevista de <span className="font-medium text-foreground">{edSol.estudiante_nombre} {edSol.estudiante_apellidos}</span> ({edSol.estudiante_grado} {edSol.estudiante_salon}). El estudiante no se puede cambiar.</>}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="space-y-4 py-1">
+            <div className="flex flex-wrap gap-4">
+              <div>
+                <p className="text-sm font-medium mb-1">Fecha:</p>
+                <Popover open={edCalOpen} onOpenChange={setEdCalOpen}>
+                  <PopoverTrigger asChild>
+                    <button className="inline-flex items-center gap-1 px-3 py-1.5 border-b-2 border-primary/40 text-primary font-medium bg-transparent hover:bg-accent rounded cursor-pointer min-w-[200px]">
+                      {edFecha ? edFecha.toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" }) : "Seleccionar fecha"}
+                      <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={edFecha} onSelect={(d) => { setEdFecha(d); setEdCalOpen(false); }} locale={es} disabled={(d) => d < new Date(new Date().setHours(0,0,0,0))} />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div>
+                <p className="text-sm font-medium mb-1">Hora:</p>
+                <div className="flex items-center gap-1">
+                  <select value={edH} onChange={e => setEdH(e.target.value)} className="px-1 py-1 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm cursor-pointer outline-none">
+                    <option value="">--</option>
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map(h => <option key={h} value={String(h)}>{h}</option>)}
+                  </select>
+                  <span>:</span>
+                  <select value={edM} onChange={e => setEdM(e.target.value)} className="px-1 py-1 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm cursor-pointer outline-none">
+                    <option value="">--</option>
+                    {["00","05","10","15","20","25","30","35","40","45","50","55"].map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                  <select value={edAP} onChange={e => setEdAP(e.target.value)} className="px-1 py-1 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm cursor-pointer outline-none">
+                    <option value="">--</option>
+                    <option value="AM">AM</option>
+                    <option value="PM">PM</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-sm font-medium mb-1">Entrevistadores:</p>
+              {edEntrev.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {edEntrev.map(e => (
+                    <span key={e.id} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
+                      {e.cargo} {e.nombres} {e.apellidos}
+                      <button type="button" onClick={() => quitarEdEntrev(e.id)} className="text-primary/70 hover:text-primary cursor-pointer" title="Quitar"><X className="w-3.5 h-3.5" /></button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="flex flex-wrap gap-2 items-center">
+                <select value={edCargo} onChange={e => { setEdCargo(e.target.value); setEdPick(null); }} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                  <option value="">Cargo</option>
+                  {cargosUnicos.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <select value={edPick ? String(edPick.id) : ""} onChange={e => setEdPick(edInternosFiltrados.find(i => String(i.id) === e.target.value) || null)} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer min-w-[180px]">
+                  <option value="">Seleccionar</option>
+                  {edInternosFiltrados.map(i => <option key={i.id} value={String(i.id)}>{i.apellidos} {i.nombres}</option>)}
+                </select>
+                <button type="button" onClick={agregarEdEntrev} disabled={!edPick} className="inline-flex items-center gap-1 px-3 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 cursor-pointer">
+                  <Plus className="w-4 h-4" /> Agregar
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-sm font-medium mb-1">Mensaje <span className="text-muted-foreground font-normal">(opcional)</span>:</p>
+              <textarea value={edMensaje} onChange={e => setEdMensaje(e.target.value)} rows={3} className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background resize-y" placeholder="Mensaje para el acudiente…" />
+            </div>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel className="cursor-pointer" disabled={edGuardando}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); guardarEdicion(); }} disabled={edGuardando || !edFecha || !edH || !edM || !edAP || edEntrev.length === 0} className="cursor-pointer">
+              {edGuardando ? "Guardando…" : "Guardar cambios"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
