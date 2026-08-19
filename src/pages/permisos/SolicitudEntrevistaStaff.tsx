@@ -13,7 +13,7 @@ import FirmaImage from "@/components/FirmaImage";
 import { apiRequest } from "@/lib/apiClient";
 import { joinEntrevistadores, entrevistadoresDeSolicitud } from "@/lib/entrevistadores";
 import FormatoWhatsAppToolbar, { EditorComunicado, whatsappToHtml, type EditorComunicadoHandle } from "@/components/FormatoWhatsAppToolbar";
-import { useGradosColegio } from "@/utils/grados";
+import { useGradosColegio, rankGrado } from "@/utils/grados";
 import { es } from "date-fns/locale";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -125,12 +125,28 @@ const SolicitudEntrevistaStaff = () => {
     }
     return { diasCreador: cre, diasEntrev: ent, diasAmbos: amb };
   }, [historialFiltrado]);
+  // "7:00 AM" → minutos desde medianoche (para ordenar cronológicamente de verdad).
+  const horaEnMin = (h: string) => {
+    const m = String(h || "").match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+    if (!m) return 99999;
+    let hh = parseInt(m[1], 10) % 12;
+    if ((m[3] || "").toUpperCase() === "PM") hh += 12;
+    return hh * 60 + parseInt(m[2], 10);
+  };
   const solDelDia = useMemo(() => {
     if (!diaStaff) return [];
     const k = fechaKey(diaStaff);
     return historialFiltrado
       .filter(s => s.fecha_entrevista === k)
-      .sort((a, b) => String(a.hora_entrevista || "").localeCompare(String(b.hora_entrevista || "")));
+      .sort((a, b) => {
+        // 1º hora de la entrevista, 2º grado, 3º nombre del estudiante.
+        const dh = horaEnMin(a.hora_entrevista) - horaEnMin(b.hora_entrevista);
+        if (dh !== 0) return dh;
+        const dg = rankGrado(a.estudiante_grado) - rankGrado(b.estudiante_grado);
+        if (dg !== 0) return dg;
+        return `${a.estudiante_apellidos || ""} ${a.estudiante_nombre || ""}`
+          .localeCompare(`${b.estudiante_apellidos || ""} ${b.estudiante_nombre || ""}`, "es");
+      });
   }, [historialFiltrado, diaStaff]);
 
   const backLink = isAdmin() ? "/dashboard" : puedeAccederDashboard() ? "/dashboard" : "/dashboard";
