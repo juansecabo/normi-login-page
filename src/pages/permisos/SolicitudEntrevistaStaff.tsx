@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import SignatureCanvas from "react-signature-canvas";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Check, ChevronDown, UserRound, Plus, X, XCircle, RefreshCw, ClipboardList, Download, Pencil } from "lucide-react";
+import { CalendarIcon, Check, ChevronDown, UserRound, Plus, X, XCircle, RefreshCw, ClipboardList, Download, Pencil, CheckCircle2 } from "lucide-react";
 import { descargarCitacionEntrevista } from "@/utils/citacionEntrevistaPdf";
 import FirmaImage from "@/components/FirmaImage";
 import { apiRequest } from "@/lib/apiClient";
@@ -132,6 +132,15 @@ const SolicitudEntrevistaStaff = () => {
     let hh = parseInt(m[1], 10) % 12;
     if ((m[3] || "").toUpperCase() === "PM") hh += 12;
     return hh * 60 + parseInt(m[2], 10);
+  };
+  // ¿Ya pasó la hora de la entrevista? (fecha + hora en zona Bogotá, UTC-5 fijo).
+  const entrevistaYaPaso = (s: any) => {
+    const m = String(s.hora_entrevista || "").match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+    if (!m || !s.fecha_entrevista) return false;
+    let hh = parseInt(m[1], 10) % 12;
+    if ((m[3] || "").toUpperCase() === "PM") hh += 12;
+    const t = new Date(`${s.fecha_entrevista}T${String(hh).padStart(2, "0")}:${m[2]}:00-05:00`).getTime();
+    return !isNaN(t) && t < Date.now();
   };
   const solDelDia = useMemo(() => {
     if (!diaStaff) return [];
@@ -319,7 +328,7 @@ const SolicitudEntrevistaStaff = () => {
       });
       // Actualiza fecha/hora y reabre la confirmación (vuelve a "Pendiente").
       await supabase.from("Solicitudes_Entrevista")
-        .update({ fecha_entrevista: nuevaFechaISO, hora_entrevista: nuevaHora, confirmado: null, respuesta_vista: true })
+        .update({ fecha_entrevista: nuevaFechaISO, hora_entrevista: nuevaHora, confirmado: null, respuesta_vista: true, recordatorio_enviado: false })
         .eq("id", reSol.id);
       setHistorial(prev => prev.map(x => x.id === reSol.id ? { ...x, fecha_entrevista: nuevaFechaISO, hora_entrevista: nuevaHora, confirmado: null } : x));
       toast({ title: "Citación reenviada", description: "Se reprogramó y se notificó nuevamente al acudiente." });
@@ -365,7 +374,7 @@ const SolicitudEntrevistaStaff = () => {
       const nuevaHora = `${edH}:${edM} ${edAP}`;
       const entrevPayload = edEntrev.map(e => ({ id: e.id, cargo: e.cargo, nombres: e.nombres, apellidos: e.apellidos, genero: e.genero ?? null }));
       const { error } = await supabase.from("Solicitudes_Entrevista")
-        .update({ fecha_entrevista: nuevaFechaISO, hora_entrevista: nuevaHora, entrevistadores: entrevPayload, mensaje: edMensaje.trim() || null })
+        .update({ fecha_entrevista: nuevaFechaISO, hora_entrevista: nuevaHora, entrevistadores: entrevPayload, mensaje: edMensaje.trim() || null, recordatorio_enviado: false })
         .eq("id", edSol.id);
       if (error) throw error;
       // Recalcula _tipo por si se agregó/quitó a sí mismo como entrevistador.
@@ -790,7 +799,14 @@ const SolicitudEntrevistaStaff = () => {
                             {s.reprogramada && <span className="ml-2 text-sm font-semibold text-blue-700">· Reprogramada</span>}
                           </p>
                         </div>
-                        <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${isExp ? "rotate-180" : ""}`} />
+                        <div className="flex items-center gap-2 shrink-0">
+                          {entrevistaYaPaso(s) && (
+                            <span title="Esta entrevista ya pasó" className="inline-flex items-center gap-1 text-green-600 text-sm font-semibold">
+                              <CheckCircle2 className="w-5 h-5" /> Ya pasó
+                            </span>
+                          )}
+                          <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${isExp ? "rotate-180" : ""}`} />
+                        </div>
                       </button>
                       {isExp && (
                         <div className="border-t border-border p-4 bg-muted/10 text-sm text-foreground leading-relaxed space-y-2">
