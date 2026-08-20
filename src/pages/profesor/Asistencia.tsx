@@ -51,6 +51,7 @@ const Asistencia = () => {
   const [roster, setRoster] = useState<AsistenciaRosterItem[]>([]);
   const [idx, setIdx] = useState(0);
   const [busqueda, setBusqueda] = useState(""); // corregir un estudiante puntual al final
+  const [filtroEstado, setFiltroEstado] = useState<AsistenciaEstado | null>(null); // ver lista por total (ausentes, etc.)
 
   // Drag de la tarjeta superior + tarjeta "saliendo" (se va de verdad, no rebota).
   const startRef = useRef<{ x: number; y: number } | null>(null);
@@ -186,9 +187,17 @@ const Asistencia = () => {
         toast({ title: "No se guardó", description: `Falló al guardar la marca de ${est.nombres}. Reintenta.`, variant: "destructive" });
       });
   };
+  // Búsqueda flexible: ignora mayúsculas Y tildes (ver memoria buscadores_flexibles).
+  const norm = (s: string) => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const resultadosBusqueda = busqueda.trim()
-    ? roster.filter((r) => `${r.apellidos || ""} ${r.nombres || ""}`.toLowerCase().includes(busqueda.trim().toLowerCase())).slice(0, 8)
+    ? roster.filter((r) => norm(`${r.apellidos || ""} ${r.nombres || ""}`).includes(norm(busqueda))).slice(0, 20)
     : [];
+  // Lista a corregir: por búsqueda, o por total tocado (ausentes, tarde, etc.).
+  const listaCorregir = busqueda.trim()
+    ? resultadosBusqueda
+    : filtroEstado
+      ? roster.filter((r) => r.estado === filtroEstado)
+      : [];
 
   // Anima la tarjeta saliente fuera de pantalla y luego la quita del DOM.
   useEffect(() => {
@@ -316,7 +325,7 @@ const Asistencia = () => {
           <div className="max-w-md mx-auto mt-4">
             {/* Encabezado de la clase */}
             <div className="flex items-center justify-between mb-3">
-              <button onClick={() => setStep("select")} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 border-border text-foreground text-sm font-medium hover:border-primary transition cursor-pointer">
+              <button onClick={() => setStep("select")} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border shadow-sm text-foreground text-sm font-medium hover:bg-muted transition cursor-pointer">
                 <ArrowLeft className="w-4 h-4" /> Cambiar clase
               </button>
               <span className="text-xs text-muted-foreground capitalize">{fechaLarga(fecha)}</span>
@@ -337,17 +346,28 @@ const Asistencia = () => {
               <div className="bg-card rounded-2xl shadow-soft p-8 text-center">
                 <p className="text-lg font-bold text-foreground mb-2">¡Asistencia completa!</p>
                 <p className="text-sm text-muted-foreground mb-4">Marcaste {pl(roster.length, "estudiante", "estudiantes")} de {grado} {salon}.</p>
-                <div className="flex justify-center gap-4 text-sm mb-6">
-                  <span className="text-emerald-600 font-semibold">{pl(conteo.presente, "presente", "presentes")}</span>
-                  <span className="text-rose-600 font-semibold">{pl(conteo.ausente, "ausente", "ausentes")}</span>
-                  <span className="text-amber-600 font-semibold">{pl(conteo.excusa, "con excusa", "con excusas")}</span>
-                  {conteo.tarde > 0 && <span className="text-orange-600 font-semibold">{pl(conteo.tarde, "tarde", "tarde")}</span>}
+                {/* Totales: TOCA uno para ver esa lista y corregirlos. Se muestran los 4 siempre. */}
+                <div className="flex flex-wrap justify-center gap-2 text-sm mb-6">
+                  {([
+                    ["presente", conteo.presente, "presente", "presentes"],
+                    ["ausente", conteo.ausente, "ausente", "ausentes"],
+                    ["tarde", conteo.tarde, "llegó tarde", "llegaron tarde"],
+                    ["excusa", conteo.excusa, "con excusa", "con excusas"],
+                  ] as [AsistenciaEstado, number, string, string][]).map(([es, n, sing, plur]) => (
+                    <button
+                      key={es}
+                      onClick={() => { setFiltroEstado(filtroEstado === es ? null : es); setBusqueda(""); }}
+                      className={`px-3 py-1 rounded-full font-semibold bg-muted transition cursor-pointer ${ESTADO_UI[es].text} ${filtroEstado === es ? "ring-2 ring-current" : "hover:opacity-80"}`}
+                    >
+                      {pl(n, sing, plur)}
+                    </button>
+                  ))}
                 </div>
                 <div className="flex flex-wrap gap-3 justify-center">
-                  <button onClick={volverAnterior} className="px-4 py-2 rounded-lg border border-border text-foreground hover:bg-muted flex items-center gap-1.5">
+                  <button onClick={volverAnterior} className="px-4 py-2 rounded-lg border border-border bg-card text-foreground hover:bg-muted flex items-center gap-1.5">
                     <RotateCcw className="w-4 h-4" /> Volver al anterior
                   </button>
-                  <button onClick={() => setIdx(0)} className="px-4 py-2 rounded-lg border border-border text-foreground hover:bg-muted">Revisar de nuevo</button>
+                  <button onClick={() => setIdx(0)} className="px-4 py-2 rounded-lg border border-border bg-card text-foreground hover:bg-muted">Revisar de nuevo</button>
                   <button onClick={() => navigate("/dashboard")} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90">Terminar</button>
                 </div>
 
@@ -356,24 +376,25 @@ const Asistencia = () => {
                   <p className="text-sm font-medium text-foreground mb-2">¿Corregir a un estudiante? (ej. uno que llegó tarde)</p>
                   <input
                     value={busqueda}
-                    onChange={(e) => setBusqueda(e.target.value)}
+                    onChange={(e) => { setBusqueda(e.target.value); setFiltroEstado(null); }}
                     placeholder="Buscar por nombre o apellido…"
                     className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background"
                   />
-                  {busqueda.trim() && (
-                    resultadosBusqueda.length === 0 ? (
-                      <p className="text-xs text-muted-foreground mt-2">Sin coincidencias.</p>
+                  <p className="text-xs text-muted-foreground mt-1.5">También puedes tocar un total de arriba (ausentes, llegaron tarde…) para ver esa lista.</p>
+                  {(busqueda.trim() || filtroEstado) && (
+                    listaCorregir.length === 0 ? (
+                      <p className="text-xs text-muted-foreground mt-2">{busqueda.trim() ? "Sin coincidencias." : "Ninguno."}</p>
                     ) : (
-                      <div className="mt-2 space-y-2 max-h-72 overflow-y-auto">
-                        {resultadosBusqueda.map((r) => (
-                          <div key={r.estudiante_id} className="border border-border rounded-lg p-2.5">
+                      <div className="mt-3 space-y-2 max-h-72 overflow-y-auto">
+                        {listaCorregir.map((r) => (
+                          <div key={r.estudiante_id} className="border border-border rounded-lg p-2.5 bg-card">
                             <p className="text-sm font-medium text-foreground">{r.apellidos} {r.nombres}</p>
                             <div className="flex flex-wrap gap-1.5 mt-2">
                               {(["presente", "ausente", "tarde", "excusa"] as AsistenciaEstado[]).map((es) => (
                                 <button
                                   key={es}
                                   onClick={() => marcarDirecto(r, es)}
-                                  className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition cursor-pointer ${r.estado === es ? `${ESTADO_UI[es].color} text-white border-transparent` : "border-border text-muted-foreground hover:bg-muted"}`}
+                                  className={`px-2.5 py-1 rounded-full text-xs font-semibold transition cursor-pointer ${r.estado === es ? `${ESTADO_UI[es].color} text-white` : "bg-muted text-foreground hover:opacity-80"}`}
                                 >
                                   {ESTADO_UI[es].label}
                                 </button>
