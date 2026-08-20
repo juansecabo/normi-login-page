@@ -50,6 +50,7 @@ const Asistencia = () => {
   const [cargandoRoster, setCargandoRoster] = useState(false);
   const [roster, setRoster] = useState<AsistenciaRosterItem[]>([]);
   const [idx, setIdx] = useState(0);
+  const [busqueda, setBusqueda] = useState(""); // corregir un estudiante puntual al final
 
   // Drag de la tarjeta superior + tarjeta "saliendo" (se va de verdad, no rebota).
   const startRef = useRef<{ x: number; y: number } | null>(null);
@@ -170,6 +171,24 @@ const Asistencia = () => {
     setDrag(null);
     startRef.current = null;
   };
+
+  // Corrección puntual desde el buscador final: marca a un estudiante sin entrar
+  // al mazo ni mover el índice (para arreglar a uno solo, p.ej. el que llegó tarde).
+  const marcarDirecto = (est: AsistenciaRosterItem, estado: AsistenciaEstado) => {
+    setRoster((prev) => prev.map((x) => (x.estudiante_id === est.estudiante_id ? { ...x, estado } : x)));
+    apiClient.asistencia
+      .marcar({ asignatura, grado, salon, fecha, estudiante_id: est.estudiante_id, estado })
+      .then((r) => {
+        setRoster((prev) => prev.map((x) => (x.estudiante_id === est.estudiante_id ? { ...x, estado: r.estado } : x)));
+        if (r.auto_excusa) toast({ title: "Excusa registrada", description: `${est.nombres} ya tenía una excusa vigente — se marcó como excusa.` });
+      })
+      .catch(() => {
+        toast({ title: "No se guardó", description: `Falló al guardar la marca de ${est.nombres}. Reintenta.`, variant: "destructive" });
+      });
+  };
+  const resultadosBusqueda = busqueda.trim()
+    ? roster.filter((r) => `${r.apellidos || ""} ${r.nombres || ""}`.toLowerCase().includes(busqueda.trim().toLowerCase())).slice(0, 8)
+    : [];
 
   // Anima la tarjeta saliente fuera de pantalla y luego la quita del DOM.
   useEffect(() => {
@@ -297,7 +316,7 @@ const Asistencia = () => {
           <div className="max-w-md mx-auto mt-4">
             {/* Encabezado de la clase */}
             <div className="flex items-center justify-between mb-3">
-              <button onClick={() => setStep("select")} className="text-primary text-sm flex items-center gap-1 hover:underline">
+              <button onClick={() => setStep("select")} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 border-border text-foreground text-sm font-medium hover:border-primary transition cursor-pointer">
                 <ArrowLeft className="w-4 h-4" /> Cambiar clase
               </button>
               <span className="text-xs text-muted-foreground capitalize">{fechaLarga(fecha)}</span>
@@ -330,6 +349,41 @@ const Asistencia = () => {
                   </button>
                   <button onClick={() => setIdx(0)} className="px-4 py-2 rounded-lg border border-border text-foreground hover:bg-muted">Revisar de nuevo</button>
                   <button onClick={() => navigate("/dashboard")} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90">Terminar</button>
+                </div>
+
+                {/* Corregir un estudiante puntual sin volver a pasar por todos */}
+                <div className="mt-6 border-t border-border pt-4 text-left">
+                  <p className="text-sm font-medium text-foreground mb-2">¿Corregir a un estudiante? (ej. uno que llegó tarde)</p>
+                  <input
+                    value={busqueda}
+                    onChange={(e) => setBusqueda(e.target.value)}
+                    placeholder="Buscar por nombre o apellido…"
+                    className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background"
+                  />
+                  {busqueda.trim() && (
+                    resultadosBusqueda.length === 0 ? (
+                      <p className="text-xs text-muted-foreground mt-2">Sin coincidencias.</p>
+                    ) : (
+                      <div className="mt-2 space-y-2 max-h-72 overflow-y-auto">
+                        {resultadosBusqueda.map((r) => (
+                          <div key={r.estudiante_id} className="border border-border rounded-lg p-2.5">
+                            <p className="text-sm font-medium text-foreground">{r.apellidos} {r.nombres}</p>
+                            <div className="flex flex-wrap gap-1.5 mt-2">
+                              {(["presente", "ausente", "tarde", "excusa"] as AsistenciaEstado[]).map((es) => (
+                                <button
+                                  key={es}
+                                  onClick={() => marcarDirecto(r, es)}
+                                  className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition cursor-pointer ${r.estado === es ? `${ESTADO_UI[es].color} text-white border-transparent` : "border-border text-muted-foreground hover:bg-muted"}`}
+                                >
+                                  {ESTADO_UI[es].label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
             ) : (
