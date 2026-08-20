@@ -160,6 +160,8 @@ const SolicitudEntrevistaStaff = () => {
 
   const backLink = isAdmin() ? "/dashboard" : puedeAccederDashboard() ? "/dashboard" : "/dashboard";
   const session = getSession();
+  // "Serás entrevistador/entrevistadora" según el género del usuario logueado.
+  const labelEntrevistador = session.genero === "F" ? "Serás entrevistadora" : "Serás entrevistador";
 
   // Contador para el numerito del tab "Solicitudes creadas"
   useEffect(() => {
@@ -757,7 +759,7 @@ const SolicitudEntrevistaStaff = () => {
                     }}
                     className="rounded-md border shadow-sm" />
                   <div className="flex flex-col gap-1 text-xs text-muted-foreground self-start">
-                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-3.5 rounded" style={{ backgroundColor: "#4f46e5" }} /> Serás entrevistador</span>
+                    <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-3.5 rounded" style={{ backgroundColor: "#4f46e5" }} /> {labelEntrevistador}</span>
                     <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-3.5 rounded" style={{ backgroundColor: "#f59e0b" }} /> Creada por ti</span>
                     <span className="flex items-center gap-2"><span className="inline-block w-3.5 h-3.5 rounded" style={{ background: "linear-gradient(135deg,#4f46e5 0 50%,#f59e0b 50% 100%)" }} /> Ambos ese día</span>
                   </div>
@@ -793,7 +795,7 @@ const SolicitudEntrevistaStaff = () => {
                         <div>
                           <p className="font-semibold text-foreground text-base">{s.estudiante_apellidos} {s.estudiante_nombre}</p>
                           <p className="text-sm text-muted-foreground">{s.estudiante_grado} {s.estudiante_salon} — Entrevista: {fmtFecha(s.fecha_entrevista)} a las {s.hora_entrevista}</p>
-                          <span className="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full mt-1" style={{ backgroundColor: esEntrev ? "#e0e7ff" : "#fef3c7", color: acento }}>{esEntrev ? "Serás entrevistador" : "Creada por ti"}</span>
+                          <span className="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full mt-1" style={{ backgroundColor: esEntrev ? "#e0e7ff" : "#fef3c7", color: acento }}>{esEntrev ? labelEntrevistador : "Creada por ti"}</span>
                           <p className="text-lg font-bold mt-1">
                             {s.confirmado === true ? <span className="text-green-600">✓ Asistirá</span> : s.confirmado === false ? <span className="text-red-600">✗ No asistirá</span> : <span className="text-amber-600">Pendiente</span>}
                             {s.reprogramada && <span className="ml-2 text-sm font-semibold text-blue-700">· Reprogramada</span>}
