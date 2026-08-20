@@ -380,7 +380,6 @@ const Asistencia = () => {
                     placeholder="Buscar por nombre o apellido…"
                     className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background"
                   />
-                  <p className="text-xs text-muted-foreground mt-1.5">También puedes tocar un total de arriba (ausentes, llegaron tarde…) para ver esa lista.</p>
                   {(busqueda.trim() || filtroEstado) && (
                     listaCorregir.length === 0 ? (
                       <p className="text-xs text-muted-foreground mt-2">{busqueda.trim() ? "Sin coincidencias." : "Ninguno."}</p>
