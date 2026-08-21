@@ -111,16 +111,20 @@ const SolicitudEntrevistaStaff = () => {
   // 'entrevistador' manda sobre 'creador'; si el día tiene de ambos → diagonal.
   const fechaKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const { diasCreador, diasEntrev, diasAmbos } = useMemo(() => {
-    const porDia: Record<string, Set<string>> = {};
+    // Por día acumulo si HAY algo creado y si HAY algo de entrevistador ese día.
+    // Una sola entrevista que sea de ambos tipos marca las dos banderas → diagonal.
+    const porDia: Record<string, { cre: boolean; ent: boolean }> = {};
     for (const s of historialFiltrado) {
       if (!s.fecha_entrevista) continue;
-      (porDia[s.fecha_entrevista] ||= new Set()).add(s._tipo);
+      const acc = (porDia[s.fecha_entrevista] ||= { cre: false, ent: false });
+      if (s._creada) acc.cre = true;
+      if (s._entrev) acc.ent = true;
     }
     const cre: Date[] = [], ent: Date[] = [], amb: Date[] = [];
-    for (const [k, set] of Object.entries(porDia)) {
+    for (const [k, f] of Object.entries(porDia)) {
       const d = new Date(k + "T12:00:00");
-      if (set.has("entrevistador") && set.has("creador")) amb.push(d);
-      else if (set.has("entrevistador")) ent.push(d);
+      if (f.cre && f.ent) amb.push(d);
+      else if (f.ent) ent.push(d);
       else cre.push(d);
     }
     return { diasCreador: cre, diasEntrev: ent, diasAmbos: amb };
@@ -222,10 +226,13 @@ const SolicitudEntrevistaStaff = () => {
       .eq("colegio_id", session.colegio_id);
     const esEntrev = (s: any) =>
       Array.isArray(s.entrevistadores) && s.entrevistadores.some((e: any) => Number(e.id) === idNum);
+    const esCreada = (s: any) => String(s.creado_por) === String(session.id);
+    // _creada y _entrev son independientes: una misma entrevista puede ser
+    // ambas (la creó y además figura de entrevistador). Así la ficha muestra
+    // las dos etiquetas y el día se pinta bicolor.
     const merged = (data || [])
-      .filter((s: any) => String(s.creado_por) === String(session.id) || esEntrev(s))
-      // _tipo: 'entrevistador' tiene prioridad sobre 'creador'.
-      .map((s: any) => ({ ...s, _tipo: esEntrev(s) ? "entrevistador" : "creador" }));
+      .filter((s: any) => esCreada(s) || esEntrev(s))
+      .map((s: any) => ({ ...s, _creada: esCreada(s), _entrev: esEntrev(s) }));
     setHistorial(merged);
     setLoadingHistorial(false);
     // Ver el historial apaga el numerito del dashboard (respuestas ya vistas).
@@ -379,11 +386,11 @@ const SolicitudEntrevistaStaff = () => {
         .update({ fecha_entrevista: nuevaFechaISO, hora_entrevista: nuevaHora, entrevistadores: entrevPayload, mensaje: edMensaje.trim() || null, recordatorio_enviado: false })
         .eq("id", edSol.id);
       if (error) throw error;
-      // Recalcula _tipo por si se agregó/quitó a sí mismo como entrevistador.
+      // Recalcula _entrev por si se agregó/quitó a sí mismo como entrevistador.
       const idNum = Number(session.id);
       const soyEntrev = entrevPayload.some(e => Number(e.id) === idNum);
       setHistorial(prev => prev.map(x => x.id === edSol.id
-        ? { ...x, fecha_entrevista: nuevaFechaISO, hora_entrevista: nuevaHora, entrevistadores: entrevPayload, mensaje: edMensaje.trim() || null, _tipo: soyEntrev ? "entrevistador" : "creador" }
+        ? { ...x, fecha_entrevista: nuevaFechaISO, hora_entrevista: nuevaHora, entrevistadores: entrevPayload, mensaje: edMensaje.trim() || null, _entrev: soyEntrev }
         : x));
       toast({ title: "Solicitud actualizada", description: "Se guardaron los cambios." });
       setEdSol(null);
@@ -787,15 +794,24 @@ const SolicitudEntrevistaStaff = () => {
                 </div>
                 {solDelDia.map(s => {
                   const isExp = expandedId === s.id;
-                  const esEntrev = s._tipo === "entrevistador";
+                  const esCreada = !!s._creada;
+                  const esEntrev = !!s._entrev;
+                  const ambos = esCreada && esEntrev;
                   const acento = esEntrev ? "#4f46e5" : "#f59e0b";
+                  // Barra izquierda: diagonal bicolor cuando es de ambos tipos.
+                  const barra = ambos
+                    ? { borderLeft: "4px solid transparent", borderImage: "linear-gradient(135deg, #f59e0b 50%, #4f46e5 50%) 1" }
+                    : { borderLeftColor: acento };
                   return (
-                    <div key={s.id} className="border border-border rounded-lg overflow-hidden border-l-4" style={{ borderLeftColor: acento }}>
+                    <div key={s.id} className="border border-border rounded-lg overflow-hidden border-l-4" style={barra}>
                       <button onClick={() => setExpandedId(isExp ? null : s.id)} className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors cursor-pointer">
                         <div>
                           <p className="font-semibold text-foreground text-base">{s.estudiante_apellidos} {s.estudiante_nombre}</p>
                           <p className="text-sm text-muted-foreground">{s.estudiante_grado} {s.estudiante_salon} — Entrevista: {fmtFecha(s.fecha_entrevista)} a las {s.hora_entrevista}</p>
-                          <span className="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full mt-1" style={{ backgroundColor: esEntrev ? "#e0e7ff" : "#fef3c7", color: acento }}>{esEntrev ? labelEntrevistador : "Creada por ti"}</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {esCreada && <span className="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#fef3c7", color: "#f59e0b" }}>Creada por ti</span>}
+                            {esEntrev && <span className="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#e0e7ff", color: "#4f46e5" }}>{labelEntrevistador}</span>}
+                          </div>
                           <p className="text-lg font-bold mt-1">
                             {s.confirmado === true ? <span className="text-green-600">✓ Asistirá</span> : s.confirmado === false ? <span className="text-red-600">✗ No asistirá</span> : <span className="text-amber-600">Pendiente</span>}
                             {s.reprogramada && <span className="ml-2 text-sm font-semibold text-blue-700">· Reprogramada</span>}
