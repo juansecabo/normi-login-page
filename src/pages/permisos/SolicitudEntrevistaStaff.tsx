@@ -212,20 +212,20 @@ const SolicitudEntrevistaStaff = () => {
   const fetchHistorial = async () => {
     setLoadingHistorial(true);
     const idNum = Number(session.id);
-    // Trae tanto las que ESTE interno creó como en las que figura de
-    // entrevistador (aunque las haya creado otra persona).
-    const [creadasRes, comoEntrevRes] = await Promise.all([
-      supabase.from("Solicitudes_Entrevista").select("*").eq("creado_por", session.id),
-      supabase.from("Solicitudes_Entrevista").select("*").contains("entrevistadores", [{ id: idNum }]),
-    ]);
-    const map = new Map<number, any>();
-    for (const s of (creadasRes.data || [])) map.set(s.id, s);
-    for (const s of (comoEntrevRes.data || [])) if (!map.has(s.id)) map.set(s.id, s);
-    // _tipo: 'entrevistador' tiene prioridad sobre 'creador'.
-    const merged = [...map.values()].map((s) => {
-      const soyEntrev = Array.isArray(s.entrevistadores) && s.entrevistadores.some((e: any) => Number(e.id) === idNum);
-      return { ...s, _tipo: soyEntrev ? "entrevistador" : "creador" };
-    });
+    // Trae TODAS las del colegio y filtra en el cliente: tanto las que ESTE
+    // interno creó como en las que figura de entrevistador (aunque las haya
+    // creado otra persona). Se filtra en el cliente porque el containment de
+    // JSON (.contains) sobre `entrevistadores` no matchea de forma fiable
+    // desde el navegador y dejaba fuera las de "solo entrevistador".
+    const { data } = await supabase
+      .from("Solicitudes_Entrevista").select("*")
+      .eq("colegio_id", session.colegio_id);
+    const esEntrev = (s: any) =>
+      Array.isArray(s.entrevistadores) && s.entrevistadores.some((e: any) => Number(e.id) === idNum);
+    const merged = (data || [])
+      .filter((s: any) => String(s.creado_por) === String(session.id) || esEntrev(s))
+      // _tipo: 'entrevistador' tiene prioridad sobre 'creador'.
+      .map((s: any) => ({ ...s, _tipo: esEntrev(s) ? "entrevistador" : "creador" }));
     setHistorial(merged);
     setLoadingHistorial(false);
     // Ver el historial apaga el numerito del dashboard (respuestas ya vistas).
