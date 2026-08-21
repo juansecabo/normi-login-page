@@ -456,7 +456,7 @@ const Index = () => {
             {/* Interesados en llevar Notas Normi a su colegio (deja sus datos → correo a Juan) */}
             <div className="text-center">
               <button type="button" onClick={() => setContactoOpen(true)} className="text-sm font-semibold text-primary hover:underline">
-                Quiero Notas Normi en mi institución
+                Soy administrativo y quiero Notas Normi en mi institución
               </button>
             </div>
           </form>
