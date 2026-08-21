@@ -13,6 +13,7 @@ import ActividadesCalendario from "./pages/ActividadesCalendario";
 import NormiExaminadora from "./pages/NormiExaminadora";
 import NotFound from "./pages/NotFound";
 import NormiRecordatorioRecuperacion from "./components/NormiRecordatorioRecuperacion";
+import { GuiaProvider } from "@/guia/runtime/GuiaProvider";
 import RegistroAcudiente from "./pages/RegistroAcudiente";
 
 // Rutas para Rector/Coordinador
@@ -125,6 +126,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <GuiaProvider>
         <ScrollToTop />
         <NormiRecordatorioRecuperacion />
         <Routes>
@@ -298,6 +300,7 @@ const App = () => (
 
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </GuiaProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

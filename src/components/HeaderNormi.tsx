@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Download, Repeat, KeyRound, LogOut, MessageCircle, Menu, ChevronDown } from "lucide-react";
+import { Download, Repeat, KeyRound, LogOut, MessageCircle, Menu, ChevronDown, Sparkles } from "lucide-react";
+import { useGuia } from "@/guia/runtime/GuiaProvider";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { clearSession, getSession, haySesionSuperAdminRespaldada, restaurarSesionSuperAdmin } from "@/hooks/useSession";
 import { useColegioConfig } from "@/hooks/useColegioConfig";
@@ -40,6 +41,7 @@ function formatearNumeroWa(digitos: string, crudo: string): string {
 }
 
 const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
+  const guia = useGuia();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [showCambiarContrasena, setShowCambiarContrasena] = useState(false);
@@ -184,6 +186,11 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
                 <DropdownMenuItem onClick={() => setShowCambiarContrasena(true)} className="gap-2 cursor-pointer whitespace-nowrap py-2.5 text-base">
                   <KeyRound className="w-4 h-4" /> {((getSession() as any).sin_contrasena) ? "Crear contraseña" : "Cambiar contraseña"}
                 </DropdownMenuItem>
+                {guia.disponible && (
+                  <DropdownMenuItem onClick={guia.abrir} className="gap-2 cursor-pointer whitespace-nowrap py-2.5 text-base">
+                    <Sparkles className="w-4 h-4" /> Normi te guía
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={handleLogout} className="gap-2 cursor-pointer whitespace-nowrap py-2.5 text-base text-destructive focus:text-destructive">
                   <LogOut className="w-4 h-4" /> Cerrar sesión
                 </DropdownMenuItem>
