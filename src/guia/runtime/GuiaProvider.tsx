@@ -290,7 +290,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
 
       if (paso.accion === "navegar" && paso.ruta) {
         navigate(paso.ruta);
-        const t = window.setTimeout(() => avanzarRef.current(), 900);
+        const t = window.setTimeout(() => avanzarRef.current(), 600);
         cleanupsRef.current.push(() => window.clearTimeout(t));
         return;
       }
@@ -306,41 +306,45 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
       cleanupsRef.current.push(() => {
         vivo = false;
       });
+      // ¿Este paso puede tener un objetivo exacto? (ancla o etiqueta entre comillas)
+      const puedeExacto = !!paso.ancla || !!etiquetaDe(paso.narracion || "");
+      const senalarZona = (zona: HTMLElement) => {
+        zona.scrollIntoView({ block: "center", behavior: "smooth" });
+        window.setTimeout(() => {
+          if (!vivo) return;
+          setRect(zona.getBoundingClientRect());
+        }, 150);
+        const onZonaClick = () => {
+          zona.removeEventListener("click", onZonaClick);
+          window.setTimeout(() => avanzarRef.current(), 250);
+        };
+        zona.addEventListener("click", onZonaClick);
+        cleanupsRef.current.push(() => zona.removeEventListener("click", onZonaClick));
+      };
       let intentos = 0;
       const buscar = () => {
         if (!vivo) return;
-        const el = localizar(paso);
+        const el = puedeExacto ? localizar(paso) : null;
         if (el) {
           el.scrollIntoView({ block: "center", behavior: "smooth" });
           window.setTimeout(() => {
             if (!vivo) return;
             setRect(el.getBoundingClientRect());
             armarAvance(paso, el);
-          }, 250);
+          }, 150);
           return;
         }
-        // Sin botón exacto: a los ~2s se señala la SECCIÓN completa (ej. el
-        // cuadro de asignaturas) y la guía avanza cuando el usuario hace click
-        // dentro de ella (la opción concreta la elige él).
-        if (intentos >= 6) {
+        // Sin botón exacto posible → la SECCIÓN completa se señala DE UNA (sin
+        // esperas); si sí podría haber exacto, se le da ~1s antes de caer a zona.
+        if (!puedeExacto || intentos >= 4) {
           const zona = localizarZona(paso);
           if (zona) {
-            zona.scrollIntoView({ block: "center", behavior: "smooth" });
-            window.setTimeout(() => {
-              if (!vivo) return;
-              setRect(zona.getBoundingClientRect());
-            }, 250);
-            const onZonaClick = () => {
-              zona.removeEventListener("click", onZonaClick);
-              window.setTimeout(() => avanzarRef.current(), 250);
-            };
-            zona.addEventListener("click", onZonaClick);
-            cleanupsRef.current.push(() => zona.removeEventListener("click", onZonaClick));
+            senalarZona(zona);
             return;
           }
         }
         if (++intentos < 14) {
-          window.setTimeout(buscar, 300);
+          window.setTimeout(buscar, 250);
           return;
         }
         // Último respaldo: nada que señalar. Se narra igual y la guía avanza
@@ -353,7 +357,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
         document.addEventListener("click", onDocClick, true);
         cleanupsRef.current.push(() => document.removeEventListener("click", onDocClick, true));
       };
-      window.setTimeout(buscar, 300);
+      window.setTimeout(buscar, 120);
     },
     [navigate],
   );
