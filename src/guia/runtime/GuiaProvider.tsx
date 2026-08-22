@@ -202,6 +202,9 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
   // Consulta automática cuando un paso no encuentra su objetivo (prerequisito
   // faltante): Normi mira la pantalla y lo explica en lenguaje natural.
   const atascoRef = useRef<() => void>(() => {});
+  // Elemento actualmente señalado y bandera de "objetivo perdido" (vigilante).
+  const senaladoRef = useRef<HTMLElement | null>(null);
+  const perdidoRef = useRef(false);
 
   const disponible = guiaDisponible();
 
@@ -305,6 +308,8 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
       if (!paso) return;
       limpiarPaso();
       setRect(null);
+      senaladoRef.current = null;
+      perdidoRef.current = false;
       setRespuesta(null);
       guiaLog("paso", { capacidad: cap.id, idx, accion: paso.accion, narracion: paso.narracion }, true);
 
@@ -333,6 +338,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
         window.setTimeout(() => {
           if (!vivo) return;
           setRect(zona.getBoundingClientRect());
+          senaladoRef.current = zona;
         }, 150);
         guiaLog("senalado", { modo: "zona" });
         const onZonaClick = () => {
@@ -352,6 +358,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
           window.setTimeout(() => {
             if (!vivo) return;
             setRect(el.getBoundingClientRect());
+            senaladoRef.current = el;
             guiaLog("senalado", { modo: "exacto" });
             armarAvance(paso, el);
           }, 150);
@@ -552,15 +559,46 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
     return () => document.removeEventListener("click", onClick, true);
   }, [ejecutando]);
 
+  // Vigilante: mientras la guia corre, verifica que el objetivo señalado siga
+  // existiendo. Si el usuario navego a otra pagina o el elemento desaparecio,
+  // apaga el borde y re-evalua el paso en la pantalla actual (vuelve a señalar
+  // lo correcto, o Normi explica el desvio via atasco).
+  useEffect(() => {
+    if (!ejecutando) return;
+    let lastPath = window.location.pathname;
+    const iv = window.setInterval(() => {
+      const cap = capacidadRef.current;
+      if (!cap) return;
+      const pathNow = window.location.pathname;
+      const el = senaladoRef.current;
+      const vivoEl = !!el && el.isConnected && el.offsetParent !== null;
+      if (pathNow !== lastPath) {
+        lastPath = pathNow;
+        guiaLog("desvio", { a: pathNow }, true);
+        setRect(null);
+        entrarPaso(cap, pasoIdxRef.current);
+        return;
+      }
+      if (el && !vivoEl && !perdidoRef.current) {
+        perdidoRef.current = true;
+        guiaLog("objetivo_perdido", {}, true);
+        setRect(null);
+        entrarPaso(cap, pasoIdxRef.current);
+      }
+    }, 700);
+    return () => window.clearInterval(iv);
+  }, [ejecutando, entrarPaso]);
+
   // Reposiciona el borde de luz al hacer scroll/resize mientras se ejecuta.
   useEffect(() => {
     if (!ejecutando) return;
     const recompute = () => {
-      const cap = capacidadRef.current;
-      const paso = cap?.pasos[pasoIdxRef.current];
-      if (!paso) return;
-      const el = localizar(paso);
-      if (el) setRect(el.getBoundingClientRect());
+      const el = senaladoRef.current;
+      if (el && el.isConnected && el.offsetParent !== null) {
+        setRect(el.getBoundingClientRect());
+      } else {
+        setRect(null); // el objetivo ya no esta a la vista: no dejar el borde flotando
+      }
     };
     window.addEventListener("resize", recompute);
     window.addEventListener("scroll", recompute, true);
