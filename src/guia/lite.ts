@@ -26,10 +26,10 @@ export function rolGuiaDeSesion(): RolGuia | null {
   return (cargo && CARGO_A_ROL[cargo]) || null;
 }
 
-/** ¿Este usuario ve "Normi te guía"? Interno + colegio de prueba (por ahora). */
+/** ¿Este usuario ve "Normi te guía"? Cualquier interno, en TODOS los colegios. */
 export function guiaDisponible(): boolean {
   const { colegio_id } = getSession();
-  return !!rolGuiaDeSesion() && colegio_id === CAILICO_ID;
+  return !!rolGuiaDeSesion() && !!colegio_id;
 }
 
 export function capacidadesDeSesion(): Capacidad[] {
