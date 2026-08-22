@@ -1,17 +1,21 @@
 // "Normi te guía" — motor visual del cursor.
-// Overlay que BLOQUEA los clicks fuera del paso (pop-up centrado), spotlight
-// sobre el elemento del paso, cursor animado, y a Normi (imagen) hablando con
-// globos de texto que entran animados. Solo botones Continúa y Detener.
+// Spotlight INTERACTIVO: se oscurece todo MENOS el elemento del paso (que queda
+// tocable y aclarado). Los clicks fuera del hueco se bloquean con un pop-up.
+// Normi (imagen) habla con globos animados; solo botones Continúa y Detener.
+import type { CSSProperties } from "react";
 import { MousePointer2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useGuia } from "./GuiaProvider";
 import normiImg from "@/assets/normi-guia.png";
 
 const INDIGO = "#4f46e5";
+const PAD = 6;
+const OSCURO = "rgba(15,23,42,0.55)";
 
 export function GuiaCursor() {
   const {
     ejecutando,
+    actuando,
     rect,
     narracion,
     pasoIdx,
@@ -28,6 +32,15 @@ export function GuiaCursor() {
   const cursorX = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
   const cursorY = rect ? rect.top + rect.height / 2 : window.innerHeight * 0.45;
 
+  // Paneles oscuros alrededor del elemento (dejan el hueco tocable).
+  const panel = (style: CSSProperties, k: string) => (
+    <div
+      key={k}
+      onClick={mostrarAviso}
+      style={{ position: "fixed", background: OSCURO, zIndex: 9998, cursor: "not-allowed", ...style }}
+    />
+  );
+
   return (
     <>
       <style>{`
@@ -41,39 +54,36 @@ export function GuiaCursor() {
           100% { opacity: 1; transform: translateY(0); }
         }
         @keyframes guiaPulso {
-          0%,100% { box-shadow: 0 0 0 9999px rgba(15,23,42,0.55), 0 0 0 3px ${INDIGO}; }
-          50%     { box-shadow: 0 0 0 9999px rgba(15,23,42,0.55), 0 0 0 7px ${INDIGO}88; }
+          0%,100% { box-shadow: 0 0 0 3px ${INDIGO}; }
+          50%     { box-shadow: 0 0 0 7px ${INDIGO}55; }
         }
       `}</style>
 
-      {/* Capa que captura y BLOQUEA todos los clicks. */}
-      <div
-        onClick={mostrarAviso}
-        style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 9998,
-          cursor: "not-allowed",
-          background: rect ? "transparent" : "rgba(15,23,42,0.55)",
-        }}
-      />
-
-      {/* Spotlight sobre el elemento del paso (pulsa para llamar la atención). */}
-      {rect && (
-        <div
-          style={{
-            position: "fixed",
-            top: rect.top - 6,
-            left: rect.left - 6,
-            width: rect.width + 12,
-            height: rect.height + 12,
-            borderRadius: 12,
-            pointerEvents: "none",
-            zIndex: 9999,
-            transition: "top 0.4s ease, left 0.4s ease, width 0.4s ease, height 0.4s ease",
-            animation: "guiaPulso 1.6s ease-in-out infinite",
-          }}
-        />
+      {rect ? (
+        <>
+          {panel({ top: 0, left: 0, width: "100vw", height: Math.max(0, rect.top - PAD) }, "t")}
+          {panel({ top: rect.bottom + PAD, left: 0, width: "100vw", bottom: 0 }, "b")}
+          {panel({ top: rect.top - PAD, left: 0, width: Math.max(0, rect.left - PAD), height: rect.height + PAD * 2 }, "l")}
+          {panel({ top: rect.top - PAD, left: rect.right + PAD, right: 0, height: rect.height + PAD * 2 }, "r")}
+          {/* Aro que resalta el elemento (no captura clicks; el hueco sí es tocable). */}
+          <div
+            style={{
+              position: "fixed",
+              top: rect.top - PAD,
+              left: rect.left - PAD,
+              width: rect.width + PAD * 2,
+              height: rect.height + PAD * 2,
+              borderRadius: 12,
+              pointerEvents: "none",
+              zIndex: 9999,
+              transition: "all 0.35s ease",
+              animation: "guiaPulso 1.6s ease-in-out infinite",
+            }}
+          />
+        </>
+      ) : (
+        // Sin objetivo: se oscurece todo (navegando o explicando).
+        panel({ inset: 0 }, "full")
       )}
 
       {/* Cursor simulado. */}
@@ -106,14 +116,13 @@ export function GuiaCursor() {
           </p>
           <p className="text-sm text-foreground leading-snug mb-3">{narracion}</p>
           <div className="flex items-center gap-2">
-            <Button onClick={continuar} className="flex-1">
-              Continúa
+            <Button onClick={continuar} disabled={actuando} className="flex-1">
+              {actuando ? "Un momento..." : "Continúa"}
             </Button>
             <Button variant="destructive" onClick={detener} className="gap-1">
               <X className="w-4 h-4" /> Detener
             </Button>
           </div>
-          {/* Colita del globo apuntando a Normi */}
           <span className="absolute -bottom-1.5 right-10 w-3 h-3 bg-card border-b border-r border-border rotate-45" />
         </div>
         <img
@@ -137,7 +146,7 @@ export function GuiaCursor() {
           >
             <p className="text-base font-semibold text-foreground mb-1">Estás en el modo guía</p>
             <p className="text-sm text-muted-foreground mb-4">
-              Sigue el paso resaltado, o toca Detener para salir del modo guía.
+              Toca lo que Normi te resalta, o toca Detener para salir del modo guía.
             </p>
             <div className="flex gap-2 justify-center">
               <Button onClick={ocultarAviso}>Entendido</Button>

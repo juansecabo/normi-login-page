@@ -33,6 +33,7 @@ interface GuiaContextValue {
   iniciarGuia: () => void;
   // Motor del cursor
   ejecutando: boolean;
+  actuando: boolean;
   pasoIdx: number;
   totalPasos: number;
   pasoActual: Paso | null;
@@ -114,6 +115,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
   const [pasoIdx, setPasoIdx] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [aviso, setAviso] = useState(false);
+  const [actuando, setActuando] = useState(false); // buscando/ubicando el elemento
 
   const capacidadRef = useRef<Capacidad | null>(null);
   const paramsRef = useRef<Record<string, string>>({});
@@ -160,23 +162,31 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
     (cap: Capacidad, idx: number) => {
       const paso = cap.pasos[idx];
       if (!paso) return;
+      setRect(null);
+      setActuando(true); // Normi está ubicando el elemento → Continúa deshabilitado
       if (paso.accion === "navegar" && paso.ruta) {
         navigate(paso.ruta);
-        setRect(null);
+        // Un respiro para que cargue la página nueva antes de habilitar Continúa.
+        window.setTimeout(() => setActuando(false), 700);
         return;
       }
       // Reintenta encontrar el objetivo (páginas/menús que cargan async).
-      setRect(null);
       let intentos = 0;
       const buscar = () => {
         const el = localizar(paso);
         if (el) {
           el.scrollIntoView({ block: "center", behavior: "smooth" });
-          window.setTimeout(() => setRect(el.getBoundingClientRect()), 250);
+          window.setTimeout(() => {
+            setRect(el.getBoundingClientRect());
+            setActuando(false);
+          }, 250);
           return;
         }
         if (++intentos < 12) window.setTimeout(buscar, 300); // ~3.6s de gracia
-        else setRect(null); // no encontrado: solo narramos
+        else {
+          setRect(null); // no encontrado: solo narramos
+          setActuando(false);
+        }
       };
       window.setTimeout(buscar, 300);
     },
@@ -268,6 +278,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
     guiaPropuesta,
     iniciarGuia,
     ejecutando,
+    actuando,
     pasoIdx,
     totalPasos: cap ? cap.pasos.length : 0,
     pasoActual,
