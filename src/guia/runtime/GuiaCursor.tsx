@@ -1,54 +1,37 @@
-// "Normi te guía" — motor visual del cursor.
-// Spotlight INTERACTIVO: se oscurece todo MENOS el elemento del paso (que queda
-// tocable y aclarado). Los clicks fuera del hueco se bloquean con un pop-up.
-// Normi (imagen) habla con globos animados; solo botones Continúa y Detener.
-import { useState, type CSSProperties } from "react";
-import { MousePointer2, X, Send } from "lucide-react";
+// "Normi te guía" — señalización visual de la guía.
+// El USUARIO hace los clicks: Normi solo marca con un borde de luz dónde tocar
+// (SIN sombrear el resto de la pantalla) y narra en globos animados. Solo hay
+// botón Detener; la guía avanza sola cuando el usuario hace lo señalado. El
+// usuario puede escribirle a Normi en cualquier momento desde el globo.
+import { useState } from "react";
+import { X, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useGuia } from "./GuiaProvider";
 import normiImg from "@/assets/normi-guia.png";
 
-const INDIGO = "#4f46e5";
 const PAD = 6;
-const OSCURO = "rgba(15,23,42,0.55)";
 
 export function GuiaCursor() {
   const {
     ejecutando,
-    actuando,
     rect,
     narracion,
     pasoIdx,
     totalPasos,
-    continuar,
     detener,
-    esperandoValor,
-    responder,
-    aviso,
-    mostrarAviso,
-    ocultarAviso,
+    preguntar,
+    respuesta,
+    preguntando,
   } = useGuia();
-  const [resp, setResp] = useState("");
+  const [texto, setTexto] = useState("");
 
   if (!ejecutando) return null;
 
-  const enviarResp = () => {
-    if (!resp.trim()) return;
-    responder(resp);
-    setResp("");
+  const mandar = () => {
+    if (!texto.trim() || preguntando) return;
+    preguntar(texto);
+    setTexto("");
   };
-
-  const cursorX = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
-  const cursorY = rect ? rect.top + rect.height / 2 : window.innerHeight * 0.45;
-
-  // Paneles oscuros alrededor del elemento (dejan el hueco tocable).
-  const panel = (style: CSSProperties, k: string) => (
-    <div
-      key={k}
-      onClick={mostrarAviso}
-      style={{ position: "fixed", background: OSCURO, zIndex: 9998, cursor: "not-allowed", ...style }}
-    />
-  );
 
   return (
     <>
@@ -62,57 +45,35 @@ export function GuiaCursor() {
           0%   { opacity: 0; transform: translateY(24px); }
           100% { opacity: 1; transform: translateY(0); }
         }
-        @keyframes guiaPulso {
-          0%,100% { box-shadow: 0 0 0 3px ${INDIGO}; }
-          50%     { box-shadow: 0 0 0 7px ${INDIGO}55; }
+        @keyframes guiaLuz {
+          0%,100% { box-shadow: 0 0 0 4px rgba(79,70,229,0.85), 0 0 18px 6px rgba(79,70,229,0.45); }
+          50%     { box-shadow: 0 0 0 8px rgba(79,70,229,0.45), 0 0 28px 12px rgba(79,70,229,0.28); }
         }
       `}</style>
 
-      {rect ? (
-        <>
-          {panel({ top: 0, left: 0, width: "100vw", height: Math.max(0, rect.top - PAD) }, "t")}
-          {panel({ top: rect.bottom + PAD, left: 0, width: "100vw", bottom: 0 }, "b")}
-          {panel({ top: rect.top - PAD, left: 0, width: Math.max(0, rect.left - PAD), height: rect.height + PAD * 2 }, "l")}
-          {panel({ top: rect.top - PAD, left: rect.right + PAD, right: 0, height: rect.height + PAD * 2 }, "r")}
-          {/* Aro que resalta el elemento (no captura clicks; el hueco sí es tocable). */}
-          <div
-            style={{
-              position: "fixed",
-              top: rect.top - PAD,
-              left: rect.left - PAD,
-              width: rect.width + PAD * 2,
-              height: rect.height + PAD * 2,
-              borderRadius: 12,
-              pointerEvents: "none",
-              zIndex: 9999,
-              transition: "all 0.35s ease",
-              animation: "guiaPulso 1.6s ease-in-out infinite",
-            }}
-          />
-        </>
-      ) : (
-        // Sin objetivo: se oscurece todo (navegando o explicando).
-        panel({ inset: 0 }, "full")
+      {/* Borde de luz sobre el elemento que el usuario debe tocar. Nada más se
+          sombrea ni se bloquea: la pantalla queda libre. */}
+      {rect && (
+        <div
+          style={{
+            position: "fixed",
+            top: rect.top - PAD,
+            left: rect.left - PAD,
+            width: rect.width + PAD * 2,
+            height: rect.height + PAD * 2,
+            borderRadius: 12,
+            pointerEvents: "none",
+            zIndex: 9999,
+            transition: "top 0.35s ease, left 0.35s ease, width 0.35s ease, height 0.35s ease",
+            animation: "guiaLuz 1.5s ease-in-out infinite",
+          }}
+        />
       )}
 
-      {/* Cursor simulado. */}
-      <div
-        style={{
-          position: "fixed",
-          top: cursorY,
-          left: cursorX,
-          zIndex: 10000,
-          pointerEvents: "none",
-          transition: "top 0.5s ease, left 0.5s ease",
-          filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.4))",
-        }}
-      >
-        <MousePointer2 fill={INDIGO} color="white" size={30} />
-      </div>
-
-      {/* Normi + globo de texto animado (abajo a la derecha). */}
+      {/* Normi + globo (abajo a la derecha). */}
       <div
         style={{ zIndex: 10001 }}
+        data-guia-ui
         className="fixed bottom-3 right-3 flex flex-col items-end gap-1 w-[min(92vw,22rem)]"
       >
         <div
@@ -123,39 +84,39 @@ export function GuiaCursor() {
           <p className="text-[11px] font-medium text-muted-foreground mb-1">
             Paso {pasoIdx + 1} de {totalPasos}
           </p>
-          <p className="text-sm text-foreground leading-snug mb-3">{narracion}</p>
-          {esperandoValor ? (
-            <div className="flex items-center gap-2">
-              <input
-                autoFocus
-                value={resp}
-                onChange={(e) => setResp(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    enviarResp();
-                  }
-                }}
-                placeholder={`Escribe ${esperandoValor}...`}
-                className="flex-1 rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40"
-              />
-              <Button size="icon" onClick={enviarResp} disabled={!resp.trim()}>
-                <Send className="w-4 h-4" />
-              </Button>
-              <Button variant="destructive" size="icon" onClick={detener}>
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <Button onClick={continuar} disabled={actuando} className="flex-1">
-                {actuando ? "Un momento..." : "Continúa"}
-              </Button>
-              <Button variant="destructive" onClick={detener} className="gap-1">
-                <X className="w-4 h-4" /> Detener
-              </Button>
+          <p className="text-sm text-foreground leading-snug">{narracion}</p>
+
+          {(respuesta || preguntando) && (
+            <div
+              style={{ animation: "guiaGloboIn 0.35s ease-out both" }}
+              className="mt-2 bg-muted rounded-xl px-3 py-2 text-sm text-foreground leading-snug"
+            >
+              {preguntando ? "Normi está pensando..." : respuesta}
             </div>
           )}
+
+          <div className="flex items-center gap-2 mt-3">
+            <input
+              value={texto}
+              onChange={(e) => setTexto(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  mandar();
+                }
+              }}
+              placeholder="Escríbele a Normi..."
+              className="flex-1 min-w-0 rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40"
+            />
+            <Button size="icon" variant="outline" onClick={mandar} disabled={preguntando || !texto.trim()}>
+              <Send className="w-4 h-4" />
+            </Button>
+            <Button variant="destructive" size="icon" onClick={detener} title="Detener la guía">
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+
+          {/* Colita del globo apuntando a Normi */}
           <span className="absolute -bottom-1.5 right-10 w-3 h-3 bg-card border-b border-r border-border rotate-45" />
         </div>
         <img
@@ -165,37 +126,6 @@ export function GuiaCursor() {
           className="h-28 md:h-32 object-contain drop-shadow-xl select-none pointer-events-none"
         />
       </div>
-
-      {/* Pop-up centrado al tocar fuera del paso. */}
-      {aviso && (
-        <div
-          style={{ zIndex: 10002 }}
-          className="fixed inset-0 flex items-center justify-center bg-black/30"
-          onClick={ocultarAviso}
-        >
-          <div
-            className="bg-card rounded-2xl shadow-2xl border max-w-sm mx-4 p-6 text-center"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <p className="text-base font-semibold text-foreground mb-1">Estás en el modo guía</p>
-            <p className="text-sm text-muted-foreground mb-4">
-              Normi va haciendo cada paso. Toca Continúa para el siguiente, o Detener para salir.
-            </p>
-            <div className="flex gap-2 justify-center">
-              <Button onClick={ocultarAviso}>Entendido</Button>
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  ocultarAviso();
-                  detener();
-                }}
-              >
-                Detener
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

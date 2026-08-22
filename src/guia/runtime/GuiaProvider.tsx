@@ -1,5 +1,10 @@
-// "Normi te guía" — provider global: estado del chat + motor del cursor.
-// Se monta una sola vez (en App, dentro del Router) y expone todo por contexto.
+// "Normi te guía" — provider global: estado del chat + motor de la guía.
+//
+// Modelo: el USUARIO hace todos los clicks. Normi solo SEÑALA (borde de luz)
+// dónde tocar y narra. No hay sombreado del resto de la pantalla ni cursor
+// falso ni botón Continúa: la guía avanza sola cuando el usuario hace lo que
+// Normi señaló (click en el elemento, elegir en la lista, escribir y salir del
+// campo). Solo existe Detener, y un campo para escribirle a Normi en el camino.
 import {
   createContext,
   useCallback,
@@ -31,21 +36,18 @@ interface GuiaContextValue {
   enviar: (texto: string) => void;
   guiaPropuesta: GuiaPropuesta | null;
   iniciarGuia: () => void;
-  // Motor del cursor
+  // Guía en ejecución
   ejecutando: boolean;
-  actuando: boolean;
   pasoIdx: number;
   totalPasos: number;
-  pasoActual: Paso | null;
   narracion: string;
   rect: DOMRect | null;
-  continuar: () => void;
   detener: () => void;
-  esperandoValor: string | null;
-  responder: (texto: string) => void;
-  aviso: boolean;
-  mostrarAviso: () => void;
-  ocultarAviso: () => void;
+  /** Pregunta libre a Normi durante la guía. */
+  preguntar: (texto: string) => void;
+  /** Última respuesta de Normi dentro de la guía (se muestra en el globo). */
+  respuesta: string | null;
+  preguntando: boolean;
 }
 
 const GuiaContext = createContext<GuiaContextValue | null>(null);
@@ -88,90 +90,7 @@ function buscarPorTexto(label: string): HTMLElement | null {
   );
 }
 
-/** Busca el valor de un campo en los parámetros (tolerante a tildes/mayúsculas). */
-function buscarValor(params: Record<string, string>, campo?: string): string | undefined {
-  if (!campo) return undefined;
-  if (params[campo] != null) return params[campo];
-  const n = normTxt(campo);
-  for (const k of Object.keys(params)) if (normTxt(k) === n) return params[k];
-  return undefined;
-}
-
-function tipear(input: HTMLInputElement | HTMLTextAreaElement, val: string) {
-  input.focus();
-  const proto = input instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
-  const setter = Object.getOwnPropertyDescriptor(proto, "value")?.set;
-  if (setter) setter.call(input, val);
-  else input.value = val;
-  input.dispatchEvent(new Event("input", { bubbles: true }));
-}
-
-function anclaDe(paso: Paso): HTMLElement | null {
-  return paso.ancla ? document.querySelector<HTMLElement>(`[data-guia="${paso.ancla}"]`) : null;
-}
-
-/** El elemento que Normi va a resaltar/tocar (control por ancla, u opción por su valor). */
-function localizarObjetivo(paso: Paso, params: Record<string, string>): HTMLElement | null {
-  if (paso.accion === "navegar") return null;
-  const anchor = anclaDe(paso);
-  if (anchor) return anchor;
-  const val = buscarValor(params, paso.campo);
-  if (val) {
-    const op = buscarPorTexto(val);
-    if (op) return op;
-  }
-  return localizar(paso);
-}
-
-type ResultadoPaso = "ok" | "skip" | { necesita: string };
-
-/** Normi ejecuta el paso. Devuelve {necesita} si le falta un dato del usuario. */
-function ejecutarPaso(paso: Paso, params: Record<string, string>): ResultadoPaso {
-  if (paso.accion === "navegar" || paso.accion === "explicar" || paso.accion === "esperar") return "ok";
-  const val = buscarValor(params, paso.campo);
-  const necesitaDato = !!paso.campo;
-  if (necesitaDato && !val) {
-    if (paso.opcional) return "ok"; // opcional sin dato: se salta
-    return { necesita: paso.campo! };
-  }
-  const anchor = anclaDe(paso);
-
-  if (paso.accion === "escribir") {
-    const input = (anchor || localizar(paso)) as HTMLInputElement | HTMLTextAreaElement | null;
-    if (input && val) tipear(input, val);
-    return "ok";
-  }
-
-  if (paso.accion === "seleccionar") {
-    if (anchor instanceof HTMLSelectElement && val) {
-      const opt = Array.from(anchor.options).find((o) => normTxt(o.textContent || "") === normTxt(val));
-      if (opt) {
-        const s = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set;
-        if (s) s.call(anchor, opt.value);
-        else anchor.value = opt.value;
-        anchor.dispatchEvent(new Event("change", { bubbles: true }));
-      }
-      return "ok";
-    }
-    if (anchor && val) {
-      anchor.click(); // abre el desplegable (Radix)
-      window.setTimeout(() => buscarPorTexto(val)?.click(), 400);
-      return "ok";
-    }
-    if (val) {
-      const op = buscarPorTexto(val); // opción/tarjeta con ese texto (ej. dashboard)
-      if (op) { op.click(); return "ok"; }
-    }
-    return "skip";
-  }
-
-  // click
-  const target = (val ? buscarPorTexto(val) : null) || anchor || localizar(paso);
-  if (target) { target.click(); return "ok"; }
-  return "skip";
-}
-
-/** Localiza el objetivo de un paso: por ancla (data-guia) o, si no, por su texto. */
+/** Localiza el objetivo de un paso: por ancla (data-guia) o por su texto. */
 function localizar(paso: Paso): HTMLElement | null {
   if (paso.ancla) {
     const el = document.querySelector<HTMLElement>(`[data-guia="${paso.ancla}"]`);
@@ -199,17 +118,26 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
   const [ejecutando, setEjecutando] = useState(false);
   const [pasoIdx, setPasoIdx] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
-  const [aviso, setAviso] = useState(false);
-  const [actuando, setActuando] = useState(false); // buscando/ubicando el elemento
-  const [esperandoValor, setEsperandoValor] = useState<string | null>(null); // campo que Normi pregunta
+  const [respuesta, setRespuesta] = useState<string | null>(null);
+  const [preguntando, setPreguntando] = useState(false);
 
   const capacidadRef = useRef<Capacidad | null>(null);
-  const paramsRef = useRef<Record<string, string>>({});
+  const pasoIdxRef = useRef(0);
+  const mensajesRef = useRef<GuiaTurn[]>(mensajes);
+  mensajesRef.current = mensajes;
+  // Limpiadores del paso actual (listeners, timeouts, polls).
+  const cleanupsRef = useRef<Array<() => void>>([]);
+  const avanzarRef = useRef<() => void>(() => {});
 
   const disponible = guiaDisponible();
 
   const abrir = useCallback(() => setAbierto(true), []);
   const cerrar = useCallback(() => setAbierto(false), []);
+
+  const limpiarPaso = () => {
+    for (const fn of cleanupsRef.current) fn();
+    cleanupsRef.current = [];
+  };
 
   const enviar = useCallback(
     async (texto: string) => {
@@ -222,7 +150,6 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
       try {
         const resp = await guiaChat({
           message: t,
-          // historial sin el saludo inicial
           history: nuevos.filter((m) => m !== SALUDO).slice(-8),
           capacidades: capacidadesLite(),
         });
@@ -243,131 +170,198 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
     [mensajes, enviando],
   );
 
-  // Localiza el ancla del paso y ejecuta la navegación si aplica.
+  /** Detecta que el usuario ya hizo lo del paso, y avanza solo. */
+  const armarAvance = (paso: Paso, el: HTMLElement) => {
+    if (paso.accion === "seleccionar") {
+      // Avanza cuando el valor mostrado cambia (sirve para select nativo y Radix).
+      const leer = () =>
+        normTxt(
+          el instanceof HTMLSelectElement ? el.options[el.selectedIndex]?.text || "" : el.textContent || "",
+        );
+      const inicial = leer();
+      const iv = window.setInterval(() => {
+        const ahora = leer();
+        if (ahora && ahora !== inicial) {
+          window.clearInterval(iv);
+          window.setTimeout(() => avanzarRef.current(), 250);
+        }
+      }, 300);
+      cleanupsRef.current.push(() => window.clearInterval(iv));
+      return;
+    }
+    if (paso.accion === "escribir") {
+      const input = el as HTMLInputElement | HTMLTextAreaElement;
+      const listo = () => {
+        if (!input.value.trim()) return;
+        quitar();
+        window.setTimeout(() => avanzarRef.current(), 150);
+      };
+      const onKey = (e: KeyboardEvent) => {
+        if (e.key === "Enter" && !e.shiftKey) listo();
+      };
+      const onBlur = () => listo();
+      const quitar = () => {
+        input.removeEventListener("keydown", onKey);
+        input.removeEventListener("blur", onBlur);
+      };
+      input.addEventListener("keydown", onKey);
+      input.addEventListener("blur", onBlur);
+      cleanupsRef.current.push(quitar);
+      return;
+    }
+    // click (y cualquier otro accionable): avanza al hacer click en el objetivo.
+    const onClick = () => {
+      quitar();
+      window.setTimeout(() => avanzarRef.current(), 200);
+    };
+    const quitar = () => el.removeEventListener("click", onClick);
+    el.addEventListener("click", onClick);
+    cleanupsRef.current.push(quitar);
+  };
+
   const entrarPaso = useCallback(
     (cap: Capacidad, idx: number) => {
       const paso = cap.pasos[idx];
       if (!paso) return;
+      limpiarPaso();
       setRect(null);
-      setActuando(true); // Normi está ubicando el elemento → Continúa deshabilitado
-      // Si el paso necesita un dato que no tenemos, Normi lo pregunta de una.
-      const faltaDato =
-        !!paso.campo && !paso.opcional && !buscarValor(paramsRef.current, paso.campo);
-      setEsperandoValor(faltaDato ? paso.campo! : null);
+      setRespuesta(null);
+
       if (paso.accion === "navegar" && paso.ruta) {
         navigate(paso.ruta);
-        // Un respiro para que cargue la página nueva antes de habilitar Continúa.
-        window.setTimeout(() => setActuando(false), 700);
+        const t = window.setTimeout(() => avanzarRef.current(), 900);
+        cleanupsRef.current.push(() => window.clearTimeout(t));
         return;
       }
-      // Reintenta encontrar el objetivo (páginas/menús que cargan async).
+      if (paso.accion === "explicar" || paso.accion === "esperar") {
+        // Solo narración: se lee y sigue solo.
+        const t = window.setTimeout(() => avanzarRef.current(), 3500);
+        cleanupsRef.current.push(() => window.clearTimeout(t));
+        return;
+      }
+
+      // Localiza el objetivo con reintentos (páginas/menús que cargan async).
+      let vivo = true;
+      cleanupsRef.current.push(() => {
+        vivo = false;
+      });
       let intentos = 0;
       const buscar = () => {
-        const el = localizarObjetivo(paso, paramsRef.current);
+        if (!vivo) return;
+        const el = localizar(paso);
         if (el) {
           el.scrollIntoView({ block: "center", behavior: "smooth" });
           window.setTimeout(() => {
+            if (!vivo) return;
             setRect(el.getBoundingClientRect());
-            setActuando(false);
+            armarAvance(paso, el);
           }, 250);
           return;
         }
-        if (++intentos < 12) window.setTimeout(buscar, 300); // ~3.6s de gracia
-        else {
-          setRect(null); // no encontrado: solo narramos
-          setActuando(false);
+        if (++intentos < 14) {
+          window.setTimeout(buscar, 300);
+          return;
         }
+        // Respaldo: no se encontró qué señalar (ej. "elige el periodo", donde
+        // la opción depende del usuario). Se narra igual y la guía avanza con
+        // el siguiente click del usuario, asumiendo que siguió la instrucción.
+        const onDocClick = (e: MouseEvent) => {
+          // Los clicks dentro del globo de Normi (escribirle, Detener) no cuentan.
+          if ((e.target as HTMLElement)?.closest?.("[data-guia-ui]")) return;
+          document.removeEventListener("click", onDocClick, true);
+          window.setTimeout(() => avanzarRef.current(), 250);
+        };
+        document.addEventListener("click", onDocClick, true);
+        cleanupsRef.current.push(() => document.removeEventListener("click", onDocClick, true));
       };
       window.setTimeout(buscar, 300);
     },
     [navigate],
   );
 
-  const iniciarGuia = useCallback(() => {
-    if (!guiaPropuesta) return;
-    capacidadRef.current = guiaPropuesta.capacidad;
-    paramsRef.current = guiaPropuesta.parametros || {};
-    setEjecutando(true);
-    setPasoIdx(0);
-    entrarPaso(guiaPropuesta.capacidad, 0);
-  }, [guiaPropuesta, entrarPaso]);
-
-  const detener = useCallback(() => {
+  const terminar = useCallback(() => {
+    limpiarPaso();
     setEjecutando(false);
     setRect(null);
-    setAviso(false);
-    setEsperandoValor(null);
     capacidadRef.current = null;
     setMensajes((prev) => [
       ...prev,
-      { role: "assistant", content: "Detuvimos la guía. Aquí sigo si quieres intentar otra cosa." },
+      { role: "assistant", content: "Listo, terminamos esta guía. ¿Te ayudo con algo más?" },
     ]);
+    setAbierto(true);
   }, []);
 
   const avanzar = useCallback(() => {
     const cap = capacidadRef.current;
     if (!cap) return;
-    const siguiente = pasoIdx + 1;
-    if (siguiente >= cap.pasos.length) {
-      setEjecutando(false);
-      setRect(null);
-      setMensajes((prev) => [
-        ...prev,
-        { role: "assistant", content: "Listo, terminamos esta guía. ¿Te ayudo con algo más?" },
-      ]);
-      capacidadRef.current = null;
+    const sig = pasoIdxRef.current + 1;
+    if (sig >= cap.pasos.length) {
+      terminar();
       return;
     }
-    setPasoIdx(siguiente);
-    entrarPaso(cap, siguiente);
-  }, [pasoIdx, entrarPaso]);
+    pasoIdxRef.current = sig;
+    setPasoIdx(sig);
+    entrarPaso(cap, sig);
+  }, [entrarPaso, terminar]);
 
-  const continuar = useCallback(() => {
-    const cap = capacidadRef.current;
-    if (!cap) return;
-    const paso = cap.pasos[pasoIdx];
-    if (paso) {
-      const r = ejecutarPaso(paso, paramsRef.current);
-      if (typeof r === "object") {
-        // Normi necesita un dato: lo pregunta y espera que el usuario le escriba.
-        setEsperandoValor(r.necesita);
-        return;
-      }
-    }
-    avanzar();
-  }, [pasoIdx, avanzar]);
+  useEffect(() => {
+    avanzarRef.current = avanzar;
+  }, [avanzar]);
 
-  // El usuario le escribe a Normi el dato que preguntó dentro del modo guía.
-  const responder = useCallback(
-    (texto: string) => {
+  const iniciarGuia = useCallback(() => {
+    if (!guiaPropuesta) return;
+    capacidadRef.current = guiaPropuesta.capacidad;
+    pasoIdxRef.current = 0;
+    setEjecutando(true);
+    setPasoIdx(0);
+    setAbierto(false); // el chat se recoge; queda el globo de Normi
+    entrarPaso(guiaPropuesta.capacidad, 0);
+  }, [guiaPropuesta, entrarPaso]);
+
+  const detener = useCallback(() => {
+    limpiarPaso();
+    setEjecutando(false);
+    setRect(null);
+    capacidadRef.current = null;
+    setMensajes((prev) => [
+      ...prev,
+      { role: "assistant", content: "Detuvimos la guía. Aquí sigo si quieres intentar otra cosa." },
+    ]);
+    setAbierto(true);
+  }, []);
+
+  /** Pregunta libre a Normi durante la guía (sin salir del modo guía). */
+  const preguntar = useCallback(
+    async (texto: string) => {
       const t = texto.trim();
-      const campo = esperandoValor;
-      if (!t || !campo) return;
-      paramsRef.current = { ...paramsRef.current, [campo]: t };
-      setEsperandoValor(null);
-      const cap = capacidadRef.current;
-      const paso = cap?.pasos[pasoIdx];
-      if (paso) {
-        const r = ejecutarPaso(paso, paramsRef.current);
-        if (typeof r === "object") {
-          setEsperandoValor(r.necesita);
-          return;
-        }
+      if (!t || preguntando) return;
+      setPreguntando(true);
+      setMensajes((prev) => [...prev, { role: "user", content: t }]);
+      try {
+        const resp = await guiaChat({
+          message: t,
+          history: mensajesRef.current.filter((m) => m !== SALUDO).slice(-8),
+          capacidades: capacidadesLite(),
+        });
+        setRespuesta(resp.text);
+        setMensajes((prev) => [...prev, { role: "assistant", content: resp.text }]);
+      } catch {
+        setRespuesta("Uy, algo falló. Inténtalo de nuevo.");
+      } finally {
+        setPreguntando(false);
       }
-      // Vuelve a resaltar por si el objetivo cambió con el nuevo dato, y avanza.
-      avanzar();
     },
-    [esperandoValor, pasoIdx, avanzar],
+    [preguntando],
   );
 
-  // Reposiciona el foco al hacer scroll/resize mientras se ejecuta.
+  // Reposiciona el borde de luz al hacer scroll/resize mientras se ejecuta.
   useEffect(() => {
     if (!ejecutando) return;
     const recompute = () => {
       const cap = capacidadRef.current;
-      const paso = cap?.pasos[pasoIdx];
+      const paso = cap?.pasos[pasoIdxRef.current];
       if (!paso) return;
-      const el = localizarObjetivo(paso, paramsRef.current);
+      const el = localizar(paso);
       if (el) setRect(el.getBoundingClientRect());
     };
     window.addEventListener("resize", recompute);
@@ -376,7 +370,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("resize", recompute);
       window.removeEventListener("scroll", recompute, true);
     };
-  }, [ejecutando, pasoIdx]);
+  }, [ejecutando]);
 
   const cap = capacidadRef.current;
   const pasoActual = cap && ejecutando ? cap.pasos[pasoIdx] ?? null : null;
@@ -392,19 +386,14 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
     guiaPropuesta,
     iniciarGuia,
     ejecutando,
-    actuando,
     pasoIdx,
     totalPasos: cap ? cap.pasos.length : 0,
-    pasoActual,
     narracion: pasoActual?.narracion || "",
     rect,
-    continuar,
     detener,
-    esperandoValor,
-    responder,
-    aviso,
-    mostrarAviso: () => setAviso(true),
-    ocultarAviso: () => setAviso(false),
+    preguntar,
+    respuesta,
+    preguntando,
   };
 
   return (
