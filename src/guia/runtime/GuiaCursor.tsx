@@ -17,7 +17,6 @@ export function GuiaCursor() {
     rect,
     narracion,
     pasoIdx,
-    totalPasos,
     detener,
     preguntar,
     respuesta,
@@ -81,9 +80,6 @@ export function GuiaCursor() {
           style={{ animation: "guiaGloboIn 0.4s ease-out both" }}
           className="relative bg-card border border-border rounded-2xl shadow-2xl p-4 w-full"
         >
-          <p className="text-[11px] font-medium text-muted-foreground mb-1">
-            Paso {pasoIdx + 1} de {totalPasos}
-          </p>
           <p className="text-sm text-foreground leading-snug">{narracion}</p>
 
           {(respuesta || preguntando) && (

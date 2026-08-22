@@ -103,7 +103,7 @@ export function GuiaPanel() {
                     onClick={iniciarGuia}
                     className="gap-2 shadow-sm h-auto py-2 text-left whitespace-normal bg-indigo-600 hover:bg-indigo-700 text-white"
                   >
-                    <Play className="w-4 h-4 shrink-0" /> Guíame: {guiaPropuesta.capacidad.titulo}
+                    <Play className="w-4 h-4 shrink-0" /> Entrar en modo guía
                   </Button>
                 </div>
               )}

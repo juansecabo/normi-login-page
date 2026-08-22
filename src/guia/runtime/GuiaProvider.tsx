@@ -400,13 +400,25 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
         });
         setRespuesta(resp.text);
         setMensajes((prev) => [...prev, { role: "assistant", content: resp.text }]);
+        // Si en pleno modo guía el usuario pide OTRA tarea, la guía cambia en
+        // caliente a esa nueva capacidad (arranca sus pasos desde el inicio).
+        if (resp.guia) {
+          const nueva = capacidadPorId(resp.guia.capacidad_id);
+          if (nueva && capacidadRef.current && nueva.id !== capacidadRef.current.id) {
+            limpiarPaso();
+            capacidadRef.current = nueva;
+            pasoIdxRef.current = 0;
+            setPasoIdx(0);
+            entrarPaso(nueva, 0);
+          }
+        }
       } catch {
         setRespuesta("Uy, algo falló. Inténtalo de nuevo.");
       } finally {
         setPreguntando(false);
       }
     },
-    [preguntando],
+    [preguntando, entrarPaso],
   );
 
   // Reposiciona el borde de luz al hacer scroll/resize mientras se ejecuta.
