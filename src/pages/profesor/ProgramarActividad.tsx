@@ -836,6 +836,7 @@ const ProgramarActividad = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
               <button
                 onClick={() => irA("programar")}
+                data-guia="actividades.menu_nueva"
                 className="bg-card rounded-lg shadow-soft p-8 flex flex-col items-center justify-center gap-3 text-center transition-all hover:shadow-md hover:bg-cyan-50 border-2 border-transparent hover:border-cyan-200"
               >
                 <Pencil className="h-10 w-10 text-cyan-600" />
@@ -876,7 +877,7 @@ const ProgramarActividad = () => {
                   {/* 1. Asignatura — solo profesores; los demás internos programan actividad General */}
                   {!modoGeneral && (
                     <div className="space-y-2">
-                      <Label>Asignatura</Label>
+                      <Label data-guia="actividades.select_asignatura">Asignatura</Label>
                       <ResponsiveSelect
                         value={asignaturaSeleccionada}
                         onValueChange={handleAsignaturaChange}
@@ -892,7 +893,7 @@ const ProgramarActividad = () => {
                   {/* 2. Grado */}
                   {asignaturaSeleccionada && (
                     <div className="space-y-2">
-                      <Label>Grado</Label>
+                      <Label data-guia="actividades.select_grado">Grado</Label>
                       <ResponsiveSelect
                         value={gradoSeleccionado}
                         onValueChange={handleGradoChange}
@@ -908,7 +909,7 @@ const ProgramarActividad = () => {
                       {/* 3. Salón(es) — multi-selección con casillas para programar
                           la misma actividad en varios salones a la vez. */}
                       <div className="space-y-2">
-                        <Label>Salón(es)</Label>
+                        <Label data-guia="actividades.check_salon">Salón(es)</Label>
                         <div className="flex flex-wrap gap-2">
                           {salones.map((s) => {
                             const marcado = salonesSeleccionados.includes(s);
@@ -996,7 +997,7 @@ const ProgramarActividad = () => {
                       {/* 4. Tipo (opcional) — solo profesores; los internos no eligen tipo */}
                       {!modoGeneral && (
                         <div className="space-y-2">
-                          <Label>Tipo de actividad (opcional)</Label>
+                          <Label data-guia="actividades.select_tipo">Tipo de actividad (opcional)</Label>
                           <ResponsiveSelect
                             value={tipoSeleccionado}
                             onValueChange={setTipoSeleccionado}
@@ -1014,6 +1015,7 @@ const ProgramarActividad = () => {
                         </div>
                         <Textarea
                           id="descripcion"
+                          data-guia="actividades.input_descripcion"
                           placeholder="Ej: Resolver ejercicios de la página 45"
                           value={descripcion}
                           onChange={(e) => setDescripcion(e.target.value)}
@@ -1023,7 +1025,7 @@ const ProgramarActividad = () => {
 
                       {/* 6. Archivos adjuntos */}
                       <div className="space-y-2">
-                        <Label>Archivos adjuntos (opcional)</Label>
+                        <Label data-guia="actividades.input_archivo">Archivos adjuntos (opcional)</Label>
                         {archivosSeleccionados.map((file, i) => (
                           <div key={i} className="flex items-center gap-2 p-2 bg-muted rounded-md text-sm min-w-0">
                             <FileText className="h-4 w-4 text-blue-600 shrink-0" />
@@ -1047,7 +1049,7 @@ const ProgramarActividad = () => {
                         <Label>Fecha de presentación</Label>
                         <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                           <PopoverTrigger asChild>
-                            <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !fechaSeleccionada && "text-muted-foreground")}>
+                            <Button data-guia="actividades.select_fecha" variant="outline" className={cn("w-full justify-start text-left font-normal", !fechaSeleccionada && "text-muted-foreground")}>
                               <Calendar className="mr-2 h-4 w-4" />
                               {fechaSeleccionada ? mostrarFecha(formatearFecha(fechaSeleccionada)) : "Seleccionar fecha"}
                             </Button>
@@ -1068,6 +1070,7 @@ const ProgramarActividad = () => {
 
                       {/* 8. Botón Programar */}
                       <Button
+                        data-guia="actividades.btn_programar"
                         onClick={() => {
                           if (bodyOverLimit) {
                             toast({

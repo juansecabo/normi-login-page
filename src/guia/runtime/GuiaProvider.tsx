@@ -62,17 +62,25 @@ function etiquetaDe(narracion: string): string | null {
   return m ? m[1] : null;
 }
 
+const textoDe = (el: HTMLElement): string =>
+  el.textContent ||
+  el.getAttribute("aria-label") ||
+  el.getAttribute("title") ||
+  (el as HTMLInputElement).placeholder ||
+  "";
+
 /** Busca un elemento clickeable visible por su texto (tildes/mayúsculas flexible). */
 function buscarPorTexto(label: string): HTMLElement | null {
   const objetivo = normTxt(label);
   if (!objetivo) return null;
-  const sel = 'button, [role="menuitem"], [role="tab"], a[href], [role="button"], label';
+  const sel =
+    'button, [role="menuitem"], [role="tab"], a[href], [role="button"], [role="option"], label';
   const cands = Array.from(document.querySelectorAll<HTMLElement>(sel)).filter(
     (el) => el.offsetParent !== null,
   );
   return (
-    cands.find((el) => normTxt(el.textContent || "") === objetivo) ||
-    cands.find((el) => normTxt(el.textContent || "").includes(objetivo)) ||
+    cands.find((el) => normTxt(textoDe(el)) === objetivo) ||
+    cands.find((el) => normTxt(textoDe(el)).includes(objetivo)) ||
     null
   );
 }
@@ -157,17 +165,20 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
         setRect(null);
         return;
       }
-      // Deja que el DOM se asiente antes de buscar el objetivo.
+      // Reintenta encontrar el objetivo (páginas/menús que cargan async).
       setRect(null);
-      window.setTimeout(() => {
+      let intentos = 0;
+      const buscar = () => {
         const el = localizar(paso);
         if (el) {
           el.scrollIntoView({ block: "center", behavior: "smooth" });
-          window.setTimeout(() => setRect(el.getBoundingClientRect()), 300);
-        } else {
-          setRect(null); // no encontrado: solo narramos
+          window.setTimeout(() => setRect(el.getBoundingClientRect()), 250);
+          return;
         }
-      }, 350);
+        if (++intentos < 12) window.setTimeout(buscar, 300); // ~3.6s de gracia
+        else setRect(null); // no encontrado: solo narramos
+      };
+      window.setTimeout(buscar, 300);
     },
     [navigate],
   );
