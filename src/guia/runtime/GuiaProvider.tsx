@@ -198,6 +198,9 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
   // Limpiadores del paso actual (listeners, timeouts, polls).
   const cleanupsRef = useRef<Array<() => void>>([]);
   const avanzarRef = useRef<() => void>(() => {});
+  // Consulta automática cuando un paso no encuentra su objetivo (prerequisito
+  // faltante): Normi mira la pantalla y lo explica en lenguaje natural.
+  const atascoRef = useRef<() => void>(() => {});
 
   const disponible = guiaDisponible();
 
@@ -357,8 +360,10 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
           window.setTimeout(buscar, 250);
           return;
         }
-        // Último respaldo: nada que señalar. Se narra igual y la guía avanza
-        // con el siguiente click del usuario (fuera del globo de Normi).
+        // Último respaldo: nada que señalar. Normi mira la pantalla y explica
+        // en lenguaje natural qué falta (ej. "no tienes ninguna actividad");
+        // mientras tanto la guía avanza con el siguiente click del usuario.
+        atascoRef.current();
         const onDocClick = (e: MouseEvent) => {
           if ((e.target as HTMLElement)?.closest?.("[data-guia-ui]")) return;
           document.removeEventListener("click", onDocClick, true);
@@ -468,6 +473,48 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
     },
     [preguntando, entrarPaso],
   );
+
+  // Paso atascado (nada que señalar): Normi revisa la pantalla por su cuenta y
+  // explica en lenguaje natural qué falta (ej. "veo que no tienes ninguna
+  // actividad, eso es lo primero que debes agregar"); si corresponde otra
+  // tarea, la propone y la guía cambia sola.
+  const atasco = useCallback(async () => {
+    const cap = capacidadRef.current;
+    if (!cap || preguntando) return;
+    const pasoA = cap.pasos[pasoIdxRef.current];
+    setPreguntando(true);
+    try {
+      const resp = await guiaChat({
+        message:
+          "(sistema) No se encontró en la pantalla lo necesario para el paso actual. Observa la PANTALLA ACTUAL y explícale al usuario, en lenguaje natural y breve, qué falta y qué debe hacer primero (ej: 'Veo que no tienes ninguna actividad, eso es lo primero que debes agregar'). Si lo que falta corresponde a otra acción de tu lista, llama proponer_guia con su id.",
+        history: mensajesRef.current.filter((m) => m !== SALUDO).slice(-6),
+        capacidades: capacidadesLite(),
+        pantalla: resumenPantalla(),
+        guia_activa: { titulo: cap.titulo, paso: pasoA?.narracion || "" },
+      });
+      setRespuesta(resp.text);
+      setMensajes((prev) => [...prev, { role: "assistant", content: resp.text }]);
+      if (resp.guia) {
+        const nueva = capacidadPorId(resp.guia.capacidad_id);
+        if (nueva && capacidadRef.current && nueva.id !== capacidadRef.current.id) {
+          limpiarPaso();
+          capacidadRef.current = nueva;
+          const inicio = pasoInicial(nueva);
+          pasoIdxRef.current = inicio;
+          setPasoIdx(inicio);
+          entrarPaso(nueva, inicio);
+        }
+      }
+    } catch {
+      // silencioso: el respaldo de click sigue activo
+    } finally {
+      setPreguntando(false);
+    }
+  }, [preguntando, entrarPaso]);
+
+  useEffect(() => {
+    atascoRef.current = atasco;
+  }, [atasco]);
 
   // Reposiciona el borde de luz al hacer scroll/resize mientras se ejecuta.
   useEffect(() => {
