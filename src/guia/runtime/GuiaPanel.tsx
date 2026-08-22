@@ -12,6 +12,12 @@ export function GuiaPanel() {
   const [texto, setTexto] = useState("");
   const [minimizado, setMinimizado] = useState(false);
   const finRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const ajustarAlto = (el: HTMLTextAreaElement) => {
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 120) + "px";
+  };
 
   // Al abrir desde el menú, siempre expandido.
   useEffect(() => {
@@ -29,6 +35,7 @@ export function GuiaPanel() {
     if (!texto.trim()) return;
     enviar(texto);
     setTexto("");
+    if (inputRef.current) inputRef.current.style.height = "auto";
   };
 
   const Header = ({ onToggle }: { onToggle: () => void }) => (
@@ -94,10 +101,15 @@ export function GuiaPanel() {
               <div ref={finRef} />
             </div>
 
-            <div className="border-t p-3 flex items-center gap-2 bg-card">
-              <input
+            <div className="border-t p-3 flex items-end gap-2 bg-card">
+              <textarea
+                ref={inputRef}
                 value={texto}
-                onChange={(e) => setTexto(e.target.value)}
+                rows={1}
+                onChange={(e) => {
+                  setTexto(e.target.value);
+                  ajustarAlto(e.target);
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
@@ -105,7 +117,7 @@ export function GuiaPanel() {
                   }
                 }}
                 placeholder="Escríbele a Normi..."
-                className="flex-1 rounded-full border border-input bg-background px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40"
+                className="flex-1 resize-none rounded-2xl border border-input bg-background px-4 py-2 text-sm leading-snug outline-none focus:ring-2 focus:ring-primary/40 max-h-[120px] overflow-y-auto"
               />
               <Button size="icon" className="rounded-full shrink-0" onClick={mandar} disabled={enviando || !texto.trim()}>
                 <Send className="w-4 h-4" />
