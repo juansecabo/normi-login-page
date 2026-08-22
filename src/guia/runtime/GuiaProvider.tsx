@@ -15,7 +15,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useNavigate } from "react-router-dom";
 import type { Capacidad, Paso } from "../tipos";
 import { capacidadesLite, capacidadPorId, guiaDisponible } from "../lite";
 import { guiaChat, guiaObjetivo, resumenPantalla, type GuiaTurn } from "./api";
@@ -195,8 +194,6 @@ const RE_CONFIRMA =
   /\b(ya (lo|la|los|las)? ?(hice|puse|marque|seleccione|elegi|escribi)|ya esta|ya estan|listo|hecho)\b/;
 
 export function GuiaProvider({ children }: { children: ReactNode }) {
-  const navigate = useNavigate();
-
   const [activo, setActivo] = useState(false);
   const [guiando, setGuiando] = useState(false);
   const [pensando, setPensando] = useState(false);
@@ -314,24 +311,23 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
       setRespuesta(null);
       guiaLog("paso", { capacidad: cap.id, idx, accion: paso.accion, narracion: paso.narracion }, true);
 
-      if (paso.accion === "navegar" && paso.ruta) {
-        navigate(paso.ruta);
-        const t = window.setTimeout(() => avanzarRef.current(), 600);
-        cleanupsRef.current.push(() => window.clearTimeout(t));
-        return;
-      }
-      if (paso.accion === "explicar" || paso.accion === "esperar") {
-        // Solo narración: se lee y sigue solo.
-        const t = window.setTimeout(() => avanzarRef.current(), 3500);
-        cleanupsRef.current.push(() => window.clearTimeout(t));
-        return;
-      }
-
-      // Localiza el objetivo con reintentos (páginas/menús que cargan async).
       let vivo = true;
       cleanupsRef.current.push(() => {
         vivo = false;
       });
+
+      // Señala un elemento (con scroll para que quede a la vista) y arma la
+      // detección de avance. Normi SOLO señala: jamás hace click ni navega.
+      const senalarEl = (el: HTMLElement, modo: string, extra?: Record<string, unknown>) => {
+        el.scrollIntoView({ block: "center", behavior: "smooth" });
+        window.setTimeout(() => {
+          if (!vivo) return;
+          setRect(el.getBoundingClientRect());
+          senaladoRef.current = el;
+          guiaLog("senalado", { modo, ...(extra || {}) });
+          armarAvance(paso, el);
+        }, 150);
+      };
       const senalarZona = (zona: HTMLElement) => {
         zona.scrollIntoView({ block: "center", behavior: "smooth" });
         window.setTimeout(() => {
@@ -359,6 +355,72 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
         document.addEventListener("click", onDocClick, true);
         cleanupsRef.current.push(() => document.removeEventListener("click", onDocClick, true));
       };
+      // El CEREBRO mira los elementos visibles y elige cuál señalar.
+      const elegirConCerebro = (descripcion: string) => {
+        const cands = candidatosVisibles();
+        guiaObjetivo({
+          tarea: cap.titulo,
+          paso: descripcion,
+          elementos: cands.map((c) => c.txt),
+        })
+          .then((r) => {
+            if (!vivo) return;
+            if (r.indice != null && cands[r.indice] && esVisible(cands[r.indice].el)) {
+              senalarEl(cands[r.indice].el, "modelo", { el: cands[r.indice].txt });
+              return;
+            }
+            guiaLog("senalado", { modo: "ninguno_modelo", nota: r.nota || null });
+            if (r.nota) {
+              setRespuesta(r.nota);
+              setMensajes((prev) => [...prev, { role: "assistant", content: r.nota! }]);
+            } else {
+              atascoRef.current();
+            }
+            armarClickLibre();
+          })
+          .catch(() => {
+            if (!vivo) return;
+            const zona = localizarZona(paso);
+            if (zona) senalarZona(zona);
+            else {
+              guiaLog("senalado", { modo: "ninguno" });
+              atascoRef.current();
+              armarClickLibre();
+            }
+          });
+      };
+
+      if (paso.accion === "navegar" && paso.ruta) {
+        // Normi NO navega: si ya estamos en la página, sigue; si no, SEÑALA el
+        // enlace/tarjeta que lleva allá y espera el click del USUARIO.
+        if (window.location.pathname === paso.ruta) {
+          const t = window.setTimeout(() => avanzarRef.current(), 300);
+          cleanupsRef.current.push(() => window.clearTimeout(t));
+          return;
+        }
+        const buscarNav = () => {
+          if (!vivo) return;
+          const link = Array.from(
+            document.querySelectorAll<HTMLElement>(`a[href="${paso.ruta}"]`),
+          ).find((el) => esVisible(el) && !el.closest("[data-guia-ui]"));
+          if (link) {
+            senalarEl(link, "enlace");
+            return;
+          }
+          elegirConCerebro(
+            `El usuario debe tocar la opción o tarjeta que lo lleva a: ${paso.narracion || paso.ruta}`,
+          );
+        };
+        window.setTimeout(buscarNav, 120);
+        return;
+      }
+      if (paso.accion === "explicar" || paso.accion === "esperar") {
+        // Solo narración: se lee y sigue solo.
+        const t = window.setTimeout(() => avanzarRef.current(), 3500);
+        cleanupsRef.current.push(() => window.clearTimeout(t));
+        return;
+      }
+
       // ¿Este paso puede tener un objetivo exacto? (ancla o etiqueta entre comillas)
       const puedeExacto = !!paso.ancla || !!etiquetaDe(paso.narracion || "");
       let intentos = 0;
@@ -366,59 +428,11 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
         if (!vivo) return;
         const el = puedeExacto ? localizar(paso) : null;
         if (el) {
-          el.scrollIntoView({ block: "center", behavior: "smooth" });
-          window.setTimeout(() => {
-            if (!vivo) return;
-            setRect(el.getBoundingClientRect());
-            senaladoRef.current = el;
-            guiaLog("senalado", { modo: "exacto" });
-            armarAvance(paso, el);
-          }, 150);
+          senalarEl(el, "exacto");
           return;
         }
-        // Sin ancla exacta: el CEREBRO mira los elementos visibles y elige cuál
-        // señalar (entiende la pantalla en vez de coincidencias de texto).
         if (!puedeExacto || intentos >= 4) {
-          const cands = candidatosVisibles();
-          guiaObjetivo({
-            tarea: cap.titulo,
-            paso: paso.narracion || "",
-            elementos: cands.map((c) => c.txt),
-          })
-            .then((r) => {
-              if (!vivo) return;
-              if (r.indice != null && cands[r.indice] && esVisible(cands[r.indice].el)) {
-                const objetivo = cands[r.indice].el;
-                objetivo.scrollIntoView({ block: "center", behavior: "smooth" });
-                window.setTimeout(() => {
-                  if (!vivo) return;
-                  setRect(objetivo.getBoundingClientRect());
-                  senaladoRef.current = objetivo;
-                  guiaLog("senalado", { modo: "modelo", el: cands[r.indice!].txt });
-                  armarAvance(paso, objetivo);
-                }, 150);
-                return;
-              }
-              // El cerebro dice que aquí no está lo que se necesita.
-              guiaLog("senalado", { modo: "ninguno_modelo", nota: r.nota || null });
-              if (r.nota) {
-                setRespuesta(r.nota);
-                setMensajes((prev) => [...prev, { role: "assistant", content: r.nota! }]);
-              } else {
-                atascoRef.current();
-              }
-              armarClickLibre();
-            })
-            .catch(() => {
-              if (!vivo) return;
-              const zona = localizarZona(paso);
-              if (zona) senalarZona(zona);
-              else {
-                guiaLog("senalado", { modo: "ninguno" });
-                atascoRef.current();
-                armarClickLibre();
-              }
-            });
+          elegirConCerebro(paso.narracion || "");
           return;
         }
         if (++intentos < 14) {
@@ -431,7 +445,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
       };
       window.setTimeout(buscar, 120);
     },
-    [navigate],
+    [],
   );
 
   const iniciar = useCallback(
@@ -607,13 +621,9 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
         guiaLog("desvio", { a: pathNow }, true);
         setRect(null);
         senaladoRef.current = null;
-        if (pathNow === cap.ruta || cap.pasos[pasoIdxRef.current]?.accion === "navegar") {
-          entrarPaso(cap, pasoIdxRef.current);
-        } else {
-          // Se fue a otra página: NO señalar nada por parecido; Normi explica.
-          limpiarPaso();
-          atascoRef.current();
-        }
+        // Re-evaluar el paso en la nueva página: si corresponde, el cerebro
+        // señala; si no, responde con una nota natural (sin señalar por parecido).
+        entrarPaso(cap, pasoIdxRef.current);
         return;
       }
       if (el && !vivoEl && !perdidoRef.current) {
