@@ -101,6 +101,43 @@ function localizar(paso: Paso): HTMLElement | null {
   return null;
 }
 
+// Palabras de relleno que no sirven para ubicar la sección del paso.
+const STOPWORDS = new Set([
+  "elige", "selecciona", "ahora", "seleccionamos", "quieres", "puedes", "abrir",
+  "trabajar", "escribe", "marca", "entramos", "vamos", "donde", "sobre", "cual",
+]);
+
+function palabrasClave(paso: Paso): string[] {
+  const out: string[] = [];
+  if (paso.campo) out.push(normTxt(paso.campo));
+  for (const w of normTxt(paso.narracion || "").replace(/[^a-z0-9ñ ]/g, " ").split(/\s+/)) {
+    if (w.length >= 5 && !STOPWORDS.has(w) && !out.includes(w)) out.push(w);
+  }
+  return out;
+}
+
+/**
+ * Cuando la elección es del usuario (no hay botón exacto que señalar), ubica la
+ * SECCIÓN completa relacionada con el paso (ej. el cuadro "Elige tu asignatura")
+ * buscando un título que contenga la palabra clave, y devuelve su contenedor.
+ */
+function localizarZona(paso: Paso): HTMLElement | null {
+  const claves = palabrasClave(paso);
+  if (!claves.length) return null;
+  const titulos = Array.from(
+    document.querySelectorAll<HTMLElement>("h1,h2,h3,h4,h5,legend,label,p,span"),
+  ).filter((el) => el.offsetParent !== null && (el.textContent || "").trim().length <= 60);
+  for (const clave of claves) {
+    const t = titulos.find((el) => normTxt(el.textContent || "").includes(clave));
+    if (t) {
+      const cont =
+        t.closest<HTMLElement>("section, [class*='card'], [class*='rounded']") || t.parentElement;
+      return cont || t;
+    }
+  }
+  return null;
+}
+
 const SALUDO: GuiaTurn = {
   role: "assistant",
   content:
@@ -258,15 +295,33 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
           }, 250);
           return;
         }
+        // Sin botón exacto: a los ~2s se señala la SECCIÓN completa (ej. el
+        // cuadro de asignaturas) y la guía avanza cuando el usuario hace click
+        // dentro de ella (la opción concreta la elige él).
+        if (intentos >= 6) {
+          const zona = localizarZona(paso);
+          if (zona) {
+            zona.scrollIntoView({ block: "center", behavior: "smooth" });
+            window.setTimeout(() => {
+              if (!vivo) return;
+              setRect(zona.getBoundingClientRect());
+            }, 250);
+            const onZonaClick = () => {
+              zona.removeEventListener("click", onZonaClick);
+              window.setTimeout(() => avanzarRef.current(), 250);
+            };
+            zona.addEventListener("click", onZonaClick);
+            cleanupsRef.current.push(() => zona.removeEventListener("click", onZonaClick));
+            return;
+          }
+        }
         if (++intentos < 14) {
           window.setTimeout(buscar, 300);
           return;
         }
-        // Respaldo: no se encontró qué señalar (ej. "elige el periodo", donde
-        // la opción depende del usuario). Se narra igual y la guía avanza con
-        // el siguiente click del usuario, asumiendo que siguió la instrucción.
+        // Último respaldo: nada que señalar. Se narra igual y la guía avanza
+        // con el siguiente click del usuario (fuera del globo de Normi).
         const onDocClick = (e: MouseEvent) => {
-          // Los clicks dentro del globo de Normi (escribirle, Detener) no cuentan.
           if ((e.target as HTMLElement)?.closest?.("[data-guia-ui]")) return;
           document.removeEventListener("click", onDocClick, true);
           window.setTimeout(() => avanzarRef.current(), 250);
