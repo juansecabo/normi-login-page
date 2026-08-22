@@ -53,6 +53,41 @@ export function useGuia(): GuiaContextValue {
   return ctx;
 }
 
+const normTxt = (s: string) =>
+  (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+
+/** Etiqueta entre comillas de la narración (ej: toca 'Agregar actividad'). */
+function etiquetaDe(narracion: string): string | null {
+  const m = narracion.match(/['"“”‘’]([^'"“”‘’]{2,})['"“”‘’]/);
+  return m ? m[1] : null;
+}
+
+/** Busca un elemento clickeable visible por su texto (tildes/mayúsculas flexible). */
+function buscarPorTexto(label: string): HTMLElement | null {
+  const objetivo = normTxt(label);
+  if (!objetivo) return null;
+  const sel = 'button, [role="menuitem"], [role="tab"], a[href], [role="button"], label';
+  const cands = Array.from(document.querySelectorAll<HTMLElement>(sel)).filter(
+    (el) => el.offsetParent !== null,
+  );
+  return (
+    cands.find((el) => normTxt(el.textContent || "") === objetivo) ||
+    cands.find((el) => normTxt(el.textContent || "").includes(objetivo)) ||
+    null
+  );
+}
+
+/** Localiza el objetivo de un paso: por ancla (data-guia) o, si no, por su texto. */
+function localizar(paso: Paso): HTMLElement | null {
+  if (paso.ancla) {
+    const el = document.querySelector<HTMLElement>(`[data-guia="${paso.ancla}"]`);
+    if (el) return el;
+  }
+  const label = etiquetaDe(paso.narracion || "");
+  if (label) return buscarPorTexto(label);
+  return null;
+}
+
 const SALUDO: GuiaTurn = {
   role: "assistant",
   content:
@@ -122,16 +157,15 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
         setRect(null);
         return;
       }
-      // Deja que el DOM se asiente antes de buscar el ancla.
+      // Deja que el DOM se asiente antes de buscar el objetivo.
       setRect(null);
       window.setTimeout(() => {
-        if (!paso.ancla) return;
-        const el = document.querySelector<HTMLElement>(`[data-guia="${paso.ancla}"]`);
+        const el = localizar(paso);
         if (el) {
           el.scrollIntoView({ block: "center", behavior: "smooth" });
           window.setTimeout(() => setRect(el.getBoundingClientRect()), 300);
         } else {
-          setRect(null); // ancla no instrumentada aún: solo narramos
+          setRect(null); // no encontrado: solo narramos
         }
       }, 350);
     },
@@ -162,9 +196,9 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
     const cap = capacidadRef.current;
     if (!cap) return;
     const paso = cap.pasos[pasoIdx];
-    // Ejecuta la acción del paso actual (si el ancla existe).
-    if (paso?.ancla) {
-      const el = document.querySelector<HTMLElement>(`[data-guia="${paso.ancla}"]`);
+    // Ejecuta la acción del paso actual (si se encuentra el objetivo).
+    if (paso) {
+      const el = localizar(paso);
       if (el) {
         if (paso.accion === "click") {
           el.click();
@@ -197,8 +231,8 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
     const recompute = () => {
       const cap = capacidadRef.current;
       const paso = cap?.pasos[pasoIdx];
-      if (!paso?.ancla) return;
-      const el = document.querySelector<HTMLElement>(`[data-guia="${paso.ancla}"]`);
+      if (!paso) return;
+      const el = localizar(paso);
       if (el) setRect(el.getBoundingClientRect());
     };
     window.addEventListener("resize", recompute);

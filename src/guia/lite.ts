@@ -41,14 +41,15 @@ export function capacidadesDeSesion(): Capacidad[] {
   return capacidadesDe(CATALOGO, rol, colegio_id, false);
 }
 
-/** Versión compacta que se envía al cerebro para que elija. */
+/** Versión compacta que se envía al cerebro para que elija. Sin sinónimos: el
+ * modelo entiende por título + descripción y así el prompt es mucho más liviano
+ * (más rápido y barato). */
 export function capacidadesLite() {
   return capacidadesDeSesion().map((c) => ({
     id: c.id,
     titulo: c.titulo,
     descripcion: c.descripcion,
     requisitos: c.requisitos,
-    sinonimos: c.sinonimos,
   }));
 }
 
