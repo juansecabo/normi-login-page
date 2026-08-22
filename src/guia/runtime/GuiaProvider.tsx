@@ -1,10 +1,11 @@
-// "Normi te guía" — provider global: estado del chat + motor de la guía.
+// "Normi te guía" — provider global del MODO GUÍA.
 //
-// Modelo: el USUARIO hace todos los clicks. Normi solo SEÑALA (borde de luz)
-// dónde tocar y narra. No hay sombreado del resto de la pantalla ni cursor
-// falso ni botón Continúa: la guía avanza sola cuando el usuario hace lo que
-// Normi señaló (click en el elemento, elegir en la lista, escribir y salir del
-// campo). Solo existe Detener, y un campo para escribirle a Normi en el camino.
+// Al elegir "Normi te guía" en el menú, aparece Normi de una (imagen + globo),
+// ya en modo guía: NO hay chat aparte ni botón de "entrar". El usuario escribe
+// en un cuadro flotante separado del globo; Normi decide sola cuándo empezar a
+// señalar (borde de luz), cuándo seguir y cuándo preguntar. El usuario hace
+// todos los clicks; la guía avanza sola al detectar la acción. Único botón:
+// Cancelar (sale del modo). Historial efímero (solo memoria del navegador).
 import {
   createContext,
   useCallback,
@@ -18,37 +19,27 @@ import { useNavigate } from "react-router-dom";
 import type { Capacidad, Paso } from "../tipos";
 import { capacidadesLite, capacidadPorId, guiaDisponible } from "../lite";
 import { guiaChat, guiaObjetivo, resumenPantalla, type GuiaTurn } from "./api";
-import { GuiaPanel } from "./GuiaPanel";
 import { GuiaCursor } from "./GuiaCursor";
 import { guiaLog } from "./logger";
 
-interface GuiaPropuesta {
-  capacidad: Capacidad;
-  parametros: Record<string, string>;
-}
-
 interface GuiaContextValue {
   disponible: boolean;
-  abierto: boolean;
+  /** El modo guía está abierto (Normi visible). */
+  activo: boolean;
   abrir: () => void;
-  cerrar: () => void;
-  mensajes: GuiaTurn[];
-  enviando: boolean;
+  /** Sale del modo guía por completo. */
+  cancelar: () => void;
+  /** El usuario le escribe a Normi (pedidos, respuestas, dudas). */
   enviar: (texto: string) => void;
-  guiaPropuesta: GuiaPropuesta | null;
-  iniciarGuia: () => void;
-  // Guía en ejecución
-  ejecutando: boolean;
-  pasoIdx: number;
-  totalPasos: number;
+  /** Normi está pensando (llamada al modelo en curso). */
+  pensando: boolean;
+  /** Hay una guía de pasos corriendo. */
+  guiando: boolean;
+  /** Instrucción del paso actual (si hay guía corriendo). */
   narracion: string;
-  rect: DOMRect | null;
-  detener: () => void;
-  /** Pregunta libre a Normi durante la guía. */
-  preguntar: (texto: string) => void;
-  /** Última respuesta de Normi dentro de la guía (se muestra en el globo). */
+  /** Último mensaje conversacional de Normi. */
   respuesta: string | null;
-  preguntando: boolean;
+  rect: DOMRect | null;
 }
 
 const GuiaContext = createContext<GuiaContextValue | null>(null);
@@ -102,6 +93,8 @@ function localizar(paso: Paso): HTMLElement | null {
     const els = Array.from(
       document.querySelectorAll<HTMLElement>(`[data-guia="${paso.ancla}"]`),
     );
+    // Siempre el VISIBLE (los ResponsiveSelect duplican el ancla en un select
+    // oculto de celular; señalarlo causaba bucles de "objetivo perdido").
     const el = els.find(esVisible);
     if (el) return el;
   }
@@ -129,6 +122,7 @@ function palabrasClave(paso: Paso): string[] {
  * Cuando la elección es del usuario (no hay botón exacto que señalar), ubica la
  * SECCIÓN completa relacionada con el paso (ej. el cuadro "Elige tu asignatura")
  * buscando un título que contenga la palabra clave, y devuelve su contenedor.
+ * Es el RESPALDO cuando el cerebro (guiaObjetivo) no está disponible.
  */
 function localizarZona(paso: Paso): HTMLElement | null {
   const claves = palabrasClave(paso);
@@ -139,8 +133,6 @@ function localizarZona(paso: Paso): HTMLElement | null {
     (el) =>
       esVisible(el) &&
       (el.textContent || "").trim().length <= 60 &&
-      // Ni el encabezado global (logo "Notas Normi") ni el globo de Normi
-      // cuentan como sección señalable.
       !el.closest("header") &&
       !el.closest("[data-guia-ui]"),
   );
@@ -195,35 +187,33 @@ function pasoInicial(cap: Capacidad): number {
   return i;
 }
 
-const SALUDO: GuiaTurn = {
-  role: "assistant",
-  content:
-    "Hola, soy Normi. Dime qué quieres hacer en la plataforma y te voy guiando paso a paso.",
-};
+const SALUDO =
+  "Hola, soy Normi. Dime qué quieres hacer en la plataforma y te voy guiando paso a paso.";
+
+// "Ya lo hice / ya está / listo": confirmación del usuario para avanzar el paso.
+const RE_CONFIRMA =
+  /\b(ya (lo|la|los|las)? ?(hice|puse|marque|seleccione|elegi|escribi)|ya esta|ya estan|listo|hecho)\b/;
 
 export function GuiaProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
-  const [abierto, setAbierto] = useState(false);
-  const [mensajes, setMensajes] = useState<GuiaTurn[]>([SALUDO]);
-  const [enviando, setEnviando] = useState(false);
-  const [guiaPropuesta, setGuiaPropuesta] = useState<GuiaPropuesta | null>(null);
-
-  const [ejecutando, setEjecutando] = useState(false);
+  const [activo, setActivo] = useState(false);
+  const [guiando, setGuiando] = useState(false);
+  const [pensando, setPensando] = useState(false);
   const [pasoIdx, setPasoIdx] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [respuesta, setRespuesta] = useState<string | null>(null);
-  const [preguntando, setPreguntando] = useState(false);
+
+  // Historial efímero (contexto para el cerebro; no se muestra como chat).
+  const [mensajes, setMensajes] = useState<GuiaTurn[]>([]);
+  const mensajesRef = useRef<GuiaTurn[]>(mensajes);
+  mensajesRef.current = mensajes;
 
   const capacidadRef = useRef<Capacidad | null>(null);
   const pasoIdxRef = useRef(0);
-  const mensajesRef = useRef<GuiaTurn[]>(mensajes);
-  mensajesRef.current = mensajes;
   // Limpiadores del paso actual (listeners, timeouts, polls).
   const cleanupsRef = useRef<Array<() => void>>([]);
   const avanzarRef = useRef<() => void>(() => {});
-  // Consulta automática cuando un paso no encuentra su objetivo (prerequisito
-  // faltante): Normi mira la pantalla y lo explica en lenguaje natural.
   const atascoRef = useRef<() => void>(() => {});
   // Elemento actualmente señalado y bandera de "objetivo perdido" (vigilante).
   const senaladoRef = useRef<HTMLElement | null>(null);
@@ -231,47 +221,29 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
 
   const disponible = guiaDisponible();
 
-  const abrir = useCallback(() => setAbierto(true), []);
-  const cerrar = useCallback(() => setAbierto(false), []);
-
   const limpiarPaso = () => {
     for (const fn of cleanupsRef.current) fn();
     cleanupsRef.current = [];
   };
 
-  const enviar = useCallback(
-    async (texto: string) => {
-      const t = texto.trim();
-      if (!t || enviando) return;
-      const nuevos: GuiaTurn[] = [...mensajes, { role: "user", content: t }];
-      setMensajes(nuevos);
-      setEnviando(true);
-      setGuiaPropuesta(null);
-      guiaLog("chat_usuario", { texto: t }, true);
-      try {
-        const resp = await guiaChat({
-          message: t,
-          history: nuevos.filter((m) => m !== SALUDO).slice(-8),
-          capacidades: capacidadesLite(),
-          pantalla: resumenPantalla(),
-        });
-        setMensajes((prev) => [...prev, { role: "assistant", content: resp.text }]);
-        guiaLog("chat_normi", { texto: resp.text, guia: resp.guia?.capacidad_id || null });
-        if (resp.guia) {
-          const cap = capacidadPorId(resp.guia.capacidad_id);
-          if (cap) setGuiaPropuesta({ capacidad: cap, parametros: resp.guia.parametros || {} });
-        }
-      } catch {
-        setMensajes((prev) => [
-          ...prev,
-          { role: "assistant", content: "Uy, algo falló. ¿Lo intentamos de nuevo?" },
-        ]);
-      } finally {
-        setEnviando(false);
-      }
-    },
-    [mensajes, enviando],
-  );
+  const abrir = useCallback(() => {
+    setActivo(true);
+    setRespuesta(SALUDO);
+    setMensajes([{ role: "assistant", content: SALUDO }]);
+    guiaLog("modo_inicio", {}, true);
+  }, []);
+
+  const cancelar = useCallback(() => {
+    guiaLog("cancelar", { capacidad: capacidadRef.current?.id || null, idx: pasoIdxRef.current }, true);
+    limpiarPaso();
+    capacidadRef.current = null;
+    senaladoRef.current = null;
+    setGuiando(false);
+    setActivo(false);
+    setRect(null);
+    setRespuesta(null);
+    setMensajes([]);
+  }, []);
 
   /** Detecta que el usuario ya hizo lo del paso, y avanza solo. */
   const armarAvance = (paso: Paso, el: HTMLElement) => {
@@ -316,7 +288,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
     }
     // click (y cualquier otro accionable): avanza al hacer click en el objetivo.
     // Si el objetivo no es un control (ej. el Label de un campo con casillas),
-    // se escucha su CONTENEDOR: marcar la casilla de al lado tambien avanza.
+    // se escucha su CONTENEDOR: marcar la casilla de al lado también avanza.
     const interactivo = el.matches(
       "button, a, input, select, textarea, [role='button'], [role='tab'], [role='menuitem'], [role='option']",
     );
@@ -360,8 +332,6 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
       cleanupsRef.current.push(() => {
         vivo = false;
       });
-      // ¿Este paso puede tener un objetivo exacto? (ancla o etiqueta entre comillas)
-      const puedeExacto = !!paso.ancla || !!etiquetaDe(paso.narracion || "");
       const senalarZona = (zona: HTMLElement) => {
         zona.scrollIntoView({ block: "center", behavior: "smooth" });
         window.setTimeout(() => {
@@ -378,6 +348,19 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
         zona.addEventListener("click", onZonaClick);
         cleanupsRef.current.push(() => zona.removeEventListener("click", onZonaClick));
       };
+      // Respaldo: la guía avanza con el siguiente click del usuario (fuera del globo).
+      const armarClickLibre = () => {
+        const onDocClick = (e: MouseEvent) => {
+          if ((e.target as HTMLElement)?.closest?.("[data-guia-ui]")) return;
+          document.removeEventListener("click", onDocClick, true);
+          guiaLog("avance", { causa: "click_libre" });
+          window.setTimeout(() => avanzarRef.current(), 250);
+        };
+        document.addEventListener("click", onDocClick, true);
+        cleanupsRef.current.push(() => document.removeEventListener("click", onDocClick, true));
+      };
+      // ¿Este paso puede tener un objetivo exacto? (ancla o etiqueta entre comillas)
+      const puedeExacto = !!paso.ancla || !!etiquetaDe(paso.narracion || "");
       let intentos = 0;
       const buscar = () => {
         if (!vivo) return;
@@ -428,7 +411,6 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
             })
             .catch(() => {
               if (!vivo) return;
-              // Respaldo sin modelo: la zona por palabra clave.
               const zona = localizarZona(paso);
               if (zona) senalarZona(zona);
               else {
@@ -447,33 +429,34 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
         atascoRef.current();
         armarClickLibre();
       };
-      // Respaldo: la guía avanza con el siguiente click del usuario (fuera del globo).
-      const armarClickLibre = () => {
-        const onDocClick = (e: MouseEvent) => {
-          if ((e.target as HTMLElement)?.closest?.("[data-guia-ui]")) return;
-          document.removeEventListener("click", onDocClick, true);
-          guiaLog("avance", { causa: "click_libre" });
-          window.setTimeout(() => avanzarRef.current(), 250);
-        };
-        document.addEventListener("click", onDocClick, true);
-        cleanupsRef.current.push(() => document.removeEventListener("click", onDocClick, true));
-      };
       window.setTimeout(buscar, 120);
     },
     [navigate],
   );
 
+  const iniciar = useCallback(
+    (cap: Capacidad) => {
+      capacidadRef.current = cap;
+      const inicio = pasoInicial(cap);
+      pasoIdxRef.current = inicio;
+      setPasoIdx(inicio);
+      setGuiando(true);
+      guiaLog("guia_inicio", { capacidad: cap.id, inicio }, true);
+      entrarPaso(cap, inicio);
+    },
+    [entrarPaso],
+  );
+
   const terminar = useCallback(() => {
     guiaLog("guia_fin", { capacidad: capacidadRef.current?.id || null }, true);
     limpiarPaso();
-    setEjecutando(false);
-    setRect(null);
     capacidadRef.current = null;
-    setMensajes((prev) => [
-      ...prev,
-      { role: "assistant", content: "Listo, terminamos esta guía. ¿Te ayudo con algo más?" },
-    ]);
-    setAbierto(true);
+    senaladoRef.current = null;
+    setGuiando(false);
+    setRect(null);
+    const msg = "Listo, terminamos esta guía. ¿Te ayudo con algo más?";
+    setRespuesta(msg);
+    setMensajes((prev) => [...prev, { role: "assistant", content: msg }]);
   }, []);
 
   const avanzar = useCallback(() => {
@@ -493,43 +476,17 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
     avanzarRef.current = avanzar;
   }, [avanzar]);
 
-  const iniciarGuia = useCallback(() => {
-    if (!guiaPropuesta) return;
-    capacidadRef.current = guiaPropuesta.capacidad;
-    const inicio = pasoInicial(guiaPropuesta.capacidad);
-    guiaLog("guia_inicio", { capacidad: guiaPropuesta.capacidad.id, inicio, parametros: guiaPropuesta.parametros }, true);
-    pasoIdxRef.current = inicio;
-    setEjecutando(true);
-    setPasoIdx(inicio);
-    setAbierto(false); // el chat se recoge; queda el globo de Normi
-    entrarPaso(guiaPropuesta.capacidad, inicio);
-  }, [guiaPropuesta, entrarPaso]);
-
-  const detener = useCallback(() => {
-    guiaLog("detener", { capacidad: capacidadRef.current?.id || null, idx: pasoIdxRef.current }, true);
-    limpiarPaso();
-    setEjecutando(false);
-    setRect(null);
-    capacidadRef.current = null;
-    setMensajes((prev) => [
-      ...prev,
-      { role: "assistant", content: "Detuvimos la guía. Aquí sigo si quieres intentar otra cosa." },
-    ]);
-    setAbierto(true);
-  }, []);
-
-  /** Pregunta libre a Normi durante la guía (sin salir del modo guía). */
-  const preguntar = useCallback(
+  /**
+   * El usuario le escribe a Normi. Normi decide sola: conversar, empezar a
+   * señalar (arranca la guía de una, sin botón), cambiarla, o avanzar si el
+   * usuario confirma que ya hizo el paso.
+   */
+  const enviar = useCallback(
     async (texto: string) => {
       const t = texto.trim();
-      if (!t || preguntando) return;
-      // "Ya lo hice / ya esta / listo": el usuario confirma el paso => avanzar.
-      if (
-        capacidadRef.current &&
-        /(ya (lo|la|los|las)? ?(hice|puse|marque|seleccione|elegi|escribi)|ya esta|ya estan|listo|hecho)/.test(
-          normTxt(t),
-        )
-      ) {
+      if (!t || pensando) return;
+      // Confirmación del paso actual → avanzar sin gastar modelo.
+      if (capacidadRef.current && RE_CONFIRMA.test(normTxt(t))) {
         guiaLog("avance", { causa: "usuario_confirmo", texto: t });
         setMensajes((prev) => [
           ...prev,
@@ -540,62 +497,58 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
         avanzarRef.current();
         return;
       }
-      setPreguntando(true);
+      setPensando(true);
       setMensajes((prev) => [...prev, { role: "user", content: t }]);
-      guiaLog("pregunta_en_guia", { texto: t }, true);
+      guiaLog(capacidadRef.current ? "pregunta_en_guia" : "chat_usuario", { texto: t }, true);
       try {
-        // Contexto de la guía en curso: qué tarea acompaña y en qué paso va,
-        // para que Normi entienda respuestas sueltas (un nombre, una fecha...).
         const cap = capacidadRef.current;
-        const pasoActualGuia = cap?.pasos[pasoIdxRef.current];
+        const pasoA = cap?.pasos[pasoIdxRef.current];
         const resp = await guiaChat({
           message: t,
-          history: mensajesRef.current.filter((m) => m !== SALUDO).slice(-8),
+          history: mensajesRef.current.slice(-8),
           capacidades: capacidadesLite(),
           pantalla: resumenPantalla(),
           guia_activa: cap
-            ? { titulo: cap.titulo, paso: pasoActualGuia?.narracion || "" }
+            ? { titulo: cap.titulo, paso: pasoA?.narracion || "" }
             : undefined,
         });
-        setRespuesta(resp.text);
         setMensajes((prev) => [...prev, { role: "assistant", content: resp.text }]);
-        // Si en pleno modo guía el usuario pide OTRA tarea, la guía cambia en
-        // caliente a esa nueva capacidad (arranca sus pasos desde el inicio).
+        setRespuesta(resp.text);
+        guiaLog("chat_normi", { texto: resp.text, guia: resp.guia?.capacidad_id || null });
         if (resp.guia) {
           const nueva = capacidadPorId(resp.guia.capacidad_id);
-          if (nueva && capacidadRef.current && nueva.id !== capacidadRef.current.id) {
-            guiaLog("cambio_guia", { de: capacidadRef.current.id, a: nueva.id });
-            limpiarPaso();
-            capacidadRef.current = nueva;
-            const inicio = pasoInicial(nueva);
-            pasoIdxRef.current = inicio;
-            setPasoIdx(inicio);
-            entrarPaso(nueva, inicio);
+          if (nueva) {
+            if (!capacidadRef.current) {
+              // Normi decide empezar a señalar: arranca de una, sin botón.
+              iniciar(nueva);
+            } else if (nueva.id !== capacidadRef.current.id) {
+              guiaLog("cambio_guia", { de: capacidadRef.current.id, a: nueva.id });
+              limpiarPaso();
+              iniciar(nueva);
+            }
           }
         }
       } catch {
-        setRespuesta("Uy, algo falló. Inténtalo de nuevo.");
+        setRespuesta("Uy, algo falló. ¿Lo intentamos de nuevo?");
       } finally {
-        setPreguntando(false);
+        setPensando(false);
       }
     },
-    [preguntando, entrarPaso],
+    [pensando, iniciar],
   );
 
   // Paso atascado (nada que señalar): Normi revisa la pantalla por su cuenta y
-  // explica en lenguaje natural qué falta (ej. "veo que no tienes ninguna
-  // actividad, eso es lo primero que debes agregar"); si corresponde otra
-  // tarea, la propone y la guía cambia sola.
+  // explica en lenguaje natural qué falta; si corresponde otra tarea, cambia sola.
   const atasco = useCallback(async () => {
     const cap = capacidadRef.current;
-    if (!cap || preguntando) return;
+    if (!cap || pensando) return;
     const pasoA = cap.pasos[pasoIdxRef.current];
-    setPreguntando(true);
+    setPensando(true);
     try {
       const resp = await guiaChat({
         message:
           "(sistema) No se encontró en la pantalla lo necesario para el paso actual. Observa la PANTALLA ACTUAL y explícale al usuario, en lenguaje natural y breve, qué falta y qué debe hacer primero (ej: 'Veo que no tienes ninguna actividad, eso es lo primero que debes agregar'). Si lo que falta corresponde a otra acción de tu lista, llama proponer_guia con su id.",
-        history: mensajesRef.current.filter((m) => m !== SALUDO).slice(-6),
+        history: mensajesRef.current.slice(-6),
         capacidades: capacidadesLite(),
         pantalla: resumenPantalla(),
         guia_activa: { titulo: cap.titulo, paso: pasoA?.narracion || "" },
@@ -608,28 +561,23 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
         if (nueva && capacidadRef.current && nueva.id !== capacidadRef.current.id) {
           guiaLog("cambio_guia", { de: capacidadRef.current.id, a: nueva.id, causa: "atasco" });
           limpiarPaso();
-          capacidadRef.current = nueva;
-          const inicio = pasoInicial(nueva);
-          pasoIdxRef.current = inicio;
-          setPasoIdx(inicio);
-          entrarPaso(nueva, inicio);
+          iniciar(nueva);
         }
       }
     } catch {
       // silencioso: el respaldo de click sigue activo
     } finally {
-      setPreguntando(false);
+      setPensando(false);
     }
-  }, [preguntando, entrarPaso]);
+  }, [pensando, iniciar]);
 
   useEffect(() => {
     atascoRef.current = atasco;
   }, [atasco]);
 
-  // Telemetría: registra CADA click del usuario mientras la guía corre (qué
-  // tocó, con su texto), para poder analizar el comportamiento real.
+  // Telemetría: registra CADA click del usuario mientras la guía corre.
   useEffect(() => {
-    if (!ejecutando) return;
+    if (!guiando) return;
     const onClick = (e: MouseEvent) => {
       const el = e.target as HTMLElement | null;
       if (!el) return;
@@ -641,14 +589,12 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
     };
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);
-  }, [ejecutando]);
+  }, [guiando]);
 
-  // Vigilante: mientras la guia corre, verifica que el objetivo señalado siga
-  // existiendo. Si el usuario navego a otra pagina o el elemento desaparecio,
-  // apaga el borde y re-evalua el paso en la pantalla actual (vuelve a señalar
-  // lo correcto, o Normi explica el desvio via atasco).
+  // Vigilante: si el usuario navegó a otra página o el objetivo desapareció,
+  // apaga el borde y re-evalúa (o Normi explica el desvío).
   useEffect(() => {
-    if (!ejecutando) return;
+    if (!guiando) return;
     let lastPath = window.location.pathname;
     const iv = window.setInterval(() => {
       const cap = capacidadRef.current;
@@ -662,11 +608,9 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
         setRect(null);
         senaladoRef.current = null;
         if (pathNow === cap.ruta || cap.pasos[pasoIdxRef.current]?.accion === "navegar") {
-          // Volvió (o el paso es de navegación): re-evaluar normal.
           entrarPaso(cap, pasoIdxRef.current);
         } else {
-          // Se fue a otra página: NO señalar nada por parecido; Normi explica
-          // el desvío y cómo retomar.
+          // Se fue a otra página: NO señalar nada por parecido; Normi explica.
           limpiarPaso();
           atascoRef.current();
         }
@@ -680,17 +624,17 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
       }
     }, 700);
     return () => window.clearInterval(iv);
-  }, [ejecutando, entrarPaso]);
+  }, [guiando, entrarPaso]);
 
   // Reposiciona el borde de luz al hacer scroll/resize mientras se ejecuta.
   useEffect(() => {
-    if (!ejecutando) return;
+    if (!guiando) return;
     const recompute = () => {
       const el = senaladoRef.current;
       if (el && esVisible(el)) {
         setRect(el.getBoundingClientRect());
       } else {
-        setRect(null); // el objetivo ya no esta a la vista: no dejar el borde flotando
+        setRect(null); // el objetivo no está a la vista: no dejar el borde flotando
       }
     };
     window.addEventListener("resize", recompute);
@@ -699,37 +643,28 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("resize", recompute);
       window.removeEventListener("scroll", recompute, true);
     };
-  }, [ejecutando]);
+  }, [guiando]);
 
   const cap = capacidadRef.current;
-  const pasoActual = cap && ejecutando ? cap.pasos[pasoIdx] ?? null : null;
+  const pasoActual = cap && guiando ? cap.pasos[pasoIdx] ?? null : null;
 
   const value: GuiaContextValue = {
     disponible,
-    abierto,
+    activo,
     abrir,
-    cerrar,
-    mensajes,
-    enviando,
+    cancelar,
     enviar,
-    guiaPropuesta,
-    iniciarGuia,
-    ejecutando,
-    pasoIdx,
-    totalPasos: cap ? cap.pasos.length : 0,
+    pensando,
+    guiando,
     narracion: pasoActual?.narracion || "",
-    rect,
-    detener,
-    preguntar,
     respuesta,
-    preguntando,
+    rect,
   };
 
   return (
     <GuiaContext.Provider value={value}>
       {children}
-      {disponible && <GuiaPanel />}
-      {disponible && <GuiaCursor />}
+      {disponible && activo && <GuiaCursor />}
     </GuiaContext.Provider>
   );
 }

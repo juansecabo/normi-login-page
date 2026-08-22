@@ -1,9 +1,9 @@
-// "Normi te guía" — señalización visual de la guía.
-// El USUARIO hace los clicks: Normi solo marca con un borde de luz dónde tocar
-// (SIN sombrear el resto de la pantalla) y narra en globos animados. Solo hay
-// botón Detener; la guía avanza sola cuando el usuario hace lo señalado. El
-// usuario puede escribirle a Normi en cualquier momento desde el globo.
-import { useState } from "react";
+// "Normi te guía" — visual del modo guía.
+// Normi (imagen) con su globo de texto (SOLO sus palabras) + un cuadro de
+// escritura FLOTANTE separado (crece hasta 5 líneas y luego scroll). Único
+// botón: Cancelar (X roja). El borde de luz señala dónde hacer click; la guía
+// avanza sola cuando el usuario hace lo señalado.
+import { useRef, useState } from "react";
 import { X, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useGuia } from "./GuiaProvider";
@@ -12,24 +12,21 @@ import normiImg from "@/assets/normi-guia.png";
 const PAD = 6;
 
 export function GuiaCursor() {
-  const {
-    ejecutando,
-    rect,
-    narracion,
-    pasoIdx,
-    detener,
-    preguntar,
-    respuesta,
-    preguntando,
-  } = useGuia();
+  const { rect, narracion, respuesta, pensando, enviar, cancelar, guiando } = useGuia();
   const [texto, setTexto] = useState("");
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  if (!ejecutando) return null;
+  const ajustarAlto = (el: HTMLTextAreaElement) => {
+    el.style.height = "auto";
+    // ~5 líneas de texto antes de mostrar barra de desplazamiento.
+    el.style.height = Math.min(el.scrollHeight, 120) + "px";
+  };
 
   const mandar = () => {
-    if (!texto.trim() || preguntando) return;
-    preguntar(texto);
+    if (!texto.trim() || pensando) return;
+    enviar(texto);
     setTexto("");
+    if (inputRef.current) inputRef.current.style.height = "auto";
   };
 
   return (
@@ -50,8 +47,7 @@ export function GuiaCursor() {
         }
       `}</style>
 
-      {/* Borde de luz sobre el elemento que el usuario debe tocar. Nada más se
-          sombrea ni se bloquea: la pantalla queda libre. */}
+      {/* Borde de luz sobre el elemento que el usuario debe tocar. */}
       {rect && (
         <div
           style={{
@@ -69,52 +65,80 @@ export function GuiaCursor() {
         />
       )}
 
-      {/* Normi + globo (abajo a la derecha). */}
+      {/* Columna flotante: cuadro de escritura (aparte) + globo de Normi + Normi. */}
       <div
         style={{ zIndex: 10001 }}
         data-guia-ui
-        className="fixed bottom-3 right-3 flex flex-col items-end gap-1 w-[min(92vw,22rem)]"
+        className="fixed bottom-3 right-3 flex flex-col items-end gap-2 w-[min(92vw,22rem)]"
       >
+        {/* Cuadro de escritura FLOTANTE, separado del globo. */}
         <div
-          key={pasoIdx}
           style={{ animation: "guiaGloboIn 0.4s ease-out both" }}
-          className="relative bg-card border border-border rounded-2xl shadow-2xl p-4 w-full"
+          className="w-full bg-card border border-border rounded-2xl shadow-2xl p-2 flex items-end gap-2"
         >
-          <p className="text-sm text-foreground leading-snug">{narracion}</p>
-
-          {(respuesta || preguntando) && (
-            <div
-              style={{ animation: "guiaGloboIn 0.35s ease-out both" }}
-              className="mt-2 bg-muted rounded-xl px-3 py-2 text-sm text-foreground leading-snug"
-            >
-              {preguntando ? "Normi está pensando..." : respuesta}
-            </div>
-          )}
-
-          <div className="flex items-center gap-2 mt-3">
-            <input
-              value={texto}
-              onChange={(e) => setTexto(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  mandar();
-                }
-              }}
-              placeholder="Escríbele a Normi..."
-              className="flex-1 min-w-0 rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40"
-            />
-            <Button size="icon" variant="outline" onClick={mandar} disabled={preguntando || !texto.trim()}>
-              <Send className="w-4 h-4" />
-            </Button>
-            <Button variant="destructive" size="icon" onClick={detener} title="Detener la guía">
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-
-          {/* Colita del globo apuntando a Normi */}
-          <span className="absolute -bottom-1.5 right-10 w-3 h-3 bg-card border-b border-r border-border rotate-45" />
+          <textarea
+            ref={inputRef}
+            value={texto}
+            rows={1}
+            onChange={(e) => {
+              setTexto(e.target.value);
+              ajustarAlto(e.target);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                mandar();
+              }
+            }}
+            placeholder="Escríbele a Normi..."
+            className="flex-1 min-w-0 resize-none rounded-xl border border-input bg-background px-3 py-2 text-sm leading-snug outline-none focus:ring-2 focus:ring-primary/40 max-h-[120px] overflow-y-auto"
+          />
+          <Button
+            size="icon"
+            variant="outline"
+            className="shrink-0"
+            onClick={mandar}
+            disabled={pensando || !texto.trim()}
+            title="Enviar"
+          >
+            <Send className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="destructive"
+            size="icon"
+            className="shrink-0"
+            onClick={cancelar}
+            title="Cancelar el modo guía"
+          >
+            <X className="w-4 h-4" />
+          </Button>
         </div>
+
+        {/* Globo de Normi: SOLO sus palabras. */}
+        {(narracion || respuesta || pensando) && (
+          <div
+            key={(guiando ? narracion : "") + "|" + (respuesta || "")}
+            style={{ animation: "guiaGloboIn 0.4s ease-out both" }}
+            className="relative bg-card border border-border rounded-2xl shadow-2xl p-4 w-full"
+          >
+            {guiando && narracion && (
+              <p className="text-sm text-foreground leading-snug">{narracion}</p>
+            )}
+            {(respuesta || pensando) && (
+              <div
+                className={
+                  "text-sm text-foreground leading-snug " +
+                  (guiando && narracion ? "mt-2 bg-muted rounded-xl px-3 py-2" : "")
+                }
+              >
+                {pensando ? "Normi está pensando..." : respuesta}
+              </div>
+            )}
+            {/* Colita del globo apuntando a Normi */}
+            <span className="absolute -bottom-1.5 right-10 w-3 h-3 bg-card border-b border-r border-border rotate-45" />
+          </div>
+        )}
+
         <img
           src={normiImg}
           alt="Normi"
