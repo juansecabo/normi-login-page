@@ -20,6 +20,7 @@ import { capacidadesLite, capacidadPorId, guiaDisponible } from "../lite";
 import { guiaChat, resumenPantalla, type GuiaTurn } from "./api";
 import { GuiaPanel } from "./GuiaPanel";
 import { GuiaCursor } from "./GuiaCursor";
+import { guiaLog } from "./logger";
 
 interface GuiaPropuesta {
   capacidad: Capacidad;
@@ -220,6 +221,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
       setMensajes(nuevos);
       setEnviando(true);
       setGuiaPropuesta(null);
+      guiaLog("chat_usuario", { texto: t }, true);
       try {
         const resp = await guiaChat({
           message: t,
@@ -228,6 +230,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
           pantalla: resumenPantalla(),
         });
         setMensajes((prev) => [...prev, { role: "assistant", content: resp.text }]);
+        guiaLog("chat_normi", { texto: resp.text, guia: resp.guia?.capacidad_id || null });
         if (resp.guia) {
           const cap = capacidadPorId(resp.guia.capacidad_id);
           if (cap) setGuiaPropuesta({ capacidad: cap, parametros: resp.guia.parametros || {} });
@@ -257,6 +260,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
         const ahora = leer();
         if (ahora && ahora !== inicial) {
           window.clearInterval(iv);
+          guiaLog("avance", { causa: "seleccion", valor: ahora });
           window.setTimeout(() => avanzarRef.current(), 250);
         }
       }, 300);
@@ -268,6 +272,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
       const listo = () => {
         if (!input.value.trim()) return;
         quitar();
+        guiaLog("avance", { causa: "escritura" });
         window.setTimeout(() => avanzarRef.current(), 150);
       };
       const onKey = (e: KeyboardEvent) => {
@@ -286,6 +291,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
     // click (y cualquier otro accionable): avanza al hacer click en el objetivo.
     const onClick = () => {
       quitar();
+      guiaLog("avance", { causa: "click_objetivo" });
       window.setTimeout(() => avanzarRef.current(), 200);
     };
     const quitar = () => el.removeEventListener("click", onClick);
@@ -300,6 +306,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
       limpiarPaso();
       setRect(null);
       setRespuesta(null);
+      guiaLog("paso", { capacidad: cap.id, idx, accion: paso.accion, narracion: paso.narracion }, true);
 
       if (paso.accion === "navegar" && paso.ruta) {
         navigate(paso.ruta);
@@ -327,8 +334,10 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
           if (!vivo) return;
           setRect(zona.getBoundingClientRect());
         }, 150);
+        guiaLog("senalado", { modo: "zona" });
         const onZonaClick = () => {
           zona.removeEventListener("click", onZonaClick);
+          guiaLog("avance", { causa: "click_zona" });
           window.setTimeout(() => avanzarRef.current(), 250);
         };
         zona.addEventListener("click", onZonaClick);
@@ -343,6 +352,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
           window.setTimeout(() => {
             if (!vivo) return;
             setRect(el.getBoundingClientRect());
+            guiaLog("senalado", { modo: "exacto" });
             armarAvance(paso, el);
           }, 150);
           return;
@@ -363,10 +373,12 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
         // Último respaldo: nada que señalar. Normi mira la pantalla y explica
         // en lenguaje natural qué falta (ej. "no tienes ninguna actividad");
         // mientras tanto la guía avanza con el siguiente click del usuario.
+        guiaLog("senalado", { modo: "ninguno" });
         atascoRef.current();
         const onDocClick = (e: MouseEvent) => {
           if ((e.target as HTMLElement)?.closest?.("[data-guia-ui]")) return;
           document.removeEventListener("click", onDocClick, true);
+          guiaLog("avance", { causa: "click_libre" });
           window.setTimeout(() => avanzarRef.current(), 250);
         };
         document.addEventListener("click", onDocClick, true);
@@ -378,6 +390,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
   );
 
   const terminar = useCallback(() => {
+    guiaLog("guia_fin", { capacidad: capacidadRef.current?.id || null }, true);
     limpiarPaso();
     setEjecutando(false);
     setRect(null);
@@ -410,6 +423,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
     if (!guiaPropuesta) return;
     capacidadRef.current = guiaPropuesta.capacidad;
     const inicio = pasoInicial(guiaPropuesta.capacidad);
+    guiaLog("guia_inicio", { capacidad: guiaPropuesta.capacidad.id, inicio, parametros: guiaPropuesta.parametros }, true);
     pasoIdxRef.current = inicio;
     setEjecutando(true);
     setPasoIdx(inicio);
@@ -418,6 +432,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
   }, [guiaPropuesta, entrarPaso]);
 
   const detener = useCallback(() => {
+    guiaLog("detener", { capacidad: capacidadRef.current?.id || null, idx: pasoIdxRef.current }, true);
     limpiarPaso();
     setEjecutando(false);
     setRect(null);
@@ -436,6 +451,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
       if (!t || preguntando) return;
       setPreguntando(true);
       setMensajes((prev) => [...prev, { role: "user", content: t }]);
+      guiaLog("pregunta_en_guia", { texto: t }, true);
       try {
         // Contexto de la guía en curso: qué tarea acompaña y en qué paso va,
         // para que Normi entienda respuestas sueltas (un nombre, una fecha...).
@@ -457,6 +473,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
         if (resp.guia) {
           const nueva = capacidadPorId(resp.guia.capacidad_id);
           if (nueva && capacidadRef.current && nueva.id !== capacidadRef.current.id) {
+            guiaLog("cambio_guia", { de: capacidadRef.current.id, a: nueva.id });
             limpiarPaso();
             capacidadRef.current = nueva;
             const inicio = pasoInicial(nueva);
@@ -494,9 +511,11 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
       });
       setRespuesta(resp.text);
       setMensajes((prev) => [...prev, { role: "assistant", content: resp.text }]);
+      guiaLog("atasco_respuesta", { texto: resp.text, guia: resp.guia?.capacidad_id || null });
       if (resp.guia) {
         const nueva = capacidadPorId(resp.guia.capacidad_id);
         if (nueva && capacidadRef.current && nueva.id !== capacidadRef.current.id) {
+          guiaLog("cambio_guia", { de: capacidadRef.current.id, a: nueva.id, causa: "atasco" });
           limpiarPaso();
           capacidadRef.current = nueva;
           const inicio = pasoInicial(nueva);
@@ -515,6 +534,23 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     atascoRef.current = atasco;
   }, [atasco]);
+
+  // Telemetría: registra CADA click del usuario mientras la guía corre (qué
+  // tocó, con su texto), para poder analizar el comportamiento real.
+  useEffect(() => {
+    if (!ejecutando) return;
+    const onClick = (e: MouseEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (!el) return;
+      const accionable = el.closest<HTMLElement>("button, a, [role], input, textarea, select, label, td") || el;
+      guiaLog("click_usuario", {
+        el: (textoDe(accionable) || accionable.tagName || "").trim().replace(/\s+/g, " ").slice(0, 60),
+        enGlobo: !!el.closest("[data-guia-ui]"),
+      });
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, [ejecutando]);
 
   // Reposiciona el borde de luz al hacer scroll/resize mientras se ejecuta.
   useEffect(() => {
