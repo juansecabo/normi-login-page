@@ -3,7 +3,7 @@
 // ocupa solo una porción de la pantalla, no todo.
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Send, Sparkles, Play, ChevronDown, X } from "lucide-react";
+import { Send, Sparkles, Play, Minus, X } from "lucide-react";
 import { useGuia } from "./GuiaProvider";
 
 export function GuiaPanel() {
@@ -39,19 +39,21 @@ export function GuiaPanel() {
   };
 
   const Header = ({ onToggle }: { onToggle: () => void }) => (
-    <div className="flex items-center justify-between px-4 py-3 bg-primary text-primary-foreground">
+    <div className="flex items-center justify-between gap-3 px-4 py-3 bg-primary text-primary-foreground">
       <button onClick={onToggle} className="flex items-center gap-2 font-semibold min-w-0">
         <Sparkles className="w-5 h-5 shrink-0" />
         <span className="truncate">Normi te guía</span>
       </button>
       <div className="flex items-center gap-1">
-        <button
-          onClick={() => setMinimizado((m) => !m)}
-          title={minimizado ? "Abrir" : "Minimizar"}
-          className="p-1 rounded hover:bg-primary-foreground/20"
-        >
-          <ChevronDown className={"w-5 h-5 transition-transform " + (minimizado ? "rotate-180" : "")} />
-        </button>
+        {!minimizado && (
+          <button
+            onClick={() => setMinimizado(true)}
+            title="Minimizar"
+            className="p-1 rounded hover:bg-primary-foreground/20"
+          >
+            <Minus className="w-5 h-5" />
+          </button>
+        )}
         <button onClick={cerrar} title="Cerrar" className="p-1 rounded hover:bg-primary-foreground/20">
           <X className="w-5 h-5" />
         </button>
@@ -60,11 +62,15 @@ export function GuiaPanel() {
   );
 
   return (
+    // Anclado al borde inferior, como pestaña de chat (estilo Facebook): nunca flota.
     <div
-      className="fixed z-[60] right-0 bottom-0 sm:right-4 sm:bottom-4 w-full sm:w-[24rem] max-w-[100vw]"
+      className={
+        "fixed z-[60] bottom-0 right-0 sm:right-6 max-w-[100vw] " +
+        (minimizado ? "w-auto" : "w-full sm:w-[24rem]")
+      }
       style={{ filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.18))" }}
     >
-      <div className="mx-2 sm:mx-0 rounded-t-2xl sm:rounded-2xl overflow-hidden border border-border bg-card">
+      <div className="rounded-t-2xl overflow-hidden border border-b-0 border-border bg-card">
         <Header onToggle={() => setMinimizado((m) => !m)} />
 
         {!minimizado && (
