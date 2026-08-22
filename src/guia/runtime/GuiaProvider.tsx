@@ -422,11 +422,18 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
       setPreguntando(true);
       setMensajes((prev) => [...prev, { role: "user", content: t }]);
       try {
+        // Contexto de la guía en curso: qué tarea acompaña y en qué paso va,
+        // para que Normi entienda respuestas sueltas (un nombre, una fecha...).
+        const cap = capacidadRef.current;
+        const pasoActualGuia = cap?.pasos[pasoIdxRef.current];
         const resp = await guiaChat({
           message: t,
           history: mensajesRef.current.filter((m) => m !== SALUDO).slice(-8),
           capacidades: capacidadesLite(),
           pantalla: resumenPantalla(),
+          guia_activa: cap
+            ? { titulo: cap.titulo, paso: pasoActualGuia?.narracion || "" }
+            : undefined,
         });
         setRespuesta(resp.text);
         setMensajes((prev) => [...prev, { role: "assistant", content: resp.text }]);

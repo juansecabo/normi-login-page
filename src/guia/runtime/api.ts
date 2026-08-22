@@ -25,6 +25,8 @@ export function guiaChat(body: {
   capacidades: GuiaLite[];
   /** Resumen de lo que el usuario VE en pantalla (ruta, títulos, botones). */
   pantalla?: string;
+  /** Contexto de la guía activa (tarea que acompaña + paso actual). */
+  guia_activa?: { titulo: string; paso: string };
 }): Promise<GuiaChatResp> {
   return apiRequest<GuiaChatResp>("/api/guia/chat", {
     method: "POST",
