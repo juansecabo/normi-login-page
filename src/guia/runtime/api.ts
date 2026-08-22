@@ -34,6 +34,18 @@ export function guiaChat(body: {
   });
 }
 
+/** El cerebro elige qué elemento visible señalar para el paso actual. */
+export function guiaObjetivo(body: {
+  tarea: string;
+  paso: string;
+  elementos: string[];
+}): Promise<{ indice: number | null; nota?: string }> {
+  return apiRequest("/api/guia/objetivo", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
 /** Foto textual de la pantalla actual: Normi la usa como "ojos". */
 export function resumenPantalla(): string {
   const partes: string[] = ["Ruta: " + window.location.pathname];

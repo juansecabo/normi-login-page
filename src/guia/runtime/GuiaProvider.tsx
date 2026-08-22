@@ -17,7 +17,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import type { Capacidad, Paso } from "../tipos";
 import { capacidadesLite, capacidadPorId, guiaDisponible } from "../lite";
-import { guiaChat, resumenPantalla, type GuiaTurn } from "./api";
+import { guiaChat, guiaObjetivo, resumenPantalla, type GuiaTurn } from "./api";
 import { GuiaPanel } from "./GuiaPanel";
 import { GuiaCursor } from "./GuiaCursor";
 import { guiaLog } from "./logger";
@@ -87,7 +87,7 @@ function buscarPorTexto(label: string): HTMLElement | null {
   const sel =
     'button, [role="menuitem"], [role="tab"], a[href], [role="button"], [role="option"], label';
   const cands = Array.from(document.querySelectorAll<HTMLElement>(sel)).filter(
-    (el) => el.offsetParent !== null && !el.closest("[data-guia-ui]"),
+    (el) => esVisible(el) && !el.closest("[data-guia-ui]"),
   );
   return (
     cands.find((el) => normTxt(textoDe(el)) === objetivo) ||
@@ -134,7 +134,7 @@ function localizarZona(paso: Paso): HTMLElement | null {
     document.querySelectorAll<HTMLElement>("h1,h2,h3,h4,h5,legend,label,p,span"),
   ).filter(
     (el) =>
-      el.offsetParent !== null &&
+      esVisible(el) &&
       (el.textContent || "").trim().length <= 60 &&
       // Ni el encabezado global (logo "Notas Normi") ni el globo de Normi
       // cuentan como sección señalable.
@@ -152,6 +152,21 @@ function localizarZona(paso: Paso): HTMLElement | null {
     }
   }
   return null;
+}
+
+/** Elementos accionables visibles (para que el CEREBRO elija cuál señalar). */
+function candidatosVisibles(): { el: HTMLElement; txt: string }[] {
+  const sel =
+    'button, [role="menuitem"], [role="tab"], a[href], [role="button"], input, textarea, select, label';
+  const out: { el: HTMLElement; txt: string }[] = [];
+  for (const el of Array.from(document.querySelectorAll<HTMLElement>(sel))) {
+    if (!esVisible(el) || el.closest("[data-guia-ui]") || el.closest("header")) continue;
+    const txt = (textoDe(el) || "").trim().replace(/\s+/g, " ").slice(0, 60);
+    if (!txt) continue;
+    out.push({ el, txt });
+    if (out.length >= 80) break;
+  }
+  return out;
 }
 
 // Campos que solo sirven para LLEGAR a la página (elegir aula), no para la acción.
@@ -369,24 +384,62 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
           }, 150);
           return;
         }
-        // Sin botón exacto posible → la SECCIÓN completa se señala DE UNA (sin
-        // esperas); si sí podría haber exacto, se le da ~1s antes de caer a zona.
+        // Sin ancla exacta: el CEREBRO mira los elementos visibles y elige cuál
+        // señalar (entiende la pantalla en vez de coincidencias de texto).
         if (!puedeExacto || intentos >= 4) {
-          const zona = localizarZona(paso);
-          if (zona) {
-            senalarZona(zona);
-            return;
-          }
+          const cands = candidatosVisibles();
+          guiaObjetivo({
+            tarea: cap.titulo,
+            paso: paso.narracion || "",
+            elementos: cands.map((c) => c.txt),
+          })
+            .then((r) => {
+              if (!vivo) return;
+              if (r.indice != null && cands[r.indice] && esVisible(cands[r.indice].el)) {
+                const objetivo = cands[r.indice].el;
+                objetivo.scrollIntoView({ block: "center", behavior: "smooth" });
+                window.setTimeout(() => {
+                  if (!vivo) return;
+                  setRect(objetivo.getBoundingClientRect());
+                  senaladoRef.current = objetivo;
+                  guiaLog("senalado", { modo: "modelo", el: cands[r.indice!].txt });
+                  armarAvance(paso, objetivo);
+                }, 150);
+                return;
+              }
+              // El cerebro dice que aquí no está lo que se necesita.
+              guiaLog("senalado", { modo: "ninguno_modelo", nota: r.nota || null });
+              if (r.nota) {
+                setRespuesta(r.nota);
+                setMensajes((prev) => [...prev, { role: "assistant", content: r.nota! }]);
+              } else {
+                atascoRef.current();
+              }
+              armarClickLibre();
+            })
+            .catch(() => {
+              if (!vivo) return;
+              // Respaldo sin modelo: la zona por palabra clave.
+              const zona = localizarZona(paso);
+              if (zona) senalarZona(zona);
+              else {
+                guiaLog("senalado", { modo: "ninguno" });
+                atascoRef.current();
+                armarClickLibre();
+              }
+            });
+          return;
         }
         if (++intentos < 14) {
           window.setTimeout(buscar, 250);
           return;
         }
-        // Último respaldo: nada que señalar. Normi mira la pantalla y explica
-        // en lenguaje natural qué falta (ej. "no tienes ninguna actividad");
-        // mientras tanto la guía avanza con el siguiente click del usuario.
         guiaLog("senalado", { modo: "ninguno" });
         atascoRef.current();
+        armarClickLibre();
+      };
+      // Respaldo: la guía avanza con el siguiente click del usuario (fuera del globo).
+      const armarClickLibre = () => {
         const onDocClick = (e: MouseEvent) => {
           if ((e.target as HTMLElement)?.closest?.("[data-guia-ui]")) return;
           document.removeEventListener("click", onDocClick, true);
@@ -576,12 +629,21 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
       if (!cap) return;
       const pathNow = window.location.pathname;
       const el = senaladoRef.current;
-      const vivoEl = !!el && el.isConnected && el.offsetParent !== null;
+      const vivoEl = !!el && esVisible(el);
       if (pathNow !== lastPath) {
         lastPath = pathNow;
         guiaLog("desvio", { a: pathNow }, true);
         setRect(null);
-        entrarPaso(cap, pasoIdxRef.current);
+        senaladoRef.current = null;
+        if (pathNow === cap.ruta || cap.pasos[pasoIdxRef.current]?.accion === "navegar") {
+          // Volvió (o el paso es de navegación): re-evaluar normal.
+          entrarPaso(cap, pasoIdxRef.current);
+        } else {
+          // Se fue a otra página: NO señalar nada por parecido; Normi explica
+          // el desvío y cómo retomar.
+          limpiarPaso();
+          atascoRef.current();
+        }
         return;
       }
       if (el && !vivoEl && !perdidoRef.current) {
@@ -599,7 +661,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
     if (!ejecutando) return;
     const recompute = () => {
       const el = senaladoRef.current;
-      if (el && el.isConnected && el.offsetParent !== null) {
+      if (el && esVisible(el)) {
         setRect(el.getBoundingClientRect());
       } else {
         setRect(null); // el objetivo ya no esta a la vista: no dejar el borde flotando
