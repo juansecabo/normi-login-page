@@ -41,6 +41,8 @@ interface GuiaContextValue {
   rect: DOMRect | null;
   continuar: () => void;
   detener: () => void;
+  esperandoValor: string | null;
+  responder: (texto: string) => void;
   aviso: boolean;
   mostrarAviso: () => void;
   ocultarAviso: () => void;
@@ -95,41 +97,78 @@ function buscarValor(params: Record<string, string>, campo?: string): string | u
   return undefined;
 }
 
-/** Normi ejecuta la acción del paso ella misma (clic, escribir, elegir en lista). */
-function ejecutarAccion(paso: Paso, params: Record<string, string>) {
-  const el = localizar(paso);
-  if (!el) return;
+function tipear(input: HTMLInputElement | HTMLTextAreaElement, val: string) {
+  input.focus();
+  const proto = input instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+  const setter = Object.getOwnPropertyDescriptor(proto, "value")?.set;
+  if (setter) setter.call(input, val);
+  else input.value = val;
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function anclaDe(paso: Paso): HTMLElement | null {
+  return paso.ancla ? document.querySelector<HTMLElement>(`[data-guia="${paso.ancla}"]`) : null;
+}
+
+/** El elemento que Normi va a resaltar/tocar (control por ancla, u opción por su valor). */
+function localizarObjetivo(paso: Paso, params: Record<string, string>): HTMLElement | null {
+  if (paso.accion === "navegar") return null;
+  const anchor = anclaDe(paso);
+  if (anchor) return anchor;
   const val = buscarValor(params, paso.campo);
-  if (paso.accion === "click") {
-    el.click();
-  } else if (paso.accion === "escribir" && val) {
-    const input = el as HTMLInputElement | HTMLTextAreaElement;
-    input.focus();
-    const setter = Object.getOwnPropertyDescriptor(
-      input instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype,
-      "value",
-    )?.set;
-    setter ? setter.call(input, val) : (input.value = val);
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-  } else if (paso.accion === "seleccionar") {
-    // Nativo (celular): fija el valor directo. Radix (PC): abre y elige la opción.
-    if (el instanceof HTMLSelectElement && val) {
-      const opt = Array.from(el.options).find((o) => normTxt(o.textContent || "") === normTxt(val));
-      if (opt) {
-        const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set;
-        setter ? setter.call(el, opt.value) : (el.value = opt.value);
-        el.dispatchEvent(new Event("change", { bubbles: true }));
-      }
-    } else {
-      el.click(); // abre el desplegable
-      if (val) {
-        window.setTimeout(() => {
-          const op = buscarPorTexto(val);
-          if (op) op.click();
-        }, 400);
-      }
-    }
+  if (val) {
+    const op = buscarPorTexto(val);
+    if (op) return op;
   }
+  return localizar(paso);
+}
+
+type ResultadoPaso = "ok" | "skip" | { necesita: string };
+
+/** Normi ejecuta el paso. Devuelve {necesita} si le falta un dato del usuario. */
+function ejecutarPaso(paso: Paso, params: Record<string, string>): ResultadoPaso {
+  if (paso.accion === "navegar" || paso.accion === "explicar" || paso.accion === "esperar") return "ok";
+  const val = buscarValor(params, paso.campo);
+  const necesitaDato = !!paso.campo;
+  if (necesitaDato && !val) {
+    if (paso.opcional) return "ok"; // opcional sin dato: se salta
+    return { necesita: paso.campo! };
+  }
+  const anchor = anclaDe(paso);
+
+  if (paso.accion === "escribir") {
+    const input = (anchor || localizar(paso)) as HTMLInputElement | HTMLTextAreaElement | null;
+    if (input && val) tipear(input, val);
+    return "ok";
+  }
+
+  if (paso.accion === "seleccionar") {
+    if (anchor instanceof HTMLSelectElement && val) {
+      const opt = Array.from(anchor.options).find((o) => normTxt(o.textContent || "") === normTxt(val));
+      if (opt) {
+        const s = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set;
+        if (s) s.call(anchor, opt.value);
+        else anchor.value = opt.value;
+        anchor.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      return "ok";
+    }
+    if (anchor && val) {
+      anchor.click(); // abre el desplegable (Radix)
+      window.setTimeout(() => buscarPorTexto(val)?.click(), 400);
+      return "ok";
+    }
+    if (val) {
+      const op = buscarPorTexto(val); // opción/tarjeta con ese texto (ej. dashboard)
+      if (op) { op.click(); return "ok"; }
+    }
+    return "skip";
+  }
+
+  // click
+  const target = (val ? buscarPorTexto(val) : null) || anchor || localizar(paso);
+  if (target) { target.click(); return "ok"; }
+  return "skip";
 }
 
 /** Localiza el objetivo de un paso: por ancla (data-guia) o, si no, por su texto. */
@@ -162,6 +201,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [aviso, setAviso] = useState(false);
   const [actuando, setActuando] = useState(false); // buscando/ubicando el elemento
+  const [esperandoValor, setEsperandoValor] = useState<string | null>(null); // campo que Normi pregunta
 
   const capacidadRef = useRef<Capacidad | null>(null);
   const paramsRef = useRef<Record<string, string>>({});
@@ -210,6 +250,10 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
       if (!paso) return;
       setRect(null);
       setActuando(true); // Normi está ubicando el elemento → Continúa deshabilitado
+      // Si el paso necesita un dato que no tenemos, Normi lo pregunta de una.
+      const faltaDato =
+        !!paso.campo && !paso.opcional && !buscarValor(paramsRef.current, paso.campo);
+      setEsperandoValor(faltaDato ? paso.campo! : null);
       if (paso.accion === "navegar" && paso.ruta) {
         navigate(paso.ruta);
         // Un respiro para que cargue la página nueva antes de habilitar Continúa.
@@ -219,7 +263,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
       // Reintenta encontrar el objetivo (páginas/menús que cargan async).
       let intentos = 0;
       const buscar = () => {
-        const el = localizar(paso);
+        const el = localizarObjetivo(paso, paramsRef.current);
         if (el) {
           el.scrollIntoView({ block: "center", behavior: "smooth" });
           window.setTimeout(() => {
@@ -252,6 +296,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
     setEjecutando(false);
     setRect(null);
     setAviso(false);
+    setEsperandoValor(null);
     capacidadRef.current = null;
     setMensajes((prev) => [
       ...prev,
@@ -259,12 +304,9 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
     ]);
   }, []);
 
-  const continuar = useCallback(() => {
+  const avanzar = useCallback(() => {
     const cap = capacidadRef.current;
     if (!cap) return;
-    const paso = cap.pasos[pasoIdx];
-    // Normi ejecuta la acción del paso actual ella misma.
-    if (paso) ejecutarAccion(paso, paramsRef.current);
     const siguiente = pasoIdx + 1;
     if (siguiente >= cap.pasos.length) {
       setEjecutando(false);
@@ -280,6 +322,44 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
     entrarPaso(cap, siguiente);
   }, [pasoIdx, entrarPaso]);
 
+  const continuar = useCallback(() => {
+    const cap = capacidadRef.current;
+    if (!cap) return;
+    const paso = cap.pasos[pasoIdx];
+    if (paso) {
+      const r = ejecutarPaso(paso, paramsRef.current);
+      if (typeof r === "object") {
+        // Normi necesita un dato: lo pregunta y espera que el usuario le escriba.
+        setEsperandoValor(r.necesita);
+        return;
+      }
+    }
+    avanzar();
+  }, [pasoIdx, avanzar]);
+
+  // El usuario le escribe a Normi el dato que preguntó dentro del modo guía.
+  const responder = useCallback(
+    (texto: string) => {
+      const t = texto.trim();
+      const campo = esperandoValor;
+      if (!t || !campo) return;
+      paramsRef.current = { ...paramsRef.current, [campo]: t };
+      setEsperandoValor(null);
+      const cap = capacidadRef.current;
+      const paso = cap?.pasos[pasoIdx];
+      if (paso) {
+        const r = ejecutarPaso(paso, paramsRef.current);
+        if (typeof r === "object") {
+          setEsperandoValor(r.necesita);
+          return;
+        }
+      }
+      // Vuelve a resaltar por si el objetivo cambió con el nuevo dato, y avanza.
+      avanzar();
+    },
+    [esperandoValor, pasoIdx, avanzar],
+  );
+
   // Reposiciona el foco al hacer scroll/resize mientras se ejecuta.
   useEffect(() => {
     if (!ejecutando) return;
@@ -287,7 +367,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
       const cap = capacidadRef.current;
       const paso = cap?.pasos[pasoIdx];
       if (!paso) return;
-      const el = localizar(paso);
+      const el = localizarObjetivo(paso, paramsRef.current);
       if (el) setRect(el.getBoundingClientRect());
     };
     window.addEventListener("resize", recompute);
@@ -320,6 +400,8 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
     rect,
     continuar,
     detener,
+    esperandoValor,
+    responder,
     aviso,
     mostrarAviso: () => setAviso(true),
     ocultarAviso: () => setAviso(false),

@@ -2,8 +2,8 @@
 // Spotlight INTERACTIVO: se oscurece todo MENOS el elemento del paso (que queda
 // tocable y aclarado). Los clicks fuera del hueco se bloquean con un pop-up.
 // Normi (imagen) habla con globos animados; solo botones Continúa y Detener.
-import type { CSSProperties } from "react";
-import { MousePointer2, X } from "lucide-react";
+import { useState, type CSSProperties } from "react";
+import { MousePointer2, X, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useGuia } from "./GuiaProvider";
 import normiImg from "@/assets/normi-guia.png";
@@ -22,12 +22,21 @@ export function GuiaCursor() {
     totalPasos,
     continuar,
     detener,
+    esperandoValor,
+    responder,
     aviso,
     mostrarAviso,
     ocultarAviso,
   } = useGuia();
+  const [resp, setResp] = useState("");
 
   if (!ejecutando) return null;
+
+  const enviarResp = () => {
+    if (!resp.trim()) return;
+    responder(resp);
+    setResp("");
+  };
 
   const cursorX = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
   const cursorY = rect ? rect.top + rect.height / 2 : window.innerHeight * 0.45;
@@ -115,14 +124,38 @@ export function GuiaCursor() {
             Paso {pasoIdx + 1} de {totalPasos}
           </p>
           <p className="text-sm text-foreground leading-snug mb-3">{narracion}</p>
-          <div className="flex items-center gap-2">
-            <Button onClick={continuar} disabled={actuando} className="flex-1">
-              {actuando ? "Un momento..." : "Continúa"}
-            </Button>
-            <Button variant="destructive" onClick={detener} className="gap-1">
-              <X className="w-4 h-4" /> Detener
-            </Button>
-          </div>
+          {esperandoValor ? (
+            <div className="flex items-center gap-2">
+              <input
+                autoFocus
+                value={resp}
+                onChange={(e) => setResp(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    enviarResp();
+                  }
+                }}
+                placeholder={`Escribe ${esperandoValor}...`}
+                className="flex-1 rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40"
+              />
+              <Button size="icon" onClick={enviarResp} disabled={!resp.trim()}>
+                <Send className="w-4 h-4" />
+              </Button>
+              <Button variant="destructive" size="icon" onClick={detener}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Button onClick={continuar} disabled={actuando} className="flex-1">
+                {actuando ? "Un momento..." : "Continúa"}
+              </Button>
+              <Button variant="destructive" onClick={detener} className="gap-1">
+                <X className="w-4 h-4" /> Detener
+              </Button>
+            </div>
+          )}
           <span className="absolute -bottom-1.5 right-10 w-3 h-3 bg-card border-b border-r border-border rotate-45" />
         </div>
         <img
