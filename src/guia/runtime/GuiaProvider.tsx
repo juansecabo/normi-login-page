@@ -99,7 +99,10 @@ function buscarPorTexto(label: string): HTMLElement | null {
 /** Localiza el objetivo de un paso: por ancla (data-guia) o por su texto. */
 function localizar(paso: Paso): HTMLElement | null {
   if (paso.ancla) {
-    const el = document.querySelector<HTMLElement>(`[data-guia="${paso.ancla}"]`);
+    const els = Array.from(
+      document.querySelectorAll<HTMLElement>(`[data-guia="${paso.ancla}"]`),
+    );
+    const el = els.find(esVisible);
     if (el) return el;
   }
   const label = etiquetaDe(paso.narracion || "");
@@ -312,13 +315,19 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
       return;
     }
     // click (y cualquier otro accionable): avanza al hacer click en el objetivo.
+    // Si el objetivo no es un control (ej. el Label de un campo con casillas),
+    // se escucha su CONTENEDOR: marcar la casilla de al lado tambien avanza.
+    const interactivo = el.matches(
+      "button, a, input, select, textarea, [role='button'], [role='tab'], [role='menuitem'], [role='option']",
+    );
+    const escucha: HTMLElement = interactivo ? el : el.parentElement || el;
     const onClick = () => {
       quitar();
       guiaLog("avance", { causa: "click_objetivo" });
       window.setTimeout(() => avanzarRef.current(), 200);
     };
-    const quitar = () => el.removeEventListener("click", onClick);
-    el.addEventListener("click", onClick);
+    const quitar = () => escucha.removeEventListener("click", onClick);
+    escucha.addEventListener("click", onClick);
     cleanupsRef.current.push(quitar);
   };
 
@@ -514,6 +523,23 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
     async (texto: string) => {
       const t = texto.trim();
       if (!t || preguntando) return;
+      // "Ya lo hice / ya esta / listo": el usuario confirma el paso => avanzar.
+      if (
+        capacidadRef.current &&
+        /(ya (lo|la|los|las)? ?(hice|puse|marque|seleccione|elegi|escribi)|ya esta|ya estan|listo|hecho)/.test(
+          normTxt(t),
+        )
+      ) {
+        guiaLog("avance", { causa: "usuario_confirmo", texto: t });
+        setMensajes((prev) => [
+          ...prev,
+          { role: "user", content: t },
+          { role: "assistant", content: "Perfecto, sigamos." },
+        ]);
+        setRespuesta("Perfecto, sigamos.");
+        avanzarRef.current();
+        return;
+      }
       setPreguntando(true);
       setMensajes((prev) => [...prev, { role: "user", content: t }]);
       guiaLog("pregunta_en_guia", { texto: t }, true);
