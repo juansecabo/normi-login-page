@@ -877,11 +877,12 @@ const ProgramarActividad = () => {
                   {/* 1. Asignatura — solo profesores; los demás internos programan actividad General */}
                   {!modoGeneral && (
                     <div className="space-y-2">
-                      <Label data-guia="actividades.select_asignatura">Asignatura</Label>
+                      <Label>Asignatura</Label>
                       <ResponsiveSelect
                         value={asignaturaSeleccionada}
                         onValueChange={handleAsignaturaChange}
                         placeholder="Seleccionar asignatura"
+                        dataGuia="actividades.select_asignatura"
                         options={asignaturas.map((a) => ({ value: a, label: a }))}
                       />
                     </div>
@@ -893,11 +894,12 @@ const ProgramarActividad = () => {
                   {/* 2. Grado */}
                   {asignaturaSeleccionada && (
                     <div className="space-y-2">
-                      <Label data-guia="actividades.select_grado">Grado</Label>
+                      <Label>Grado</Label>
                       <ResponsiveSelect
                         value={gradoSeleccionado}
                         onValueChange={handleGradoChange}
                         placeholder="Seleccionar grado"
+                        dataGuia="actividades.select_grado"
                         options={grados.map((g) => ({ value: g, label: g }))}
                       />
                     </div>
@@ -997,11 +999,12 @@ const ProgramarActividad = () => {
                       {/* 4. Tipo (opcional) — solo profesores; los internos no eligen tipo */}
                       {!modoGeneral && (
                         <div className="space-y-2">
-                          <Label data-guia="actividades.select_tipo">Tipo de actividad (opcional)</Label>
+                          <Label>Tipo de actividad (opcional)</Label>
                           <ResponsiveSelect
                             value={tipoSeleccionado}
                             onValueChange={setTipoSeleccionado}
                             placeholder="Sin tipo específico"
+                            dataGuia="actividades.select_tipo"
                             options={TIPOS_ACTIVIDAD.map((t) => ({ value: t, label: t }))}
                           />
                         </div>

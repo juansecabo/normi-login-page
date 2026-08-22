@@ -86,6 +86,52 @@ function buscarPorTexto(label: string): HTMLElement | null {
   );
 }
 
+/** Busca el valor de un campo en los parámetros (tolerante a tildes/mayúsculas). */
+function buscarValor(params: Record<string, string>, campo?: string): string | undefined {
+  if (!campo) return undefined;
+  if (params[campo] != null) return params[campo];
+  const n = normTxt(campo);
+  for (const k of Object.keys(params)) if (normTxt(k) === n) return params[k];
+  return undefined;
+}
+
+/** Normi ejecuta la acción del paso ella misma (clic, escribir, elegir en lista). */
+function ejecutarAccion(paso: Paso, params: Record<string, string>) {
+  const el = localizar(paso);
+  if (!el) return;
+  const val = buscarValor(params, paso.campo);
+  if (paso.accion === "click") {
+    el.click();
+  } else if (paso.accion === "escribir" && val) {
+    const input = el as HTMLInputElement | HTMLTextAreaElement;
+    input.focus();
+    const setter = Object.getOwnPropertyDescriptor(
+      input instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype,
+      "value",
+    )?.set;
+    setter ? setter.call(input, val) : (input.value = val);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  } else if (paso.accion === "seleccionar") {
+    // Nativo (celular): fija el valor directo. Radix (PC): abre y elige la opción.
+    if (el instanceof HTMLSelectElement && val) {
+      const opt = Array.from(el.options).find((o) => normTxt(o.textContent || "") === normTxt(val));
+      if (opt) {
+        const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set;
+        setter ? setter.call(el, opt.value) : (el.value = opt.value);
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    } else {
+      el.click(); // abre el desplegable
+      if (val) {
+        window.setTimeout(() => {
+          const op = buscarPorTexto(val);
+          if (op) op.click();
+        }, 400);
+      }
+    }
+  }
+}
+
 /** Localiza el objetivo de un paso: por ancla (data-guia) o, si no, por su texto. */
 function localizar(paso: Paso): HTMLElement | null {
   if (paso.ancla) {
@@ -217,20 +263,8 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
     const cap = capacidadRef.current;
     if (!cap) return;
     const paso = cap.pasos[pasoIdx];
-    // Ejecuta la acción del paso actual (si se encuentra el objetivo).
-    if (paso) {
-      const el = localizar(paso);
-      if (el) {
-        if (paso.accion === "click") {
-          el.click();
-        } else if (paso.accion === "escribir" && paso.campo && paramsRef.current[paso.campo]) {
-          const input = el as HTMLInputElement;
-          input.focus();
-          input.value = paramsRef.current[paso.campo];
-          input.dispatchEvent(new Event("input", { bubbles: true }));
-        }
-      }
-    }
+    // Normi ejecuta la acción del paso actual ella misma.
+    if (paso) ejecutarAccion(paso, paramsRef.current);
     const siguiente = pasoIdx + 1;
     if (siguiente >= cap.pasos.length) {
       setEjecutando(false);

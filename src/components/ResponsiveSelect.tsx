@@ -17,13 +17,15 @@ interface ResponsiveSelectProps {
   placeholder: string;
   options: Option[];
   disabled?: boolean;
+  /** Marca para "Normi te guía" (data-guia); se aplica al control visible. */
+  dataGuia?: string;
 }
 
 /**
  * Native <select> on mobile (better OS picker UX),
  * shadcn Select on desktop (consistent design, always opens down).
  */
-const ResponsiveSelect = ({ value, onValueChange, placeholder, options, disabled }: ResponsiveSelectProps) => {
+const ResponsiveSelect = ({ value, onValueChange, placeholder, options, disabled, dataGuia }: ResponsiveSelectProps) => {
   return (
     <>
       {/* Mobile: native select */}
@@ -31,6 +33,7 @@ const ResponsiveSelect = ({ value, onValueChange, placeholder, options, disabled
         value={value}
         onChange={(e) => onValueChange(e.target.value)}
         disabled={disabled}
+        data-guia={dataGuia}
         className="md:hidden w-full p-3 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
       >
         <option value="">{placeholder}</option>
@@ -42,7 +45,7 @@ const ResponsiveSelect = ({ value, onValueChange, placeholder, options, disabled
       {/* Desktop: shadcn Select */}
       <div className="hidden md:block">
         <Select value={value} onValueChange={onValueChange} disabled={disabled}>
-          <SelectTrigger>
+          <SelectTrigger data-guia={dataGuia}>
             <SelectValue placeholder={placeholder} />
           </SelectTrigger>
           <SelectContent>

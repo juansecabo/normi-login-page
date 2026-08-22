@@ -146,7 +146,7 @@ export function GuiaCursor() {
           >
             <p className="text-base font-semibold text-foreground mb-1">Estás en el modo guía</p>
             <p className="text-sm text-muted-foreground mb-4">
-              Toca lo que Normi te resalta, o toca Detener para salir del modo guía.
+              Normi va haciendo cada paso. Toca Continúa para el siguiente, o Detener para salir.
             </p>
             <div className="flex gap-2 justify-center">
               <Button onClick={ocultarAviso}>Entendido</Button>
