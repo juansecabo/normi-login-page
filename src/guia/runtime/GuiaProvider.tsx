@@ -68,6 +68,11 @@ function etiquetaDe(narracion: string): string | null {
   return m ? m[1] : null;
 }
 
+/** Visible de verdad, incluso dentro de modales (position: fixed hace que
+ *  offsetParent sea null, por eso NO sirve como chequeo de visibilidad). */
+const esVisible = (el: HTMLElement): boolean =>
+  el.isConnected && el.getClientRects().length > 0;
+
 const textoDe = (el: HTMLElement): string =>
   el.textContent ||
   el.getAttribute("aria-label") ||
