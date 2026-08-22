@@ -17,7 +17,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import type { Capacidad, Paso } from "../tipos";
 import { capacidadesLite, capacidadPorId, guiaDisponible } from "../lite";
-import { guiaChat, type GuiaTurn } from "./api";
+import { guiaChat, resumenPantalla, type GuiaTurn } from "./api";
 import { GuiaPanel } from "./GuiaPanel";
 import { GuiaCursor } from "./GuiaCursor";
 
@@ -138,6 +138,29 @@ function localizarZona(paso: Paso): HTMLElement | null {
   return null;
 }
 
+// Campos que solo sirven para LLEGAR a la página (elegir aula), no para la acción.
+const CAMPOS_LLEGADA = new Set(["asignatura", "grado", "salon"]);
+
+/**
+ * Si el usuario YA está en la página donde ocurre la acción, la guía no debe
+ * devolverlo al inicio: salta los pasos de llegada (navegar, esperar, elegir
+ * asignatura/grado/salón) y arranca en el primer paso propio de la acción.
+ */
+function pasoInicial(cap: Capacidad): number {
+  if (window.location.pathname !== cap.ruta) return 0;
+  let i = 0;
+  while (i < cap.pasos.length - 1) {
+    const p = cap.pasos[i];
+    const esLlegada =
+      p.accion === "navegar" ||
+      p.accion === "esperar" ||
+      (!!p.campo && CAMPOS_LLEGADA.has(normTxt(p.campo)));
+    if (!esLlegada) break;
+    i++;
+  }
+  return i;
+}
+
 const SALUDO: GuiaTurn = {
   role: "assistant",
   content:
@@ -189,6 +212,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
           message: t,
           history: nuevos.filter((m) => m !== SALUDO).slice(-8),
           capacidades: capacidadesLite(),
+          pantalla: resumenPantalla(),
         });
         setMensajes((prev) => [...prev, { role: "assistant", content: resp.text }]);
         if (resp.guia) {
@@ -366,11 +390,12 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
   const iniciarGuia = useCallback(() => {
     if (!guiaPropuesta) return;
     capacidadRef.current = guiaPropuesta.capacidad;
-    pasoIdxRef.current = 0;
+    const inicio = pasoInicial(guiaPropuesta.capacidad);
+    pasoIdxRef.current = inicio;
     setEjecutando(true);
-    setPasoIdx(0);
+    setPasoIdx(inicio);
     setAbierto(false); // el chat se recoge; queda el globo de Normi
-    entrarPaso(guiaPropuesta.capacidad, 0);
+    entrarPaso(guiaPropuesta.capacidad, inicio);
   }, [guiaPropuesta, entrarPaso]);
 
   const detener = useCallback(() => {
@@ -397,6 +422,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
           message: t,
           history: mensajesRef.current.filter((m) => m !== SALUDO).slice(-8),
           capacidades: capacidadesLite(),
+          pantalla: resumenPantalla(),
         });
         setRespuesta(resp.text);
         setMensajes((prev) => [...prev, { role: "assistant", content: resp.text }]);
@@ -407,9 +433,10 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
           if (nueva && capacidadRef.current && nueva.id !== capacidadRef.current.id) {
             limpiarPaso();
             capacidadRef.current = nueva;
-            pasoIdxRef.current = 0;
-            setPasoIdx(0);
-            entrarPaso(nueva, 0);
+            const inicio = pasoInicial(nueva);
+            pasoIdxRef.current = inicio;
+            setPasoIdx(inicio);
+            entrarPaso(nueva, inicio);
           }
         }
       } catch {
