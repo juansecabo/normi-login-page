@@ -81,7 +81,7 @@ function buscarPorTexto(label: string): HTMLElement | null {
   const sel =
     'button, [role="menuitem"], [role="tab"], a[href], [role="button"], [role="option"], label';
   const cands = Array.from(document.querySelectorAll<HTMLElement>(sel)).filter(
-    (el) => el.offsetParent !== null,
+    (el) => el.offsetParent !== null && !el.closest("[data-guia-ui]"),
   );
   return (
     cands.find((el) => normTxt(textoDe(el)) === objetivo) ||
@@ -126,9 +126,19 @@ function localizarZona(paso: Paso): HTMLElement | null {
   if (!claves.length) return null;
   const titulos = Array.from(
     document.querySelectorAll<HTMLElement>("h1,h2,h3,h4,h5,legend,label,p,span"),
-  ).filter((el) => el.offsetParent !== null && (el.textContent || "").trim().length <= 60);
+  ).filter(
+    (el) =>
+      el.offsetParent !== null &&
+      (el.textContent || "").trim().length <= 60 &&
+      // Ni el encabezado global (logo "Notas Normi") ni el globo de Normi
+      // cuentan como sección señalable.
+      !el.closest("header") &&
+      !el.closest("[data-guia-ui]"),
+  );
   for (const clave of claves) {
-    const t = titulos.find((el) => normTxt(el.textContent || "").includes(clave));
+    // Palabra COMPLETA: "nota" no debe matchear "Notas Normi".
+    const re = new RegExp(`(^|[^a-z0-9ñ])${clave}([^a-z0-9ñ]|$)`);
+    const t = titulos.find((el) => re.test(normTxt(el.textContent || "")));
     if (t) {
       const cont =
         t.closest<HTMLElement>("section, [class*='card'], [class*='rounded']") || t.parentElement;
