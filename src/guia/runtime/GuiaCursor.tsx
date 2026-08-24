@@ -45,6 +45,10 @@ export function GuiaCursor() {
           0%,100% { box-shadow: 0 0 0 4px rgba(79,70,229,0.85), 0 0 18px 6px rgba(79,70,229,0.45); }
           50%     { box-shadow: 0 0 0 8px rgba(79,70,229,0.45), 0 0 28px 12px rgba(79,70,229,0.28); }
         }
+        @keyframes guiaPunto {
+          0%, 100% { opacity: 0.15; transform: translateY(0); }
+          40%      { opacity: 1; transform: translateY(-2px); }
+        }
       `}</style>
 
       {/* Borde de luz sobre el elemento que el usuario debe tocar. */}
@@ -131,7 +135,23 @@ export function GuiaCursor() {
                   (guiando && narracion ? "mt-2 bg-muted rounded-xl px-3 py-2" : "")
                 }
               >
-                {pensando ? "Normi está pensando..." : respuesta}
+                {pensando ? (
+                  // Puntos suspensivos animados (aparecen y desaparecen en ola).
+                  <span className="inline-flex items-center gap-1.5 py-1">
+                    {[0, 1, 2].map((i) => (
+                      <span
+                        key={i}
+                        className="w-2 h-2 rounded-full bg-muted-foreground/80"
+                        style={{
+                          animation: "guiaPunto 1.2s ease-in-out infinite",
+                          animationDelay: `${i * 0.2}s`,
+                        }}
+                      />
+                    ))}
+                  </span>
+                ) : (
+                  respuesta
+                )}
               </div>
             )}
             {/* Colita del globo apuntando a Normi */}
