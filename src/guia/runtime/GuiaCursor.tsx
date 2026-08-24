@@ -123,7 +123,7 @@ export function GuiaCursor() {
           <div
             key={(guiando ? narracion : "") + "|" + (respuesta || "")}
             style={{ animation: "guiaGloboIn 0.4s ease-out both" }}
-            className="relative bg-card border border-border rounded-2xl shadow-2xl p-4 w-full"
+            className="relative bg-card border border-border rounded-2xl shadow-2xl p-4 w-fit max-w-full"
           >
             {guiando && narracion && (
               <p className="text-sm text-foreground leading-snug">{narracion}</p>
