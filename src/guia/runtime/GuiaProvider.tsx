@@ -358,10 +358,12 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
       // El CEREBRO mira los elementos visibles y elige cuál señalar.
       const elegirConCerebro = (descripcion: string) => {
         const cands = candidatosVisibles();
+        const titulo = document.querySelector<HTMLElement>("h1, h2")?.textContent?.trim() || "";
         guiaObjetivo({
           tarea: cap.titulo,
           paso: descripcion,
           elementos: cands.map((c) => c.txt),
+          contexto: `ruta ${window.location.pathname}${titulo ? `, título "${titulo}"` : ""}`,
         })
           .then((r) => {
             if (!vivo) return;
@@ -377,6 +379,16 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
               atascoRef.current();
             }
             armarClickLibre();
+            // La página pudo terminar de cargar después: si el objetivo exacto
+            // aparece, se señala (corrige el "no estás en esa pantalla" falso).
+            const iv = window.setInterval(() => {
+              const tardio = localizar(paso);
+              if (tardio) {
+                window.clearInterval(iv);
+                senalarEl(tardio, "exacto_tardio");
+              }
+            }, 600);
+            cleanupsRef.current.push(() => window.clearInterval(iv));
           })
           .catch(() => {
             if (!vivo) return;
@@ -431,7 +443,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
           senalarEl(el, "exacto");
           return;
         }
-        if (!puedeExacto || intentos >= 4) {
+        if (!puedeExacto) {
           elegirConCerebro(paso.narracion || "");
           return;
         }
@@ -439,9 +451,8 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
           window.setTimeout(buscar, 250);
           return;
         }
-        guiaLog("senalado", { modo: "ninguno" });
-        atascoRef.current();
-        armarClickLibre();
+        // Reintentos exactos agotados: ahora sí decide el cerebro.
+        elegirConCerebro(paso.narracion || "");
       };
       window.setTimeout(buscar, 120);
     },

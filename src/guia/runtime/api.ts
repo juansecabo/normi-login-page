@@ -39,6 +39,8 @@ export function guiaObjetivo(body: {
   tarea: string;
   paso: string;
   elementos: string[];
+  /** Ruta y titulo de la pantalla actual (para que no diga "otra pantalla"). */
+  contexto?: string;
 }): Promise<{ indice: number | null; nota?: string }> {
   return apiRequest("/api/guia/objetivo", {
     method: "POST",
