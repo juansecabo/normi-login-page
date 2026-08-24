@@ -1222,7 +1222,6 @@ const EnviarComunicado = () => {
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-foreground">Mensaje</h3>
                   <div className="flex items-center gap-3">
-                    <DictadoMic valor={mensaje} setValor={setMensaje} />
                     <FormatoWhatsAppToolbar editorRef={mensajeRef} />
                     <CharCircle value={usedChars} max={personalMax} />
                   </div>
@@ -1233,6 +1232,9 @@ const EnviarComunicado = () => {
                   setValor={setMensaje}
                   placeholder="Escribe el comunicado..."
                 />
+                <div className="flex justify-end">
+                  <DictadoMic valor={mensaje} setValor={setMensaje} />
+                </div>
               </div>
 
               {/* Archivos adjuntos */}
