@@ -84,7 +84,8 @@ const DictadoMic = ({ valor, setValor }: Props) => {
     recorderRef.current = null;
   };
 
-  // Ondas estilo WhatsApp: barras verticales según el volumen del micrófono.
+  // Ondas estilo WhatsApp: barras delgadas que se desplazan con calma (una
+  // barra nueva cada TICK_MS con el PICO de volumen de ese tramo, no 60/seg).
   const dibujarOndas = () => {
     const canvas = canvasRef.current;
     const analyser = analyserRef.current;
@@ -92,32 +93,53 @@ const DictadoMic = ({ valor, setValor }: Props) => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const datos = new Uint8Array(analyser.frequencyBinCount);
-    const barras = 24;
-    const historial: number[] = new Array(barras).fill(4);
+    // Lienzo nítido al ancho REAL del contenedor (pantallas de alta densidad).
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const W = Math.max(60, rect.width);
+    const H = Math.max(20, rect.height);
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.scale(dpr, dpr);
 
-    const frame = () => {
+    const ANCHO_BARRA = 3;
+    const HUECO = 2;
+    const PASO = ANCHO_BARRA + HUECO;
+    const barras = Math.floor(W / PASO);
+    const TICK_MS = 120; // velocidad de avance de la onda
+    const MIN_H = 3;
+
+    const datos = new Uint8Array(analyser.frequencyBinCount);
+    const historial: number[] = new Array(barras).fill(MIN_H);
+    let pico = 0;
+    let ultimoTick = performance.now();
+
+    const frame = (ahora: number) => {
       if (!analyserRef.current) return;
       analyser.getByteTimeDomainData(datos);
-      // Volumen RMS del tramo actual → altura de la barra nueva.
       let suma = 0;
       for (let i = 0; i < datos.length; i++) {
         const d = (datos[i] - 128) / 128;
         suma += d * d;
       }
       const rms = Math.sqrt(suma / datos.length);
-      historial.push(Math.max(4, Math.min(1, rms * 6) * canvas.height));
-      if (historial.length > barras) historial.shift();
+      if (rms > pico) pico = rms;
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (ahora - ultimoTick >= TICK_MS) {
+        ultimoTick = ahora;
+        historial.push(Math.max(MIN_H, Math.min(1, pico * 5) * (H - 4)));
+        if (historial.length > barras) historial.shift();
+        pico = 0;
+      }
+
+      ctx.clearRect(0, 0, W, H);
       ctx.fillStyle = "#dc2626";
-      const ancho = canvas.width / barras;
       for (let i = 0; i < historial.length; i++) {
         const h = historial[i];
-        const x = i * ancho;
-        const y = (canvas.height - h) / 2;
+        const x = i * PASO;
+        const y = (H - h) / 2;
         ctx.beginPath();
-        ctx.roundRect(x + 1, y, ancho - 2, h, 2);
+        ctx.roundRect(x, y, ANCHO_BARRA, h, 1.5);
         ctx.fill();
       }
       rafRef.current = requestAnimationFrame(frame);
@@ -227,10 +249,10 @@ const DictadoMic = ({ valor, setValor }: Props) => {
 
   if (grabando) {
     return (
-      <div className="flex items-center gap-2 rounded-md border border-red-300 bg-red-50 px-2 py-1">
-        <span className="h-2 w-2 rounded-full bg-red-600 animate-pulse" />
-        <span className="text-sm font-medium tabular-nums text-red-700">{formatearTiempo(segundos)}</span>
-        <canvas ref={canvasRef} width={120} height={28} className="h-7 w-[120px]" />
+      <div className="flex w-full items-center gap-3 rounded-full border border-red-200 bg-red-50 py-1 pl-4 pr-1">
+        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-600 animate-pulse" />
+        <span className="shrink-0 text-sm font-medium tabular-nums text-red-700">{formatearTiempo(segundos)}</span>
+        <canvas ref={canvasRef} className="h-8 min-w-0 flex-1" />
         <Button
           type="button"
           variant="outline"
@@ -238,7 +260,7 @@ const DictadoMic = ({ valor, setValor }: Props) => {
           title="Detener y transcribir"
           aria-label="Detener y transcribir"
           onClick={detener}
-          className="border-red-500 text-red-600 bg-white hover:bg-red-100"
+          className="shrink-0 rounded-full border-red-500 text-red-600 bg-white hover:bg-red-100"
         >
           <Square className="h-4 w-4" />
         </Button>
