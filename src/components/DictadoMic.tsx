@@ -10,11 +10,12 @@ import { Button } from "@/components/ui/button";
  * costo de API); al soltar, se detiene. En navegadores sin soporte (p. ej.
  * Firefox) el botón no se renderiza.
  *
- * Contra el bug de Android Chrome (re-emite resultados acumulados y duplica
- * palabras): NO se acumula incrementalmente; en cada evento se reconstruye el
- * texto completo recorriendo ev.results desde 0. La "base" es lo que ya
- * estaba escrito antes de presionar (más lo consolidado si el navegador
- * reinicia la sesión por un silencio).
+ * Quirks de Android Chrome cubiertos:
+ *  - Los eventos re-emiten TODA la transcripción acumulada de la sesión →
+ *    en onresult se reconstruye desde 0, nunca se acumula.
+ *  - El reconocimiento se corta solo cada pocas palabras (onend frecuente) y
+ *    REUSAR la misma instancia conserva los resultados viejos (los duplica) →
+ *    en cada reinicio se consolida lo dicho y se crea una instancia NUEVA.
  */
 
 type Props = {
@@ -55,39 +56,31 @@ const soportado =
 const DictadoMic = ({ valor, setValor }: Props) => {
   const [escuchando, setEscuchando] = useState(false);
   const recRef = useRef<SpeechRecognitionLike | null>(null);
-  const baseRef = useRef("");
-  const sesionRef = useRef(""); // lo transcrito en la sesión actual del reconocedor
+  const baseRef = useRef(""); // texto previo + sesiones ya consolidadas
+  const sesionRef = useRef(""); // transcripción de la sesión ACTUAL del reconocedor
   const presionadoRef = useRef(false);
   const setValorRef = useRef(setValor);
   setValorRef.current = setValor;
 
   const pintar = () => {
     const cuerpo = capitalizar(sesionRef.current.trim());
-    setValorRef.current(baseRef.current + cuerpo);
+    setValorRef.current((baseRef.current + cuerpo).replace(/\s+$/, ""));
   };
 
-  const soltar = () => {
-    presionadoRef.current = false;
-    setEscuchando(false);
-    // stop() (no abort) deja llegar el resultado final pendiente antes del onend.
-    try {
-      recRef.current?.stop();
-    } catch {
-      /* ya detenido */
-    }
-  };
-
-  const presionar = () => {
-    if (presionadoRef.current) return;
-    const rec = crearReconocedor();
-    if (!rec) return;
-    presionadoRef.current = true;
-    baseRef.current = valor ? valor.replace(/\s+$/, "") + " " : "";
+  const consolidarSesion = () => {
+    const cuerpo = capitalizar(sesionRef.current.trim());
+    if (cuerpo) baseRef.current = baseRef.current + cuerpo + " ";
     sesionRef.current = "";
+  };
+
+  // Arranca UNA sesión del reconocedor. Siempre con instancia NUEVA: reusar la
+  // misma en Android hace que re-emita (y duplique) lo ya transcrito.
+  const iniciarSesion = () => {
+    const rec = crearReconocedor();
+    if (!rec) return false;
 
     rec.onresult = (ev: any) => {
-      // Reconstruir SIEMPRE desde 0: results es la lista completa de la sesión
-      // (en Android los eventos repiten lo anterior; así no se duplica nada).
+      if (recRef.current !== rec) return; // sesión vieja: ignorar
       let texto = "";
       for (let i = 0; i < ev.results.length; i++) {
         texto += String(ev.results[i][0]?.transcript || "");
@@ -106,31 +99,48 @@ const DictadoMic = ({ valor, setValor }: Props) => {
     };
 
     rec.onend = () => {
-      // Consolidar lo dicho en esta sesión dentro de la base.
-      const cuerpo = capitalizar(sesionRef.current.trim());
-      baseRef.current = cuerpo ? baseRef.current + cuerpo + " " : baseRef.current;
-      sesionRef.current = "";
-      if (presionadoRef.current) {
-        // El navegador cortó por silencio pero el dedo sigue puesto: reanudar.
-        try {
-          rec.start();
-          return;
-        } catch {
-          presionadoRef.current = false;
-          setEscuchando(false);
-        }
-      }
+      if (recRef.current !== rec) return; // ya la reemplazó otra sesión
       recRef.current = null;
+      consolidarSesion();
+      if (presionadoRef.current) {
+        // Corte por silencio con el dedo aún puesto: nueva sesión limpia.
+        if (iniciarSesion()) return;
+        presionadoRef.current = false;
+        setEscuchando(false);
+      }
       setValorRef.current(baseRef.current.replace(/\s+$/, ""));
     };
 
-    recRef.current = rec;
     try {
       rec.start();
-      setEscuchando(true);
+      recRef.current = rec;
+      return true;
     } catch {
+      return false;
+    }
+  };
+
+  const presionar = () => {
+    if (presionadoRef.current) return;
+    presionadoRef.current = true;
+    baseRef.current = valor ? valor.replace(/\s+$/, "") + " " : "";
+    sesionRef.current = "";
+    if (iniciarSesion()) {
+      setEscuchando(true);
+    } else {
       presionadoRef.current = false;
-      recRef.current = null;
+    }
+  };
+
+  const soltar = () => {
+    if (!presionadoRef.current) return;
+    presionadoRef.current = false;
+    setEscuchando(false);
+    // stop() (no abort) deja llegar el resultado final pendiente antes del onend.
+    try {
+      recRef.current?.stop();
+    } catch {
+      /* ya detenido */
     }
   };
 
