@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { apiRequest } from "@/lib/apiClient";
 import { filtrarPorNombre } from "@/lib/nombresUsuarios";
 import FormatoWhatsAppToolbar, { EditorComunicado, EditorComunicadoHandle } from "@/components/FormatoWhatsAppToolbar";
+import DictadoMic from "@/components/DictadoMic";
 import CharCircle from "@/components/CharCircle";
 import { buildTemplateBodyPreview, MAX_WA_TEMPLATE_BODY, WA_TEMPLATE_OVERHEAD } from "@/lib/wapBody";
 
@@ -917,6 +918,7 @@ const ComunicadosFirma = () => {
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-foreground">Mensaje</h3>
           <div className="flex items-center gap-3">
+            <DictadoMic valor={mensaje} setValor={setMensaje} />
             <FormatoWhatsAppToolbar editorRef={mensajeRef} />
             <CharCircle value={usedChars} max={personalMax} />
           </div>
