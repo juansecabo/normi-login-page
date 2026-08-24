@@ -660,12 +660,12 @@ const ComunicadosFirma = () => {
   // ── Render del FORM de envío (idéntico a Enviar Comunicado) ───────────
   const renderEnviar = () => (
     <>
-      <div className="relative mt-4 mb-6">
+      <div className="mt-4 mb-6 flex flex-col items-center gap-3 md:relative md:block">
         <h2 className="text-2xl font-bold text-foreground text-center">Comunicado con firma</h2>
         <button
           type="button"
           onClick={limpiarFormulario}
-          className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-3 py-1.5 text-sm border border-input bg-background rounded-md hover:bg-muted transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-input bg-background rounded-md hover:bg-muted transition-colors md:absolute md:right-0 md:top-1/2 md:-translate-y-1/2"
           title="Limpiar todos los destinatarios y el mensaje"
         >
           <RotateCcw className="w-4 h-4" />
