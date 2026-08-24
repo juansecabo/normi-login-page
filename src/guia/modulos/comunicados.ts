@@ -268,7 +268,7 @@ export const COMUNICADOS: Capacidad[] = [
         accion: "explicar",
       },
       {
-        narracion: "Toca 'Enviar N mensajes personalizados'.",
+        narracion: "Revisa el resumen y toca el botón verde que dice Enviar con el número de mensajes.",
         accion: "click",
         ancla: "comunicados.masivo_enviar",
       },
@@ -449,7 +449,7 @@ export const COMUNICADOS: Capacidad[] = [
         campo: "plantilla",
       },
       {
-        narracion: "Toca 'Enviar N mensajes personalizados' y confirma.",
+        narracion: "Revisa el resumen y toca el botón verde que dice Enviar con el número de mensajes para confirmar.",
         accion: "click",
         ancla: "comunicados.masivo_enviar",
       },

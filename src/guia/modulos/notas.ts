@@ -631,7 +631,7 @@ export const NOTAS: Capacidad[] = [
         ancla: "notas.boton_habilitar",
       },
       {
-        narracion: "Toca 'Quitar recuperación'.",
+        narracion: "Toca 'Quitar habilitación'.",
         accion: "click",
         ancla: "notas.modal_habilitacion_quitar",
       },

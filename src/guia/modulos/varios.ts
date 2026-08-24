@@ -143,7 +143,7 @@ export const VARIOS: Capacidad[] = [
       "Definir una pregunta y respuesta secretas para que Normi te devuelva la contraseña por WhatsApp cuando la olvides.",
     categoria: "Varios",
     roles: [...TODOS_INTERNOS],
-    ruta: "/perfil?seccion=recuperacion",
+    ruta: "/perfil",
     endpoint: "POST /api/perfil/recuperacion (JWT propio)",
     sinonimos: [
       "configurar recuperación de contraseña",
@@ -189,7 +189,7 @@ export const VARIOS: Capacidad[] = [
       "Registrar un correo donde recibir la contraseña desde la página de inicio cuando la olvides.",
     categoria: "Varios",
     roles: [...TODOS_INTERNOS],
-    ruta: "/perfil?seccion=recuperacion",
+    ruta: "/perfil",
     endpoint: "POST /api/perfil/recuperacion (JWT propio)",
     sinonimos: [
       "recuperar contraseña por correo",

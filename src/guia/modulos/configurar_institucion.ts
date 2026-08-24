@@ -201,7 +201,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
       ...abrirFicha("estructura", "Abrimos Jornadas, grados y salones."),
       { narracion: "En la tarjeta 'Jornadas', toca la jornada estándar que quieras (Matutina, Vespertina o Nocturna) para agregarla de un toque.", accion: "click", ancla: "configurar_institucion.jornada_estandar", campo: "jornada" },
       { narracion: "Si necesitas otra con nombre propio, abre 'Otra jornada (nombre personalizado)', escríbela y toca 'Agregar'.", accion: "escribir", ancla: "configurar_institucion.jornada_nombre_custom", campo: "nombre_jornada", opcional: true },
-      { narracion: "Después le pones la hora de entrada y salida (ver 'ajustar horas de una jornada').", accion: "explicar" },
+      { narracion: "Después ajusta la hora de entrada y la de salida de la jornada nueva.", accion: "explicar" },
     ],
   },
   {
