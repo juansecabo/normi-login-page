@@ -906,14 +906,14 @@ const EnviarComunicado = () => {
             </TabsList>
 
             <TabsContent value="enviar">
-              <div className="mt-4 mb-6 flex flex-col items-center gap-3 md:relative md:block">
+              <div className="mt-4 mb-6 flex flex-col gap-3 md:relative md:block">
                 <h2 className="text-2xl font-bold text-foreground text-center">
                   Enviar Comunicado
                 </h2>
                 <button
                   type="button"
                   onClick={limpiarFormulario}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-input bg-background rounded-md hover:bg-muted transition-colors md:absolute md:right-0 md:top-1/2 md:-translate-y-1/2"
+                  className="self-end flex items-center gap-1.5 px-3 py-1.5 text-sm border border-input bg-background rounded-md hover:bg-muted transition-colors md:absolute md:right-0 md:top-1/2 md:-translate-y-1/2"
                   title="Limpiar todos los destinatarios y el mensaje"
                 >
                   <RotateCcw className="w-4 h-4" />
