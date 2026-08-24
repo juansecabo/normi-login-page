@@ -6,6 +6,9 @@
 // CRUD sobre Solicitudes_Entrevista via dbProxy (insert/update = ALL_ROLES) y
 // reprogramación de fecha/hora. La tarjeta aparece para todo el staff con
 // dashboard salvo portero.
+//
+// OJO: al llegar a la ruta se muestra un MENÚ de dos fichas (Crear solicitud /
+// Solicitudes creadas); el calendario solo existe dentro de Solicitudes creadas.
 
 import type { Capacidad } from "../tipos";
 
@@ -19,6 +22,32 @@ const STAFF_ENTREVISTAS = [
   "orientador",
   "admin",
 ] as const;
+
+// Pasos compartidos para llegar a la solicitud dentro del calendario:
+// ficha "Solicitudes creadas" → día del calendario → ficha del estudiante.
+const abrirSolicitudEnCalendario = (queSolicitud: string) =>
+  [
+    {
+      narracion: "Entramos a Solicitud de Entrevista.",
+      accion: "navegar" as const,
+      ruta: "/solicitud-entrevista-staff",
+    },
+    {
+      narracion: "Toca 'Solicitudes creadas'.",
+      accion: "click" as const,
+      ancla: "entrevistas.ficha_creadas",
+    },
+    {
+      narracion: "Toca en el calendario el día de la entrevista.",
+      accion: "click" as const,
+      ancla: "entrevistas.calendario_dia",
+    },
+    {
+      narracion: `Toca la ficha del estudiante para desplegar ${queSolicitud}.`,
+      accion: "click" as const,
+      ancla: "entrevistas.ficha_solicitud",
+    },
+  ];
 
 export const ENTREVISTAS: Capacidad[] = [
   {
@@ -43,8 +72,13 @@ export const ENTREVISTAS: Capacidad[] = [
         ruta: "/solicitud-entrevista-staff",
       },
       {
+        narracion: "Toca 'Solicitudes creadas'.",
+        accion: "click",
+        ancla: "entrevistas.ficha_creadas",
+      },
+      {
         narracion:
-          "En el calendario, los días con entrevista salen marcados (naranja si la creaste, violeta si eres entrevistador, diagonal si el día tiene de ambos). Toca un día para ver sus entrevistas.",
+          "En el calendario, los días con entrevista salen marcados (naranja si la creaste, azul si eres entrevistador, diagonal si el día tiene de ambos; abajo está la leyenda de colores). Toca un día para ver sus entrevistas.",
         accion: "click",
         ancla: "entrevistas.calendario_dia",
       },
@@ -54,17 +88,21 @@ export const ENTREVISTAS: Capacidad[] = [
     id: "entrevistas.crear",
     titulo: "Crear una solicitud de entrevista",
     descripcion:
-      "Citar al acudiente de un estudiante a una entrevista, con fecha, hora, entrevistadores y mensaje.",
+      "Citar al acudiente de un estudiante a una entrevista, con fecha, hora, entrevistadores, mensaje y firma.",
     categoria: "Entrevistas",
     roles: [...STAFF_ENTREVISTAS],
     ruta: "/solicitud-entrevista-staff",
     endpoint: "POST /api/db (Solicitudes_Entrevista insert)",
     requisitos: [
       { entidad: "estudiante", descripcion: "Estudiante cuyo acudiente será citado." },
+      { entidad: "grado", descripcion: "Grado del estudiante." },
+      { entidad: "salon", descripcion: "Salón del estudiante." },
     ],
     sinonimos: [
       "crear una entrevista",
       "citar a un acudiente",
+      "citar a los padres de un estudiante",
+      "hacer una citación a un acudiente",
       "agendar una entrevista con un papá",
       "solicitar una entrevista",
       "programar una reunión con un acudiente",
@@ -81,9 +119,22 @@ export const ENTREVISTAS: Capacidad[] = [
         ancla: "entrevistas.boton_crear",
       },
       {
-        narracion: "Busca y elige al estudiante.",
-        accion: "escribir",
-        ancla: "entrevistas.buscar_estudiante",
+        narracion: "Elige el 'Grado:' del estudiante.",
+        accion: "seleccionar",
+        ancla: "entrevistas.select_grado",
+        campo: "grado",
+      },
+      {
+        narracion: "Ahora el 'Salón:'.",
+        accion: "seleccionar",
+        ancla: "entrevistas.select_salon",
+        campo: "salon",
+      },
+      {
+        narracion:
+          "En el desplegable que dice Agregar estudiante, elige al estudiante. Puedes agregar varios: a cada acudiente le llega su propia citación.",
+        accion: "seleccionar",
+        ancla: "entrevistas.select_estudiante",
         campo: "estudiante",
       },
       {
@@ -99,11 +150,11 @@ export const ENTREVISTAS: Capacidad[] = [
         campo: "hora",
       },
       {
-        narracion: "Agrega a los entrevistadores (además de ti, si va alguien más).",
+        narracion:
+          "Elige el cargo y el nombre de cada entrevistador y presiona 'Agregar'. Agrégate a ti también si vas a estar en la entrevista.",
         accion: "seleccionar",
         ancla: "entrevistas.entrevistadores",
         campo: "entrevistadores",
-        opcional: true,
       },
       {
         narracion: "Escribe el mensaje para el acudiente.",
@@ -113,7 +164,18 @@ export const ENTREVISTAS: Capacidad[] = [
         opcional: true,
       },
       {
-        narracion: "Envía y confirma en 'Confirmar solicitud'.",
+        narracion: "Dibuja tu firma en el recuadro 'Firma del solicitante'.",
+        accion: "escribir",
+        ancla: "entrevistas.firma",
+        campo: "firma",
+      },
+      {
+        narracion: "Toca 'Solicitar Entrevista'.",
+        accion: "click",
+        ancla: "entrevistas.boton_solicitar",
+      },
+      {
+        narracion: "Y confirma en 'Sí, solicitar'.",
         accion: "click",
         ancla: "entrevistas.confirmar_crear",
       },
@@ -122,7 +184,8 @@ export const ENTREVISTAS: Capacidad[] = [
   {
     id: "entrevistas.reenviar",
     titulo: "Reenviar la citación de una entrevista",
-    descripcion: "Volver a enviar por WhatsApp la citación de una entrevista al acudiente.",
+    descripcion:
+      "Reprogramar y volver a enviar por WhatsApp la citación al acudiente (solo si aún no confirmó que asistirá; el estado vuelve a Pendiente).",
     categoria: "Entrevistas",
     roles: [...STAFF_ENTREVISTAS],
     ruta: "/solicitud-entrevista-staff",
@@ -130,22 +193,31 @@ export const ENTREVISTAS: Capacidad[] = [
       "reenviar la citación",
       "volver a mandar la entrevista",
       "recordar la entrevista al acudiente",
+      "reprogramar la cita de la entrevista",
     ],
     pasos: [
+      ...abrirSolicitudEnCalendario("la solicitud"),
       {
-        narracion: "Entramos a Solicitud de Entrevista.",
-        accion: "navegar",
-        ruta: "/solicitud-entrevista-staff",
-      },
-      {
-        narracion: "Abre el día de la entrevista y despliega la solicitud.",
-        accion: "click",
-        ancla: "entrevistas.calendario_dia",
-      },
-      {
-        narracion: "Toca 'Reenviar citación'.",
+        narracion: "Toca 'Reprogramar cita'.",
         accion: "click",
         ancla: "entrevistas.boton_reenviar",
+      },
+      {
+        narracion: "Elige la nueva fecha de la entrevista.",
+        accion: "seleccionar",
+        ancla: "entrevistas.reenviar_fecha",
+        campo: "fecha",
+      },
+      {
+        narracion: "Y la nueva hora.",
+        accion: "seleccionar",
+        ancla: "entrevistas.reenviar_hora",
+        campo: "hora",
+      },
+      {
+        narracion: "Confirma en 'Reenviar citación'.",
+        accion: "click",
+        ancla: "entrevistas.reenviar_confirmar",
       },
     ],
   },
@@ -153,7 +225,7 @@ export const ENTREVISTAS: Capacidad[] = [
     id: "entrevistas.editar",
     titulo: "Editar una entrevista",
     descripcion:
-      "Cambiar la fecha, la hora, los entrevistadores o el mensaje de una entrevista ya creada.",
+      "Cambiar la fecha, la hora, los entrevistadores o el mensaje de una entrevista que tú creaste (solo el creador puede editarla).",
     categoria: "Entrevistas",
     roles: [...STAFF_ENTREVISTAS],
     ruta: "/solicitud-entrevista-staff",
@@ -166,16 +238,7 @@ export const ENTREVISTAS: Capacidad[] = [
       "corregir el mensaje de la entrevista",
     ],
     pasos: [
-      {
-        narracion: "Entramos a Solicitud de Entrevista.",
-        accion: "navegar",
-        ruta: "/solicitud-entrevista-staff",
-      },
-      {
-        narracion: "Abre el día y despliega la solicitud que vas a cambiar.",
-        accion: "click",
-        ancla: "entrevistas.calendario_dia",
-      },
+      ...abrirSolicitudEnCalendario("la solicitud que vas a cambiar"),
       {
         narracion: "Toca 'Editar solicitud'.",
         accion: "click",
@@ -209,19 +272,10 @@ export const ENTREVISTAS: Capacidad[] = [
       "confirmar la asistencia de la entrevista",
     ],
     pasos: [
-      {
-        narracion: "Entramos a Solicitud de Entrevista.",
-        accion: "navegar",
-        ruta: "/solicitud-entrevista-staff",
-      },
-      {
-        narracion: "Abre el día y despliega la solicitud.",
-        accion: "click",
-        ancla: "entrevistas.calendario_dia",
-      },
+      ...abrirSolicitudEnCalendario("la solicitud"),
       {
         narracion:
-          "Marca 'Asistirá' o 'No asistirá'. Si vuelves a tocar el mismo, regresa a 'Pendiente'.",
+          "Bajo Confirmar asistencia, toca el botón verde Asistirá o el rojo No asistirá, según el caso. Si vuelves a tocar el mismo, regresa a Pendiente.",
         accion: "click",
         ancla: "entrevistas.marcar_estado",
       },

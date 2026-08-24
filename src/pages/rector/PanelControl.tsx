@@ -1779,10 +1779,10 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                                 <TableCell className="font-mono text-xs whitespace-nowrap">{formatTelefono(e.numero_de_telefono) || "—"}</TableCell>
                                 <TableCell className="text-muted-foreground">{e.contrasena || "—"}</TableCell>
                                 <TableCell className="text-right space-x-1">
-                                  <Button variant="ghost" size="sm" onClick={() => openEstDialog(e)}>
+                                  <Button variant="ghost" size="sm" aria-label="Editar" onClick={() => openEstDialog(e)}>
                                     <Pencil className="w-4 h-4" />
                                   </Button>
-                                  <Button variant="ghost" size="sm" onClick={() => setShowDeleteEst(e)}>
+                                  <Button variant="ghost" size="sm" aria-label="Eliminar" onClick={() => setShowDeleteEst(e)}>
                                     <Trash2 className="w-4 h-4 text-destructive" />
                                   </Button>
                                 </TableCell>
@@ -1895,10 +1895,10 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                             <TableCell className="font-mono text-xs whitespace-nowrap">{formatTelefono(p.numero_de_telefono) || "—"}</TableCell>
                             <TableCell className="text-muted-foreground">{p.contrasena || "—"}</TableCell>
                             <TableCell className="text-right space-x-1">
-                              <Button variant="ghost" size="sm" onClick={() => openPerfDialog(p)}>
+                              <Button variant="ghost" size="sm" aria-label="Editar" onClick={() => openPerfDialog(p)}>
                                 <Pencil className="w-4 h-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" onClick={() => setShowDeletePerf(p)}>
+                              <Button variant="ghost" size="sm" aria-label="Eliminar" onClick={() => setShowDeletePerf(p)}>
                                 <Trash2 className="w-4 h-4 text-destructive" />
                               </Button>
                             </TableCell>

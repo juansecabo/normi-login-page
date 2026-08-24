@@ -906,7 +906,7 @@ export default function Consultas() {
                                 const checked = e.target.checked;
                                 setNivelesMarcados({ ...nivelesMarcados, [n]: checked });
                                 // Marcar/desmarcar todos los grados de ese nivel
-                                const gradosDelNivel = NIVELES_GRADOS[n] || [];
+                                const gradosDelNivel = nivelesGrados[n] || [];
                                 setGradosMarcados((prev) => {
                                   const next = { ...prev };
                                   for (const g of gradosDelNivel) next[g] = checked;

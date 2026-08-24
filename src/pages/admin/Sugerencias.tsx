@@ -166,6 +166,7 @@ const Sugerencias = () => {
                       <TableCell>
                         <button
                           onClick={(e) => { e.stopPropagation(); setConfirmDelete(s); }}
+                          title="Eliminar"
                           className="p-1 rounded hover:bg-red-100 text-red-500 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />

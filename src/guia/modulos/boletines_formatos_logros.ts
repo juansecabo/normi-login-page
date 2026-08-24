@@ -44,17 +44,13 @@ const BOLETINES_ROLES = [
   "admin",
 ] as const;
 
-// Todos los internos con dashboard + profesor + admin (guard de /api/formatos y
-// /api/permisos/docente, y gate de las páginas de Formatos: puedeAccederDashboard
-// || isAdmin || isProfesor).
+// Quienes tienen el tile "Formatos" en su dashboard (DashboardRector solo lo
+// agrega a Rector y Coordinador(a); el del profesor esta gateado por colegio).
+// El backend admite a mas cargos por URL directa, pero la guia solo senala.
 const TODOS_INTERNOS = [
   "profesor",
   "rector",
   "coordinador",
-  "secretaria",
-  "administrativo",
-  "orientador",
-  "portero",
   "admin",
 ] as const;
 
@@ -323,7 +319,7 @@ export const BOLETINES_FORMATOS_LOGROS: Capacidad[] = [
       },
       {
         narracion:
-          "En la sección 'Inconsistencias del periodo', ubica al profesor y toca 'Recordar por WhatsApp'.",
+          "Ubica al profesor en la sección de inconsistencias (abajo) y toca 'Recordar por WhatsApp'.",
         accion: "click",
         ancla: "boletines.boton_recordar_wa",
         campo: "profesor",
@@ -343,7 +339,7 @@ export const BOLETINES_FORMATOS_LOGROS: Capacidad[] = [
     descripcion:
       "Llenar y firmar la solicitud de permiso docente; queda registrada y se notifica al rector y al coordinador del nivel por WhatsApp.",
     categoria: CATEGORIA,
-    roles: [...TODOS_INTERNOS],
+    roles: ["profesor"],
     ruta: "/formatos/permiso-docente",
     endpoint: "POST /api/permisos/docente (todos los internos)",
     requisitos: [
@@ -360,7 +356,7 @@ export const BOLETINES_FORMATOS_LOGROS: Capacidad[] = [
       ...abrirFormato("formatos.ficha_permiso_docente", "Solicitud de permiso docente"),
       {
         narracion: "La fecha de solicitud viene con hoy; cámbiala si hace falta.",
-        accion: "seleccionar",
+        accion: "escribir",
         ancla: "permisodoc.fecha_solicitud",
         campo: "fecha_solicitud",
         opcional: true,
@@ -372,8 +368,8 @@ export const BOLETINES_FORMATOS_LOGROS: Capacidad[] = [
         campo: "nombre_docente",
       },
       {
-        narracion: "Elige la fecha del permiso.",
-        accion: "seleccionar",
+        narracion: "Pon la fecha del permiso.",
+        accion: "escribir",
         ancla: "permisodoc.fecha_permiso",
         campo: "fecha_permiso",
       },
@@ -427,7 +423,7 @@ export const BOLETINES_FORMATOS_LOGROS: Capacidad[] = [
     id: "formatos.permiso_docente_registro",
     titulo: "Consultar el registro de permisos docentes",
     descripcion:
-      "Ver las solicitudes de permiso docente registradas (el profesor ve las suyas; el staff ve todas).",
+      "Ver las solicitudes de permiso docente registradas. El profesor ve solo las suyas; rectoría y secretaría ven todas, y coordinación las de sus niveles.",
     categoria: CATEGORIA,
     roles: [...TODOS_INTERNOS],
     ruta: "/formatos/permisos-docentes",
@@ -443,7 +439,7 @@ export const BOLETINES_FORMATOS_LOGROS: Capacidad[] = [
       ...abrirFormato("formatos.ficha_permisos_registro", "Permisos docentes (registro)"),
       {
         narracion:
-          "Aparece la lista de solicitudes. Si eres profesor ves solo las tuyas; el personal directivo ve las de todos.",
+          "Aparece la lista de solicitudes. Si eres profesor ves solo las tuyas; rectoría y secretaría ven todas, y coordinación las de sus niveles.",
         accion: "esperar",
         ancla: "permisosconsulta.lista",
       },
@@ -485,7 +481,7 @@ export const BOLETINES_FORMATOS_LOGROS: Capacidad[] = [
     descripcion:
       "Registrar la planilla de nivelación por periodo: elegir asignatura, grado y salón, agregar estudiantes con su nota definitiva y firmas, y guardar.",
     categoria: CATEGORIA,
-    roles: [...TODOS_INTERNOS],
+    roles: ["profesor"],
     gate: "pestalozziano",
     ruta: "/formatos/nivelacion",
     endpoint: "POST /api/formatos (tipo nivelacion; notifica al rector y coordinador)",
@@ -523,24 +519,28 @@ export const BOLETINES_FORMATOS_LOGROS: Capacidad[] = [
         campo: "salon",
       },
       {
-        narracion: "Escribe el periodo (por ejemplo, 'Primer período').",
+        narracion: "Escribe el periodo, por ejemplo Primer período.",
         accion: "escribir",
         ancla: "nivelacion.periodo",
         campo: "periodo",
       },
       {
         narracion: "Ajusta la fecha si hace falta.",
-        accion: "seleccionar",
+        accion: "escribir",
         ancla: "nivelacion.fecha",
         campo: "fecha",
         opcional: true,
       },
       {
-        narracion:
-          "En 'Agregar estudiante' elige uno del listado del salón y toca 'Agregar'. Repite por cada estudiante que necesites.",
-        accion: "click",
+        narracion: "En el desplegable de agregar estudiante, elige uno del listado del salón.",
+        accion: "seleccionar",
         ancla: "nivelacion.agregar_estudiante",
         campo: "estudiante",
+      },
+      {
+        narracion: "Toca 'Agregar'. Repite por cada estudiante que necesites.",
+        accion: "click",
+        ancla: "nivelacion.boton_agregar_estudiante",
       },
       {
         narracion: "En su fila, escribe la nota definitiva y las observaciones.",
@@ -588,12 +588,15 @@ export const BOLETINES_FORMATOS_LOGROS: Capacidad[] = [
       { entidad: "grado", descripcion: "Grado del salón." },
       { entidad: "salon", descripcion: "Salón concreto (carga sus estudiantes)." },
       { entidad: "periodo", descripcion: "Periodo del apoyo." },
+      { entidad: "asignatura", descripcion: "Asignatura del plan de apoyo (texto libre)." },
     ],
     sinonimos: [
       "hacer una planilla de apoyo",
       "diligenciar el plan de apoyo al mejoramiento",
       "llenar el apoyo con taller y sustentación",
       "registrar el plan de apoyo",
+      "planilla de recuperación",
+      "recuperar la materia",
     ],
     pasos: [
       ...abrirFormato("formatos.ficha_apoyo", "Plan de Apoyo al Mejoramiento"),
@@ -610,7 +613,7 @@ export const BOLETINES_FORMATOS_LOGROS: Capacidad[] = [
         campo: "salon",
       },
       {
-        narracion: "Escribe el periodo (por ejemplo, 'Primer período').",
+        narracion: "Escribe el periodo, por ejemplo Primer período.",
         accion: "escribir",
         ancla: "apoyo.periodo",
         campo: "periodo",
@@ -844,7 +847,12 @@ export const BOLETINES_FORMATOS_LOGROS: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion: "En Logros del periodo, abre 'Nuevo logro' o edita uno existente.",
+        narracion: "Entramos a Logros del periodo.",
+        accion: "navegar",
+        ruta: "/profesor/logros",
+      },
+      {
+        narracion: "Abre 'Nuevo logro' o edita uno existente.",
         accion: "click",
         ancla: "logros.boton_nuevo",
       },
@@ -875,7 +883,7 @@ export const BOLETINES_FORMATOS_LOGROS: Capacidad[] = [
     categoria: CATEGORIA,
     roles: ["profesor"],
     ruta: "/profesor/logros",
-    endpoint: "PATCH /api/logros/:id (endpoint acepta cualquier interno; la página es profesor-only)",
+    endpoint: "PATCH /api/logros/:id (solo el docente dueño del logro, o coordinador o más)",
     sinonimos: [
       "editar un logro",
       "cambiar la redacción de un logro",
@@ -913,7 +921,7 @@ export const BOLETINES_FORMATOS_LOGROS: Capacidad[] = [
     categoria: CATEGORIA,
     roles: ["profesor"],
     ruta: "/profesor/logros",
-    endpoint: "DELETE /api/logros/:id (endpoint acepta cualquier interno; la página es profesor-only)",
+    endpoint: "DELETE /api/logros/:id (solo el docente dueño del logro, o coordinador o más)",
     sinonimos: [
       "eliminar un logro",
       "borrar un logro del banco",
@@ -969,9 +977,10 @@ export const BOLETINES_FORMATOS_LOGROS: Capacidad[] = [
       },
       {
         narracion:
-          "Para activarlo en todos tus salones, marca la casilla grande a la izquierda del logro.",
+          "Para activarlo en todos tus salones, marca la casilla grande a la izquierda del logro (si ya estaba marcada, tocarla lo quita de todos).",
         accion: "click",
         ancla: "logros.checkbox_logro",
+        opcional: true,
       },
       {
         narracion:

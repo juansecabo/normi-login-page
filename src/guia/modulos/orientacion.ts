@@ -172,15 +172,20 @@ export const ORIENTACION: Capacidad[] = [
         ancla: "orientacion.caso_estudiante_opcion",
       },
       {
-        narracion: "Confirma o ajusta la fecha de apertura.",
-        accion: "seleccionar",
+        narracion: "Confirma o ajusta la fecha de apertura (viene con la de hoy).",
+        accion: "escribir",
         ancla: "orientacion.caso_fecha_apertura",
         campo: "fecha",
         opcional: true,
       },
       {
+        narracion: "Toca la sección 'Motivo de la atención' para abrirla.",
+        accion: "click",
+        ancla: "orientacion.caso_motivo_seccion",
+      },
+      {
         narracion:
-          "Abre la sección 'Motivo de la atención' y describe por qué se abre el caso (es el único campo obligatorio).",
+          "Describe en el cuadro por qué se abre el caso (es el único campo obligatorio).",
         accion: "escribir",
         ancla: "orientacion.caso_motivo",
         campo: "motivo_atencion",
@@ -192,7 +197,7 @@ export const ORIENTACION: Capacidad[] = [
         opcional: true,
       },
       {
-        narracion: "Guarda el caso; te llevará directo a su detalle.",
+        narracion: "Toca 'Guardar caso'; te llevará directo a su detalle.",
         accion: "click",
         ancla: "orientacion.caso_guardar",
       },
@@ -230,7 +235,7 @@ export const ORIENTACION: Capacidad[] = [
         campo: "motivo_atencion",
       },
       {
-        narracion: "Guarda los cambios.",
+        narracion: "Toca 'Guardar cambios'.",
         accion: "click",
         ancla: "orientacion.caso_guardar",
       },
@@ -285,7 +290,7 @@ export const ORIENTACION: Capacidad[] = [
       ...abrirDetalleCaso(),
       {
         narracion:
-          "En la sección 'Diagnóstico', toca 'Agregar' (o 'Editar' si ya hay uno).",
+          "Baja hasta el título Diagnóstico y toca el botón que está a su derecha (dice Agregar, o Editar si ya hay uno).",
         accion: "click",
         ancla: "orientacion.caso_diagnostico_abrir",
       },
@@ -303,8 +308,8 @@ export const ORIENTACION: Capacidad[] = [
         opcional: true,
       },
       {
-        narracion: "Elige la fecha del diagnóstico.",
-        accion: "seleccionar",
+        narracion: "Ajusta la fecha del diagnóstico si hace falta.",
+        accion: "escribir",
         ancla: "orientacion.diagnostico_fecha",
         campo: "fecha",
         opcional: true,
@@ -342,9 +347,8 @@ export const ORIENTACION: Capacidad[] = [
       ...abrirDetalleCaso(),
       {
         narracion:
-          "Baja a la sección 'Firmas'. Dibuja la firma en el recuadro del orientador o del estudiante.",
-        accion: "click",
-        ancla: "orientacion.caso_firma_canvas",
+          "Baja a la sección de Firmas y dibuja la firma en el recuadro del orientador o en el del estudiante, con el mouse o el dedo.",
+        accion: "explicar",
       },
       {
         narracion:
@@ -354,7 +358,7 @@ export const ORIENTACION: Capacidad[] = [
         opcional: true,
       },
       {
-        narracion: "Toca 'Guardar firma' para dejarla registrada.",
+        narracion: "Toca el botón 'Guardar firma' que está debajo del recuadro donde dibujaste.",
         accion: "click",
         ancla: "orientacion.caso_firma_guardar",
       },
@@ -384,15 +388,16 @@ export const ORIENTACION: Capacidad[] = [
     pasos: [
       ...abrirDetalleCaso(),
       {
-        narracion: "En la sección 'Seguimientos', toca 'Agregar seguimiento'.",
+        narracion: "Toca 'Agregar seguimiento', en la sección de seguimientos.",
         accion: "click",
         ancla: "orientacion.seguimiento_agregar",
       },
       {
-        narracion: "Elige la fecha del seguimiento.",
-        accion: "seleccionar",
+        narracion: "La fecha viene con el día de hoy; ajústala si la sesión fue otro día.",
+        accion: "escribir",
         ancla: "orientacion.seguimiento_fecha",
         campo: "fecha",
+        opcional: true,
       },
       {
         narracion: "Escribe la anotación (el tema tratado en la sesión). Es obligatoria.",
@@ -414,7 +419,7 @@ export const ORIENTACION: Capacidad[] = [
         opcional: true,
       },
       {
-        narracion: "Guarda el seguimiento.",
+        narracion: "Toca 'Registrar seguimiento' para guardarlo.",
         accion: "click",
         ancla: "orientacion.seguimiento_guardar",
       },
@@ -448,7 +453,7 @@ export const ORIENTACION: Capacidad[] = [
         campo: "anotacion",
       },
       {
-        narracion: "Guarda los cambios.",
+        narracion: "Toca 'Guardar cambios'.",
         accion: "click",
         ancla: "orientacion.seguimiento_guardar",
       },
@@ -746,6 +751,8 @@ export const ORIENTACION: Capacidad[] = [
     ],
     sinonimos: [
       "remitir a orientación",
+      "remitir a la psicóloga",
+      "mandar a psicoorientación",
       "hacer una remisión",
       "remitir un estudiante",
       "formato 005",
@@ -804,7 +811,7 @@ export const ORIENTACION: Capacidad[] = [
         campo: "medidas_previas",
       },
       {
-        narracion: "Firma en el recuadro (puedes tocar 'Limpiar firma' si te equivocas).",
+        narracion: "Firma en el recuadro. Si te equivocas, puedes tocar el botón Limpiar firma y repetirla.",
         accion: "click",
         ancla: "orientacion.remitir_firma",
       },

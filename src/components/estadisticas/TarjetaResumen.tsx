@@ -29,6 +29,7 @@ export const TarjetaResumen = ({
     <div 
       className={`bg-card rounded-lg shadow-soft p-4 border border-border ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
       onClick={onClick}
+      role={onClick ? "button" : undefined}
     >
       <div className="flex items-start justify-between">
         <div>

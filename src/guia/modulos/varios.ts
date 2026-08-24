@@ -46,9 +46,22 @@ const STAFF_DASHBOARD: RolGuia[] = [
   "portero",
 ];
 
-// Guard real de las bandejas de admin de correcciones y dudas
-// (requireRole(ROLES_ADMIN) = SuperAdmin, Administrador, Rector, Coordinador(a)).
-const ADMIN_RECTOR_COORD: RolGuia[] = ["admin", "rector", "coordinador"];
+// Bandejas de correcciones y dudas: el backend admite tambien a Rector y
+// Coordinador(a), pero SOLO el DashboardAdmin tiene las tarjetas hacia esas
+// rutas, asi que la guia solo puede llevar al admin.
+const ADMIN_RECTOR_COORD: RolGuia[] = ["admin"];
+
+// Internos con la tarjeta Perfil en su dashboard (el portero no la tiene en
+// FICHAS_PORTERO, asi que la guia no puede llevarlo a /perfil).
+const INTERNOS_CON_PERFIL: RolGuia[] = [
+  "profesor",
+  "rector",
+  "coordinador",
+  "secretaria",
+  "administrativo",
+  "orientador",
+  "admin",
+];
 
 export const VARIOS: Capacidad[] = [
   // ─────────────────────────────  PERFIL  ─────────────────────────────
@@ -58,9 +71,9 @@ export const VARIOS: Capacidad[] = [
     descripcion:
       "Actualizar tu nombre, apellidos, número de celular y fecha de nacimiento. El cambio aplica a todos tus perfiles en todos los colegios.",
     categoria: "Varios",
-    roles: [...TODOS_INTERNOS],
+    roles: [...INTERNOS_CON_PERFIL],
     ruta: "/perfil",
-    endpoint: "PATCH /api/perfil/datos (JWT propio — escribe en Usuarios)",
+    endpoint: "POST /api/perfil/datos (JWT propio — escribe en Usuarios)",
     sinonimos: [
       "cambiar mis datos",
       "actualizar mi teléfono",
@@ -83,7 +96,7 @@ export const VARIOS: Capacidad[] = [
         campo: "telefono",
       },
       {
-        narracion: "Guarda los cambios. El ajuste se refleja en todos tus perfiles y colegios.",
+        narracion: "Toca 'Guardar datos'. El ajuste se refleja en todos tus perfiles y colegios.",
         accion: "click",
         ancla: "varios.perfil_guardar_datos",
       },
@@ -95,7 +108,7 @@ export const VARIOS: Capacidad[] = [
     descripcion:
       "Cambiar la contraseña desde la sección 'Cambiar datos' del perfil, verificando la actual.",
     categoria: "Varios",
-    roles: [...TODOS_INTERNOS],
+    roles: [...INTERNOS_CON_PERFIL],
     ruta: "/perfil",
     endpoint: "POST /auth/change-password (verifica la actual con service_role)",
     sinonimos: [
@@ -112,7 +125,7 @@ export const VARIOS: Capacidad[] = [
         ancla: "varios.perfil_ficha_datos",
       },
       {
-        narracion: "Baja hasta 'Cambiar contraseña' y escribe tu contraseña actual.",
+        narracion: "Baja a la sección de cambiar contraseña y escribe tu contraseña actual en el campo Contraseña actual.",
         accion: "escribir",
         ancla: "varios.perfil_pwd_actual",
         campo: "contrasena_actual",
@@ -142,7 +155,7 @@ export const VARIOS: Capacidad[] = [
     descripcion:
       "Definir una pregunta y respuesta secretas para que Normi te devuelva la contraseña por WhatsApp cuando la olvides.",
     categoria: "Varios",
-    roles: [...TODOS_INTERNOS],
+    roles: [...INTERNOS_CON_PERFIL],
     ruta: "/perfil",
     endpoint: "POST /api/perfil/recuperacion (JWT propio)",
     sinonimos: [
@@ -188,7 +201,7 @@ export const VARIOS: Capacidad[] = [
     descripcion:
       "Registrar un correo donde recibir la contraseña desde la página de inicio cuando la olvides.",
     categoria: "Varios",
-    roles: [...TODOS_INTERNOS],
+    roles: [...INTERNOS_CON_PERFIL],
     ruta: "/perfil",
     endpoint: "POST /api/perfil/recuperacion (JWT propio)",
     sinonimos: [
@@ -274,21 +287,15 @@ export const VARIOS: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion: "Abre el menú del encabezado.",
+        narracion: "Abre el menú del encabezado (botón 'Menú' arriba a la derecha).",
         accion: "click",
         ancla: "varios.header_menu",
       },
       {
         narracion:
-          "Toca 'Cambiar perfil'. Si no aparece, esta cédula solo tiene un perfil.",
+          "Toca 'Cambiar perfil'. Se cierra esta sesión y en la página de inicio eliges con cuál perfil entrar. Si no aparece la opción, esta cédula solo tiene un perfil.",
         accion: "click",
         ancla: "varios.header_cambiar_perfil",
-      },
-      {
-        narracion: "En el selector, elige el perfil al que quieres entrar.",
-        accion: "click",
-        ancla: "varios.selector_perfil",
-        campo: "perfil",
       },
     ],
   },
@@ -307,7 +314,7 @@ export const VARIOS: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion: "Abre el menú del encabezado.",
+        narracion: "Abre el menú del encabezado (botón 'Menú' arriba a la derecha).",
         accion: "click",
         ancla: "varios.header_menu",
       },
@@ -333,7 +340,7 @@ export const VARIOS: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion: "Abre el menú del encabezado.",
+        narracion: "Abre el menú del encabezado (botón 'Menú' arriba a la derecha).",
         accion: "click",
         ancla: "varios.header_menu",
       },
@@ -362,7 +369,7 @@ export const VARIOS: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion: "Abre el menú del encabezado.",
+        narracion: "Abre el menú del encabezado (botón 'Menú' arriba a la derecha).",
         accion: "click",
         ancla: "varios.header_menu",
       },
@@ -407,7 +414,7 @@ export const VARIOS: Capacidad[] = [
     sinonimos: ["cerrar sesión", "salir de mi cuenta", "salir de la plataforma", "log out"],
     pasos: [
       {
-        narracion: "Abre el menú del encabezado.",
+        narracion: "Abre el menú del encabezado (botón 'Menú' arriba a la derecha).",
         accion: "click",
         ancla: "varios.header_menu",
       },
@@ -429,7 +436,7 @@ export const VARIOS: Capacidad[] = [
     roles: ["profesor"],
     requiereDirectorGrupo: true,
     ruta: "/mi-grupo",
-    endpoint: "POST /api/auth/avatar-estudiante/:id (valida permiso en el server)",
+    endpoint: "POST /api/avatar/estudiante/upload (valida permiso en el server)",
     requisitos: [{ entidad: "estudiante", descripcion: "Estudiante de tu grupo." }],
     sinonimos: [
       "subir la foto de un estudiante",
@@ -458,8 +465,19 @@ export const VARIOS: Capacidad[] = [
         campo: "estudiante",
       },
       {
-        narracion: "Elige la imagen desde tu dispositivo. Se guarda sola. Listo.",
+        narracion:
+          "En el pop-up, toca 'Subir archivo' para elegir la imagen (o 'Tomar foto' para tomarla con la cámara).",
+        accion: "click",
+        ancla: "varios.mi_grupo_subir_archivo",
+      },
+      {
+        narracion: "Acomoda la foto dentro del marco: arrastra y usa el control de zoom.",
         accion: "explicar",
+      },
+      {
+        narracion: "Toca 'Guardar'. La foto queda puesta. Listo.",
+        accion: "click",
+        ancla: "varios.mi_grupo_guardar_foto",
       },
     ],
   },
@@ -471,7 +489,7 @@ export const VARIOS: Capacidad[] = [
     roles: ["profesor"],
     requiereDirectorGrupo: true,
     ruta: "/mi-grupo",
-    endpoint: "DELETE /api/auth/avatar-estudiante/:id (valida permiso en el server)",
+    endpoint: "DELETE /api/avatar/estudiante (valida permiso en el server)",
     requisitos: [{ entidad: "estudiante", descripcion: "Estudiante de tu grupo." }],
     sinonimos: [
       "quitar la foto de un estudiante",
@@ -492,7 +510,8 @@ export const VARIOS: Capacidad[] = [
         campo: "estudiante",
       },
       {
-        narracion: "Usa la opción de eliminar foto y confirma. Queda con las iniciales.",
+        narracion:
+          "En el pop-up, toca 'Quitar foto'. La foto se elimina de una y el estudiante queda con sus iniciales.",
         accion: "click",
         ancla: "varios.mi_grupo_avatar_eliminar",
       },
@@ -520,6 +539,12 @@ export const VARIOS: Capacidad[] = [
         ancla: "varios.direccion_ficha_consolidado",
       },
       {
+        narracion: "Elige el periodo que quieres ver.",
+        accion: "click",
+        ancla: "varios.consolidado_periodo",
+        campo: "periodo",
+      },
+      {
         narracion:
           "Ahí ves las notas de todos tus estudiantes en todas las asignaturas.",
         accion: "explicar",
@@ -534,7 +559,7 @@ export const VARIOS: Capacidad[] = [
     descripcion:
       "Generar un documento Word (evaluación, taller o quiz) con preguntas de selección múltiple y/o abiertas sobre un tema, para una de tus asignaturas.",
     categoria: "Varios",
-    roles: ["profesor", "admin"],
+    roles: ["profesor"],
     ruta: "/normi-examinadora",
     endpoint: "POST /api/examinadora/generar (Profesor, Administrador)",
     requisitos: [
@@ -618,7 +643,7 @@ export const VARIOS: Capacidad[] = [
     descripcion:
       "Ver qué estudiantes y acudientes ya se registraron con Normi, con filtros por grado, salón y estado, y buscador por nombre o cédula.",
     categoria: "Varios",
-    roles: ["profesor", "rector", "coordinador", "admin"],
+    roles: ["profesor", "rector", "coordinador", "secretaria", "administrativo", "orientador", "admin"],
     ruta: "/registro-normi",
     sinonimos: [
       "quién está registrado en normi",
@@ -672,7 +697,7 @@ export const VARIOS: Capacidad[] = [
     descripcion:
       "Abrir el pop-up con el nombre y teléfono del acudiente que está registrado en Normi para un estudiante.",
     categoria: "Varios",
-    roles: ["profesor", "rector", "coordinador", "admin"],
+    roles: ["profesor", "rector", "coordinador", "secretaria", "administrativo", "orientador", "admin"],
     ruta: "/registro-normi",
     requisitos: [{ entidad: "estudiante", descripcion: "Estudiante cuyo acudiente quieres ver." }],
     sinonimos: [
@@ -712,7 +737,7 @@ export const VARIOS: Capacidad[] = [
     descripcion:
       "Exportar a Excel la lista (estudiantes o acudientes) tal como está filtrada, con el estado de registro.",
     categoria: "Varios",
-    roles: ["profesor", "rector", "coordinador", "admin"],
+    roles: ["profesor", "rector", "coordinador", "secretaria", "administrativo", "orientador", "admin"],
     ruta: "/registro-normi",
     sinonimos: [
       "descargar el registro en excel",
@@ -742,7 +767,7 @@ export const VARIOS: Capacidad[] = [
     descripcion:
       "Revisar cuántas interacciones (notas, actividades y comunicados) ha tenido cada profesor y cada salón con la plataforma.",
     categoria: "Varios",
-    roles: [...STAFF_DASHBOARD],
+    roles: ["rector", "coordinador", "admin", "administrativo", "secretaria", "orientador"],
     ruta: "/uso-normi",
     sinonimos: [
       "uso de normi",
@@ -833,7 +858,7 @@ export const VARIOS: Capacidad[] = [
     pasos: [
       { narracion: "Abrimos el Manual de Convivencia.", accion: "navegar", ruta: "/manual-convivencia" },
       {
-        narracion: "Escribe la palabra o frase en el buscador del manual.",
+        narracion: "Escribe la palabra o frase en el buscador del manual (si tu colegio tiene el manual en PDF, usa el buscador del visor de PDF).",
         accion: "escribir",
         ancla: "varios.manual_buscar",
         campo: "texto_busqueda",
@@ -891,7 +916,7 @@ export const VARIOS: Capacidad[] = [
     pasos: [
       { narracion: "Entramos al Buzón de Sugerencias.", accion: "navegar", ruta: "/admin/sugerencias" },
       {
-        narracion: "En la fila de la sugerencia, toca el ícono de papelera.",
+        narracion: "En la fila de la sugerencia, toca el ícono rojo de papelera que está al final, a la derecha.",
         accion: "click",
         ancla: "varios.sugerencias_eliminar",
       },
@@ -1004,6 +1029,30 @@ export const VARIOS: Capacidad[] = [
         accion: "click",
         ancla: "varios.dudas_boton_estado",
         campo: "estado",
+      },
+    ],
+  },
+  {
+    id: "varios.dashboard_reordenar_fichas",
+    titulo: "Organizar las fichas de tu pantalla de inicio",
+    descripcion:
+      "Reorganizar a tu gusto las tarjetas del dashboard arrastrándolas; el orden se guarda para tu usuario.",
+    categoria: "Varios",
+    roles: [...TODOS_INTERNOS],
+    ruta: "/dashboard",
+    sinonimos: [
+      "organizar las fichas del inicio",
+      "mover las tarjetas del dashboard",
+      "cambiar el orden de las tarjetas",
+      "acomodar mi pantalla de inicio",
+      "arrastrar las fichas",
+    ],
+    pasos: [
+      { narracion: "Vamos a tu pantalla de inicio.", accion: "navegar", ruta: "/dashboard" },
+      {
+        narracion:
+          "Mantén presionada cualquier tarjeta y, sin soltar, arrástrala hasta el lugar donde la quieres. Suelta y el orden queda guardado. Listo.",
+        accion: "explicar",
       },
     ],
   },

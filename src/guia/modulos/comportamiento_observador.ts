@@ -23,12 +23,11 @@
 //     sesión), y como solo el profesor crea, el autor siempre es profesor.
 //
 // Observador Estudiantil:
-//   - Acceso: internos (esInterno = profesor/admin/puedeAccederDashboard, que
-//     incluye portero) + acudientes; estudiante queda fuera. Crear/editar/ver
-//     por cualquier INTERNO (incluido portero).
-//   - Notificar a acudientes (POST /api/observador/notificar) NO incluye portero:
-//     si el portero crea una observación, se guarda pero NO se dispara el
-//     WhatsApp al acudiente (el endpoint responde 403 y se ignora en silencio).
+//   - Acceso por URL: internos (incluye portero) + acudientes; estudiante fuera.
+//     PERO el dashboard del portero (FICHAS_PORTERO) NO tiene la tarjeta del
+//     Observador, así que la guía no puede llevarlo (y además el endpoint de
+//     notificar responde 403 para él). Por eso NO ponemos portero en roles.
+//   - Notificar a acudientes (POST /api/observador/notificar) NO incluye portero.
 //   - El rol "acudiente" (solo lectura + badge de no leídas) NO es un RolGuia de
 //     internos, así que su flujo no se cataloga aquí.
 
@@ -48,7 +47,7 @@ const ACCEDEN_REGISTROS = [
 // Crean/editan/eliminan registros: solo el profesor (puedeCrear = isProfesor; autor).
 const CREAN_REGISTROS = ["profesor"] as const;
 
-// Observador: cualquier interno (incluye portero).
+// Observador: internos con tarjeta en su dashboard (portero NO la tiene).
 const INTERNOS_OBSERVADOR = [
   "profesor",
   "rector",
@@ -56,7 +55,6 @@ const INTERNOS_OBSERVADOR = [
   "secretaria",
   "administrativo",
   "orientador",
-  "portero",
   "admin",
 ] as const;
 
@@ -147,7 +145,7 @@ export const COMPORTAMIENTO_OBSERVADOR: Capacidad[] = [
     id: "comportamiento_observador.registro_crear",
     titulo: "Crear un registro de comportamiento",
     descripcion:
-      "Diligenciar un registro formal (académico y/o de disciplina) de un estudiante, con firma, que al guardarse avisa por WhatsApp al rector, los coordinadores y el director de grupo.",
+      "Diligenciar un registro formal (académico y/o de disciplina) de un estudiante, con firma, que al guardarse avisa por WhatsApp al rector, los coordinadores y, si aplica, al director de grupo.",
     categoria: "Comportamiento y Observador",
     roles: [...CREAN_REGISTROS],
     ruta: "/registros-comportamiento",
@@ -160,7 +158,7 @@ export const COMPORTAMIENTO_OBSERVADOR: Capacidad[] = [
     ],
     sinonimos: [
       "crear un registro de comportamiento",
-      "hacer un observador disciplinario",
+      "hacer un observador disciplinario formal (registro con firma)",
       "registrar un comportamiento de un estudiante",
       "llenar un registro académico y de disciplina",
       "reportar el comportamiento de un alumno",
@@ -172,9 +170,10 @@ export const COMPORTAMIENTO_OBSERVADOR: Capacidad[] = [
         ruta: "/registros-comportamiento",
       },
       {
-        narracion: "Abre la pestaña 'Crear nuevo'.",
+        narracion: "Abre la pestaña 'Crear nuevo' (como profesor, ya entras ahí).",
         accion: "click",
         ancla: "comportamiento_observador.reg_tab_crear",
+        opcional: true,
       },
       {
         narracion:
@@ -261,7 +260,7 @@ export const COMPORTAMIENTO_OBSERVADOR: Capacidad[] = [
     id: "comportamiento_observador.registro_consultar",
     titulo: "Consultar los registros de comportamiento de un estudiante",
     descripcion:
-      "Ver el historial de registros de un estudiante y abrir cada uno para leer el detalle completo.",
+      "Ver el historial de registros de un estudiante y abrir cada uno para leer el detalle completo. Si eres profesor, ves los registros que tú creaste y los de los estudiantes de tu dirección de grupo.",
     categoria: "Comportamiento y Observador",
     roles: [...ACCEDEN_REGISTROS],
     ruta: "/registros-comportamiento",
@@ -272,7 +271,7 @@ export const COMPORTAMIENTO_OBSERVADOR: Capacidad[] = [
     sinonimos: [
       "ver los registros de comportamiento",
       "consultar el historial de un estudiante",
-      "revisar los observadores de un alumno",
+      "revisar los registros disciplinarios de un alumno",
       "cuántos registros tiene un estudiante",
       "abrir un registro de comportamiento",
     ],
@@ -383,38 +382,6 @@ export const COMPORTAMIENTO_OBSERVADOR: Capacidad[] = [
       },
     ],
   },
-  {
-    id: "comportamiento_observador.registro_eliminar",
-    titulo: "Eliminar un registro de comportamiento",
-    descripcion: "Borrar un registro que tú creaste. La acción no se puede deshacer.",
-    categoria: "Comportamiento y Observador",
-    roles: [...CREAN_REGISTROS],
-    ruta: "/registros-comportamiento",
-    endpoint: "Supabase delete Registros_Comportamiento (solo el autor)",
-    requisitos: [
-      { entidad: "estudiante", descripcion: "Estudiante del registro a eliminar." },
-    ],
-    sinonimos: [
-      "eliminar un registro de comportamiento",
-      "borrar un registro",
-      "quitar un observador que hice",
-    ],
-    pasos: [
-      ...abrirHistorialRegistros(),
-      {
-        narracion:
-          "En un registro tuyo, toca la papelera (solo aparece en los que tú creaste).",
-        accion: "click",
-        ancla: "comportamiento_observador.reg_eliminar",
-      },
-      {
-        narracion: "Confirma en el aviso tocando 'Eliminar'. Listo.",
-        accion: "click",
-        ancla: "comportamiento_observador.reg_confirmar_eliminar",
-      },
-    ],
-  },
-
   // ─────────────────────────── OBSERVADOR ESTUDIANTIL ────────────────────────
   {
     id: "comportamiento_observador.observador_consultar",
@@ -478,10 +445,8 @@ export const COMPORTAMIENTO_OBSERVADOR: Capacidad[] = [
       },
       {
         narracion:
-          "Toca una anotación del cuaderno para abrirla ampliada en letra normal.",
-        accion: "click",
-        ancla: "comportamiento_observador.obs_item_observacion",
-        opcional: true,
+          "Puedes tocar cualquier anotación del cuaderno para abrirla ampliada en letra normal. Listo.",
+        accion: "explicar",
       },
     ],
   },
@@ -566,7 +531,7 @@ export const COMPORTAMIENTO_OBSERVADOR: Capacidad[] = [
       },
       {
         narracion:
-          "Marca los estudiantes uno por uno, o usa 'Seleccionar todos' para marcar los que se ven filtrados.",
+          "Marca los estudiantes uno por uno. También existe el enlace Seleccionar todos, que marca los que se ven filtrados.",
         accion: "click",
         ancla: "comportamiento_observador.obs_check_estudiante",
         campo: "estudiante",
@@ -611,7 +576,7 @@ export const COMPORTAMIENTO_OBSERVADOR: Capacidad[] = [
       ...abrirEstudianteObservador(),
       {
         narracion:
-          "En una observación tuya, toca el lápiz (solo aparece en las que tú escribiste).",
+          "Pasa el mouse sobre una observación tuya y toca el lápiz que aparece a la derecha (en el celular se ve siempre; solo sale en las que tú escribiste).",
         accion: "click",
         ancla: "comportamiento_observador.obs_editar",
       },
@@ -648,7 +613,7 @@ export const COMPORTAMIENTO_OBSERVADOR: Capacidad[] = [
       ...abrirEstudianteObservador(),
       {
         narracion:
-          "En una observación tuya, toca la papelera (solo aparece en las que tú escribiste).",
+          "Pasa el mouse sobre una observación tuya y toca la papelera que aparece a la derecha (en el celular se ve siempre; solo sale en las que tú escribiste).",
         accion: "click",
         ancla: "comportamiento_observador.obs_eliminar",
       },

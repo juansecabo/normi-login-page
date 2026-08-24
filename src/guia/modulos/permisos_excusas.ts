@@ -26,7 +26,9 @@
 
 import type { Capacidad } from "../tipos";
 
-// Todos los internos con dashboard pueden entrar a las vistas de staff.
+// Internos con la ficha "Permisos y Excusas" en su dashboard. El portero puede
+// entrar por URL directa, pero su dashboard (FICHAS_PORTERO) no tiene la ficha,
+// asi que la guia no puede llevarlo: queda fuera.
 const ALL_INTERNOS = [
   "profesor",
   "rector",
@@ -34,7 +36,6 @@ const ALL_INTERNOS = [
   "secretaria",
   "administrativo",
   "orientador",
-  "portero",
   "admin",
 ] as const;
 
@@ -51,7 +52,7 @@ const abrirLista = (
       ruta: "/permisos-excusas",
     },
     {
-      narracion: `Elige la ficha de ${nombre}.`,
+      narracion: `Elige la ficha de '${nombre}'.`,
       accion: "click" as const,
       ancla: `permisos_excusas.card_${tipo}`,
     },
@@ -184,10 +185,15 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion:
-          "Primero abre la lista que te interesa (Retiro, Inasistencia o Uniforme) desde Permisos y Excusas.",
+        narracion: "Vamos a Permisos y Excusas.",
         accion: "navegar",
         ruta: "/permisos-excusas",
+      },
+      {
+        narracion:
+          "Toca la ficha de la lista que quieres revisar: 'Retiro de Estudiantes', Justificación por Inasistencia o por Uniforme.",
+        accion: "click",
+        ancla: "permisos_excusas.card_retiro",
       },
       {
         narracion:
@@ -222,14 +228,19 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion:
-          "Abre la lista que te interesa (Retiro, Inasistencia o Uniforme) desde Permisos y Excusas.",
+        narracion: "Vamos a Permisos y Excusas.",
         accion: "navegar",
         ruta: "/permisos-excusas",
       },
       {
         narracion:
-          "Escribe el nombre o la identificación en el buscador. Ignora tildes y mayúsculas. Con la X borras la búsqueda.",
+          "Toca la ficha de la lista que quieres revisar: 'Retiro de Estudiantes', Justificación por Inasistencia o por Uniforme.",
+        accion: "click",
+        ancla: "permisos_excusas.card_retiro",
+      },
+      {
+        narracion:
+          "Escribe el nombre del estudiante en el buscador (en Inasistencia y Uniforme también sirve su identificación). Ignora tildes y mayúsculas. Con la X borras la búsqueda.",
         accion: "escribir",
         ancla: "permisos_excusas.buscar_input",
         campo: "estudiante",
@@ -260,23 +271,28 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion:
-          "Abre la lista que te interesa (Retiro, Inasistencia o Uniforme) desde Permisos y Excusas.",
+        narracion: "Vamos a Permisos y Excusas.",
         accion: "navegar",
         ruta: "/permisos-excusas",
+      },
+      {
+        narracion:
+          "Toca la ficha de la lista que quieres revisar: 'Retiro de Estudiantes', Justificación por Inasistencia o por Uniforme.",
+        accion: "click",
+        ancla: "permisos_excusas.card_retiro",
       },
       {
         narracion: "Elige el grado en el primer desplegable.",
         accion: "seleccionar",
         ancla: "permisos_excusas.filtro_grado",
-        campo: "grado",
+        campo: "filtro_grado",
       },
       {
         narracion:
           "Si quieres, elige también el salón en el segundo desplegable (las opciones dependen del grado elegido).",
         accion: "seleccionar",
         ancla: "permisos_excusas.filtro_salon",
-        campo: "salon",
+        campo: "filtro_salon",
         opcional: true,
       },
       {
@@ -290,7 +306,7 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
     id: "permisos_excusas.filtrar_dia",
     titulo: "Filtrar por día con el calendario",
     descripcion:
-      "Usar el calendario lateral para ver solo los registros de una fecha; los días con registros salen en naranja.",
+      "Usar el calendario lateral para ver solo lo que llegó un día (filtra por la fecha en que se creó el registro, no por la fecha del retiro o de la ausencia); los días con registros salen en naranja.",
     categoria: "Permisos y Excusas",
     roles: [...ALL_INTERNOS],
     ruta: "/permisos-excusas/retiro-staff",
@@ -306,14 +322,19 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion:
-          "Abre la lista que te interesa (Retiro, Inasistencia o Uniforme) desde Permisos y Excusas.",
+        narracion: "Vamos a Permisos y Excusas.",
         accion: "navegar",
         ruta: "/permisos-excusas",
       },
       {
         narracion:
-          "En el calendario de la izquierda toca el día que quieres. Los días en naranja son los que tienen registros. La lista arranca en el día de hoy.",
+          "Toca la ficha de la lista que quieres revisar: 'Retiro de Estudiantes', Justificación por Inasistencia o por Uniforme.",
+        accion: "click",
+        ancla: "permisos_excusas.card_retiro",
+      },
+      {
+        narracion:
+          "En el calendario de la izquierda toca el día que quieres. Los días en naranja tienen registros (según cuándo llegó cada uno, no la fecha del retiro o de la ausencia). La lista arranca en el día de hoy.",
         accion: "click",
         ancla: "permisos_excusas.calendario_dia",
         campo: "fecha",
@@ -346,10 +367,15 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion:
-          "Abre la lista de Retiro o de Inasistencia (las de Uniforme no llevan adjuntos) desde Permisos y Excusas.",
+        narracion: "Vamos a Permisos y Excusas.",
         accion: "navegar",
         ruta: "/permisos-excusas",
+      },
+      {
+        narracion:
+          "Toca la ficha de 'Retiro de Estudiantes' o la de Justificación por Inasistencia (las de Uniforme no llevan adjuntos).",
+        accion: "click",
+        ancla: "permisos_excusas.card_retiro",
       },
       {
         narracion: "Despliega la tarjeta del estudiante.",
@@ -359,7 +385,7 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
       },
       {
         narracion:
-          "En la sección 'Archivos adjuntos', toca 'Ver' junto al archivo. Se abre en una pestaña nueva.",
+          "En la sección de archivos adjuntos, toca 'Ver' junto al archivo. Se abre en una pestaña nueva.",
         accion: "click",
         ancla: "permisos_excusas.archivo_ver",
       },
@@ -384,10 +410,15 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion:
-          "Abre la lista de Retiro o de Inasistencia (las de Uniforme no llevan adjuntos) desde Permisos y Excusas.",
+        narracion: "Vamos a Permisos y Excusas.",
         accion: "navegar",
         ruta: "/permisos-excusas",
+      },
+      {
+        narracion:
+          "Toca la ficha de 'Retiro de Estudiantes' o la de Justificación por Inasistencia (las de Uniforme no llevan adjuntos).",
+        accion: "click",
+        ancla: "permisos_excusas.card_retiro",
       },
       {
         narracion: "Despliega la tarjeta del estudiante.",
@@ -397,7 +428,7 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
       },
       {
         narracion:
-          "En 'Archivos adjuntos', toca 'Descargar' junto al archivo. Se guarda en tu dispositivo.",
+          "En la sección de archivos adjuntos, toca 'Descargar' junto al archivo. Se guarda en tu dispositivo.",
         accion: "click",
         ancla: "permisos_excusas.archivo_descargar",
       },
@@ -420,33 +451,36 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion:
-          "Abre la lista que te interesa (Retiro, Inasistencia o Uniforme) desde Permisos y Excusas.",
+        narracion: "Vamos a Permisos y Excusas.",
         accion: "navegar",
         ruta: "/permisos-excusas",
       },
       {
         narracion:
-          "Activa la casilla 'Imprimir' arriba de la lista. Aparecerá una casilla de selección en cada tarjeta.",
+          "Toca la ficha de la lista que quieres revisar: 'Retiro de Estudiantes', Justificación por Inasistencia o por Uniforme.",
+        accion: "click",
+        ancla: "permisos_excusas.card_retiro",
+      },
+      {
+        narracion:
+          "Activa la casilla 'Imprimir' arriba de la lista (si no ves registros, primero toca un día naranja en el calendario o 'Ver todas'). Aparecerá una casilla de selección en cada tarjeta.",
         accion: "click",
         ancla: "permisos_excusas.imprimir_toggle",
       },
       {
         narracion:
-          "Marca las tarjetas que quieres imprimir con su casilla 'Imprimir'.",
+          "En cada tarjeta que quieras imprimir, marca la casilla que le aparece encima.",
         accion: "click",
         ancla: "permisos_excusas.tarjeta_selector",
       },
       {
         narracion:
-          "Si necesitas más de una copia de una tarjeta, ajusta la cantidad con los botones + y - (de 1 a 10).",
-        accion: "click",
-        ancla: "permisos_excusas.tarjeta_cantidad_mas",
-        opcional: true,
+          "Si necesitas más de una copia de una tarjeta, ajusta la cantidad con los botones + y - que le aparecen al lado (de 1 a 10).",
+        accion: "explicar",
       },
       {
         narracion:
-          "Toca 'Descargar' (muestra cuántas seleccionaste). Se genera un documento Word con los formatos y se baja a tu dispositivo.",
+          "Toca el botón Descargar de arriba, junto a la casilla Imprimir (muestra cuántas seleccionaste). Se genera un documento Word con los formatos y se baja a tu dispositivo.",
         accion: "click",
         ancla: "permisos_excusas.descargar_word_boton",
       },

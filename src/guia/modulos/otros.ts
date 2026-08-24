@@ -3,24 +3,37 @@
 // Páginas de interno que no encajaban en otro módulo y que el barrido de
 // completitud detectó sin cubrir:
 //  - Horarios de Avisos (/horarios-avisos): configurar a qué hora se disparan
-//    los avisos automáticos de actividades. No tiene tarjeta en el dashboard;
-//    se llega por URL directa (la guía navega por URL igual). Guards backend:
-//    lectura = admin/rector/coordinador/secretaria/administrativo/profesor;
-//    edición = admin/rector/coordinador.
+//    los avisos automáticos de actividades. OJO: no tiene tarjeta ni enlace en
+//    ninguna parte de la UI; solo se llega tecleando la URL (Normi nunca navega,
+//    así que el paso de llegada lo explica). Guard del FRONTEND: la página
+//    expulsa a quien no tiene dashboard directivo (el profesor queda fuera
+//    aunque el backend le permita GET). Edición = admin/rector/coordinador.
 //  - Aprende con Normi (/aprende-normi): tutorial jugable. Tarjeta solo en el
 //    dashboard del profesor y solo en Cailico.
 
 import type { Capacidad } from "../tipos";
 
+// Roles que la PÁGINA deja entrar (puedeAccederDashboard || isAdmin; el
+// profesor es redirigido a "/" aunque el backend le permita leer).
 const AVISOS_LECTURA = [
   "admin",
   "rector",
   "coordinador",
   "secretaria",
   "administrativo",
-  "profesor",
 ] as const;
 const AVISOS_EDICION = ["admin", "rector", "coordinador"] as const;
+
+// Paso de llegada: la página no tiene tarjeta ni enlace en la UI.
+const llegarAHorariosAvisos = () =>
+  [
+    {
+      narracion:
+        "Esta página no tiene tarjeta en el inicio: escribe /horarios-avisos al final de la dirección en la barra del navegador y dale Enter.",
+      accion: "navegar" as const,
+      ruta: "/horarios-avisos",
+    },
+  ];
 
 export const OTROS: Capacidad[] = [
   {
@@ -38,13 +51,10 @@ export const OTROS: Capacidad[] = [
       "configuración de avisos automáticos",
     ],
     pasos: [
+      ...llegarAHorariosAvisos(),
       {
-        narracion: "Entramos a la configuración de horarios de avisos.",
-        accion: "navegar",
-        ruta: "/horarios-avisos",
-      },
-      {
-        narracion: "Aquí ves las reglas de avisos por nivel o grado.",
+        narracion:
+          "Aquí ves las reglas de avisos por nivel o grado, en 'Reglas configuradas'.",
         accion: "explicar",
       },
     ],
@@ -67,28 +77,74 @@ export const OTROS: Capacidad[] = [
       "programar a qué hora se manda el aviso",
     ],
     pasos: [
-      { narracion: "Entramos a Horarios de Avisos.", accion: "navegar", ruta: "/horarios-avisos" },
-      { narracion: "Toca el botón para agregar una regla.", accion: "click", ancla: "avisos.boton_agregar" },
-      { narracion: "Elige el nivel o grado.", accion: "seleccionar", ancla: "avisos.select_nivel", campo: "nivel" },
-      { narracion: "Fija la hora del aviso.", accion: "seleccionar", ancla: "avisos.select_hora", campo: "hora" },
-      { narracion: "Marca a quién avisar (estudiantes y/o acudientes).", accion: "click", ancla: "avisos.check_destinatarios", opcional: true },
-      { narracion: "Guarda la regla.", accion: "click", ancla: "avisos.boton_guardar" },
+      ...llegarAHorariosAvisos(),
+      {
+        narracion: "En el cuadro Agregar nueva regla, elige el 'Nivel'.",
+        accion: "seleccionar",
+        ancla: "avisos.select_nivel",
+        campo: "nivel",
+      },
+      {
+        narracion:
+          "Si la regla es solo para un grado, elígelo en el select de Grado (es opcional).",
+        accion: "seleccionar",
+        ancla: "avisos.select_grado",
+        campo: "grado",
+        opcional: true,
+      },
+      {
+        narracion: "Escribe la hora del aviso en formato HH:MM (por ejemplo 14:30).",
+        accion: "escribir",
+        ancla: "avisos.input_hora",
+        campo: "hora",
+      },
+      {
+        narracion:
+          "Si quieres, ajusta las casillas 'Est' (estudiantes) y 'Acud' (acudientes); vienen las dos marcadas.",
+        accion: "click",
+        ancla: "avisos.check_destinatarios",
+        opcional: true,
+      },
+      {
+        narracion: "Toca 'Agregar' para guardar la regla.",
+        accion: "click",
+        ancla: "avisos.boton_guardar",
+      },
     ],
   },
   {
     id: "otros.horarios_avisos_editar",
     titulo: "Editar una regla de horario de avisos",
-    descripcion: "Cambiar la hora o los destinatarios de una regla de avisos existente.",
+    descripcion:
+      "Cambiar la hora o los destinatarios de una regla de avisos, o activarla/desactivarla con su interruptor. Todo se edita directo en la fila.",
     categoria: "Horarios de Avisos",
     roles: [...AVISOS_EDICION],
     ruta: "/horarios-avisos",
     endpoint: "PATCH /api/horarios-avisos/:id (admin, rector, coordinador)",
-    sinonimos: ["editar una regla de aviso", "cambiar la hora de un aviso automático"],
+    sinonimos: [
+      "editar una regla de aviso",
+      "cambiar la hora de un aviso automático",
+      "desactivar una regla de aviso",
+      "pausar un aviso automático",
+    ],
     pasos: [
-      { narracion: "Entramos a Horarios de Avisos.", accion: "navegar", ruta: "/horarios-avisos" },
-      { narracion: "Abre la regla que quieres cambiar.", accion: "click", ancla: "avisos.regla_editar" },
-      { narracion: "Ajusta la hora o los destinatarios.", accion: "seleccionar", ancla: "avisos.select_hora", campo: "hora" },
-      { narracion: "Guarda los cambios.", accion: "click", ancla: "avisos.boton_guardar" },
+      ...llegarAHorariosAvisos(),
+      {
+        narracion:
+          "Busca la fila de la regla en 'Reglas configuradas': todo se edita ahí mismo, sin abrir nada.",
+        accion: "explicar",
+      },
+      {
+        narracion:
+          "Corrige la hora (HH:MM), marca o desmarca las casillas de destinatarios, o usa el interruptor para activar o desactivar la regla.",
+        accion: "escribir",
+        ancla: "avisos.fila_hora",
+        campo: "hora",
+      },
+      {
+        narracion: "Listo: los cambios se guardan solos al salir del campo.",
+        accion: "explicar",
+      },
     ],
   },
   {
@@ -101,9 +157,13 @@ export const OTROS: Capacidad[] = [
     endpoint: "DELETE /api/horarios-avisos/:id (admin, rector, coordinador)",
     sinonimos: ["eliminar una regla de aviso", "borrar un horario de avisos"],
     pasos: [
-      { narracion: "Entramos a Horarios de Avisos.", accion: "navegar", ruta: "/horarios-avisos" },
-      { narracion: "Abre el menú de la regla.", accion: "click", ancla: "avisos.regla_menu" },
-      { narracion: "Toca 'Eliminar' y confirma.", accion: "click", ancla: "avisos.regla_eliminar" },
+      ...llegarAHorariosAvisos(),
+      {
+        narracion:
+          "Toca la caneca roja de la regla que quieres borrar y confirma en el aviso del navegador.",
+        accion: "click",
+        ancla: "avisos.regla_eliminar",
+      },
     ],
   },
   {
@@ -127,7 +187,7 @@ export const OTROS: Capacidad[] = [
         ruta: "/aprende-normi",
       },
       {
-        narracion: "Sigue las lecciones a tu ritmo. Listo.",
+        narracion: "Toca una misión y sigue los retos a tu ritmo. Listo.",
         accion: "explicar",
       },
     ],

@@ -12,8 +12,10 @@
 //     UI: useEffect con isAdmin() → navigate("/dashboard").
 //  3. Comunicados con firma (/comunicados-firma) — emisores = [admin, rector,
 //     coordinador, secretaria, administrativo, orientador, profesor] (SIN
-//     portero, no está en CARGOS_EMISORES). Firmar/recibir la firma = cualquier
-//     interno (incluido portero).
+//     portero, no está en CARGOS_EMISORES). Firmar = los internos que pueden
+//     SER destinatarios de un comunicado con firma (el portero NO: no existe
+//     perfil destinatario para su cargo, y su dashboard tampoco tiene la
+//     tarjeta de Comunicados y Firma; el admin tampoco recibe).
 //  4. Recibir comunicados/documentos — el profesor usa /profesor/comunicados y
 //     /profesor/documentos (filtra por sus asignaciones de aula); el resto del
 //     personal usa /comunicados-recibidos y /documentos-recibidos (filtra por el
@@ -48,16 +50,15 @@ const EMISORES_FIRMA = [
   "profesor",
 ] as const;
 
-// Cualquier interno puede firmar y recibir (incluido el portero y el admin).
+// Internos que pueden recibir un comunicado con firma y firmarlo (sin portero,
+// que nunca es destinatario ni tiene la tarjeta; sin admin, que nunca recibe).
 const TODOS_INTERNOS = [
-  "admin",
   "rector",
   "coordinador",
   "secretaria",
   "administrativo",
   "orientador",
   "profesor",
-  "portero",
 ] as const;
 
 // Personal (no profesor, no admin) que recibe por el perfil de su cargo.
@@ -87,7 +88,7 @@ const abrirFormularioEnvio = (ruta: string) =>
     },
     {
       narracion:
-        "Marca los perfiles que van a recibir (Estudiantes, Acudientes, Profesores, Coordinadores, Rector, y demás), o usa 'Todos'.",
+        "Marca los perfiles que van a recibir (Estudiantes, Acudientes, Profesores, Coordinadores, Rector, y demás), o usa la opción Todos.",
       accion: "seleccionar" as const,
       ancla: "comunicados.perfil_checkbox",
       campo: "perfiles",
@@ -268,7 +269,7 @@ export const COMUNICADOS: Capacidad[] = [
         accion: "explicar",
       },
       {
-        narracion: "Revisa el resumen y toca el botón verde que dice Enviar con el número de mensajes.",
+        narracion: "Verifica las filas detectadas y la vista previa, y toca el botón verde que dice Enviar con el número de mensajes.",
         accion: "click",
         ancla: "comunicados.masivo_enviar",
       },
@@ -330,7 +331,7 @@ export const COMUNICADOS: Capacidad[] = [
     id: "comunicados.eliminar_enviado",
     titulo: "Eliminar un comunicado del historial",
     descripcion:
-      "Borrar permanentemente un comunicado que enviaste (solo los tuyos; el rector puede borrar cualquiera).",
+      "Borrar permanentemente un comunicado que enviaste (solo puedes borrar los tuyos).",
     categoria: "Comunicados",
     roles: [...EMISORES_NORMAL],
     ruta: "/enviar-comunicado",
@@ -592,7 +593,12 @@ export const COMUNICADOS: Capacidad[] = [
         ruta: "/comunicados-firma",
       },
       {
-        narracion: "Abre la pestaña 'Enviados' y toca el comunicado.",
+        narracion: "Abre la pestaña 'Enviados'.",
+        accion: "click",
+        ancla: "comunicados.firma_tab_enviados",
+      },
+      {
+        narracion: "Toca el comunicado que quieras reenviar.",
         accion: "click",
         ancla: "comunicados.firma_item_enviado",
       },
@@ -687,7 +693,7 @@ export const COMUNICADOS: Capacidad[] = [
       },
       {
         narracion:
-          "Si quieres corregirla, toca 'Borrar' y vuelve a dibujarla. Cuando esté lista, toca 'Firmar'. Una vez firmada queda bloqueada. Listo.",
+          "Cuando la firma esté lista, toca 'Firmar' (si quieres corregirla antes, usa el botón Borrar y vuelve a dibujarla). Una vez firmada queda bloqueada. Listo.",
         accion: "click",
         ancla: "comunicados.firma_boton_firmar",
       },
@@ -727,7 +733,7 @@ export const COMUNICADOS: Capacidad[] = [
         ancla: "comunicados.recibidos_item",
       },
       {
-        narracion: "Si trae archivo, usa 'Ver' o 'Descargar'. Listo.",
+        narracion: "Si trae archivo, usa los botones Ver o Descargar. Listo.",
         accion: "explicar",
       },
     ],
@@ -761,7 +767,7 @@ export const COMUNICADOS: Capacidad[] = [
         opcional: true,
       },
       {
-        narracion: "Toca la tarjeta y usa 'Ver' o 'Descargar' para abrir el archivo. Listo.",
+        narracion: "Toca la tarjeta y usa los botones Ver o Descargar para abrir el archivo. Listo.",
         accion: "click",
         ancla: "comunicados.recibidos_item",
       },
@@ -801,7 +807,7 @@ export const COMUNICADOS: Capacidad[] = [
         ancla: "comunicados.recibidos_item",
       },
       {
-        narracion: "Si trae archivo, usa 'Ver' o 'Descargar'. Listo.",
+        narracion: "Si trae archivo, usa los botones Ver o Descargar. Listo.",
         accion: "explicar",
       },
     ],
@@ -835,7 +841,7 @@ export const COMUNICADOS: Capacidad[] = [
         opcional: true,
       },
       {
-        narracion: "Toca la tarjeta y usa 'Ver' o 'Descargar' para abrir el archivo. Listo.",
+        narracion: "Toca la tarjeta y usa los botones Ver o Descargar para abrir el archivo. Listo.",
         accion: "click",
         ancla: "comunicados.recibidos_item",
       },

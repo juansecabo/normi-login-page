@@ -165,7 +165,7 @@ export const CONSULTAS: Capacidad[] = [
       },
       {
         narracion:
-          "Marca uno o más perfiles destinatarios (Estudiantes, Acudientes, Profesores, Coordinadores, Rector, Administrativos, Secretaria, Orientador).",
+          "Marca uno o más perfiles destinatarios (Estudiantes, Acudientes, Profesores, Coordinadores, Rector, Administrativos, Secretaria General, Orientador(a) Escolar).",
         accion: "click",
         ancla: "consultas.checkbox_perfil",
         campo: "perfiles",
@@ -211,16 +211,16 @@ export const CONSULTAS: Capacidad[] = [
       },
       {
         narracion:
+          "Revisa el 'Resumen del envío' para confirmar a quién le llega.",
+        accion: "explicar",
+      },
+      {
+        narracion:
           "Deja activado 'Requiere firma digital' si es una autorización oficial, o desactívalo si no hace falta firma.",
         accion: "click",
         ancla: "consultas.switch_firma",
         campo: "requiere_firma",
         opcional: true,
-      },
-      {
-        narracion:
-          "Revisa el 'Resumen del envío' para confirmar a quién le llega.",
-        accion: "explicar",
       },
       {
         narracion: "Toca 'Crear y enviar'. Se guarda y se despacha por WhatsApp.",
@@ -281,7 +281,7 @@ export const CONSULTAS: Capacidad[] = [
       ...abrirDetalleConsulta(),
       {
         narracion:
-          "Aquí ves la tabla de estudiantes con la respuesta de cada acudiente, y más abajo las respuestas de internos y de estudiantes.",
+          "Según a quién iba dirigida, aquí ves la tabla de estudiantes con la respuesta de cada acudiente, y/o las tablas de respuestas de internos y de estudiantes.",
         accion: "explicar",
       },
     ],
@@ -290,7 +290,7 @@ export const CONSULTAS: Capacidad[] = [
     id: "consultas.buscar_filtrar",
     titulo: "Buscar y filtrar respuestas",
     descripcion:
-      "Buscar un estudiante o filtrar la tabla por estado, opción marcada, grado o salón.",
+      "Buscar un estudiante o filtrar la tabla por estado, opción marcada, grado o salón (solo en consultas dirigidas a estudiantes o acudientes).",
     categoria: "Consultas",
     roles: [...ALL_INTERNOS],
     ruta: "/consultas/:id",
@@ -304,7 +304,8 @@ export const CONSULTAS: Capacidad[] = [
     pasos: [
       ...abrirDetalleConsulta(),
       {
-        narracion: "Escribe el nombre del estudiante en el buscador.",
+        narracion:
+          "Escribe el nombre del estudiante en el buscador (el buscador y los filtros solo aparecen cuando la consulta va dirigida a estudiantes o acudientes).",
         accion: "escribir",
         ancla: "consultas.buscar_estudiante",
         campo: "busqueda",
@@ -319,7 +320,8 @@ export const CONSULTAS: Capacidad[] = [
         opcional: true,
       },
       {
-        narracion: "Con 'Opción' filtras por la respuesta marcada.",
+        narracion:
+          "Con 'Opción' filtras por la respuesta marcada (este filtro se oculta si en Estado elegiste Sin respuesta).",
         accion: "seleccionar",
         ancla: "consultas.filtro_opcion",
         campo: "opcion",
@@ -354,14 +356,15 @@ export const CONSULTAS: Capacidad[] = [
       ...abrirDetalleConsulta(),
       {
         narracion:
-          "Si te toca responder, arriba aparece el panel 'Tu respuesta'. Elige la opción que corresponda.",
+          "Si te toca responder y la consulta sigue abierta, aparece el panel 'Tu respuesta'. Elige la opción que corresponda.",
         accion: "click",
         ancla: "consultas.opcion_respuesta",
         campo: "opcion",
       },
       {
-        narracion: "Si la consulta pide firma, firma en el recuadro.",
-        accion: "escribir",
+        narracion:
+          "Si la consulta pide firma, dibuja tu firma con el dedo o el mouse dentro del recuadro blanco. Si te queda mal, toca 'Limpiar firma' y repite.",
+        accion: "click",
         ancla: "consultas.firma_canvas",
         campo: "firma",
         opcional: true,
@@ -392,7 +395,7 @@ export const CONSULTAS: Capacidad[] = [
       ...abrirDetalleConsulta(),
       {
         narracion:
-          "En el panel 'Ya respondiste esta consulta' toca 'Editar'.",
+          "Busca el panel con el chulo verde que dice 'Ya respondiste esta consulta' (solo existe mientras la consulta siga abierta) y toca el botón Editar pequeño que está dentro de ese panel, no el Editar de la barra de arriba.",
         accion: "click",
         ancla: "consultas.boton_editar_respuesta",
       },

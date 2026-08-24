@@ -15,13 +15,16 @@
 //
 // El profesor solo puede tomar/editar/ver clases que REALMENTE dicta (se valida
 // contra "Asignación Profesores"); el Administrador, cualquiera del colegio.
+// OJO: para TOMAR, la pagina llena los selects con las asignaciones PROPIAS del
+// usuario, asi que un admin sin filas en Asignacion Profesores ve selects vacios.
 
 import type { Capacidad } from "../tipos";
 
 // Escriben asistencia (tomar, corregir, quitar). Guard real: ROLES_TOMAN.
 const TOMAN_ASISTENCIA = ["profesor", "admin"] as const;
-// Ven el registro (matriz/calendario). Guard real: cualquier interno (no
-// estudiante ni acudiente). Incluye portero (es interno; el backend no lo excluye).
+// Ven el registro (matriz/calendario). El backend admite a cualquier interno,
+// pero el dashboard del portero (FICHAS_PORTERO) no tiene la tarjeta Asistencia,
+// asi que la guia no puede llevarlo: queda fuera.
 const VEN_ASISTENCIA = [
   "profesor",
   "rector",
@@ -29,7 +32,6 @@ const VEN_ASISTENCIA = [
   "secretaria",
   "administrativo",
   "orientador",
-  "portero",
   "admin",
 ] as const;
 
@@ -56,6 +58,8 @@ export const ASISTENCIA: Capacidad[] = [
       "marcar quién vino a clase",
       "poner los ausentes de mi clase",
       "registrar la asistencia del día",
+      "llamar a lista",
+      "ver quién faltó hoy",
     ],
     pasos: [
       {
@@ -87,8 +91,8 @@ export const ASISTENCIA: Capacidad[] = [
         campo: "salon",
       },
       {
-        narracion: "Confirma el día (viene con la fecha de hoy; puedes cambiarla a un día anterior).",
-        accion: "seleccionar",
+        narracion: "Confirma la 'Fecha' (viene con la de hoy; puedes cambiarla a un día anterior).",
+        accion: "escribir",
         ancla: "asistencia.input_fecha",
         campo: "fecha",
         opcional: true,
@@ -138,12 +142,13 @@ export const ASISTENCIA: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion: "Desde el resumen final de la lista, ubica la sección para corregir un estudiante.",
+        narracion:
+          "Esta corrección se hace en el resumen que aparece al terminar de pasar lista. Si no lo ves, primero toma la asistencia de esa clase.",
         accion: "explicar",
       },
       {
         narracion:
-          "Escribe el nombre o apellido del estudiante en el buscador. También puedes tocar un total de arriba (por ejemplo 'ausentes' o 'llegaron tarde') para ver esa lista.",
+          "Escribe el nombre o apellido del estudiante en el buscador. También puedes tocar uno de los totales de arriba (el de ausentes o el de llegaron tarde) para ver esa lista.",
         accion: "escribir",
         ancla: "asistencia.buscar_corregir",
         campo: "estudiante",
@@ -187,6 +192,12 @@ export const ASISTENCIA: Capacidad[] = [
         narracion: "Abrimos el Registro de Asistencia.",
         accion: "navegar",
         ruta: "/asistencia",
+      },
+      {
+        narracion: "Si ves el menú de Asistencia, entra a 'Registro de Asistencia'.",
+        accion: "click",
+        ancla: "asistencia.menu_registro",
+        opcional: true,
       },
       {
         narracion: "Selecciona la asignatura.",
@@ -249,6 +260,12 @@ export const ASISTENCIA: Capacidad[] = [
         ruta: "/asistencia",
       },
       {
+        narracion: "Si ves el menú de Asistencia, entra a 'Registro de Asistencia'.",
+        accion: "click",
+        ancla: "asistencia.menu_registro",
+        opcional: true,
+      },
+      {
         narracion: "Elige la asignatura, el grado y el salón, y el mes o rango que quieres exportar.",
         accion: "seleccionar",
         ancla: "asistencia.consulta_selector_asignatura",
@@ -290,9 +307,33 @@ export const ASISTENCIA: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion: "Abrimos el Registro de Asistencia y elegimos la clase (asignatura, grado y salón) y el rango.",
+        narracion: "Abrimos el Registro de Asistencia.",
         accion: "navegar",
         ruta: "/asistencia",
+      },
+      {
+        narracion: "Si ves el menú de Asistencia, entra a 'Registro de Asistencia'.",
+        accion: "click",
+        ancla: "asistencia.menu_registro",
+        opcional: true,
+      },
+      {
+        narracion: "Selecciona la asignatura.",
+        accion: "seleccionar",
+        ancla: "asistencia.consulta_selector_asignatura",
+        campo: "asignatura",
+      },
+      {
+        narracion: "Ahora el grado.",
+        accion: "seleccionar",
+        ancla: "asistencia.consulta_selector_grado",
+        campo: "grado",
+      },
+      {
+        narracion: "Y el salón.",
+        accion: "seleccionar",
+        ancla: "asistencia.consulta_selector_salon",
+        campo: "salon",
       },
       {
         narracion:
@@ -329,6 +370,9 @@ export const ASISTENCIA: Capacidad[] = [
     ruta: "/asistencia",
     endpoint: "POST /api/asistencia/quitar (Profesor, Administrador; el profesor solo sus clases)",
     requisitos: [
+      { entidad: "asignatura", descripcion: "Asignatura." },
+      { entidad: "grado", descripcion: "Grado." },
+      { entidad: "salon", descripcion: "Salón." },
       { entidad: "estudiante", descripcion: "Estudiante cuya marca se borra." },
       { entidad: "fecha", descripcion: "Día de la marca a quitar." },
     ],
@@ -341,9 +385,33 @@ export const ASISTENCIA: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion: "Abrimos el Registro de Asistencia y elegimos la clase y el rango.",
+        narracion: "Abrimos el Registro de Asistencia.",
         accion: "navegar",
         ruta: "/asistencia",
+      },
+      {
+        narracion: "Si ves el menú de Asistencia, entra a 'Registro de Asistencia'.",
+        accion: "click",
+        ancla: "asistencia.menu_registro",
+        opcional: true,
+      },
+      {
+        narracion: "Selecciona la asignatura.",
+        accion: "seleccionar",
+        ancla: "asistencia.consulta_selector_asignatura",
+        campo: "asignatura",
+      },
+      {
+        narracion: "Ahora el grado.",
+        accion: "seleccionar",
+        ancla: "asistencia.consulta_selector_grado",
+        campo: "grado",
+      },
+      {
+        narracion: "Y el salón.",
+        accion: "seleccionar",
+        ancla: "asistencia.consulta_selector_salon",
+        campo: "salon",
       },
       {
         narracion: "Toca la casilla del estudiante en el día que quieres limpiar.",
@@ -385,9 +453,33 @@ export const ASISTENCIA: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion: "Abrimos el Registro de Asistencia y elegimos la clase (asignatura, grado y salón).",
+        narracion: "Abrimos el Registro de Asistencia.",
         accion: "navegar",
         ruta: "/asistencia",
+      },
+      {
+        narracion: "Si ves el menú de Asistencia, entra a 'Registro de Asistencia'.",
+        accion: "click",
+        ancla: "asistencia.menu_registro",
+        opcional: true,
+      },
+      {
+        narracion: "Selecciona la asignatura.",
+        accion: "seleccionar",
+        ancla: "asistencia.consulta_selector_asignatura",
+        campo: "asignatura",
+      },
+      {
+        narracion: "Ahora el grado.",
+        accion: "seleccionar",
+        ancla: "asistencia.consulta_selector_grado",
+        campo: "grado",
+      },
+      {
+        narracion: "Y el salón.",
+        accion: "seleccionar",
+        ancla: "asistencia.consulta_selector_salon",
+        campo: "salon",
       },
       {
         narracion: "En la matriz, toca el nombre del estudiante.",
@@ -397,16 +489,8 @@ export const ASISTENCIA: Capacidad[] = [
       },
       {
         narracion:
-          "Se abre su calendario del mes con cada día coloreado por estado y el resumen de porcentaje. Usa las flechas para cambiar de mes.",
-        accion: "click",
-        ancla: "asistencia.cal_mes_anterior",
-        opcional: true,
-      },
-      {
-        narracion: "Cuando termines, cierra el calendario. Listo.",
-        accion: "click",
-        ancla: "asistencia.cal_cerrar",
-        opcional: true,
+          "Se abre su calendario del mes con cada día coloreado por estado y el resumen de porcentaje. Usa las flechas de arriba para cambiar de mes y cierra con la X cuando termines. Listo.",
+        accion: "explicar",
       },
     ],
   },
@@ -421,6 +505,8 @@ export const ASISTENCIA: Capacidad[] = [
     endpoint: "POST /api/asistencia/marcar y /quitar (Profesor, Administrador; el profesor solo sus clases)",
     requisitos: [
       { entidad: "asignatura", descripcion: "Asignatura." },
+      { entidad: "grado", descripcion: "Grado." },
+      { entidad: "salon", descripcion: "Salón." },
       { entidad: "estudiante", descripcion: "Estudiante a corregir." },
       { entidad: "fecha", descripcion: "Día concreto dentro del calendario." },
     ],
@@ -432,7 +518,36 @@ export const ASISTENCIA: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion: "Abrimos el Registro de Asistencia, elegimos la clase y tocamos el nombre del estudiante para abrir su calendario.",
+        narracion: "Abrimos el Registro de Asistencia.",
+        accion: "navegar",
+        ruta: "/asistencia",
+      },
+      {
+        narracion: "Si ves el menú de Asistencia, entra a 'Registro de Asistencia'.",
+        accion: "click",
+        ancla: "asistencia.menu_registro",
+        opcional: true,
+      },
+      {
+        narracion: "Selecciona la asignatura.",
+        accion: "seleccionar",
+        ancla: "asistencia.consulta_selector_asignatura",
+        campo: "asignatura",
+      },
+      {
+        narracion: "Ahora el grado.",
+        accion: "seleccionar",
+        ancla: "asistencia.consulta_selector_grado",
+        campo: "grado",
+      },
+      {
+        narracion: "Y el salón.",
+        accion: "seleccionar",
+        ancla: "asistencia.consulta_selector_salon",
+        campo: "salon",
+      },
+      {
+        narracion: "En la matriz, toca el nombre del estudiante para abrir su calendario.",
         accion: "click",
         ancla: "asistencia.nombre_estudiante",
         campo: "estudiante",
@@ -444,7 +559,7 @@ export const ASISTENCIA: Capacidad[] = [
         campo: "fecha",
       },
       {
-        narracion: "En la barra que aparece abajo, elige el nuevo estado; o toca 'Quitar' para borrar la marca de ese día.",
+        narracion: "En la barra que aparece abajo, elige el nuevo estado; o toca el botón Quitar para borrar la marca de ese día.",
         accion: "click",
         ancla: "asistencia.cal_estado_boton",
         campo: "estado",

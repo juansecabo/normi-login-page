@@ -14,9 +14,11 @@
 // Usuarios (nombres/apellidos/teléfono/contraseña, global cross-colegio),
 // Estudiantes y Acudientes (membresías por colegio). El guard de CRUD de
 // Estudiantes/Acudientes es [admin, rector, secretaria, coordinador,
-// administrativo, profesor]. Por eso Orientador(a) y Portero pueden ABRIR el
-// panel y consultar, pero sus escrituras las rechaza el proxy; y el Profesor(a)
-// puede escribir, pero solo desde la vista embebida como director de grupo.
+// administrativo, profesor], EXCEPTO Acudientes.delete que es solo
+// admin/rector/coordinador. Orientador(a) y Portero pueden ABRIR el panel pero
+// el proxy rechaza sus escrituras sobre Estudiantes/Acudientes; el Profesor(a)
+// escribe solo desde la vista embebida de Configurar Institución (director de
+// grupo), así que en ESTE módulo (que guía por /panel-control) no se lista.
 //
 // El componente TAMBIÉN contiene, como código muerto, el CRUD de Funcionarios
 // (Internos) y de Asignaciones (openIntDialog/openAsigDialog + sus diálogos),
@@ -36,19 +38,18 @@ const VER_PANEL = [
   "secretaria",
   "administrativo",
   "orientador",
-  "portero",
 ] as const;
 
-// Quién puede CREAR/EDITAR/BORRAR estudiantes y acudientes (guard real del
-// dbProxy). Incluye profesor (director de grupo, embebido); excluye orientador
-// y portero (el proxy rechaza sus escrituras aunque abran el panel).
+// Quién puede CREAR/EDITAR/BORRAR estudiantes y acudientes POR ESTA RUTA.
+// Sin profesor: /panel-control lo expulsa (puedeAccederDashboard) y su camino
+// real es Configurar Institución → Personas (módulo configurar_institucion).
+// Sin orientador ni portero (el proxy rechaza sus escrituras).
 const CRUD_PERSONAS = [
   "admin",
   "rector",
   "secretaria",
   "coordinador",
   "administrativo",
-  "profesor",
 ] as const;
 
 // Cambiar la identificación (cédula) de un acudiente NO lo puede hacer el
@@ -135,7 +136,8 @@ export const PANEL_CONTROL: Capacidad[] = [
         opcional: true,
       },
       {
-        narracion: "También puedes filtrar por 'con foto' o 'sin foto'.",
+        narracion:
+          "Si quieres, usa el filtro de foto (el selector que dice Todos, junto al de salón) para ver solo los que tienen foto o los que no.",
         accion: "seleccionar",
         ancla: "panel_control.filtro_foto_est",
         campo: "foto",
@@ -283,7 +285,13 @@ export const PANEL_CONTROL: Capacidad[] = [
     pasos: [
       ...abrirTabEstudiantes(),
       {
-        narracion: "Busca al estudiante y abre su edición con el lápiz.",
+        narracion: "Busca al estudiante por nombre o id.",
+        accion: "escribir",
+        ancla: "panel_control.buscar_est",
+        campo: "busqueda",
+      },
+      {
+        narracion: "En su fila, toca el lápiz para abrir su edición.",
         accion: "click",
         ancla: "panel_control.fila_editar_est",
       },
@@ -315,7 +323,7 @@ export const PANEL_CONTROL: Capacidad[] = [
     categoria: "Panel de Control",
     roles: [...CRUD_PERSONAS],
     ruta: "/panel-control",
-    endpoint: "POST /api/db (Estudiantes delete) + apiClient.auth.cleanupUsuarioOrphan",
+    endpoint: "POST /api/db (Estudiantes delete)",
     requisitos: [{ entidad: "estudiante", descripcion: "Estudiante a eliminar." }],
     sinonimos: [
       "eliminar un estudiante",
@@ -366,7 +374,8 @@ export const PANEL_CONTROL: Capacidad[] = [
         campo: "busqueda",
       },
       {
-        narracion: "Toca su foto en la primera columna para verla en grande.",
+        narracion:
+          "Toca su foto en la primera columna para verla en grande (solo si la persona tiene foto; para un acudiente, hazlo desde la pestaña Acudientes).",
         accion: "click",
         ancla: "panel_control.foto_est",
       },
@@ -431,7 +440,6 @@ export const PANEL_CONTROL: Capacidad[] = [
       "Registrar un acudiente nuevo con su cédula, nombres, apellidos y vincularle uno o varios estudiantes a cargo (hasta 4).",
     categoria: "Panel de Control",
     roles: [...CRUD_PERSONAS],
-    requiereDirectorGrupo: false,
     ruta: "/panel-control",
     endpoint: "POST /api/db (Usuarios upsert + Acudientes upsert — admin, rector, secretaria, coordinador, administrativo, profesor)",
     requisitos: [
@@ -565,7 +573,13 @@ export const PANEL_CONTROL: Capacidad[] = [
     pasos: [
       ...abrirTabAcudientes(),
       {
-        narracion: "Busca al acudiente por nombre o id y ábrelo con el lápiz.",
+        narracion: "Busca al acudiente por nombre o id.",
+        accion: "escribir",
+        ancla: "panel_control.buscar_perf",
+        campo: "busqueda",
+      },
+      {
+        narracion: "En su fila, toca el lápiz para abrir su edición.",
         accion: "click",
         ancla: "panel_control.fila_editar_perf",
       },
@@ -606,7 +620,13 @@ export const PANEL_CONTROL: Capacidad[] = [
     pasos: [
       ...abrirTabAcudientes(),
       {
-        narracion: "Busca al acudiente y ábrelo con el lápiz.",
+        narracion: "Busca al acudiente por nombre o id.",
+        accion: "escribir",
+        ancla: "panel_control.buscar_perf",
+        campo: "busqueda",
+      },
+      {
+        narracion: "En su fila, toca el lápiz para abrir su edición.",
         accion: "click",
         ancla: "panel_control.fila_editar_perf",
       },
@@ -635,7 +655,7 @@ export const PANEL_CONTROL: Capacidad[] = [
     descripcion:
       "Borrar la membresía de un acudiente del colegio. Después de eso no podrá iniciar sesión (si no es persona en otro colegio).",
     categoria: "Panel de Control",
-    roles: [...CRUD_PERSONAS],
+    roles: ["admin", "rector", "coordinador"],
     ruta: "/panel-control",
     endpoint: "POST /api/db (Acudientes delete) + apiClient.auth.cleanupUsuarioOrphan",
     requisitos: [{ entidad: "acudiente", descripcion: "Acudiente a eliminar." }],

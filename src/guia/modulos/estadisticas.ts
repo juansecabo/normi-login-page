@@ -265,7 +265,7 @@ export const ESTADISTICAS: Capacidad[] = [
       },
       {
         narracion:
-          "Si quieres, acota por grado y salón (son opcionales); déjalos en 'Todos' para ver la asignatura en todo el colegio.",
+          "Si quieres, acota por grado y salón (son opcionales); si no eliges nada ves la asignatura en todo el colegio",
         accion: "seleccionar",
         ancla: "estadisticas.filtro_grado",
         campo: "grado",
@@ -301,6 +301,11 @@ export const ESTADISTICAS: Capacidad[] = [
     ],
     pasos: [
       {
+        narracion: "Entramos a Estadísticas desde el tablero.",
+        accion: "navegar",
+        ruta: "/estadisticas",
+      },
+      {
         narracion: "Abrimos el filtro 'Período' arriba del tablero.",
         accion: "click",
         ancla: "estadisticas.filtro_periodo",
@@ -324,7 +329,7 @@ export const ESTADISTICAS: Capacidad[] = [
       "Abrir la lista de estudiantes con promedio por debajo de la nota aprobatoria del colegio, según los filtros actuales.",
     categoria: "Estadísticas",
     roles: [...DIRECTIVOS],
-    ruta: "/estudiantes-riesgo",
+    ruta: "/estadisticas",
     endpoint: "GET /api/estadisticas/riesgo (isRectorOrCoordinador)",
     requisitos: [{ entidad: "periodo", descripcion: "Periodo (o anual)." }],
     sinonimos: [
@@ -333,6 +338,8 @@ export const ESTADISTICAS: Capacidad[] = [
       "estudiantes reprobando",
       "riesgo académico",
       "quiénes van mal",
+      "mortalidad académica",
+      "cuántos van perdiendo",
     ],
     pasos: [
       ...abrirTablero(),
@@ -346,7 +353,7 @@ export const ESTADISTICAS: Capacidad[] = [
       },
       {
         narracion:
-          "Toca la tarjeta 'En Riesgo Académico' (cuando hay estudiantes, dice 'Click para ver detalles').",
+          "Toca la tarjeta roja de En Riesgo (en Institución y Salón dice En Riesgo Académico).",
         accion: "click",
         ancla: "estadisticas.tarjeta_riesgo",
       },
@@ -410,7 +417,7 @@ export const ESTADISTICAS: Capacidad[] = [
     pasos: [
       ...abrirTablero(),
       {
-        narracion: "Elige el nivel de análisis (por ejemplo Institución).",
+        narracion: "Elige el nivel de análisis: Institución, Por Grado, Por Salón o Por Asignatura (en Por Estudiante no aparece este indicador).",
         accion: "seleccionar",
         ancla: "estadisticas.filtro_nivel",
         campo: "nivel_analisis",
@@ -440,7 +447,7 @@ export const ESTADISTICAS: Capacidad[] = [
     categoria: "Estadísticas",
     roles: ["profesor"],
     ruta: "/profesor/estadisticas",
-    endpoint: "GET /api/estadisticas/asignatura (profesor, sus asignaciones)",
+    endpoint: "GET /api/estadisticas/asignatura (directivos y profesores; la UI del profesor lo limita a sus asignaciones)",
     requisitos: [
       { entidad: "asignatura", descripcion: "Una de tus asignaturas." },
       { entidad: "grado", descripcion: "Grado (opcional, 'Todos' por defecto)." },
@@ -596,7 +603,7 @@ export const ESTADISTICAS: Capacidad[] = [
         campo: "salon",
       },
       {
-        narracion: "En '¿Cómo deseas ver las notas?' elige 'Por Asignatura'.",
+        narracion: "Elige 'Por Asignatura' cuando la pantalla pregunte cómo deseas ver las notas.",
         accion: "click",
         ancla: "estadisticas.modo_por_asignatura",
       },
@@ -626,11 +633,12 @@ export const ESTADISTICAS: Capacidad[] = [
       { entidad: "grado", descripcion: "Grado del estudiante." },
       { entidad: "salon", descripcion: "Salón." },
       { entidad: "estudiante", descripcion: "Estudiante a consultar." },
-      { entidad: "periodo", descripcion: "Periodo a ver (opcional)." },
+      { entidad: "periodo", descripcion: "Periodo a ver (1 a 4)." },
     ],
     sinonimos: [
       "ver todas las notas de un estudiante",
       "consolidado de un estudiante",
+      "sábana de notas",
       "boletín de notas de un alumno",
       "situación académica de un estudiante",
     ],
@@ -653,7 +661,7 @@ export const ESTADISTICAS: Capacidad[] = [
         campo: "salon",
       },
       {
-        narracion: "En '¿Cómo deseas ver las notas?' elige 'Por Estudiante'.",
+        narracion: "Elige 'Por Estudiante' cuando la pantalla pregunte cómo deseas ver las notas.",
         accion: "click",
         ancla: "estadisticas.modo_por_estudiante",
       },
@@ -664,11 +672,14 @@ export const ESTADISTICAS: Capacidad[] = [
         campo: "estudiante",
       },
       {
-        narracion: "Ya ves su consolidado. Si quieres, elige un periodo concreto arriba.",
-        accion: "seleccionar",
+        narracion: "Elige el periodo tocando una de las tarjetas (1º a 4º).",
+        accion: "click",
         ancla: "estadisticas.consolidado_periodo",
         campo: "periodo",
-        opcional: true,
+      },
+      {
+        narracion: "Ya ves su consolidado con todas las asignaturas de ese periodo. Listo.",
+        accion: "explicar",
       },
     ],
   },

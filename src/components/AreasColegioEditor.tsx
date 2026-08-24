@@ -196,10 +196,10 @@ const AreasColegioEditor = ({ colegioId }: Props) => {
                       <p className="font-medium text-foreground">{a.nombre}</p>
                       <div className="flex gap-1">
                         <Button variant="outline" size="sm" onClick={() => abrirComponer(a)}>Asignaturas y pesos</Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setRenombrando(a); setNuevoNombre(a.nombre); }}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Renombrar" onClick={() => { setRenombrando(a); setNuevoNombre(a.nombre); }}>
                           <Pencil className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setBorrando(a)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" title="Eliminar" onClick={() => setBorrando(a)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -235,10 +235,10 @@ const AreasColegioEditor = ({ colegioId }: Props) => {
                   {it.tipo === "area" && <span className="ml-2 text-[10px] uppercase font-medium text-primary bg-primary/10 rounded px-1.5 py-0.5">Área</span>}
                 </span>
                 <span className="flex gap-0.5">
-                  <button disabled={guardandoOrden || idx === 0} onClick={() => mover(idx, -1)} className="p-1 rounded hover:bg-muted disabled:opacity-30">
+                  <button disabled={guardandoOrden || idx === 0} title="Subir" onClick={() => mover(idx, -1)} className="p-1 rounded hover:bg-muted disabled:opacity-30">
                     <ArrowUp className="w-4 h-4" />
                   </button>
-                  <button disabled={guardandoOrden || idx === listaOrden.length - 1} onClick={() => mover(idx, 1)} className="p-1 rounded hover:bg-muted disabled:opacity-30">
+                  <button disabled={guardandoOrden || idx === listaOrden.length - 1} title="Bajar" onClick={() => mover(idx, 1)} className="p-1 rounded hover:bg-muted disabled:opacity-30">
                     <ArrowDown className="w-4 h-4" />
                   </button>
                 </span>

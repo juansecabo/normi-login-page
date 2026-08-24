@@ -24,7 +24,10 @@
 
 import type { Capacidad } from "../tipos";
 
-// Todos los internos (guard real de Calendario Actividades).
+// Internos con camino de UI al hub /profesor/programar-actividad. El backend
+// admite a todos, pero ni el portero (FICHAS_PORTERO) ni el Administrador
+// (DashboardAdmin solo tiene Todas las Actividades) tienen tarjeta hacia el
+// hub, y la guia solo senala: quedan fuera (el admin usa las admin_*).
 const ALL_INTERNOS = [
   "profesor",
   "rector",
@@ -32,8 +35,6 @@ const ALL_INTERNOS = [
   "secretaria",
   "administrativo",
   "orientador",
-  "portero",
-  "admin",
 ] as const;
 
 // Internos que NO son profesores: programan actividad "General" (institucional).
@@ -43,8 +44,6 @@ const INTERNOS_GENERALES = [
   "secretaria",
   "administrativo",
   "orientador",
-  "portero",
-  "admin",
 ] as const;
 
 // Roles que llegan al planillero de Notas (y por ahí a /actividades-calendario).
@@ -97,6 +96,8 @@ export const ACTIVIDADES: Capacidad[] = [
       "asignar un taller",
       "crear una actividad para mi curso",
       "programar un quiz",
+      "programar un examen",
+      "poner un examen",
     ],
     pasos: [
       ...abrirNuevaActividad(),
@@ -153,7 +154,7 @@ export const ACTIVIDADES: Capacidad[] = [
       },
       {
         narracion:
-          "Si esa misma actividad ya estaba programada (igual descripción, fecha y salón) Normi te avisa; puedes cancelar o 'Programar de nuevo'. Al confirmar se notifica a estudiantes y acudientes. Listo.",
+          "Si esa misma actividad ya estaba programada (la misma descripción, fecha, salón y destinatarios) Normi te avisa; puedes cancelar o 'Programar de nuevo'. Al confirmar se notifica a estudiantes y acudientes. Listo.",
         accion: "explicar",
       },
     ],
@@ -247,13 +248,26 @@ export const ACTIVIDADES: Capacidad[] = [
     pasos: [
       ...abrirNuevaActividad(),
       {
-        narracion: "Elige asignatura, grado y marca el salón (según tu rol).",
+        narracion: "Si eres profesor, elige la asignatura.",
+        accion: "seleccionar",
+        ancla: "actividades.select_asignatura",
+        campo: "asignatura",
+        opcional: true,
+      },
+      {
+        narracion: "Elige el grado.",
+        accion: "seleccionar",
+        ancla: "actividades.select_grado",
+        campo: "grado",
+      },
+      {
+        narracion: "Marca el salón (o los salones).",
         accion: "click",
         ancla: "actividades.check_salon",
         campo: "salon",
       },
       {
-        narracion: "En '¿Para quién?' toca 'Estudiantes específicos'.",
+        narracion: "En la sección ¿Para quién?, toca 'Estudiantes específicos'.",
         accion: "click",
         ancla: "actividades.btn_destino_especifico",
       },
@@ -363,7 +377,7 @@ export const ACTIVIDADES: Capacidad[] = [
         campo: "fecha",
       },
       {
-        narracion: "A la derecha aparece la lista de actividades de ese día. Listo.",
+        narracion: "Al lado (o debajo, en el celular) aparece la lista de actividades de ese día. Listo.",
         accion: "explicar",
       },
     ],
@@ -401,7 +415,7 @@ export const ACTIVIDADES: Capacidad[] = [
         opcional: true,
       },
       {
-        narracion: "O escribe en 'Buscar por descripción' para encontrarla por texto.",
+        narracion: "O escribe parte de la descripción en el buscador para encontrarla por texto.",
         accion: "escribir",
         ancla: "actividades.input_buscar_actividad",
         campo: "descripcion",
@@ -517,9 +531,20 @@ export const ACTIVIDADES: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion: "Entra a 'Actividades Programadas' y abre el día de la actividad.",
+        narracion: "Vamos a Programar Actividad.",
         accion: "navegar",
         ruta: "/profesor/programar-actividad",
+      },
+      {
+        narracion: "Toca la tarjeta 'Actividades Programadas'.",
+        accion: "click",
+        ancla: "actividades.menu_programadas",
+      },
+      {
+        narracion: "En el calendario, toca el día de la actividad (naranja = con actividades).",
+        accion: "click",
+        ancla: "actividades.calendario_propio_dia",
+        campo: "fecha",
       },
       {
         narracion: "En la tarjeta, junto al archivo, toca 'Ver'.",
@@ -542,9 +567,20 @@ export const ACTIVIDADES: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion: "Entra a 'Actividades Programadas' y abre el día de la actividad.",
+        narracion: "Vamos a Programar Actividad.",
         accion: "navegar",
         ruta: "/profesor/programar-actividad",
+      },
+      {
+        narracion: "Toca la tarjeta 'Actividades Programadas'.",
+        accion: "click",
+        ancla: "actividades.menu_programadas",
+      },
+      {
+        narracion: "En el calendario, toca el día de la actividad (naranja = con actividades).",
+        accion: "click",
+        ancla: "actividades.calendario_propio_dia",
+        campo: "fecha",
       },
       {
         narracion: "En la tarjeta, junto al archivo, toca 'Descargar'.",
@@ -713,8 +749,7 @@ export const ACTIVIDADES: Capacidad[] = [
       {
         narracion:
           "Toca una tarjeta para ver el detalle completo (profesor, fecha, descripción y adjuntos). Listo.",
-        accion: "click",
-        ancla: "actividades.admin_tarjeta",
+        accion: "explicar",
       },
     ],
   },
@@ -734,9 +769,15 @@ export const ACTIVIDADES: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion: "Entra a Todas las Actividades y abre el día de la actividad.",
+        narracion: "Entramos a Todas las Actividades.",
         accion: "navegar",
         ruta: "/admin/todas-actividades",
+      },
+      {
+        narracion: "En el calendario toca el día de la actividad (naranja = con actividades).",
+        accion: "click",
+        ancla: "actividades.admin_calendario_dia",
+        campo: "fecha",
       },
       {
         narracion: "Toca el lápiz (Editar) de la tarjeta.",
@@ -771,9 +812,15 @@ export const ACTIVIDADES: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion: "Entra a Todas las Actividades y abre el día de la actividad.",
+        narracion: "Entramos a Todas las Actividades.",
         accion: "navegar",
         ruta: "/admin/todas-actividades",
+      },
+      {
+        narracion: "En el calendario toca el día de la actividad (naranja = con actividades).",
+        accion: "click",
+        ancla: "actividades.admin_calendario_dia",
+        campo: "fecha",
       },
       {
         narracion: "Toca el bote de basura (Eliminar) de la tarjeta.",

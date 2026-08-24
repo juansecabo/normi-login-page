@@ -92,7 +92,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Cambiar nombre, NIT, ciudad, DANE, dirección, teléfono, rector y resolución del colegio.",
     categoria: "Configurar Institución",
     roles: [...RECTOR_MAS],
-    ruta: `${RUTA}?vista=info`,
+    ruta: RUTA,
     endpoint: "PATCH /api/colegio/config (datos: admin, rector, coordinador; nombre: admin, rector)",
     sinonimos: [
       "cambiar el nombre del colegio",
@@ -104,7 +104,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     ],
     pasos: [
       ...abrirFicha("info", "Abrimos Información del colegio."),
-      { narracion: "En 'Nombre del colegio' escribe el nombre. Ojo: cambiarlo renombra el colegio en toda la plataforma (sigue siendo el mismo, no se pierde nada).", accion: "escribir", ancla: "configurar_institucion.info_nombre", campo: "nombre_colegio" },
+      { narracion: "Escribe el nombre en el campo Nombre del colegio. Ojo: cambiarlo renombra el colegio en toda la plataforma (sigue siendo el mismo, no se pierde nada).", accion: "escribir", ancla: "configurar_institucion.info_nombre", campo: "nombre_colegio" },
       { narracion: "Completa los demás datos que quieras: NIT, ciudad, código DANE, dirección, teléfono y nombre del rector(a).", accion: "escribir", ancla: "configurar_institucion.info_nit", campo: "datos_legales", opcional: true },
       { narracion: "Si aplica, escribe la resolución o licencia de funcionamiento completa.", accion: "escribir", ancla: "configurar_institucion.info_resolucion", campo: "resolucion", opcional: true },
       { narracion: "Toca 'Guardar datos'. Aparecerán en boletines, exámenes y documentos oficiales.", accion: "click", ancla: "configurar_institucion.info_guardar" },
@@ -118,7 +118,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Cargar el escudo (PNG sin fondo, también JPG o WEBP); se reescala y centra a 500x500.",
     categoria: "Configurar Institución",
     roles: [...RECTOR_MAS],
-    ruta: `${RUTA}?vista=escudo`,
+    ruta: RUTA,
     endpoint: "POST /api/colegio/logo (admin, rector)",
     sinonimos: [
       "subir el escudo",
@@ -129,7 +129,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     pasos: [
       ...abrirFicha("escudo", "Abrimos la ficha Escudo."),
       { narracion: "Toca 'Subir escudo' (o 'Cambiar escudo' si ya hay uno).", accion: "click", ancla: "configurar_institucion.escudo_boton" },
-      { narracion: "Elige el archivo del escudo. Lo ideal es un PNG sin fondo, cuadrado (500x500 px).", accion: "seleccionar", ancla: "configurar_institucion.escudo_input", campo: "archivo_imagen" },
+      { narracion: "Se abre el explorador de archivos: elige el escudo. Lo ideal es un PNG sin fondo, cuadrado (500x500 px).", accion: "explicar" },
       { narracion: "El escudo se sube y se muestra al instante. Listo.", accion: "explicar" },
     ],
   },
@@ -141,7 +141,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Definir nota mínima, máxima, aprobatoria y cantidad de decimales del colegio.",
     categoria: "Configurar Institución",
     roles: [...CONFIG_COLEGIO],
-    ruta: `${RUTA}?vista=escala`,
+    ruta: RUTA,
     endpoint: "PATCH /api/colegio/config (admin, rector, coordinador)",
     sinonimos: [
       "cambiar la escala de notas",
@@ -163,7 +163,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Nombrar un tramo de notas (ej. Sobresaliente de 4.0 a 4.5) con su color, usado en Estadísticas.",
     categoria: "Configurar Institución",
     roles: [...CONFIG_COLEGIO],
-    ruta: `${RUTA}?vista=escala`,
+    ruta: RUTA,
     endpoint: "PATCH /api/colegio/config (rangos_desempeno)",
     sinonimos: [
       "agregar un rango de desempeño",
@@ -174,9 +174,9 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     ],
     pasos: [
       ...abrirFicha("escala", "Abrimos Escala de calificación."),
-      { narracion: "Baja a 'Rangos de desempeño' y toca 'Agregar rango'.", accion: "click", ancla: "configurar_institucion.escala_agregar_rango" },
+      { narracion: "Toca 'Agregar rango', en la sección Rangos de desempeño.", accion: "click", ancla: "configurar_institucion.escala_agregar_rango" },
       { narracion: "Escribe el nombre del rango (ej. Sobresaliente).", accion: "escribir", ancla: "configurar_institucion.rango_nombre", campo: "nombre_rango" },
-      { narracion: "Pon el 'Desde' y el 'Hasta' del rango (dentro de la escala, sin cruzarse con otro; pueden tocarse en el borde).", accion: "escribir", ancla: "configurar_institucion.rango_desde", campo: "rango_min_max" },
+      { narracion: "Pon el Desde y el Hasta del rango (dentro de la escala, sin cruzarse con otro; pueden tocarse en el borde).", accion: "escribir", ancla: "configurar_institucion.rango_desde", campo: "rango_min_max" },
       { narracion: "Elige el color del rango.", accion: "seleccionar", ancla: "configurar_institucion.rango_color", campo: "color", opcional: true },
       { narracion: "Toca 'Guardar' abajo para guardar la escala con sus rangos.", accion: "click", ancla: "configurar_institucion.escala_guardar" },
     ],
@@ -189,7 +189,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Crear una jornada del colegio (Matutina, Vespertina, Nocturna o una personalizada).",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=estructura`,
+    ruta: RUTA,
     endpoint: "POST /api/institucion/jornadas (esCoordinadorOMas)",
     sinonimos: [
       "agregar una jornada",
@@ -210,9 +210,8 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Fijar la hora de entrada y de salida de una jornada (el aviso sale 5 minutos tras la salida).",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=estructura`,
+    ruta: RUTA,
     endpoint: "PATCH /api/institucion/jornadas/:id (esCoordinadorOMas)",
-    requisitos: [{ entidad: "fecha", descripcion: "Hora de entrada y de salida de la jornada." }],
     sinonimos: [
       "poner la hora de entrada de una jornada",
       "cambiar la hora de salida",
@@ -221,8 +220,9 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     ],
     pasos: [
       ...abrirFicha("estructura", "Abrimos Jornadas, grados y salones."),
-      { narracion: "En la fila de la jornada, en 'Entrada' elige la hora, los minutos y AM/PM.", accion: "seleccionar", ancla: "configurar_institucion.jornada_hora_entrada", campo: "hora_entrada" },
-      { narracion: "En 'Salida' elige igual la hora, los minutos y AM/PM. Se guarda solo.", accion: "seleccionar", ancla: "configurar_institucion.jornada_hora_salida", campo: "hora_salida" },
+      { narracion: "En la fila de la jornada, en los selectores de Entrada elige la hora, los minutos y AM/PM.", accion: "click", ancla: "configurar_institucion.jornada_hora_entrada", campo: "hora_entrada" },
+      { narracion: "En los de Salida elige igual la hora, los minutos y AM/PM.", accion: "click", ancla: "configurar_institucion.jornada_hora_salida", campo: "hora_salida" },
+      { narracion: "Listo: cada cambio se guarda solo.", accion: "explicar" },
     ],
   },
   {
@@ -231,7 +231,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Quitar una jornada del colegio.",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=estructura`,
+    ruta: RUTA,
     endpoint: "DELETE /api/institucion/jornadas/:id (esCoordinadorOMas)",
     sinonimos: ["eliminar una jornada", "borrar una jornada", "quitar la jornada nocturna"],
     pasos: [
@@ -247,7 +247,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Crear un nivel que agrupa grados (Preescolar, Primaria, Secundaria, Media o personalizado).",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=estructura`,
+    ruta: RUTA,
     endpoint: "POST /api/institucion/niveles (esCoordinadorOMas)",
     sinonimos: [
       "agregar un nivel",
@@ -267,7 +267,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Cambiar el nombre de un nivel (se propaga a grados, estudiantes, coordinadores y comunicados).",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=estructura`,
+    ruta: RUTA,
     endpoint: "PATCH /api/institucion/niveles/:id (esCoordinadorOMas)",
     sinonimos: ["renombrar un nivel", "cambiar el nombre de un nivel", "corregir el nombre del nivel"],
     pasos: [
@@ -283,7 +283,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Arrastrar los niveles por el asa para cambiar su orden.",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=estructura`,
+    ruta: RUTA,
     endpoint: "PATCH /api/institucion/niveles/:id (orden)",
     sinonimos: ["reordenar los niveles", "cambiar el orden de los niveles", "acomodar los niveles"],
     pasos: [
@@ -297,7 +297,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Quitar un nivel del colegio.",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=estructura`,
+    ruta: RUTA,
     endpoint: "DELETE /api/institucion/niveles/:id (esCoordinadorOMas)",
     sinonimos: ["eliminar un nivel", "borrar un nivel", "quitar el nivel media"],
     pasos: [
@@ -313,7 +313,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Marcar los grados que ofrece el colegio (alta rápida por toque o un grado con nombre propio).",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=estructura`,
+    ruta: RUTA,
     endpoint: "POST /api/institucion/grados (esCoordinadorOMas)",
     sinonimos: [
       "agregar grados",
@@ -334,7 +334,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Elegir a qué nivel pertenece cada grado declarado.",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=estructura`,
+    ruta: RUTA,
     endpoint: "PATCH /api/institucion/grados/:id (nivel)",
     requisitos: [{ entidad: "nivel", descripcion: "Nivel al que pertenece el grado." }],
     sinonimos: [
@@ -353,7 +353,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Cambiar el nombre de un grado (se propaga a estudiantes, notas, actividades, asistencia y asignaciones).",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=estructura`,
+    ruta: RUTA,
     endpoint: "PATCH /api/institucion/grados/:id (grado)",
     sinonimos: ["renombrar un grado", "cambiar el nombre de un grado", "corregir el nombre del curso"],
     pasos: [
@@ -369,12 +369,12 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Arrastrar los grados por el asa para fijar su orden.",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=estructura`,
+    ruta: RUTA,
     endpoint: "PATCH /api/institucion/grados/:id (orden)",
     sinonimos: ["reordenar los grados", "cambiar el orden de los grados", "acomodar los cursos"],
     pasos: [
       ...abrirFicha("estructura", "Abrimos Jornadas, grados y salones."),
-      { narracion: "En 'Grados del colegio', toma la fila por el asa (icono de agarre) y arrástrala a su nueva posición. Se guarda solo.", accion: "click", ancla: "configurar_institucion.grado_asa" },
+      { narracion: "En Grados del colegio, toma la fila por el asa (icono de agarre) y arrástrala a su nueva posición. Se guarda solo.", accion: "click", ancla: "configurar_institucion.grado_asa" },
     ],
   },
   {
@@ -383,7 +383,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Quitar un grado del colegio (si tiene salones, hay que quitarlos primero).",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=estructura`,
+    ruta: RUTA,
     endpoint: "DELETE /api/institucion/grados/:id (esCoordinadorOMas)",
     sinonimos: ["eliminar un grado", "borrar un grado", "quitar un curso"],
     pasos: [
@@ -399,7 +399,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Con la asignación rápida, crear N salones (con jornada) en varios grados de un golpe.",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=estructura`,
+    ruta: RUTA,
     endpoint: "POST /api/institucion/salones/bulk (esCoordinadorOMas)",
     sinonimos: [
       "crear salones en varios grados",
@@ -421,7 +421,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Añadir un salón más a un grado concreto (hasta 10 por grado).",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=estructura`,
+    ruta: RUTA,
     endpoint: "POST /api/institucion/salones (esCoordinadorOMas)",
     requisitos: [{ entidad: "grado", descripcion: "Grado al que se agrega el salón." }],
     sinonimos: ["agregar un salón", "añadir otro salón a un grado", "crear un salón nuevo"],
@@ -436,7 +436,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Elegir la jornada de un salón concreto.",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=estructura`,
+    ruta: RUTA,
     endpoint: "PATCH /api/institucion/salones/:id (jornada_id)",
     sinonimos: ["poner la jornada de un salón", "asignar jornada a un salón", "cambiar la jornada de un curso"],
     pasos: [
@@ -450,7 +450,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Quitar un salón; si tiene estudiantes matriculados, sale un aviso antes de borrarlo (no borra estudiantes ni notas).",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=estructura`,
+    ruta: RUTA,
     endpoint: "DELETE /api/institucion/salones/:id (esCoordinadorOMas)",
     sinonimos: ["eliminar un salón", "borrar un salón", "quitar un curso"],
     pasos: [
@@ -465,7 +465,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Traer grados y salones desde los estudiantes ya cargados, con un clic.",
     categoria: "Configurar Institución",
     roles: [...RECTOR_MAS],
-    ruta: `${RUTA}?vista=estructura`,
+    ruta: RUTA,
     endpoint: "POST /api/institucion/importar-estructura (esRectorOMas)",
     sinonimos: [
       "importar la estructura",
@@ -486,7 +486,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Marcar una asignatura de la lista o escribir una nueva para el catálogo del colegio.",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=asignaturas`,
+    ruta: RUTA,
     endpoint: "POST /api/institucion/asignaturas (esCoordinadorOMas)",
     sinonimos: [
       "agregar una asignatura",
@@ -497,8 +497,9 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     ],
     pasos: [
       ...abrirFicha("asignaturas", "Abrimos Asignaturas."),
-      { narracion: "En 'Asignaturas del colegio', marca la casilla de cada asignatura que ofrece el colegio.", accion: "click", ancla: "configurar_institucion.asignatura_check", campo: "asignatura" },
-      { narracion: "Si falta alguna, escríbela en el campo de abajo y toca 'Agregar'.", accion: "escribir", ancla: "configurar_institucion.asignatura_nueva", campo: "nombre_asignatura", opcional: true },
+      { narracion: "En la tarjeta Asignaturas del colegio, marca la casilla de cada asignatura que ofrece el colegio.", accion: "click", ancla: "configurar_institucion.asignatura_check", campo: "asignatura" },
+      { narracion: "Si falta alguna, escríbela en el campo de abajo.", accion: "escribir", ancla: "configurar_institucion.asignatura_nueva", campo: "nombre_asignatura", opcional: true },
+      { narracion: "Y toca 'Agregar'.", accion: "click", ancla: "configurar_institucion.asignatura_agregar", opcional: true },
     ],
   },
   {
@@ -507,7 +508,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Desmarcar una asignatura; si no tiene historial se elimina, si tiene notas se desactiva (historial intacto).",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=asignaturas`,
+    ruta: RUTA,
     endpoint: "DELETE /api/institucion/asignaturas/:id (o PATCH activa=false si está en uso)",
     sinonimos: [
       "quitar una asignatura",
@@ -526,7 +527,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Cambiar el nombre de una asignatura (se propaga a notas, actividades, asistencia y carga académica).",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=asignaturas`,
+    ruta: RUTA,
     endpoint: "PATCH /api/institucion/asignaturas/:id (nombre)",
     sinonimos: ["renombrar una asignatura", "cambiar el nombre de una materia", "corregir el nombre de la asignatura"],
     pasos: [
@@ -542,7 +543,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Marcar qué asignaturas se ven en un grado (aplica a todos sus salones).",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=asignaturas`,
+    ruta: RUTA,
     endpoint: "POST/DELETE /api/institucion/plan-estudios (esCoordinadorOMas)",
     requisitos: [
       { entidad: "grado", descripcion: "Grado del plan de estudios." },
@@ -556,7 +557,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     ],
     pasos: [
       ...abrirFicha("asignaturas", "Abrimos Asignaturas."),
-      { narracion: "Baja a 'Plan de estudios por grado' y elige el grado tocando su pastilla.", accion: "click", ancla: "configurar_institucion.plan_grado", campo: "grado" },
+      { narracion: "Baja a Plan de estudios por grado y elige el grado tocando su pastilla.", accion: "click", ancla: "configurar_institucion.plan_grado", campo: "grado" },
       { narracion: "Marca (o desmarca) la casilla de cada asignatura que se ve en ese grado. Puedes buscarla en el campo de búsqueda.", accion: "click", ancla: "configurar_institucion.plan_asignatura_check", campo: "asignatura" },
     ],
   },
@@ -566,7 +567,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Poner las horas semanales de una asignatura en un grado.",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=asignaturas`,
+    ruta: RUTA,
     endpoint: "POST /api/institucion/plan-estudios (intensidad_horaria)",
     sinonimos: [
       "poner las horas de una asignatura",
@@ -576,7 +577,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     ],
     pasos: [
       ...abrirFicha("asignaturas", "Abrimos Asignaturas."),
-      { narracion: "En 'Plan de estudios por grado', elige el grado.", accion: "click", ancla: "configurar_institucion.plan_grado", campo: "grado" },
+      { narracion: "En Plan de estudios por grado, elige el grado.", accion: "click", ancla: "configurar_institucion.plan_grado", campo: "grado" },
       { narracion: "En la fila de la asignatura marcada, escribe las horas semanales (1 a 40) en la casilla 'h/sem'. Se guarda al salir de la casilla.", accion: "escribir", ancla: "configurar_institucion.plan_horas", campo: "intensidad_horaria" },
     ],
   },
@@ -588,7 +589,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Crear un área que agrupa asignaturas con pesos (ej. Ciencias Sociales) para el boletín.",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=asignaturas`,
+    ruta: RUTA,
     endpoint: "POST /api/institucion/areas (esCoordinadorOMas)",
     sinonimos: [
       "crear un área",
@@ -608,7 +609,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Elegir qué asignaturas componen un área y con qué peso (deben sumar 100%).",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=asignaturas`,
+    ruta: RUTA,
     endpoint: "PUT /api/institucion/areas/:id/asignaturas (esCoordinadorOMas)",
     requisitos: [{ entidad: "asignatura", descripcion: "Asignaturas que componen el área." }],
     sinonimos: [
@@ -630,13 +631,14 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Cambiar el nombre de un área del boletín.",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=asignaturas`,
+    ruta: RUTA,
     endpoint: "PATCH /api/institucion/areas/:id (nombre)",
     sinonimos: ["renombrar un área", "cambiar el nombre de un área"],
     pasos: [
       ...abrirFicha("asignaturas", "Abrimos Asignaturas."),
-      { narracion: "En la tarjeta 'Áreas', en el área toca el lápiz.", accion: "click", ancla: "configurar_institucion.area_renombrar" },
-      { narracion: "Escribe el nombre nuevo y toca 'Guardar'.", accion: "escribir", ancla: "configurar_institucion.area_renombrar_input", campo: "nombre_area" },
+      { narracion: "En la tarjeta de áreas, toca el lápiz de 'Renombrar' del área.", accion: "click", ancla: "configurar_institucion.area_renombrar" },
+      { narracion: "Escribe el nombre nuevo.", accion: "escribir", ancla: "configurar_institucion.area_renombrar_input", campo: "nombre_area" },
+      { narracion: "Y toca 'Guardar'.", accion: "click", ancla: "configurar_institucion.area_renombrar_guardar" },
     ],
   },
   {
@@ -645,12 +647,12 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Quitar un área (sus asignaturas no se borran, vuelven a imprimirse sueltas).",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=asignaturas`,
+    ruta: RUTA,
     endpoint: "DELETE /api/institucion/areas/:id (esCoordinadorOMas)",
     sinonimos: ["eliminar un área", "borrar un área", "quitar un área del boletín"],
     pasos: [
       ...abrirFicha("asignaturas", "Abrimos Asignaturas."),
-      { narracion: "En la tarjeta 'Áreas', en el área toca la papelera.", accion: "click", ancla: "configurar_institucion.area_eliminar" },
+      { narracion: "En la tarjeta de áreas, toca la papelera de 'Eliminar' del área.", accion: "click", ancla: "configurar_institucion.area_eliminar" },
       { narracion: "Confirma con 'Eliminar'.", accion: "click", ancla: "configurar_institucion.area_eliminar_confirmar" },
     ],
   },
@@ -660,7 +662,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Subir o bajar áreas y asignaturas sueltas para fijar el orden del boletín.",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=asignaturas`,
+    ruta: RUTA,
     endpoint: "PUT /api/institucion/boletin-orden (esCoordinadorOMas)",
     sinonimos: [
       "ordenar el boletín",
@@ -670,7 +672,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     ],
     pasos: [
       ...abrirFicha("asignaturas", "Abrimos Asignaturas."),
-      { narracion: "Baja a 'Orden del boletín'. Con las flechas arriba y abajo mueve cada área o asignatura a su lugar. Se guarda al instante.", accion: "click", ancla: "configurar_institucion.boletin_flecha" },
+      { narracion: "Baja a la sección Orden del boletín. Con las flechas de 'Subir' y Bajar mueve cada área o asignatura a su lugar. Se guarda al instante.", accion: "click", ancla: "configurar_institucion.boletin_flecha" },
     ],
   },
 
@@ -681,7 +683,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Pintar en el calendario las fechas de un periodo (1 a 4) arrastrando del día inicial al final.",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=calendario`,
+    ruta: RUTA,
     endpoint: "PUT /api/institucion/calendario/periodos (esCoordinadorOMas)",
     requisitos: [{ entidad: "fecha", descripcion: "Fecha de inicio y fin del periodo." }],
     sinonimos: [
@@ -702,7 +704,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Pintar en el calendario un día o rango sin clases y ponerle motivo (los avisos no se envían esos días).",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=calendario`,
+    ruta: RUTA,
     endpoint: "POST /api/institucion/calendario/dias (esCoordinadorOMas)",
     requisitos: [{ entidad: "fecha", descripcion: "Día o rango sin clases." }],
     sinonimos: [
@@ -716,7 +718,8 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
       ...abrirFicha("calendario", "Abrimos el Calendario."),
       { narracion: "En la barra de herramientas, toca 'Día sin clases'.", accion: "click", ancla: "configurar_institucion.cal_herramienta_sinclases" },
       { narracion: "Haz clic en el día (o arrastra para un rango) en el calendario.", accion: "click", ancla: "configurar_institucion.cal_dia", campo: "rango_fechas" },
-      { narracion: "Escribe el motivo (semana de receso, jornada pedagógica...) y toca 'Marcar sin clases'.", accion: "escribir", ancla: "configurar_institucion.cal_dia_motivo", campo: "motivo" },
+      { narracion: "Escribe el motivo (semana de receso, jornada pedagógica...).", accion: "escribir", ancla: "configurar_institucion.cal_dia_motivo", campo: "motivo" },
+      { narracion: "Y toca 'Marcar sin clases'.", accion: "click", ancla: "configurar_institucion.cal_dia_confirmar" },
     ],
   },
   {
@@ -725,7 +728,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Marcar un día CON clases donde además pasa algo (entrega de boletines, día deportivo, izada de bandera).",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=calendario`,
+    ruta: RUTA,
     endpoint: "POST /api/institucion/calendario/eventos (esCoordinadorOMas)",
     requisitos: [{ entidad: "fecha", descripcion: "Día o rango del evento." }],
     sinonimos: [
@@ -739,7 +742,8 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
       ...abrirFicha("calendario", "Abrimos el Calendario."),
       { narracion: "En la barra de herramientas, toca 'Evento'.", accion: "click", ancla: "configurar_institucion.cal_herramienta_evento" },
       { narracion: "Haz clic en el día (o arrastra para un rango) en el calendario.", accion: "click", ancla: "configurar_institucion.cal_dia", campo: "rango_fechas" },
-      { narracion: "Escribe el nombre del evento y toca 'Crear evento'.", accion: "escribir", ancla: "configurar_institucion.cal_evento_nombre", campo: "nombre_evento" },
+      { narracion: "Escribe el nombre del evento.", accion: "escribir", ancla: "configurar_institucion.cal_evento_nombre", campo: "nombre_evento" },
+      { narracion: "Y toca 'Crear evento'.", accion: "click", ancla: "configurar_institucion.cal_evento_confirmar" },
     ],
   },
   {
@@ -748,7 +752,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Sin herramienta activa, tocar un día pintado para ver su detalle y editar su motivo o nombre.",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=calendario`,
+    ruta: RUTA,
     endpoint: "PATCH /api/institucion/calendario/dias|eventos/:id (esCoordinadorOMas)",
     sinonimos: [
       "editar un día sin clases",
@@ -759,7 +763,8 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     pasos: [
       ...abrirFicha("calendario", "Abrimos el Calendario."),
       { narracion: "Sin herramienta seleccionada (si hay una activa, tócala de nuevo para soltarla), haz clic en el día pintado.", accion: "click", ancla: "configurar_institucion.cal_dia" },
-      { narracion: "En el detalle, ajusta el motivo (día sin clases) o el nombre (evento) y toca 'Guardar'.", accion: "escribir", ancla: "configurar_institucion.cal_detalle_texto", campo: "motivo_o_nombre" },
+      { narracion: "En el detalle, ajusta el motivo (día sin clases) o el nombre (evento).", accion: "escribir", ancla: "configurar_institucion.cal_detalle_texto", campo: "motivo_o_nombre" },
+      { narracion: "Y toca 'Guardar'.", accion: "click", ancla: "configurar_institucion.cal_detalle_guardar" },
     ],
   },
   {
@@ -768,7 +773,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Con la goma, hacer clic sobre un periodo, día sin clases o evento para quitarlo.",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
-    ruta: `${RUTA}?vista=calendario`,
+    ruta: RUTA,
     endpoint: "DELETE /api/institucion/calendario/dias|eventos/:id o PUT periodos (esCoordinadorOMas)",
     sinonimos: [
       "quitar un día sin clases",
@@ -791,7 +796,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Cargar el Manual de Convivencia en PDF (máx 20 MB); aparece en el tablero de todos.",
     categoria: "Configurar Institución",
     roles: [...RECTOR_MAS],
-    ruta: `${RUTA}?vista=manual`,
+    ruta: RUTA,
     endpoint: "POST /api/institucion/manual (esRectorOMas)",
     sinonimos: [
       "subir el manual de convivencia",
@@ -802,7 +807,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     pasos: [
       ...abrirFicha("manual", "Abrimos Manual de Convivencia."),
       { narracion: "Toca 'Subir PDF' (o 'Cambiar PDF' si ya hay uno).", accion: "click", ancla: "configurar_institucion.manual_subir" },
-      { narracion: "Elige el archivo PDF del manual (máximo 20 MB).", accion: "seleccionar", ancla: "configurar_institucion.manual_input", campo: "archivo_pdf" },
+      { narracion: "Se abre el explorador de archivos: elige el PDF del manual (máximo 20 MB).", accion: "explicar" },
     ],
   },
   {
@@ -811,7 +816,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Eliminar el PDF del Manual de Convivencia cargado.",
     categoria: "Configurar Institución",
     roles: [...RECTOR_MAS],
-    ruta: `${RUTA}?vista=manual`,
+    ruta: RUTA,
     endpoint: "DELETE /api/institucion/manual (esRectorOMas)",
     sinonimos: ["quitar el manual de convivencia", "borrar el PDF del manual", "eliminar el manual"],
     pasos: [
@@ -827,7 +832,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Registrar un administrador, rector, secretaría, coordinador, administrativo, orientador, profesor o portero (autocompleta por cédula).",
     categoria: "Configurar Institución",
     roles: [...GESTIONAN_STAFF],
-    ruta: `${RUTA}?vista=personas`,
+    ruta: RUTA,
     endpoint: "POST /api/institucion/interno (puedeGestionarStaff; el cargo objetivo respeta la jerarquía)",
     requisitos: [{ entidad: "profesor", descripcion: "Cédula y datos de la persona a registrar." }],
     sinonimos: [
@@ -843,7 +848,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
       { narracion: "Escribe la cédula. Si ya está registrada, los datos se autocompletan solos.", accion: "escribir", ancla: "configurar_institucion.persona_cedula", campo: "cedula" },
       { narracion: "Completa apellidos, nombres, teléfono, género (obligatorio) y fecha de nacimiento (opcional).", accion: "escribir", ancla: "configurar_institucion.persona_nombres", campo: "datos_persona" },
       { narracion: "Si es coordinador, marca los niveles que coordina; si es profesor, marca si es director de grupo (grado y salón) y su carga académica.", accion: "click", ancla: "configurar_institucion.persona_extras", campo: "extras_cargo", opcional: true },
-      { narracion: "Toca 'Agregar'. Entra por primera vez con su cédula como contraseña.", accion: "click", ancla: "configurar_institucion.persona_guardar" },
+      { narracion: "Toca el botón Agregar de abajo del pop-up. La persona entra por primera vez con su cédula como contraseña.", accion: "click", ancla: "configurar_institucion.persona_guardar" },
     ],
   },
   {
@@ -852,7 +857,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Corregir datos, niveles que coordina o la dirección de grupo de un integrante del staff.",
     categoria: "Configurar Institución",
     roles: [...GESTIONAN_STAFF],
-    ruta: `${RUTA}?vista=personas`,
+    ruta: RUTA,
     endpoint: "PATCH /api/institucion/interno (puedeCrearCargo según el cargo objetivo)",
     sinonimos: [
       "editar un profesor",
@@ -873,7 +878,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Retirar un cargo del staff; si tiene otros los conserva, si era el único sale del personal del colegio.",
     categoria: "Configurar Institución",
     roles: [...GESTIONAN_STAFF],
-    ruta: `${RUTA}?vista=personas`,
+    ruta: RUTA,
     endpoint: "DELETE /api/institucion/interno (puedeCrearCargo según el cargo objetivo)",
     sinonimos: [
       "quitar el cargo a alguien",
@@ -893,7 +898,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Cambiar la cédula de una persona; se migra en todo el sistema (notas, asistencia, vínculos, comunicados).",
     categoria: "Configurar Institución",
     roles: ["admin"],
-    ruta: `${RUTA}?vista=personas`,
+    ruta: RUTA,
     endpoint: "POST /auth/cambiar-cedula (RPC cambiar_cedula; solo Administrador)",
     sinonimos: [
       "corregir la cédula de alguien",
@@ -915,7 +920,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Dentro del profesor, añadir asignaciones (asignaturas + grados + salones) sin ir al Panel de Control.",
     categoria: "Configurar Institución",
     roles: [...CARGA_PROF],
-    ruta: `${RUTA}?vista=personas`,
+    ruta: RUTA,
     endpoint: "dbProxy Asignación Profesores (insert/update/delete: admin, rector, coordinador)",
     requisitos: [
       { entidad: "asignatura", descripcion: "Asignatura(s) que dictará." },
@@ -942,7 +947,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Desde Personas, abrir Estudiantes o Acudientes; ahí se incrusta el Panel de Control (mismo CRUD y misma data).",
     categoria: "Configurar Institución",
     roles: [...CRUD_EST_ACU],
-    ruta: `${RUTA}?vista=personas`,
+    ruta: RUTA,
     endpoint: "PanelControl embebido (dbProxy Estudiantes/Acudientes/Usuarios)",
     sinonimos: [
       "ver los estudiantes",
@@ -963,7 +968,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Ver el aula de forma visual: tablero, director(a) de grupo y un pupitre por estudiante.",
     categoria: "Configurar Institución",
     roles: [...CRUD_EST_ACU],
-    ruta: `${RUTA}?vista=armar-salon`,
+    ruta: RUTA,
     endpoint: "GET /api/institucion/estructura + dbProxy (Estudiantes/Internos/Usuarios)",
     requisitos: [
       { entidad: "grado", descripcion: "Grado del salón a armar." },
@@ -987,7 +992,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Desde Armar salón, elegir el profesor que dirige el grupo (solo staff, no el propio profesor).",
     categoria: "Configurar Institución",
     roles: [...GESTIONAN_STAFF],
-    ruta: `${RUTA}?vista=armar-salon`,
+    ruta: RUTA,
     endpoint: "PATCH /api/institucion/interno (direccion_de_grupo; puedeCrearCargo Profesor)",
     requisitos: [{ entidad: "profesor", descripcion: "Profesor que será director de grupo." }],
     sinonimos: [
@@ -1010,7 +1015,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Desde el pupitre '+', registrar un estudiante nuevo con todos sus datos en ese grado y salón.",
     categoria: "Configurar Institución",
     roles: [...CRUD_EST_ACU],
-    ruta: `${RUTA}?vista=armar-salon`,
+    ruta: RUTA,
     endpoint: "dbProxy Usuarios + Estudiantes (CRUD estudiantes; profesor solo su grupo)",
     requisitos: [{ entidad: "estudiante", descripcion: "Cédula y datos del estudiante." }],
     sinonimos: [
@@ -1033,7 +1038,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Editar los datos de un estudiante y, si no eres su director de grupo, moverlo a otro grado o salón.",
     categoria: "Configurar Institución",
     roles: [...CRUD_EST_ACU],
-    ruta: `${RUTA}?vista=armar-salon`,
+    ruta: RUTA,
     endpoint: "dbProxy Usuarios + Estudiantes (update)",
     sinonimos: [
       "editar un estudiante",
@@ -1054,7 +1059,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Retirar la matrícula de un estudiante (su identidad global se conserva).",
     categoria: "Configurar Institución",
     roles: [...CRUD_EST_ACU],
-    ruta: `${RUTA}?vista=armar-salon`,
+    ruta: RUTA,
     endpoint: "dbProxy Estudiantes (delete)",
     sinonimos: [
       "eliminar un estudiante",
@@ -1074,7 +1079,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Dentro de la edición de un estudiante, vincular o editar sus acudientes (máximo 3).",
     categoria: "Configurar Institución",
     roles: [...CRUD_EST_ACU],
-    ruta: `${RUTA}?vista=armar-salon`,
+    ruta: RUTA,
     endpoint: "dbProxy Usuarios + Acudientes (insert/update)",
     requisitos: [{ entidad: "acudiente", descripcion: "Cédula y datos del acudiente." }],
     sinonimos: [
@@ -1086,7 +1091,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     pasos: [
       ...abrirFicha("armar-salon", "Abrimos Armar salón."),
       { narracion: "Elige el grado y el salón, y en el pupitre del estudiante toca el lápiz para editarlo.", accion: "click", ancla: "configurar_institucion.armar_est_editar" },
-      { narracion: "Baja a 'Acudientes' y toca 'Agregar acudiente' (o el lápiz de uno existente).", accion: "click", ancla: "configurar_institucion.armar_acu_agregar" },
+      { narracion: "Baja a Acudientes y toca 'Agregar acudiente' (o el lápiz de uno existente).", accion: "click", ancla: "configurar_institucion.armar_acu_agregar" },
       { narracion: "Escribe la cédula (autocompleta si ya existe) y completa apellidos, nombres, teléfono y género.", accion: "escribir", ancla: "configurar_institucion.armar_acu_cedula", campo: "datos_acudiente" },
       { narracion: "Toca 'Agregar acudiente' (o 'Guardar' si lo estás editando).", accion: "click", ancla: "configurar_institucion.armar_acu_guardar" },
     ],
@@ -1099,7 +1104,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Fijar el número por el que Normi responde y envía en el colegio (id de WABA + token, se valida contra Meta).",
     categoria: "Configurar Institución",
     roles: ["admin"],
-    ruta: `${RUTA}?vista=whatsapp`,
+    ruta: RUTA,
     endpoint: "GET/POST /api/institucion/whatsapp (SuperAdmin, Administrador)",
     sinonimos: [
       "configurar el WhatsApp del agente",
@@ -1111,7 +1116,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
       ...abrirFicha("whatsapp", "Abrimos Número de WhatsApp (solo Administrador)."),
       { narracion: "Pega el id de la WABA y el token de Meta.", accion: "escribir", ancla: "configurar_institucion.wa_waba_id", campo: "waba_id_token" },
       { narracion: "Toca 'Buscar números'.", accion: "click", ancla: "configurar_institucion.wa_buscar" },
-      { narracion: "Elige el número de este colegio en la lista.", accion: "seleccionar", ancla: "configurar_institucion.wa_numero", campo: "numero" },
+      { narracion: "Elige el número de este colegio en la lista.", accion: "click", ancla: "configurar_institucion.wa_numero", campo: "numero" },
       { narracion: "Toca 'Guardar número'. Se valida contra Meta y el Agente queda respondiendo por ese WhatsApp.", accion: "click", ancla: "configurar_institucion.wa_guardar" },
     ],
   },
@@ -1121,7 +1126,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Fijar el correo y la contraseña para entrar a chat.notasnormi.com y ver los chats del colegio.",
     categoria: "Configurar Institución",
     roles: ["admin"],
-    ruta: `${RUTA}?vista=chatwoot`,
+    ruta: RUTA,
     endpoint: "GET/POST /api/institucion/chatwoot (SuperAdmin, Administrador)",
     sinonimos: [
       "configurar la bandeja de conversaciones",

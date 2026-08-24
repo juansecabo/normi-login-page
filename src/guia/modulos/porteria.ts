@@ -33,6 +33,7 @@ export const PORTERIA: Capacidad[] = [
       "ir a portería",
       "entrar a portería",
       "llegadas tarde",
+      "retardos",
       "módulo de portería",
     ],
     pasos: [
@@ -66,6 +67,7 @@ export const PORTERIA: Capacidad[] = [
       "avisar que un estudiante llegó tarde",
       "notificar al acudiente por llegada tarde",
       "marcar tardanza",
+      "reportar un retardo",
       "registrar que llegaron tarde",
       "enviar reporte de llegada tarde",
     ],
@@ -77,8 +79,8 @@ export const PORTERIA: Capacidad[] = [
       },
       {
         narracion: "Abrimos la tarjeta de reportar llegada tarde.",
-        accion: "click",
-        ancla: "porteria.card_reportar",
+        accion: "navegar",
+        ruta: "/porteria/llegada-tarde",
       },
       {
         narracion:
@@ -105,14 +107,14 @@ export const PORTERIA: Capacidad[] = [
       },
       {
         narracion:
-          "Marca la casilla de cada estudiante que llegó tarde. Van apareciendo en el panel de seleccionados.",
+          "Marca la casilla de cada estudiante que llegó tarde. Verás el conteo de seleccionados (en pantallas grandes, en el panel de la derecha).",
         accion: "click",
         ancla: "porteria.item_estudiante",
         campo: "estudiante",
       },
       {
         narracion:
-          "Cuando estén todos, envía el reporte. Se notificará por WhatsApp a los acudientes con la hora de entrada de este momento.",
+          "Cuando estén todos, toca 'Enviar reporte'. Se notificará por WhatsApp a los acudientes con la hora de entrada de este momento.",
         accion: "click",
         ancla: "porteria.enviar_reporte",
       },
@@ -141,15 +143,20 @@ export const PORTERIA: Capacidad[] = [
     ],
     pasos: [
       {
+        narracion: "Vamos a la pantalla de reportar llegada tarde.",
+        accion: "navegar",
+        ruta: "/porteria/llegada-tarde",
+      },
+      {
         narracion:
-          "En el panel de seleccionados, toca la equis del estudiante que quieres sacar.",
+          "En el panel de seleccionados, toca la equis del estudiante que quieres sacar. Si no ves el panel (en el celular no aparece), destilda la casilla del estudiante en la lista.",
         accion: "click",
         ancla: "porteria.quitar_seleccionado",
         campo: "estudiante",
       },
       {
         narracion:
-          "Si prefieres empezar de cero, usa Quitar todos para vaciar la selección completa.",
+          "Si prefieres empezar de cero, usa 'Quitar todos' para vaciar la selección completa.",
         accion: "click",
         ancla: "porteria.quitar_todos",
         opcional: true,
@@ -183,13 +190,13 @@ export const PORTERIA: Capacidad[] = [
       },
       {
         narracion: "Abrimos la tarjeta de registro de llegada tarde.",
-        accion: "click",
-        ancla: "porteria.card_registro",
+        accion: "navegar",
+        ruta: "/porteria/registro",
       },
       {
-        narracion: "Nos quedamos en la pestaña Por día.",
-        accion: "click",
-        ancla: "porteria.tab_por_dia",
+        narracion:
+          "Nos quedamos en la pestaña 'Por día', que es la que se abre por defecto.",
+        accion: "explicar",
       },
       {
         narracion:
@@ -200,7 +207,7 @@ export const PORTERIA: Capacidad[] = [
       },
       {
         narracion:
-          "A la derecha aparecen los estudiantes reportados ese día, con la hora de entrada y cuántos acudientes se notificaron.",
+          "Junto al calendario aparecen los estudiantes reportados ese día, con la hora de entrada y cuántos acudientes se notificaron.",
         accion: "esperar",
         ancla: "porteria.lista_dia",
       },
@@ -223,6 +230,7 @@ export const PORTERIA: Capacidad[] = [
       "quién llega tarde más seguido",
       "resumen de llegadas tarde por estudiante",
       "reincidentes de llegada tarde",
+      "cuántos retardos tiene un estudiante",
       "historial de tardanzas de un estudiante",
     ],
     pasos: [
@@ -233,11 +241,11 @@ export const PORTERIA: Capacidad[] = [
       },
       {
         narracion: "Abrimos la tarjeta de registro de llegada tarde.",
-        accion: "click",
-        ancla: "porteria.card_registro",
+        accion: "navegar",
+        ruta: "/porteria/registro",
       },
       {
-        narracion: "Cambiamos a la pestaña Por estudiante.",
+        narracion: "Cambiamos a la pestaña 'Por estudiante'.",
         accion: "click",
         ancla: "porteria.tab_por_estudiante",
       },
@@ -288,7 +296,12 @@ export const PORTERIA: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion: "Entramos al registro de llegada tarde.",
+        narracion: "Entramos al hub de Portería.",
+        accion: "navegar",
+        ruta: "/porteria",
+      },
+      {
+        narracion: "Abrimos la tarjeta de registro de llegada tarde.",
         accion: "navegar",
         ruta: "/porteria/registro",
       },
@@ -311,7 +324,7 @@ export const PORTERIA: Capacidad[] = [
         ancla: "porteria.dialog_corregir",
       },
       {
-        narracion: "Confirma con Eliminar del registro.",
+        narracion: "Confirma con 'Eliminar del registro'.",
         accion: "click",
         ancla: "porteria.confirmar_eliminar",
       },
