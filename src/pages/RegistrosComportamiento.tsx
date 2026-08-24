@@ -661,6 +661,7 @@ const RegistrosComportamiento = () => {
     const { error } = await supabase.from("Registros_Comportamiento").delete().eq("id", eliminarId);
     if (error) {
       console.error("Delete registro:", error);
+      window.alert("No se pudo eliminar el registro. Inténtalo de nuevo; si persiste, avisa al administrador.");
     } else {
       setExpandedIds(prev => { const n = new Set(prev); n.delete(eliminarId); return n; });
       setEliminarId(null);

@@ -94,7 +94,9 @@ export function capacidadesDe(
 ): Capacidad[] {
   return catalogo.filter((c) => {
     if (!c.roles.includes(rol)) return false;
-    if (c.requiereDirectorGrupo && !esDirectorGrupo) return false;
+    // El flag de director de grupo solo restringe al PROFESOR (los directivos
+    // de la lista de roles entran por su propio derecho).
+    if (c.requiereDirectorGrupo && rol === "profesor" && !esDirectorGrupo) return false;
     if (c.gate && c.gate !== "todos") {
       if (colegioId !== COLEGIO_IDS[c.gate]) return false;
     }

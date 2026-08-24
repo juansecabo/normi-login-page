@@ -69,7 +69,8 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     titulo: "Abrir Configurar Institución",
     descripcion: "Entrar al panel donde se define y mantiene toda la estructura del colegio.",
     categoria: "Configurar Institución",
-    roles: [...GESTIONAN_STAFF],
+    roles: [...GESTIONAN_STAFF, "profesor"],
+    requiereDirectorGrupo: true, // el profesor entra solo si es director de grupo
     ruta: RUTA,
     endpoint: "GET /api/colegio/config + /api/institucion/* (lectura: cualquier interno)",
     sinonimos: [
@@ -947,6 +948,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Desde Personas, abrir Estudiantes o Acudientes; ahí se incrusta el Panel de Control (mismo CRUD y misma data).",
     categoria: "Configurar Institución",
     roles: [...CRUD_EST_ACU],
+    requiereDirectorGrupo: true, // el profesor solo si es director de grupo
     ruta: RUTA,
     endpoint: "PanelControl embebido (dbProxy Estudiantes/Acudientes/Usuarios)",
     sinonimos: [
@@ -968,6 +970,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Ver el aula de forma visual: tablero, director(a) de grupo y un pupitre por estudiante.",
     categoria: "Configurar Institución",
     roles: [...CRUD_EST_ACU],
+    requiereDirectorGrupo: true, // el profesor solo si es director de grupo
     ruta: RUTA,
     endpoint: "GET /api/institucion/estructura + dbProxy (Estudiantes/Internos/Usuarios)",
     requisitos: [
@@ -1015,6 +1018,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Desde el pupitre '+', registrar un estudiante nuevo con todos sus datos en ese grado y salón.",
     categoria: "Configurar Institución",
     roles: [...CRUD_EST_ACU],
+    requiereDirectorGrupo: true, // el profesor solo si es director de grupo
     ruta: RUTA,
     endpoint: "dbProxy Usuarios + Estudiantes (CRUD estudiantes; profesor solo su grupo)",
     requisitos: [{ entidad: "estudiante", descripcion: "Cédula y datos del estudiante." }],
@@ -1038,6 +1042,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Editar los datos de un estudiante y, si no eres su director de grupo, moverlo a otro grado o salón.",
     categoria: "Configurar Institución",
     roles: [...CRUD_EST_ACU],
+    requiereDirectorGrupo: true, // el profesor solo si es director de grupo
     ruta: RUTA,
     endpoint: "dbProxy Usuarios + Estudiantes (update)",
     sinonimos: [
@@ -1059,6 +1064,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Retirar la matrícula de un estudiante (su identidad global se conserva).",
     categoria: "Configurar Institución",
     roles: [...CRUD_EST_ACU],
+    requiereDirectorGrupo: true, // el profesor solo si es director de grupo
     ruta: RUTA,
     endpoint: "dbProxy Estudiantes (delete)",
     sinonimos: [
@@ -1079,6 +1085,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     descripcion: "Dentro de la edición de un estudiante, vincular o editar sus acudientes (máximo 3).",
     categoria: "Configurar Institución",
     roles: [...CRUD_EST_ACU],
+    requiereDirectorGrupo: true, // el profesor solo si es director de grupo
     ruta: RUTA,
     endpoint: "dbProxy Usuarios + Acudientes (insert/update)",
     requisitos: [{ entidad: "acudiente", descripcion: "Cédula y datos del acudiente." }],

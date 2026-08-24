@@ -382,6 +382,38 @@ export const COMPORTAMIENTO_OBSERVADOR: Capacidad[] = [
       },
     ],
   },
+  {
+    id: "comportamiento_observador.registro_eliminar",
+    titulo: "Eliminar un registro de comportamiento",
+    descripcion: "Borrar un registro que tú creaste. La acción no se puede deshacer.",
+    categoria: "Comportamiento y Observador",
+    roles: [...CREAN_REGISTROS],
+    ruta: "/registros-comportamiento",
+    endpoint: "Supabase delete Registros_Comportamiento (el profesor solo los suyos; blindaje en dbProxy)",
+    requisitos: [
+      { entidad: "estudiante", descripcion: "Estudiante del registro a eliminar." },
+    ],
+    sinonimos: [
+      "eliminar un registro de comportamiento",
+      "borrar un registro",
+      "quitar un observador que hice",
+    ],
+    pasos: [
+      ...abrirHistorialRegistros(),
+      {
+        narracion:
+          "En un registro tuyo, toca la papelera (solo aparece en los que tú creaste).",
+        accion: "click",
+        ancla: "comportamiento_observador.reg_eliminar",
+      },
+      {
+        narracion: "Confirma en el aviso tocando 'Eliminar'. Listo.",
+        accion: "click",
+        ancla: "comportamiento_observador.reg_confirmar_eliminar",
+      },
+    ],
+  },
+
   // ─────────────────────────── OBSERVADOR ESTUDIANTIL ────────────────────────
   {
     id: "comportamiento_observador.observador_consultar",

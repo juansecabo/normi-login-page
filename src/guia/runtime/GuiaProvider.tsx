@@ -16,7 +16,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Capacidad, Paso } from "../tipos";
-import { capacidadesLite, capacidadPorId, guiaDisponible } from "../lite";
+import { capacidadesLite, capacidadPorId, guiaDisponible, prefetchDirectorGrupo } from "../lite";
 import { guiaChat, guiaObjetivo, resumenPantalla, type GuiaTurn } from "./api";
 import { GuiaCursor } from "./GuiaCursor";
 import { guiaLog } from "./logger";
@@ -225,6 +225,9 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
 
   const abrir = useCallback(() => {
     setActivo(true);
+    // Resuelve (y cachea) si el profesor es director de grupo, para que sus
+    // guías de dirección de grupo entren al catálogo de la sesión.
+    void prefetchDirectorGrupo();
     setRespuesta(SALUDO);
     setMensajes([{ role: "assistant", content: SALUDO }]);
     guiaLog("modo_inicio", {}, true);
