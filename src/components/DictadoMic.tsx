@@ -39,6 +39,16 @@ function capitalizar(texto: string): string {
   return texto.replace(/(^|[.!?]\s+|\n\s*)([a-záéíóúüñ])/g, (_m, antes, letra) => antes + letra.toUpperCase());
 }
 
+function colorPrimario(): string {
+  try {
+    const v = getComputedStyle(document.documentElement).getPropertyValue("--primary").trim();
+    if (v) return `hsl(${v})`;
+  } catch {
+    /* fallback */
+  }
+  return "#16a34a";
+}
+
 function formatearTiempo(seg: number): string {
   const m = Math.floor(seg / 60);
   const s = seg % 60;
@@ -110,7 +120,9 @@ const DictadoMic = ({ valor, setValor }: Props) => {
     const MIN_H = 3;
 
     const datos = new Uint8Array(analyser.frequencyBinCount);
-    const historial: number[] = new Array(barras).fill(MIN_H);
+    // Una barra de mas: es la que va entrando por la derecha mientras desliza.
+    const historial: number[] = new Array(barras + 1).fill(MIN_H);
+    const color = colorPrimario();
     let pico = 0;
     let ultimoTick = performance.now();
 
@@ -128,15 +140,21 @@ const DictadoMic = ({ valor, setValor }: Props) => {
       if (ahora - ultimoTick >= TICK_MS) {
         ultimoTick = ahora;
         historial.push(Math.max(MIN_H, Math.min(1, pico * 5) * (H - 4)));
-        if (historial.length > barras) historial.shift();
+        while (historial.length > barras + 1) historial.shift();
         pico = 0;
       }
 
+      // Deslizamiento continuo: entre tick y tick, todo se corre a la
+      // izquierda una fraccion del paso (asi la onda fluye, no salta).
+      const t = Math.min(1, (ahora - ultimoTick) / TICK_MS);
+      const offset = PASO * t;
+
       ctx.clearRect(0, 0, W, H);
-      ctx.fillStyle = "#dc2626";
+      ctx.fillStyle = color;
       for (let i = 0; i < historial.length; i++) {
         const h = historial[i];
-        const x = i * PASO;
+        const x = i * PASO - offset;
+        if (x + ANCHO_BARRA < 0 || x > W) continue;
         const y = (H - h) / 2;
         ctx.beginPath();
         ctx.roundRect(x, y, ANCHO_BARRA, h, 1.5);
@@ -249,9 +267,9 @@ const DictadoMic = ({ valor, setValor }: Props) => {
 
   if (grabando) {
     return (
-      <div className="flex w-full items-center gap-3 rounded-full border border-red-200 bg-red-50 py-1 pl-4 pr-1">
-        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-600 animate-pulse" />
-        <span className="shrink-0 text-sm font-medium tabular-nums text-red-700">{formatearTiempo(segundos)}</span>
+      <div className="flex w-full items-center gap-3 rounded-full border border-primary/30 bg-primary/10 py-1 pl-4 pr-1">
+        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary animate-pulse" />
+        <span className="shrink-0 text-sm font-medium tabular-nums text-primary">{formatearTiempo(segundos)}</span>
         <canvas ref={canvasRef} className="h-8 min-w-0 flex-1" />
         <Button
           type="button"
@@ -260,7 +278,7 @@ const DictadoMic = ({ valor, setValor }: Props) => {
           title="Detener y transcribir"
           aria-label="Detener y transcribir"
           onClick={detener}
-          className="shrink-0 rounded-full border-red-500 text-red-600 bg-white hover:bg-red-100"
+          className="shrink-0 rounded-full border-primary text-primary bg-white hover:bg-primary/10"
         >
           <Square className="h-4 w-4" />
         </Button>
