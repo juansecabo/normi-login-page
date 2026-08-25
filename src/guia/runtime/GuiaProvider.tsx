@@ -216,7 +216,28 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
   const senaladoRef = useRef<HTMLElement | null>(null);
   const perdidoRef = useRef(false);
 
-  const disponible = guiaDisponible();
+  // ¿Está disponible la guía? OJO: NO se puede calcular una sola vez en el
+  // render. Este provider envuelve toda la app, así que se monta ANTES del
+  // login; cuando el usuario entra, la sesión se escribe en localStorage y la
+  // SPA navega sin recargar, de modo que el provider no vuelve a renderizar y
+  // el ítem "Normi te guía" quedaba oculto hasta refrescar la página (el resto
+  // del menú sí aparecía porque el header se monta después del login).
+  // Solución: estado reactivo que se revisa al enfocar la ventana, al cambiar
+  // el almacenamiento en otra pestaña y en un chequeo periódico barato
+  // (setState con el mismo booleano no provoca re-render).
+  const [disponible, setDisponible] = useState<boolean>(() => guiaDisponible());
+  useEffect(() => {
+    const recalcular = () => setDisponible(guiaDisponible());
+    recalcular();
+    window.addEventListener("storage", recalcular);
+    window.addEventListener("focus", recalcular);
+    const iv = window.setInterval(recalcular, 1500);
+    return () => {
+      window.removeEventListener("storage", recalcular);
+      window.removeEventListener("focus", recalcular);
+      window.clearInterval(iv);
+    };
+  }, []);
 
   const limpiarPaso = () => {
     for (const fn of cleanupsRef.current) fn();
