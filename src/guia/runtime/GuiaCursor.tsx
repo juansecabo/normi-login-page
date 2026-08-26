@@ -75,6 +75,18 @@ export function GuiaCursor() {
         data-guia-ui
         className="fixed bottom-3 right-3 flex flex-col items-end gap-2 w-[min(92vw,22rem)]"
       >
+        {/* X de cerrar, sola y arriba: pegada al Enviar se presionaba sin querer. */}
+        <Button
+          variant="destructive"
+          size="icon"
+          className="shrink-0 shadow-2xl"
+          style={{ animation: "guiaGloboIn 0.4s ease-out both" }}
+          onClick={cancelar}
+          title="Cancelar el modo guía"
+        >
+          <X className="w-4 h-4" />
+        </Button>
+
         {/* Cuadro de escritura FLOTANTE, separado del globo. */}
         <div
           style={{ animation: "guiaGloboIn 0.4s ease-out both" }}
@@ -106,15 +118,6 @@ export function GuiaCursor() {
             title="Enviar"
           >
             <Send className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="destructive"
-            size="icon"
-            className="shrink-0"
-            onClick={cancelar}
-            title="Cancelar el modo guía"
-          >
-            <X className="w-4 h-4" />
           </Button>
         </div>
 
