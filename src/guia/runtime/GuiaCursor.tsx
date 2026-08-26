@@ -79,7 +79,7 @@ export function GuiaCursor() {
         <Button
           variant="destructive"
           size="icon"
-          className="shrink-0 shadow-2xl rounded-full"
+          className="shrink-0 shadow-2xl"
           style={{ animation: "guiaGloboIn 0.4s ease-out both" }}
           onClick={cancelar}
           title="Cancelar el modo guía"
