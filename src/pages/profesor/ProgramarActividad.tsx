@@ -214,12 +214,12 @@ const ProgramarActividad = () => {
     actividad_id: number; asignatura: string; descripcion: string; grado: string; salon: string;
     fecha_limite_entrega: string | null; entregados: number; esperados: number;
   }>>([]);
-  useEffect(() => {
+  const cargarResumenEntregas = () => {
     apiRequest('/api/entregas/resumen')
       .then((r) => setResumenEntregas((r as { resumen: typeof resumenEntregas }).resumen || []))
       .catch(() => setResumenEntregas([]));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vista]);
+  };
+  useEffect(() => { cargarResumenEntregas(); }, []);
   const [loadingMias, setLoadingMias] = useState(false);
   const [mesCal, setMesCal] = useState<Date>(new Date());
   const [diaSelCal, setDiaSelCal] = useState<Date | undefined>(new Date());
@@ -1477,7 +1477,7 @@ const ProgramarActividad = () => {
         autoId={entregasDe?.auto_id ?? null}
         titulo={entregasDe ? `${entregasDe.Asignatura} · ${entregasDe.Grado} ${entregasDe.Salon}` : ""}
         open={!!entregasDe}
-        onOpenChange={(v) => { if (!v) setEntregasDe(null); }}
+        onOpenChange={(v) => { if (!v) { setEntregasDe(null); cargarResumenEntregas(); } }}
       />
 
       {/* Delete confirmation dialog */}
