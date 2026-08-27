@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { apiRequest } from "@/lib/apiClient";
 import { useNavigate } from "react-router-dom";
 import { ClipboardList, X, Paperclip, Eye, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -10,6 +11,8 @@ import { es } from "date-fns/locale";
 import { markLastSeen } from "@/utils/notificaciones";
 
 interface ActividadCalendario {
+  permite_entregas?: boolean;
+  fecha_limite_entrega?: string | null;
   column_id: string;
   auto_id: number;
   Nombres: string;
@@ -78,6 +81,8 @@ const handleDescargarArchivo = async (url: string) => {
 const CalendarioAcudiente = () => {
   const navigate = useNavigate();
   const [acudidos, setAcudidos] = useState<AcudidoData[]>([]);
+  // Estado de entregas de trabajos de los acudidos (solo lectura para el acudiente).
+  const [entregasPorAcudido, setEntregasPorAcudido] = useState<Record<string, Record<number, { tarde: boolean; fecha_entrega: string }>>>({});
   const [actividades, setActividades] = useState<ActividadConHijo[]>([]);
   const [loading, setLoading] = useState(true);
   const [mesActual, setMesActual] = useState(new Date());
@@ -93,6 +98,17 @@ const CalendarioAcudiente = () => {
 
     const acudidosData = session.acudidos || [];
     setAcudidos(acudidosData);
+    (async () => {
+      const mapa: Record<string, Record<number, { tarde: boolean; fecha_entrega: string }>> = {};
+      await Promise.all(acudidosData.map(async (a: { id: string }) => {
+        try {
+          const r = await apiRequest(`/api/entregas/de-acudido?estudiante_id=${a.id}`) as { entregas: Array<{ actividad_id: number; tarde: boolean; fecha_entrega: string }> };
+          mapa[String(a.id)] = {};
+          for (const e of r.entregas || []) mapa[String(a.id)][e.actividad_id] = { tarde: e.tarde, fecha_entrega: e.fecha_entrega };
+        } catch { /* sin entregas no bloquea */ }
+      }));
+      setEntregasPorAcudido(mapa);
+    })();
 
     const cargar = async () => {
       try {
@@ -251,6 +267,14 @@ const CalendarioAcudiente = () => {
                                 <p className="text-sm text-muted-foreground mt-1">
                                   Prof. {actividad.Nombres} {actividad.Apellidos}
                                 </p>
+                                {actividad.permite_entregas && (() => {
+                                  const ent = entregasPorAcudido[String(acudido.id)]?.[(actividad as { auto_id?: number }).auto_id ?? -1];
+                                  return (
+                                    <span className={`inline-block mt-2 mr-2 px-2 py-0.5 text-xs font-medium rounded-full ${ent ? (ent.tarde ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-muted text-muted-foreground'}`}>
+                                      {ent ? (ent.tarde ? 'Trabajo entregado tarde' : 'Trabajo entregado') : 'Trabajo sin entregar'}
+                                    </span>
+                                  );
+                                })()}
                                 {actividad.archivo_url && (
                                   <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
                                     <Paperclip className="h-3 w-3 shrink-0" />

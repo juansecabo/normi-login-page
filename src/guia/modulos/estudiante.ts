@@ -143,6 +143,31 @@ export const ESTUDIANTE: Capacidad[] = [
     ],
   },
   {
+    id: "est.entregar_trabajo",
+    titulo: "Entregar un trabajo a tu profesor",
+    descripcion:
+      "Subir por la plataforma el trabajo de una actividad que el profesor habilitó para entregas. Antes del plazo puedes cambiar o agregar archivos; al vencer, la entrega queda congelada.",
+    categoria: "Actividades",
+    roles: ["estudiante"],
+    ruta: "/estudiante/actividades",
+    endpoint: "POST /api/entregas (solo el propio estudiante, valida el plazo)",
+    sinonimos: ["entregar tarea", "subir mi trabajo", "enviar el taller", "mandar la tarea al profesor"],
+    pasos: [
+      { narracion: "Toca la ficha 'Actividades' en tu tablero.", accion: "navegar", ruta: "/estudiante/actividades" },
+      { narracion: "Toca el día de la actividad que vas a entregar.", accion: "click", ancla: "act.dia_calendario" },
+      {
+        narracion: "En la actividad, toca 'Entregar trabajo'. Si ya entregaste, el botón dice 'Entregado' y puedes cambiarla mientras no venza el plazo.",
+        accion: "click",
+        ancla: "entrega.abrir",
+      },
+      {
+        narracion: "Adjunta tus archivos con 'Seleccionar archivo', escribe un comentario si quieres y confirma con 'Entregar trabajo'.",
+        accion: "click",
+        ancla: "entrega.enviar",
+      },
+    ],
+  },
+  {
     id: "est.adjunto_actividad",
     titulo: "Ver o descargar el archivo de una actividad",
     descripcion:

@@ -8,10 +8,14 @@ import HeaderNormi from "@/components/HeaderNormi";
 import { Calendar } from "@/components/ui/calendar";
 import { es } from "date-fns/locale";
 import { markLastSeen } from "@/utils/notificaciones";
+import { apiRequest } from "@/lib/apiClient";
+import { EntregarTrabajoModal, type EntregaMia } from "@/components/EntregarTrabajoModal";
 
 interface ActividadCalendario {
   column_id: string;
   auto_id: number;
+  permite_entregas?: boolean;
+  fecha_limite_entrega?: string | null;
   Nombres: string;
   Apellidos: string;
   Asignatura: string;
@@ -78,6 +82,19 @@ const CalendarioEstudiante = () => {
   const [mesActual, setMesActual] = useState(new Date());
   const [diaSeleccionado, setDiaSeleccionado] = useState<Date | undefined>(new Date());
   const [marcas, setMarcas] = useState<Record<number, 'hecho' | 'estudiar'>>({});
+  // Entregas de trabajos: mis entregas por actividad + modal de entrega.
+  const [entregas, setEntregas] = useState<Record<number, EntregaMia>>({});
+  const [entregando, setEntregando] = useState<ActividadCalendario | null>(null);
+
+  const cargarEntregas = async () => {
+    try {
+      const r = await apiRequest('/api/entregas/mias') as { entregas: EntregaMia[] };
+      const map: Record<number, EntregaMia> = {};
+      for (const e of r.entregas || []) map[e.actividad_id] = e;
+      setEntregas(map);
+    } catch { /* sin entregas no bloquea la pagina */ }
+  };
+  useEffect(() => { cargarEntregas(); }, []);
   const [detalle, setDetalle] = useState<ActividadCalendario | null>(null);
 
   useEffect(() => {
@@ -297,6 +314,18 @@ const CalendarioEstudiante = () => {
                                 >
                                   Estudiar
                                 </button>
+                                {actividad.permite_entregas && (() => {
+                                  const ent = entregas[actividad.auto_id];
+                                  return (
+                                    <button
+                                      data-guia="entrega.abrir"
+                                      onClick={(e) => { e.stopPropagation(); setEntregando(actividad); }}
+                                      className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${ent ? (ent.tarde ? 'bg-amber-500 text-white' : 'bg-emerald-600 text-white') : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                                    >
+                                      {ent ? (ent.tarde ? '✓ Entregado tarde' : '✓ Entregado') : 'Entregar trabajo'}
+                                    </button>
+                                  );
+                                })()}
                               </div>
                             </div>
                           </div>
@@ -323,6 +352,14 @@ const CalendarioEstudiante = () => {
           )}
         </div>
       </main>
+
+      <EntregarTrabajoModal
+        actividad={entregando ? { auto_id: entregando.auto_id, Asignatura: entregando.Asignatura, fecha_limite_entrega: entregando.fecha_limite_entrega } : null}
+        entrega={entregando ? (entregas[entregando.auto_id] || null) : null}
+        open={!!entregando}
+        onOpenChange={(v) => { if (!v) setEntregando(null); }}
+        onEntregada={cargarEntregas}
+      />
 
       <Dialog open={!!detalle} onOpenChange={(open) => !open && setDetalle(null)}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">

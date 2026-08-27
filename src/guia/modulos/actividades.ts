@@ -834,4 +834,48 @@ export const ACTIVIDADES: Capacidad[] = [
       },
     ],
   },
+  {
+    id: "actividades.permitir_entregas",
+    titulo: "Pedir que los estudiantes entreguen el trabajo por la plataforma",
+    descripcion:
+      "Al programar una actividad, habilitar que los estudiantes suban sus archivos, con fecha y hora límite de entrega. Útil para trabajo en casa, incapacidades o suspensiones.",
+    categoria: "Actividades",
+    roles: ["profesor"],
+    ruta: "/programar-actividad",
+    endpoint: "Calendario Actividades.permite_entregas + fecha_limite_entrega",
+    sinonimos: ["que me entreguen la tarea", "recibir trabajos", "habilitar entregas", "trabajo en casa"],
+    pasos: [
+      { narracion: "Entramos a programar la actividad.", accion: "navegar", ruta: "/programar-actividad" },
+      {
+        narracion: "Llene la actividad como siempre y marque la casilla 'Permitir entregas por la plataforma'.",
+        accion: "click",
+        ancla: "actividades.permitir_entregas",
+      },
+      {
+        narracion: "Defina la fecha y la hora límite de entrega. Antes del plazo los estudiantes pueden cambiar sus archivos; al vencer, lo entregado queda congelado.",
+        accion: "explicar",
+      },
+      { narracion: "Confirme con 'Programar'.", accion: "click", ancla: "actividades.btn_programar" },
+    ],
+  },
+  {
+    id: "actividades.revisar_entregas",
+    titulo: "Revisar las entregas de una actividad",
+    descripcion:
+      "Ver quién entregó el trabajo (con fecha, y si fue tarde, el atraso), abrir o descargar los archivos, y ver quién falta. Cada tarde recibe un resumen por WhatsApp con las entregas del día.",
+    categoria: "Actividades",
+    roles: ["profesor"],
+    ruta: "/programar-actividad",
+    endpoint: "GET /api/entregas/actividad/:id (solo el profesor de la actividad)",
+    sinonimos: ["ver los trabajos", "quién me entregó", "revisar tareas enviadas", "entregas de los estudiantes"],
+    pasos: [
+      { narracion: "Entramos a sus actividades.", accion: "navegar", ruta: "/programar-actividad" },
+      { narracion: "Abra la pestaña 'Actividades Programadas' y toque el día de la actividad.", accion: "click" },
+      {
+        narracion: "En la actividad, toque 'Entregas': verá quién entregó, sus archivos con 'Ver' y 'Descargar', y quién falta.",
+        accion: "click",
+        ancla: "actividades.ver_entregas",
+      },
+    ],
+  },
 ];

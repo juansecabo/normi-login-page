@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { subirArchivo } from "@/lib/storage";
+import { EntregasActividadModal } from "@/components/EntregasActividadModal";
 import { apiRequest } from "@/lib/apiClient";
 import { getSession, isProfesor, isEstudiante, isPadreDeFamilia } from "@/hooks/useSession";
 import { rankGrado, useGradosColegio } from "@/utils/grados";
@@ -82,6 +83,9 @@ interface AsignacionRow {
 
 interface ActividadCalendario {
   column_id: number;
+  auto_id: number;
+  permite_entregas?: boolean;
+  fecha_limite_entrega?: string | null;
   id_profesor: string;
   Nombres: string;
   Apellidos: string;
@@ -176,6 +180,16 @@ const ProgramarActividad = () => {
 
   // Calendario: TODAS las actividades que ha dejado este profesor (pendientes + pasadas)
   const [misActividades, setMisActividades] = useState<ActividadCalendario[]>([]);
+
+  // Entregas de trabajos: el profesor habilita que los estudiantes suban sus
+  // archivos por la plataforma, con fecha y hora limite.
+  const [permitirEntregas, setPermitirEntregas] = useState(false);
+  const [fechaLimiteStr, setFechaLimiteStr] = useState("");
+  const [horaLimite, setHoraLimite] = useState("23:59");
+  const [editPermitir, setEditPermitir] = useState(false);
+  const [editFechaLimiteStr, setEditFechaLimiteStr] = useState("");
+  const [editHoraLimite, setEditHoraLimite] = useState("23:59");
+  const [entregasDe, setEntregasDe] = useState<ActividadCalendario | null>(null);
   const [loadingMias, setLoadingMias] = useState(false);
   const [mesCal, setMesCal] = useState<Date>(new Date());
   const [diaSelCal, setDiaSelCal] = useState<Date | undefined>(new Date());
@@ -587,6 +601,10 @@ const ProgramarActividad = () => {
         if (archivoUrlFinal) {
           insertData.archivo_url = archivoUrlFinal;
         }
+        insertData.permite_entregas = permitirEntregas;
+        insertData.fecha_limite_entrega = permitirEntregas
+          ? `${fechaLimiteStr || fechaFormateada}T${horaLimite || "23:59"}:00-05:00`
+          : null;
 
         const { error } = await supabase
           .from('Calendario Actividades')
@@ -683,6 +701,17 @@ const ProgramarActividad = () => {
     setEditFecha(fecha || undefined);
     setEditArchivos([]);
     setEditUrlsExistentes(actividad.archivo_url ? actividad.archivo_url.split('\n').filter(Boolean) : []);
+    setEditPermitir(!!actividad.permite_entregas);
+    if (actividad.fecha_limite_entrega) {
+      const lim = new Date(actividad.fecha_limite_entrega);
+      const bog = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(lim);
+      const get = (t: string) => bog.find((x) => x.type === t)?.value || '';
+      setEditFechaLimiteStr(`${get('year')}-${get('month')}-${get('day')}`);
+      setEditHoraLimite(`${get('hour')}:${get('minute')}`);
+    } else {
+      setEditFechaLimiteStr('');
+      setEditHoraLimite('23:59');
+    }
     setEditModalOpen(true);
   };
 
@@ -715,6 +744,10 @@ const ProgramarActividad = () => {
           Descripción: editDescripcion.trim(),
           fecha_de_presentacion: formatearFecha(editFecha),
           archivo_url: archivoUrlFinal,
+          permite_entregas: editPermitir,
+          fecha_limite_entrega: editPermitir
+            ? `${editFechaLimiteStr || formatearFecha(editFecha)}T${editHoraLimite || "23:59"}:00-05:00`
+            : null,
         })
         .eq('column_id', editActividad!.column_id);
 
@@ -1071,6 +1104,48 @@ const ProgramarActividad = () => {
                         </Popover>
                       </div>
 
+                      {/* 7.5 Entregas de trabajos */}
+                      <div className="space-y-2 rounded-lg border border-border p-3">
+                        <label className="flex items-start gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            data-guia="actividades.permitir_entregas"
+                            className="mt-1 h-4 w-4 accent-primary"
+                            checked={permitirEntregas}
+                            onChange={(e) => setPermitirEntregas(e.target.checked)}
+                          />
+                          <span>
+                            <span className="font-medium text-foreground">Permitir entregas por la plataforma</span>
+                            <span className="block text-xs text-muted-foreground">Los estudiantes podrán subir sus trabajos y tú los revisas desde Actividades Programadas.</span>
+                          </span>
+                        </label>
+                        {permitirEntregas && (
+                          <div className="grid grid-cols-2 gap-3 pt-1">
+                            <div className="space-y-1">
+                              <Label className="text-xs">Fecha límite de entrega</Label>
+                              <input
+                                type="date"
+                                className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
+                                value={fechaLimiteStr || (fechaSeleccionada ? formatearFecha(fechaSeleccionada) : "")}
+                                onChange={(e) => setFechaLimiteStr(e.target.value)}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Hora límite</Label>
+                              <input
+                                type="time"
+                                className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
+                                value={horaLimite}
+                                onChange={(e) => setHoraLimite(e.target.value)}
+                              />
+                            </div>
+                            <p className="col-span-2 text-xs text-muted-foreground">
+                              Antes del plazo pueden reemplazar o agregar archivos. Al vencer, lo entregado queda congelado; quien no entregó tiene una sola oportunidad tardía (marcada con su atraso).
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
                       {/* 8. Botón Programar */}
                       <Button
                         data-guia="actividades.btn_programar"
@@ -1201,7 +1276,12 @@ const ProgramarActividad = () => {
                                         </div>
                                       </div>
                                     ))}
-                                    <div className="flex gap-2 mt-3">
+                                    <div className="flex gap-2 mt-3 flex-wrap">
+                                      {actividad.permite_entregas && (
+                                        <Button variant="secondary" size="sm" data-guia="actividades.ver_entregas" onClick={() => setEntregasDe(actividad)} className="gap-1">
+                                          <FileText className="h-4 w-4" /> Entregas
+                                        </Button>
+                                      )}
                                       <Button variant="outline" size="sm" onClick={() => handleAbrirEditar(actividad)} className="gap-1"><Pencil className="h-4 w-4" /> Editar</Button>
                                       <Button variant="destructive" size="sm" onClick={() => handleConfirmarEliminar(actividad)} className="gap-1"><Trash2 className="h-4 w-4" /> Eliminar</Button>
                                     </div>
@@ -1293,6 +1373,43 @@ const ProgramarActividad = () => {
                 </PopoverContent>
               </Popover>
             </div>
+
+            <div className="space-y-2 rounded-lg border border-border p-3">
+              <label className="flex items-start gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 accent-primary"
+                  checked={editPermitir}
+                  onChange={(e) => setEditPermitir(e.target.checked)}
+                />
+                <span>
+                  <span className="font-medium text-foreground">Permitir entregas por la plataforma</span>
+                  <span className="block text-xs text-muted-foreground">Los estudiantes podrán subir sus trabajos y tú los revisas desde Actividades Programadas.</span>
+                </span>
+              </label>
+              {editPermitir && (
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Fecha límite de entrega</Label>
+                    <input
+                      type="date"
+                      className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
+                      value={editFechaLimiteStr || (editFecha ? formatearFecha(editFecha) : "")}
+                      onChange={(e) => setEditFechaLimiteStr(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Hora límite</Label>
+                    <input
+                      type="time"
+                      className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
+                      value={editHoraLimite}
+                      onChange={(e) => setEditHoraLimite(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditModalOpen(false)}>Cancelar</Button>
@@ -1302,6 +1419,13 @@ const ProgramarActividad = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <EntregasActividadModal
+        autoId={entregasDe?.auto_id ?? null}
+        titulo={entregasDe ? `${entregasDe.Asignatura} · ${entregasDe.Grado} ${entregasDe.Salon}` : ""}
+        open={!!entregasDe}
+        onOpenChange={(v) => { if (!v) setEntregasDe(null); }}
+      />
 
       {/* Delete confirmation dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
