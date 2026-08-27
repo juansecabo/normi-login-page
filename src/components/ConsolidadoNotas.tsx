@@ -680,6 +680,7 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
           <div key={asignatura} className="bg-card rounded-lg shadow-soft border border-border overflow-hidden">
             <button
               type="button"
+              data-guia="notas.asignatura_acordeon"
               onClick={() => toggleAsignatura(asignatura)}
               className="w-full text-left bg-primary/10 hover:bg-primary/15 transition-colors p-4 flex items-center justify-between gap-3"
             >

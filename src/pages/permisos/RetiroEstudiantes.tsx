@@ -301,6 +301,7 @@ const RetiroEstudiantes = () => {
             <label className="flex items-start gap-3 mb-6 cursor-pointer select-none">
               <div
                 className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${aceptoTerminos ? "bg-primary border-primary" : "border-border"}`}
+                data-guia="retiro.acepto"
                 onClick={() => setAceptoTerminos(!aceptoTerminos)}
               >
                 {aceptoTerminos && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
@@ -497,7 +498,7 @@ const RetiroEstudiantes = () => {
               {/* Firma */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Firma del acudiente</label>
-                <div className="border-2 border-dashed border-border rounded-lg bg-white">
+                <div data-guia="permisos.firma" className="border-2 border-dashed border-border rounded-lg bg-white">
                   <SignatureCanvas
                     ref={sigCanvas}
                     penColor="black"

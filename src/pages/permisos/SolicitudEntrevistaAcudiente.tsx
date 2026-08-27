@@ -147,7 +147,7 @@ const SolicitudEntrevistaAcudiente = () => {
 
           {loading ? <div className="text-center py-8 text-muted-foreground">Cargando...</div> : (
             <div className="flex flex-col lg:flex-row lg:items-start gap-6">
-              <div className="flex justify-center lg:sticky lg:top-4 shrink-0">
+              <div data-guia="entrevista.dia_calendario" className="flex justify-center lg:sticky lg:top-4 shrink-0">
                 <Calendar mode="single" selected={diaSeleccionado} onSelect={setDiaSeleccionado} month={mesActual} onMonthChange={setMesActual} locale={es}
                   modifiers={{ conSol: diasMarcados.filter(d => !diaSeleccionado || fechaKey(d) !== fechaKey(diaSeleccionado)) }}
                   modifiersClassNames={{ conSol: "bg-blue-400 text-white hover:bg-blue-500 !h-8 !w-8" }}
@@ -168,7 +168,7 @@ const SolicitudEntrevistaAcudiente = () => {
                         const isExp = expandedId === s.id;
                         return (
                           <div key={s.id} className="border border-border rounded-lg overflow-hidden">
-                            <button onClick={() => setExpandedId(isExp ? null : s.id)} className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors cursor-pointer">
+                            <button data-guia="entrevista.item" onClick={() => setExpandedId(isExp ? null : s.id)} className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors cursor-pointer">
                               <div>
                                 <p className="font-semibold text-foreground text-sm">{s.estudiante_nombre} {s.estudiante_apellidos}</p>
                                 <p className="text-xs text-muted-foreground">Hora: {s.hora_entrevista} — Con: {entrevistadoresDeSolicitud(s)}</p>

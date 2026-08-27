@@ -688,7 +688,7 @@ export default function ConsultaPublica() {
                     <span className="text-muted-foreground text-sm font-normal"> {r.contexto}</span>
                   )}
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div data-guia="consulta.opciones" className="flex flex-wrap gap-2">
                   {consulta.opciones.map((op) => (
                     <button
                       key={op}

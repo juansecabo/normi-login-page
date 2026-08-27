@@ -20,6 +20,8 @@ const CARGO_A_ROL: Record<string, RolGuia> = {
   Celador: "portero",
   Administrador: "admin",
   SuperAdmin: "admin",
+  Estudiante: "estudiante",
+  Acudiente: "acudiente",
 };
 
 export function rolGuiaDeSesion(): RolGuia | null {
@@ -27,7 +29,7 @@ export function rolGuiaDeSesion(): RolGuia | null {
   return (cargo && CARGO_A_ROL[cargo]) || null;
 }
 
-/** ¿Este usuario ve "Normi te guía"? Cualquier interno, en TODOS los colegios. */
+/** ¿Este usuario ve "Normi te guía"? Internos, estudiantes y acudientes, en TODOS los colegios. */
 export function guiaDisponible(): boolean {
   const { colegio_id } = getSession();
   return !!rolGuiaDeSesion() && !!colegio_id;

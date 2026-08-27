@@ -14,7 +14,10 @@ export type RolGuia =
   | "administrativo"
   | "orientador"
   | "portero"
-  | "admin";
+  | "admin"
+  // Comunidad (desde 2026-08-26): la guía también acompaña a las familias.
+  | "estudiante"
+  | "acudiente";
 
 // Features que solo existen en ciertos colegios (gate por colegio_id).
 export type GateColegio = "todos" | "cailico" | "pestalozziano";

@@ -1058,6 +1058,7 @@ const ComunicadosFirma = () => {
               <div
                 key={m.respuesta_id}
                 className={`rounded-lg p-4 space-y-1 cursor-pointer transition-colors ${firmado ? "bg-muted/40 border" : "bg-primary/10 border-2 border-primary/40 hover:bg-primary/15"}`}
+                data-guia="firma.item"
                 onClick={() => setFirmando(m)}
               >
                 <div className="flex items-center gap-2 flex-wrap">
@@ -1236,7 +1237,7 @@ const ComunicadosFirma = () => {
               ) : (
                 <div className="space-y-2">
                   <Label className="text-sm">Dibuja tu firma con el dedo:</Label>
-                  <div className="border rounded-md bg-white">
+                  <div data-guia="firma.lienzo" className="border rounded-md bg-white">
                     <SignatureCanvas ref={sigRef} penColor="black" canvasProps={{ className: "w-full touch-none", style: { height: "180px" } }} />
                   </div>
                   <div className="flex justify-between">

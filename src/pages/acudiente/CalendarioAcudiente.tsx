@@ -197,7 +197,7 @@ const CalendarioAcudiente = () => {
             <div className="text-center py-8 text-muted-foreground">Cargando...</div>
           ) : (
             <div className="flex flex-col lg:flex-row lg:items-start gap-6">
-              <div className="flex justify-center lg:sticky lg:top-4 shrink-0">
+              <div data-guia="act.dia_calendario" className="flex justify-center lg:sticky lg:top-4 shrink-0">
                 <Calendar
                   mode="single"
                   selected={diaSeleccionado}
@@ -240,6 +240,7 @@ const CalendarioAcudiente = () => {
                             {acts.map(actividad => (
                               <div
                                 key={actividad.column_id}
+                                data-guia="act.card_actividad"
                                 onClick={() => setDetalle(actividad)}
                                 className="border border-border rounded-lg p-4 hover:border-primary/50 hover:bg-muted/30 transition-colors cursor-pointer"
                               >

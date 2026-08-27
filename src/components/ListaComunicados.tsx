@@ -127,13 +127,14 @@ const ListaComunicados = ({ comunicados, loading, showDocumentLink = false }: Li
         <Input
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
+          data-guia="comunicados.buscar"
           placeholder="Buscar por remitente o contenido..."
           className="pl-9"
         />
       </div>
 
       {filtrados.map((c) => (
-        <div key={c.id} className="bg-primary/10 border-2 border-primary/40 rounded-lg p-4 space-y-2 cursor-pointer hover:bg-primary/15 hover:border-primary/60 transition-colors" onClick={() => setSelectedItem(c)}>
+        <div key={c.id} data-guia="comunicados.item" className="bg-primary/10 border-2 border-primary/40 rounded-lg p-4 space-y-2 cursor-pointer hover:bg-primary/15 hover:border-primary/60 transition-colors" onClick={() => setSelectedItem(c)}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Clock className="w-3 h-3" />

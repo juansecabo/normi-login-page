@@ -138,6 +138,7 @@ const NotasAcudiente = () => {
               {acudidos.map((h) => (
                 <button
                   key={h.id}
+                  data-guia="acu.item_acudido"
                   onClick={() => seleccionar(h)}
                   className="relative flex items-center gap-3 p-4 rounded-lg border-2 border-border hover:border-primary/50 hover:bg-muted/50 transition-all duration-200 text-left"
                 >

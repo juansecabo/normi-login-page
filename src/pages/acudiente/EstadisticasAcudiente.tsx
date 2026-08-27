@@ -88,6 +88,7 @@ const EstadisticasAcudiente = () => {
               {acudidos.map((h) => (
                 <button
                   key={h.id}
+                  data-guia="acu.item_acudido"
                   onClick={() => seleccionar(h)}
                   className="flex items-center gap-3 p-4 rounded-lg border-2 border-border hover:border-primary/50 hover:bg-muted/50 transition-all duration-200 text-left"
                 >
@@ -117,7 +118,7 @@ const EstadisticasAcudiente = () => {
                   <div className="flex items-center gap-4">
                     <label className="text-sm text-muted-foreground">Período</label>
                     <Select value={periodoSeleccionado} onValueChange={setPeriodoSeleccionado}>
-                      <SelectTrigger className="w-48">
+                      <SelectTrigger data-guia="estad.select_periodo" className="w-48">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>

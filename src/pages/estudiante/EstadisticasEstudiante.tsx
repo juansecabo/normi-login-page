@@ -57,7 +57,7 @@ const EstadisticasEstudiantePage = () => {
               <div className="flex items-center gap-4">
                 <label className="text-sm text-muted-foreground">Período</label>
                 <Select value={periodoSeleccionado} onValueChange={setPeriodoSeleccionado}>
-                  <SelectTrigger className="w-48">
+                  <SelectTrigger data-guia="estad.select_periodo" className="w-48">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

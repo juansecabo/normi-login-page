@@ -218,7 +218,7 @@ const CalendarioEstudiante = () => {
           ) : (
             <div className="flex flex-col lg:flex-row lg:items-start gap-6">
               {/* Calendario */}
-              <div className="flex justify-center lg:sticky lg:top-4 shrink-0">
+              <div data-guia="act.dia_calendario" className="flex justify-center lg:sticky lg:top-4 shrink-0">
                 <Calendar
                   mode="single"
                   selected={diaSeleccionado}
@@ -256,6 +256,7 @@ const CalendarioEstudiante = () => {
                         return (
                           <div
                             key={actividad.column_id}
+                            data-guia="act.card_actividad"
                             onClick={() => setDetalle(actividad)}
                             className={`border rounded-lg p-4 transition-colors cursor-pointer hover:bg-muted/30 ${marca === 'hecho' ? 'border-green-300 bg-green-50/50' : marca === 'estudiar' ? 'border-yellow-300 bg-yellow-50/50' : 'border-border hover:border-primary/50'}`}
                           >

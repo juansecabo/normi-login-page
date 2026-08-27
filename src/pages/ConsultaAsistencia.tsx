@@ -200,7 +200,7 @@ const ConsultaAsistencia = () => {
               {rolAcudiente && acudidos.length > 1 && (
                 <div className="flex flex-wrap gap-2 justify-center mb-4">
                   {acudidos.map((h) => (
-                    <button key={h.id} onClick={() => setAcudidoSel(h)}
+                    <button key={h.id} data-guia="asistencia.chip_acudido" onClick={() => setAcudidoSel(h)}
                       className={`px-3 py-1.5 rounded-full text-sm font-medium border ${acudidoSel?.id === h.id ? "bg-primary text-primary-foreground border-primary" : "border-border text-foreground hover:bg-muted"}`}>
                       {h.nombre} {h.apellidos}
                     </button>
@@ -222,7 +222,7 @@ const ConsultaAsistencia = () => {
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {resumenPorAsignatura.map((a) => (
-                        <button key={a.asignatura}
+                        <button key={a.asignatura} data-guia="asistencia.item_asignatura"
                           onClick={() => setCal({ estudiante: { estudiante_id: sujeto.id, nombres: sujeto.nombres, apellidos: sujeto.apellidos, avatar_url: sujeto.avatar_url }, asignatura: a.asignatura, grado: sujeto.grado, salon: sujeto.salon })}
                           className="bg-card rounded-lg shadow-sm border border-border px-4 py-3 flex items-center justify-between hover:shadow-md transition text-left">
                           <div className="min-w-0">

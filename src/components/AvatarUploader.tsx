@@ -349,6 +349,7 @@ const AvatarUploader = ({ width = 110, height = 140, fill = false, target }: Ava
         disabled={uploading}
         className={`group relative overflow-hidden border-4 border-primary/20 shadow-soft bg-secondary flex items-center justify-center transition-all hover:border-primary/40 disabled:opacity-60 flex-shrink-0 ${fill ? "h-full w-auto" : "aspect-square"}`}
         style={dimension}
+        data-guia="dash.avatar"
         title={avatarUrl ? "Cambiar foto" : "Subir foto"}
       >
         {avatarUrl ? (
