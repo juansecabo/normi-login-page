@@ -78,6 +78,26 @@ const handleDescargarArchivo = async (url: string) => {
   }
 };
 
+
+/** "vence hoy 11:59 pm", "vence mañana", "venció el 26 de ago" — plazo legible. */
+const textoPlazo = (iso: string | null | undefined): { texto: string; vencido: boolean } => {
+  if (!iso) return { texto: "sin plazo", vencido: false };
+  const lim = new Date(iso);
+  const ahora = new Date();
+  const vencido = ahora > lim;
+  const bog = (d: Date, opts: Intl.DateTimeFormatOptions) =>
+    d.toLocaleString("es-CO", { ...opts, timeZone: "America/Bogota" });
+  const hoyK = bog(ahora, { year: "numeric", month: "2-digit", day: "2-digit" });
+  const limK = bog(lim, { year: "numeric", month: "2-digit", day: "2-digit" });
+  const manana = new Date(ahora.getTime() + 86400000);
+  const mananaK = bog(manana, { year: "numeric", month: "2-digit", day: "2-digit" });
+  const hora = bog(lim, { hour: "numeric", minute: "2-digit", hour12: true });
+  if (vencido) return { texto: `venció el ${bog(lim, { day: "numeric", month: "short" })}`, vencido: true };
+  if (limK === hoyK) return { texto: `vence hoy ${hora}`, vencido: false };
+  if (limK === mananaK) return { texto: `vence mañana ${hora}`, vencido: false };
+  return { texto: `vence el ${bog(lim, { day: "numeric", month: "short" })} ${hora}`, vencido: false };
+};
+
 const CalendarioAcudiente = () => {
   const navigate = useNavigate();
   const [acudidos, setAcudidos] = useState<AcudidoData[]>([]);
@@ -202,6 +222,42 @@ const CalendarioAcudiente = () => {
             <span className="text-foreground font-medium">Actividades</span>
           </div>
         </div>
+
+        {(() => {
+          // Franja informativa: trabajos pendientes de entrega por cada acudido
+          // (el acudiente no entrega; le sirve para estar encima del plazo).
+          const pendientes: Array<{ hijo: string; a: ActividadConHijo }> = [];
+          for (const act of actividades) {
+            if (!act.permite_entregas) continue;
+            const auto = (act as { auto_id?: number }).auto_id ?? -1;
+            if (entregasPorAcudido[String(act.acudido.id)]?.[auto]) continue;
+            pendientes.push({ hijo: `${act.acudido.nombre} ${act.acudido.apellidos}`, a: act });
+          }
+          pendientes.sort((x, y) => (x.a.fecha_limite_entrega || "9999").localeCompare(y.a.fecha_limite_entrega || "9999"));
+          if (loading || pendientes.length === 0) return null;
+          return (
+            <div className="bg-card rounded-lg shadow-soft p-6 mb-6 border-l-4 border-amber-500">
+              <h2 className="text-lg font-bold text-foreground mb-4">
+                Trabajos por entregar <span className="text-amber-600">({pendientes.length})</span>
+              </h2>
+              <div className="space-y-2">
+                {pendientes.map(({ hijo, a }, i) => {
+                  const plazo = textoPlazo(a.fecha_limite_entrega);
+                  return (
+                    <div key={i} className="border border-border rounded-lg p-3">
+                      <p className="text-sm text-foreground">
+                        A <b>{hijo}</b> le falta entregar: <b>{a.Asignatura}</b> — {a.Descripción}
+                      </p>
+                      <p className={`text-xs mt-0.5 font-medium ${plazo.vencido ? "text-amber-700" : "text-muted-foreground"}`}>
+                        {plazo.texto}{plazo.vencido ? " — le queda una sola oportunidad de entrega" : ""}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
 
         <div className="bg-card rounded-lg shadow-soft p-6">
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6">

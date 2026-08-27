@@ -75,6 +75,26 @@ const handleDescargarArchivo = async (url: string) => {
   }
 };
 
+
+/** "vence hoy 11:59 pm", "vence mañana", "venció el 26 de ago" — plazo legible. */
+const textoPlazo = (iso: string | null | undefined): { texto: string; vencido: boolean } => {
+  if (!iso) return { texto: "sin plazo", vencido: false };
+  const lim = new Date(iso);
+  const ahora = new Date();
+  const vencido = ahora > lim;
+  const bog = (d: Date, opts: Intl.DateTimeFormatOptions) =>
+    d.toLocaleString("es-CO", { ...opts, timeZone: "America/Bogota" });
+  const hoyK = bog(ahora, { year: "numeric", month: "2-digit", day: "2-digit" });
+  const limK = bog(lim, { year: "numeric", month: "2-digit", day: "2-digit" });
+  const manana = new Date(ahora.getTime() + 86400000);
+  const mananaK = bog(manana, { year: "numeric", month: "2-digit", day: "2-digit" });
+  const hora = bog(lim, { hour: "numeric", minute: "2-digit", hour12: true });
+  if (vencido) return { texto: `venció el ${bog(lim, { day: "numeric", month: "short" })}`, vencido: true };
+  if (limK === hoyK) return { texto: `vence hoy ${hora}`, vencido: false };
+  if (limK === mananaK) return { texto: `vence mañana ${hora}`, vencido: false };
+  return { texto: `vence el ${bog(lim, { day: "numeric", month: "short" })} ${hora}`, vencido: false };
+};
+
 const CalendarioEstudiante = () => {
   const navigate = useNavigate();
   const [actividades, setActividades] = useState<ActividadCalendario[]>([]);
@@ -223,6 +243,44 @@ const CalendarioEstudiante = () => {
             <span className="text-foreground font-medium">Actividades</span>
           </div>
         </div>
+
+        {(() => {
+          // Franja "Por entregar": actividades con entregas habilitadas que aún
+          // no he entregado, ordenadas por plazo. Atajo directo al modal.
+          const porEntregar = actividades
+            .filter((a) => a.permite_entregas && !entregas[a.auto_id])
+            .sort((x, y) => (x.fecha_limite_entrega || "9999").localeCompare(y.fecha_limite_entrega || "9999"));
+          if (loading || porEntregar.length === 0) return null;
+          return (
+            <div className="bg-card rounded-lg shadow-soft p-6 mb-6 border-l-4 border-primary" data-guia="entrega.franja">
+              <h2 className="text-lg font-bold text-foreground mb-4">
+                Por entregar <span className="text-primary">({porEntregar.length})</span>
+              </h2>
+              <div className="space-y-2">
+                {porEntregar.map((a) => {
+                  const plazo = textoPlazo(a.fecha_limite_entrega);
+                  return (
+                    <div key={a.auto_id} className="flex items-center justify-between gap-3 flex-wrap border border-border rounded-lg p-3">
+                      <div className="min-w-0">
+                        <span className="inline-block px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full">{a.Asignatura}</span>
+                        <p className="text-sm text-foreground mt-1 line-clamp-1">{a.Descripción}</p>
+                        <p className={`text-xs mt-0.5 font-medium ${plazo.vencido ? "text-amber-700" : "text-muted-foreground"}`}>
+                          {plazo.texto}{plazo.vencido ? " — te queda una sola oportunidad" : ""}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setEntregando(a)}
+                        className="shrink-0 px-4 py-2 text-sm font-semibold rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                      >
+                        Entregar trabajo
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
 
         <div className="bg-card rounded-lg shadow-soft p-6">
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6">

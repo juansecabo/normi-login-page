@@ -48,6 +48,26 @@ import { Calendar, Paperclip, FileText, X, Loader2, Pencil, Trash2, Eye, Downloa
 
 const diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 
+
+/** "vence hoy 11:59 pm", "vence mañana", "venció el 26 de ago" — plazo legible. */
+const textoPlazo = (iso: string | null | undefined): { texto: string; vencido: boolean } => {
+  if (!iso) return { texto: "sin plazo", vencido: false };
+  const lim = new Date(iso);
+  const ahora = new Date();
+  const vencido = ahora > lim;
+  const bog = (d: Date, opts: Intl.DateTimeFormatOptions) =>
+    d.toLocaleString("es-CO", { ...opts, timeZone: "America/Bogota" });
+  const hoyK = bog(ahora, { year: "numeric", month: "2-digit", day: "2-digit" });
+  const limK = bog(lim, { year: "numeric", month: "2-digit", day: "2-digit" });
+  const manana = new Date(ahora.getTime() + 86400000);
+  const mananaK = bog(manana, { year: "numeric", month: "2-digit", day: "2-digit" });
+  const hora = bog(lim, { hour: "numeric", minute: "2-digit", hour12: true });
+  if (vencido) return { texto: `venció el ${bog(lim, { day: "numeric", month: "short" })}`, vencido: true };
+  if (limK === hoyK) return { texto: `vence hoy ${hora}`, vencido: false };
+  if (limK === mananaK) return { texto: `vence mañana ${hora}`, vencido: false };
+  return { texto: `vence el ${bog(lim, { day: "numeric", month: "short" })} ${hora}`, vencido: false };
+};
+
 const formatearFecha = (date: Date): string => {
   const y = date.getFullYear();
   const m = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -190,6 +210,16 @@ const ProgramarActividad = () => {
   const [editFechaLimiteStr, setEditFechaLimiteStr] = useState("");
   const [editHoraLimite, setEditHoraLimite] = useState("23:59");
   const [entregasDe, setEntregasDe] = useState<ActividadCalendario | null>(null);
+  const [resumenEntregas, setResumenEntregas] = useState<Array<{
+    actividad_id: number; asignatura: string; descripcion: string; grado: string; salon: string;
+    fecha_limite_entrega: string | null; entregados: number; esperados: number;
+  }>>([]);
+  useEffect(() => {
+    apiRequest('/api/entregas/resumen')
+      .then((r) => setResumenEntregas((r as { resumen: typeof resumenEntregas }).resumen || []))
+      .catch(() => setResumenEntregas([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vista]);
   const [loadingMias, setLoadingMias] = useState(false);
   const [mesCal, setMesCal] = useState<Date>(new Date());
   const [diaSelCal, setDiaSelCal] = useState<Date | undefined>(new Date());
@@ -861,7 +891,6 @@ const ProgramarActividad = () => {
             )}
           </div>
         </div>
-        <p className="text-sm text-muted-foreground max-w-3xl mx-auto mb-6 text-center">Programa las tareas, evaluaciones, exposiciones y demás actividades académicas de tus estudiantes.</p>
 
         <div className="max-w-5xl mx-auto">
           {/* Menú de entrada: dos botones grandes (los profes no veían la pestaña). */}
@@ -1181,7 +1210,34 @@ const ProgramarActividad = () => {
                 <div className="text-center text-muted-foreground py-8">Cargando...</div>
               ) : (
                 <>
-                  <p className="text-sm text-muted-foreground mb-4">Tu calendario de actividades: toca un día para ver lo que dejaste. Incluye las pendientes y el historial de las que ya pasaron.</p>
+                  {resumenEntregas.length > 0 && (
+                    <div className="rounded-lg border-l-4 border-primary bg-muted/30 p-4 mb-4" data-guia="entregas.franja_profe">
+                      <h3 className="text-base font-bold text-foreground mb-3">Con entregas ({resumenEntregas.length})</h3>
+                      <div className="space-y-2">
+                        {resumenEntregas.map((r) => {
+                          const plazo = textoPlazo(r.fecha_limite_entrega);
+                          return (
+                            <div key={r.actividad_id} className="flex items-center justify-between gap-3 flex-wrap bg-card border border-border rounded-lg p-3">
+                              <div className="min-w-0">
+                                <span className="inline-block px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full">{r.asignatura} · {r.grado} {r.salon}</span>
+                                <p className="text-sm text-foreground mt-1 line-clamp-1">{r.descripcion}</p>
+                                <p className={`text-xs mt-0.5 font-medium ${plazo.vencido ? "text-muted-foreground" : "text-muted-foreground"}`}>{plazo.texto}</p>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  const act = misActividades.find((a) => a.auto_id === r.actividad_id);
+                                  if (act) setEntregasDe(act);
+                                }}
+                                className={`shrink-0 px-4 py-2 text-sm font-semibold rounded-full transition-colors ${r.entregados >= r.esperados && r.esperados > 0 ? "bg-emerald-600 text-white hover:bg-emerald-700" : "bg-primary text-primary-foreground hover:opacity-90"}`}
+                              >
+                                {r.entregados}/{r.esperados} entregas
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                   {(() => {
                     // Opciones de filtro derivadas de TODAS las actividades del profe.
                     const opcAsig = [...new Set(misActividades.map((a) => a.Asignatura).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es"));
