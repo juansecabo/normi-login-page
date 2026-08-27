@@ -1115,7 +1115,7 @@ const ProgramarActividad = () => {
                             onChange={(e) => setPermitirEntregas(e.target.checked)}
                           />
                           <span>
-                            <span className="font-medium text-foreground">Permitir entregas por la plataforma</span>
+                            <span className="text-sm font-medium text-foreground">Permitir entregas por la plataforma</span>
                             <span className="block text-xs text-muted-foreground">Los estudiantes podrán subir sus trabajos y tú los revisas desde Actividades Programadas.</span>
                           </span>
                         </label>
@@ -1139,9 +1139,6 @@ const ProgramarActividad = () => {
                                 onChange={(e) => setHoraLimite(e.target.value)}
                               />
                             </div>
-                            <p className="col-span-2 text-xs text-muted-foreground">
-                              Antes del plazo pueden reemplazar o agregar archivos. Al vencer, lo entregado queda congelado; quien no entregó tiene una sola oportunidad tardía (marcada con su atraso).
-                            </p>
                           </div>
                         )}
                       </div>
@@ -1383,7 +1380,7 @@ const ProgramarActividad = () => {
                   onChange={(e) => setEditPermitir(e.target.checked)}
                 />
                 <span>
-                  <span className="font-medium text-foreground">Permitir entregas por la plataforma</span>
+                  <span className="text-sm font-medium text-foreground">Permitir entregas por la plataforma</span>
                   <span className="block text-xs text-muted-foreground">Los estudiantes podrán subir sus trabajos y tú los revisas desde Actividades Programadas.</span>
                 </span>
               </label>
