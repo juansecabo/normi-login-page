@@ -105,6 +105,7 @@ const CalendarioEstudiante = () => {
   // Entregas de trabajos: mis entregas por actividad + modal de entrega.
   const [entregas, setEntregas] = useState<Record<number, EntregaMia>>({});
   const [entregando, setEntregando] = useState<ActividadCalendario | null>(null);
+  const [verEntregaVirtual, setVerEntregaVirtual] = useState(false);
 
   const cargarEntregas = async () => {
     try {
@@ -245,35 +246,81 @@ const CalendarioEstudiante = () => {
         </div>
 
         {(() => {
-          // Franja "Por entregar": actividades con entregas habilitadas que aún
-          // no he entregado, ordenadas por plazo. Atajo directo al modal.
-          const porEntregar = actividades
-            .filter((a) => a.permite_entregas && !entregas[a.auto_id])
-            .sort((x, y) => (x.fecha_limite_entrega || "9999").localeCompare(y.fecha_limite_entrega || "9999"));
-          if (loading || porEntregar.length === 0) return null;
+          // "Actividades con entrega virtual": botón que abre el panel con las
+          // actividades que reciben entregas (pendientes primero, por plazo).
+          const conEntrega = actividades
+            .filter((a) => a.permite_entregas)
+            .sort((x, y) => {
+              const px = entregas[x.auto_id] ? 1 : 0;
+              const py = entregas[y.auto_id] ? 1 : 0;
+              if (px !== py) return px - py;
+              return (x.fecha_limite_entrega || "9999").localeCompare(y.fecha_limite_entrega || "9999");
+            });
+          if (loading || conEntrega.length === 0) return null;
+          const pendientes = conEntrega.filter((a) => !entregas[a.auto_id]).length;
+          if (!verEntregaVirtual) {
+            return (
+              <button
+                onClick={() => setVerEntregaVirtual(true)}
+                data-guia="entrega.franja"
+                className="w-full bg-card rounded-lg shadow-soft p-5 mb-6 border-l-4 border-primary flex items-center justify-between gap-3 hover:bg-muted/50 transition-colors text-left"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <Paperclip className="h-5 w-5 text-primary shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-bold text-foreground">Actividades con entrega virtual</p>
+                    <p className="text-sm text-muted-foreground">
+                      {pendientes > 0 ? `Tienes ${pendientes === 1 ? "1 trabajo" : `${pendientes} trabajos`} por entregar` : "Todo entregado"}
+                    </p>
+                  </div>
+                </div>
+                {pendientes > 0 && (
+                  <span className="shrink-0 min-w-7 h-7 px-2 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center">
+                    {pendientes}
+                  </span>
+                )}
+              </button>
+            );
+          }
           return (
-            <div className="bg-card rounded-lg shadow-soft p-6 mb-6 border-l-4 border-primary" data-guia="entrega.franja">
-              <h2 className="text-lg font-bold text-foreground mb-4">
-                Por entregar <span className="text-primary">({porEntregar.length})</span>
-              </h2>
+            <div className="bg-card rounded-lg shadow-soft p-6 mb-6 border-l-4 border-primary">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+                  <Paperclip className="h-5 w-5 text-primary" />
+                  Actividades con entrega virtual
+                </h2>
+                <button onClick={() => setVerEntregaVirtual(false)} className="text-muted-foreground hover:text-foreground" title="Cerrar">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
               <div className="space-y-2">
-                {porEntregar.map((a) => {
+                {conEntrega.map((a) => {
+                  const entrega = entregas[a.auto_id];
                   const plazo = textoPlazo(a.fecha_limite_entrega);
                   return (
                     <div key={a.auto_id} className="flex items-center justify-between gap-3 flex-wrap border border-border rounded-lg p-3">
                       <div className="min-w-0">
                         <span className="inline-block px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full">{a.Asignatura}</span>
                         <p className="text-sm text-foreground mt-1 line-clamp-1">{a.Descripción}</p>
-                        <p className={`text-xs mt-0.5 font-medium ${plazo.vencido ? "text-amber-700" : "text-muted-foreground"}`}>
-                          {plazo.texto}{plazo.vencido ? " — te queda una sola oportunidad" : ""}
+                        <p className={`text-xs mt-0.5 font-medium ${!entrega && plazo.vencido ? "text-amber-700" : "text-muted-foreground"}`}>
+                          {plazo.texto}{!entrega && plazo.vencido ? " — te queda una sola oportunidad" : ""}
                         </p>
                       </div>
-                      <button
-                        onClick={() => setEntregando(a)}
-                        className="shrink-0 px-4 py-2 text-sm font-semibold rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                      >
-                        Entregar trabajo
-                      </button>
+                      {entrega ? (
+                        <button
+                          onClick={() => setEntregando(a)}
+                          className={`shrink-0 px-4 py-2 text-sm font-semibold rounded-full transition-colors ${entrega.tarde ? "bg-amber-100 text-amber-800 hover:bg-amber-200" : "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"}`}
+                        >
+                          {entrega.tarde ? "✓ Entregado tarde" : "✓ Entregado"}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setEntregando(a)}
+                          className="shrink-0 px-4 py-2 text-sm font-semibold rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                        >
+                          Entregar trabajo
+                        </button>
+                      )}
                     </div>
                   );
                 })}
