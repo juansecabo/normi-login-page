@@ -1547,13 +1547,6 @@ const ProgramarActividad = () => {
         </DialogContent>
       </Dialog>
 
-      <EntregasActividadModal
-        autoId={entregasDe?.auto_id ?? null}
-        titulo={entregasDe ? `${entregasDe.Asignatura} · ${entregasDe.Grado} ${entregasDe.Salon}` : ""}
-        open={!!entregasDe}
-        onOpenChange={(v) => { if (!v) { setEntregasDe(null); cargarResumenEntregas(); } }}
-      />
-
       {/* Delete confirmation dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
