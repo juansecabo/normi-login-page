@@ -1109,6 +1109,7 @@ const ProgramarActividad = () => {
                         <label className="flex items-start gap-2 cursor-pointer select-none">
                           <input
                             type="checkbox"
+                            data-guia="actividades.permitir_entregas"
                             className="mt-1 h-4 w-4 accent-primary"
                             checked={permitirEntregas}
                             onChange={(e) => setPermitirEntregas(e.target.checked)}
