@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { CheckCircle2, Clock, Download, Eye, FileText, Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/apiClient";
 
 /**
- * Modal del PROFESOR para revisar las entregas de trabajos de una actividad
- * (pedido de la coordinadora 2026-08-27). Lista quién entregó (con fecha, y si
- * fue tarde, el tiempo de atraso) y quién falta. Solo lectura: la nota se pone
- * donde siempre, en la tabla de notas.
+ * Entregas de una actividad, para el PROFESOR (pedido de la coordinadora
+ * 2026-08-27). Lista quién entregó (con fecha, y si fue tarde, el tiempo de
+ * atraso) y quién falta, con buscador por nombre del estudiante. Solo lectura:
+ * la nota se pone donde siempre, en la tabla de notas. Se renderiza como
+ * página propia dentro de Programar Actividad (?v=entregas-act&act=ID).
  */
 
 interface Entrega {
@@ -77,117 +78,124 @@ const atrasoTexto = (entrega: string, limite: string): string => {
   return `${d} día${d > 1 ? "s" : ""}${h % 24 ? ` y ${h % 24} h` : ""} tarde`;
 };
 
-export function EntregasActividadModal({
-  autoId,
-  titulo,
-  open,
-  onOpenChange,
-}: {
-  autoId: number | null;
-  titulo: string;
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-}) {
+/** Búsqueda flexible: sin tildes ni mayúsculas. */
+const norm = (s: string) => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+
+export function EntregasDeActividad({ autoId }: { autoId: number | null }) {
   const [data, setData] = useState<Data | null>(null);
   const [loading, setLoading] = useState(false);
+  const [busqueda, setBusqueda] = useState("");
 
   useEffect(() => {
-    if (!open || !autoId) return;
+    if (!autoId) return;
     setLoading(true);
     setData(null);
+    setBusqueda("");
     apiRequest(`/api/entregas/actividad/${autoId}`)
       .then((d) => setData(d as Data))
       .catch(() => setData(null))
       .finally(() => setLoading(false));
-  }, [open, autoId]);
+  }, [autoId]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 py-8 justify-center text-muted-foreground">
+        <Loader2 className="w-5 h-5 animate-spin" /> Cargando entregas...
+      </div>
+    );
+  }
+  if (!data) {
+    return <p className="text-sm text-muted-foreground py-6 text-center">No se pudieron cargar las entregas.</p>;
+  }
+
+  const q = norm(busqueda.trim());
+  const entregas = q ? data.entregas.filter((e) => norm(e.nombre).includes(q)) : data.entregas;
+  const faltantes = q ? data.faltantes.filter((f) => norm(f.nombre).includes(q)) : data.faltantes;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[560px] max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Entregas — {titulo}</DialogTitle>
-        </DialogHeader>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+        <span className="font-semibold text-foreground">
+          {data.entregas.length} de {data.total_esperados} entregaron
+        </span>
+        {data.fecha_limite_entrega && (
+          <span className="text-muted-foreground">
+            Plazo: {fmtFecha(data.fecha_limite_entrega)}
+          </span>
+        )}
+      </div>
 
-        {loading ? (
-          <div className="flex items-center gap-2 py-8 justify-center text-muted-foreground">
-            <Loader2 className="w-5 h-5 animate-spin" /> Cargando entregas...
-          </div>
-        ) : !data ? (
-          <p className="text-sm text-muted-foreground py-6 text-center">No se pudieron cargar las entregas.</p>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-              <span className="font-semibold text-foreground">
-                {data.entregas.length} de {data.total_esperados} entregaron
-              </span>
-              {data.fecha_limite_entrega && (
-                <span className="text-muted-foreground">
-                  Plazo: {fmtFecha(data.fecha_limite_entrega)}
-                </span>
-              )}
-            </div>
+      <Input
+        value={busqueda}
+        onChange={(e) => setBusqueda(e.target.value)}
+        placeholder="Buscar estudiante por nombre…"
+        className="max-w-sm"
+      />
 
-            {data.entregas.length > 0 && (
-              <div className="space-y-3">
-                {data.entregas.map((e) => (
-                  <div key={e.estudiante_id} className="border border-border rounded-lg p-3 space-y-2">
-                    <div className="flex items-start justify-between gap-2 flex-wrap">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <CheckCircle2 className={`w-4 h-4 shrink-0 ${e.tarde ? "text-amber-600" : "text-emerald-600"}`} />
-                        <span className="font-medium text-foreground truncate">{e.nombre}</span>
-                      </div>
-                      <div className="text-xs text-right">
-                        <div className="text-muted-foreground">{fmtFecha(e.fecha_entrega)}</div>
-                        {e.tarde && data.fecha_limite_entrega && (
-                          <div className="text-amber-700 font-semibold">
-                            {atrasoTexto(e.fecha_entrega, data.fecha_limite_entrega)}
-                          </div>
-                        )}
-                      </div>
+      {entregas.length > 0 && (
+        <div className="space-y-3">
+          {entregas.map((e) => (
+            <div key={e.estudiante_id} className="border border-border rounded-lg p-3 space-y-2">
+              <div className="flex items-start justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2 min-w-0">
+                  <CheckCircle2 className={`w-4 h-4 shrink-0 ${e.tarde ? "text-amber-600" : "text-emerald-600"}`} />
+                  <span className="font-medium text-foreground truncate">{e.nombre}</span>
+                </div>
+                <div className="text-xs text-right">
+                  <div className="text-muted-foreground">{fmtFecha(e.fecha_entrega)}</div>
+                  {e.tarde && data.fecha_limite_entrega && (
+                    <div className="text-amber-700 font-semibold">
+                      {atrasoTexto(e.fecha_entrega, data.fecha_limite_entrega)}
                     </div>
-                    {e.comentario && (
-                      <p className="text-sm text-muted-foreground bg-muted/50 rounded px-2 py-1">{e.comentario}</p>
-                    )}
-                    {(e.archivos || "").split("\n").filter(Boolean).map((url, i) => (
-                      <div key={i} className="flex items-center gap-2 flex-wrap">
-                        <FileText className="h-4 w-4 text-blue-600 shrink-0" />
-                        <span className="text-sm truncate flex-1 min-w-[120px]">{getCleanFilename(url)}</span>
-                        <button onClick={() => verArchivo(url)} className="px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 flex items-center gap-1">
-                          <Eye className="h-3.5 w-3.5" /> Ver
-                        </button>
-                        <button onClick={() => descargarArchivo(url)} className="px-2 py-1 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 flex items-center gap-1">
-                          <Download className="h-3.5 w-3.5" /> Descargar
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {data.faltantes.length > 0 && (
-              <div>
-                <p className="text-sm font-semibold text-foreground mb-2">
-                  Sin entregar ({data.faltantes.length})
-                </p>
-                <div className="space-y-1">
-                  {data.faltantes.map((f) => (
-                    <div key={f.estudiante_id} className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Clock className="w-4 h-4 shrink-0" /> {f.nombre}
-                    </div>
-                  ))}
+                  )}
                 </div>
               </div>
-            )}
+              {e.comentario && (
+                <p className="text-sm text-muted-foreground bg-muted/50 rounded px-2 py-1">{e.comentario}</p>
+              )}
+              {(e.archivos || "").split("\n").filter(Boolean).map((url, i) => (
+                <div key={i} className="flex items-center gap-2 flex-wrap">
+                  <FileText className="h-4 w-4 text-blue-600 shrink-0" />
+                  <span className="text-sm truncate flex-1 min-w-[120px]">{getCleanFilename(url)}</span>
+                  <button onClick={() => verArchivo(url)} className="px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 flex items-center gap-1">
+                    <Eye className="h-3.5 w-3.5" /> Ver
+                  </button>
+                  <button onClick={() => descargarArchivo(url)} className="px-2 py-1 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 flex items-center gap-1">
+                    <Download className="h-3.5 w-3.5" /> Descargar
+                  </button>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
 
-            {data.entregas.length === 0 && data.faltantes.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                No hay estudiantes destinatarios en esta actividad.
-              </p>
-            )}
+      {faltantes.length > 0 && (
+        <div>
+          <p className="text-sm font-semibold text-foreground mb-2">
+            Sin entregar ({faltantes.length})
+          </p>
+          <div className="space-y-1">
+            {faltantes.map((f) => (
+              <div key={f.estudiante_id} className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Clock className="w-4 h-4 shrink-0" /> {f.nombre}
+              </div>
+            ))}
           </div>
-        )}
-      </DialogContent>
-    </Dialog>
+        </div>
+      )}
+
+      {q && entregas.length === 0 && faltantes.length === 0 && (
+        <p className="text-sm text-muted-foreground text-center py-4">
+          Ningún estudiante coincide con esa búsqueda.
+        </p>
+      )}
+
+      {!q && data.entregas.length === 0 && data.faltantes.length === 0 && (
+        <p className="text-sm text-muted-foreground text-center py-4">
+          No hay estudiantes destinatarios en esta actividad.
+        </p>
+      )}
+    </div>
   );
 }

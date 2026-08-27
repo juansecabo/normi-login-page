@@ -360,6 +360,7 @@ const CalendarioEstudiante = () => {
               <div data-guia="act.dia_calendario" className="flex justify-center lg:sticky lg:top-4 shrink-0">
                 <Calendar
                   mode="single"
+                  classNames={{ day_today: "bg-red-600 text-white hover:bg-red-600 hover:text-white focus:bg-red-600 focus:text-white aria-selected:bg-red-600 aria-selected:text-white" }}
                   selected={diaSeleccionado}
                   onSelect={setDiaSeleccionado}
                   month={mesActual}

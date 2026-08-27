@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { subirArchivo } from "@/lib/storage";
-import { EntregasActividadModal } from "@/components/EntregasActividadModal";
+import { EntregasDeActividad } from "@/components/EntregasActividadModal";
 import { apiRequest } from "@/lib/apiClient";
 import { getSession, isProfesor, isEstudiante, isPadreDeFamilia } from "@/hooks/useSession";
 import { rankGrado, useGradosColegio } from "@/utils/grados";
@@ -209,7 +209,6 @@ const ProgramarActividad = () => {
   const [editPermitir, setEditPermitir] = useState(false);
   const [editFechaLimiteStr, setEditFechaLimiteStr] = useState("");
   const [editHoraLimite, setEditHoraLimite] = useState("23:59");
-  const [entregasDe, setEntregasDe] = useState<ActividadCalendario | null>(null);
   const [filtroEntAsig, setFiltroEntAsig] = useState("todas");
   const [filtroEntGrado, setFiltroEntGrado] = useState("todos");
   const [filtroEntSalon, setFiltroEntSalon] = useState("todos");
@@ -222,18 +221,23 @@ const ProgramarActividad = () => {
       .then((r) => setResumenEntregas((r as { resumen: typeof resumenEntregas }).resumen || []))
       .catch(() => setResumenEntregas([]));
   };
-  useEffect(() => { cargarResumenEntregas(); }, []);
   const [loadingMias, setLoadingMias] = useState(false);
   const [mesCal, setMesCal] = useState<Date>(new Date());
   const [diaSelCal, setDiaSelCal] = useState<Date | undefined>(new Date());
   // Vista actual en la URL (?v=programar|actividades) para que sobreviva al refrescar.
   const [searchParams, setSearchParams] = useSearchParams();
-  const vista: "menu" | "programar" | "actividades" | "entregas" =
+  const vista: "menu" | "programar" | "actividades" | "entregas" | "entregas-act" =
     searchParams.get("v") === "programar" ? "programar"
     : searchParams.get("v") === "actividades" ? "actividades"
     : searchParams.get("v") === "entregas" ? "entregas"
+    : searchParams.get("v") === "entregas-act" ? "entregas-act"
     : "menu";
   const irA = (v: "menu" | "programar" | "actividades" | "entregas") => setSearchParams(v === "menu" ? {} : { v });
+  // Página de entregas de UNA actividad (?v=entregas-act&act=ID).
+  const entregasActId = Number(searchParams.get("act") || 0);
+  const irAEntregasAct = (autoId: number) => setSearchParams({ v: "entregas-act", act: String(autoId) });
+  // El resumen se refresca al entrar/volver a estas vistas (tras revisar entregas).
+  useEffect(() => { cargarResumenEntregas(); }, [vista]); // eslint-disable-line react-hooks/exhaustive-deps
   // Filtros del calendario de actividades del profesor.
   const [filtroAsig, setFiltroAsig] = useState("todas");
   const [filtroGrado, setFiltroGrado] = useState("todos");
@@ -890,11 +894,19 @@ const ProgramarActividad = () => {
               <>
                 <button onClick={() => irA("menu")} className="text-primary hover:underline">Programar Actividad</button>
                 <span className="text-muted-foreground">→</span>
-                {vista === "entregas" ? (
+                {vista === "entregas" || vista === "entregas-act" ? (
                   <>
                     <button onClick={() => irA("actividades")} className="text-primary hover:underline">Actividades Programadas</button>
                     <span className="text-muted-foreground">→</span>
-                    <span className="text-foreground font-medium">Entrega virtual</span>
+                    {vista === "entregas-act" ? (
+                      <>
+                        <button onClick={() => irA("entregas")} className="text-primary hover:underline">Entrega virtual</button>
+                        <span className="text-muted-foreground">→</span>
+                        <span className="text-foreground font-medium">Entregas</span>
+                      </>
+                    ) : (
+                      <span className="text-foreground font-medium">Entrega virtual</span>
+                    )}
                   </>
                 ) : (
                   <span className="text-foreground font-medium">{vista === "programar" ? "Nueva actividad" : "Actividades Programadas"}</span>
@@ -1282,6 +1294,7 @@ const ProgramarActividad = () => {
                         <div className="flex flex-col items-center lg:sticky lg:top-4 shrink-0">
                           <CalendarComponent
                             mode="single"
+                            classNames={{ day_today: "bg-red-600 text-white hover:bg-red-600 hover:text-white focus:bg-red-600 focus:text-white aria-selected:bg-red-600 aria-selected:text-white" }}
                             selected={diaSelCal}
                             onSelect={setDiaSelCal}
                             month={mesCal}
@@ -1329,7 +1342,7 @@ const ProgramarActividad = () => {
                                     ))}
                                     <div className="flex gap-2 mt-3 flex-wrap">
                                       {actividad.permite_entregas && (
-                                        <Button variant="secondary" size="sm" data-guia="actividades.ver_entregas" onClick={() => setEntregasDe(actividad)} className="gap-1">
+                                        <Button variant="secondary" size="sm" data-guia="actividades.ver_entregas" onClick={() => irAEntregasAct(actividad.auto_id)} className="gap-1">
                                           <FileText className="h-4 w-4" /> Entregas
                                         </Button>
                                       )}
@@ -1388,10 +1401,7 @@ const ProgramarActividad = () => {
                               <p className="text-xs mt-0.5 font-medium text-muted-foreground">{plazo.texto}</p>
                             </div>
                             <button
-                              onClick={() => {
-                                const act = misActividades.find((a) => a.auto_id === r.actividad_id);
-                                if (act) setEntregasDe(act);
-                              }}
+                              onClick={() => irAEntregasAct(r.actividad_id)}
                               className={`shrink-0 px-4 py-2 text-sm font-semibold rounded-full transition-colors ${r.entregados >= r.esperados && r.esperados > 0 ? "bg-emerald-600 text-white hover:bg-emerald-700" : "bg-primary text-primary-foreground hover:opacity-90"}`}
                             >
                               {r.entregados}/{r.esperados} entregas
@@ -1405,6 +1415,20 @@ const ProgramarActividad = () => {
               })()}
             </div>
           )}
+
+          {/* ===== Entregas de UNA actividad (página propia con buscador) ===== */}
+          {vista === "entregas-act" && (() => {
+            const act = misActividades.find((a) => a.auto_id === entregasActId);
+            return (
+              <div className="bg-card rounded-lg shadow-soft p-6 md:p-8">
+                <h2 className="text-xl font-bold text-foreground mb-1">
+                  Entregas{act ? ` — ${act.Asignatura} · ${act.Grado} ${act.Salon}` : ""}
+                </h2>
+                {act && <p className="text-sm text-muted-foreground mb-5 line-clamp-2">{act.Descripción}</p>}
+                <EntregasDeActividad autoId={entregasActId || null} />
+              </div>
+            );
+          })()}
         </div>
       </main>
 
