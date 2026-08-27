@@ -1246,10 +1246,10 @@ const ProgramarActividad = () => {
                             <X className="h-5 w-5" />
                           </button>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-                          <ResponsiveSelect value={filtroEntAsig} onValueChange={setFiltroEntAsig} placeholder="Asignatura" options={[{ value: "todas", label: "Todas las asignaturas" }, ...opcEntAsig.map((a) => ({ value: a, label: a }))]} />
-                          <ResponsiveSelect value={filtroEntGrado} onValueChange={setFiltroEntGrado} placeholder="Grado" options={[{ value: "todos", label: "Todos los grados" }, ...opcEntGrado.map((g) => ({ value: g, label: g }))]} />
-                          <ResponsiveSelect value={filtroEntSalon} onValueChange={setFiltroEntSalon} placeholder="Salón" options={[{ value: "todos", label: "Todos los salones" }, ...opcEntSalon.map((s) => ({ value: s, label: `Salón ${s}` }))]} />
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+                          <ResponsiveSelect value={filtroEntAsig} onValueChange={setFiltroEntAsig} placeholder="Asignaturas" options={[{ value: "todas", label: "Asignaturas" }, ...opcEntAsig.map((a) => ({ value: a, label: a }))]} />
+                          <ResponsiveSelect value={filtroEntGrado} onValueChange={setFiltroEntGrado} placeholder="Grados" options={[{ value: "todos", label: "Grados" }, ...opcEntGrado.map((g) => ({ value: g, label: g }))]} />
+                          <ResponsiveSelect value={filtroEntSalon} onValueChange={setFiltroEntSalon} placeholder="Salones" options={[{ value: "todos", label: "Salones" }, ...opcEntSalon.map((s) => ({ value: s, label: `Salón ${s}` }))]} />
                         </div>
                         <div className="space-y-2">
                           {filtradas.length === 0 && (
@@ -1286,10 +1286,10 @@ const ProgramarActividad = () => {
                     const opcGrado = [...new Set(misActividades.map((a) => a.Grado).filter(Boolean))].sort((a, b) => rankGrado(a) - rankGrado(b));
                     const opcSalon = [...new Set(misActividades.map((a) => a.Salon).filter(Boolean))].sort((a, b) => Number(a) - Number(b));
                     return (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-                        <ResponsiveSelect value={filtroAsig} onValueChange={setFiltroAsig} placeholder="Asignatura" options={[{ value: "todas", label: "Todas las asignaturas" }, ...opcAsig.map((a) => ({ value: a, label: a }))]} />
-                        <ResponsiveSelect value={filtroGrado} onValueChange={setFiltroGrado} placeholder="Grado" options={[{ value: "todos", label: "Todos los grados" }, ...opcGrado.map((g) => ({ value: g, label: g }))]} />
-                        <ResponsiveSelect value={filtroSalon} onValueChange={setFiltroSalon} placeholder="Salón" options={[{ value: "todos", label: "Todos los salones" }, ...opcSalon.map((s) => ({ value: s, label: `Salón ${s}` }))]} />
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+                        <ResponsiveSelect value={filtroAsig} onValueChange={setFiltroAsig} placeholder="Asignaturas" options={[{ value: "todas", label: "Asignaturas" }, ...opcAsig.map((a) => ({ value: a, label: a }))]} />
+                        <ResponsiveSelect value={filtroGrado} onValueChange={setFiltroGrado} placeholder="Grados" options={[{ value: "todos", label: "Grados" }, ...opcGrado.map((g) => ({ value: g, label: g }))]} />
+                        <ResponsiveSelect value={filtroSalon} onValueChange={setFiltroSalon} placeholder="Salones" options={[{ value: "todos", label: "Salones" }, ...opcSalon.map((s) => ({ value: s, label: `Salón ${s}` }))]} />
                         <Input value={busquedaAct} onChange={(e) => setBusquedaAct(e.target.value)} placeholder="Buscar por descripción…" />
                       </div>
                     );
