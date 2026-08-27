@@ -19,13 +19,17 @@ interface ResponsiveSelectProps {
   disabled?: boolean;
   /** Marca para "Normi te guía" (data-guia); se aplica al control visible. */
   dataGuia?: string;
+  /** No renderizar la opción vacía del placeholder en el select nativo (móvil).
+   *  Para filtros cuya primera opción real ya cumple ese papel (p. ej. "todas"),
+   *  donde el placeholder saldría repetido y seleccionarlo dejaría valor "". */
+  sinOpcionPlaceholder?: boolean;
 }
 
 /**
  * Native <select> on mobile (better OS picker UX),
  * shadcn Select on desktop (consistent design, always opens down).
  */
-const ResponsiveSelect = ({ value, onValueChange, placeholder, options, disabled, dataGuia }: ResponsiveSelectProps) => {
+const ResponsiveSelect = ({ value, onValueChange, placeholder, options, disabled, dataGuia, sinOpcionPlaceholder }: ResponsiveSelectProps) => {
   return (
     <>
       {/* Mobile: native select */}
@@ -36,7 +40,7 @@ const ResponsiveSelect = ({ value, onValueChange, placeholder, options, disabled
         data-guia={dataGuia}
         className="md:hidden w-full p-3 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
       >
-        <option value="">{placeholder}</option>
+        {!sinOpcionPlaceholder && <option value="">{placeholder}</option>}
         {options.map((o) => (
           <option key={o.value} value={o.value}>{o.label}</option>
         ))}
