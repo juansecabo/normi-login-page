@@ -47,14 +47,8 @@ const ManualColegio = ({ manualUrl, onChanged }: { manualUrl: string | null; onC
     if (file.size > 20 * 1024 * 1024) { toast({ title: "Archivo grande", description: "Máximo 20 MB.", variant: "destructive" }); return; }
     setSubiendo(true);
     try {
-      const cambio = !!manualUrl;
       await apiClient.institucion.subirManual(file);
       await onChanged();
-      toast({
-        variant: "success" as never,
-        title: cambio ? "Manual cambiado" : "Manual subido",
-        description: "El PDF ya está disponible en el botón «Manual de Convivencia» de los tableros.",
-      });
     } catch (err: any) {
       toast({ title: "No se pudo subir", description: err?.message, variant: "destructive" });
     } finally {
