@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ClipboardList, X, Paperclip, Eye, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -105,7 +105,10 @@ const CalendarioEstudiante = () => {
   // Entregas de trabajos: mis entregas por actividad + modal de entrega.
   const [entregas, setEntregas] = useState<Record<number, EntregaMia>>({});
   const [entregando, setEntregando] = useState<ActividadCalendario | null>(null);
-  const [verEntregaVirtual, setVerEntregaVirtual] = useState(false);
+  // "Entrega virtual" es una página propia (?v=entregas) con breadcrumb.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const vistaEntregas = searchParams.get("v") === "entregas";
+  const [filtroEntAsig, setFiltroEntAsig] = useState("todas");
 
   const cargarEntregas = async () => {
     try {
@@ -241,13 +244,21 @@ const CalendarioEstudiante = () => {
               Inicio
             </button>
             <span className="text-muted-foreground">→</span>
-            <span className="text-foreground font-medium">Actividades</span>
+            {vistaEntregas ? (
+              <>
+                <button onClick={() => setSearchParams({})} className="text-primary hover:underline">Actividades</button>
+                <span className="text-muted-foreground">→</span>
+                <span className="text-foreground font-medium">Entrega virtual</span>
+              </>
+            ) : (
+              <span className="text-foreground font-medium">Actividades</span>
+            )}
           </div>
         </div>
 
         {(() => {
-          // "Actividades con entrega virtual": botón que abre el panel con las
-          // actividades que reciben entregas (pendientes primero, por plazo).
+          // "Actividades con entrega virtual": botón que lleva a su página
+          // (?v=entregas). Pendientes primero, luego entregadas, por plazo.
           const conEntrega = actividades
             .filter((a) => a.permite_entregas)
             .sort((x, y) => {
@@ -258,22 +269,14 @@ const CalendarioEstudiante = () => {
             });
           if (loading || conEntrega.length === 0) return null;
           const pendientes = conEntrega.filter((a) => !entregas[a.auto_id]).length;
-          if (!verEntregaVirtual) {
+          if (!vistaEntregas) {
             return (
               <button
-                onClick={() => setVerEntregaVirtual(true)}
+                onClick={() => setSearchParams({ v: "entregas" })}
                 data-guia="entrega.franja"
-                className="w-full bg-card rounded-lg shadow-soft p-5 mb-6 border-l-4 border-primary flex items-center justify-between gap-3 hover:bg-muted/50 transition-colors text-left"
+                className="w-full rounded-lg bg-primary/10 border-l-4 border-primary px-4 py-3 mb-6 flex items-center justify-between gap-3 hover:bg-primary/20 transition-colors text-left"
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <Paperclip className="h-5 w-5 text-primary shrink-0" />
-                  <div className="min-w-0">
-                    <p className="font-bold text-foreground">Actividades con entrega virtual</p>
-                    <p className="text-sm text-muted-foreground">
-                      {pendientes > 0 ? `Tienes ${pendientes === 1 ? "1 trabajo" : `${pendientes} trabajos`} por entregar` : "Todo entregado"}
-                    </p>
-                  </div>
-                </div>
+                <p className="font-bold text-foreground">Actividades con entrega virtual</p>
                 {pendientes > 0 && (
                   <span className="shrink-0 min-w-7 h-7 px-2 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center">
                     {pendientes}
@@ -282,19 +285,31 @@ const CalendarioEstudiante = () => {
               </button>
             );
           }
+          const opcAsig = [...new Set(conEntrega.map((a) => a.Asignatura).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es"));
+          const filtradas = filtroEntAsig === "todas" ? conEntrega : conEntrega.filter((a) => a.Asignatura === filtroEntAsig);
           return (
-            <div className="bg-card rounded-lg shadow-soft p-6 mb-6 border-l-4 border-primary">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-                  <Paperclip className="h-5 w-5 text-primary" />
-                  Actividades con entrega virtual
-                </h2>
-                <button onClick={() => setVerEntregaVirtual(false)} className="text-muted-foreground hover:text-foreground" title="Cerrar">
-                  <X className="h-5 w-5" />
-                </button>
+            <div className="bg-card rounded-lg shadow-soft p-6">
+              <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-5">
+                <Paperclip className="h-5 w-5 text-primary" />
+                Actividades con entrega virtual
+              </h2>
+              <div className="mb-4 max-w-xs">
+                <select
+                  value={filtroEntAsig}
+                  onChange={(e) => setFiltroEntAsig(e.target.value)}
+                  className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                >
+                  <option value="todas">Asignaturas</option>
+                  {opcAsig.map((a) => (
+                    <option key={a} value={a}>{a}</option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-2">
-                {conEntrega.map((a) => {
+                {filtradas.length === 0 && (
+                  <p className="text-sm text-muted-foreground py-2">No hay actividades de esa asignatura.</p>
+                )}
+                {filtradas.map((a) => {
                   const entrega = entregas[a.auto_id];
                   const plazo = textoPlazo(a.fecha_limite_entrega);
                   return (
@@ -329,7 +344,9 @@ const CalendarioEstudiante = () => {
           );
         })()}
 
-        <div className="bg-card rounded-lg shadow-soft p-6">
+        {/* En la página "Entrega virtual" el calendario se oculta (sigue montado
+            para conservar el día seleccionado al volver). */}
+        <div className={vistaEntregas ? "hidden" : "bg-card rounded-lg shadow-soft p-6"}>
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6">
             <ClipboardList className="h-5 w-5 text-primary" />
             Actividades Asignadas

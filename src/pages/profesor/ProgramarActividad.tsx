@@ -210,7 +210,6 @@ const ProgramarActividad = () => {
   const [editFechaLimiteStr, setEditFechaLimiteStr] = useState("");
   const [editHoraLimite, setEditHoraLimite] = useState("23:59");
   const [entregasDe, setEntregasDe] = useState<ActividadCalendario | null>(null);
-  const [verEntregasVirtuales, setVerEntregasVirtuales] = useState(false);
   const [filtroEntAsig, setFiltroEntAsig] = useState("todas");
   const [filtroEntGrado, setFiltroEntGrado] = useState("todos");
   const [filtroEntSalon, setFiltroEntSalon] = useState("todos");
@@ -229,11 +228,12 @@ const ProgramarActividad = () => {
   const [diaSelCal, setDiaSelCal] = useState<Date | undefined>(new Date());
   // Vista actual en la URL (?v=programar|actividades) para que sobreviva al refrescar.
   const [searchParams, setSearchParams] = useSearchParams();
-  const vista: "menu" | "programar" | "actividades" =
+  const vista: "menu" | "programar" | "actividades" | "entregas" =
     searchParams.get("v") === "programar" ? "programar"
     : searchParams.get("v") === "actividades" ? "actividades"
+    : searchParams.get("v") === "entregas" ? "entregas"
     : "menu";
-  const irA = (v: "menu" | "programar" | "actividades") => setSearchParams(v === "menu" ? {} : { v });
+  const irA = (v: "menu" | "programar" | "actividades" | "entregas") => setSearchParams(v === "menu" ? {} : { v });
   // Filtros del calendario de actividades del profesor.
   const [filtroAsig, setFiltroAsig] = useState("todas");
   const [filtroGrado, setFiltroGrado] = useState("todos");
@@ -890,7 +890,15 @@ const ProgramarActividad = () => {
               <>
                 <button onClick={() => irA("menu")} className="text-primary hover:underline">Programar Actividad</button>
                 <span className="text-muted-foreground">→</span>
-                <span className="text-foreground font-medium">{vista === "programar" ? "Nueva actividad" : "Actividades Programadas"}</span>
+                {vista === "entregas" ? (
+                  <>
+                    <button onClick={() => irA("actividades")} className="text-primary hover:underline">Actividades Programadas</button>
+                    <span className="text-muted-foreground">→</span>
+                    <span className="text-foreground font-medium">Entrega virtual</span>
+                  </>
+                ) : (
+                  <span className="text-foreground font-medium">{vista === "programar" ? "Nueva actividad" : "Actividades Programadas"}</span>
+                )}
               </>
             )}
           </div>
@@ -1214,82 +1222,30 @@ const ProgramarActividad = () => {
                 <div className="text-center text-muted-foreground py-8">Cargando...</div>
               ) : (
                 <>
-                  {resumenEntregas.length > 0 && !verEntregasVirtuales && (
+                  {resumenEntregas.length > 0 && (
                     <button
-                      onClick={() => setVerEntregasVirtuales(true)}
+                      onClick={() => irA("entregas")}
                       data-guia="entregas.franja_profe"
-                      className="w-full rounded-lg border-l-4 border-primary bg-muted/30 p-4 mb-4 flex items-center justify-between gap-3 hover:bg-muted/60 transition-colors text-left"
+                      className="w-full rounded-lg bg-primary/10 border-l-4 border-primary px-4 py-3 mb-4 flex items-center justify-between gap-3 hover:bg-primary/20 transition-colors text-left"
                     >
-                      <div className="min-w-0">
-                        <p className="text-base font-bold text-foreground">Actividades con entrega virtual</p>
-                        <p className="text-sm text-muted-foreground">Revisa los trabajos que te han enviado los estudiantes</p>
-                      </div>
+                      <p className="font-bold text-foreground">Actividades con entrega virtual</p>
                       <span className="shrink-0 min-w-7 h-7 px-2 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center">
                         {resumenEntregas.length}
                       </span>
                     </button>
                   )}
-                  {resumenEntregas.length > 0 && verEntregasVirtuales && (() => {
-                    const opcEntAsig = [...new Set(resumenEntregas.map((r) => r.asignatura).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es"));
-                    const opcEntGrado = [...new Set(resumenEntregas.map((r) => r.grado).filter(Boolean))].sort((a, b) => rankGrado(a) - rankGrado(b));
-                    const opcEntSalon = [...new Set(resumenEntregas.map((r) => r.salon).filter(Boolean))].sort((a, b) => Number(a) - Number(b));
-                    const filtradas = resumenEntregas.filter((r) =>
-                      (filtroEntAsig === "todas" || r.asignatura === filtroEntAsig) &&
-                      (filtroEntGrado === "todos" || r.grado === filtroEntGrado) &&
-                      (filtroEntSalon === "todos" || r.salon === filtroEntSalon)
-                    );
-                    return (
-                      <div className="rounded-lg border-l-4 border-primary bg-muted/30 p-4 mb-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="text-base font-bold text-foreground">Actividades con entrega virtual ({filtradas.length})</h3>
-                          <button onClick={() => setVerEntregasVirtuales(false)} className="text-muted-foreground hover:text-foreground" title="Cerrar">
-                            <X className="h-5 w-5" />
-                          </button>
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
-                          <ResponsiveSelect value={filtroEntAsig} onValueChange={setFiltroEntAsig} placeholder="Asignaturas" options={[{ value: "todas", label: "Asignaturas" }, ...opcEntAsig.map((a) => ({ value: a, label: a }))]} />
-                          <ResponsiveSelect value={filtroEntGrado} onValueChange={setFiltroEntGrado} placeholder="Grados" options={[{ value: "todos", label: "Grados" }, ...opcEntGrado.map((g) => ({ value: g, label: g }))]} />
-                          <ResponsiveSelect value={filtroEntSalon} onValueChange={setFiltroEntSalon} placeholder="Salones" options={[{ value: "todos", label: "Salones" }, ...opcEntSalon.map((s) => ({ value: s, label: `Salón ${s}` }))]} />
-                        </div>
-                        <div className="space-y-2">
-                          {filtradas.length === 0 && (
-                            <p className="text-sm text-muted-foreground py-2">No hay actividades con esos filtros.</p>
-                          )}
-                          {filtradas.map((r) => {
-                            const plazo = textoPlazo(r.fecha_limite_entrega);
-                            return (
-                              <div key={r.actividad_id} className="flex items-center justify-between gap-3 flex-wrap bg-card border border-border rounded-lg p-3">
-                                <div className="min-w-0">
-                                  <span className="inline-block px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full">{r.asignatura} · {r.grado} {r.salon}</span>
-                                  <p className="text-sm text-foreground mt-1 line-clamp-1">{r.descripcion}</p>
-                                  <p className="text-xs mt-0.5 font-medium text-muted-foreground">{plazo.texto}</p>
-                                </div>
-                                <button
-                                  onClick={() => {
-                                    const act = misActividades.find((a) => a.auto_id === r.actividad_id);
-                                    if (act) setEntregasDe(act);
-                                  }}
-                                  className={`shrink-0 px-4 py-2 text-sm font-semibold rounded-full transition-colors ${r.entregados >= r.esperados && r.esperados > 0 ? "bg-emerald-600 text-white hover:bg-emerald-700" : "bg-primary text-primary-foreground hover:opacity-90"}`}
-                                >
-                                  {r.entregados}/{r.esperados} entregas
-                                </button>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })()}
                   {(() => {
                     // Opciones de filtro derivadas de TODAS las actividades del profe.
                     const opcAsig = [...new Set(misActividades.map((a) => a.Asignatura).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es"));
                     const opcGrado = [...new Set(misActividades.map((a) => a.Grado).filter(Boolean))].sort((a, b) => rankGrado(a) - rankGrado(b));
                     const opcSalon = [...new Set(misActividades.map((a) => a.Salon).filter(Boolean))].sort((a, b) => Number(a) - Number(b));
                     return (
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-                        <ResponsiveSelect value={filtroAsig} onValueChange={setFiltroAsig} placeholder="Asignaturas" options={[{ value: "todas", label: "Asignaturas" }, ...opcAsig.map((a) => ({ value: a, label: a }))]} />
-                        <ResponsiveSelect value={filtroGrado} onValueChange={setFiltroGrado} placeholder="Grados" options={[{ value: "todos", label: "Grados" }, ...opcGrado.map((g) => ({ value: g, label: g }))]} />
-                        <ResponsiveSelect value={filtroSalon} onValueChange={setFiltroSalon} placeholder="Salones" options={[{ value: "todos", label: "Salones" }, ...opcSalon.map((s) => ({ value: s, label: `Salón ${s}` }))]} />
+                      <div className="mb-5">
+                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
+                          <ResponsiveSelect value={filtroAsig} onValueChange={setFiltroAsig} placeholder="Asignaturas" options={[{ value: "todas", label: "Asignaturas" }, ...opcAsig.map((a) => ({ value: a, label: a }))]} />
+                          <ResponsiveSelect value={filtroGrado} onValueChange={setFiltroGrado} placeholder="Grados" options={[{ value: "todos", label: "Grados" }, ...opcGrado.map((g) => ({ value: g, label: g }))]} />
+                          <ResponsiveSelect value={filtroSalon} onValueChange={setFiltroSalon} placeholder="Salones" options={[{ value: "todos", label: "Salones" }, ...opcSalon.map((s) => ({ value: s, label: `Salón ${s}` }))]} />
+                        </div>
                         <Input value={busquedaAct} onChange={(e) => setBusquedaAct(e.target.value)} placeholder="Buscar por descripción…" />
                       </div>
                     );
@@ -1395,6 +1351,58 @@ const ProgramarActividad = () => {
                   })()}
                 </>
               )}
+            </div>
+          )}
+
+          {/* ===== Actividades con entrega virtual ===== */}
+          {vista === "entregas" && (
+            <div className="bg-card rounded-lg shadow-soft p-6 md:p-8">
+              <h2 className="text-xl font-bold text-foreground mb-5">Actividades con entrega virtual</h2>
+              {(() => {
+                const opcEntAsig = [...new Set(resumenEntregas.map((r) => r.asignatura).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es"));
+                const opcEntGrado = [...new Set(resumenEntregas.map((r) => r.grado).filter(Boolean))].sort((a, b) => rankGrado(a) - rankGrado(b));
+                const opcEntSalon = [...new Set(resumenEntregas.map((r) => r.salon).filter(Boolean))].sort((a, b) => Number(a) - Number(b));
+                const filtradas = resumenEntregas.filter((r) =>
+                  (filtroEntAsig === "todas" || r.asignatura === filtroEntAsig) &&
+                  (filtroEntGrado === "todos" || r.grado === filtroEntGrado) &&
+                  (filtroEntSalon === "todos" || r.salon === filtroEntSalon)
+                );
+                return (
+                  <>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+                      <ResponsiveSelect value={filtroEntAsig} onValueChange={setFiltroEntAsig} placeholder="Asignaturas" options={[{ value: "todas", label: "Asignaturas" }, ...opcEntAsig.map((a) => ({ value: a, label: a }))]} />
+                      <ResponsiveSelect value={filtroEntGrado} onValueChange={setFiltroEntGrado} placeholder="Grados" options={[{ value: "todos", label: "Grados" }, ...opcEntGrado.map((g) => ({ value: g, label: g }))]} />
+                      <ResponsiveSelect value={filtroEntSalon} onValueChange={setFiltroEntSalon} placeholder="Salones" options={[{ value: "todos", label: "Salones" }, ...opcEntSalon.map((s) => ({ value: s, label: `Salón ${s}` }))]} />
+                    </div>
+                    <div className="space-y-2">
+                      {filtradas.length === 0 && (
+                        <p className="text-sm text-muted-foreground py-2">No hay actividades con esos filtros.</p>
+                      )}
+                      {filtradas.map((r) => {
+                        const plazo = textoPlazo(r.fecha_limite_entrega);
+                        return (
+                          <div key={r.actividad_id} className="flex items-center justify-between gap-3 flex-wrap border border-border rounded-lg p-3">
+                            <div className="min-w-0">
+                              <span className="inline-block px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full">{r.asignatura} · {r.grado} {r.salon}</span>
+                              <p className="text-sm text-foreground mt-1 line-clamp-1">{r.descripcion}</p>
+                              <p className="text-xs mt-0.5 font-medium text-muted-foreground">{plazo.texto}</p>
+                            </div>
+                            <button
+                              onClick={() => {
+                                const act = misActividades.find((a) => a.auto_id === r.actividad_id);
+                                if (act) setEntregasDe(act);
+                              }}
+                              className={`shrink-0 px-4 py-2 text-sm font-semibold rounded-full transition-colors ${r.entregados >= r.esperados && r.esperados > 0 ? "bg-emerald-600 text-white hover:bg-emerald-700" : "bg-primary text-primary-foreground hover:opacity-90"}`}
+                            >
+                              {r.entregados}/{r.esperados} entregas
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           )}
         </div>
