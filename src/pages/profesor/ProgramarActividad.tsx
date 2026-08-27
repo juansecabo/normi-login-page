@@ -883,8 +883,9 @@ const ProgramarActividad = () => {
       <main className="flex-1 container mx-auto p-4 md:p-8">
         {/* Breadcrumb */}
         <div className="bg-card rounded-lg shadow-soft p-4 max-w-3xl mx-auto mb-6">
-          {/* overflow-x: si el camino no cabe (móvil), se desliza con el dedo. */}
-          <div className="flex items-center gap-2 text-sm overflow-x-auto whitespace-nowrap [&>*]:shrink-0">
+          {/* Cada nivel envuelve en varias líneas para aprovechar el ancho; si aun
+              así no cabe, se desliza con el dedo (sin barra de scroll visible). */}
+          <div className="flex items-center gap-2 text-sm overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden text-center">
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">
               Inicio
             </button>
