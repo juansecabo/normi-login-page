@@ -89,7 +89,7 @@ export function EntregarTrabajoModal({
         title: res.tarde ? "Entrega registrada (fuera de plazo)" : "Trabajo entregado",
         description: res.tarde
           ? "Quedó registrada con la fecha y hora de hoy. Ya no se puede modificar."
-          : "Tu profesor podrá revisarlo. Puedes cambiarlo mientras no venza el plazo.",
+          : "Tu profesor podrá revisarlo.",
       });
       onEntregada();
       onOpenChange(false);
