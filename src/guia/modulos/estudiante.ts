@@ -124,25 +124,6 @@ export const ESTUDIANTE: Capacidad[] = [
     ],
   },
   {
-    id: "est.marcar_actividad",
-    titulo: "Marcar una actividad como hecha o para estudiar",
-    descripcion:
-      "Señalar una tarea con 'Hecho' (borde verde) o 'Estudiar' (borde amarillo) para organizarte. Volver a tocar el botón quita la marca.",
-    categoria: "Actividades",
-    roles: ["estudiante"],
-    ruta: "/estudiante/actividades",
-    sinonimos: ["marcar tarea hecha", "señalar para estudiar", "organizar mis tareas"],
-    pasos: [
-      { narracion: "Toca la ficha 'Actividades' en tu tablero.", accion: "navegar", ruta: "/estudiante/actividades" },
-      { narracion: "Toca un día naranja para ver sus actividades.", accion: "click", ancla: "act.dia_calendario" },
-      {
-        narracion:
-          "En cada actividad tienes 'Hecho' y 'Estudiar'. Toca 'Hecho' cuando la termines, o 'Estudiar' para recordar repasarla. Solo puede tener una marca a la vez.",
-        accion: "click",
-      },
-    ],
-  },
-  {
     id: "est.entregar_trabajo",
     titulo: "Entregar un trabajo a tu profesor",
     descripcion:
