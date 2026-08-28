@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { subirArchivo } from "@/lib/storage";
 import { EntregasDeActividad } from "@/components/EntregasActividadModal";
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 import { apiRequest } from "@/lib/apiClient";
 import { getSession, isProfesor, isEstudiante, isPadreDeFamilia } from "@/hooks/useSession";
 import { rankGrado, useGradosColegio } from "@/utils/grados";
@@ -883,9 +884,7 @@ const ProgramarActividad = () => {
       <main className="flex-1 container mx-auto p-4 md:p-8">
         {/* Breadcrumb */}
         <div className="bg-card rounded-lg shadow-soft p-4 max-w-3xl mx-auto mb-6">
-          {/* Cada nivel envuelve en varias líneas para aprovechar el ancho; si aun
-              así no cabe, se desliza con el dedo (sin barra de scroll visible). */}
-          <div className="flex items-center gap-2 text-sm overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden text-center">
+          <BreadcrumbDeslizable clave={vista}>
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">
               Inicio
             </button>
@@ -915,7 +914,7 @@ const ProgramarActividad = () => {
                 )}
               </>
             )}
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         <div className="max-w-5xl mx-auto">

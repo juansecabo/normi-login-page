@@ -10,6 +10,7 @@ import { es } from "date-fns/locale";
 import { markLastSeen } from "@/utils/notificaciones";
 import { apiRequest } from "@/lib/apiClient";
 import { EntregarTrabajoModal, type EntregaMia } from "@/components/EntregarTrabajoModal";
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 
 interface ActividadCalendario {
   column_id: string;
@@ -239,9 +240,7 @@ const CalendarioEstudiante = () => {
       <main className="flex-1 container mx-auto p-4 md:p-8">
         {/* Breadcrumb */}
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          {/* Cada nivel envuelve en varias líneas para aprovechar el ancho; si aun
-              así no cabe, se desliza con el dedo (sin barra de scroll visible). */}
-          <div className="flex items-center gap-2 text-sm overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden text-center">
+          <BreadcrumbDeslizable clave={vistaEntregas ? "entregas" : "actividades"}>
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">
               Inicio
             </button>
@@ -255,7 +254,7 @@ const CalendarioEstudiante = () => {
             ) : (
               <span className="text-foreground font-medium">Actividades</span>
             )}
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         {(() => {
