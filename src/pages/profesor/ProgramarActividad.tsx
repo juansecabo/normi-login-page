@@ -1322,7 +1322,11 @@ const ProgramarActividad = () => {
                 <h2 className="text-base font-semibold text-foreground mb-1">
                   {act ? `${act.Asignatura} - ${act.Grado} ${act.Salon}` : "Entregas"}
                 </h2>
-                {act && <p className="text-sm text-muted-foreground mb-5 line-clamp-2">{act.Descripción}</p>}
+                {act && (
+                  <div className="rounded-md bg-emerald-50 border border-emerald-100 px-3 py-2 mb-5">
+                    <p className="text-base text-foreground">{act.Descripción}</p>
+                  </div>
+                )}
                 <EntregasDeActividad autoId={entregasActId || null} />
               </div>
             );
