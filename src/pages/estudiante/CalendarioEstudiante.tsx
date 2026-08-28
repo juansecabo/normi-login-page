@@ -89,8 +89,9 @@ const CalendarioEstudiante = () => {
   // Entregas de trabajos: mis entregas por actividad + modal de entrega.
   const [entregas, setEntregas] = useState<Record<number, EntregaMia>>({});
   const [entregando, setEntregando] = useState<ActividadCalendario | null>(null);
-  // Filtro por asignatura del calendario de actividades.
+  // Filtros del calendario de actividades.
   const [filtroAsig, setFiltroAsig] = useState("todas");
+  const [soloConEntrega, setSoloConEntrega] = useState(false);
 
   const cargarEntregas = async () => {
     try {
@@ -196,10 +197,11 @@ const CalendarioEstudiante = () => {
   const opcionesAsignaturas = [...new Set(actividades.map((a) => a.Asignatura).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b, "es"));
 
-  // Mapear actividades por fecha (respetando el filtro por asignatura)
+  // Mapear actividades por fecha (respetando los filtros)
   const actividadesPorFecha: Record<string, ActividadCalendario[]> = {};
   actividades.forEach(a => {
     if (filtroAsig !== "todas" && a.Asignatura !== filtroAsig) return;
+    if (soloConEntrega && !a.permite_entregas) return;
     const fecha = parsearFecha(a.fecha_de_presentacion);
     if (fecha) {
       const key = fechaKey(fecha);
@@ -245,16 +247,27 @@ const CalendarioEstudiante = () => {
             Actividades Asignadas
           </h2>
 
-          {/* Filtro por asignatura: afecta los días marcados y la lista del día. */}
-          {!loading && opcionesAsignaturas.length > 1 && (
-            <div className="mb-4 max-w-xs" data-guia="entrega.franja">
-              <ResponsiveSelect
-                sinOpcionPlaceholder
-                value={filtroAsig}
-                onValueChange={setFiltroAsig}
-                placeholder="Asignaturas"
-                options={[{ value: "todas", label: "Asignaturas" }, ...opcionesAsignaturas.map((a) => ({ value: a, label: a }))]}
-              />
+          {/* Filtros: afectan los días marcados y la lista del día. */}
+          {!loading && opcionesAsignaturas.length > 0 && (
+            <div className="mb-4 flex flex-wrap items-center gap-3" data-guia="entrega.franja">
+              <div className="w-full max-w-[180px]">
+                <ResponsiveSelect
+                  sinOpcionPlaceholder
+                  value={filtroAsig}
+                  onValueChange={setFiltroAsig}
+                  placeholder="Asignaturas"
+                  options={[{ value: "todas", label: "Asignaturas" }, ...opcionesAsignaturas.map((a) => ({ value: a, label: a }))]}
+                />
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 accent-primary shrink-0"
+                  checked={soloConEntrega}
+                  onChange={(e) => setSoloConEntrega(e.target.checked)}
+                />
+                <span className="text-sm text-foreground">Con entrega en plataforma</span>
+              </label>
             </div>
           )}
 

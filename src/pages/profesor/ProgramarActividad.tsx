@@ -209,6 +209,7 @@ const ProgramarActividad = () => {
   const [filtroAsig, setFiltroAsig] = useState("todas");
   const [filtroGrado, setFiltroGrado] = useState("todos");
   const [filtroSalon, setFiltroSalon] = useState("todos");
+  const [soloConEntrega, setSoloConEntrega] = useState(false);
   const [busquedaAct, setBusquedaAct] = useState("");
 
   // Edit modal state
@@ -1199,10 +1200,19 @@ const ProgramarActividad = () => {
                     const opcSalon = [...new Set(misActividades.map((a) => a.Salon).filter(Boolean))].sort((a, b) => Number(a) - Number(b));
                     return (
                       <div className="mb-5">
-                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3 items-center">
                           <ResponsiveSelect sinOpcionPlaceholder value={filtroAsig} onValueChange={setFiltroAsig} placeholder="Asignaturas" options={[{ value: "todas", label: "Asignaturas" }, ...opcAsig.map((a) => ({ value: a, label: a }))]} />
                           <ResponsiveSelect sinOpcionPlaceholder value={filtroGrado} onValueChange={setFiltroGrado} placeholder="Grados" options={[{ value: "todos", label: "Grados" }, ...opcGrado.map((g) => ({ value: g, label: g }))]} />
                           <ResponsiveSelect sinOpcionPlaceholder value={filtroSalon} onValueChange={setFiltroSalon} placeholder="Salones" options={[{ value: "todos", label: "Salones" }, ...opcSalon.map((s) => ({ value: s, label: `Salón ${s}` }))]} />
+                          <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 accent-primary shrink-0"
+                              checked={soloConEntrega}
+                              onChange={(e) => setSoloConEntrega(e.target.checked)}
+                            />
+                            <span className="text-sm text-foreground">Con entrega en plataforma</span>
+                          </label>
                         </div>
                         <Input value={busquedaAct} onChange={(e) => setBusquedaAct(e.target.value)} placeholder="Buscar por descripción…" />
                       </div>
@@ -1216,6 +1226,7 @@ const ProgramarActividad = () => {
                       (filtroAsig === "todas" || a.Asignatura === filtroAsig) &&
                       (filtroGrado === "todos" || a.Grado === filtroGrado) &&
                       (filtroSalon === "todos" || a.Salon === filtroSalon) &&
+                      (!soloConEntrega || !!a.permite_entregas) &&
                       (!q || norm(a.Descripción).includes(q))
                     );
                     const porFecha: Record<string, ActividadCalendario[]> = {};
