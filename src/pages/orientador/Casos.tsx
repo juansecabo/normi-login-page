@@ -64,9 +64,9 @@ interface Caso {
 const fmtFecha = (s: string) => new Date(s + "T12:00:00").toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" });
 const fmtLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-const Section = ({ n, title, openSec, setOpenSec, children }: { n: number; title: string; openSec: number | null; setOpenSec: (v: number | null) => void; children: React.ReactNode }) => (
+const Section = ({ n, title, openSec, setOpenSec, dataGuia, children }: { n: number; title: string; openSec: number | null; setOpenSec: (v: number | null) => void; dataGuia?: string; children: React.ReactNode }) => (
   <div className="border border-border rounded-md overflow-hidden">
-    <button type="button" onClick={() => setOpenSec(openSec === n ? null : n)} className="w-full flex items-center justify-between px-3 py-2 bg-muted/30 hover:bg-muted/50 text-sm font-semibold cursor-pointer">
+    <button type="button" data-guia={dataGuia} onClick={() => setOpenSec(openSec === n ? null : n)} className="w-full flex items-center justify-between px-3 py-2 bg-muted/30 hover:bg-muted/50 text-sm font-semibold cursor-pointer">
       <span>{n}. {title}</span>
       <ChevronDown className={`w-4 h-4 transition-transform ${openSec === n ? "rotate-180" : ""}`} />
     </button>
@@ -81,10 +81,10 @@ const Field = ({ label, value, onChange, placeholder, type = "text" }: { label: 
   </div>
 );
 
-const Area = ({ label, value, onChange, placeholder, rows = 3 }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; rows?: number }) => (
+const Area = ({ label, value, onChange, placeholder, rows = 3, dataGuia }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; rows?: number; dataGuia?: string }) => (
   <div>
     {label && <label className="text-xs font-medium block mb-1 text-muted-foreground">{label}</label>}
-    <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows} className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background resize-y" />
+    <textarea data-guia={dataGuia} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows} className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background resize-y" />
   </div>
 );
 
@@ -413,7 +413,7 @@ const Casos = () => {
             <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
               <img src={iconCasos} alt="" className="h-6 w-6 object-contain" /> Casos de Seguimiento
             </h2>
-            <button onClick={() => setShowNuevo(true)} className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 cursor-pointer">
+            <button data-guia="orientacion.casos_nuevo" onClick={() => setShowNuevo(true)} className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 cursor-pointer">
               <Plus className="w-4 h-4" /> Nuevo caso
             </button>
           </div>
@@ -423,6 +423,7 @@ const Casos = () => {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input
+                  data-guia="orientacion.casos_buscador"
                   value={busqueda}
                   onChange={e => setBusqueda(e.target.value)}
                   placeholder="Buscar por nombre del estudiante o número de identificación..."
@@ -430,19 +431,19 @@ const Casos = () => {
                 />
               </div>
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                <select data-guia="orientacion.casos_filtro_estado" value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                   <option value="">Todos los estados</option>
                   {ESTADOS.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
                 </select>
-                <select value={filtroGrado} onChange={(e) => { setFiltroGrado(e.target.value); setFiltroSalon(""); }} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                <select data-guia="orientacion.casos_filtro_grado" value={filtroGrado} onChange={(e) => { setFiltroGrado(e.target.value); setFiltroSalon(""); }} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                   <option value="">Todos los grados</option>
                   {gradosUnicos.map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
-                <select value={filtroSalon} onChange={(e) => setFiltroSalon(e.target.value)} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                <select data-guia="orientacion.casos_filtro_salon" value={filtroSalon} onChange={(e) => setFiltroSalon(e.target.value)} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                   <option value="">Todos los salones</option>
                   {salonesUnicos.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
-                <label className="inline-flex items-center gap-2 px-3 py-2 text-sm cursor-pointer select-none">
+                <label data-guia="orientacion.casos_filtro_diagnostico" className="inline-flex items-center gap-2 px-3 py-2 text-sm cursor-pointer select-none">
                   <input type="checkbox" checked={soloDiagnostico} onChange={(e) => setSoloDiagnostico(e.target.checked)} className="accent-primary" />
                   Solo con diagnóstico
                 </label>
@@ -451,7 +452,7 @@ const Casos = () => {
               {casosFiltrados.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">No hay casos con estos filtros</p>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-3" data-guia="orientacion.caso_item">
                   <p className="text-sm text-muted-foreground">{casosFiltrados.length} {casosFiltrados.length === 1 ? "caso" : "casos"}</p>
                   {casosFiltrados.map(c => (
                     <button
@@ -499,10 +500,10 @@ const Casos = () => {
                   <>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <input value={estBusqueda} onChange={e => setEstBusqueda(e.target.value)} placeholder="Busca por nombre o apellido..." className="w-full pl-9 pr-3 py-2 border border-input rounded-md text-sm bg-background" />
+                      <input data-guia="orientacion.caso_estudiante_buscador" value={estBusqueda} onChange={e => setEstBusqueda(e.target.value)} placeholder="Busca por nombre o apellido..." className="w-full pl-9 pr-3 py-2 border border-input rounded-md text-sm bg-background" />
                     </div>
                     {estudiantesBusqueda.length > 0 && (
-                      <div className="border border-border rounded-md mt-1 max-h-48 overflow-y-auto bg-card">
+                      <div data-guia="orientacion.caso_estudiante_opcion" className="border border-border rounded-md mt-1 max-h-48 overflow-y-auto bg-card">
                         {estudiantesBusqueda.map(e => (
                           <button key={e.id} onClick={() => seleccionarEstudiante(e)} className="block w-full text-left px-3 py-2 text-sm hover:bg-muted/50">
                             {e.apellidos} {e.nombres}
@@ -517,6 +518,7 @@ const Casos = () => {
               <div>
                 <label className="text-sm font-medium block mb-1">Fecha de apertura *</label>
                 <input
+                  data-guia="orientacion.caso_fecha_apertura"
                   type="date"
                   value={fechaApertura ? fmtLocal(fechaApertura) : ""}
                   onChange={e => setFechaApertura(e.target.value ? new Date(e.target.value + "T12:00:00") : undefined)}
@@ -544,8 +546,8 @@ const Casos = () => {
               <Area label="Materias que se le dificultan" value={form.materias_dificultan} onChange={v => setForm(f => ({ ...f, materias_dificultan: v }))} />
             </Section>
 
-            <Section n={2} title="Motivo de la atención *" openSec={openSec} setOpenSec={setOpenSec}>
-              <Area label="" value={form.motivo_atencion} onChange={v => setForm(f => ({ ...f, motivo_atencion: v }))} rows={3} placeholder="Describe brevemente el motivo por el cual se abre el caso" />
+            <Section n={2} title="Motivo de la atención *" openSec={openSec} setOpenSec={setOpenSec} dataGuia="orientacion.caso_motivo_seccion">
+              <Area label="" value={form.motivo_atencion} onChange={v => setForm(f => ({ ...f, motivo_atencion: v }))} rows={3} placeholder="Describe brevemente el motivo por el cual se abre el caso" dataGuia="orientacion.caso_motivo" />
             </Section>
 
             <Section n={3} title="Datos familiares" openSec={openSec} setOpenSec={setOpenSec}>
@@ -597,7 +599,7 @@ const Casos = () => {
           </div>
           <DialogFooter>
             <button onClick={() => intentarCerrarNuevo(false)} className="px-4 py-2 rounded-md border text-sm font-medium hover:bg-muted">Cancelar</button>
-            <button onClick={handleGuardarNuevo} disabled={guardando || !estSeleccionado || !form.motivo_atencion.trim()} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
+            <button data-guia="orientacion.caso_guardar" onClick={handleGuardarNuevo} disabled={guardando || !estSeleccionado || !form.motivo_atencion.trim()} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
               {guardando ? "Guardando..." : "Guardar caso"}
             </button>
           </DialogFooter>

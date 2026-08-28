@@ -108,7 +108,7 @@ export const AnalisisAsignatura = ({ asignatura, periodo, grado, salon, titulo }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-guia="estadisticas.resultado">
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-2 text-sm text-blue-700">
           <span className="font-medium">ℹ️</span>
@@ -155,6 +155,7 @@ export const AnalisisAsignatura = ({ asignatura, periodo, grado, salon, titulo }
             icono={AlertTriangle}
             color={estudiantesReprobados > 0 ? "danger" : "success"}
             onClick={estudiantesReprobados > 0 ? handleRiesgoClick : undefined}
+            dataGuia="estadisticas.tarjeta_riesgo"
           />
         </div>
 

@@ -224,14 +224,14 @@ const Perfil = () => {
 
           {vista === "menu" && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <button onClick={() => setVista("datos")} className="flex flex-col items-center gap-3 p-10 rounded-xl bg-sky-100 hover:bg-sky-200 transition-colors cursor-pointer">
+              <button onClick={() => setVista("datos")} data-guia="varios.perfil_ficha_datos" className="flex flex-col items-center gap-3 p-10 rounded-xl bg-sky-100 hover:bg-sky-200 transition-colors cursor-pointer">
                 <UserRound className="w-12 h-12 text-sky-700" />
                 <span className="text-lg font-semibold text-foreground">Cambiar datos</span>
                 <span className="text-sm text-muted-foreground text-center">
                   {esEstudiante ? "Tu número de celular y tu contraseña" : "Tu nombre, celular, fecha de nacimiento y contraseña"}
                 </span>
               </button>
-              <button onClick={() => setVista("recuperacion")} className="flex flex-col items-center gap-3 p-10 rounded-xl bg-amber-100 hover:bg-amber-200 transition-colors cursor-pointer">
+              <button onClick={() => setVista("recuperacion")} data-guia="varios.perfil_ficha_recuperacion" className="flex flex-col items-center gap-3 p-10 rounded-xl bg-amber-100 hover:bg-amber-200 transition-colors cursor-pointer">
                 <KeyRound className="w-12 h-12 text-amber-700" />
                 <span className="text-lg font-semibold text-foreground">Recuperación de contraseña</span>
                 <span className="text-sm text-muted-foreground text-center">Configura cómo recuperarla cuando se te olvide</span>
@@ -256,7 +256,7 @@ const Perfil = () => {
                       </div>
                     </>
                   )}
-                  <div>
+                  <div data-guia="varios.perfil_input_telefono">
                     <label className="text-sm font-medium block mb-1">Número de celular</label>
                     <PhoneInput value={telefono} onChange={setTelefono} placeholder="Ej: 3001234567" />
                   </div>
@@ -266,7 +266,7 @@ const Perfil = () => {
                       <input type="date" value={fechaNacimiento} onChange={(e) => setFechaNacimiento(e.target.value)} className={inputCls} />
                     </div>
                   )}
-                  <button onClick={guardarDatos} disabled={guardandoDatos} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
+                  <button onClick={guardarDatos} disabled={guardandoDatos} data-guia="varios.perfil_guardar_datos" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
                     {guardandoDatos && <Loader2 className="w-4 h-4 animate-spin" />} Guardar datos
                   </button>
                   <p className="text-xs text-muted-foreground">
@@ -276,14 +276,14 @@ const Perfil = () => {
                   <div className="border-t border-border pt-5 space-y-3">
                     <h3 className="font-semibold text-foreground">Cambiar contraseña</h3>
                     <div className="relative">
-                      <input type={showPwd ? "text" : "password"} autoComplete="new-password" value={pwdActual} onChange={(e) => setPwdActual(e.target.value)} placeholder="Contraseña actual" className={inputCls} />
+                      <input type={showPwd ? "text" : "password"} autoComplete="new-password" data-guia="varios.perfil_pwd_actual" value={pwdActual} onChange={(e) => setPwdActual(e.target.value)} placeholder="Contraseña actual" className={inputCls} />
                       <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" tabIndex={-1}>
                         {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
-                    <input type={showPwd ? "text" : "password"} autoComplete="new-password" value={pwdNueva} onChange={(e) => setPwdNueva(e.target.value)} placeholder="Nueva contraseña (mínimo 6 caracteres)" className={inputCls} />
-                    <input type={showPwd ? "text" : "password"} autoComplete="new-password" value={pwdConfirma} onChange={(e) => setPwdConfirma(e.target.value)} placeholder="Repite la nueva contraseña" className={inputCls} />
-                    <button onClick={guardarContrasena} disabled={guardandoPwd} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
+                    <input type={showPwd ? "text" : "password"} autoComplete="new-password" data-guia="varios.perfil_pwd_nueva" value={pwdNueva} onChange={(e) => setPwdNueva(e.target.value)} placeholder="Nueva contraseña (mínimo 6 caracteres)" className={inputCls} />
+                    <input type={showPwd ? "text" : "password"} autoComplete="new-password" data-guia="varios.perfil_pwd_confirma" value={pwdConfirma} onChange={(e) => setPwdConfirma(e.target.value)} placeholder="Repite la nueva contraseña" className={inputCls} />
+                    <button onClick={guardarContrasena} disabled={guardandoPwd} data-guia="varios.perfil_guardar_contrasena" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
                       {guardandoPwd && <Loader2 className="w-4 h-4 animate-spin" />} Cambiar contraseña
                     </button>
                   </div>
@@ -304,12 +304,12 @@ const Perfil = () => {
                 <div className="space-y-5">
                   <h3 className="font-semibold text-foreground">¿Cómo desea recuperar su contraseña cuando se olvide?</h3>
                   <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                    <button onClick={() => elegirMetodo("whatsapp")} className={`flex flex-col items-center gap-2 sm:gap-3 p-4 sm:p-8 rounded-xl border-2 bg-green-100 hover:bg-green-200 transition-colors cursor-pointer ${metodo === "whatsapp" ? "border-green-600 shadow-md" : "border-transparent"}`}>
+                    <button onClick={() => elegirMetodo("whatsapp")} data-guia="varios.perfil_rec_metodo_whatsapp" className={`flex flex-col items-center gap-2 sm:gap-3 p-4 sm:p-8 rounded-xl border-2 bg-green-100 hover:bg-green-200 transition-colors cursor-pointer ${metodo === "whatsapp" ? "border-green-600 shadow-md" : "border-transparent"}`}>
                       <MessageCircle className="w-8 h-8 sm:w-12 sm:h-12 text-green-600" />
                       <span className="text-base sm:text-lg font-semibold text-foreground">Por WhatsApp</span>
                       <span className="text-xs sm:text-sm text-muted-foreground text-center">Normi te hará una pregunta secreta</span>
                     </button>
-                    <button onClick={() => elegirMetodo("correo")} className={`flex flex-col items-center gap-2 sm:gap-3 p-4 sm:p-8 rounded-xl border-2 bg-blue-100 hover:bg-blue-200 transition-colors cursor-pointer ${metodo === "correo" ? "border-blue-600 shadow-md" : "border-transparent"}`}>
+                    <button onClick={() => elegirMetodo("correo")} data-guia="varios.perfil_rec_metodo_correo" className={`flex flex-col items-center gap-2 sm:gap-3 p-4 sm:p-8 rounded-xl border-2 bg-blue-100 hover:bg-blue-200 transition-colors cursor-pointer ${metodo === "correo" ? "border-blue-600 shadow-md" : "border-transparent"}`}>
                       <Mail className="w-8 h-8 sm:w-12 sm:h-12 text-blue-600" />
                       <span className="text-base sm:text-lg font-semibold text-foreground">Por correo</span>
                       <span className="text-xs sm:text-sm text-muted-foreground text-center">Te llega al correo desde la página de inicio</span>
@@ -320,11 +320,11 @@ const Perfil = () => {
                     <div ref={camposRecRef} className="space-y-3 scroll-mt-4">
                       <div>
                         <label className="text-sm font-medium block mb-1">Pregunta secreta</label>
-                        <input value={pregunta} onChange={(e) => setPregunta(e.target.value)} placeholder="Una pregunta cuya respuesta solo tú conozcas" className={inputCls} maxLength={200} />
+                        <input value={pregunta} onChange={(e) => setPregunta(e.target.value)} data-guia="varios.perfil_rec_pregunta" placeholder="Una pregunta cuya respuesta solo tú conozcas" className={inputCls} maxLength={200} />
                       </div>
                       <div>
                         <label className="text-sm font-medium block mb-1">Respuesta</label>
-                        <input value={respuesta} onChange={(e) => setRespuesta(e.target.value)} placeholder="La respuesta a tu pregunta" className={inputCls} maxLength={200} />
+                        <input value={respuesta} onChange={(e) => setRespuesta(e.target.value)} data-guia="varios.perfil_rec_respuesta" placeholder="La respuesta a tu pregunta" className={inputCls} maxLength={200} />
                       </div>
                       <p className="text-xs text-muted-foreground">
                         Cuando le digas a Normi por WhatsApp que olvidaste tu contraseña, te hará esta pregunta. Si la respuesta coincide, te dará tu contraseña en el chat.
@@ -336,11 +336,11 @@ const Perfil = () => {
                     <div ref={camposRecRef} className="space-y-3 scroll-mt-4">
                       <div>
                         <label className="text-sm font-medium block mb-1">Correo de recuperación</label>
-                        <input type="email" autoComplete="off" value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder="tucorreo@ejemplo.com" className={inputCls} />
+                        <input type="email" autoComplete="off" data-guia="varios.perfil_rec_correo" value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder="tucorreo@ejemplo.com" className={inputCls} />
                       </div>
                       <div>
                         <label className="text-sm font-medium block mb-1">Repite el correo</label>
-                        <input type="email" autoComplete="off" value={correo2} onChange={(e) => setCorreo2(e.target.value)} placeholder="tucorreo@ejemplo.com" className={inputCls} />
+                        <input type="email" autoComplete="off" data-guia="varios.perfil_rec_correo2" value={correo2} onChange={(e) => setCorreo2(e.target.value)} placeholder="tucorreo@ejemplo.com" className={inputCls} />
                       </div>
                       <p className="text-xs text-muted-foreground">
                         Cuando olvides tu contraseña, en la página de inicio podrás pedir que te la enviemos a este correo.
@@ -349,7 +349,7 @@ const Perfil = () => {
                   )}
 
                   {metodo && (
-                    <button onClick={guardarRecuperacion} disabled={guardandoRec} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
+                    <button onClick={guardarRecuperacion} disabled={guardandoRec} data-guia="varios.perfil_rec_guardar" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
                       {guardandoRec && <Loader2 className="w-4 h-4 animate-spin" />} Guardar
                     </button>
                   )}

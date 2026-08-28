@@ -178,7 +178,7 @@ const ConsolidadoGrupo = () => {
           </div>
         ) : periodo == null ? (
           /* ── Selector de periodo ─────────────────────────────── */
-          <div className="max-w-3xl mx-auto">
+          <div className="max-w-3xl mx-auto" data-guia="estadisticas.grupo_periodo">
             <h2 className="text-2xl font-bold text-foreground mb-1 text-center">Consolidado de mi grupo</h2>
             <p className="text-sm text-muted-foreground mb-1 text-center">
               <span className="inline-flex items-center gap-1.5 font-semibold text-primary">
@@ -186,7 +186,7 @@ const ConsolidadoGrupo = () => {
               </span>
             </p>
             <p className="text-sm text-muted-foreground mb-6 text-center">Elige un periodo para ver las definitivas de tus estudiantes.</p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div data-guia="varios.consolidado_periodo" className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {PERIODOS.map((p) => (
                 <button key={p} onClick={() => setPeriodo(p)}
                   className="flex flex-col items-center justify-center gap-2 p-6 rounded-lg border-2 border-border bg-card transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/5">
@@ -209,6 +209,7 @@ const ConsolidadoGrupo = () => {
                   onClick={descargarExcel}
                   disabled={descargandoExcel}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-border bg-card text-sm font-medium hover:bg-secondary/50 transition-colors disabled:opacity-50"
+                  data-guia="estadisticas.grupo_excel"
                 >
                   {descargandoExcel ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                   Descargar Excel

@@ -82,7 +82,9 @@ export const EditorComunicado = forwardRef<EditorComunicadoHandle, {
   valor: string;
   setValor: (v: string) => void;
   placeholder?: string;
-}>(({ valor, setValor, placeholder }, ref) => {
+  /** Marca para "Normi te guía" (data-guia); se aplica al editor. */
+  dataGuia?: string;
+}>(({ valor, setValor, placeholder, dataGuia }, ref) => {
   const divRef = useRef<HTMLDivElement>(null);
   const lastEmitted = useRef<string>("");
 
@@ -125,6 +127,7 @@ export const EditorComunicado = forwardRef<EditorComunicadoHandle, {
       suppressContentEditableWarning
       role="textbox"
       aria-multiline="true"
+      data-guia={dataGuia}
       data-placeholder={placeholder || ""}
       onInput={serialize}
       onBlur={limpiarSiVacio}

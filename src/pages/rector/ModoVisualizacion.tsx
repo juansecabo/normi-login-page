@@ -100,8 +100,10 @@ const ModoVisualizacion = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-xl mx-auto">
             <button
+              data-guia="notas.modo_por_asignatura"
               onClick={() => handleSelectModo("asignatura")}
               className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg border-2 border-border bg-background transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/10"
+              data-guia="estadisticas.modo_por_asignatura"
             >
               <BookOpen className="w-16 h-16 text-primary" />
               <span className="font-semibold text-lg text-foreground">Por Asignatura</span>
@@ -111,8 +113,10 @@ const ModoVisualizacion = () => {
             </button>
 
             <button
+              data-guia="notas.modo_por_estudiante"
               onClick={() => handleSelectModo("estudiante")}
               className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg border-2 border-border bg-background transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/10"
+              data-guia="estadisticas.modo_por_estudiante"
             >
               <Users className="w-16 h-16 text-primary" />
               <span className="font-semibold text-lg text-foreground">Por Estudiante</span>

@@ -89,6 +89,7 @@ const PermisosExcusas = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <button
+              data-guia="permisos_excusas.card_retiro"
               onClick={() => navigate(isPadreDeFamilia() ? "/permisos-excusas/retiro" : "/permisos-excusas/retiro-staff")}
               className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-red-50 border-2 border-red-200 transition-all duration-200 hover:shadow-md hover:bg-red-100 hover:scale-[1.02] cursor-pointer"
             >

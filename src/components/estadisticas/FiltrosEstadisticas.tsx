@@ -70,7 +70,7 @@ export const FiltrosEstadisticas = ({
     : [];
 
   return (
-    <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
+    <div data-guia="estadisticas.filtros" className="bg-card rounded-lg shadow-soft p-4 mb-6">
       <h3 className="font-semibold text-foreground mb-4">Filtros de análisis</h3>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
@@ -78,7 +78,7 @@ export const FiltrosEstadisticas = ({
         <div>
           <label className="text-sm text-muted-foreground mb-1.5 block">Período</label>
           <Select value={periodoSeleccionado} onValueChange={setPeriodoSeleccionado}>
-            <SelectTrigger>
+            <SelectTrigger data-guia="estadisticas.filtro_periodo">
               <SelectValue placeholder="Seleccionar período" />
             </SelectTrigger>
             <SelectContent>
@@ -104,7 +104,7 @@ export const FiltrosEstadisticas = ({
               setEstudianteSeleccionado?.("");
             }
           }}>
-            <SelectTrigger>
+            <SelectTrigger data-guia="estadisticas.filtro_nivel">
               <SelectValue placeholder="Seleccionar nivel" />
             </SelectTrigger>
             <SelectContent>
@@ -126,7 +126,7 @@ export const FiltrosEstadisticas = ({
               setSalonSeleccionado?.("");
               setEstudianteSeleccionado?.("");
             }}>
-              <SelectTrigger>
+              <SelectTrigger data-guia="estadisticas.filtro_grado">
                 <SelectValue placeholder="Seleccionar grado" />
               </SelectTrigger>
               <SelectContent>
@@ -149,7 +149,7 @@ export const FiltrosEstadisticas = ({
               setSalonSeleccionado(val);
               setEstudianteSeleccionado?.("");
             }}>
-              <SelectTrigger>
+              <SelectTrigger data-guia="estadisticas.filtro_salon">
                 <SelectValue placeholder="Seleccionar salón" />
               </SelectTrigger>
               <SelectContent>
@@ -167,7 +167,7 @@ export const FiltrosEstadisticas = ({
           <div>
             <label className="text-sm text-muted-foreground mb-1.5 block">Estudiante</label>
             <Select value={estudianteSeleccionado || ""} onValueChange={setEstudianteSeleccionado}>
-              <SelectTrigger>
+              <SelectTrigger data-guia="estadisticas.filtro_estudiante">
                 <SelectValue placeholder="Seleccionar estudiante" />
               </SelectTrigger>
               <SelectContent>
@@ -184,7 +184,7 @@ export const FiltrosEstadisticas = ({
           <div>
             <label className="text-sm text-muted-foreground mb-1.5 block">Asignatura</label>
             <Select value={asignaturaSeleccionada || ""} onValueChange={setAsignaturaSeleccionada}>
-              <SelectTrigger>
+              <SelectTrigger data-guia="estadisticas.filtro_asignatura">
                 <SelectValue placeholder="Seleccionar asignatura" />
               </SelectTrigger>
               <SelectContent>

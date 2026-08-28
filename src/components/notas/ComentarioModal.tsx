@@ -50,6 +50,7 @@ const ComentarioModal = ({
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <Textarea
+            data-guia="notas.modal_comentario_texto"
             placeholder="Escribe un comentario..."
             value={comentario}
             onChange={(e) => setComentario(e.target.value.slice(0, 500))}
@@ -63,7 +64,7 @@ const ComentarioModal = ({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button onClick={handleGuardar} className="bg-primary hover:bg-primary/90">
+          <Button data-guia="notas.modal_comentario_guardar" onClick={handleGuardar} className="bg-primary hover:bg-primary/90">
             Guardar
           </Button>
         </DialogFooter>

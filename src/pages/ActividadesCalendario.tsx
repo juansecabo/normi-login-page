@@ -504,6 +504,7 @@ const ActividadesCalendario = () => {
               </Button>
               <Button
                 onClick={handleAbrirModalCrear}
+                data-guia="actividades.aula_btn_agregar"
                 size="sm"
                 className="gap-2"
               >
@@ -565,6 +566,7 @@ const ActividadesCalendario = () => {
                       <Button
                         variant="outline"
                         size="sm"
+                        data-guia="actividades.aula_btn_editar"
                         onClick={() => handleAbrirModalEditar(actividad)}
                         className="gap-1"
                       >
@@ -574,6 +576,7 @@ const ActividadesCalendario = () => {
                       <Button
                         variant="destructive"
                         size="sm"
+                        data-guia="actividades.aula_btn_eliminar"
                         onClick={() => handleConfirmarEliminar(actividad)}
                         className="gap-1"
                       >
@@ -602,6 +605,7 @@ const ActividadesCalendario = () => {
               <Label htmlFor="descripcion">Descripción de la actividad</Label>
               <Textarea
                 id="descripcion"
+                data-guia="actividades.aula_descripcion"
                 placeholder="Ej: Entrega de taller sobre fracciones"
                 value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value.slice(0, 500))}
@@ -652,7 +656,7 @@ const ActividadesCalendario = () => {
                 </div>
               ))}
               {/* File input — always available to add more */}
-              <label className="flex items-center gap-2 p-3 border-2 border-dashed border-muted-foreground/30 rounded-md cursor-pointer hover:border-primary/50 transition-colors">
+              <label data-guia="actividades.aula_archivo" className="flex items-center gap-2 p-3 border-2 border-dashed border-muted-foreground/30 rounded-md cursor-pointer hover:border-primary/50 transition-colors">
                 <Paperclip className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">
                   {(urlsExistentes.length + archivosSeleccionados.length) > 0 ? 'Agregar otro archivo' : 'Seleccionar archivo'}
@@ -679,6 +683,7 @@ const ActividadesCalendario = () => {
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
+                    data-guia="actividades.aula_fecha"
                     className={cn(
                       "w-full justify-start text-left font-normal",
                       !fechaSeleccionada && "text-muted-foreground"
@@ -713,7 +718,7 @@ const ActividadesCalendario = () => {
             <Button variant="outline" onClick={() => setModalOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleGuardarActividad} disabled={subiendoArchivo}>
+            <Button data-guia="actividades.aula_guardar" onClick={handleGuardarActividad} disabled={subiendoArchivo}>
               {subiendoArchivo ? "Subiendo archivo..." : "Guardar Actividad"}
             </Button>
           </DialogFooter>
@@ -738,6 +743,7 @@ const ActividadesCalendario = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
+              data-guia="actividades.aula_confirmar_eliminar"
               onClick={handleEliminarActividad}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >

@@ -177,9 +177,9 @@ const AreasColegioEditor = ({ colegioId }: Props) => {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex gap-2">
-            <Input value={nuevaArea} onChange={(e) => setNuevaArea(e.target.value)} placeholder="Nombre del área (ej. Ciencias Sociales)"
+            <Input data-guia="configurar_institucion.area_nombre" value={nuevaArea} onChange={(e) => setNuevaArea(e.target.value)} placeholder="Nombre del área (ej. Ciencias Sociales)"
               onKeyDown={(e) => e.key === "Enter" && crearArea()} />
-            <Button onClick={crearArea} disabled={creando || !nuevaArea.trim()} className="gap-1 shrink-0">
+            <Button data-guia="configurar_institucion.area_crear" onClick={crearArea} disabled={creando || !nuevaArea.trim()} className="gap-1 shrink-0">
               {creando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} Crear área
             </Button>
           </div>
@@ -195,11 +195,11 @@ const AreasColegioEditor = ({ colegioId }: Props) => {
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <p className="font-medium text-foreground">{a.nombre}</p>
                       <div className="flex gap-1">
-                        <Button variant="outline" size="sm" onClick={() => abrirComponer(a)}>Asignaturas y pesos</Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Renombrar" onClick={() => { setRenombrando(a); setNuevoNombre(a.nombre); }}>
+                        <Button data-guia="configurar_institucion.area_componer" variant="outline" size="sm" onClick={() => abrirComponer(a)}>Asignaturas y pesos</Button>
+                        <Button data-guia="configurar_institucion.area_renombrar" variant="ghost" size="icon" className="h-8 w-8" title="Renombrar" onClick={() => { setRenombrando(a); setNuevoNombre(a.nombre); }}>
                           <Pencil className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" title="Eliminar" onClick={() => setBorrando(a)}>
+                        <Button data-guia="configurar_institucion.area_eliminar" variant="ghost" size="icon" className="h-8 w-8 text-destructive" title="Eliminar" onClick={() => setBorrando(a)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -226,7 +226,7 @@ const AreasColegioEditor = ({ colegioId }: Props) => {
           <p className="text-sm text-muted-foreground">Así se listarán las áreas y asignaturas en el boletín. Usa las flechas para acomodar el orden del colegio.</p>
         </CardHeader>
         <CardContent>
-          <div className="space-y-1.5">
+          <div className="space-y-1.5" data-guia="configurar_institucion.boletin_flecha">
             {listaOrden.map((it, idx) => (
               <div key={`${it.tipo}-${it.id}`} className="flex items-center justify-between gap-2 border border-border rounded-md px-3 py-1.5 bg-card">
                 <span className="text-sm text-foreground">
@@ -254,7 +254,7 @@ const AreasColegioEditor = ({ colegioId }: Props) => {
           <DialogHeader><DialogTitle>{componiendo?.nombre} — asignaturas y pesos</DialogTitle></DialogHeader>
           <div className="space-y-2">
             {filas.map((f, i) => (
-              <div key={i} className="flex gap-2 items-center">
+              <div key={i} className="flex gap-2 items-center" data-guia="configurar_institucion.area_comp_asignatura">
                 <select value={f.asignatura} onChange={(e) => setFilas(filas.map((x, j) => j === i ? { ...x, asignatura: e.target.value } : x))}
                   className="flex-1 h-9 rounded-md border border-input bg-card px-2 text-sm">
                   <option value="">Asignatura…</option>
@@ -281,7 +281,7 @@ const AreasColegioEditor = ({ colegioId }: Props) => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setComponiendo(null)}>Cancelar</Button>
-            <Button onClick={guardarComposicion} disabled={guardandoComp} className="gap-2">
+            <Button data-guia="configurar_institucion.area_comp_guardar" onClick={guardarComposicion} disabled={guardandoComp} className="gap-2">
               {guardandoComp && <Loader2 className="w-4 h-4 animate-spin" />} Guardar
             </Button>
           </DialogFooter>
@@ -292,10 +292,10 @@ const AreasColegioEditor = ({ colegioId }: Props) => {
       <Dialog open={!!renombrando} onOpenChange={(o) => !o && setRenombrando(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Renombrar área</DialogTitle></DialogHeader>
-          <Input value={nuevoNombre} onChange={(e) => setNuevoNombre(e.target.value)} onKeyDown={(e) => e.key === "Enter" && renombrar()} />
+          <Input data-guia="configurar_institucion.area_renombrar_input" value={nuevoNombre} onChange={(e) => setNuevoNombre(e.target.value)} onKeyDown={(e) => e.key === "Enter" && renombrar()} />
           <DialogFooter>
             <Button variant="outline" onClick={() => setRenombrando(null)}>Cancelar</Button>
-            <Button onClick={renombrar}>Guardar</Button>
+            <Button data-guia="configurar_institucion.area_renombrar_guardar" onClick={renombrar}>Guardar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -309,7 +309,7 @@ const AreasColegioEditor = ({ colegioId }: Props) => {
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setBorrando(null)}>Cancelar</Button>
-            <Button variant="destructive" onClick={borrar}>Eliminar</Button>
+            <Button data-guia="configurar_institucion.area_eliminar_confirmar" variant="destructive" onClick={borrar}>Eliminar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

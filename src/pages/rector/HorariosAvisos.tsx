@@ -242,7 +242,7 @@ export default function HorariosAvisos() {
               <div>
                 <label className="text-xs text-muted-foreground">Nivel</label>
                 <Select value={nuevoNivel} onValueChange={(v) => { setNuevoNivel(v); setNuevoGrado(""); }}>
-                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                  <SelectTrigger data-guia="avisos.select_nivel"><SelectValue placeholder="—" /></SelectTrigger>
                   <SelectContent>
                     {NIVELES.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
                   </SelectContent>
@@ -251,7 +251,7 @@ export default function HorariosAvisos() {
               <div>
                 <label className="text-xs text-muted-foreground">Grado (opcional, override)</label>
                 <Select value={nuevoGrado || "_none"} onValueChange={(v) => setNuevoGrado(v === "_none" ? "" : v)}>
-                  <SelectTrigger><SelectValue placeholder="Sin override" /></SelectTrigger>
+                  <SelectTrigger data-guia="avisos.select_grado"><SelectValue placeholder="Sin override" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="_none">Todo el nivel</SelectItem>
                     {grados.filter((g) => NIVEL_DE_GRADO[g] === nuevoNivel).map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
@@ -260,11 +260,11 @@ export default function HorariosAvisos() {
               </div>
               <div>
                 <label className="text-xs text-muted-foreground">Hora (HH:MM)</label>
-                <Input value={nuevaHora} onChange={(e) => setNuevaHora(e.target.value)} placeholder="12:00" />
+                <Input value={nuevaHora} onChange={(e) => setNuevaHora(e.target.value)} placeholder="12:00" data-guia="avisos.input_hora" />
               </div>
               <div className="space-y-1">
                 <label className="text-xs text-muted-foreground block">Enviar a</label>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2" data-guia="avisos.check_destinatarios">
                   <Checkbox checked={nuevoEst} onCheckedChange={(v) => setNuevoEst(!!v)} id="new-est" />
                   <label htmlFor="new-est" className="text-sm">Est</label>
                   <Checkbox checked={nuevoAcu} onCheckedChange={(v) => setNuevoAcu(!!v)} id="new-acu" />
@@ -272,7 +272,7 @@ export default function HorariosAvisos() {
                 </div>
               </div>
               <div>
-                <Button onClick={crear} disabled={guardando} className="w-full">
+                <Button onClick={crear} disabled={guardando} className="w-full" data-guia="avisos.boton_guardar">
                   <Plus className="h-4 w-4 mr-1" /> Agregar
                 </Button>
               </div>
@@ -286,11 +286,11 @@ export default function HorariosAvisos() {
         ) : ordenadas.length === 0 ? (
           <Card><CardContent className="pt-6 text-center text-muted-foreground">No hay reglas configuradas. Agregá una arriba.</CardContent></Card>
         ) : (
-          <Card>
+          <Card data-guia="avisos.regla_eliminar">
             <CardHeader>
               <CardTitle className="text-base">Reglas configuradas</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-2" data-guia="avisos.fila_hora">
               {ordenadas.map((h) => {
                 const tieneEst = h.audiencias.includes("Estudiantes");
                 const tieneAcu = h.audiencias.includes("Acudientes");

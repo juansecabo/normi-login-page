@@ -212,7 +212,7 @@ const RetiroEstudiantesStaff = () => {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div className="relative col-span-2 sm:col-span-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar por nombre o identificación…"
+                  <input data-guia="permisos_excusas.buscar_input" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar por nombre o identificación…"
                     className="w-full pl-9 pr-8 py-2 border border-input rounded-md text-sm bg-background" />
                   {busqueda && (
                     <button type="button" onClick={() => setBusqueda("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" title="Borrar búsqueda">
@@ -220,12 +220,12 @@ const RetiroEstudiantesStaff = () => {
                     </button>
                   )}
                 </div>
-                <select value={filtroGrado} onChange={(e) => { setFiltroGrado(e.target.value); setFiltroSalon(""); }}
+                <select data-guia="permisos_excusas.filtro_grado" value={filtroGrado} onChange={(e) => { setFiltroGrado(e.target.value); setFiltroSalon(""); }}
                   className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                   <option value="">Todos los grados</option>
                   {gradosUnicos.map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
-                <select value={filtroSalon} onChange={(e) => setFiltroSalon(e.target.value)}
+                <select data-guia="permisos_excusas.filtro_salon" value={filtroSalon} onChange={(e) => setFiltroSalon(e.target.value)}
                   className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                   <option value="">Todos los salones</option>
                   {salonesUnicos.map(s => <option key={s} value={s}>{s}</option>)}
@@ -233,13 +233,13 @@ const RetiroEstudiantesStaff = () => {
               </div>
 
               <div className="flex flex-col lg:flex-row lg:items-start gap-6">
-                <CalendarioFiltroDia diasMarcados={diasMarcados} dia={diaCal} onDia={setDiaCal} />
-                <div className="flex-1 min-w-0">
+                <CalendarioFiltroDia dataGuia="permisos_excusas.calendario_dia" dataGuiaVerTodas="permisos_excusas.calendario_ver_todas" diasMarcados={diasMarcados} dia={diaCal} onDia={setDiaCal} />
+                <div data-guia="permisos_excusas.tarjeta_expandir" className="flex-1 min-w-0">
               {listaFinal.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">{diaCal ? "No hay autorizaciones para este día" : "No hay autorizaciones con estos filtros"}</p>
               ) : (
-                <div className="space-y-6">
-                  <ImprimirToggle imprimirMode={imprimirMode} onToggle={toggleImprimirMode} cantidadSeleccionada={cantidadSeleccionada} onDescargar={handleDescargar} descargando={descargando} />
+                <div data-guia="permisos_excusas.tarjeta_selector" className="space-y-6">
+                  <ImprimirToggle dataGuia="permisos_excusas.imprimir_toggle" dataGuiaDescargar="permisos_excusas.descargar_word_boton" imprimirMode={imprimirMode} onToggle={toggleImprimirMode} cantidadSeleccionada={cantidadSeleccionada} onDescargar={handleDescargar} descargando={descargando} />
                   <p className="text-sm text-muted-foreground">{listaFinal.length} {listaFinal.length === 1 ? "autorización" : "autorizaciones"}</p>
                   {(() => {
                     const grupos: { key: string; items: typeof listaFinal }[] = [];
@@ -296,10 +296,10 @@ const RetiroEstudiantesStaff = () => {
                                       <span className="text-sm text-foreground truncate">{getCleanFilename(url)}</span>
                                     </div>
                                     <div className="flex gap-2">
-                                      <button onClick={() => handleVerArchivo(url)} className="px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 flex items-center gap-1.5">
+                                      <button data-guia="permisos_excusas.archivo_ver" onClick={() => handleVerArchivo(url)} className="px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 flex items-center gap-1.5">
                                         <Eye className="h-4 w-4" /> Ver
                                       </button>
-                                      <button onClick={() => handleDescargarArchivo(url)} className="px-3 py-1.5 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 flex items-center gap-1.5">
+                                      <button data-guia="permisos_excusas.archivo_descargar" onClick={() => handleDescargarArchivo(url)} className="px-3 py-1.5 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 flex items-center gap-1.5">
                                         <Download className="h-4 w-4" /> Descargar
                                       </button>
                                     </div>

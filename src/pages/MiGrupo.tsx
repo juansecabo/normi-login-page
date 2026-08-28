@@ -114,7 +114,7 @@ const MiGrupo = () => {
                 </span>
                 <div className="relative">
                   <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <input value={filtro} onChange={(e) => setFiltro(e.target.value)} placeholder="Buscar estudiante…"
+                  <input value={filtro} onChange={(e) => setFiltro(e.target.value)} data-guia="varios.mi_grupo_buscar" placeholder="Buscar estudiante…"
                     className="pl-8 pr-3 py-1.5 rounded-lg border border-border bg-background text-sm w-52" />
                 </div>
               </div>
@@ -122,7 +122,7 @@ const MiGrupo = () => {
               {visibles.length === 0 ? (
                 <p className="text-center text-muted-foreground py-10">No hay estudiantes en este grupo.</p>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-6">
+                <div data-guia="varios.mi_grupo_avatar" className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-6">
                   {visibles.map((e) => (
                     <div key={e.id} className="flex flex-col items-center gap-2">
                       <AvatarUploader

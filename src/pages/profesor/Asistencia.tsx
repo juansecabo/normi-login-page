@@ -304,15 +304,15 @@ const Asistencia = () => {
               <p className="text-center text-muted-foreground">Cargando tus asignaciones…</p>
             ) : (
               <div className="space-y-4">
-                <Selector label="Asignatura" value={asignatura} onChange={(v) => { setAsignatura(v); setGrado(""); setSalon(""); }} options={asignaturas} placeholder="Selecciona asignatura" />
-                <Selector label="Grado" value={grado} onChange={(v) => { setGrado(v); setSalon(""); }} options={grados} placeholder="Selecciona grado" disabled={!asignatura} />
-                <Selector label="Salón" value={salon} onChange={setSalon} options={salones} placeholder="Selecciona salón" disabled={!grado} />
+                <Selector label="Asignatura" dataGuia="asistencia.selector_asignatura" value={asignatura} onChange={(v) => { setAsignatura(v); setGrado(""); setSalon(""); }} options={asignaturas} placeholder="Selecciona asignatura" />
+                <Selector label="Grado" dataGuia="asistencia.selector_grado" value={grado} onChange={(v) => { setGrado(v); setSalon(""); }} options={grados} placeholder="Selecciona grado" disabled={!asignatura} />
+                <Selector label="Salón" dataGuia="asistencia.selector_salon" value={salon} onChange={setSalon} options={salones} placeholder="Selecciona salón" disabled={!grado} />
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">Fecha</label>
-                  <input type="date" value={fecha} max={hoyBogota()} onChange={(e) => setFecha(e.target.value)}
+                  <input data-guia="asistencia.input_fecha" type="date" value={fecha} max={hoyBogota()} onChange={(e) => setFecha(e.target.value)}
                     className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground" />
                 </div>
-                <button onClick={iniciar} disabled={!asignatura || !grado || !salon || cargandoRoster}
+                <button data-guia="asistencia.boton_comenzar" onClick={iniciar} disabled={!asignatura || !grado || !salon || cargandoRoster}
                   className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-semibold disabled:opacity-50 hover:opacity-90 transition">
                   {cargandoRoster ? "Cargando…" : "Comenzar"}
                 </button>
@@ -375,6 +375,7 @@ const Asistencia = () => {
                 <div className="mt-6 border-t border-border pt-4 text-left">
                   <p className="text-sm font-medium text-foreground mb-2">¿Corregir a un estudiante? (ej. uno que llegó tarde)</p>
                   <input
+                    data-guia="asistencia.buscar_corregir"
                     value={busqueda}
                     onChange={(e) => { setBusqueda(e.target.value); setFiltroEstado(null); }}
                     placeholder="Buscar por nombre o apellido…"
@@ -385,7 +386,7 @@ const Asistencia = () => {
                     listaCorregir.length === 0 ? (
                       <p className="text-xs text-muted-foreground mt-2">{busqueda.trim() ? "Sin coincidencias." : "Ninguno."}</p>
                     ) : (
-                      <div className="mt-3 space-y-2 max-h-72 overflow-y-auto">
+                      <div data-guia="asistencia.corregir_estado_boton" className="mt-3 space-y-2 max-h-72 overflow-y-auto">
                         {listaCorregir.map((r) => (
                           <div key={r.estudiante_id} className="border border-border rounded-lg p-2.5 bg-card">
                             <p className="text-sm font-medium text-foreground">{r.apellidos} {r.nombres}</p>
@@ -410,7 +411,7 @@ const Asistencia = () => {
             ) : (
               <>
                 {/* Mazo: tarjeta siguiente detrás + tarjeta actual arriba */}
-                <div className="relative h-[460px] select-none" style={{ touchAction: "none" }}>
+                <div data-guia="asistencia.mazo" className="relative h-[460px] select-none" style={{ touchAction: "none" }}>
                   {roster[idx + 1] && <CardView item={roster[idx + 1]} behind />}
                   {actual && (
                     <div
@@ -451,7 +452,7 @@ const Asistencia = () => {
                     className="w-16 h-16 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-lg hover:scale-105 transition">
                     <X className="w-8 h-8" />
                   </button>
-                  <button onClick={() => commit("presente")} title="Asistió"
+                  <button data-guia="asistencia.boton_presente" onClick={() => commit("presente")} title="Asistió"
                     className="w-16 h-16 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg hover:scale-105 transition">
                     <Check className="w-8 h-8" />
                   </button>
@@ -465,12 +466,12 @@ const Asistencia = () => {
   );
 };
 
-const Selector = ({ label, value, onChange, options, placeholder, disabled }: {
-  label: string; value: string; onChange: (v: string) => void; options: string[]; placeholder: string; disabled?: boolean;
+const Selector = ({ label, value, onChange, options, placeholder, disabled, dataGuia }: {
+  label: string; value: string; onChange: (v: string) => void; options: string[]; placeholder: string; disabled?: boolean; dataGuia?: string;
 }) => (
   <div>
     <label className="block text-sm font-medium text-foreground mb-1">{label}</label>
-    <select value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled}
+    <select data-guia={dataGuia} value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled}
       className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground disabled:opacity-50">
       <option value="">{placeholder}</option>
       {options.map((o) => <option key={o} value={o}>{o}</option>)}

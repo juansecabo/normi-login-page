@@ -142,17 +142,17 @@ const PermisoDocente = () => {
 
         <div className="mt-6 space-y-4 bg-card rounded-lg shadow-soft p-5">
           <div className="grid md:grid-cols-2 gap-4">
-            <div><label className="text-sm font-medium">Fecha de solicitud</label><input type="date" value={fechaSolicitud} onChange={(e) => setFechaSolicitud(e.target.value)} className={inputCls} /></div>
-            <div><label className="text-sm font-medium">Fecha del permiso *</label><input type="date" value={fechaPermiso} onChange={(e) => setFechaPermiso(e.target.value)} className={inputCls} /></div>
-            <div><label className="text-sm font-medium">Nombre del docente *</label><input value={nombreDocente} onChange={(e) => setNombreDocente(e.target.value)} className={inputCls} /></div>
-            <div><label className="text-sm font-medium">Total de horas ausente</label><input value={totalHoras} onChange={(e) => setTotalHoras(e.target.value)} className={inputCls} placeholder="Ej. 3 horas" /></div>
+            <div><label className="text-sm font-medium">Fecha de solicitud</label><input type="date" value={fechaSolicitud} onChange={(e) => setFechaSolicitud(e.target.value)} className={inputCls} data-guia="permisodoc.fecha_solicitud" /></div>
+            <div><label className="text-sm font-medium">Fecha del permiso *</label><input type="date" value={fechaPermiso} onChange={(e) => setFechaPermiso(e.target.value)} className={inputCls} data-guia="permisodoc.fecha_permiso" /></div>
+            <div><label className="text-sm font-medium">Nombre del docente *</label><input value={nombreDocente} onChange={(e) => setNombreDocente(e.target.value)} className={inputCls} data-guia="permisodoc.nombre_docente" /></div>
+            <div><label className="text-sm font-medium">Total de horas ausente</label><input value={totalHoras} onChange={(e) => setTotalHoras(e.target.value)} className={inputCls} placeholder="Ej. 3 horas" data-guia="permisodoc.total_horas" /></div>
           </div>
-          <div><label className="text-sm font-medium">Motivo del permiso *</label><textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} rows={3} className={inputCls + " resize-y"} /></div>
+          <div><label className="text-sm font-medium">Motivo del permiso *</label><textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} rows={3} className={inputCls + " resize-y"} data-guia="permisodoc.motivo" /></div>
 
           <div>
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">Docentes que quedan a cargo</label>
-              <button type="button" onClick={addCargo} className="inline-flex items-center gap-1 text-sm text-primary hover:underline"><Plus className="w-4 h-4" /> Agregar</button>
+              <button type="button" onClick={addCargo} className="inline-flex items-center gap-1 text-sm text-primary hover:underline" data-guia="permisodoc.agregar_cargo"><Plus className="w-4 h-4" /> Agregar</button>
             </div>
             <div className="space-y-2 mt-2">
               {cargos.map((c, i) => (
@@ -169,11 +169,11 @@ const PermisoDocente = () => {
             </div>
           </div>
 
-          <div><label className="text-sm font-medium">Zona de apoyo en descanso — docente a cargo</label><input value={zonaApoyo} onChange={(e) => setZonaApoyo(e.target.value)} className={inputCls} /></div>
+          <div><label className="text-sm font-medium">Zona de apoyo en descanso — docente a cargo</label><input value={zonaApoyo} onChange={(e) => setZonaApoyo(e.target.value)} className={inputCls} data-guia="permisodoc.zona_apoyo" /></div>
 
           <div>
             <label className="text-sm font-medium">Firma del docente solicitante</label>
-            <div className="border-2 border-dashed border-border rounded-lg bg-white mt-1">
+            <div className="border-2 border-dashed border-border rounded-lg bg-white mt-1" data-guia="permisodoc.firma">
               <SignatureCanvas ref={sig} penColor="black" canvasProps={{ className: "w-full", style: { width: "100%", height: "150px" } }} onEnd={onFirmaEnd} />
             </div>
             <div className="flex gap-2 items-center mt-1">
@@ -183,7 +183,7 @@ const PermisoDocente = () => {
           </div>
 
           <div className="flex flex-wrap gap-3 pt-2">
-            <button onClick={guardar} disabled={saving} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 disabled:opacity-60"><Save className="w-4 h-4" /> {saving ? "Guardando…" : "Guardar"}</button>
+            <button onClick={guardar} disabled={saving} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 disabled:opacity-60" data-guia="permisodoc.boton_guardar"><Save className="w-4 h-4" /> {saving ? "Guardando…" : "Guardar"}</button>
             <button onClick={guardarYDescargar} disabled={saving} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border-2 border-border font-semibold hover:border-primary disabled:opacity-60"><Download className="w-4 h-4" /> Guardar y descargar PDF</button>
           </div>
         </div>

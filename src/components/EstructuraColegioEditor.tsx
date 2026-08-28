@@ -67,7 +67,7 @@ const de24 = (str?: string | null): { h12: number; min: number; ampm: "AM" | "PM
  * Selector de hora amable: hora (1-12) + minutos (cada 5) + AM/PM.
  * `value`/`onChange` trabajan en formato 24h "HH:MM" (lo que guarda la BD).
  */
-function SelectorHora({ value, onChange }: { value?: string | null; onChange: (v: string) => void }) {
+function SelectorHora({ value, onChange, dataGuia }: { value?: string | null; onChange: (v: string) => void; dataGuia?: string }) {
   const parsed = de24(value);
   const h12 = parsed?.h12 ?? null;
   const min = parsed?.min ?? null;
@@ -79,7 +79,7 @@ function SelectorHora({ value, onChange }: { value?: string | null; onChange: (v
   };
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1" data-guia={dataGuia}>
       <Select value={h12 != null ? String(h12) : ""} onValueChange={(v) => emitir(Number(v), min ?? 0, ampm)}>
         <SelectTrigger className="w-[68px]"><SelectValue placeholder="Hora" /></SelectTrigger>
         <SelectContent>{Array.from({ length: 12 }, (_, i) => i + 1).map((n) => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent>
@@ -366,10 +366,10 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
             <div key={j.id} className="flex items-center gap-3 border border-border rounded-md p-3 flex-wrap">
               <span className="font-medium flex-1 min-w-[90px]">{j.nombre}</span>
               <label className="text-xs text-muted-foreground">Entrada</label>
-              <SelectorHora value={j.hora_entrada} onChange={(v) => editarHoraEntrada(j.id, v)} />
+              <SelectorHora dataGuia="configurar_institucion.jornada_hora_entrada" value={j.hora_entrada} onChange={(v) => editarHoraEntrada(j.id, v)} />
               <label className="text-xs text-muted-foreground">Salida</label>
-              <SelectorHora value={j.hora_salida} onChange={(v) => editarHoraSalida(j.id, v)} />
-              <button onClick={() => borrarJornada(j.id)} className="text-muted-foreground hover:text-destructive" title="Eliminar jornada"><Trash2 className="w-4 h-4" /></button>
+              <SelectorHora dataGuia="configurar_institucion.jornada_hora_salida" value={j.hora_salida} onChange={(v) => editarHoraSalida(j.id, v)} />
+              <button data-guia="configurar_institucion.jornada_eliminar" onClick={() => borrarJornada(j.id)} className="text-muted-foreground hover:text-destructive" title="Eliminar jornada"><Trash2 className="w-4 h-4" /></button>
             </div>
           ))}
 
@@ -377,7 +377,7 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
           {JORNADAS_ESTANDAR.some((n) => !jornadas.some((j) => j.nombre.toLowerCase() === n.toLowerCase())) && (
             <div className="pt-2 border-t border-border">
               <p className="text-xs text-muted-foreground mb-2">Agrega una jornada (luego le pones entrada y salida):</p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2" data-guia="configurar_institucion.jornada_estandar">
                 {JORNADAS_ESTANDAR.filter((n) => !jornadas.some((j) => j.nombre.toLowerCase() === n.toLowerCase())).map((n) => (
                   <Button key={n} variant="outline" size="sm" disabled={guardando} onClick={() => crearJornadaNombre(n)}>
                     <Plus className="w-4 h-4 mr-1" /> {n}
@@ -391,7 +391,7 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
           <details className="pt-1">
             <summary className="text-xs text-primary cursor-pointer">Otra jornada (nombre personalizado)</summary>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
-              <Input value={jorNombre} onChange={(e) => setJorNombre(e.target.value)} placeholder="Nombre de la jornada" className="flex-1 min-w-[160px]" />
+              <Input data-guia="configurar_institucion.jornada_nombre_custom" value={jorNombre} onChange={(e) => setJorNombre(e.target.value)} placeholder="Nombre de la jornada" className="flex-1 min-w-[160px]" />
               <Button onClick={crearJornada} disabled={guardando}><Plus className="w-4 h-4 mr-1" /> Agregar</Button>
             </div>
           </details>
@@ -413,10 +413,10 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
                     <Sortable key={n.id} id={String(n.id)}>
                       {(handle) => (
                         <div className="flex items-center gap-1 pl-1.5 pr-1.5 py-1 rounded-full border border-primary/40 bg-primary/5 text-sm">
-                          <button {...handle} className="text-muted-foreground hover:text-primary p-0.5 cursor-grab active:cursor-grabbing touch-none" title="Arrastrar para reordenar"><GripVertical className="w-3.5 h-3.5" /></button>
+                          <button data-guia="configurar_institucion.nivel_asa" {...handle} className="text-muted-foreground hover:text-primary p-0.5 cursor-grab active:cursor-grabbing touch-none" title="Arrastrar para reordenar"><GripVertical className="w-3.5 h-3.5" /></button>
                           <span className="font-medium">{n.nombre}</span>
-                          <button onClick={() => setEditNivel({ id: n.id, nombre: n.nombre })} className="text-muted-foreground hover:text-primary p-0.5" title="Renombrar nivel"><Pencil className="w-3.5 h-3.5" /></button>
-                          <button onClick={() => borrarNivel(n.id)} className="text-muted-foreground hover:text-destructive p-0.5" title="Eliminar nivel"><Trash2 className="w-3.5 h-3.5" /></button>
+                          <button data-guia="configurar_institucion.nivel_renombrar" onClick={() => setEditNivel({ id: n.id, nombre: n.nombre })} className="text-muted-foreground hover:text-primary p-0.5" title="Renombrar nivel"><Pencil className="w-3.5 h-3.5" /></button>
+                          <button data-guia="configurar_institucion.nivel_eliminar" onClick={() => borrarNivel(n.id)} className="text-muted-foreground hover:text-destructive p-0.5" title="Eliminar nivel"><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
                       )}
                     </Sortable>
@@ -429,7 +429,7 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
           {NIVELES_ESTANDAR.some((n) => !niveles.some((x) => x.nombre.toLowerCase() === n.toLowerCase())) && (
             <div className="pt-1">
               <p className="text-xs text-muted-foreground mb-2">Agrega un nivel:</p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2" data-guia="configurar_institucion.nivel_estandar">
                 {NIVELES_ESTANDAR.filter((n) => !niveles.some((x) => x.nombre.toLowerCase() === n.toLowerCase())).map((n) => (
                   <Button key={n} variant="outline" size="sm" onClick={() => crearNivelNombre(n)}><Plus className="w-4 h-4 mr-1" /> {n}</Button>
                 ))}
@@ -439,7 +439,7 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
           <details className="pt-1">
             <summary className="text-xs text-primary cursor-pointer">Otro nivel (nombre personalizado)</summary>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
-              <Input value={nivNombre} onChange={(e) => setNivNombre(e.target.value)} placeholder="Nombre del nivel" className="flex-1 min-w-[160px]" maxLength={40} />
+              <Input data-guia="configurar_institucion.nivel_nombre_custom" value={nivNombre} onChange={(e) => setNivNombre(e.target.value)} placeholder="Nombre del nivel" className="flex-1 min-w-[160px]" maxLength={40} />
               <Button onClick={async () => { await crearNivelNombre(nivNombre); setNivNombre(""); }}><Plus className="w-4 h-4 mr-1" /> Agregar</Button>
             </div>
           </details>
@@ -455,7 +455,7 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
         <CardContent className="space-y-4">
           {permitirImportar && (
             <div>
-              <Button variant="outline" size="sm" onClick={importarEstructura} disabled={importando}>
+              <Button data-guia="configurar_institucion.importar_estructura" variant="outline" size="sm" onClick={importarEstructura} disabled={importando}>
                 {importando && <Loader2 className="w-4 h-4 mr-1 animate-spin" />} Importar estructura actual (según los estudiantes)
               </Button>
             </div>
@@ -464,7 +464,7 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
           {/* Alta rápida: grados estándar (toggle). */}
           <div>
             <p className="text-xs text-muted-foreground mb-2">Alta rápida (toca para agregar o quitar):</p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2" data-guia="configurar_institucion.grado_chip_rapido">
               {ORDEN_GRADOS.map((g) => {
                 const on = gradosDeclarados.has(g);
                 return (
@@ -481,7 +481,7 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
           <details>
             <summary className="text-xs text-primary cursor-pointer">Otro grado (nombre personalizado)</summary>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
-              <Input value={gradoNombre} onChange={(e) => setGradoNombre(e.target.value)} placeholder="Nombre del grado" className="flex-1 min-w-[160px]" maxLength={40} />
+              <Input data-guia="configurar_institucion.grado_nombre_custom" value={gradoNombre} onChange={(e) => setGradoNombre(e.target.value)} placeholder="Nombre del grado" className="flex-1 min-w-[160px]" maxLength={40} />
               <Button onClick={() => crearGradoCustom(gradoNombre)}><Plus className="w-4 h-4 mr-1" /> Agregar</Button>
             </div>
           </details>
@@ -497,18 +497,18 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
                       <Sortable key={g.id} id={String(g.id)}>
                         {(handle) => (
                           <div className="flex items-center gap-2 flex-wrap border border-border rounded-md px-3 py-2 bg-card">
-                            <button {...handle} className="text-muted-foreground hover:text-primary cursor-grab active:cursor-grabbing touch-none shrink-0" title="Arrastrar para reordenar"><GripVertical className="w-4 h-4" /></button>
+                            <button data-guia="configurar_institucion.grado_asa" {...handle} className="text-muted-foreground hover:text-primary cursor-grab active:cursor-grabbing touch-none shrink-0" title="Arrastrar para reordenar"><GripVertical className="w-4 h-4" /></button>
                             <span className="font-medium flex-1 min-w-[90px]">{g.grado}</span>
                             <label className="text-xs text-muted-foreground">Nivel</label>
                             <Select value={g.nivel ?? SIN_NIVEL} onValueChange={(v) => setNivelGrado(g.id, v === SIN_NIVEL ? null : v)}>
-                              <SelectTrigger className="w-44"><SelectValue placeholder="Sin nivel" /></SelectTrigger>
+                              <SelectTrigger data-guia="configurar_institucion.grado_selector_nivel" className="w-44"><SelectValue placeholder="Sin nivel" /></SelectTrigger>
                               <SelectContent>
                                 <SelectItem value={SIN_NIVEL}>Sin nivel</SelectItem>
                                 {nivelesOrdenados.map((n) => <SelectItem key={n.id} value={n.nombre}>{n.nombre}</SelectItem>)}
                               </SelectContent>
                             </Select>
-                            <button onClick={() => setEditGrado({ id: g.id, grado: g.grado })} className="text-muted-foreground hover:text-primary p-1" title="Renombrar grado"><Pencil className="w-4 h-4" /></button>
-                            <button onClick={() => toggleGrado(g.grado)} className="text-muted-foreground hover:text-destructive p-1" title="Eliminar grado"><Trash2 className="w-4 h-4" /></button>
+                            <button data-guia="configurar_institucion.grado_renombrar" onClick={() => setEditGrado({ id: g.id, grado: g.grado })} className="text-muted-foreground hover:text-primary p-1" title="Renombrar grado"><Pencil className="w-4 h-4" /></button>
+                            <button data-guia="configurar_institucion.grado_eliminar" onClick={() => toggleGrado(g.grado)} className="text-muted-foreground hover:text-destructive p-1" title="Eliminar grado"><Trash2 className="w-4 h-4" /></button>
                           </div>
                         )}
                       </Sortable>
@@ -538,7 +538,7 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
               <p className="text-sm font-medium">Asignación rápida</p>
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">1. Elige los grados</label>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1.5" data-guia="configurar_institucion.salon_bulk_grados">
                   {gradosOrdenados.map((g) => {
                     const on = bulkGrados.includes(g.grado);
                     return (
@@ -560,21 +560,21 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
                 <div>
                   <label className="text-xs text-muted-foreground block mb-1">2. Nº de salones</label>
                   <Select value={String(bulkCantidad)} onValueChange={(v) => setBulkCantidad(Number(v))}>
-                    <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                    <SelectTrigger data-guia="configurar_institucion.salon_bulk_cantidad" className="w-24"><SelectValue /></SelectTrigger>
                     <SelectContent>{Array.from({ length: 10 }, (_, i) => i + 1).map((n) => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground block mb-1">3. Jornada</label>
                   <Select value={bulkJornada} onValueChange={setBulkJornada}>
-                    <SelectTrigger className="w-48"><SelectValue placeholder="Sin jornada" /></SelectTrigger>
+                    <SelectTrigger data-guia="configurar_institucion.salon_bulk_jornada" className="w-48"><SelectValue placeholder="Sin jornada" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Sin jornada</SelectItem>
                       {jornadas.map((j) => <SelectItem key={j.id} value={String(j.id)}>{j.nombre}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
-                <Button onClick={aplicarBulk} disabled={aplicandoBulk || bulkGrados.length === 0}>
+                <Button data-guia="configurar_institucion.salon_bulk_aplicar" onClick={aplicarBulk} disabled={aplicandoBulk || bulkGrados.length === 0}>
                   {aplicandoBulk && <Loader2 className="w-4 h-4 mr-1 animate-spin" />} Aplicar a {bulkGrados.length || 0} grado(s)
                 </Button>
               </div>
@@ -586,7 +586,7 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
               <div key={g.id} className="border border-border rounded-md p-3">
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-semibold">{g.grado} <span className="text-xs text-muted-foreground font-normal">({sals.length} {sals.length === 1 ? "salón" : "salones"})</span></span>
-                  <Button size="sm" variant="outline" onClick={() => agregarSalon(g.grado)} disabled={sals.length >= 10}><Plus className="w-4 h-4 mr-1" /> Salón</Button>
+                  <Button data-guia="configurar_institucion.salon_agregar" size="sm" variant="outline" onClick={() => agregarSalon(g.grado)} disabled={sals.length >= 10}><Plus className="w-4 h-4 mr-1" /> Salón</Button>
                 </div>
                 {sals.length === 0 ? (
                   <p className="text-xs text-muted-foreground italic">Sin salones. Agrega el primero.</p>
@@ -596,13 +596,13 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
                       <div key={s.id} className="flex items-center gap-3 text-sm">
                         <span className="w-20">Salón {s.salon}</span>
                         <Select value={s.jornada_id ? String(s.jornada_id) : "none"} onValueChange={(v) => asignarJornada(s.id, v === "none" ? null : Number(v))}>
-                          <SelectTrigger className="w-48"><SelectValue placeholder="Sin jornada" /></SelectTrigger>
+                          <SelectTrigger data-guia="configurar_institucion.salon_selector_jornada" className="w-48"><SelectValue placeholder="Sin jornada" /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="none">Sin jornada</SelectItem>
                             {jornadas.map((j) => <SelectItem key={j.id} value={String(j.id)}>{j.nombre}</SelectItem>)}
                           </SelectContent>
                         </Select>
-                        <button onClick={() => intentarBorrarSalon(s)} className="text-muted-foreground hover:text-destructive" title="Eliminar salón"><Trash2 className="w-4 h-4" /></button>
+                        <button data-guia="configurar_institucion.salon_eliminar" onClick={() => intentarBorrarSalon(s)} className="text-muted-foreground hover:text-destructive" title="Eliminar salón"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     ))}
                   </div>
@@ -623,10 +623,10 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
             <DialogTitle>Renombrar nivel</DialogTitle>
             <DialogDescription className="pt-1">El nuevo nombre se aplicará en todo el colegio (grados, estudiantes, coordinadores y comunicados de ese nivel).</DialogDescription>
           </DialogHeader>
-          <Input value={editNivel?.nombre ?? ""} onChange={(e) => setEditNivel((p) => p ? { ...p, nombre: e.target.value } : p)} maxLength={40} autoFocus onKeyDown={(e) => { if (e.key === "Enter") guardarNombreNivel(); }} />
+          <Input data-guia="configurar_institucion.nivel_renombrar_input" value={editNivel?.nombre ?? ""} onChange={(e) => setEditNivel((p) => p ? { ...p, nombre: e.target.value } : p)} maxLength={40} autoFocus onKeyDown={(e) => { if (e.key === "Enter") guardarNombreNivel(); }} />
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditNivel(null)} disabled={guardandoNivel}>Cancelar</Button>
-            <Button onClick={guardarNombreNivel} disabled={guardandoNivel || !editNivel?.nombre.trim()}>{guardandoNivel && <Loader2 className="w-4 h-4 mr-1 animate-spin" />} Guardar</Button>
+            <Button data-guia="configurar_institucion.nivel_renombrar_guardar" onClick={guardarNombreNivel} disabled={guardandoNivel || !editNivel?.nombre.trim()}>{guardandoNivel && <Loader2 className="w-4 h-4 mr-1 animate-spin" />} Guardar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -638,10 +638,10 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
             <DialogTitle>Renombrar grado</DialogTitle>
             <DialogDescription className="pt-1">El nuevo nombre se aplicará en todo el colegio: estudiantes, notas, actividades, asistencia, salones y asignaciones de ese grado.</DialogDescription>
           </DialogHeader>
-          <Input value={editGrado?.grado ?? ""} onChange={(e) => setEditGrado((p) => p ? { ...p, grado: e.target.value } : p)} maxLength={40} autoFocus onKeyDown={(e) => { if (e.key === "Enter") guardarNombreGrado(); }} />
+          <Input data-guia="configurar_institucion.grado_renombrar_input" value={editGrado?.grado ?? ""} onChange={(e) => setEditGrado((p) => p ? { ...p, grado: e.target.value } : p)} maxLength={40} autoFocus onKeyDown={(e) => { if (e.key === "Enter") guardarNombreGrado(); }} />
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditGrado(null)} disabled={guardandoGrado}>Cancelar</Button>
-            <Button onClick={guardarNombreGrado} disabled={guardandoGrado || !editGrado?.grado.trim()}>{guardandoGrado && <Loader2 className="w-4 h-4 mr-1 animate-spin" />} Guardar</Button>
+            <Button data-guia="configurar_institucion.grado_renombrar_guardar" onClick={guardarNombreGrado} disabled={guardandoGrado || !editGrado?.grado.trim()}>{guardandoGrado && <Loader2 className="w-4 h-4 mr-1 animate-spin" />} Guardar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -662,6 +662,7 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmSalon(null)} disabled={borrandoSalon}>Cancelar</Button>
             <Button
+              data-guia="configurar_institucion.salon_eliminar_confirmar"
               variant="destructive"
               disabled={borrandoSalon}
               onClick={async () => {

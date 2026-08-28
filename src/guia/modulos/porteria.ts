@@ -122,7 +122,6 @@ export const PORTERIA: Capacidad[] = [
         narracion:
           "Esperamos la confirmación, que dice cuántos estudiantes se reportaron y a cuántos acudientes se avisó. Si alguno no tiene acudiente registrado, aquí te lo indica.",
         accion: "esperar",
-        ancla: "porteria.toast_enviado",
       },
     ],
   },

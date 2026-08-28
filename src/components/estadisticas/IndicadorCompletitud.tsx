@@ -78,6 +78,7 @@ export const IndicadorCompletitud = ({
         <button
           onClick={() => setOpen(true)}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-100 text-green-700 text-sm font-medium hover:bg-green-200 transition-colors cursor-pointer"
+          data-guia="estadisticas.indicador_completitud"
         >
           <CheckCircle className="w-4 h-4" />
           <span>Completo</span>
@@ -181,6 +182,7 @@ export const IndicadorCompletitud = ({
       <button
         onClick={() => setOpen(true)}
         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-100 text-amber-700 text-sm font-medium hover:bg-amber-200 transition-colors cursor-pointer"
+        data-guia="estadisticas.indicador_completitud"
       >
         <AlertCircle className="w-4 h-4" />
         <span>Incompleto</span>

@@ -495,7 +495,7 @@ const ArmarSalon = () => {
       {esProfesor ? (
         <h3 className="text-lg font-semibold mb-4">Tu salón: {grado} {salon}</h3>
       ) : (
-        <div className="flex flex-wrap items-end gap-3 mb-6">
+        <div className="flex flex-wrap items-end gap-3 mb-6" data-guia="configurar_institucion.armar_selector_grado">
           <div>
             <Label className="text-sm">Grado</Label>
             <select value={grado} onChange={(e) => { setGrado(e.target.value); setSalon(""); }} className="mt-1 flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm">
@@ -534,6 +534,7 @@ const ArmarSalon = () => {
             {!esProfesor && (
               <button
                 type="button"
+                data-guia="configurar_institucion.armar_director_boton"
                 onClick={abrirDirDialog}
                 className="inline-flex align-middle ml-2 text-muted-foreground hover:text-foreground cursor-pointer"
                 title={director ? "Cambiar director(a) de grupo" : "Asignar director(a) de grupo"}
@@ -550,10 +551,10 @@ const ArmarSalon = () => {
                 <img src={e.genero === "F" ? imgAlumna : imgAlumno} alt="" className="h-28 object-contain" />
                 <p className="text-xs text-center mt-1 leading-tight">{e.apellidos}<br />{e.nombres}</p>
                 <div className="flex items-center gap-1 mt-1">
-                  <button onClick={() => abrirEditar(e)} className="p-1 text-muted-foreground hover:text-primary" title="Editar">
+                  <button data-guia="configurar_institucion.armar_est_editar" onClick={() => abrirEditar(e)} className="p-1 text-muted-foreground hover:text-primary" title="Editar">
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => setConfirmEliminar(e)} className="p-1 text-muted-foreground hover:text-destructive" title="Eliminar">
+                  <button data-guia="configurar_institucion.armar_est_eliminar" onClick={() => setConfirmEliminar(e)} className="p-1 text-muted-foreground hover:text-destructive" title="Eliminar">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -561,6 +562,7 @@ const ArmarSalon = () => {
             ))}
             {/* Pupitre "+" para agregar estudiante */}
             <button
+              data-guia="configurar_institucion.armar_agregar_estudiante"
               onClick={() => { resetForm(); setDialogAbierto(true); }}
               className="flex flex-col items-center justify-center min-h-[8rem] border-2 border-dashed border-border rounded-lg text-muted-foreground hover:border-primary hover:text-primary transition-colors"
               title="Agregar estudiante"
@@ -585,7 +587,7 @@ const ArmarSalon = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label className="text-sm">Cédula / ID *</Label>
-              <Input value={cedula} onChange={(e) => setCedula(soloDigitos(e.target.value))} placeholder="Solo números" readOnly={!!editando} className={`mt-1 ${editando ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} />
+              <Input data-guia="configurar_institucion.armar_est_cedula" value={cedula} onChange={(e) => setCedula(soloDigitos(e.target.value))} placeholder="Solo números" readOnly={!!editando} className={`mt-1 ${editando ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} />
               {buscando && <p className="text-xs text-muted-foreground mt-1">Buscando…</p>}
             </div>
             <div className="sm:col-span-2"><Label className="text-sm">Teléfono</Label><div className="mt-1"><PhoneInput value={telefono} onChange={setTelefono} disabled={bloqueado} placeholder="3001234567" /></div></div>
@@ -604,7 +606,7 @@ const ArmarSalon = () => {
 
           {/* En edición: mover de salón (el director de grupo no puede — su salón es fijo) */}
           {editando && !esProfesor && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3" data-guia="configurar_institucion.armar_est_mover">
               <div>
                 <Label className="text-sm">Grado</Label>
                 <select value={edGrado} onChange={(e) => { setEdGrado(e.target.value); setEdSalon(""); }} className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
@@ -649,14 +651,14 @@ const ArmarSalon = () => {
               )}
               {!mostrarFormAcu ? (
                 acudientesEst.length < 3 && (
-                  <Button variant="outline" size="sm" onClick={() => setMostrarFormAcu(true)} className="gap-1">
+                  <Button data-guia="configurar_institucion.armar_acu_agregar" variant="outline" size="sm" onClick={() => setMostrarFormAcu(true)} className="gap-1">
                     <Plus className="w-4 h-4" /> Agregar acudiente
                   </Button>
                 )
               ) : (
                 <div className="border rounded-lg p-3 space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div><Label className="text-sm">Cédula *</Label><Input value={acuCedula} onChange={(e) => setAcuCedula(soloDigitos(e.target.value))} placeholder="Solo números" readOnly={!!editandoAcu} className={`mt-1 ${editandoAcu ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
+                    <div><Label className="text-sm">Cédula *</Label><Input data-guia="configurar_institucion.armar_acu_cedula" value={acuCedula} onChange={(e) => setAcuCedula(soloDigitos(e.target.value))} placeholder="Solo números" readOnly={!!editandoAcu} className={`mt-1 ${editandoAcu ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
                     <div className="sm:col-span-2"><Label className="text-sm">Teléfono</Label><div className="mt-1"><PhoneInput value={acuTelefono} onChange={setAcuTelefono} disabled={acuBloqueado} placeholder="3001234567" /></div></div>
                     <div><Label className="text-sm">Apellidos *</Label><Input value={acuApellidos} onChange={(e) => setAcuApellidos(capitalizarNombre(e.target.value))} readOnly={acuBloqueado} className={`mt-1 ${acuBloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
                     <div><Label className="text-sm">Nombres *</Label><Input value={acuNombres} onChange={(e) => setAcuNombres(capitalizarNombre(e.target.value))} readOnly={acuBloqueado} className={`mt-1 ${acuBloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
@@ -679,7 +681,7 @@ const ArmarSalon = () => {
                   <div className="flex justify-end gap-2">
                     <Button variant="outline" size="sm" onClick={resetFormAcu} disabled={acuGuardando}>Cancelar</Button>
                     {(!editandoAcu || !esProfesor) && (
-                      <Button size="sm" onClick={editandoAcu ? guardarAcudienteEditado : agregarAcudiente} disabled={acuGuardando} className="gap-1">
+                      <Button data-guia="configurar_institucion.armar_acu_guardar" size="sm" onClick={editandoAcu ? guardarAcudienteEditado : agregarAcudiente} disabled={acuGuardando} className="gap-1">
                         {acuGuardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} {editandoAcu ? "Guardar" : "Agregar acudiente"}
                       </Button>
                     )}
@@ -691,7 +693,7 @@ const ArmarSalon = () => {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => { setDialogAbierto(false); resetForm(); }} disabled={guardando}>Cancelar</Button>
-            <Button onClick={editando ? guardarEdicion : agregarEstudiante} disabled={guardando || buscando || (!!editando && !esProfesor && !edSalon)} className="gap-2">
+            <Button data-guia="configurar_institucion.armar_est_guardar" onClick={editando ? guardarEdicion : agregarEstudiante} disabled={guardando || buscando || (!!editando && !esProfesor && !edSalon)} className="gap-2">
               {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} {editando ? "Guardar" : "Agregar"}
             </Button>
           </DialogFooter>
@@ -711,7 +713,7 @@ const ArmarSalon = () => {
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmEliminar(null)} disabled={eliminando}>Cancelar</Button>
-            <Button variant="destructive" onClick={eliminarEstudiante} disabled={eliminando} className="gap-2">
+            <Button data-guia="configurar_institucion.armar_est_eliminar_confirmar" variant="destructive" onClick={eliminarEstudiante} disabled={eliminando} className="gap-2">
               {eliminando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Eliminar
             </Button>
           </DialogFooter>
@@ -745,7 +747,7 @@ const ArmarSalon = () => {
                 placeholder="Buscar por nombre…"
                 className="mt-1 mb-2"
               />
-              <select value={selProfe} onChange={(e) => setSelProfe(e.target.value)} size={Math.min(8, Math.max(2, profesFiltrados.length + 1))} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+              <select data-guia="configurar_institucion.armar_director_selector" value={selProfe} onChange={(e) => setSelProfe(e.target.value)} size={Math.min(8, Math.max(2, profesFiltrados.length + 1))} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                 <option value="">Selecciona…</option>
                 {profesFiltrados.map((p) => (
                   <option key={p.id} value={p.id}>{p.nombre}{p.grupo ? ` — dirige ${p.grupo}` : ""}</option>
@@ -766,7 +768,7 @@ const ArmarSalon = () => {
                 {guardandoDir ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Quitar dirección de grupo
               </Button>
             ) : (
-              <Button onClick={asignarDirector} disabled={!selProfe || guardandoDir} className="gap-2">
+              <Button data-guia="configurar_institucion.armar_director_asignar" onClick={asignarDirector} disabled={!selProfe || guardandoDir} className="gap-2">
                 {guardandoDir ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Asignar
               </Button>
             )}

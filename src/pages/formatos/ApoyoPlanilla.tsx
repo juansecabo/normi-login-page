@@ -163,16 +163,16 @@ const ApoyoPlanilla = () => {
         <div className="mt-6 space-y-4 bg-card rounded-lg shadow-soft p-5">
           <div className="grid md:grid-cols-3 gap-3">
             <div><label className="text-sm font-medium">Grado *</label>
-              <select value={grado} onChange={(e) => { setGrado(e.target.value); setSalon(""); }} className={inputCls + " cursor-pointer"}>
+              <select value={grado} onChange={(e) => { setGrado(e.target.value); setSalon(""); }} className={inputCls + " cursor-pointer"} data-guia="apoyo.select_grado">
                 <option value="">Seleccionar</option>{gradosColegio.map((g) => <option key={g} value={g}>{g}</option>)}
               </select></div>
             <div><label className="text-sm font-medium">Salón *</label>
-              <select value={salon} onChange={(e) => setSalon(e.target.value)} className={inputCls + " cursor-pointer"}>
+              <select value={salon} onChange={(e) => setSalon(e.target.value)} className={inputCls + " cursor-pointer"} data-guia="apoyo.select_salon">
                 <option value="">Seleccionar</option>{salones.map((sa) => <option key={sa} value={sa}>{sa}</option>)}
               </select></div>
-            <div><label className="text-sm font-medium">Período *</label><input value={periodo} onChange={(e) => setPeriodo(e.target.value)} className={inputCls} placeholder="Ej. Primer período" /></div>
-            <div><label className="text-sm font-medium">Docente *</label><input value={docente} onChange={(e) => setDocente(e.target.value)} className={inputCls} /></div>
-            <div><label className="text-sm font-medium">Asignatura *</label><input value={asignatura} onChange={(e) => setAsignatura(e.target.value)} className={inputCls} /></div>
+            <div><label className="text-sm font-medium">Período *</label><input value={periodo} onChange={(e) => setPeriodo(e.target.value)} className={inputCls} placeholder="Ej. Primer período" data-guia="apoyo.periodo" /></div>
+            <div><label className="text-sm font-medium">Docente *</label><input value={docente} onChange={(e) => setDocente(e.target.value)} className={inputCls} data-guia="apoyo.docente" /></div>
+            <div><label className="text-sm font-medium">Asignatura *</label><input value={asignatura} onChange={(e) => setAsignatura(e.target.value)} className={inputCls} data-guia="apoyo.asignatura" /></div>
             <div><label className="text-sm font-medium">Fecha</label><input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className={inputCls} /></div>
           </div>
 
@@ -190,10 +190,10 @@ const ApoyoPlanilla = () => {
                     <tr key={f.id} className="border-t border-border">
                       <td className="p-2 text-muted-foreground">{i + 1}</td>
                       <td className="p-2">{f.nombre}</td>
-                      <td className="p-2"><input value={f.taller} onChange={(e) => setFila(i, "taller", e.target.value)} className="px-2 py-1 border border-input rounded w-16 bg-background" /></td>
+                      <td className="p-2"><input value={f.taller} onChange={(e) => setFila(i, "taller", e.target.value)} className="px-2 py-1 border border-input rounded w-16 bg-background" data-guia="apoyo.fila_taller" /></td>
                       <td className="p-2"><input value={f.sustent} onChange={(e) => setFila(i, "sustent", e.target.value)} className="px-2 py-1 border border-input rounded w-16 bg-background" /></td>
                       <td className="p-2 font-semibold text-primary">{definitiva(f) || "—"}</td>
-                      <td className="p-2"><input value={f.obs} onChange={(e) => setFila(i, "obs", e.target.value)} className="px-2 py-1 border border-input rounded w-full bg-background" /></td>
+                      <td className="p-2"><input value={f.obs} onChange={(e) => setFila(i, "obs", e.target.value)} className="px-2 py-1 border border-input rounded w-full bg-background" data-guia="apoyo.fila_obs" /></td>
                     </tr>
                   ))}
                 </tbody>
@@ -203,7 +203,7 @@ const ApoyoPlanilla = () => {
 
           <div>
             <label className="text-sm font-medium">Firma del docente</label>
-            <div className="border-2 border-dashed border-border rounded-lg bg-white mt-1">
+            <div className="border-2 border-dashed border-border rounded-lg bg-white mt-1" data-guia="apoyo.firma_docente">
               <SignatureCanvas ref={sig} penColor="black" canvasProps={{ className: "w-full", style: { width: "100%", height: "150px" } }} onEnd={onFirmaEnd} />
             </div>
             <div className="flex gap-2 items-center mt-1">
@@ -213,7 +213,7 @@ const ApoyoPlanilla = () => {
           </div>
 
           <div className="flex flex-wrap gap-3 pt-1">
-            <button onClick={guardar} disabled={saving} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 disabled:opacity-60"><Save className="w-4 h-4" /> {saving ? "Guardando…" : "Guardar"}</button>
+            <button onClick={guardar} disabled={saving} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 disabled:opacity-60" data-guia="apoyo.boton_guardar"><Save className="w-4 h-4" /> {saving ? "Guardando…" : "Guardar"}</button>
             <button onClick={guardarYDescargar} disabled={saving} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border-2 border-border font-semibold hover:border-primary disabled:opacity-60"><Download className="w-4 h-4" /> Guardar y descargar PDF</button>
           </div>
         </div>

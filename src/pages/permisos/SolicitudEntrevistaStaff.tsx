@@ -526,6 +526,7 @@ const SolicitudEntrevistaStaff = () => {
             <h2 className="text-xl font-bold text-foreground mb-6 text-center">Solicitud de Entrevista</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
               <button
+                data-guia="entrevistas.boton_crear"
                 onClick={() => irA("crear")}
                 className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg border-2 border-border bg-background transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/5"
               >
@@ -534,6 +535,7 @@ const SolicitudEntrevistaStaff = () => {
                 <span className="text-xs text-muted-foreground text-center">Cita a un acudiente a una entrevista.</span>
               </button>
               <button
+                data-guia="entrevistas.ficha_creadas"
                 onClick={() => irA("creadas")}
                 className="relative flex flex-col items-center justify-center gap-4 p-8 rounded-lg border-2 border-border bg-background transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/5"
               >
@@ -559,14 +561,14 @@ const SolicitudEntrevistaStaff = () => {
               <div className="flex flex-wrap gap-3">
                 <div className="space-y-1">
                   <label className="text-sm font-medium">Grado:</label>
-                  <select value={grado} onChange={(e) => { setGrado(e.target.value); setSalon(""); }} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                  <select data-guia="entrevistas.select_grado" value={grado} onChange={(e) => { setGrado(e.target.value); setSalon(""); }} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                     <option value="">Seleccionar</option>
                     {gradosColegio.map(g => <option key={g} value={g}>{g}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm font-medium">Salón:</label>
-                  <select value={salon} onChange={(e) => setSalon(e.target.value)} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                  <select data-guia="entrevistas.select_salon" value={salon} onChange={(e) => setSalon(e.target.value)} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                     <option value="">Seleccionar</option>
                     {salonesDelGrado.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
@@ -589,6 +591,7 @@ const SolicitudEntrevistaStaff = () => {
                   </div>
                 )}
                 <select
+                  data-guia="entrevistas.select_estudiante"
                   value=""
                   disabled={!salon}
                   onChange={(e) => { const est = estudiantes.find(x => String(x.id) === e.target.value); if (est) agregarEstudiante(est); }}
@@ -606,7 +609,7 @@ const SolicitudEntrevistaStaff = () => {
                 Por este medio nos permitimos solicitar su presencia en el colegio el día {" "}
                 <Popover open={calOpen} onOpenChange={setCalOpen}>
                   <PopoverTrigger asChild>
-                    <button className="inline-flex items-center gap-1 px-3 py-1.5 border-b-2 border-primary/40 text-primary font-medium bg-transparent hover:bg-accent rounded cursor-pointer min-w-[180px]">
+                    <button data-guia="entrevistas.fecha" className="inline-flex items-center gap-1 px-3 py-1.5 border-b-2 border-primary/40 text-primary font-medium bg-transparent hover:bg-accent rounded cursor-pointer min-w-[180px]">
                       {fechaEntrevista ? fechaEntrevista.toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" }) : "Seleccionar fecha"}
                       <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground" />
                     </button>
@@ -616,7 +619,7 @@ const SolicitudEntrevistaStaff = () => {
                   </PopoverContent>
                 </Popover>
                 {" "} Hora: {" "}
-                <select value={horaH} onChange={e => setHoraH(e.target.value)} className="inline px-1 py-1 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm cursor-pointer outline-none">
+                <select data-guia="entrevistas.hora" value={horaH} onChange={e => setHoraH(e.target.value)} className="inline px-1 py-1 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm cursor-pointer outline-none">
                   <option value="">--</option>
                   {Array.from({ length: 12 }, (_, i) => i + 1).map(h => <option key={h} value={String(h)}>{h}</option>)}
                 </select>
@@ -651,7 +654,7 @@ const SolicitudEntrevistaStaff = () => {
                     ))}
                   </div>
                 )}
-                <div className="flex flex-wrap gap-3 items-center">
+                <div data-guia="entrevistas.entrevistadores" className="flex flex-wrap gap-3 items-center">
                   <select value={cargoEntrevista} onChange={e => { setCargoEntrevista(e.target.value); setInternoPick(null); }}
                     className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                     <option value="">Cargo</option>
@@ -674,7 +677,7 @@ const SolicitudEntrevistaStaff = () => {
 
               {/* Mensaje adicional opcional, con negrilla/cursiva (mismo editor
                   de comunicados: se ve formateado y viaja en formato WhatsApp). */}
-              <div className="space-y-2">
+              <div data-guia="entrevistas.mensaje" className="space-y-2">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <label className="text-sm font-medium text-foreground">Mensaje adicional <span className="text-muted-foreground font-normal">(opcional)</span></label>
                   <FormatoWhatsAppToolbar editorRef={editorMensajeRef} />
@@ -696,7 +699,7 @@ const SolicitudEntrevistaStaff = () => {
               {/* Firma */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Firma del solicitante</label>
-                <div className="border-2 border-dashed border-border rounded-lg bg-white">
+                <div data-guia="entrevistas.firma" className="border-2 border-dashed border-border rounded-lg bg-white">
                   <SignatureCanvas ref={sigCanvas} penColor="black" canvasProps={{ className: "w-full", style: { width: "100%", height: "160px" } }} onEnd={handleFirmaEnd} />
                 </div>
                 <div className="flex gap-2 items-center">
@@ -717,7 +720,7 @@ const SolicitudEntrevistaStaff = () => {
                   return;
                 }
                 setShowConfirm(true);
-              }} disabled={!camposCompletos || saving}
+              }} data-guia="entrevistas.boton_solicitar" disabled={!camposCompletos || saving}
                 className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-bold text-base transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
                 {saving ? "Creando..." : "Solicitar Entrevista"}
               </button>
@@ -752,7 +755,7 @@ const SolicitudEntrevistaStaff = () => {
             : (
               <div className="flex flex-col lg:flex-row lg:items-start gap-6">
                 {/* Calendario: ubica cada entrevista por su fecha; color por tipo. */}
-                <div className="flex flex-col items-center lg:sticky lg:top-4 shrink-0 gap-3">
+                <div data-guia="entrevistas.calendario_dia" className="flex flex-col items-center lg:sticky lg:top-4 shrink-0 gap-3">
                   <Calendar mode="single" selected={diaStaff} onSelect={(d) => { setDiaStaff(d); setExpandedId(null); }} month={mesStaff} onMonthChange={setMesStaff} locale={es}
                     modifiers={{
                       creador: diasCreador.filter(d => !diaStaff || fechaKey(d) !== fechaKey(diaStaff)),
@@ -787,7 +790,7 @@ const SolicitudEntrevistaStaff = () => {
                     <p className="text-sm">No hay entrevistas para este día.</p>
                   </div>
                 ) : (
-                <div className="space-y-3">
+                <div className="space-y-3" data-guia="entrevistas.ficha_solicitud">
                 <div className="flex items-center justify-between mb-1">
                   <h4 className="text-base font-semibold text-foreground capitalize">{diaStaff.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</h4>
                   <button onClick={() => { setDiaStaff(undefined); setExpandedId(null); }} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
@@ -847,7 +850,7 @@ const SolicitudEntrevistaStaff = () => {
                           {/* El solicitante puede fijar el estado (por si el acudiente fue/avisó y olvidó marcar) */}
                           <div className="border-t border-border pt-3 mt-1">
                             <p className="font-medium mb-2">Confirmar asistencia:</p>
-                            <div className="flex gap-3">
+                            <div data-guia="entrevistas.marcar_estado" className="flex gap-3">
                               <button
                                 onClick={() => marcarEstado(s.id, true)}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 font-medium text-sm transition-all cursor-pointer ${s.confirmado === true ? "border-green-500 bg-green-50 text-green-700" : "border-border text-muted-foreground hover:border-green-300"}`}
@@ -868,6 +871,7 @@ const SolicitudEntrevistaStaff = () => {
                           {String(s.creado_por) === String(session.id) && (
                             <div className="border-t border-border pt-3 mt-1">
                               <button
+                                data-guia="entrevistas.boton_editar"
                                 onClick={() => abrirEditar(s)}
                                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-border font-medium text-sm hover:border-primary cursor-pointer"
                               >
@@ -881,6 +885,7 @@ const SolicitudEntrevistaStaff = () => {
                           {s.confirmado !== true && (
                             <div className="border-t border-border pt-3 mt-1">
                               <button
+                                data-guia="entrevistas.boton_reenviar"
                                 onClick={() => abrirReenvio(s)}
                                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 cursor-pointer"
                               >
@@ -957,7 +962,7 @@ const SolicitudEntrevistaStaff = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="cursor-pointer">Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCrear} className="cursor-pointer">{saving ? "Creando..." : "Sí, solicitar"}</AlertDialogAction>
+            <AlertDialogAction data-guia="entrevistas.confirmar_crear" onClick={handleCrear} className="cursor-pointer">{saving ? "Creando..." : "Sí, solicitar"}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -977,7 +982,7 @@ const SolicitudEntrevistaStaff = () => {
               <p className="text-sm font-medium mb-1">Nueva fecha:</p>
               <Popover open={reCalOpen} onOpenChange={setReCalOpen}>
                 <PopoverTrigger asChild>
-                  <button className="inline-flex items-center gap-1 px-3 py-1.5 border-b-2 border-primary/40 text-primary font-medium bg-transparent hover:bg-accent rounded cursor-pointer min-w-[200px]">
+                  <button data-guia="entrevistas.reenviar_fecha" className="inline-flex items-center gap-1 px-3 py-1.5 border-b-2 border-primary/40 text-primary font-medium bg-transparent hover:bg-accent rounded cursor-pointer min-w-[200px]">
                     {reFecha ? reFecha.toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" }) : "Seleccionar fecha"}
                     <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground" />
                   </button>
@@ -989,7 +994,7 @@ const SolicitudEntrevistaStaff = () => {
             </div>
             <div>
               <p className="text-sm font-medium mb-1">Nueva hora:</p>
-              <div className="flex items-center gap-1">
+              <div data-guia="entrevistas.reenviar_hora" className="flex items-center gap-1">
                 <select value={reH} onChange={e => setReH(e.target.value)} className="px-1 py-1 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm cursor-pointer outline-none">
                   <option value="">--</option>
                   {Array.from({ length: 12 }, (_, i) => i + 1).map(h => <option key={h} value={String(h)}>{h}</option>)}
@@ -1010,7 +1015,7 @@ const SolicitudEntrevistaStaff = () => {
 
           <AlertDialogFooter>
             <AlertDialogCancel className="cursor-pointer" disabled={reenviando}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.preventDefault(); confirmarReenvio(); }} disabled={reenviando || !reFecha || !reH || !reM || !reAP} className="cursor-pointer">
+            <AlertDialogAction data-guia="entrevistas.reenviar_confirmar" onClick={(e) => { e.preventDefault(); confirmarReenvio(); }} disabled={reenviando || !reFecha || !reH || !reM || !reAP} className="cursor-pointer">
               {reenviando ? "Reenviando…" : "Reenviar citación"}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -1033,7 +1038,7 @@ const SolicitudEntrevistaStaff = () => {
                 <p className="text-sm font-medium mb-1">Fecha:</p>
                 <Popover open={edCalOpen} onOpenChange={setEdCalOpen}>
                   <PopoverTrigger asChild>
-                    <button className="inline-flex items-center gap-1 px-3 py-1.5 border-b-2 border-primary/40 text-primary font-medium bg-transparent hover:bg-accent rounded cursor-pointer min-w-[200px]">
+                    <button data-guia="entrevistas.editar_fecha" className="inline-flex items-center gap-1 px-3 py-1.5 border-b-2 border-primary/40 text-primary font-medium bg-transparent hover:bg-accent rounded cursor-pointer min-w-[200px]">
                       {edFecha ? edFecha.toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" }) : "Seleccionar fecha"}
                       <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground" />
                     </button>
@@ -1099,7 +1104,7 @@ const SolicitudEntrevistaStaff = () => {
 
           <AlertDialogFooter>
             <AlertDialogCancel className="cursor-pointer" disabled={edGuardando}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.preventDefault(); guardarEdicion(); }} disabled={edGuardando || !edFecha || !edH || !edM || !edAP || edEntrev.length === 0} className="cursor-pointer">
+            <AlertDialogAction data-guia="entrevistas.editar_guardar" onClick={(e) => { e.preventDefault(); guardarEdicion(); }} disabled={edGuardando || !edFecha || !edH || !edM || !edAP || edEntrev.length === 0} className="cursor-pointer">
               {edGuardando ? "Guardando…" : "Guardar cambios"}
             </AlertDialogAction>
           </AlertDialogFooter>

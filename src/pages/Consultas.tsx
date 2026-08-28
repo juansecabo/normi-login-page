@@ -707,6 +707,7 @@ export default function Consultas() {
 
         <div className="flex gap-2 mb-4 border-b">
           <button
+            data-guia="consultas.tab_listar"
             className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
               tab === "listar" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
@@ -715,6 +716,7 @@ export default function Consultas() {
             Todas las consultas
           </button>
           <button
+            data-guia="consultas.tab_crear"
             className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
               tab === "crear" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
@@ -726,7 +728,7 @@ export default function Consultas() {
         </div>
 
         {tab === "listar" && (
-          <div className="space-y-3">
+          <div className="space-y-3" data-guia="consultas.card_consulta">
             {loading ? (
               <div className="text-center py-8 text-muted-foreground">Cargando...</div>
             ) : consultas.length === 0 ? (
@@ -803,6 +805,7 @@ export default function Consultas() {
                   <Label htmlFor="titulo">Título de la consulta</Label>
                   <Input
                     id="titulo"
+                    data-guia="consultas.input_titulo"
                     placeholder="Ej: Jornada de Vacunación contra el VPH"
                     value={titulo}
                     onChange={(e) => setTitulo(e.target.value)}
@@ -812,6 +815,7 @@ export default function Consultas() {
                   <Label htmlFor="mensajeConsulta">Mensaje completo (se muestra al abrir el link)</Label>
                   <Textarea
                     id="mensajeConsulta"
+                    data-guia="consultas.textarea_mensaje"
                     placeholder="El texto completo que verá el acudiente al entrar..."
                     value={mensajeConsulta}
                     onChange={(e) => setMensajeConsulta(e.target.value)}
@@ -825,6 +829,7 @@ export default function Consultas() {
                   <Label htmlFor="mensajeWhatsapp">Mensaje corto de WhatsApp (con el link)</Label>
                   <Textarea
                     id="mensajeWhatsapp"
+                    data-guia="consultas.textarea_whatsapp"
                     placeholder="Texto corto que se envía por WhatsApp. El link se agrega automáticamente al final."
                     value={mensajeWhatsapp}
                     onChange={(e) => setMensajeWhatsapp(e.target.value)}
@@ -841,7 +846,7 @@ export default function Consultas() {
               <CardHeader>
                 <CardTitle className="text-base">Opciones de respuesta</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-2" data-guia="consultas.opcion_input">
                 {opciones.map((op, i) => (
                   <div key={i} className="flex gap-2 items-center">
                     <Input
@@ -857,7 +862,7 @@ export default function Consultas() {
                   </div>
                 ))}
                 {opciones.length < 4 && (
-                  <Button type="button" variant="outline" size="sm" onClick={agregarOpcion}>
+                  <Button type="button" variant="outline" size="sm" onClick={agregarOpcion} data-guia="consultas.boton_agregar_opcion">
                     <Plus className="h-3 w-3 mr-1" /> Añadir opción
                   </Button>
                 )}
@@ -877,7 +882,7 @@ export default function Consultas() {
                   <p className="text-xs text-muted-foreground mt-1 mb-2">
                     Selecciona uno o más perfiles. Para cada uno aparecerán los filtros y selectores específicos abajo.
                   </p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2" data-guia="consultas.checkbox_perfil">
                     {PERFILES_UI.map((p) => (
                       <label key={p.key} className="flex items-center gap-2 text-sm cursor-pointer">
                         <input
@@ -920,7 +925,7 @@ export default function Consultas() {
                       </div>
                     </div>
 
-                    <div>
+                    <div data-guia="consultas.check_grado">
                       <Label className="font-medium">Grados</Label>
                       <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mt-2">
                         {gradosColegio.map((g) => (
@@ -940,6 +945,7 @@ export default function Consultas() {
                       <div>
                         <button
                           type="button"
+                          data-guia="consultas.toggle_salones"
                           className="flex items-center gap-2 text-sm font-medium text-foreground"
                           onClick={() => setMostrarSalones(!mostrarSalones)}
                         >
@@ -970,6 +976,7 @@ export default function Consultas() {
                   <div>
                     <button
                       type="button"
+                      data-guia="consultas.toggle_estudiantes"
                       className="flex items-center gap-2 text-sm font-medium text-foreground"
                       onClick={() => setMostrarEstudiantes(!mostrarEstudiantes)}
                     >
@@ -1018,6 +1025,7 @@ export default function Consultas() {
                   <div>
                     <button
                       type="button"
+                      data-guia="consultas.toggle_profesores"
                       className="flex items-center gap-2 text-sm font-medium text-foreground"
                       onClick={() => setMostrarProfesores(!mostrarProfesores)}
                     >
@@ -1058,8 +1066,8 @@ export default function Consultas() {
                   { on: perfilesMarcados.Administrativos, label: "Administrativos", lista: listaAdministrativos, sel: administrativosSeleccionados, setter: setAdministrativosSeleccionados },
                   { on: perfilesMarcados.Secretaria, label: "Secretaria General", lista: listaSecretarias, sel: secretariasSeleccionadas, setter: setSecretariasSeleccionadas },
                   { on: perfilesMarcados.Orientador, label: "Orientador(a) Escolar", lista: listaOrientadores, sel: orientadoresSeleccionados, setter: setOrientadoresSeleccionados },
-                ].filter(x => x.on).map((grupo) => (
-                  <div key={grupo.label} className="border-l-2 border-primary/30 pl-4 space-y-2">
+                ].filter(x => x.on).map((grupo, gi) => (
+                  <div key={grupo.label} data-guia={gi === 0 ? "consultas.check_interno_especifico" : undefined} className="border-l-2 border-primary/30 pl-4 space-y-2">
                     <p className="text-xs text-muted-foreground">{grupo.label} específicos (vacío = todos)</p>
                     {loadingInternos && grupo.lista.length === 0 ? (
                       <p className="text-xs text-muted-foreground">Cargando...</p>
@@ -1109,15 +1117,15 @@ export default function Consultas() {
                   </Label>
                   <p className="text-xs text-muted-foreground">Para autorizaciones oficiales, activa esta opción.</p>
                 </div>
-                <Switch id="firma" checked={requiereFirma} onCheckedChange={setRequiereFirma} />
+                <Switch id="firma" data-guia="consultas.switch_firma" checked={requiereFirma} onCheckedChange={setRequiereFirma} />
               </CardContent>
             </Card>
 
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={resetForm} disabled={enviando}>
+              <Button variant="outline" onClick={resetForm} disabled={enviando} data-guia="consultas.boton_limpiar">
                 <X className="h-4 w-4 mr-1" /> Limpiar
               </Button>
-              <Button onClick={handleEnviar} disabled={enviando}>
+              <Button onClick={handleEnviar} disabled={enviando} data-guia="consultas.boton_crear_enviar">
                 <Send className="h-4 w-4 mr-1" /> {enviando ? "Enviando..." : "Crear y enviar"}
               </Button>
             </div>

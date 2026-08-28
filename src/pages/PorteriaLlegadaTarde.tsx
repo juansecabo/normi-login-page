@@ -180,12 +180,12 @@ const PorteriaLlegadaTarde = () => {
           </p>
 
           <div className="grid grid-cols-2 gap-3">
-            <select value={filtroGrado} onChange={e => { setFiltroGrado(e.target.value); setFiltroSalon(""); }}
+            <select data-guia="porteria.filtro_grado" value={filtroGrado} onChange={e => { setFiltroGrado(e.target.value); setFiltroSalon(""); }}
               className="px-3 py-2 border border-input rounded-md text-sm bg-card cursor-pointer">
               <option value="">Todos los grados</option>
               {gradosUnicos.map(g => <option key={g} value={g}>{g}</option>)}
             </select>
-            <select value={filtroSalon} onChange={e => setFiltroSalon(e.target.value)}
+            <select data-guia="porteria.filtro_salon" value={filtroSalon} onChange={e => setFiltroSalon(e.target.value)}
               className="px-3 py-2 border border-input rounded-md text-sm bg-card cursor-pointer">
               <option value="">Todos los salones</option>
               {salonesUnicos.map(s => <option key={s} value={s}>{s}</option>)}
@@ -193,7 +193,7 @@ const PorteriaLlegadaTarde = () => {
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input value={busqueda} onChange={e => setBusqueda(e.target.value)}
+            <input data-guia="porteria.buscar_estudiante" value={busqueda} onChange={e => setBusqueda(e.target.value)}
               placeholder="Buscar estudiante por nombre..."
               className="w-full pl-9 pr-9 py-2 border border-input rounded-md text-sm bg-card" />
             {busqueda && (
@@ -205,7 +205,7 @@ const PorteriaLlegadaTarde = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div ref={listaRef} className="lg:col-span-2">
+            <div ref={listaRef} data-guia="porteria.item_estudiante" className="lg:col-span-2">
               {loading ? (
                 <div className="text-center py-10 text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
               ) : estudiantesFiltrados.length === 0 ? (
@@ -239,13 +239,13 @@ const PorteriaLlegadaTarde = () => {
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-sm font-semibold">Seleccionados ({seleccionadosArr.length})</p>
                   {seleccionadosArr.length > 0 && (
-                    <button onClick={() => setSeleccionados({})} className="text-xs text-muted-foreground hover:text-destructive">Quitar todos</button>
+                    <button data-guia="porteria.quitar_todos" onClick={() => setSeleccionados({})} className="text-xs text-muted-foreground hover:text-destructive">Quitar todos</button>
                   )}
                 </div>
                 {seleccionadosArr.length === 0 ? (
                   <p className="text-xs text-muted-foreground py-4 text-center">Marca los estudiantes que llegaron tarde y aparecerán aquí.</p>
                 ) : (
-                  <div className="space-y-1.5 max-h-[45vh] overflow-y-auto">
+                  <div data-guia="porteria.quitar_seleccionado" className="space-y-1.5 max-h-[45vh] overflow-y-auto">
                     {seleccionadosArr.map(e => (
                       <div key={e.id} className="flex items-center justify-between gap-2 text-sm bg-background border border-border rounded-md px-2 py-1.5">
                         <div className="min-w-0">
@@ -257,7 +257,7 @@ const PorteriaLlegadaTarde = () => {
                     ))}
                   </div>
                 )}
-                <Button onClick={enviarReporte} disabled={seleccionadosArr.length === 0 || enviando} className="w-full mt-3 gap-2">
+                <Button data-guia="porteria.enviar_reporte" onClick={enviarReporte} disabled={seleccionadosArr.length === 0 || enviando} className="w-full mt-3 gap-2">
                   {enviando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                   Enviar reporte{seleccionadosArr.length > 0 ? ` (${seleccionadosArr.length})` : ""}
                 </Button>
@@ -270,7 +270,7 @@ const PorteriaLlegadaTarde = () => {
       {seleccionadosArr.length > 0 && (
         <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-card border-t border-border p-3 shadow-lg flex items-center justify-between gap-3">
           <span className="text-sm font-medium">{seleccionadosArr.length} seleccionado{seleccionadosArr.length === 1 ? "" : "s"}</span>
-          <Button onClick={enviarReporte} disabled={enviando} className="gap-2">
+          <Button data-guia="porteria.enviar_reporte" onClick={enviarReporte} disabled={enviando} className="gap-2">
             {enviando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} Enviar reporte
           </Button>
         </div>
@@ -394,12 +394,12 @@ export const PorteriaRegistro = () => {
           </div>
         </div>
 
-        <div className="flex gap-2 mb-4">
+        <div data-guia="porteria.tabs_registro" className="flex gap-2 mb-4">
           <button onClick={() => setSub("dia")}
             className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${sub === "dia" ? "bg-primary text-primary-foreground" : "bg-card text-foreground hover:bg-muted/50 border border-border"}`}>
             Por día
           </button>
-          <button onClick={() => setSub("estudiante")}
+          <button data-guia="porteria.tab_por_estudiante" onClick={() => setSub("estudiante")}
             className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${sub === "estudiante" ? "bg-primary text-primary-foreground" : "bg-card text-foreground hover:bg-muted/50 border border-border"}`}>
             Por estudiante
           </button>
@@ -413,8 +413,8 @@ export const PorteriaRegistro = () => {
               {dia ? `Llegadas tarde del ${fmtFecha(keyDeDate(dia))}` : "Todas las llegadas tarde"}
             </h3>
             <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-6">
-              <CalendarioFiltroDia diasMarcados={diasMarcados} dia={dia} onDia={setDia} />
-              <div>
+              <CalendarioFiltroDia dataGuia="porteria.calendario_dia" diasMarcados={diasMarcados} dia={dia} onDia={setDia} />
+              <div data-guia="porteria.lista_dia">
                 <p className="text-sm text-muted-foreground mb-3">
                   {dia ? fmtFecha(keyDeDate(dia)) : "Histórico completo"} · {regsDia.length} reporte{regsDia.length === 1 ? "" : "s"}
                 </p>
@@ -423,7 +423,7 @@ export const PorteriaRegistro = () => {
                 ) : regsDia.length === 0 ? (
                   <p className="text-center py-8 text-muted-foreground text-sm">No hay reportes de llegada tarde en esta fecha.</p>
                 ) : (
-                  <div className="space-y-2">
+                  <div data-guia="porteria.eliminar_reporte" className="space-y-2">
                     {regsDia.map(r => (
                       <div key={r.id} className="flex items-center justify-between gap-3 border border-border rounded-lg px-3 py-2">
                         <div className="min-w-0">
@@ -453,11 +453,11 @@ export const PorteriaRegistro = () => {
               <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
                 <ClipboardList className="w-5 h-5 text-primary" /> Cuántas veces ha llegado tarde cada estudiante
               </h3>
-              <button onClick={cargarResumen} className="text-muted-foreground hover:text-primary p-1" title="Actualizar"><RefreshCw className="w-4 h-4" /></button>
+              <button data-guia="porteria.actualizar_resumen" onClick={cargarResumen} className="text-muted-foreground hover:text-primary p-1" title="Actualizar"><RefreshCw className="w-4 h-4" /></button>
             </div>
             <div className="relative mb-3">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input value={buscar} onChange={e => setBuscar(e.target.value)}
+              <input data-guia="porteria.buscar_resumen" value={buscar} onChange={e => setBuscar(e.target.value)}
                 placeholder="Buscar estudiante..."
                 className="w-full pl-9 pr-9 py-2 border border-input rounded-md text-sm bg-background" />
               {buscar && (
@@ -472,7 +472,7 @@ export const PorteriaRegistro = () => {
             ) : resumenFiltrado.length === 0 ? (
               <p className="text-center py-8 text-muted-foreground text-sm">Aún no hay estudiantes con reportes de llegada tarde.</p>
             ) : (
-              <div className="space-y-2">
+              <div data-guia="porteria.fila_resumen" className="space-y-2">
                 {resumenFiltrado.map(r => (
                   <div key={r.estudiante_id} className="border border-border rounded-lg">
                     <button onClick={() => abrirEstudiante(r.estudiante_id)} className="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-muted/30 transition-colors rounded-lg">
@@ -490,7 +490,7 @@ export const PorteriaRegistro = () => {
                         {cargandoEst ? (
                           <div className="text-center py-3 text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin mx-auto" /></div>
                         ) : (
-                          <ul className="space-y-1">
+                          <ul data-guia="porteria.eliminar_reporte" className="space-y-1">
                             {regsEst.map(x => (
                               <li key={x.id} className="flex items-center justify-between gap-2 text-sm">
                                 <span className="text-foreground">{fmtFecha(x.fecha)} · {horaBonita(x.hora_entrada)}</span>
@@ -512,7 +512,7 @@ export const PorteriaRegistro = () => {
       </main>
 
       <Dialog open={!!eliminarReg} onOpenChange={(o) => { if (!o) setEliminarReg(null); }}>
-        <DialogContent className="max-w-md">
+        <DialogContent data-guia="porteria.dialog_corregir" className="max-w-md">
           <DialogHeader><DialogTitle>Corregir reporte</DialogTitle></DialogHeader>
           <p className="text-sm text-muted-foreground py-1">
             Se eliminará el reporte de llegada tarde de <strong>{eliminarReg?.estudiante_nombre}</strong>
@@ -523,7 +523,7 @@ export const PorteriaRegistro = () => {
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEliminarReg(null)} disabled={eliminando}>Cancelar</Button>
-            <Button variant="destructive" onClick={confirmarEliminar} disabled={eliminando} className="gap-2">
+            <Button data-guia="porteria.confirmar_eliminar" variant="destructive" onClick={confirmarEliminar} disabled={eliminando} className="gap-2">
               {eliminando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Eliminar del registro
             </Button>
           </DialogFooter>
@@ -553,7 +553,7 @@ export const PorteriaHub = () => {
             <span className="text-foreground font-medium">Portería</span>
           </div>
         </div>
-        <div className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div data-guia="porteria.hub" className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button onClick={() => navigate("/porteria/llegada-tarde")}
             className="bg-card rounded-lg shadow-soft p-8 flex flex-col items-center justify-center gap-3 text-center transition-all hover:shadow-md hover:bg-orange-50 border-2 border-transparent hover:border-orange-200">
             <Clock className="h-10 w-10 text-orange-500" />

@@ -908,6 +908,7 @@ const ProgramarActividad = () => {
               </button>
               <button
                 onClick={() => irA("actividades")}
+                data-guia="actividades.menu_programadas"
                 className="bg-card rounded-lg shadow-soft p-8 flex flex-col items-center justify-center gap-3 text-center transition-all hover:shadow-md hover:bg-emerald-50 border-2 border-transparent hover:border-emerald-200"
               >
                 <Calendar className="h-10 w-10 text-emerald-600" />
@@ -929,6 +930,7 @@ const ProgramarActividad = () => {
                   <div className="flex justify-end -mt-1">
                     <button
                       type="button"
+                      data-guia="actividades.btn_limpiar"
                       onClick={limpiarFormulario}
                       className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-input bg-background rounded-md hover:bg-muted transition-colors"
                       title="Limpiar todos los campos"
@@ -1014,7 +1016,7 @@ const ProgramarActividad = () => {
                               className={`px-3 py-2 rounded-md border text-sm cursor-pointer ${!destinoEspecifico ? "border-primary bg-primary/10 text-foreground" : "border-border bg-background text-muted-foreground hover:bg-muted/40"}`}>
                               Todo el salón
                             </button>
-                            <button type="button" onClick={() => setDestinoEspecifico(true)}
+                            <button type="button" data-guia="actividades.btn_destino_especifico" onClick={() => setDestinoEspecifico(true)}
                               className={`px-3 py-2 rounded-md border text-sm cursor-pointer ${destinoEspecifico ? "border-primary bg-primary/10 text-foreground" : "border-border bg-background text-muted-foreground hover:bg-muted/40"}`}>
                               Estudiantes específicos
                             </button>
@@ -1024,13 +1026,14 @@ const ProgramarActividad = () => {
                               <div className="relative border-b border-border bg-background">
                                 <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                                 <input
+                                  data-guia="actividades.input_buscar_estudiante"
                                   value={busquedaEst}
                                   onChange={(e) => setBusquedaEst(e.target.value)}
                                   placeholder="Buscar estudiante…"
                                   className="w-full pl-8 pr-3 py-2 text-sm bg-background outline-none"
                                 />
                               </div>
-                              <div className="p-2 max-h-56 overflow-y-auto space-y-1">
+                              <div data-guia="actividades.check_estudiante" className="p-2 max-h-56 overflow-y-auto space-y-1">
                                 {estudiantesAula.length === 0 ? (
                                   <p className="text-xs text-muted-foreground">Cargando estudiantes…</p>
                                 ) : (() => {
@@ -1218,7 +1221,7 @@ const ProgramarActividad = () => {
                     return (
                       <div className="mb-5">
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3 items-center">
-                          <ResponsiveSelect sinOpcionPlaceholder value={filtroAsig} onValueChange={setFiltroAsig} placeholder="Asignaturas" options={[{ value: "todas", label: "Asignaturas" }, ...opcAsig.map((a) => ({ value: a, label: a }))]} />
+                          <ResponsiveSelect sinOpcionPlaceholder dataGuia="actividades.filtro_asignatura" value={filtroAsig} onValueChange={setFiltroAsig} placeholder="Asignaturas" options={[{ value: "todas", label: "Asignaturas" }, ...opcAsig.map((a) => ({ value: a, label: a }))]} />
                           <ResponsiveSelect sinOpcionPlaceholder value={filtroGrado} onValueChange={setFiltroGrado} placeholder="Grados" options={[{ value: "todos", label: "Grados" }, ...opcGrado.map((g) => ({ value: g, label: g }))]} />
                           <ResponsiveSelect sinOpcionPlaceholder value={filtroSalon} onValueChange={setFiltroSalon} placeholder="Salones" options={[{ value: "todos", label: "Salones" }, ...opcSalon.map((s) => ({ value: s, label: `Salón ${s}` }))]} />
                           <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -1231,7 +1234,7 @@ const ProgramarActividad = () => {
                             <span className="text-sm text-foreground">Con entrega en plataforma</span>
                           </label>
                         </div>
-                        <Input value={busquedaAct} onChange={(e) => setBusquedaAct(e.target.value)} placeholder="Buscar por descripción…" />
+                        <Input data-guia="actividades.input_buscar_actividad" value={busquedaAct} onChange={(e) => setBusquedaAct(e.target.value)} placeholder="Buscar por descripción…" />
                       </div>
                     );
                   })()}
@@ -1265,7 +1268,7 @@ const ProgramarActividad = () => {
                     const pasado = diaSelCal ? new Date(diaSelCal.getFullYear(), diaSelCal.getMonth(), diaSelCal.getDate()) < hoy : false;
                     return (
                       <div className="flex flex-col lg:flex-row lg:items-start gap-6">
-                        <div className="flex flex-col items-center lg:sticky lg:top-4 shrink-0">
+                        <div data-guia="actividades.calendario_propio_dia" className="flex flex-col items-center lg:sticky lg:top-4 shrink-0">
                           <CalendarComponent
                             mode="single"
                             classNames={{ day_selected: "!bg-red-600 !text-white hover:!bg-red-600 focus:!bg-red-600" }}
@@ -1309,8 +1312,8 @@ const ProgramarActividad = () => {
                                           <span className="text-sm text-foreground truncate">{getCleanFilename(url)}</span>
                                         </div>
                                         <div className="flex gap-2">
-                                          <button onClick={() => handleVerArchivo(url)} className="px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 flex items-center gap-1.5"><Eye className="h-4 w-4" /> Ver</button>
-                                          <button onClick={() => handleDescargarArchivo(url)} className="px-3 py-1.5 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 flex items-center gap-1.5"><Download className="h-4 w-4" /> Descargar</button>
+                                          <button data-guia="actividades.btn_ver_archivo" onClick={() => handleVerArchivo(url)} className="px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 flex items-center gap-1.5"><Eye className="h-4 w-4" /> Ver</button>
+                                          <button data-guia="actividades.btn_descargar_archivo" onClick={() => handleDescargarArchivo(url)} className="px-3 py-1.5 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 flex items-center gap-1.5"><Download className="h-4 w-4" /> Descargar</button>
                                         </div>
                                       </div>
                                     ))}
@@ -1331,8 +1334,8 @@ const ProgramarActividad = () => {
                                         </>
                                       )}
                                       <div className="ml-auto flex items-center gap-1">
-                                        <Button variant="outline" size="sm" aria-label="Editar" title="Editar" onClick={() => handleAbrirEditar(actividad)}><Pencil className="h-4 w-4" /></Button>
-                                        <Button variant="destructive" size="sm" aria-label="Eliminar" title="Eliminar" onClick={() => handleConfirmarEliminar(actividad)}><Trash2 className="h-4 w-4" /></Button>
+                                        <Button variant="outline" size="sm" aria-label="Editar" title="Editar" data-guia="actividades.btn_editar" onClick={() => handleAbrirEditar(actividad)}><Pencil className="h-4 w-4" /></Button>
+                                        <Button variant="destructive" size="sm" aria-label="Eliminar" title="Eliminar" data-guia="actividades.btn_eliminar" onClick={() => handleConfirmarEliminar(actividad)}><Trash2 className="h-4 w-4" /></Button>
                                       </div>
                                     </div>
                                   </div>
@@ -1395,6 +1398,7 @@ const ProgramarActividad = () => {
               <Label htmlFor="edit-descripcion">Descripción de la actividad</Label>
               <Textarea
                 id="edit-descripcion"
+                data-guia="actividades.edit_descripcion"
                 value={editDescripcion}
                 onChange={(e) => setEditDescripcion(e.target.value)}
                 className="min-h-[100px]"
@@ -1491,7 +1495,7 @@ const ProgramarActividad = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditModalOpen(false)}>Cancelar</Button>
-            <Button onClick={handleGuardarEdicion} disabled={editGuardando}>
+            <Button data-guia="actividades.edit_guardar" onClick={handleGuardarEdicion} disabled={editGuardando}>
               {editGuardando ? "Guardando..." : "Guardar"}
             </Button>
           </DialogFooter>
@@ -1515,7 +1519,7 @@ const ProgramarActividad = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleEliminarActividad} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction data-guia="actividades.confirmar_eliminar" onClick={handleEliminarActividad} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>

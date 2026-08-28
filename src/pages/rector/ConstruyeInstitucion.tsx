@@ -85,16 +85,16 @@ const ManualColegio = ({ manualUrl, onChanged }: { manualUrl: string | null; onC
             <FileText className="w-5 h-5" /> Ver PDF actual <ExternalLink className="w-4 h-4" />
           </a>
           <div className="flex gap-2">
-            <Button onClick={() => fileRef.current?.click()} disabled={subiendo} variant="outline" className="gap-2">
+            <Button data-guia="configurar_institucion.manual_subir" onClick={() => fileRef.current?.click()} disabled={subiendo} variant="outline" className="gap-2">
               {subiendo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Pencil className="w-4 h-4" />} Cambiar PDF
             </Button>
-            <Button onClick={quitar} disabled={quitando} variant="outline" className="gap-2 text-destructive hover:text-destructive">
+            <Button data-guia="configurar_institucion.manual_quitar" onClick={quitar} disabled={quitando} variant="outline" className="gap-2 text-destructive hover:text-destructive">
               {quitando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Quitar
             </Button>
           </div>
         </div>
       ) : (
-        <Button onClick={() => fileRef.current?.click()} disabled={subiendo} className="gap-2">
+        <Button data-guia="configurar_institucion.manual_subir" onClick={() => fileRef.current?.click()} disabled={subiendo} className="gap-2">
           {subiendo ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />} Subir PDF
         </Button>
       )}
@@ -280,11 +280,11 @@ const ConstruyeInstitucion = () => {
               <CardContent className="space-y-3">
                 <div>
                   <label className="text-sm font-medium block mb-1">Nombre del colegio</label>
-                  <Input value={nombreColegio} onChange={(e) => setNombreColegio(e.target.value)} placeholder="Nombre de la institución" />
+                  <Input data-guia="configurar_institucion.info_nombre" value={nombreColegio} onChange={(e) => setNombreColegio(e.target.value)} placeholder="Nombre de la institución" />
                   <p className="text-[11px] text-muted-foreground mt-1">Cambiarlo renombra el colegio en toda la plataforma (mismo colegio, no se pierde ni se mueve nada).</p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div><label className="text-sm font-medium block mb-1">NIT</label><Input value={datos.nit} onChange={(e) => setDatos({ ...datos, nit: e.target.value })} placeholder="Ej: 800.123.456-7" /></div>
+                  <div><label className="text-sm font-medium block mb-1">NIT</label><Input data-guia="configurar_institucion.info_nit" value={datos.nit} onChange={(e) => setDatos({ ...datos, nit: e.target.value })} placeholder="Ej: 800.123.456-7" /></div>
                   <div><label className="text-sm font-medium block mb-1">Ciudad</label><Input value={datos.ciudad} onChange={(e) => setDatos({ ...datos, ciudad: e.target.value })} placeholder="Ej: Corozal" /></div>
                   <div><label className="text-sm font-medium block mb-1">Código DANE</label><Input value={datos.dane} onChange={(e) => setDatos({ ...datos, dane: e.target.value })} /></div>
                   <div><label className="text-sm font-medium block mb-1">Dirección</label><Input value={datos.direccion} onChange={(e) => setDatos({ ...datos, direccion: e.target.value })} /></div>
@@ -292,12 +292,12 @@ const ConstruyeInstitucion = () => {
                   <div><label className="text-sm font-medium block mb-1">Nombre del rector(a)</label><Input value={datos.rector_nombre} onChange={(e) => setDatos({ ...datos, rector_nombre: e.target.value })} /></div>
                   <div className="sm:col-span-2">
                     <label className="text-sm font-medium block mb-1">Resolución</label>
-                    <textarea value={datos.resolucion} onChange={(e) => setDatos({ ...datos, resolucion: e.target.value })}
+                    <textarea data-guia="configurar_institucion.info_resolucion" value={datos.resolucion} onChange={(e) => setDatos({ ...datos, resolucion: e.target.value })}
                       placeholder="Resolución o licencia de funcionamiento (texto completo)" rows={2}
                       className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-ring" />
                   </div>
                 </div>
-                <Button onClick={guardarDatos} disabled={guardandoDatos}>{guardandoDatos && <Loader2 className="w-4 h-4 mr-1 animate-spin" />} Guardar datos</Button>
+                <Button data-guia="configurar_institucion.info_guardar" onClick={guardarDatos} disabled={guardandoDatos}>{guardandoDatos && <Loader2 className="w-4 h-4 mr-1 animate-spin" />} Guardar datos</Button>
               </CardContent>
             </Card>
             </>)}
@@ -313,7 +313,7 @@ const ConstruyeInstitucion = () => {
                 <div>
                   <input id="escudo-input" type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
                     onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) subirEscudo(f); }} />
-                  <Button variant="outline" disabled={subiendoEscudo} onClick={() => document.getElementById("escudo-input")?.click()}>
+                  <Button data-guia="configurar_institucion.escudo_boton" variant="outline" disabled={subiendoEscudo} onClick={() => document.getElementById("escudo-input")?.click()}>
                     {subiendoEscudo ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Subiendo...</> : <><ImageIcon className="w-4 h-4 mr-1" /> {logoUrl ? "Cambiar escudo" : "Subir escudo"}</>}
                   </Button>
                 </div>

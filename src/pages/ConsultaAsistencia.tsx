@@ -12,12 +12,12 @@ import { resumen, rangoMes, MESES, hoyBogota } from "@/components/asistencia/est
 
 type Clase = { asignatura: string; grado: string; salon: string };
 
-const Selector = ({ label, value, onChange, options, disabled }: {
-  label: string; value: string; onChange: (v: string) => void; options: string[]; disabled?: boolean;
+const Selector = ({ label, value, onChange, options, disabled, dataGuia }: {
+  label: string; value: string; onChange: (v: string) => void; options: string[]; disabled?: boolean; dataGuia?: string;
 }) => (
   <div>
     <label className="block text-xs font-medium text-muted-foreground mb-1">{label}</label>
-    <select value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled}
+    <select data-guia={dataGuia} value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled}
       className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground disabled:opacity-50">
       <option value="">{label}</option>
       {options.map((o) => <option key={o} value={o}>{o}</option>)}
@@ -142,13 +142,13 @@ const ConsultaAsistencia = () => {
               </p>
               <div className="bg-card rounded-lg shadow-soft p-4 md:p-5 mb-5">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-                  <Selector label="Asignatura" value={asignatura} options={asignaturas} onChange={(v) => { setAsignatura(v); setGrado(""); setSalon(""); }} />
-                  <Selector label="Grado" value={grado} options={grados} disabled={!asignatura} onChange={(v) => { setGrado(v); setSalon(""); }} />
-                  <Selector label="Salón" value={salon} options={salones} disabled={!grado} onChange={setSalon} />
+                  <Selector label="Asignatura" dataGuia="asistencia.consulta_selector_asignatura" value={asignatura} options={asignaturas} onChange={(v) => { setAsignatura(v); setGrado(""); setSalon(""); }} />
+                  <Selector label="Grado" dataGuia="asistencia.consulta_selector_grado" value={grado} options={grados} disabled={!asignatura} onChange={(v) => { setGrado(v); setSalon(""); }} />
+                  <Selector label="Salón" dataGuia="asistencia.consulta_selector_salon" value={salon} options={salones} disabled={!grado} onChange={setSalon} />
                 </div>
                 {/* Modo de tiempo: Mes / Día / Rango */}
                 <div className="flex items-center justify-between flex-wrap gap-3">
-                  <div className="inline-flex rounded-lg border border-border overflow-hidden text-sm">
+                  <div data-guia="asistencia.modo_mes" className="inline-flex rounded-lg border border-border overflow-hidden text-sm">
                     {([["mes", "Mes"], ["dia", "Día"], ["rango", "Rango"]] as const).map(([k, lbl]) => (
                       <button key={k} onClick={() => setModoTiempo(k)}
                         className={`px-3 py-1.5 font-medium ${modoTiempo === k ? "bg-primary text-primary-foreground" : "bg-background text-foreground hover:bg-muted"}`}>

@@ -682,6 +682,7 @@ const ComunicadosFirma = () => {
               <Label>Perfiles</Label>
               <button
                 type="button"
+                data-guia="comunicados.selector_perfiles"
                 onClick={() => setOpenPerfiles(v => !v)}
                 className="w-full flex items-center justify-between px-3 py-2 text-sm border rounded cursor-pointer hover:bg-muted/40 bg-background"
               >
@@ -726,7 +727,7 @@ const ComunicadosFirma = () => {
           );
 
           return (
-            <div className="border-l-2 border-primary/30 pl-4 space-y-5">
+            <div data-guia="comunicados.filtro_grado" className="border-l-2 border-primary/30 pl-4 space-y-5">
               <div className="space-y-1">
                 <Label className="text-xs">Nivel</Label>
                 {dropdownBtn("Nivel", nivelesSel.length, openNivel, () => setOpenNivel(v => !v), false)}
@@ -979,6 +980,7 @@ const ComunicadosFirma = () => {
 
       {/* Botón enviar */}
       <button
+        data-guia="comunicados.firma_boton_enviar"
         disabled={!canSend || enviando}
         onClick={() => {
           if (bodyOverLimit) {
@@ -1011,7 +1013,7 @@ const ComunicadosFirma = () => {
       ) : enviados.length === 0 ? (
         <p className="text-center text-muted-foreground py-8">Todavía no has enviado comunicados con firma.</p>
       ) : (
-        <div className="space-y-4">
+        <div data-guia="comunicados.firma_item_enviado" className="space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar por destinatario o mensaje..." className="pl-9" />
@@ -1029,7 +1031,7 @@ const ComunicadosFirma = () => {
                   <Badge className={c.firmadas >= c.total && c.total > 0 ? "bg-green-100 text-green-800 border border-green-300" : "bg-amber-500"}>
                     {c.firmadas}/{c.total} firmadas
                   </Badge>
-                  <button onClick={(e) => { e.stopPropagation(); setDeleteId(c.id); }} title="Eliminar"><Trash2 className="h-4 w-4 text-destructive" /></button>
+                  <button data-guia="comunicados.firma_eliminar" onClick={(e) => { e.stopPropagation(); setDeleteId(c.id); }} title="Eliminar"><Trash2 className="h-4 w-4 text-destructive" /></button>
                 </div>
               </div>
               {c.destinatarios_label && <p className="text-sm"><span className="font-bold text-red-600">Para:</span> {c.destinatarios_label}</p>}
@@ -1050,7 +1052,7 @@ const ComunicadosFirma = () => {
       ) : mios.length === 0 ? (
         <p className="text-center text-muted-foreground py-8">No tienes comunicados para firmar.</p>
       ) : (
-        <div className="space-y-3">
+        <div data-guia="comunicados.firma_item_porfirmar" className="space-y-3">
           {mios.map((m) => {
             const firmado = !!m.fecha_firma;
             const est = refEstudiante(m);
@@ -1101,9 +1103,9 @@ const ComunicadosFirma = () => {
           {esEmisor ? (
             <Tabs defaultValue="enviar" onValueChange={(v) => { if (v === "enviados") cargarEnviados(); if (v === "porfirmar") cargarMios(); }}>
               <TabsList className="flex w-full">
-                <TabsTrigger value="enviar" className="flex-1 text-xs md:text-sm px-2 md:px-3">Enviar</TabsTrigger>
-                <TabsTrigger value="enviados" className="flex-1 text-xs md:text-sm px-2 md:px-3">Enviados</TabsTrigger>
-                <TabsTrigger value="porfirmar" className="flex-1 text-xs md:text-sm px-2 md:px-3">Por firmar</TabsTrigger>
+                <TabsTrigger value="enviar" data-guia="comunicados.firma_tab_enviar" className="flex-1 text-xs md:text-sm px-2 md:px-3">Enviar</TabsTrigger>
+                <TabsTrigger value="enviados" data-guia="comunicados.firma_tab_enviados" className="flex-1 text-xs md:text-sm px-2 md:px-3">Enviados</TabsTrigger>
+                <TabsTrigger value="porfirmar" data-guia="comunicados.firma_tab_porfirmar" className="flex-1 text-xs md:text-sm px-2 md:px-3">Por firmar</TabsTrigger>
               </TabsList>
               <TabsContent value="enviar">{renderEnviar()}</TabsContent>
               <TabsContent value="enviados">{renderEnviados()}</TabsContent>
@@ -1154,7 +1156,7 @@ const ComunicadosFirma = () => {
                 </div>
               ))}
               <div className="flex gap-2 mb-3">
-                <button onClick={() => handleReenviar(detalle)} className="px-3 py-1.5 text-sm font-medium border rounded-md hover:bg-muted flex items-center gap-1.5"><RotateCcw className="h-4 w-4" /> Reenviar a los que faltan</button>
+                <button data-guia="comunicados.firma_reenviar" onClick={() => handleReenviar(detalle)} className="px-3 py-1.5 text-sm font-medium border rounded-md hover:bg-muted flex items-center gap-1.5"><RotateCcw className="h-4 w-4" /> Reenviar a los que faltan</button>
               </div>
               {loadingDetalle ? (
                 <div className="text-center py-6 text-muted-foreground">Cargando...</div>
@@ -1212,7 +1214,7 @@ const ComunicadosFirma = () => {
           </DialogHeader>
           <DialogFooter>
             <button onClick={() => setDeleteId(null)} className="px-4 py-2 rounded-md border text-sm font-medium hover:bg-muted">Cancelar</button>
-            <button onClick={handleEliminar} className="px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90">Eliminar</button>
+            <button data-guia="comunicados.firma_confirmar_eliminar" onClick={handleEliminar} className="px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90">Eliminar</button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1236,13 +1238,13 @@ const ComunicadosFirma = () => {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <Label className="text-sm">Dibuja tu firma con el dedo:</Label>
+                  <Label data-guia="comunicados.firma_canvas" className="text-sm">Dibuja tu firma con el dedo:</Label>
                   <div data-guia="firma.lienzo" className="border rounded-md bg-white">
                     <SignatureCanvas ref={sigRef} penColor="black" canvasProps={{ className: "w-full touch-none", style: { height: "180px" } }} />
                   </div>
                   <div className="flex justify-between">
                     <button type="button" onClick={() => sigRef.current?.clear()} className="px-3 py-1.5 text-sm font-medium border rounded-md hover:bg-muted flex items-center gap-1.5"><RotateCcw className="h-4 w-4" /> Borrar</button>
-                    <button onClick={handleFirmar} disabled={guardandoFirma} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 flex items-center gap-1.5 disabled:opacity-50"><PenLine className="h-4 w-4" /> {guardandoFirma ? "Guardando..." : "Firmar"}</button>
+                    <button data-guia="comunicados.firma_boton_firmar" onClick={handleFirmar} disabled={guardandoFirma} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 flex items-center gap-1.5 disabled:opacity-50"><PenLine className="h-4 w-4" /> {guardandoFirma ? "Guardando..." : "Firmar"}</button>
                   </div>
                   <p className="text-xs text-muted-foreground">Puedes corregirla con "Borrar" antes de confirmar. Al firmar quedará bloqueada.</p>
                 </div>

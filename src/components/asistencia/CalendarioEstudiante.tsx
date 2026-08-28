@@ -110,7 +110,7 @@ const CalendarioEstudiante = ({ estudiante, contextoLabel, puedeEditar, loadMont
         </div>
 
         {/* Grilla */}
-        <div className={`grid grid-cols-7 gap-1 ${loading ? "opacity-40" : ""}`}>
+        <div data-guia="asistencia.cal_dia" className={`grid grid-cols-7 gap-1 ${loading ? "opacity-40" : ""}`}>
           {Array.from({ length: offset }).map((_, i) => <div key={`b${i}`} />)}
           {Array.from({ length: diasEnMes }).map((_, i) => {
             const dia = i + 1;
@@ -135,7 +135,7 @@ const CalendarioEstudiante = ({ estudiante, contextoLabel, puedeEditar, loadMont
 
         {/* Barra de edición del día seleccionado */}
         {puedeEditar && diaSel && (
-          <div className="mt-3 flex items-center gap-2 flex-wrap">
+          <div data-guia="asistencia.cal_estado_boton" className="mt-3 flex items-center gap-2 flex-wrap">
             <span className="text-xs text-muted-foreground">Día {diaSel.slice(8)}:</span>
             {ESTADOS_LISTA.map((e) => (
               <button key={e} onClick={() => marcarDia(e)} disabled={guardando}

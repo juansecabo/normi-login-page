@@ -901,8 +901,8 @@ const EnviarComunicado = () => {
           <Tabs defaultValue="enviar" onValueChange={(v) => { if (v === "historial") fetchHistorial(); }}>
             <TabsList className="flex w-full">
               <TabsTrigger value="enviar" className="flex-1 text-xs md:text-sm px-2 md:px-3">Enviar</TabsTrigger>
-              <TabsTrigger value="masivo" className="flex-1 text-xs md:text-sm px-2 md:px-3">Masivo</TabsTrigger>
-              <TabsTrigger value="historial" className="flex-1 text-xs md:text-sm px-2 md:px-3">Historial</TabsTrigger>
+              <TabsTrigger value="masivo" data-guia="comunicados.tab_masivo" className="flex-1 text-xs md:text-sm px-2 md:px-3">Masivo</TabsTrigger>
+              <TabsTrigger value="historial" data-guia="comunicados.tab_historial" className="flex-1 text-xs md:text-sm px-2 md:px-3">Historial</TabsTrigger>
             </TabsList>
 
             <TabsContent value="enviar">
@@ -912,6 +912,7 @@ const EnviarComunicado = () => {
                 </h2>
                 <button
                   type="button"
+                  data-guia="comunicados.boton_limpiar"
                   onClick={limpiarFormulario}
                   className="self-end flex items-center gap-1.5 px-3 py-1.5 text-sm border border-input bg-background rounded-md hover:bg-muted transition-colors md:absolute md:right-0 md:top-1/2 md:-translate-y-1/2"
                   title="Limpiar todos los destinatarios y el mensaje"
@@ -938,7 +939,7 @@ const EnviarComunicado = () => {
                         <span className="text-xs">{openPerfiles ? '▲' : '▼'}</span>
                       </button>
                       {openPerfiles && (
-                        <div className="border rounded p-2 bg-muted/20 flex flex-col gap-2">
+                        <div data-guia="comunicados.perfil_checkbox" className="border rounded p-2 bg-muted/20 flex flex-col gap-2">
                           <label className="flex items-center gap-2 cursor-pointer select-none text-sm font-semibold border-b pb-2 mb-1">
                             <input
                               type="checkbox"
@@ -988,7 +989,7 @@ const EnviarComunicado = () => {
                   return (
                     <div className="border-l-2 border-primary/30 pl-4 space-y-5">
 
-                      <div className="space-y-1">
+                      <div data-guia="comunicados.filtro_nivel" className="space-y-1">
                         <Label className="text-xs">Nivel</Label>
                         {dropdownBtn("Nivel", nivelesSel.length, openNivel, () => setOpenNivel(v => !v), false)}
                         {openNivel && (
@@ -1047,7 +1048,7 @@ const EnviarComunicado = () => {
                       )}
 
                       {gradosSelCount > 0 && (
-                      <div className="space-y-1">
+                      <div data-guia="comunicados.filtro_salon" className="space-y-1">
                         <Label className="text-xs">Salón</Label>
                         {dropdownBtn("Salón", salonesSelCount, openSalon, () => setOpenSalon(v => !v), false)}
                         {openSalon && (
@@ -1075,7 +1076,7 @@ const EnviarComunicado = () => {
 
                 {(perfilesMarcados.Estudiantes || perfilesMarcados.Padres) &&
                   Object.values(gradosMarcados).some(Boolean) && (
-                  <div className="border-l-2 border-primary/30 pl-4 space-y-1">
+                  <div data-guia="comunicados.destinatarios_especificos" className="border-l-2 border-primary/30 pl-4 space-y-1">
                     <Label className="text-xs">Estudiantes específicos</Label>
                     <button
                       type="button"
@@ -1130,7 +1131,7 @@ const EnviarComunicado = () => {
 
                 {/* Profesores específicos (desplegable) */}
                 {perfilesMarcados.Profesores && (
-                  <div className="border-l-2 border-primary/30 pl-4 space-y-1">
+                  <div data-guia="comunicados.destinatarios_especificos" className="border-l-2 border-primary/30 pl-4 space-y-1">
                     <Label className="text-xs">Profesores específicos (vacío = todos los que coinciden con los filtros)</Label>
                     <button
                       type="button"
@@ -1231,6 +1232,7 @@ const EnviarComunicado = () => {
                   valor={mensaje}
                   setValor={setMensaje}
                   placeholder="Escribe el comunicado..."
+                  dataGuia="comunicados.editor_mensaje"
                 />
                 <div className="flex justify-end">
                   <DictadoMic valor={mensaje} setValor={setMensaje} />
@@ -1264,6 +1266,7 @@ const EnviarComunicado = () => {
                 )}
                 <button
                   type="button"
+                  data-guia="comunicados.boton_adjuntar"
                   onClick={() => {
                     if (fileInputRef.current) {
                       fileInputRef.current.value = '';
@@ -1310,6 +1313,7 @@ const EnviarComunicado = () => {
 
               {/* Botón enviar */}
               <button
+                data-guia="comunicados.boton_enviar"
                 disabled={!canSend || enviando}
                 onClick={() => {
                   if (bodyOverLimit) {
@@ -1354,6 +1358,7 @@ const EnviarComunicado = () => {
                   Copia las columnas de Excel y pégalas aquí. La primera fila debe ser los encabezados y la primera columna debe ser el id del estudiante.
                 </p>
                 <Textarea
+                  data-guia="comunicados.masivo_datos"
                   value={datosMasivos}
                   onChange={(e) => parsearDatos(e.target.value)}
                   placeholder={"codigo\tusuario\tcontraseña\n12345\test12345\tPass123!\n12346\test12346\tPass456!"}
@@ -1413,6 +1418,7 @@ const EnviarComunicado = () => {
                   </div>
                 )}
                 <Textarea
+                  data-guia="comunicados.masivo_plantilla"
                   value={plantillaMasivo}
                   onChange={(e) => setPlantillaMasivo(e.target.value)}
                   placeholder="Hola, tu usuario es {usuario} y tu contraseña es {contraseña}. No la compartas con nadie."
@@ -1432,6 +1438,7 @@ const EnviarComunicado = () => {
 
               {/* Botón enviar */}
               <button
+                data-guia="comunicados.masivo_enviar"
                 disabled={!filasParsed.length || !plantillaMasivo.trim() || enviandoMasivo}
                 onClick={() => setShowConfirmMasivo(true)}
                 className="w-full flex items-center justify-center gap-2 p-4 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-white font-bold text-lg transition-all duration-200 hover:shadow-md hover:scale-[1.01] hover:from-green-600 hover:to-green-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
@@ -1465,10 +1472,11 @@ const EnviarComunicado = () => {
                   No has enviado comunicados aún.
                 </p>
               ) : (
-                <div className="space-y-4">
+                <div data-guia="comunicados.historial_item" className="space-y-4">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
+                      data-guia="comunicados.historial_busqueda"
                       value={busqueda}
                       onChange={(e) => setBusqueda(e.target.value)}
                       placeholder="Buscar por destinatario o mensaje..."
@@ -1495,6 +1503,7 @@ const EnviarComunicado = () => {
                           <span className="text-xs font-semibold text-primary">#{numeroByIdHist.get(c.id)}</span>
                           {String(c.id_remitente ?? "") === String(idRemitente) && (
                             <button
+                              data-guia="comunicados.historial_eliminar"
                               onClick={(e) => { e.stopPropagation(); setDeleteId(c.id); }}
                               className="text-muted-foreground hover:text-destructive transition-colors"
                               title="Eliminar"
@@ -1581,7 +1590,7 @@ const EnviarComunicado = () => {
             <button onClick={() => setShowConfirm(false)} className="px-4 py-2 rounded-md border text-sm font-medium hover:bg-muted">
               Cancelar
             </button>
-            <button onClick={handleEnviar} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90">
+            <button data-guia="comunicados.confirmar_enviar" onClick={handleEnviar} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90">
               Enviar
             </button>
           </DialogFooter>
@@ -1613,7 +1622,7 @@ const EnviarComunicado = () => {
             <button onClick={() => setShowConfirmMasivo(false)} className="px-4 py-2 rounded-md border text-sm font-medium hover:bg-muted">
               Cancelar
             </button>
-            <button onClick={handleEnviarMasivo} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90">
+            <button data-guia="comunicados.masivo_confirmar" onClick={handleEnviarMasivo} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90">
               Enviar {filasParsed.length} mensajes
             </button>
           </DialogFooter>
@@ -1633,7 +1642,7 @@ const EnviarComunicado = () => {
             <button onClick={() => setDeleteId(null)} className="px-4 py-2 rounded-md border text-sm font-medium hover:bg-muted">
               Cancelar
             </button>
-            <button onClick={handleEliminar} className="px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90">
+            <button data-guia="comunicados.confirmar_eliminar_enviado" onClick={handleEliminar} className="px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90">
               Eliminar
             </button>
           </DialogFooter>

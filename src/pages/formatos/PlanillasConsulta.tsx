@@ -147,7 +147,7 @@ const PlanillasConsulta = () => {
             Aún no hay planillas diligenciadas.
           </div>
         ) : (
-          <div className="mt-6 space-y-3">
+          <div className="mt-6 space-y-3" data-guia="planillas.lista">
             {formatos.map((f) => {
               const d = f.datos || {};
               const nEst = Array.isArray(d.filas) ? d.filas.length : 0;
@@ -166,6 +166,7 @@ const PlanillasConsulta = () => {
                   <button
                     onClick={() => verPDF(f)}
                     className="flex-none inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg border-2 border-border font-medium hover:border-primary"
+                    data-guia="planillas.boton_pdf"
                   >
                     <Download className="w-4 h-4" /> PDF
                   </button>

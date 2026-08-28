@@ -84,7 +84,7 @@ const FinalPeriodoCelda = ({
           <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
             <DropdownMenu open={showMenu} onOpenChange={setShowMenu}>
               <DropdownMenuTrigger asChild>
-                <button className="p-1 hover:bg-muted rounded transition-colors">
+                <button data-guia="notas.boton_habilitar" className="p-1 hover:bg-muted rounded transition-colors">
                   <MoreVertical className="w-3 h-3 text-muted-foreground" />
                 </button>
               </DropdownMenuTrigger>
@@ -105,7 +105,7 @@ const FinalPeriodoCelda = ({
                 {(puedeHabilitar || habilitacion) && onHabilitar && (
                   <>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={onHabilitar} className="text-blue-600 focus:text-blue-700">
+                    <DropdownMenuItem data-guia="notas.menu_habilitacion" onClick={onHabilitar} className="text-blue-600 focus:text-blue-700">
                       <GraduationCap className="w-4 h-4 mr-2" />
                       {habilitacion ? "Editar habilitación" : "Habilitación"}
                     </DropdownMenuItem>
@@ -114,7 +114,7 @@ const FinalPeriodoCelda = ({
                 {onNotificarPadre && (
                   <>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={onNotificarPadre}>
+                    <DropdownMenuItem data-guia="notas.menu_notificar_padres" onClick={onNotificarPadre}>
                       <Send className="w-4 h-4 mr-2" />
                       Notificar a padre(s)
                     </DropdownMenuItem>

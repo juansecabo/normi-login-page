@@ -89,7 +89,7 @@ const ChatwootColegioEditor = ({ colegioId }: { colegioId?: string }) => {
 
             <div>
               <label className="text-sm font-medium block mb-1">Correo de ingreso</label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="correo@colegio.edu.co" autoComplete="off" readOnly={!editable} onFocus={desbloquear} />
+              <Input data-guia="configurar_institucion.cw_email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="correo@colegio.edu.co" autoComplete="off" readOnly={!editable} onFocus={desbloquear} />
             </div>
 
             <div>
@@ -97,7 +97,7 @@ const ChatwootColegioEditor = ({ colegioId }: { colegioId?: string }) => {
                 Contraseña {provisionado && <span className="text-muted-foreground font-normal">(déjala en blanco para no cambiarla)</span>}
               </label>
               <div className="relative">
-                <Input type={verPass ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)}
+                <Input data-guia="configurar_institucion.cw_password" type={verPass ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)}
                   placeholder={provisionado ? "••••••••" : "Mínimo 6 caracteres"} autoComplete="new-password" readOnly={!editable} onFocus={desbloquear} className="pr-10" />
                 <button type="button" onClick={() => setVerPass((v) => !v)} tabIndex={-1}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
@@ -109,7 +109,7 @@ const ChatwootColegioEditor = ({ colegioId }: { colegioId?: string }) => {
             {ok && <div className="flex items-start gap-2 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm px-3 py-2"><CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" /> {ok}</div>}
             {error && <div className="flex items-start gap-2 rounded-md bg-red-50 border border-red-200 text-red-800 text-sm px-3 py-2"><AlertCircle className="h-4 w-4 mt-0.5 shrink-0" /> {error}</div>}
 
-            <Button onClick={guardar} disabled={guardando} className="gap-2">
+            <Button data-guia="configurar_institucion.cw_guardar" onClick={guardar} disabled={guardando} className="gap-2">
               {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               {provisionado ? "Guardar cambios" : "Configurar bandeja"}
             </Button>

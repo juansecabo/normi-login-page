@@ -374,6 +374,7 @@ const RemitirOrientacion = () => {
                   <div className="relative">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <input
+                      data-guia="orientacion.remitir_estudiante_buscador"
                       type="text"
                       value={estBusqueda}
                       onChange={e => setEstBusqueda(e.target.value)}
@@ -383,7 +384,7 @@ const RemitirOrientacion = () => {
                       className="w-full border rounded pl-8 pr-3 py-2 text-sm bg-background"
                     />
                     {(estFocused || estBusqueda) && estudiantesBusqueda.length > 0 && (
-                      <ul className="absolute left-0 right-0 top-full mt-1 max-h-60 overflow-auto bg-popover border rounded shadow-lg z-20">
+                      <ul data-guia="orientacion.remitir_estudiante_opcion" className="absolute left-0 right-0 top-full mt-1 max-h-60 overflow-auto bg-popover border rounded shadow-lg z-20">
                         {estudiantesBusqueda.map(e => (
                           <li
                             key={e.id}
@@ -427,7 +428,7 @@ const RemitirOrientacion = () => {
               {estSeleccionado && (
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">Documento de identidad</label>
-                  <div className="flex flex-wrap items-center gap-4 border rounded px-3 py-2 bg-muted/20">
+                  <div data-guia="orientacion.remitir_tipo_documento" className="flex flex-wrap items-center gap-4 border rounded px-3 py-2 bg-muted/20">
                     {(["RC", "TI", "CC"] as const).map((t) => (
                       <label key={t} className="flex items-center gap-1.5 text-sm cursor-pointer">
                         <input type="radio" name="tipoDoc" checked={tipoDoc === t} onChange={() => setTipoDoc(t)} className="accent-primary" /> {t}
@@ -441,7 +442,7 @@ const RemitirOrientacion = () => {
               {/* Remitir a (uno o varios) */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Remitir a</label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div data-guia="orientacion.remitir_destino" className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <label className="flex items-center gap-2 text-sm border rounded px-3 py-2 cursor-pointer hover:bg-accent">
                     <input type="radio" name="destino" checked={destinos.orientacion} onChange={() => setDestinos({ orientacion: true, director_grupo: false, coordinador: false })} className="accent-primary" />
                     Orientación Escolar
@@ -463,6 +464,7 @@ const RemitirOrientacion = () => {
                   Motivo de la remisión
                 </label>
                 <textarea
+                  data-guia="orientacion.remitir_motivo"
                   value={motivo}
                   onChange={e => setMotivo(e.target.value)}
                   rows={4}
@@ -477,6 +479,7 @@ const RemitirOrientacion = () => {
                   Especificación de la conducta o dificultad
                 </label>
                 <textarea
+                  data-guia="orientacion.remitir_especificacion"
                   value={especificacion}
                   onChange={e => setEspecificacion(e.target.value)}
                   rows={4}
@@ -491,6 +494,7 @@ const RemitirOrientacion = () => {
                   Medidas pedagógicas aplicadas previamente
                 </label>
                 <textarea
+                  data-guia="orientacion.remitir_medidas"
                   value={medidas}
                   onChange={e => setMedidas(e.target.value)}
                   rows={4}
@@ -510,7 +514,7 @@ const RemitirOrientacion = () => {
               {/* Firma */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Firma</label>
-                <div className="border rounded bg-background">
+                <div data-guia="orientacion.remitir_firma" className="border rounded bg-background">
                   <SignatureCanvas
                     ref={sigRef}
                     penColor="black"
@@ -533,6 +537,7 @@ const RemitirOrientacion = () => {
               <div className="flex justify-end">
                 <button
                   type="button"
+                  data-guia="orientacion.remitir_enviar"
                   disabled={!camposCompletos || guardando}
                   onClick={handleEnviar}
                   className="px-4 py-2 rounded-md bg-primary text-primary-foreground font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"

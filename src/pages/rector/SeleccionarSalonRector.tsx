@@ -90,7 +90,7 @@ const SeleccionarSalonRector = () => {
         </div>
 
         {/* Selector de Salón */}
-        <div className="bg-card rounded-lg shadow-soft p-8 max-w-4xl mx-auto">
+        <div data-guia="notas.selector_salon" className="bg-card rounded-lg shadow-soft p-8 max-w-4xl mx-auto">
           <h3 className="text-xl font-bold text-foreground mb-6 text-center">
             Selecciona el salón:
           </h3>
@@ -104,7 +104,7 @@ const SeleccionarSalonRector = () => {
               No hay salones disponibles para este grado
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4" data-guia="estadisticas.select_salon_item">
               {salones.map((salon) => (
                 <button
                   key={salon}

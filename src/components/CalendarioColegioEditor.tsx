@@ -320,20 +320,20 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
           {!soloLectura && (
           <div className="sticky top-2 z-30 flex flex-wrap items-center gap-2 bg-card/95 backdrop-blur-sm border border-border rounded-xl shadow-md px-3 py-2 -mx-1">
             {[1, 2, 3, 4].map((n) => (
-              <button key={n} onClick={(e) => toggleHerramienta(`p${n}` as Herramienta, e)}
+              <button key={n} data-guia="configurar_institucion.cal_herramienta_periodo" onClick={(e) => toggleHerramienta(`p${n}` as Herramienta, e)}
                 className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer focus:outline-none ${PERIODO_ESTILO[n].chip} ${herramienta === `p${n}` ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
                 {PERIODO_ESTILO[n].nombre}
               </button>
             ))}
-            <button onClick={(e) => toggleHerramienta("evento", e)}
+            <button data-guia="configurar_institucion.cal_herramienta_evento" onClick={(e) => toggleHerramienta("evento", e)}
               className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer focus:outline-none bg-indigo-200 border-indigo-400 ${herramienta === "evento" ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
               Evento
             </button>
-            <button onClick={(e) => toggleHerramienta("sinclases", e)}
+            <button data-guia="configurar_institucion.cal_herramienta_sinclases" onClick={(e) => toggleHerramienta("sinclases", e)}
               className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer focus:outline-none bg-red-200 border-red-400 ${herramienta === "sinclases" ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
               Día sin clases
             </button>
-            <button onClick={(e) => toggleHerramienta("quitar", e)}
+            <button data-guia="configurar_institucion.cal_herramienta_quitar" onClick={(e) => toggleHerramienta("quitar", e)}
               className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer focus:outline-none bg-background inline-flex items-center gap-1 ${herramienta === "quitar" ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
               <Eraser className="w-3.5 h-3.5" /> Quitar
             </button>
@@ -359,7 +359,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
           )}
 
           {/* ── Los 12 meses ── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-5" data-guia="configurar_institucion.cal_dia">
             {MESES.map((mes, m) => {
               const primerDow = (new Date(anoEscolar, m, 1).getDay() + 6) % 7; // L=0…D=6
               const totalDias = new Date(anoEscolar, m + 1, 0).getDate();
@@ -474,11 +474,11 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
             </DialogDescription>
           </DialogHeader>
           <div>
-            <Textarea value={motivoTexto} onChange={(e) => setMotivoTexto(e.target.value)} placeholder="Motivo: semana de receso, jornada pedagógica…" maxLength={80} autoFocus rows={3} className="resize-none" />
+            <Textarea data-guia="configurar_institucion.cal_dia_motivo" value={motivoTexto} onChange={(e) => setMotivoTexto(e.target.value)} placeholder="Motivo: semana de receso, jornada pedagógica…" maxLength={80} autoFocus rows={3} className="resize-none" />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setMotivoDialog(null)} disabled={guardando}>Cancelar</Button>
-            <Button onClick={crearDiaSinClases} disabled={guardando} className="gap-2">
+            <Button data-guia="configurar_institucion.cal_dia_confirmar" onClick={crearDiaSinClases} disabled={guardando} className="gap-2">
               {guardando && <Loader2 className="w-4 h-4 animate-spin" />} Marcar sin clases
             </Button>
           </DialogFooter>
@@ -498,12 +498,12 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
           </DialogHeader>
           <div>
             {/* 889 = lo que cabe en la plantilla de WhatsApp del aviso diario fuera de ventana de 24h. */}
-            <Textarea value={eventoNombre} onChange={(e) => setEventoNombre(e.target.value)} placeholder="Nombre: entrega de boletines, día deportivo, izada de bandera…" maxLength={889} autoFocus rows={4} className="resize-none" />
+            <Textarea data-guia="configurar_institucion.cal_evento_nombre" value={eventoNombre} onChange={(e) => setEventoNombre(e.target.value)} placeholder="Nombre: entrega de boletines, día deportivo, izada de bandera…" maxLength={889} autoFocus rows={4} className="resize-none" />
             <p className="text-xs text-muted-foreground text-right">{eventoNombre.length}/889</p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEventoDialog(null)} disabled={guardando}>Cancelar</Button>
-            <Button onClick={crearEvento} disabled={guardando || !eventoNombre.trim()} className="gap-2">
+            <Button data-guia="configurar_institucion.cal_evento_confirmar" onClick={crearEvento} disabled={guardando || !eventoNombre.trim()} className="gap-2">
               {guardando && <Loader2 className="w-4 h-4 animate-spin" />} Crear evento
             </Button>
           </DialogFooter>
@@ -525,12 +525,12 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
             {soloLectura ? (
               <p className="text-sm text-muted-foreground">{detalle.dia.motivo || "Sin motivo"}</p>
             ) : (<>
-            <Textarea value={motivoEdit} onChange={(e) => setMotivoEdit(e.target.value)} placeholder="Motivo: semana de receso, jornada pedagógica…" maxLength={80} rows={3} className="resize-none" />
+            <Textarea data-guia="configurar_institucion.cal_detalle_texto" value={motivoEdit} onChange={(e) => setMotivoEdit(e.target.value)} placeholder="Motivo: semana de receso, jornada pedagógica…" maxLength={80} rows={3} className="resize-none" />
             <DialogFooter>
               <Button variant="destructive" onClick={() => { const d = detalle.dia; setDetalle(null); setConfirmDia(d); }} disabled={guardando} className="gap-2">
                 <Trash2 className="w-4 h-4" /> Eliminar
               </Button>
-              <Button onClick={guardarMotivo} disabled={guardando} className="gap-2">
+              <Button data-guia="configurar_institucion.cal_detalle_guardar" onClick={guardarMotivo} disabled={guardando} className="gap-2">
                 {guardando && <Loader2 className="w-4 h-4 animate-spin" />} Guardar
               </Button>
             </DialogFooter>
@@ -548,13 +548,13 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
             {soloLectura ? (
               <p className="text-sm text-muted-foreground">{detalle.evento.nombre}</p>
             ) : (<>
-            <Textarea value={eventoEdit} onChange={(e) => setEventoEdit(e.target.value)} placeholder="Nombre del evento" maxLength={889} rows={4} className="resize-none" />
+            <Textarea data-guia="configurar_institucion.cal_detalle_texto" value={eventoEdit} onChange={(e) => setEventoEdit(e.target.value)} placeholder="Nombre del evento" maxLength={889} rows={4} className="resize-none" />
             <p className="text-xs text-muted-foreground text-right">{eventoEdit.length}/889</p>
             <DialogFooter>
               <Button variant="destructive" onClick={() => { const ev = detalle.evento; setDetalle(null); setConfirmEvento(ev); }} disabled={guardando} className="gap-2">
                 <Trash2 className="w-4 h-4" /> Eliminar
               </Button>
-              <Button onClick={guardarNombreEvento} disabled={guardando || !eventoEdit.trim()} className="gap-2">
+              <Button data-guia="configurar_institucion.cal_detalle_guardar" onClick={guardarNombreEvento} disabled={guardando || !eventoEdit.trim()} className="gap-2">
                 {guardando && <Loader2 className="w-4 h-4 animate-spin" />} Guardar
               </Button>
             </DialogFooter>
@@ -599,7 +599,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmEvento(null)} disabled={guardando}>Cancelar</Button>
-            <Button variant="destructive" onClick={eliminarEvento} disabled={guardando} className="gap-2">
+            <Button data-guia="configurar_institucion.cal_quitar_confirmar" variant="destructive" onClick={eliminarEvento} disabled={guardando} className="gap-2">
               {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Eliminar
             </Button>
           </DialogFooter>
@@ -620,7 +620,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmDia(null)} disabled={guardando}>Cancelar</Button>
-            <Button variant="destructive" onClick={eliminarDia} disabled={guardando} className="gap-2">
+            <Button data-guia="configurar_institucion.cal_quitar_confirmar" variant="destructive" onClick={eliminarDia} disabled={guardando} className="gap-2">
               {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Eliminar
             </Button>
           </DialogFooter>
@@ -638,7 +638,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmPeriodo(null)} disabled={guardando}>Cancelar</Button>
-            <Button variant="destructive" onClick={quitarPeriodo} disabled={guardando} className="gap-2">
+            <Button data-guia="configurar_institucion.cal_quitar_confirmar" variant="destructive" onClick={quitarPeriodo} disabled={guardando} className="gap-2">
               {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eraser className="w-4 h-4" />} Quitar
             </Button>
           </DialogFooter>

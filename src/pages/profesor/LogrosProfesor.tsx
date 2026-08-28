@@ -213,7 +213,7 @@ const LogrosProfesor = () => {
             <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
               <BookOpenCheck className="h-5 w-5 text-primary" /> Logros del periodo
             </h2>
-            {combos.length > 0 && <Button onClick={abrirNuevo} className="gap-1"><Plus className="w-4 h-4" /> Nuevo logro</Button>}
+            {combos.length > 0 && <Button onClick={abrirNuevo} className="gap-1" data-guia="logros.boton_nuevo"><Plus className="w-4 h-4" /> Nuevo logro</Button>}
           </div>
           <p className="text-sm text-muted-foreground mb-5">
             Marca la casilla de un logro para agregarlo, y elige en qué <b>salones</b> aplica. Se guarda solo.
@@ -229,15 +229,15 @@ const LogrosProfesor = () => {
             <div className="space-y-4">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <select value={asignatura} onChange={(e) => { setAsignatura(e.target.value); const gs = combos.filter((c) => c.asignatura === e.target.value); setGrado(gs[0]?.grado || ""); }}
-                  className="col-span-2 sm:col-span-1 px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                  className="col-span-2 sm:col-span-1 px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer" data-guia="logros.select_asignatura">
                   {asignaturasUnicas.map((a) => <option key={a} value={a}>{a}</option>)}
                 </select>
                 <select value={grado} onChange={(e) => setGrado(e.target.value)}
-                  className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                  className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer" data-guia="logros.select_grado">
                   {gradosDeAsig.map((g) => <option key={g} value={g}>{g}</option>)}
                 </select>
                 <select value={periodo} onChange={(e) => setPeriodo(parseInt(e.target.value, 10))}
-                  className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                  className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer" data-guia="logros.select_periodo">
                   {PERIODOS.map((p) => <option key={p} value={p}>{ORDINAL[p]} periodo</option>)}
                 </select>
               </div>
@@ -249,13 +249,14 @@ const LogrosProfesor = () => {
                   Aún no hay logros de {asignatura} — {grado}. Crea el primero con “Nuevo logro”.
                 </p>
               ) : (
-                <div className="divide-y divide-border border border-border rounded-lg">
+                <div className="divide-y divide-border border border-border rounded-lg" data-guia="logros.banco">
                   {banco.map((l) => {
                     const on = agregada(l);
                     return (
                       <div key={l.id} className="p-3 flex items-start gap-3">
                         {/* Casilla del logro */}
                         <button onClick={() => toggleLogro(l)} disabled={guardandoId === l.id} title={on ? "Quitar de todos los salones" : "Agregar a todos los salones"}
+                          data-guia="logros.checkbox_logro"
                           className={`mt-0.5 w-6 h-6 shrink-0 rounded-md border-2 flex items-center justify-center ${on ? "bg-primary border-primary" : "border-muted-foreground/40 hover:border-primary"}`}>
                           {guardandoId === l.id ? <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" /> : on ? <Check className="w-4 h-4 text-white" /> : null}
                         </button>
@@ -264,7 +265,7 @@ const LogrosProfesor = () => {
                           <p className="text-sm text-foreground leading-snug">{textoPrincipal(l)}</p>
                           <div className="mt-2">
                             <span className="text-sm font-bold text-foreground">Salones:</span>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2 mt-1.5">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2 mt-1.5" data-guia="logros.boton_salon">
                               {salonesDelGrado.map((s) => {
                                 const sel = (l.salones || []).includes(s);
                                 return (
@@ -279,8 +280,8 @@ const LogrosProfesor = () => {
                         </div>
 
                         <div className="flex gap-1 shrink-0">
-                          <button title="Editar" onClick={() => abrirEditar(l)} className="p-1.5 rounded hover:bg-muted"><Pencil className="w-4 h-4 text-muted-foreground" /></button>
-                          <button title="Eliminar del banco" onClick={() => setBorrando(l)} className="p-1.5 rounded hover:bg-muted"><Trash2 className="w-4 h-4 text-destructive" /></button>
+                          <button title="Editar" onClick={() => abrirEditar(l)} className="p-1.5 rounded hover:bg-muted" data-guia="logros.boton_editar"><Pencil className="w-4 h-4 text-muted-foreground" /></button>
+                          <button title="Eliminar del banco" onClick={() => setBorrando(l)} className="p-1.5 rounded hover:bg-muted" data-guia="logros.boton_eliminar"><Trash2 className="w-4 h-4 text-destructive" /></button>
                         </div>
                       </div>
                     );
@@ -306,16 +307,16 @@ const LogrosProfesor = () => {
                 <div>
                   <label className="text-sm font-medium block mb-1">Redacción principal — nivel <b>{nivelAlto?.label}</b> (el más alto)</label>
                   <Textarea value={nivelAlto ? (red[nivelAlto.key] || "") : ""} onChange={(e) => nivelAlto && setNivelTexto(nivelAlto.key, e.target.value)} rows={3}
-                    placeholder="Ej: Comprende el clima como un conjunto de fenómenos atmosféricos…" />
+                    placeholder="Ej: Comprende el clima como un conjunto de fenómenos atmosféricos…" data-guia="logros.dialog_texto_principal" />
                 </div>
-                <Button variant="outline" size="sm" onClick={generarVariantes} disabled={generando || !(nivelAlto && (red[nivelAlto.key] || "").trim())} className="gap-2">
+                <Button variant="outline" size="sm" onClick={generarVariantes} disabled={generando || !(nivelAlto && (red[nivelAlto.key] || "").trim())} className="gap-2" data-guia="logros.dialog_generar_variantes">
                   {generando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-primary" />}
                   Generar los demás niveles con Normi
                 </Button>
                 {niveles.slice(1).map((n) => (
                   <div key={n.key}>
                     <label className="text-sm font-medium block mb-1 text-muted-foreground">Nivel {n.label}</label>
-                    <Textarea value={red[n.key] || ""} onChange={(e) => setNivelTexto(n.key, e.target.value)} rows={2} placeholder="Opcional" />
+                    <Textarea value={red[n.key] || ""} onChange={(e) => setNivelTexto(n.key, e.target.value)} rows={2} placeholder="Opcional" data-guia="logros.dialog_texto_nivel" />
                   </div>
                 ))}
               </>
@@ -323,7 +324,7 @@ const LogrosProfesor = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogAbierto(false)} disabled={guardando}>Cancelar</Button>
-            <Button onClick={guardar} disabled={guardando} className="gap-2">{guardando && <Loader2 className="w-4 h-4 animate-spin" />} Guardar en el banco</Button>
+            <Button onClick={guardar} disabled={guardando} className="gap-2" data-guia="logros.dialog_guardar">{guardando && <Loader2 className="w-4 h-4 animate-spin" />} Guardar en el banco</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -336,7 +337,7 @@ const LogrosProfesor = () => {
           <p className="text-xs text-destructive">Se quitará también de todos los salones donde esté asignado.</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setBorrando(null)}>Cancelar</Button>
-            <Button variant="destructive" onClick={borrar}>Eliminar</Button>
+            <Button variant="destructive" onClick={borrar} data-guia="logros.confirmar_eliminar">Eliminar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

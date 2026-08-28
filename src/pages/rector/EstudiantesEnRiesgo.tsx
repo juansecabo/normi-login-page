@@ -139,7 +139,7 @@ const EstudiantesEnRiesgo = () => {
             <p className="text-muted-foreground">No hay estudiantes en riesgo académico con los filtros seleccionados.</p>
           </div>
         ) : (
-          <div className="bg-card rounded-lg shadow-soft overflow-hidden">
+          <div className="bg-card rounded-lg shadow-soft overflow-hidden" data-guia="estadisticas.tabla_riesgo">
             <div className="p-4 border-b border-border">
               <p className="text-sm text-muted-foreground">
                 Se encontraron <span className="font-bold text-red-600">{estudiantesEnRiesgo.length}</span> estudiante(s) con promedio menor a {aprobLabel}

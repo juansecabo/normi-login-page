@@ -394,11 +394,11 @@ const ObservadorEstudiantil = () => {
               <div className="flex items-center justify-between flex-wrap gap-2">
                 {!modoSeleccion ? (
                   <div className="flex items-center gap-3 flex-wrap">
-                    <button onClick={() => setModoSeleccion(true)}
+                    <button data-guia="comportamiento_observador.obs_seleccionar_varios" onClick={() => setModoSeleccion(true)}
                       className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-primary/40 text-primary text-sm font-medium hover:bg-primary/10">
                       <Users className="w-4 h-4" /> Seleccionar varios
                     </button>
-                    <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-border text-sm font-medium text-foreground cursor-pointer hover:bg-muted/40 select-none">
+                    <label data-guia="comportamiento_observador.obs_filtro_con_obs" className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-border text-sm font-medium text-foreground cursor-pointer hover:bg-muted/40 select-none">
                       <input type="checkbox" checked={filtroConObs} onChange={e => setFiltroConObs(e.target.checked)} className="w-4 h-4 accent-orange-500" />
                       <NotebookPen className="w-4 h-4 text-orange-500" /> Con observaciones
                     </label>
@@ -412,12 +412,12 @@ const ObservadorEstudiantil = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <select value={filtroGrado} onChange={e => { setFiltroGrado(e.target.value); setFiltroSalon(""); }}
+                <select data-guia="comportamiento_observador.obs_filtro_grado" value={filtroGrado} onChange={e => { setFiltroGrado(e.target.value); setFiltroSalon(""); }}
                   className="px-3 py-2 border border-input rounded-md text-sm bg-card cursor-pointer">
                   <option value="">Todos los grados</option>
                   {gradosUnicos.map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
-                <select value={filtroSalon} onChange={e => setFiltroSalon(e.target.value)}
+                <select data-guia="comportamiento_observador.obs_filtro_salon" value={filtroSalon} onChange={e => setFiltroSalon(e.target.value)}
                   className="px-3 py-2 border border-input rounded-md text-sm bg-card cursor-pointer">
                   <option value="">Todos los salones</option>
                   {salonesUnicos.map(s => <option key={s} value={s}>{s}</option>)}
@@ -425,7 +425,7 @@ const ObservadorEstudiantil = () => {
               </div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input value={busqueda} onChange={e => setBusqueda(e.target.value)}
+                <input data-guia="comportamiento_observador.obs_buscar" value={busqueda} onChange={e => setBusqueda(e.target.value)}
                   placeholder="Buscar estudiante por nombre..."
                   className="w-full pl-9 pr-9 py-2 border border-input rounded-md text-sm bg-card" />
                 {busqueda && (
@@ -454,7 +454,7 @@ const ObservadorEstudiantil = () => {
                         if (modoSeleccion) {
                           const marcado = !!seleccionados[e.id];
                           return (
-                            <label key={e.id} className={`w-full flex items-center gap-3 border rounded-lg p-3 mb-2 cursor-pointer transition-colors ${marcado ? "border-primary bg-primary/5" : "border-border hover:bg-muted/30"}`}>
+                            <label key={e.id} data-guia="comportamiento_observador.obs_check_estudiante" className={`w-full flex items-center gap-3 border rounded-lg p-3 mb-2 cursor-pointer transition-colors ${marcado ? "border-primary bg-primary/5" : "border-border hover:bg-muted/30"}`}>
                               <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${marcado ? "bg-primary border-primary" : "border-border"}`}>
                                 {marcado && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
                               </div>
@@ -470,7 +470,7 @@ const ObservadorEstudiantil = () => {
                           );
                         }
                         return (
-                          <button key={e.id} onClick={() => abrirEstudiante(e)}
+                          <button key={e.id} data-guia="comportamiento_observador.obs_item_estudiante" onClick={() => abrirEstudiante(e)}
                             className="w-full flex items-center justify-between border border-border rounded-lg p-4 mb-2 text-left hover:bg-muted/30 transition-colors">
                             <div>
                               <p className="font-semibold text-foreground text-sm flex items-center gap-1.5">
@@ -512,7 +512,7 @@ const ObservadorEstudiantil = () => {
                           ))}
                         </div>
                       )}
-                      <Button onClick={abrirNuevoMultiple} disabled={seleccionadosArr.length === 0} className="w-full mt-3 gap-2">
+                      <Button data-guia="comportamiento_observador.obs_agregar_varios" onClick={abrirNuevoMultiple} disabled={seleccionadosArr.length === 0} className="w-full mt-3 gap-2">
                         <Plus className="w-4 h-4" /> Agregar observación{seleccionadosArr.length > 0 ? ` (${seleccionadosArr.length})` : ""}
                       </Button>
                     </div>
@@ -528,7 +528,7 @@ const ObservadorEstudiantil = () => {
             <div className="space-y-5">
               {esInterno && (
                 <div className="flex items-center justify-end">
-                  <Button onClick={abrirNuevo} className="gap-2"><Plus className="w-4 h-4" /> Agregar observación</Button>
+                  <Button data-guia="comportamiento_observador.obs_agregar" onClick={abrirNuevo} className="gap-2"><Plus className="w-4 h-4" /> Agregar observación</Button>
                 </div>
               )}
 
@@ -556,10 +556,10 @@ const ObservadorEstudiantil = () => {
                             </p>
                             {esMio && esInterno && (
                               <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => abrirEditar(o)} title="Editar" className="p-1 rounded hover:bg-amber-100 text-amber-800">
+                                <button data-guia="comportamiento_observador.obs_editar" onClick={() => abrirEditar(o)} title="Editar" className="p-1 rounded hover:bg-amber-100 text-amber-800">
                                   <Pencil className="w-4 h-4" />
                                 </button>
-                                <button onClick={() => setEliminarId(o.id)} title="Eliminar" className="p-1 rounded hover:bg-red-100 text-red-600">
+                                <button data-guia="comportamiento_observador.obs_eliminar" onClick={() => setEliminarId(o.id)} title="Eliminar" className="p-1 rounded hover:bg-red-100 text-red-600">
                                   <Trash2 className="w-4 h-4" />
                                 </button>
                               </div>
@@ -586,7 +586,7 @@ const ObservadorEstudiantil = () => {
       {modoSeleccion && !estSel && (
         <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-card border-t border-border p-3 shadow-lg flex items-center justify-between gap-3">
           <span className="text-sm font-medium">{seleccionadosArr.length} seleccionado{seleccionadosArr.length === 1 ? "" : "s"}</span>
-          <Button onClick={abrirNuevoMultiple} disabled={seleccionadosArr.length === 0} className="gap-2">
+          <Button data-guia="comportamiento_observador.obs_agregar_varios" onClick={abrirNuevoMultiple} disabled={seleccionadosArr.length === 0} className="gap-2">
             <Plus className="w-4 h-4" /> Agregar observación
           </Button>
         </div>
@@ -631,6 +631,7 @@ const ObservadorEstudiantil = () => {
             </p>
           )}
           <textarea
+            data-guia="comportamiento_observador.obs_modal_texto"
             value={texto}
             onChange={e => setTexto(e.target.value)}
             autoFocus
@@ -642,7 +643,7 @@ const ObservadorEstudiantil = () => {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalOpen(false)} disabled={guardando}>Cancelar</Button>
-            <Button onClick={guardar} disabled={guardando || !texto.trim()}>
+            <Button data-guia="comportamiento_observador.obs_modal_guardar" onClick={guardar} disabled={guardando || !texto.trim()}>
               {guardando ? "Guardando…" : "Guardar"}
             </Button>
           </DialogFooter>
@@ -656,7 +657,7 @@ const ObservadorEstudiantil = () => {
           <p className="text-sm text-muted-foreground py-2">¿Seguro que quieres eliminar esta observación? No se puede deshacer.</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEliminarId(null)}>Cancelar</Button>
-            <Button onClick={eliminar} className="bg-destructive hover:bg-destructive/90">Eliminar</Button>
+            <Button data-guia="comportamiento_observador.obs_confirmar_eliminar" onClick={eliminar} className="bg-destructive hover:bg-destructive/90">Eliminar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

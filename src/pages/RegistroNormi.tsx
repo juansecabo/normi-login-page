@@ -496,7 +496,7 @@ const RegistroNormi = () => {
         {/* Filters */}
         <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 sm:gap-3 mb-6 max-w-4xl mx-auto">
           <Select value={gradoFilter} onValueChange={(v) => { setGradoFilter(v); setSalonFilter("todos"); }}>
-            <SelectTrigger className="w-full sm:w-48 bg-muted">
+            <SelectTrigger data-guia="varios.registro_filtro_grado" className="w-full sm:w-48 bg-muted">
               <SelectValue placeholder="Grado" />
             </SelectTrigger>
             <SelectContent>
@@ -508,7 +508,7 @@ const RegistroNormi = () => {
           </Select>
 
           <Select value={salonFilter} onValueChange={setSalonFilter}>
-            <SelectTrigger className="w-full sm:w-40 bg-muted">
+            <SelectTrigger data-guia="varios.registro_filtro_salon" className="w-full sm:w-40 bg-muted">
               <SelectValue placeholder="Salón" />
             </SelectTrigger>
             <SelectContent>
@@ -520,7 +520,7 @@ const RegistroNormi = () => {
           </Select>
 
           <Select value={estadoFilter} onValueChange={setEstadoFilter}>
-            <SelectTrigger className="w-full sm:w-48 bg-muted">
+            <SelectTrigger data-guia="varios.registro_filtro_estado" className="w-full sm:w-48 bg-muted">
               <SelectValue placeholder="Estado" />
             </SelectTrigger>
             <SelectContent>
@@ -533,6 +533,7 @@ const RegistroNormi = () => {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
+              data-guia="varios.registro_buscar"
               placeholder="Buscar por nombre o id..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -556,6 +557,7 @@ const RegistroNormi = () => {
         <div className="flex justify-end mb-3 max-w-4xl mx-auto">
           <Button
             onClick={handleExport}
+            data-guia="varios.registro_exportar"
             variant="outline"
             size="sm"
             disabled={(activeTab === "estudiantes" ? displayedEstudiantes : displayedPadres).length === 0}
@@ -567,7 +569,7 @@ const RegistroNormi = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="max-w-4xl mx-auto">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList data-guia="varios.registro_tab" className="grid w-full grid-cols-2">
             <TabsTrigger
               value="estudiantes"
               className="data-[state=active]:bg-green-600 data-[state=active]:text-white data-[state=active]:shadow-sm font-medium"
@@ -666,7 +668,7 @@ const RegistroNormi = () => {
                 {estadoFilter === "todos" && <Progress value={padPct} className="h-3" />}
               </div>
 
-              <div className="overflow-x-auto" ref={activeTab === "padres" ? listRef : undefined}>
+              <div className="overflow-x-auto" data-guia="varios.registro_ver_info" ref={activeTab === "padres" ? listRef : undefined}>
                 <Table style={{ tableLayout: "auto" }}>
                   <TableHeader>
                     <TableRow>

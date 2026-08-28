@@ -114,7 +114,7 @@ const WhatsAppColegioEditor = ({ colegioId }: { colegioId?: string }) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-sm font-medium block mb-1">Id de la WABA</label>
-                <Input value={wabaId} onChange={(e) => setWabaId(e.target.value)} placeholder="Ej: 1845618089735128" autoComplete="off" readOnly={!editable} onFocus={desbloquear} />
+                <Input data-guia="configurar_institucion.wa_waba_id" value={wabaId} onChange={(e) => setWabaId(e.target.value)} placeholder="Ej: 1845618089735128" autoComplete="off" readOnly={!editable} onFocus={desbloquear} />
               </div>
               <div>
                 <label className="text-sm font-medium block mb-1">Token de la WABA</label>
@@ -129,14 +129,14 @@ const WhatsAppColegioEditor = ({ colegioId }: { colegioId?: string }) => {
               </div>
             </div>
 
-            <Button onClick={buscar} disabled={buscando} variant="outline" className="gap-2">
+            <Button data-guia="configurar_institucion.wa_buscar" onClick={buscar} disabled={buscando} variant="outline" className="gap-2">
               {buscando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />} Buscar números
             </Button>
 
             {numeros && (
               <div className="space-y-3 rounded-lg border p-4 bg-muted/30">
                 <p className="text-sm font-medium">Elige el número de este colegio</p>
-                <div className="space-y-2">
+                <div className="space-y-2" data-guia="configurar_institucion.wa_numero">
                   {numeros.map((n) => (
                     <label key={n.id} className="flex items-center gap-3 cursor-pointer rounded-md px-2 py-1.5 hover:bg-muted">
                       <input type="radio" name="wa-num" value={n.id} checked={elegido === n.id} onChange={() => setElegido(n.id)} />
@@ -154,7 +154,7 @@ const WhatsAppColegioEditor = ({ colegioId }: { colegioId?: string }) => {
             {error && <div className="flex items-start gap-2 rounded-md bg-red-50 border border-red-200 text-red-800 text-sm px-3 py-2"><AlertCircle className="h-4 w-4 mt-0.5 shrink-0" /> {error}</div>}
 
             {numeros && (
-              <Button onClick={guardar} disabled={guardando || !elegido} className="gap-2">
+              <Button data-guia="configurar_institucion.wa_guardar" onClick={guardar} disabled={guardando || !elegido} className="gap-2">
                 {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Guardar número
               </Button>
             )}

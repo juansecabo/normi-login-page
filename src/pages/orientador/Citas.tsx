@@ -292,7 +292,7 @@ const Citas = () => {
             <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
               <img src={iconCitas} alt="" className="h-6 w-6 object-contain" /> Citas y Atención
             </h2>
-            <button onClick={() => setShowNueva(true)} className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 cursor-pointer">
+            <button data-guia="orientacion.citas_agendar" onClick={() => setShowNueva(true)} className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 cursor-pointer">
               <Plus className="w-4 h-4" /> Agendar cita
             </button>
           </div>
@@ -300,7 +300,7 @@ const Citas = () => {
           {loading ? <div className="text-center py-8 text-muted-foreground">Cargando...</div> : (
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <select value={filtroGrado} onChange={(e) => { setFiltroGrado(e.target.value); setFiltroSalon(""); }} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                <select data-guia="orientacion.citas_filtro_grado" value={filtroGrado} onChange={(e) => { setFiltroGrado(e.target.value); setFiltroSalon(""); }} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                   <option value="">Todos los grados</option>
                   {gradosUnicos.map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
@@ -327,7 +327,7 @@ const Citas = () => {
                 return (
                   <div className="flex flex-col lg:flex-row lg:items-start gap-6">
                     {/* Calendario */}
-                    <div className="flex flex-col items-center lg:sticky lg:top-4 shrink-0">
+                    <div data-guia="orientacion.citas_calendario" className="flex flex-col items-center lg:sticky lg:top-4 shrink-0">
                       <Calendar
                         mode="single"
                         selected={diaSeleccionado}
@@ -357,14 +357,14 @@ const Citas = () => {
                           <p className="text-sm">No hay citas agendadas este día.</p>
                         </div>
                       ) : (
-                        <div className="space-y-3">
+                        <div className="space-y-3" data-guia="orientacion.cita_item">
                           <h3 className="text-lg font-bold text-violet-700 border-b-2 border-violet-200 pb-2">
                             {fmtFecha(fechaKey(diaSeleccionado!))} · {citasDelDia.length} {citasDelDia.length === 1 ? "cita" : "citas"}
                           </h3>
                           {citasDelDia
                             .slice()
                             .sort((a, b) => (a.hora || "99:99").localeCompare(b.hora || "99:99"))
-                            .map(c => {
+                            .map((c, i) => {
                               const isExp = expandedId === c.id;
                               return (
                                 <div key={c.id} className="border border-border rounded-lg overflow-hidden">
@@ -379,7 +379,7 @@ const Citas = () => {
                                       </div>
                                       <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${isExp ? "rotate-180" : ""}`} />
                                     </button>
-                                    <button onClick={(e) => { e.stopPropagation(); setEliminarId(c.id); }} title="Eliminar cita" className="px-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer border-l border-border flex items-center">
+                                    <button data-guia={i === 0 ? "orientacion.cita_eliminar" : undefined} onClick={(e) => { e.stopPropagation(); setEliminarId(c.id); }} title="Eliminar cita" className="px-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer border-l border-border flex items-center">
                                       <Trash2 className="w-4 h-4" />
                                     </button>
                                   </div>
@@ -424,9 +424,9 @@ const Citas = () => {
               ) : (
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input value={estBusqueda} onChange={e => setEstBusqueda(e.target.value)} placeholder="Busca por nombre o apellido..." className="w-full pl-9 pr-3 py-2 border border-input rounded-md text-sm bg-background" />
+                  <input data-guia="orientacion.cita_estudiante_buscador" value={estBusqueda} onChange={e => setEstBusqueda(e.target.value)} placeholder="Busca por nombre o apellido..." className="w-full pl-9 pr-3 py-2 border border-input rounded-md text-sm bg-background" />
                   {estudiantesBusqueda.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-1 z-20 border border-border rounded-md max-h-48 overflow-y-auto bg-card shadow-md">
+                    <div data-guia="orientacion.cita_estudiante_opcion" className="absolute top-full left-0 right-0 mt-1 z-20 border border-border rounded-md max-h-48 overflow-y-auto bg-card shadow-md">
                       {estudiantesBusqueda.map(e => (
                         <button key={e.id} onClick={() => { setEstSeleccionado(e); setEstBusqueda(""); }} className="block w-full text-left px-3 py-2 text-sm hover:bg-muted/50">
                           {e.apellidos} {e.nombres} <span className="text-xs text-muted-foreground">— {e.grado} {e.salon}</span>
@@ -442,7 +442,7 @@ const Citas = () => {
                 <label className="text-sm font-medium block mb-1">Fecha *</label>
                 <Popover open={calOpen} onOpenChange={setCalOpen}>
                   <PopoverTrigger asChild>
-                    <button className="w-full inline-flex items-center justify-between px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                    <button data-guia="orientacion.cita_fecha" className="w-full inline-flex items-center justify-between px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                       {fecha ? fecha.toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" }) : "Selecciona"}
                       <CalendarIcon className="w-4 h-4 text-muted-foreground" />
                     </button>
@@ -454,7 +454,7 @@ const Citas = () => {
               </div>
               <div>
                 <label className="text-sm font-medium block mb-1">Hora (opcional)</label>
-                <div className="flex items-center gap-1">
+                <div data-guia="orientacion.cita_hora" className="flex items-center gap-1">
                   <select value={horaH} onChange={e => setHoraH(e.target.value)} className="px-2 py-2 border border-input rounded-md text-sm bg-background cursor-pointer outline-none">
                     <option value="">--</option>
                     {Array.from({ length: 12 }, (_, i) => i + 1).map(h => <option key={h} value={String(h)}>{h}</option>)}
@@ -474,7 +474,7 @@ const Citas = () => {
             </div>
             <div>
               <label className="text-sm font-medium block mb-2">Informar a: *</label>
-              <div className="flex flex-wrap gap-3">
+              <div data-guia="orientacion.cita_informar_a" className="flex flex-wrap gap-3">
                 {ASISTENTES.map(a => (
                   <label key={a.value} className="flex items-center gap-2 cursor-pointer select-none" onClick={() => toggleAsistente(a.value)}>
                     <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${asistentes.includes(a.value) ? "bg-primary border-primary" : "border-border"}`}>
@@ -487,12 +487,12 @@ const Citas = () => {
             </div>
             <div>
               <label className="text-sm font-medium block mb-1">Motivo *</label>
-              <textarea value={motivo} onChange={e => setMotivo(e.target.value)} placeholder="Motivo de la cita..." className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background min-h-[100px] resize-y" />
+              <textarea data-guia="orientacion.cita_motivo" value={motivo} onChange={e => setMotivo(e.target.value)} placeholder="Motivo de la cita..." className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background min-h-[100px] resize-y" />
             </div>
           </div>
           <DialogFooter>
             <button onClick={() => setShowNueva(false)} className="px-4 py-2 rounded-md border text-sm font-medium hover:bg-muted">Cancelar</button>
-            <button onClick={handleAgendar} disabled={guardando || !estSeleccionado || !fecha || asistentes.length === 0 || !motivo.trim()} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
+            <button data-guia="orientacion.cita_guardar" onClick={handleAgendar} disabled={guardando || !estSeleccionado || !fecha || asistentes.length === 0 || !motivo.trim()} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
               {guardando ? "Agendando..." : "Agendar"}
             </button>
           </DialogFooter>
@@ -510,7 +510,7 @@ const Citas = () => {
           </p>
           <DialogFooter>
             <button onClick={() => setEliminarId(null)} disabled={eliminando} className="px-4 py-2 rounded-md border text-sm font-medium hover:bg-muted disabled:opacity-50">Cancelar</button>
-            <button onClick={handleEliminar} disabled={eliminando} className="px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90 disabled:opacity-50">
+            <button data-guia="orientacion.cita_eliminar_confirmar" onClick={handleEliminar} disabled={eliminando} className="px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90 disabled:opacity-50">
               {eliminando ? "Eliminando..." : "Eliminar"}
             </button>
           </DialogFooter>

@@ -225,7 +225,7 @@ const TodasActividades = () => {
             <div className="text-center py-8 text-muted-foreground">Cargando...</div>
           ) : (
             <div className="flex flex-col lg:flex-row lg:items-start gap-6">
-              <div className="flex justify-center lg:sticky lg:top-4 shrink-0">
+              <div data-guia="actividades.admin_calendario_dia" className="flex justify-center lg:sticky lg:top-4 shrink-0">
                 <Calendar
                   mode="single"
                   selected={diaSeleccionado}
@@ -278,10 +278,10 @@ const TodasActividades = () => {
                               </span>
                             </div>
                             <div className="flex gap-1 shrink-0">
-                              <button onClick={(e) => { e.stopPropagation(); handleEditar(a); }} className="p-1.5 rounded hover:bg-muted" title="Editar">
+                              <button data-guia="actividades.admin_btn_editar" onClick={(e) => { e.stopPropagation(); handleEditar(a); }} className="p-1.5 rounded hover:bg-muted" title="Editar">
                                 <Pencil className="w-4 h-4 text-muted-foreground" />
                               </button>
-                              <button onClick={(e) => { e.stopPropagation(); setDeleteId(a.column_id); }} className="p-1.5 rounded hover:bg-destructive/10" title="Eliminar">
+                              <button data-guia="actividades.admin_btn_eliminar" onClick={(e) => { e.stopPropagation(); setDeleteId(a.column_id); }} className="p-1.5 rounded hover:bg-destructive/10" title="Eliminar">
                                 <Trash2 className="w-4 h-4 text-destructive" />
                               </button>
                             </div>
@@ -404,13 +404,13 @@ const TodasActividades = () => {
               </div>
               <div className="space-y-2">
                 <Label>Descripción</Label>
-                <Textarea value={descripcion} onChange={(e) => setDescripcion(e.target.value)} rows={5} />
+                <Textarea data-guia="actividades.admin_edit_descripcion" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} rows={5} />
               </div>
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditModalOpen(false)}>Cancelar</Button>
-            <Button onClick={handleGuardar} disabled={guardando}>
+            <Button data-guia="actividades.admin_edit_guardar" onClick={handleGuardar} disabled={guardando}>
               {guardando ? "Guardando..." : "Guardar cambios"}
             </Button>
           </DialogFooter>
@@ -425,7 +425,7 @@ const TodasActividades = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleEliminar}>Eliminar</AlertDialogAction>
+            <AlertDialogAction data-guia="actividades.admin_confirmar_eliminar" onClick={handleEliminar}>Eliminar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

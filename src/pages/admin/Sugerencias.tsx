@@ -107,6 +107,7 @@ const Sugerencias = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
+              data-guia="varios.sugerencias_buscar"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar por nombre, rol, mensaje..."
@@ -123,7 +124,7 @@ const Sugerencias = () => {
               {search ? "No se encontraron resultados." : "No hay sugerencias aún."}
             </p>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto" data-guia="varios.sugerencias_fila">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -132,7 +133,7 @@ const Sugerencias = () => {
                     <TableHead>Rol</TableHead>
                     <TableHead>Contacto</TableHead>
                     <TableHead>Sugerencia</TableHead>
-                    <TableHead className="w-[60px]" />
+                    <TableHead className="w-[60px]" data-guia="varios.sugerencias_eliminar" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -217,6 +218,7 @@ const Sugerencias = () => {
             </Button>
             <Button
               variant="destructive"
+              data-guia="varios.sugerencias_confirmar_eliminar"
               onClick={() => confirmDelete && handleDelete(confirmDelete.id)}
             >
               Eliminar

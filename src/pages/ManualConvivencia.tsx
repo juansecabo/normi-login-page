@@ -219,6 +219,7 @@ const ManualConvivencia = () => {
               <input
                 ref={inputRef}
                 type="text"
+                data-guia="varios.manual_buscar"
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
                 placeholder="Buscar en el manual..."
@@ -234,7 +235,7 @@ const ManualConvivencia = () => {
               )}
             </div>
             {totalResultados > 0 && (
-              <div className="flex items-center gap-1 text-sm text-muted-foreground shrink-0">
+              <div data-guia="varios.manual_resultado_siguiente" className="flex items-center gap-1 text-sm text-muted-foreground shrink-0">
                 <span>{resultadoActual}/{totalResultados}</span>
                 <button
                   onClick={anteriorResultado}

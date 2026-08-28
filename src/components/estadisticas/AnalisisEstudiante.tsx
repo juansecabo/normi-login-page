@@ -52,7 +52,7 @@ export const AnalisisEstudiante = ({ idEstudiante, periodo, titulo, mostrarPuest
     .sort((a, b) => parseInt(a.periodo.replace("Período ", "")) - parseInt(b.periodo.replace("Período ", "")));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-guia="estadisticas.resultado">
       <div className="flex justify-end">
         <BotonDescarga contenidoRef={contenidoRef} nombreArchivo={titulo || estudiante.nombre_completo} />
       </div>

@@ -128,6 +128,7 @@ const CambiarContrasenaModal = ({ open, onOpenChange }: CambiarContrasenaModalPr
               <div className="relative">
                 <input
                   type={showActual ? "text" : "password"}
+                  data-guia="varios.modal_pwd_actual"
                   value={contrasenaActual}
                   onChange={(e) => setContrasenaActual(e.target.value)}
                   className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
@@ -151,6 +152,7 @@ const CambiarContrasenaModal = ({ open, onOpenChange }: CambiarContrasenaModalPr
             <div className="relative">
               <input
                 type={showNueva ? "text" : "password"}
+                data-guia="varios.modal_pwd_nueva"
                 value={nuevaContrasena}
                 onChange={(e) => setNuevaContrasena(e.target.value.slice(0, 50))}
                 maxLength={50}
@@ -174,6 +176,7 @@ const CambiarContrasenaModal = ({ open, onOpenChange }: CambiarContrasenaModalPr
             <div className="relative">
               <input
                 type={showConfirmar ? "text" : "password"}
+                data-guia="varios.modal_pwd_confirma"
                 value={confirmarContrasena}
                 onChange={(e) => setConfirmarContrasena(e.target.value.slice(0, 50))}
                 maxLength={50}
@@ -200,6 +203,7 @@ const CambiarContrasenaModal = ({ open, onOpenChange }: CambiarContrasenaModalPr
             </button>
             <button
               type="submit"
+              data-guia="varios.modal_pwd_guardar"
               disabled={loading}
               className={`flex-1 px-4 py-2 font-medium rounded-lg transition-colors ${
                 loading

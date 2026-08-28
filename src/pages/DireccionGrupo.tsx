@@ -26,6 +26,7 @@ const DireccionGrupo = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
             <button
               onClick={() => navigate("/mi-grupo")}
+              data-guia="varios.direccion_ficha_fotos"
               className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg border-2 border-border bg-background transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/5"
             >
               <Camera className="w-12 h-12 text-lime-700" />
@@ -34,6 +35,7 @@ const DireccionGrupo = () => {
             </button>
             <button
               onClick={() => navigate("/consolidado-grupo")}
+              data-guia="varios.direccion_ficha_consolidado"
               className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg border-2 border-border bg-background transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/5"
             >
               <BarChart3 className="w-12 h-12 text-orange-600" />

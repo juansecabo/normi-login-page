@@ -111,10 +111,10 @@ const EscalaColegioEditor = ({ cfg, guardar, alGuardar }: Props) => {
   return (
     <div>
       <div className="grid grid-cols-2 gap-4 max-w-md">
-        <div><Label className="text-sm">Nota mínima</Label><Input type="text" inputMode="decimal" value={min} onChange={(e) => setMin(e.target.value)} className="mt-1" /></div>
+        <div><Label className="text-sm">Nota mínima</Label><Input data-guia="configurar_institucion.escala_min" type="text" inputMode="decimal" value={min} onChange={(e) => setMin(e.target.value)} className="mt-1" /></div>
         <div><Label className="text-sm">Nota máxima</Label><Input type="text" inputMode="decimal" value={max} onChange={(e) => setMax(e.target.value)} className="mt-1" /></div>
-        <div><Label className="text-sm">Nota aprobatoria</Label><Input type="text" inputMode="decimal" value={aprob} onChange={(e) => setAprob(e.target.value)} className="mt-1" /></div>
-        <div><Label className="text-sm">Decimales</Label><Input type="number" step="1" min="0" max="2" value={dec} onChange={(e) => setDec(e.target.value)} className="mt-1" /></div>
+        <div><Label className="text-sm">Nota aprobatoria</Label><Input data-guia="configurar_institucion.escala_aprobatoria" type="text" inputMode="decimal" value={aprob} onChange={(e) => setAprob(e.target.value)} className="mt-1" /></div>
+        <div><Label className="text-sm">Decimales</Label><Input data-guia="configurar_institucion.escala_decimales" type="number" step="1" min="0" max="2" value={dec} onChange={(e) => setDec(e.target.value)} className="mt-1" /></div>
       </div>
 
       {/* ── RANGOS DE DESEMPEÑO ── */}
@@ -131,11 +131,11 @@ const EscalaColegioEditor = ({ cfg, guardar, alGuardar }: Props) => {
             <div key={i} className="flex items-end gap-2">
               <div className="flex-1">
                 {i === 0 && <Label className="text-xs text-muted-foreground">Nombre</Label>}
-                <Input value={r.label} onChange={(e) => actualizar(i, "label", e.target.value)} placeholder="Ej: Sobresaliente" className="mt-1" />
+                <Input data-guia="configurar_institucion.rango_nombre" value={r.label} onChange={(e) => actualizar(i, "label", e.target.value)} placeholder="Ej: Sobresaliente" className="mt-1" />
               </div>
               <div className="w-20">
                 {i === 0 && <Label className="text-xs text-muted-foreground">Desde</Label>}
-                <Input type="text" inputMode="decimal" value={r.min} onChange={(e) => actualizar(i, "min", e.target.value)} className="mt-1" />
+                <Input data-guia="configurar_institucion.rango_desde" type="text" inputMode="decimal" value={r.min} onChange={(e) => actualizar(i, "min", e.target.value)} className="mt-1" />
               </div>
               <div className="w-20">
                 {i === 0 && <Label className="text-xs text-muted-foreground">Hasta</Label>}
@@ -143,16 +143,16 @@ const EscalaColegioEditor = ({ cfg, guardar, alGuardar }: Props) => {
               </div>
               <div>
                 {i === 0 && <Label className="text-xs text-muted-foreground">Color</Label>}
-                <input type="color" value={r.color} onChange={(e) => actualizar(i, "color", e.target.value)} className="mt-1 h-10 w-12 rounded border border-border cursor-pointer p-0.5" title="Color del rango" />
+                <input data-guia="configurar_institucion.rango_color" type="color" value={r.color} onChange={(e) => actualizar(i, "color", e.target.value)} className="mt-1 h-10 w-12 rounded border border-border cursor-pointer p-0.5" title="Color del rango" />
               </div>
               <button onClick={() => quitar(i)} className="h-10 text-muted-foreground hover:text-destructive" title="Quitar rango"><Trash2 className="w-4 h-4" /></button>
             </div>
           ))}
         </div>
-        <Button variant="outline" size="sm" onClick={agregar} className="mt-3 gap-1"><Plus className="w-4 h-4" /> Agregar rango</Button>
+        <Button data-guia="configurar_institucion.escala_agregar_rango" variant="outline" size="sm" onClick={agregar} className="mt-3 gap-1"><Plus className="w-4 h-4" /> Agregar rango</Button>
       </div>
 
-      <Button onClick={onGuardar} disabled={guardando} className="mt-8 gap-2">
+      <Button data-guia="configurar_institucion.escala_guardar" onClick={onGuardar} disabled={guardando} className="mt-8 gap-2">
         {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Guardar
       </Button>
     </div>

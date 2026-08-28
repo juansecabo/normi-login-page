@@ -121,6 +121,7 @@ const BotonDescarga = ({ contenidoRef, nombreArchivo = "estadisticas" }: BotonDe
       variant="outline"
       size="sm"
       className="flex items-center gap-2"
+      data-guia="estadisticas.boton_descargar_pdf"
     >
       {descargando ? (
         <>

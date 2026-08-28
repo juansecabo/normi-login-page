@@ -435,15 +435,15 @@ const Boletines = () => {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
             <select value={grado} onChange={(e) => { setGrado(e.target.value); const s = aulas.filter((a) => a.grado === e.target.value); setSalon(s[0]?.salon || ""); }}
-              className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+              className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer" data-guia="boletines.selector_grado">
               {gradosUnicos.map((g) => <option key={g} value={g}>{g}</option>)}
             </select>
             <select value={salon} onChange={(e) => setSalon(e.target.value)}
-              className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+              className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer" data-guia="boletines.selector_salon">
               {salonesDeGrado.map((s) => <option key={s} value={s}>Salón {s}</option>)}
             </select>
             <select value={periodo} onChange={(e) => setPeriodo(parseInt(e.target.value, 10))}
-              className="col-span-2 sm:col-span-1 px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+              className="col-span-2 sm:col-span-1 px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer" data-guia="boletines.selector_periodo">
               {[1, 2, 3, 4].map((p) => <option key={p} value={p}>{ORDINAL[p]} periodo</option>)}
             </select>
           </div>
@@ -469,19 +469,19 @@ const Boletines = () => {
                     ? `columnas: ${datos.columnas.map((c) => `${c.nombre} ${c.pct}%`).join(" / ")}`
                     : "sin grupos uniformes (cada asignatura imprime su propio desglose)"}
                 </p>
-                <Button onClick={() => generarPdf()} disabled={generando} className="gap-2">
+                <Button onClick={() => generarPdf()} disabled={generando} className="gap-2" data-guia="boletines.boton_pdf_curso">
                   {generando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                   Descargar PDF del curso
                 </Button>
               </div>
-              <div className="border border-border rounded-lg divide-y divide-border max-h-[50vh] overflow-auto">
+              <div className="border border-border rounded-lg divide-y divide-border max-h-[50vh] overflow-auto" data-guia="boletines.lista_estudiantes">
                 {datos.estudiantes.map((e) => (
                   <div key={e.id} className="flex items-center justify-between px-3 py-2">
                     <span className="text-sm text-foreground">
                       <span className="text-muted-foreground tabular-nums mr-2">{e.num_lista}.</span>
                       {e.apellidos} {e.nombres}
                     </span>
-                    <button onClick={() => generarPdf(e)} disabled={generando} className="p-1.5 rounded hover:bg-muted" title="Descargar boletín individual">
+                    <button onClick={() => generarPdf(e)} disabled={generando} className="p-1.5 rounded hover:bg-muted" title="Descargar boletín individual" data-guia="boletines.boton_pdf_estudiante">
                       <Download className="w-4 h-4 text-primary" />
                     </button>
                   </div>
@@ -492,7 +492,7 @@ const Boletines = () => {
         </div>
 
         {/* ── Inconsistencias del periodo (todo el colegio) ── */}
-        <div className="bg-card rounded-lg shadow-soft p-6 mt-6">
+        <div className="bg-card rounded-lg shadow-soft p-6 mt-6" data-guia="boletines.seccion_inconsistencias">
           <h3 className="text-lg font-bold text-foreground flex items-center gap-2 mb-1">
             <AlertTriangle className="h-5 w-5 text-amber-500" /> Inconsistencias del periodo
           </h3>
@@ -520,7 +520,7 @@ const Boletines = () => {
                     {g.profesor && (
                       <Button size="sm" variant="outline" className="gap-1.5"
                         disabled={notificando === g.profesor.id}
-                        onClick={() => setConfirmNotif(g)}>
+                        onClick={() => setConfirmNotif(g)} data-guia="boletines.boton_recordar_wa">
                         {notificando === g.profesor.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                         Recordar por WhatsApp
                       </Button>
@@ -567,7 +567,7 @@ const Boletines = () => {
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmNotif(null)}>Cancelar</Button>
-            <Button onClick={notificar} disabled={!!notificando} className="gap-2">
+            <Button onClick={notificar} disabled={!!notificando} className="gap-2" data-guia="boletines.confirmar_recordar_wa">
               {notificando && <Loader2 className="w-4 h-4 animate-spin" />} Enviar
             </Button>
           </DialogFooter>

@@ -689,10 +689,10 @@ const RegistrosComportamiento = () => {
 
           {puedeCrear && editandoId == null && (
             <div className="flex gap-2 mb-6 border-b border-border">
-              <button onClick={() => setTab("crear")} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === "crear" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+              <button data-guia="comportamiento_observador.reg_tab_crear" onClick={() => setTab("crear")} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === "crear" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
                 Crear nuevo
               </button>
-              <button onClick={() => setTab("historial")} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === "historial" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+              <button data-guia="comportamiento_observador.reg_tab_historial" onClick={() => setTab("historial")} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === "historial" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
                 Historial
               </button>
             </div>
@@ -711,7 +711,7 @@ const RegistrosComportamiento = () => {
               )}
               <div>
                 <label className="text-sm font-medium block mb-1">Tipo de registro *</label>
-                <select value={tipo} onChange={e => setTipo(e.target.value)} className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                <select data-guia="comportamiento_observador.reg_tipo" value={tipo} onChange={e => setTipo(e.target.value)} className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                   <option value="">Selecciona el tipo</option>
                   {TIPOS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
@@ -730,11 +730,11 @@ const RegistrosComportamiento = () => {
                 ) : (
                   <div className="space-y-2">
                     <div className="grid grid-cols-2 gap-2">
-                      <select value={formFiltroGrado} onChange={e => { setFormFiltroGrado(e.target.value); setFormFiltroSalon(""); }} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                      <select data-guia="comportamiento_observador.reg_filtro_grado_form" value={formFiltroGrado} onChange={e => { setFormFiltroGrado(e.target.value); setFormFiltroSalon(""); }} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                         <option value="">Todos los grados</option>
                         {gradosFormUnicos.map(g => <option key={g} value={g}>{g}</option>)}
                       </select>
-                      <select value={formFiltroSalon} onChange={e => setFormFiltroSalon(e.target.value)} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                      <select data-guia="comportamiento_observador.reg_filtro_salon_form" value={formFiltroSalon} onChange={e => setFormFiltroSalon(e.target.value)} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                         <option value="">Todos los salones</option>
                         {salonesFormUnicos.map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
@@ -742,6 +742,7 @@ const RegistrosComportamiento = () => {
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <input
+                        data-guia="comportamiento_observador.reg_buscar_estudiante"
                         value={estBusqueda}
                         onChange={e => setEstBusqueda(e.target.value)}
                         onFocus={() => setEstFocused(true)}
@@ -750,7 +751,7 @@ const RegistrosComportamiento = () => {
                         className="w-full pl-9 pr-3 py-2 border border-input rounded-md text-sm bg-background"
                       />
                       {estFocused && estudiantesBusqueda.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 mt-1 z-20 border border-border rounded-md max-h-64 overflow-y-auto bg-card shadow-md">
+                        <div data-guia="comportamiento_observador.reg_resultado_estudiante" className="absolute top-full left-0 right-0 mt-1 z-20 border border-border rounded-md max-h-64 overflow-y-auto bg-card shadow-md">
                           {estudiantesBusqueda.map(e => (
                             <button key={e.id} onMouseDown={(ev) => { ev.preventDefault(); seleccionarEstudiante(e); }} className="block w-full text-left px-3 py-2 text-sm hover:bg-muted/50">
                               {e.apellidos} {e.nombres} <span className="text-xs text-muted-foreground">— {e.grado} {e.salon}</span>
@@ -771,18 +772,18 @@ const RegistrosComportamiento = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <label className="text-sm font-medium block mb-1">Edad</label>
-                  <input type="number" value={edad} onChange={e => setEdad(e.target.value)} min={3} max={25} placeholder="Edad" className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background" />
+                  <input data-guia="comportamiento_observador.reg_edad" type="number" value={edad} onChange={e => setEdad(e.target.value)} min={3} max={25} placeholder="Edad" className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background" />
                 </div>
                 <div>
                   <label className="text-sm font-medium block mb-1">Fecha *</label>
                   <Popover open={calOpen} onOpenChange={setCalOpen}>
                     <PopoverTrigger asChild>
-                      <button className="w-full inline-flex items-center justify-between px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                      <button data-guia="comportamiento_observador.reg_fecha" className="w-full inline-flex items-center justify-between px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                         {fecha ? fecha.toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" }) : "Selecciona"}
                         <CalendarIcon className="w-4 h-4 text-muted-foreground" />
                       </button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
+                    <PopoverContent data-guia="comportamiento_observador.reg_fecha_calendario" className="w-auto p-0" align="start">
                       <Calendar mode="single" selected={fecha} onSelect={(d) => { setFecha(d); setCalOpen(false); }} locale={es} />
                     </PopoverContent>
                   </Popover>
@@ -796,7 +797,7 @@ const RegistrosComportamiento = () => {
                 ) : asignaturasParaEstudiante.length === 0 ? (
                   <p className="text-xs text-muted-foreground italic">No tienes asignaturas registradas para este estudiante.</p>
                 ) : (
-                  <div className="flex flex-wrap gap-3 border border-border rounded-md p-3 bg-muted/10">
+                  <div data-guia="comportamiento_observador.reg_asignaturas" className="flex flex-wrap gap-3 border border-border rounded-md p-3 bg-muted/10">
                     {asignaturasParaEstudiante.map(a => (
                       <label key={a} className="inline-flex items-center gap-2 cursor-pointer select-none" onClick={() => toggleAsignatura(a)}>
                         <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${asignaturasSel.includes(a) ? "bg-primary border-primary" : "border-border"}`}>
@@ -811,7 +812,7 @@ const RegistrosComportamiento = () => {
 
               <div>
                 <label className="text-sm font-medium block mb-1">Comportamiento Significativo *</label>
-                <textarea value={comportamiento} onChange={e => setComportamiento(e.target.value)} placeholder="Describe el comportamiento observado en detalle..." className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background min-h-[180px] resize-y" />
+                <textarea data-guia="comportamiento_observador.reg_comportamiento" value={comportamiento} onChange={e => setComportamiento(e.target.value)} placeholder="Describe el comportamiento observado en detalle..." className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background min-h-[180px] resize-y" />
               </div>
 
               <div>
@@ -824,7 +825,7 @@ const RegistrosComportamiento = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="border border-border rounded-md bg-white">
+                  <div data-guia="comportamiento_observador.reg_firma_canvas" className="border border-border rounded-md bg-white">
                     <SignatureCanvas
                       ref={sigRef}
                       penColor="black"
@@ -844,7 +845,7 @@ const RegistrosComportamiento = () => {
                     Cancelar
                   </button>
                 )}
-                <button onClick={handleGuardar} disabled={guardando || !camposCompletos} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
+                <button data-guia="comportamiento_observador.reg_guardar" onClick={handleGuardar} disabled={guardando || !camposCompletos} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
                   <Plus className="w-4 h-4" /> {guardando ? "Guardando..." : (editandoId != null ? "Guardar cambios" : "Crear registro")}
                 </button>
               </div>
@@ -856,11 +857,11 @@ const RegistrosComportamiento = () => {
           ) : estVistaId == null ? (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
-                <select value={filtroGrado} onChange={e => { setFiltroGrado(e.target.value); setFiltroSalon(""); }} className="px-3 py-2 border border-input rounded-md text-sm bg-card cursor-pointer">
+                <select data-guia="comportamiento_observador.reg_filtro_grado" value={filtroGrado} onChange={e => { setFiltroGrado(e.target.value); setFiltroSalon(""); }} className="px-3 py-2 border border-input rounded-md text-sm bg-card cursor-pointer">
                   <option value="">Todos los grados</option>
                   {gradosUnicos.map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
-                <select value={filtroSalon} onChange={e => setFiltroSalon(e.target.value)} className="px-3 py-2 border border-input rounded-md text-sm bg-card cursor-pointer">
+                <select data-guia="comportamiento_observador.reg_filtro_salon" value={filtroSalon} onChange={e => setFiltroSalon(e.target.value)} className="px-3 py-2 border border-input rounded-md text-sm bg-card cursor-pointer">
                   <option value="">Todos los salones</option>
                   {salonesUnicos.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
@@ -868,6 +869,7 @@ const RegistrosComportamiento = () => {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input
+                  data-guia="comportamiento_observador.reg_buscar_hist"
                   value={histBusqueda}
                   onChange={e => setHistBusqueda(e.target.value)}
                   placeholder="Buscar estudiante por nombre..."
@@ -887,7 +889,7 @@ const RegistrosComportamiento = () => {
                   <p>No hay estudiantes con registros para estos filtros.</p>
                 </div>
               ) : (
-                <div ref={histListRef}>
+                <div ref={histListRef} data-guia="comportamiento_observador.reg_item_estudiante">
                   {histPadTop > 0 && <div style={{ height: histPadTop }} />}
                   {histItems.map(vi => {
                     const e = estudiantesHistorial[vi.index];
@@ -924,7 +926,7 @@ const RegistrosComportamiento = () => {
                     <p className="text-xs text-muted-foreground">{estVista?.grado} {estVista?.salon}</p>
                   </div>
                 </div>
-                <select value={ordenarPor} onChange={e => setOrdenarPor(e.target.value as "fecha" | "tipo" | "profesor")} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                <select data-guia="comportamiento_observador.reg_ordenar" value={ordenarPor} onChange={e => setOrdenarPor(e.target.value as "fecha" | "tipo" | "profesor")} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                   <option value="fecha">Ordenar por fecha (recientes primero)</option>
                   <option value="tipo">Ordenar por tipo</option>
                   <option value="profesor">Ordenar por profesor</option>
@@ -937,7 +939,7 @@ const RegistrosComportamiento = () => {
                   <p>Este estudiante ya no tiene registros.</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div data-guia="comportamiento_observador.reg_item_registro" className="space-y-3">
                   {registrosDelEstudiante.map(r => {
                     const isExp = expandedIds.has(r.id);
                     return (
@@ -957,10 +959,10 @@ const RegistrosComportamiento = () => {
                           </button>
                           {r.autor_id === autor.id && (
                             <>
-                              <button onClick={(e) => { e.stopPropagation(); iniciarEdicion(r); }} title="Editar registro" className="px-3 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer border-l border-border flex items-center">
+                              <button data-guia="comportamiento_observador.reg_editar" onClick={(e) => { e.stopPropagation(); iniciarEdicion(r); }} title="Editar registro" className="px-3 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer border-l border-border flex items-center">
                                 <Pencil className="w-4 h-4" />
                               </button>
-                              <button onClick={(e) => { e.stopPropagation(); setEliminarId(r.id); }} title="Eliminar registro" className="px-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer border-l border-border flex items-center">
+                              <button data-guia="comportamiento_observador.reg_eliminar" onClick={(e) => { e.stopPropagation(); setEliminarId(r.id); }} title="Eliminar registro" className="px-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer border-l border-border flex items-center">
                                 <Trash2 className="w-4 h-4" />
                               </button>
                             </>
@@ -991,7 +993,7 @@ const RegistrosComportamiento = () => {
                               </div>
                             )}
                             <div className="pt-2">
-                              <button onClick={() => descargarWord(r)} className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
+                              <button data-guia="comportamiento_observador.reg_descargar_word" onClick={() => descargarWord(r)} className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
                                 <Download className="w-4 h-4" /> Descargar Word
                               </button>
                             </div>
@@ -1014,7 +1016,7 @@ const RegistrosComportamiento = () => {
           <p className="text-sm text-muted-foreground py-2">¿Seguro que quieres eliminar este registro? Esta acción no se puede deshacer.</p>
           <DialogFooter>
             <button onClick={() => setEliminarId(null)} disabled={eliminando} className="px-4 py-2 rounded-md border text-sm font-medium hover:bg-muted disabled:opacity-50">Cancelar</button>
-            <button onClick={handleEliminar} disabled={eliminando} className="px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90 disabled:opacity-50">
+            <button data-guia="comportamiento_observador.reg_confirmar_eliminar" onClick={handleEliminar} disabled={eliminando} className="px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90 disabled:opacity-50">
               {eliminando ? "Eliminando..." : "Eliminar"}
             </button>
           </DialogFooter>

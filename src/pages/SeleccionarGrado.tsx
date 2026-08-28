@@ -106,7 +106,7 @@ const SeleccionarGrado = () => {
               No hay grados asignados para esta asignatura
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div data-guia="notas.selector_grado" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {grados.map((grado, index) => {
                 const isSelected = selectedGrado === grado;
 

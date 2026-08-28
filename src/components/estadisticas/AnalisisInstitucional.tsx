@@ -70,7 +70,7 @@ export const AnalisisInstitucional = ({ periodo, titulo }: AnalisisInstitucional
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-guia="estadisticas.resultado">
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-2 text-sm text-blue-700">
           <span className="font-medium">ℹ️</span>
@@ -120,6 +120,7 @@ export const AnalisisInstitucional = ({ periodo, titulo }: AnalisisInstitucional
             <div
               onClick={estudiantesEnRiesgo.length > 0 ? handleVerRiesgo : undefined}
               className={estudiantesEnRiesgo.length > 0 ? "cursor-pointer hover:scale-[1.02] transition-transform" : ""}
+              data-guia="estadisticas.tarjeta_riesgo"
             >
               <TarjetaResumen
                 titulo="En Riesgo Académico"

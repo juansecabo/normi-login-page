@@ -475,7 +475,18 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
           window.setTimeout(buscar, 250);
           return;
         }
-        // Reintentos exactos agotados: ahora sí decide el cerebro.
+        // Reintentos exactos agotados. Si el paso es una ELECCIÓN del usuario
+        // (tiene `campo`: asignatura, grado, salón…), señalar la ZONA completa
+        // (ej. el cuadro "Elige tu asignatura") en vez de dejar que el cerebro
+        // escoja UNA sola opción (bug: señalaba solo "Castellano").
+        if (paso.campo) {
+          const zona = localizarZona(paso);
+          if (zona) {
+            senalarZona(zona);
+            return;
+          }
+        }
+        // Ahora sí decide el cerebro.
         elegirConCerebro(paso.narracion || "");
       };
       window.setTimeout(buscar, 120);

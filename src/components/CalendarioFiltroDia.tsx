@@ -19,9 +19,13 @@ interface Props {
   diasMarcados: string[];
   dia: Date | undefined;
   onDia: (d: Date | undefined) => void;
+  /** Ancla para "Normi te guía" (data-guia en el contenedor del calendario). */
+  dataGuia?: string;
+  /** Ancla para "Normi te guía" en el botón 'Ver todas'. */
+  dataGuiaVerTodas?: string;
 }
 
-const CalendarioFiltroDia = ({ diasMarcados, dia, onDia }: Props) => {
+const CalendarioFiltroDia = ({ diasMarcados, dia, onDia, dataGuia, dataGuiaVerTodas }: Props) => {
   const [mes, setMes] = useState<Date>(dia || new Date());
   const fechas = diasMarcados.map((k) => {
     const [y, m, d] = k.split("-").map(Number);
@@ -29,7 +33,7 @@ const CalendarioFiltroDia = ({ diasMarcados, dia, onDia }: Props) => {
   });
 
   return (
-    <div className="flex flex-col items-center lg:sticky lg:top-4 shrink-0">
+    <div data-guia={dataGuia} className="flex flex-col items-center lg:sticky lg:top-4 shrink-0">
       <Calendar
         mode="single"
         selected={dia}
@@ -42,7 +46,7 @@ const CalendarioFiltroDia = ({ diasMarcados, dia, onDia }: Props) => {
         className="rounded-md border shadow-sm"
       />
       {dia ? (
-        <Button variant="outline" size="sm" className="mt-3" onClick={() => onDia(undefined)}>
+        <Button data-guia={dataGuiaVerTodas} variant="outline" size="sm" className="mt-3" onClick={() => onDia(undefined)}>
           Ver todas
         </Button>
       ) : (

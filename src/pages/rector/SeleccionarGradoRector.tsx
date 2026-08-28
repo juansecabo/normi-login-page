@@ -59,12 +59,12 @@ const SeleccionarGradoRector = () => {
         </div>
 
         {/* Selector de Grado */}
-        <div className="bg-card rounded-lg shadow-soft p-8 max-w-4xl mx-auto">
+        <div data-guia="notas.selector_grado" className="bg-card rounded-lg shadow-soft p-8 max-w-4xl mx-auto">
           <h3 className="text-xl font-bold text-foreground mb-6 text-center">
             Selecciona el grado:
           </h3>
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4" data-guia="estadisticas.select_grado_item">
             {grados.map((grado) => (
               <button
                 key={grado}

@@ -518,6 +518,7 @@ const TablaNotasPreescolar = () => {
             </div>
             <Button
               size="sm"
+              data-guia="notas.preescolar_enviar"
               onClick={() => handleNotificarMasivo(periodoActivo)}
               className="gap-1"
             >
@@ -583,6 +584,7 @@ const TablaNotasPreescolar = () => {
                           )}
                         </label>
                         <textarea
+                          data-guia={act.nombre === "Descripción Integral" ? "notas.preescolar_informe_texto" : undefined}
                           className="min-h-[160px] md:min-h-[200px] p-3 rounded-md border border-border bg-background text-foreground text-sm resize-y focus:outline-none focus:ring-2 focus:ring-primary/50"
                           placeholder={
                             act.nombre === "Descripción Integral"

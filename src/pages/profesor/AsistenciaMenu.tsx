@@ -33,6 +33,7 @@ const AsistenciaMenu = () => {
 
           <div className="grid gap-4">
             <button
+              data-guia="asistencia.menu_tomar"
               onClick={() => navigate("/profesor/asistencia/tomar")}
               className="flex items-center gap-4 text-left p-5 rounded-xl border border-border bg-card hover:bg-emerald-50 transition-colors shadow-soft"
             >
@@ -47,6 +48,7 @@ const AsistenciaMenu = () => {
             </button>
 
             <button
+              data-guia="asistencia.menu_registro"
               onClick={() => navigate("/asistencia")}
               className="flex items-center gap-4 text-left p-5 rounded-xl border border-border bg-card hover:bg-blue-50 transition-colors shadow-soft"
             >

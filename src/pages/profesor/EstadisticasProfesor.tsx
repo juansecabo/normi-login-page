@@ -193,7 +193,7 @@ const EstadisticasProfesor = () => {
                     setSalonSeleccionado("");
                     setEstudianteSeleccionado("");
                   }}>
-                    <SelectTrigger><SelectValue placeholder="Seleccionar asignatura" /></SelectTrigger>
+                    <SelectTrigger data-guia="estadisticas.prof_filtro_asignatura"><SelectValue placeholder="Seleccionar asignatura" /></SelectTrigger>
                     <SelectContent>
                       {asignaturasProfesor.map(m => (
                         <SelectItem key={m} value={m}>{m}</SelectItem>
@@ -206,7 +206,7 @@ const EstadisticasProfesor = () => {
                 <div className="w-full sm:w-auto sm:min-w-[150px]">
                   <label className="text-sm text-muted-foreground mb-1.5 block">Período</label>
                   <Select value={periodoSeleccionado} onValueChange={setPeriodoSeleccionado}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger data-guia="estadisticas.prof_filtro_periodo"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="1">Período 1</SelectItem>
                       <SelectItem value="2">Período 2</SelectItem>
@@ -225,7 +225,7 @@ const EstadisticasProfesor = () => {
                     setSalonSeleccionado("");
                     setEstudianteSeleccionado("");
                   }}>
-                    <SelectTrigger><SelectValue placeholder="Seleccionar grado" /></SelectTrigger>
+                    <SelectTrigger data-guia="estadisticas.prof_filtro_grado"><SelectValue placeholder="Seleccionar grado" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
                       {gradosParaAsignatura.map(g => (
@@ -243,7 +243,7 @@ const EstadisticasProfesor = () => {
                       setSalonSeleccionado(val === "all" ? "" : val);
                       setEstudianteSeleccionado("");
                     }}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger data-guia="estadisticas.prof_filtro_salon"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Todos</SelectItem>
                         {salonesParaGrado.map(s => (
@@ -261,7 +261,7 @@ const EstadisticasProfesor = () => {
                     <Select value={estudianteSeleccionado || "all"} onValueChange={(val) => {
                       setEstudianteSeleccionado(val === "all" ? "" : val);
                     }}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger data-guia="estadisticas.prof_filtro_estudiante"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Todos</SelectItem>
                         {estudiantesDelSalon.map(e => (

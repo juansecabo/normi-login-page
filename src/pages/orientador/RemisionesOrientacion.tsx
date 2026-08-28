@@ -341,6 +341,7 @@ const RemisionesOrientacion = () => {
             <div className="relative col-span-2 md:col-span-1">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <input
+                data-guia="orientacion.remisiones_buscador"
                 value={busqueda}
                 onChange={e => setBusqueda(e.target.value)}
                 placeholder="Buscar por nombre..."
@@ -370,7 +371,7 @@ const RemisionesOrientacion = () => {
           ) : remisionesFiltradas.length === 0 ? (
             <div className="text-muted-foreground text-sm">No hay remisiones.</div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-3" data-guia="orientacion.remision_item">
               {remisionesFiltradas.map(r => {
                 const isOpen = expandedIds.has(r.id);
                 const isNueva = r.id > lastSeen && !r.recibido_por_id;
@@ -457,6 +458,7 @@ const RemisionesOrientacion = () => {
                         <div className="flex flex-wrap gap-2 pt-1">
                           <button
                             type="button"
+                            data-guia="orientacion.remision_descargar_word"
                             onClick={() => descargarWord(r)}
                             className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md border border-input bg-background hover:bg-accent"
                           >
@@ -464,6 +466,7 @@ const RemisionesOrientacion = () => {
                           </button>
                           <button
                             type="button"
+                            data-guia="orientacion.remision_agendar_cita"
                             onClick={() => navigate(`/orientador/citas?estudianteId=${r.estudiante_id}`)}
                             className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md border border-input bg-background hover:bg-accent"
                           >
@@ -472,6 +475,7 @@ const RemisionesOrientacion = () => {
                           {!r.recibido_por_id && (
                             <button
                               type="button"
+                              data-guia="orientacion.remision_marcar_recibida"
                               disabled={marcando === r.id}
                               onClick={() => marcarRecibida(r)}
                               className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"

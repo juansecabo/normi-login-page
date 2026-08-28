@@ -622,7 +622,7 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
         {cabeceraEstudiante}
         <div className="bg-card rounded-lg shadow-soft p-6 md:p-8">
           <h3 className="text-xl font-bold text-foreground mb-5 text-center">Elige el periodo:</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4" data-guia="estadisticas.consolidado_periodo">
             {periodos.map((p) => (
               <button
                 key={p.numero}
@@ -654,7 +654,7 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
 
       {/* Barra de periodos: arriba de TODAS las asignaturas (cambia el periodo). */}
       {asignaturas.length > 0 && (
-        <div className="bg-card rounded-lg shadow-soft p-2 flex flex-wrap gap-2">
+        <div data-guia="notas.barra_periodos" className="bg-card rounded-lg shadow-soft p-2 flex flex-wrap gap-2">
           {periodos.map((p) => {
             const isActive = periodoGlobal === p.numero;
             return (

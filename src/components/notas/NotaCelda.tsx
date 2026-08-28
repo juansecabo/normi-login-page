@@ -93,6 +93,7 @@ const NotaCelda = ({
           <div className="absolute inset-0 p-1 flex items-center justify-center">
             <input
               ref={(el) => { inputRef(el); localInputRef.current = el; }}
+              data-guia="notas.celda_nota_input"
               type="text"
               className="w-full h-8 text-center border border-primary rounded px-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               value={valorEditando}
@@ -146,12 +147,12 @@ const NotaCelda = ({
             <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
               <DropdownMenu open={showMenu} onOpenChange={setShowMenu}>
                 <DropdownMenuTrigger asChild>
-                  <button className="p-1 hover:bg-muted rounded transition-colors">
+                  <button data-guia="notas.menu_celda" className="p-1 hover:bg-muted rounded transition-colors">
                     <MoreVertical className="w-3 h-3 text-muted-foreground" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="bg-background z-50">
-                  <DropdownMenuItem onClick={onAbrirComentario}>
+                  <DropdownMenuItem data-guia="notas.menu_agregar_comentario" onClick={onAbrirComentario}>
                     <MessageSquare className="w-4 h-4 mr-2" />
                     {comentario ? "Editar comentario" : "Agregar comentario"}
                   </DropdownMenuItem>
@@ -165,7 +166,7 @@ const NotaCelda = ({
                     </DropdownMenuItem>
                   )}
                   {onCompletarAbajo && (
-                    <DropdownMenuItem onClick={onCompletarAbajo}>
+                    <DropdownMenuItem data-guia="notas.menu_completar_abajo" onClick={onCompletarAbajo}>
                       <ChevronsDown className="w-4 h-4 mr-2" />
                       Completar hacia abajo
                     </DropdownMenuItem>

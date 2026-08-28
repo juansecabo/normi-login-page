@@ -120,7 +120,8 @@ const NotificacionModal = ({
           >
             Cancelar
           </Button>
-          <Button 
+          <Button
+            data-guia={nombreEstudiante ? "notas.confirmar_notificar_padres" : "notas.confirmar_notificar_masivo"}
             onClick={handleConfirmar}
             disabled={enviando}
             className="bg-primary hover:bg-primary/90"

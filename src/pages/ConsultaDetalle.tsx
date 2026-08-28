@@ -961,23 +961,23 @@ export default function ConsultaDetalle() {
   return (
     <div className="min-h-screen bg-background">
       <HeaderNormi />
-      <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-4">
+      <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-4" data-guia="consultas.detalle_cargado">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <Button onClick={() => navigate("/consultas")} variant="outline" size="sm" className="bg-white">
             ← Volver a consultas
           </Button>
           <div className="flex gap-2">
-            <Button onClick={copiarLinkConsulta} variant="outline" size="sm" className="bg-white">
+            <Button onClick={copiarLinkConsulta} variant="outline" size="sm" className="bg-white" data-guia="consultas.boton_copiar_link">
               <Copy className="h-4 w-4 mr-1" />
               {linkCopiado ? "¡Copiado!" : "Copiar link"}
             </Button>
             {consulta.activa && esCreador && (
-              <Button variant="outline" size="sm" onClick={abrirEditar} className="bg-white">
+              <Button variant="outline" size="sm" onClick={abrirEditar} className="bg-white" data-guia="consultas.boton_editar">
                 <Pencil className="h-4 w-4 mr-1" /> Editar
               </Button>
             )}
             {consulta.activa && (
-              <Button variant="outline" size="sm" onClick={cerrarConsulta} className="bg-white">
+              <Button variant="outline" size="sm" onClick={cerrarConsulta} className="bg-white" data-guia="consultas.boton_cerrar">
                 Cerrar consulta
               </Button>
             )}
@@ -986,12 +986,12 @@ export default function ConsultaDetalle() {
               const esCreador = s.id != null && consulta.creado_por != null && Number(s.id) === Number(consulta.creado_por);
               if (!esCreador && !isAdmin()) return null;
               return (
-                <Button variant="outline" size="sm" onClick={() => setEliminarOpen(true)} className="bg-white text-destructive border-destructive/40 hover:bg-destructive/10">
+                <Button variant="outline" size="sm" onClick={() => setEliminarOpen(true)} className="bg-white text-destructive border-destructive/40 hover:bg-destructive/10" data-guia="consultas.boton_eliminar">
                   <Trash2 className="h-4 w-4 mr-1" /> Eliminar
                 </Button>
               );
             })()}
-            <Button onClick={exportarExcel} size="sm">
+            <Button onClick={exportarExcel} size="sm" data-guia="consultas.boton_excel">
               <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
             </Button>
           </div>
@@ -1063,7 +1063,7 @@ export default function ConsultaDetalle() {
                   )}
                 </div>
                 {miFechaRespuesta && !miEditando && (
-                  <Button size="sm" variant="outline" onClick={() => setMiEditando(true)}>
+                  <Button size="sm" variant="outline" onClick={() => setMiEditando(true)} data-guia="consultas.boton_editar_respuesta">
                     <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
                   </Button>
                 )}
@@ -1083,7 +1083,7 @@ export default function ConsultaDetalle() {
                 </div>
               ) : (
                 <>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2" data-guia="consultas.opcion_respuesta">
                     {consulta.opciones.map((op) => (
                       <button
                         key={op}
@@ -1103,7 +1103,7 @@ export default function ConsultaDetalle() {
                   {consulta.requiere_firma && (
                     <div>
                       <Label className="text-xs font-medium">Firma</Label>
-                      <div className="border rounded-md bg-background">
+                      <div className="border rounded-md bg-background" data-guia="consultas.firma_canvas">
                         <SignatureCanvas
                           ref={sigRef}
                           penColor="black"
@@ -1130,7 +1130,7 @@ export default function ConsultaDetalle() {
                         Cancelar
                       </Button>
                     )}
-                    <Button size="sm" onClick={enviarMiRespuesta} disabled={miEnviando || !miOpcion}>
+                    <Button size="sm" onClick={enviarMiRespuesta} disabled={miEnviando || !miOpcion} data-guia="consultas.boton_enviar_respuesta">
                       {miEnviando ? "Enviando..." : miFechaRespuesta ? "Actualizar respuesta" : "Enviar respuesta"}
                     </Button>
                   </div>
@@ -1150,6 +1150,7 @@ export default function ConsultaDetalle() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
+                data-guia="consultas.buscar_estudiante"
                 placeholder="Buscar estudiante..."
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
@@ -1160,6 +1161,7 @@ export default function ConsultaDetalle() {
           <div>
             <label className="text-sm font-bold text-foreground block mb-1">Estado</label>
             <select
+              data-guia="consultas.filtro_estado"
               value={filtroEstado}
               onChange={(e) => setFiltroEstado(e.target.value as typeof filtroEstado)}
               className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm"
@@ -1173,6 +1175,7 @@ export default function ConsultaDetalle() {
             <div>
               <label className="text-sm font-bold text-foreground block mb-1">Opción</label>
               <select
+                data-guia="consultas.filtro_opcion"
                 value={filtroOpcion}
                 onChange={(e) => setFiltroOpcion(e.target.value)}
                 className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm"
@@ -1189,6 +1192,7 @@ export default function ConsultaDetalle() {
           <div>
             <label className="text-sm font-bold text-foreground block mb-1">Grado</label>
             <select
+              data-guia="consultas.filtro_grado"
               value={filtroGrado}
               onChange={(e) => setFiltroGrado(e.target.value)}
               className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm"
@@ -1218,7 +1222,7 @@ export default function ConsultaDetalle() {
           </div>
         </div>
 
-        <div className="overflow-x-auto border rounded-lg bg-white shadow-sm">
+        <div className="overflow-x-auto border rounded-lg bg-white shadow-sm" data-guia="consultas.boton_ver_firma">
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="bg-primary text-primary-foreground">
@@ -1480,7 +1484,7 @@ export default function ConsultaDetalle() {
             <Button variant="outline" onClick={() => setEliminarOpen(false)} disabled={eliminando}>
               Cancelar
             </Button>
-            <Button variant="destructive" onClick={eliminarConsulta} disabled={eliminando}>
+            <Button variant="destructive" onClick={eliminarConsulta} disabled={eliminando} data-guia="consultas.confirmar_eliminar">
               {eliminando ? "Eliminando..." : "Sí, eliminar"}
             </Button>
           </DialogFooter>
@@ -1497,6 +1501,7 @@ export default function ConsultaDetalle() {
               <Label htmlFor="editTitulo">Título</Label>
               <Input
                 id="editTitulo"
+                data-guia="consultas.modal_editar_titulo"
                 value={editTitulo}
                 onChange={(e) => setEditTitulo(e.target.value)}
               />
@@ -1505,6 +1510,7 @@ export default function ConsultaDetalle() {
               <Label htmlFor="editMensaje">Mensaje completo de la consulta</Label>
               <Textarea
                 id="editMensaje"
+                data-guia="consultas.modal_editar_mensaje"
                 value={editMensaje}
                 onChange={(e) => setEditMensaje(e.target.value)}
                 rows={12}
@@ -1514,7 +1520,7 @@ export default function ConsultaDetalle() {
               </p>
             </div>
 
-            <div className="border-t pt-3">
+            <div className="border-t pt-3" data-guia="consultas.modal_editar_destinatarios">
               <Label className="font-medium">Destinatarios</Label>
               <p className="text-xs text-muted-foreground mt-1 mb-3">
                 Solo recibirán notificación los <strong>nuevos</strong> destinatarios que agregues. Los que ya estaban no reciben mensajes repetidos.
@@ -1529,7 +1535,7 @@ export default function ConsultaDetalle() {
             <Button variant="outline" onClick={() => setEditarOpen(false)} disabled={guardandoEdit}>
               Cancelar
             </Button>
-            <Button onClick={guardarEdit} disabled={guardandoEdit}>
+            <Button onClick={guardarEdit} disabled={guardandoEdit} data-guia="consultas.modal_editar_guardar">
               {guardandoEdit ? "Guardando..." : "Guardar cambios"}
             </Button>
           </DialogFooter>

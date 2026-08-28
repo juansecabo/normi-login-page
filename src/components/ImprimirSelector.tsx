@@ -6,11 +6,15 @@ interface ToggleProps {
   cantidadSeleccionada: number;
   onDescargar: () => void;
   descargando: boolean;
+  /** Ancla para "Normi te guía" en la casilla 'Imprimir'. */
+  dataGuia?: string;
+  /** Ancla para "Normi te guía" en el botón 'Descargar'. */
+  dataGuiaDescargar?: string;
 }
 
-export const ImprimirToggle = ({ imprimirMode, onToggle, cantidadSeleccionada, onDescargar, descargando }: ToggleProps) => (
+export const ImprimirToggle = ({ imprimirMode, onToggle, cantidadSeleccionada, onDescargar, descargando, dataGuia, dataGuiaDescargar }: ToggleProps) => (
   <div className="flex items-center justify-end gap-3 mb-3">
-    <label className="flex items-center gap-2 cursor-pointer select-none" onClick={onToggle}>
+    <label data-guia={dataGuia} className="flex items-center gap-2 cursor-pointer select-none" onClick={onToggle}>
       <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${imprimirMode ? "bg-primary border-primary" : "border-border"}`}>
         {imprimirMode && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
       </div>
@@ -20,6 +24,7 @@ export const ImprimirToggle = ({ imprimirMode, onToggle, cantidadSeleccionada, o
     </label>
     {imprimirMode && cantidadSeleccionada > 0 && (
       <button
+        data-guia={dataGuiaDescargar}
         onClick={onDescargar}
         disabled={descargando}
         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 cursor-pointer"

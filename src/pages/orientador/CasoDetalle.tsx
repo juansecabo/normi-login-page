@@ -184,7 +184,7 @@ interface FormState {
 }
 
 const FirmaBlock = ({
-  label, urlGuardada, onSave, onClear, saving, firmaGuardada,
+  label, urlGuardada, onSave, onClear, saving, firmaGuardada, dataGuiaGuardar,
 }: {
   label: string;
   urlGuardada: string | null;
@@ -192,6 +192,7 @@ const FirmaBlock = ({
   onClear: () => Promise<void>;
   saving: boolean;
   firmaGuardada?: string | null;
+  dataGuiaGuardar?: string;
 }) => {
   const sigRef = useRef<any>(null);
   const [hasInk, setHasInk] = useState(false);
@@ -267,6 +268,7 @@ const FirmaBlock = ({
         </button>
         <button
           type="button"
+          data-guia={dataGuiaGuardar}
           onClick={guardar}
           disabled={!hasInk || saving}
           className="text-xs px-3 py-1 rounded bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer disabled:opacity-50"
@@ -276,6 +278,7 @@ const FirmaBlock = ({
         {firmaGuardada && (
           <button
             type="button"
+            data-guia="orientacion.caso_firma_usar_guardada"
             onClick={() => onSave(firmaGuardada)}
             disabled={saving}
             className="text-xs px-3 py-1 rounded border border-primary text-primary hover:bg-primary/10 cursor-pointer disabled:opacity-50"
@@ -870,7 +873,7 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
           </div>
         </div>
 
-        <div className="bg-card rounded-lg shadow-soft p-6 space-y-6">
+        <div data-guia="orientacion.caso_detalle" className="bg-card rounded-lg shadow-soft p-6 space-y-6">
           {/* Encabezado */}
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
@@ -886,13 +889,13 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
               <p className="text-xs text-muted-foreground">Abierto por {c.autor_nombre}</p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <button onClick={descargarWord} className="inline-flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium border border-blue-600 text-blue-600 hover:bg-blue-50 cursor-pointer" title="Descargar en Word">
+              <button data-guia="orientacion.caso_descargar_word" onClick={descargarWord} className="inline-flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium border border-blue-600 text-blue-600 hover:bg-blue-50 cursor-pointer" title="Descargar en Word">
                 <FileDown className="w-4 h-4" /> Descargar Word
               </button>
-              <button onClick={abrirEditar} className="inline-flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium border border-primary text-primary hover:bg-primary/10 cursor-pointer">
+              <button data-guia="orientacion.caso_editar" onClick={abrirEditar} className="inline-flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium border border-primary text-primary hover:bg-primary/10 cursor-pointer">
                 <Pencil className="w-4 h-4" /> Editar
               </button>
-              <button onClick={() => setShowDeleteCaso(true)} className="inline-flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium border border-destructive text-destructive hover:bg-destructive/10 cursor-pointer">
+              <button data-guia="orientacion.caso_eliminar" onClick={() => setShowDeleteCaso(true)} className="inline-flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium border border-destructive text-destructive hover:bg-destructive/10 cursor-pointer">
                 <Trash2 className="w-4 h-4" /> Eliminar
               </button>
             </div>
@@ -973,7 +976,7 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
           <div className="border-t border-border pt-4">
             <div className="flex items-center justify-between mb-2">
               <p className="font-semibold text-blue-700">Diagnóstico</p>
-              <button onClick={abrirDiag} className="inline-flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium border border-primary text-primary hover:bg-primary/10 cursor-pointer">
+              <button data-guia="orientacion.caso_diagnostico_abrir" onClick={abrirDiag} className="inline-flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium border border-primary text-primary hover:bg-primary/10 cursor-pointer">
                 <Pencil className="w-4 h-4" /> {c.tipo_diagnostico ? "Editar" : "Agregar"}
               </button>
             </div>
@@ -1004,6 +1007,7 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
                 onClear={() => borrarFirma("orientadora")}
                 saving={savingFirmaO}
                 firmaGuardada={firmaOrientadorGuardada}
+                dataGuiaGuardar="orientacion.caso_firma_guardar"
               />
               <FirmaBlock
                 label="Estudiante"
@@ -1016,7 +1020,7 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
           </div>
 
           {/* Cambiar estado */}
-          <div className="border-t border-border pt-4 flex items-center gap-2 flex-wrap">
+          <div data-guia="orientacion.caso_cambiar_estado" className="border-t border-border pt-4 flex items-center gap-2 flex-wrap">
             <span className="text-sm font-medium">Cambiar estado:</span>
             {ESTADOS.filter(e => e.value !== c.estado).map(e => (
               <button key={e.value} onClick={() => cambiarEstado(e.value)} className={`px-3 py-1 rounded-full text-sm font-medium ${e.color} hover:opacity-80 cursor-pointer`}>{e.label}</button>
@@ -1027,7 +1031,7 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
           <div className="border-t border-border pt-4">
             <div className="flex items-center justify-between mb-3">
               <p className="font-semibold text-blue-700">Seguimientos ({c.seguimientos?.length || 0})</p>
-              <button onClick={abrirAgregarSeg} className="inline-flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium border border-primary text-primary hover:bg-primary/10 cursor-pointer">
+              <button data-guia="orientacion.seguimiento_agregar" onClick={abrirAgregarSeg} className="inline-flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium border border-primary text-primary hover:bg-primary/10 cursor-pointer">
                 <Plus className="w-4 h-4" /> Agregar seguimiento
               </button>
             </div>
@@ -1040,13 +1044,13 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
                         <span className="font-bold text-foreground">Seguimiento #{idx + 1}</span> · {fmtFecha(sg.fecha)} · {sg.autor_nombre}
                       </p>
                       <div className="flex items-center gap-1 shrink-0">
-                        <button onClick={() => setNotifSeg(idx)} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-primary" title="Notificar seguimiento">
+                        <button data-guia={idx === 0 ? "orientacion.seguimiento_notificar" : undefined} onClick={() => setNotifSeg(idx)} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-primary" title="Notificar seguimiento">
                           <Send className="w-4 h-4" />
                         </button>
-                        <button onClick={() => abrirEditarSeg(idx, sg)} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-primary" title="Editar seguimiento">
+                        <button data-guia={idx === 0 ? "orientacion.seguimiento_editar" : undefined} onClick={() => abrirEditarSeg(idx, sg)} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-primary" title="Editar seguimiento">
                           <Pencil className="w-4 h-4" />
                         </button>
-                        <button onClick={() => setShowDeleteSeg(idx)} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-destructive" title="Eliminar seguimiento">
+                        <button data-guia={idx === 0 ? "orientacion.seguimiento_eliminar" : undefined} onClick={() => setShowDeleteSeg(idx)} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-destructive" title="Eliminar seguimiento">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -1193,6 +1197,7 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
             <div>
               <label className="text-sm font-medium block mb-1">Fecha *</label>
               <input
+                data-guia="orientacion.seguimiento_fecha"
                 type="date"
                 value={segFecha ? fmtLocal(segFecha) : ""}
                 onChange={e => setSegFecha(e.target.value ? new Date(e.target.value + "T12:00:00") : undefined)}
@@ -1201,15 +1206,15 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
             </div>
             <div>
               <label className="text-sm font-medium block mb-1">Anotación *</label>
-              <textarea value={segAnotacion} onChange={e => setSegAnotacion(e.target.value)} placeholder="Tema o asunto tratado en la sesión..." className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background min-h-[100px] resize-y" />
+              <textarea data-guia="orientacion.seguimiento_anotacion" value={segAnotacion} onChange={e => setSegAnotacion(e.target.value)} placeholder="Tema o asunto tratado en la sesión..." className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background min-h-[100px] resize-y" />
             </div>
             <div>
               <label className="text-sm font-medium block mb-1">Observaciones</label>
-              <textarea value={segObservaciones} onChange={e => setSegObservaciones(e.target.value)} placeholder="Observaciones, conclusiones o compromisos..." className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background min-h-[100px] resize-y" />
+              <textarea data-guia="orientacion.seguimiento_observaciones" value={segObservaciones} onChange={e => setSegObservaciones(e.target.value)} placeholder="Observaciones, conclusiones o compromisos..." className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background min-h-[100px] resize-y" />
             </div>
             <div>
               <label className="text-sm font-medium block mb-1">Archivos adjuntos (opcional)</label>
-              <input type="file" accept="image/*,application/pdf" onChange={(e) => { const f = e.target.files?.[0]; if (f) subirAdjuntoSeg(f); e.currentTarget.value = ""; }}
+              <input data-guia="orientacion.seguimiento_adjunto" type="file" accept="image/*,application/pdf" onChange={(e) => { const f = e.target.files?.[0]; if (f) subirAdjuntoSeg(f); e.currentTarget.value = ""; }}
                 className="block w-full text-sm text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:bg-primary file:text-primary-foreground file:cursor-pointer" />
               {segSubiendo && <p className="text-xs text-muted-foreground mt-1">Subiendo…</p>}
               {segAdjuntos.length > 0 && (
@@ -1226,7 +1231,7 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
           </div>
           <DialogFooter>
             <button onClick={() => { setShowSeg(false); setEditingSegIndex(null); }} className="px-4 py-2 rounded-md border text-sm font-medium hover:bg-muted">Cancelar</button>
-            <button onClick={handleGuardarSeg} disabled={guardandoSeg || segSubiendo || !segAnotacion.trim()} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
+            <button data-guia="orientacion.seguimiento_guardar" onClick={handleGuardarSeg} disabled={guardandoSeg || segSubiendo || !segAnotacion.trim()} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
               {guardandoSeg ? "Guardando..." : (editingSegIndex !== null ? "Guardar cambios" : "Registrar seguimiento")}
             </button>
           </DialogFooter>
@@ -1244,7 +1249,7 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
           </p>
           <DialogFooter>
             <button onClick={() => setShowDeleteCaso(false)} disabled={eliminandoCaso} className="px-4 py-2 rounded-md border text-sm font-medium hover:bg-muted disabled:opacity-50">Cancelar</button>
-            <button onClick={handleEliminarCaso} disabled={eliminandoCaso} className="px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90 disabled:opacity-50">
+            <button data-guia="orientacion.caso_eliminar_confirmar" onClick={handleEliminarCaso} disabled={eliminandoCaso} className="px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90 disabled:opacity-50">
               {eliminandoCaso ? "Eliminando..." : "Eliminar"}
             </button>
           </DialogFooter>
@@ -1262,7 +1267,7 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
           </p>
           <DialogFooter>
             <button onClick={() => setShowDeleteSeg(null)} disabled={eliminandoSeg} className="px-4 py-2 rounded-md border text-sm font-medium hover:bg-muted disabled:opacity-50">Cancelar</button>
-            <button onClick={handleEliminarSeg} disabled={eliminandoSeg} className="px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90 disabled:opacity-50">
+            <button data-guia="orientacion.seguimiento_eliminar_confirmar" onClick={handleEliminarSeg} disabled={eliminandoSeg} className="px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90 disabled:opacity-50">
               {eliminandoSeg ? "Eliminando..." : "Eliminar"}
             </button>
           </DialogFooter>
@@ -1278,22 +1283,22 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
           <div className="space-y-3 py-1">
             <div>
               <label className="text-sm font-medium">Tipo de diagnóstico</label>
-              <input value={diagTipo} onChange={(e) => setDiagTipo(e.target.value)} placeholder="Ej: TDAH, dislexia, condición médica…"
+              <input data-guia="orientacion.diagnostico_tipo" value={diagTipo} onChange={(e) => setDiagTipo(e.target.value)} placeholder="Ej: TDAH, dislexia, condición médica…"
                 className="w-full mt-1 px-3 py-2 border border-input rounded-md text-sm bg-background" />
             </div>
             <div>
               <label className="text-sm font-medium">Descripción</label>
-              <textarea value={diagDesc} onChange={(e) => setDiagDesc(e.target.value)} rows={3} placeholder="Detalles del diagnóstico…"
+              <textarea data-guia="orientacion.diagnostico_descripcion" value={diagDesc} onChange={(e) => setDiagDesc(e.target.value)} rows={3} placeholder="Detalles del diagnóstico…"
                 className="w-full mt-1 px-3 py-2 border border-input rounded-md text-sm bg-background resize-y" />
             </div>
             <div>
               <label className="text-sm font-medium">Fecha</label>
-              <input type="date" value={diagFecha ? fmtLocal(diagFecha) : ""} onChange={(e) => setDiagFecha(e.target.value ? new Date(e.target.value + "T12:00:00") : undefined)}
+              <input data-guia="orientacion.diagnostico_fecha" type="date" value={diagFecha ? fmtLocal(diagFecha) : ""} onChange={(e) => setDiagFecha(e.target.value ? new Date(e.target.value + "T12:00:00") : undefined)}
                 className="w-full mt-1 px-3 py-2 border border-input rounded-md text-sm bg-background" />
             </div>
             <div>
               <label className="text-sm font-medium">Adjunto</label>
-              <input type="file" accept="image/*,application/pdf" onChange={(e) => { const f = e.target.files?.[0]; if (f) subirAdjuntoDiag(f); }}
+              <input data-guia="orientacion.diagnostico_adjunto" type="file" accept="image/*,application/pdf" onChange={(e) => { const f = e.target.files?.[0]; if (f) subirAdjuntoDiag(f); }}
                 className="block w-full mt-1 text-sm text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:bg-primary file:text-primary-foreground file:cursor-pointer" />
               {subiendoAdjunto && <p className="text-xs text-muted-foreground mt-1">Subiendo…</p>}
               {diagAdjuntoUrl && !subiendoAdjunto && (
@@ -1306,7 +1311,7 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
           </div>
           <DialogFooter>
             <button onClick={() => setShowDiag(false)} disabled={guardandoDiag} className="px-4 py-2 rounded-md border text-sm font-medium hover:bg-muted disabled:opacity-50">Cancelar</button>
-            <button onClick={guardarDiagnostico} disabled={guardandoDiag || subiendoAdjunto} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-50">
+            <button data-guia="orientacion.diagnostico_guardar" onClick={guardarDiagnostico} disabled={guardandoDiag || subiendoAdjunto} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-50">
               {guardandoDiag ? "Guardando…" : "Guardar"}
             </button>
           </DialogFooter>
@@ -1324,7 +1329,7 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
           </p>
           <DialogFooter>
             <button onClick={() => setNotifSeg(null)} disabled={notificandoSeg} className="px-4 py-2 rounded-md border text-sm font-medium hover:bg-muted disabled:opacity-50">Cancelar</button>
-            <button onClick={confirmarNotificarSeg} disabled={notificandoSeg} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-50">
+            <button data-guia="orientacion.seguimiento_notificar_confirmar" onClick={confirmarNotificarSeg} disabled={notificandoSeg} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-50">
               {notificandoSeg ? "Notificando…" : "Notificar"}
             </button>
           </DialogFooter>

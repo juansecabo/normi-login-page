@@ -1619,6 +1619,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
         <div className="space-y-1">
           <Label className="text-xs">ID del estudiante</Label>
           <Input
+            data-guia={num === 1 ? "panel_control.perf_acudido_id" : undefined}
             type="text"
             inputMode="numeric"
             value={id}
@@ -1681,8 +1682,8 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
             {!embedded && (
             <div className="overflow-x-auto -mx-6 px-6 md:-mx-8 md:px-8 sm:mx-0 sm:px-0 mb-6">
               <TabsList className="flex w-full">
-                <TabsTrigger value="estudiantes" className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Estudiantes</TabsTrigger>
-                <TabsTrigger value="perfiles" className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Acudientes</TabsTrigger>
+                <TabsTrigger data-guia="panel_control.tab_estudiantes" value="estudiantes" className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Estudiantes</TabsTrigger>
+                <TabsTrigger data-guia="panel_control.tab_acudientes" value="perfiles" className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Acudientes</TabsTrigger>
               </TabsList>
             </div>
             )}
@@ -1691,14 +1692,14 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
             <TabsContent value="estudiantes">
               <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 sm:gap-3 mb-4">
                 <Select value={filtroGradoEst} onValueChange={(v) => { setFiltroGradoEst(v); setFiltroSalonEst("todos"); }}>
-                  <SelectTrigger className="sm:w-52"><SelectValue placeholder="Grado" /></SelectTrigger>
+                  <SelectTrigger data-guia="panel_control.filtro_grado_est" className="sm:w-52"><SelectValue placeholder="Grado" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos los grados</SelectItem>
                     {gradosColegio.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <Select value={filtroSalonEst} onValueChange={setFiltroSalonEst}>
-                  <SelectTrigger className="sm:w-52"><SelectValue placeholder="Salón" /></SelectTrigger>
+                  <SelectTrigger data-guia="panel_control.filtro_salon_est" className="sm:w-52"><SelectValue placeholder="Salón" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos los salones</SelectItem>
                     {salonesParaGrado(filtroGradoEst).map((s) => <SelectItem key={s} value={s}>Salón {s}</SelectItem>)}
@@ -1706,7 +1707,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                 </Select>
                 {(
                   <Select value={filtroFotoEst} onValueChange={setFiltroFotoEst}>
-                    <SelectTrigger className="col-span-2 sm:w-52"><SelectValue placeholder="Foto" /></SelectTrigger>
+                    <SelectTrigger data-guia="panel_control.filtro_foto_est" className="col-span-2 sm:w-52"><SelectValue placeholder="Foto" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="todos">Todos</SelectItem>
                       <SelectItem value="con">Con foto</SelectItem>
@@ -1720,6 +1721,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
+                    data-guia="panel_control.buscar_est"
                     placeholder="Buscar por nombre, id, grado..."
                     value={searchEst}
                     onChange={(e) => setSearchEst(e.target.value)}
@@ -1731,7 +1733,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                     </button>
                   )}
                 </div>
-                <Button onClick={() => openEstDialog()}>
+                <Button data-guia="panel_control.boton_agregar_est" onClick={() => openEstDialog()}>
                   <Plus className="w-4 h-4 mr-2" /> Agregar
                 </Button>
               </div>
@@ -1741,14 +1743,14 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                   <Loader2 className="w-6 h-6 animate-spin" />
                 </div>
               ) : (
-                <div ref={estListRef} className="overflow-x-auto">
+                <div ref={estListRef} data-guia="panel_control.fila_editar_est" className="overflow-x-auto">
                   {/* table-fixed: anchos de columna estables — con la lista virtualizada,
                       el layout automático recalculaba anchos con cada scroll y la tabla
                       "parpadeaba" (nombres saltando entre 1 y 2 líneas). */}
-                  <Table className="table-fixed min-w-[880px]">
+                  <Table data-guia="panel_control.fila_eliminar_est" className="table-fixed min-w-[880px]">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-16">Foto</TableHead>
+                        <TableHead data-guia="panel_control.foto_est" className="w-16">Foto</TableHead>
                         <TableHead className="w-28">ID</TableHead>
                         <TableHead className="w-40">Apellidos</TableHead>
                         <TableHead className="w-40">Nombres</TableHead>
@@ -1805,14 +1807,14 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
             <TabsContent value="perfiles">
               <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 sm:gap-3 mb-4">
                 <Select value={filtroGradoPerf} onValueChange={(v) => { setFiltroGradoPerf(v); setFiltroSalonPerf("todos"); }}>
-                  <SelectTrigger className="sm:w-52"><SelectValue placeholder="Grado del acudido" /></SelectTrigger>
+                  <SelectTrigger data-guia="panel_control.filtro_grado_perf" className="sm:w-52"><SelectValue placeholder="Grado del acudido" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos los grados</SelectItem>
                     {gradosColegio.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <Select value={filtroSalonPerf} onValueChange={setFiltroSalonPerf}>
-                  <SelectTrigger className="sm:w-52"><SelectValue placeholder="Salón del acudido" /></SelectTrigger>
+                  <SelectTrigger data-guia="panel_control.filtro_salon_perf" className="sm:w-52"><SelectValue placeholder="Salón del acudido" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos los salones</SelectItem>
                     {salonesParaGrado(filtroGradoPerf).map((s) => <SelectItem key={s} value={s}>Salón {s}</SelectItem>)}
@@ -1834,6 +1836,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
+                    data-guia="panel_control.buscar_perf"
                     placeholder="Buscar por nombre, id, tipo..."
                     value={searchPerf}
                     onChange={(e) => setSearchPerf(e.target.value)}
@@ -1845,7 +1848,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                     </button>
                   )}
                 </div>
-                <Button onClick={() => openPerfDialog()}>
+                <Button data-guia="panel_control.boton_agregar_perf" onClick={() => openPerfDialog()}>
                   <Plus className="w-4 h-4 mr-2" /> Agregar
                 </Button>
               </div>
@@ -1855,9 +1858,9 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                   <Loader2 className="w-6 h-6 animate-spin" />
                 </div>
               ) : (
-                <div ref={perfListRef} className="overflow-x-auto">
+                <div ref={perfListRef} data-guia="panel_control.fila_editar_perf" className="overflow-x-auto">
                   {/* table-fixed: mismos anchos estables que la tabla de estudiantes. */}
-                  <Table className="table-fixed min-w-[880px]">
+                  <Table data-guia="panel_control.fila_eliminar_perf" className="table-fixed min-w-[880px]">
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-16">Foto</TableHead>
@@ -1959,6 +1962,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
               <Label>Cédula / ID estudiantil</Label>
               <div className="flex items-center gap-2">
                 <Input
+                  data-guia="panel_control.est_cedula"
                   type="text"
                   inputMode="numeric"
                   value={estId}
@@ -1975,7 +1979,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                   className={(!!editingEst && !estCedEditable) ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}
                 />
                 {editingEst && !estCedEditable && (
-                  <button type="button" onClick={() => setEstCedEditable(true)} title="Corregir identificación"
+                  <button data-guia="panel_control.est_cedula_editar" type="button" onClick={() => setEstCedEditable(true)} title="Corregir identificación"
                     className="shrink-0 p-2 rounded-md border border-input text-muted-foreground hover:text-primary hover:border-primary">
                     <Pencil className="w-4 h-4" />
                   </button>
@@ -1989,6 +1993,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
             <div className="space-y-2">
               <Label>Apellidos</Label>
               <Input
+                data-guia="panel_control.est_apellidos"
                 value={estApellidos}
                 onChange={(e) => setEstApellidos(e.target.value)}
                 placeholder="Apellidos del estudiante"
@@ -1997,12 +2002,13 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
             <div className="space-y-2">
               <Label>Nombres</Label>
               <Input
+                data-guia="panel_control.est_nombres"
                 value={estNombre}
                 onChange={(e) => setEstNombre(e.target.value)}
                 placeholder="Nombres del estudiante"
               />
             </div>
-            <div className="space-y-2">
+            <div data-guia="panel_control.est_telefono" className="space-y-2">
               <Label>Teléfono <span className="text-xs text-muted-foreground">(opcional)</span></Label>
               <PhoneInput
                 value={estTelefono}
@@ -2014,7 +2020,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
               <div className="space-y-2">
                 <Label>Grado</Label>
                 <Select value={estGrado} onValueChange={setEstGrado} disabled={!!soloGrupo}>
-                  <SelectTrigger>
+                  <SelectTrigger data-guia="panel_control.est_grado">
                     <SelectValue placeholder="Seleccionar" />
                   </SelectTrigger>
                   <SelectContent>
@@ -2027,7 +2033,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
               <div className="space-y-2">
                 <Label>Salón</Label>
                 <Select value={estSalon} onValueChange={setEstSalon} disabled={!!soloGrupo}>
-                  <SelectTrigger>
+                  <SelectTrigger data-guia="panel_control.est_salon">
                     <SelectValue placeholder="Seleccionar" />
                   </SelectTrigger>
                   <SelectContent>
@@ -2078,7 +2084,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
             <Button variant="outline" onClick={() => setShowEstDialog(false)}>
               Cancelar
             </Button>
-            <Button onClick={saveEstudiante} disabled={savingEst}>
+            <Button data-guia="panel_control.est_guardar" onClick={saveEstudiante} disabled={savingEst}>
               {savingEst && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Guardar
             </Button>
@@ -2106,7 +2112,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
             <Button variant="outline" onClick={() => setShowDeleteEst(null)}>
               Cancelar
             </Button>
-            <Button variant="destructive" onClick={deleteEstudiante} disabled={savingEst}>
+            <Button data-guia="panel_control.est_confirmar_eliminar" variant="destructive" onClick={deleteEstudiante} disabled={savingEst}>
               {savingEst && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Eliminar
             </Button>
@@ -2410,6 +2416,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
               <Label>Cédula del acudiente</Label>
               <div className="flex items-center gap-2">
                 <Input
+                  data-guia="panel_control.perf_cedula"
                   type="text"
                   inputMode="numeric"
                   value={perfPadreId}
@@ -2426,7 +2433,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                   className={(!!editingPerf && (esProfesor || !acuCedEditable)) ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}
                 />
                 {editingPerf && !esProfesor && !acuCedEditable && (
-                  <button type="button" onClick={() => setAcuCedEditable(true)} title="Corregir identificación"
+                  <button data-guia="panel_control.perf_cedula_editar" type="button" onClick={() => setAcuCedEditable(true)} title="Corregir identificación"
                     className="shrink-0 p-2 rounded-md border border-input text-muted-foreground hover:text-primary hover:border-primary">
                     <Pencil className="w-4 h-4" />
                   </button>
@@ -2440,14 +2447,14 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Apellidos</Label>
-                <Input value={perfPadreApellidos} onChange={(e) => setPerfPadreApellidos(e.target.value)} placeholder="Apellidos" readOnly={(esProfesor && (perfUsuarioExiste || !!editingPerf))} className={(esProfesor && (perfUsuarioExiste || !!editingPerf)) ? "bg-muted" : ""} />
+                <Input data-guia="panel_control.perf_apellidos" value={perfPadreApellidos} onChange={(e) => setPerfPadreApellidos(e.target.value)} placeholder="Apellidos" readOnly={(esProfesor && (perfUsuarioExiste || !!editingPerf))} className={(esProfesor && (perfUsuarioExiste || !!editingPerf)) ? "bg-muted" : ""} />
               </div>
               <div className="space-y-2">
                 <Label>Nombres</Label>
-                <Input value={perfPadreNombre} onChange={(e) => setPerfPadreNombre(e.target.value)} placeholder="Nombres" readOnly={(esProfesor && (perfUsuarioExiste || !!editingPerf))} className={(esProfesor && (perfUsuarioExiste || !!editingPerf)) ? "bg-muted" : ""} />
+                <Input data-guia="panel_control.perf_nombres" value={perfPadreNombre} onChange={(e) => setPerfPadreNombre(e.target.value)} placeholder="Nombres" readOnly={(esProfesor && (perfUsuarioExiste || !!editingPerf))} className={(esProfesor && (perfUsuarioExiste || !!editingPerf)) ? "bg-muted" : ""} />
               </div>
             </div>
-            <div className="space-y-2">
+            <div data-guia="panel_control.perf_telefono" className="space-y-2">
               <Label>Teléfono <span className="text-xs text-muted-foreground">(opcional)</span></Label>
               <PhoneInput
                 value={perfTelefono}
@@ -2496,7 +2503,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                 perfHijo4Salon, setPerfHijo4Salon,
               )}
               {slotsAcudidos < 4 && (
-                <Button type="button" variant="outline" size="sm" onClick={() => setSlotsAcudidos((n) => Math.min(4, n + 1))} className="gap-1">
+                <Button data-guia="panel_control.perf_agregar_acudido" type="button" variant="outline" size="sm" onClick={() => setSlotsAcudidos((n) => Math.min(4, n + 1))} className="gap-1">
                   <Plus className="h-4 w-4" /> Agregar acudido
                 </Button>
               )}
@@ -2513,7 +2520,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
             <Button variant="outline" onClick={() => setShowPerfDialog(false)}>
               Cancelar
             </Button>
-            <Button onClick={savePerfil} disabled={savingPerf}>
+            <Button data-guia="panel_control.perf_guardar" onClick={savePerfil} disabled={savingPerf}>
               {savingPerf && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Guardar
             </Button>
@@ -2539,7 +2546,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
             <Button variant="outline" onClick={() => setShowDeletePerf(null)}>
               Cancelar
             </Button>
-            <Button variant="destructive" onClick={deletePerfil} disabled={savingPerf}>
+            <Button data-guia="panel_control.perf_confirmar_eliminar" variant="destructive" onClick={deletePerfil} disabled={savingPerf}>
               {savingPerf && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Eliminar
             </Button>

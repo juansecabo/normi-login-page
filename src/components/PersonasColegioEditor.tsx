@@ -586,7 +586,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
       <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
         <h2 className="text-xl font-semibold">{labelActual} <span className="text-muted-foreground font-normal">({listaDelRol.length})</span></h2>
         {esStaff && rol !== null && cargosAgregables.includes(rol) && (
-          <Button onClick={() => { reset(); setDialogAbierto(true); }} className="gap-1">
+          <Button data-guia="configurar_institucion.persona_agregar" onClick={() => { reset(); setDialogAbierto(true); }} className="gap-1">
             <Plus className="w-4 h-4" /> Agregar
           </Button>
         )}
@@ -701,10 +701,10 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
                   <TableCell className="text-muted-foreground">{"contrasena" in p ? (p.contrasena || "(su cédula)") : "—"}</TableCell>
                   {esStaff && rol !== null && cargosAgregables.includes(rol) && (
                     <TableCell className="text-right space-x-1 whitespace-nowrap">
-                      <button onClick={() => abrirEditar(p)} className="p-2 text-muted-foreground hover:text-primary" title="Editar">
+                      <button data-guia="configurar_institucion.persona_editar" onClick={() => abrirEditar(p)} className="p-2 text-muted-foreground hover:text-primary" title="Editar">
                         <Pencil className="w-4 h-4" />
                       </button>
-                      <button onClick={() => setConfirmQuitar(p)} className="p-2 text-muted-foreground hover:text-destructive" title="Quitar cargo">
+                      <button data-guia="configurar_institucion.persona_quitar" onClick={() => setConfirmQuitar(p)} className="p-2 text-muted-foreground hover:text-destructive" title="Quitar cargo">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </TableCell>
@@ -744,9 +744,9 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
             <div className="sm:col-span-2">
               <Label className="text-sm">Cédula *</Label>
               <div className="flex items-center gap-2 mt-1">
-                <Input value={cedula} onChange={(e) => setCedula(e.target.value.replace(/\D/g, ""))} placeholder="Solo números" readOnly={!!editando && !(esAdmin && cedulaEditable)} className={`${(!!editando && !(esAdmin && cedulaEditable)) ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} />
+                <Input data-guia="configurar_institucion.persona_cedula" value={cedula} onChange={(e) => setCedula(e.target.value.replace(/\D/g, ""))} placeholder="Solo números" readOnly={!!editando && !(esAdmin && cedulaEditable)} className={`${(!!editando && !(esAdmin && cedulaEditable)) ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} />
                 {editando && esAdmin && !cedulaEditable && (
-                  <button type="button" onClick={() => setCedulaEditable(true)} title="Corregir cédula"
+                  <button type="button" data-guia="configurar_institucion.persona_cedula_editable" onClick={() => setCedulaEditable(true)} title="Corregir cédula"
                     className="shrink-0 p-2 rounded-md border border-border text-muted-foreground hover:text-primary hover:border-primary">
                     <Pencil className="w-4 h-4" />
                   </button>
@@ -758,7 +758,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
               {buscando && <p className="text-xs text-muted-foreground mt-1">Buscando…</p>}
             </div>
             <div><Label className="text-sm">Apellidos *</Label><Input value={apellidos} onChange={(e) => setApellidos(capitalizarNombre(e.target.value))} readOnly={bloqueado} className={`mt-1 ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
-            <div><Label className="text-sm">Nombres *</Label><Input value={nombres} onChange={(e) => setNombres(capitalizarNombre(e.target.value))} readOnly={bloqueado} className={`mt-1 ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
+            <div><Label className="text-sm">Nombres *</Label><Input data-guia="configurar_institucion.persona_nombres" value={nombres} onChange={(e) => setNombres(capitalizarNombre(e.target.value))} readOnly={bloqueado} className={`mt-1 ${bloqueado ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`} /></div>
             <div className="sm:col-span-2"><Label className="text-sm">Teléfono</Label><div className="mt-1"><PhoneInput value={telefono} onChange={setTelefono} disabled={bloqueado} placeholder="3001234567" /></div></div>
             <div>
               <Label className="text-sm">Género *</Label>
@@ -778,7 +778,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
 
           {/* Coordinador: nivel(es) que coordina (puede ser más de uno) */}
           {rol === "Coordinador(a)" && (
-            <div>
+            <div data-guia="configurar_institucion.persona_extras">
               <Label className="text-sm">Coordina los niveles <span className="text-muted-foreground">(elige uno o varios)</span></Label>
               <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
                 {NIVELES_COORDINA.map((n) => (
@@ -798,7 +798,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
 
           {/* Profesor: director de grupo (grado + salón de la estructura del colegio) */}
           {rol === "Profesor(a)" && (
-            <div className="space-y-2">
+            <div className="space-y-2" data-guia="configurar_institucion.persona_extras">
               <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
                 <input type="checkbox" checked={esDirector} onChange={(e) => { setEsDirector(e.target.checked); if (!e.target.checked) { setDirGrado(""); setDirSalon(""); } }} className="w-4 h-4 accent-primary cursor-pointer" />
                 Es director(a) de grupo
@@ -830,7 +830,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
 
           {/* Profesor: carga académica (asignaciones) ahí mismo, sin ir al Panel de Control */}
           {rol === "Profesor(a)" && puedeCarga && (
-            <div className="space-y-2 border-t border-border pt-3">
+            <div className="space-y-2 border-t border-border pt-3" data-guia="configurar_institucion.carga_seleccion">
               <Label className="text-sm font-semibold">Carga académica</Label>
               {(editando ? cargas : cargasPend).length === 0 ? (
                 <p className="text-xs text-muted-foreground">Sin asignaciones todavía. Puedes añadirlas aquí o después desde el Panel de Control.</p>
@@ -893,7 +893,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button type="button" variant="outline" size="sm" onClick={anadirCarga} disabled={guardandoCarga} className="gap-1">
+                  <Button data-guia="configurar_institucion.carga_anadir" type="button" variant="outline" size="sm" onClick={anadirCarga} disabled={guardandoCarga} className="gap-1">
                     {guardandoCarga ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (editCarga ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />)}
                     {editCarga ? "Guardar cambios" : "Añadir asignación"}
                   </Button>
@@ -917,7 +917,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
 
           <DialogFooter>
             <Button variant="outline" onClick={() => { setDialogAbierto(false); reset(); }} disabled={guardando}>Cancelar</Button>
-            <Button onClick={editando ? guardarEdicion : agregarStaff} disabled={guardando || buscando} className="gap-2">
+            <Button data-guia="configurar_institucion.persona_guardar" onClick={editando ? guardarEdicion : agregarStaff} disabled={guardando || buscando} className="gap-2">
               {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} {editando ? "Guardar" : "Agregar"}
             </Button>
           </DialogFooter>
@@ -950,7 +950,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmQuitar(null)} disabled={quitando}>Cancelar</Button>
-            <Button variant="destructive" onClick={quitarCargo} disabled={quitando} className="gap-2">
+            <Button data-guia="configurar_institucion.persona_quitar_confirmar" variant="destructive" onClick={quitarCargo} disabled={quitando} className="gap-2">
               {quitando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Quitar cargo
             </Button>
           </DialogFooter>

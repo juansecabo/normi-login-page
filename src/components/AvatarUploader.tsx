@@ -429,7 +429,7 @@ const AvatarUploader = ({ width = 110, height = 140, fill = false, target }: Ava
                 <X className="w-4 h-4 mr-2" /> Cancelar
               </Button>
               {avatarUrl && (
-                <Button variant="destructive" onClick={handleDelete} disabled={uploading}>
+                <Button variant="destructive" onClick={handleDelete} disabled={uploading} data-guia="varios.mi_grupo_avatar_eliminar">
                   {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
                   Quitar foto
                 </Button>
@@ -439,7 +439,7 @@ const AvatarUploader = ({ width = 110, height = 140, fill = false, target }: Ava
                   <Camera className="w-4 h-4 mr-2" /> Tomar foto
                 </Button>
               )}
-              <Button onClick={handlePick} disabled={uploading}>
+              <Button onClick={handlePick} disabled={uploading} data-guia="varios.mi_grupo_subir_archivo">
                 <Upload className="w-4 h-4 mr-2" />
                 {avatarUrl ? "Subir otra" : "Subir archivo"}
               </Button>
@@ -559,7 +559,7 @@ const AvatarUploader = ({ width = 110, height = 140, fill = false, target }: Ava
               <Button variant="outline" onClick={closeDialog} disabled={uploading}>
                 Cancelar
               </Button>
-              <Button onClick={handleSave} disabled={uploading || !croppedArea}>
+              <Button onClick={handleSave} disabled={uploading || !croppedArea} data-guia="varios.mi_grupo_guardar_foto">
                 {uploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 Guardar
               </Button>

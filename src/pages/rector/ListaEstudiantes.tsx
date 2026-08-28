@@ -133,7 +133,7 @@ const ListaEstudiantes = () => {
               No hay estudiantes en este salón
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2" data-guia="estadisticas.item_estudiante">
               {estudiantes.map((estudiante) => (
                 <button
                   key={estudiante.id}

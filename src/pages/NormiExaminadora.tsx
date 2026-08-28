@@ -300,7 +300,7 @@ const NormiExaminadora = () => {
               <div className="space-y-2">
                 <Label className="text-base font-semibold">1. Quiero crear:</Label>
                 <Select value={tipoActividad} onValueChange={setTipoActividad}>
-                  <SelectTrigger className="w-full bg-background">
+                  <SelectTrigger data-guia="varios.examinadora_tipo" className="w-full bg-background">
                     <SelectValue placeholder="Selecciona el tipo de actividad" />
                   </SelectTrigger>
                   <SelectContent className="bg-background z-50">
@@ -315,7 +315,7 @@ const NormiExaminadora = () => {
               <div className="space-y-2">
                 <Label className="text-base font-semibold">2. Asignatura:</Label>
                 <Select value={asignaturaSeleccionada} onValueChange={setAsignaturaSeleccionada}>
-                  <SelectTrigger className="w-full bg-background">
+                  <SelectTrigger data-guia="varios.examinadora_asignatura" className="w-full bg-background">
                     <SelectValue placeholder="Selecciona la asignatura" />
                   </SelectTrigger>
                   <SelectContent className="bg-background z-50">
@@ -336,7 +336,7 @@ const NormiExaminadora = () => {
                   onValueChange={setGradoSeleccionado}
                   disabled={!asignaturaSeleccionada}
                 >
-                  <SelectTrigger className="w-full bg-background">
+                  <SelectTrigger data-guia="varios.examinadora_grado" className="w-full bg-background">
                     <SelectValue placeholder={asignaturaSeleccionada ? "Selecciona el grado" : "Primero selecciona una asignatura"} />
                   </SelectTrigger>
                   <SelectContent className="bg-background z-50">
@@ -357,7 +357,7 @@ const NormiExaminadora = () => {
                   onValueChange={setSalonSeleccionado}
                   disabled={!gradoSeleccionado}
                 >
-                  <SelectTrigger className="w-full bg-background">
+                  <SelectTrigger data-guia="varios.examinadora_salon" className="w-full bg-background">
                     <SelectValue placeholder={gradoSeleccionado ? "Selecciona el salón" : "Primero selecciona un grado"} />
                   </SelectTrigger>
                   <SelectContent className="bg-background z-50">
@@ -375,6 +375,7 @@ const NormiExaminadora = () => {
                 <Label className="text-base font-semibold">5. Tema:</Label>
                 <Input
                   type="text"
+                  data-guia="varios.examinadora_tema"
                   placeholder="Escribe el tema de la actividad"
                   value={tema}
                   onChange={(e) => setTema(e.target.value)}
@@ -386,6 +387,7 @@ const NormiExaminadora = () => {
               <div className="space-y-2">
                 <Label className="text-base font-semibold">6. Instrucciones (Opcional):</Label>
                 <Textarea
+                  data-guia="varios.examinadora_instrucciones"
                   placeholder="Escribe instrucciones adicionales para la actividad"
                   value={instrucciones}
                   onChange={(e) => setInstrucciones(e.target.value)}
@@ -412,6 +414,7 @@ const NormiExaminadora = () => {
                         type="number"
                         min={0}
                         max={30}
+                        data-guia="varios.examinadora_preguntas_multiple"
                         value={preguntasMultiple}
                         onChange={(e) => {
                           const val = parseInt(e.target.value) || 0;
@@ -465,6 +468,7 @@ const NormiExaminadora = () => {
                         type="number"
                         min={0}
                         max={30}
+                        data-guia="varios.examinadora_preguntas_abiertas"
                         value={preguntasAbiertas}
                         onChange={(e) => {
                           const val = parseInt(e.target.value) || 0;
@@ -509,6 +513,7 @@ const NormiExaminadora = () => {
               {/* Botón Crear */}
               <Button
                 onClick={handleCrear}
+                data-guia="varios.examinadora_crear"
                 className="w-full bg-gradient-to-r from-primary to-green-600 hover:from-green-600 hover:to-primary text-white font-semibold py-6 text-lg"
                 disabled={!tipoActividad || !asignaturaSeleccionada || !gradoSeleccionado || !tema || enviando}
               >

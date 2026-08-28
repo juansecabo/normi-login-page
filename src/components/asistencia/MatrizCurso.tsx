@@ -229,12 +229,12 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
       <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
         <div className="relative">
           <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input value={filtro} onChange={(e) => setFiltro(e.target.value)} placeholder="Buscar estudiante…"
+          <input data-guia="asistencia.buscar_estudiante" value={filtro} onChange={(e) => setFiltro(e.target.value)} placeholder="Buscar estudiante…"
             className="pl-8 pr-3 py-1.5 rounded-lg border border-border bg-background text-sm w-52" />
         </div>
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground">{estudiantesVisibles.length}/{data.estudiantes.length} · {fechas.length} días</span>
-          <button onClick={descargarExcel} disabled={descargando}
+          <button data-guia="asistencia.boton_excel" onClick={descargarExcel} disabled={descargando}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:opacity-90 disabled:opacity-50">
             <Download className="w-4 h-4" /> {descargando ? "…" : "Excel"}
           </button>
@@ -242,16 +242,16 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
       </div>
 
       {/* Matriz con scroll horizontal + primera columna sticky */}
-      <div className="overflow-x-auto border border-border rounded-lg">
+      <div data-guia="asistencia.matriz" className="overflow-x-auto border border-border rounded-lg">
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr className="bg-muted/50">
-              <th className="sticky left-0 z-10 bg-muted/50 text-left px-3 py-2 font-semibold w-full min-w-[220px] border-r border-border">Estudiante</th>
+              <th data-guia="asistencia.nombre_estudiante" className="sticky left-0 z-10 bg-muted/50 text-left px-3 py-2 font-semibold w-full min-w-[220px] border-r border-border">Estudiante</th>
               {fechas.map((f) => <th key={f} className="px-2 py-2 font-medium text-muted-foreground whitespace-nowrap">{fechaCorta(f)}</th>)}
               <th className="px-3 py-2 font-semibold whitespace-nowrap">%</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody data-guia="asistencia.celda_matriz">
             {estudiantesVisibles.map((e) => {
               const fila = mapa.get(e.estudiante_id) || new Map<string, AsistenciaEstado>();
               const r = resumen([...fila.values()].map((estado) => ({ estado })));
@@ -310,7 +310,7 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
               <span className="text-xs text-muted-foreground">· {fechaCorta(editando.fecha)}</span>
               <button onClick={cerrar} className="ml-auto text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div data-guia="asistencia.popover_estado" className="flex items-center gap-2 flex-wrap">
               {ESTADOS_LISTA.map((e) => (
                 <button key={e} onClick={() => setEstado(e)} disabled={guardando}
                   className={`px-2.5 py-1 rounded-full text-xs font-semibold text-white ${ESTADO_UI[e].cell} hover:opacity-90 disabled:opacity-50`}>
@@ -318,7 +318,7 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
                 </button>
               ))}
               {mapa.get(editando.id)?.get(editando.fecha) && (
-                <button onClick={quitar} disabled={guardando}
+                <button data-guia="asistencia.popover_quitar" onClick={quitar} disabled={guardando}
                   className="px-2.5 py-1 rounded-full text-xs font-semibold border border-rose-300 text-rose-600 hover:bg-rose-50 disabled:opacity-50">
                   Quitar
                 </button>

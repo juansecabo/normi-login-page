@@ -101,7 +101,7 @@ export default function CorreccionesRegistroAdmin() {
         ) : solicitudes.length === 0 ? (
           <Card className="p-8 text-center text-muted-foreground">No hay solicitudes todavía.</Card>
         ) : (
-          <div className="space-y-3">
+          <div data-guia="varios.correcciones_boton_estado" className="space-y-3">
             {solicitudes.map((s, i) => (
               <Card key={s.id} className="p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">

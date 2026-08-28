@@ -75,7 +75,7 @@ export const AnalisisSalon = ({ grado, salon, periodo, titulo }: AnalisisSalonPr
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-guia="estadisticas.resultado">
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-2 text-sm text-blue-700">
           <span className="font-medium">ℹ️</span>
@@ -110,6 +110,7 @@ export const AnalisisSalon = ({ grado, salon, periodo, titulo }: AnalisisSalonPr
             icono={AlertTriangle}
             color={estudiantesEnRiesgo.length > 0 ? "danger" : "success"}
             onClick={mostrarRiesgo && estudiantesEnRiesgo.length > 0 ? handleVerRiesgo : undefined}
+            dataGuia="estadisticas.tarjeta_riesgo"
           />
         </div>
 

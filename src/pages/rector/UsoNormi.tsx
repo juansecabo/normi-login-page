@@ -263,7 +263,7 @@ const UsoNormi = () => {
             </div>
           ) : (
             <Tabs defaultValue="profesores">
-              <TabsList className="flex w-full mb-6">
+              <TabsList data-guia="varios.uso_tab" className="flex w-full mb-6">
                 <TabsTrigger value="profesores" className="flex-1">Profesores</TabsTrigger>
                 <TabsTrigger value="salones" className="flex-1">Salones</TabsTrigger>
               </TabsList>

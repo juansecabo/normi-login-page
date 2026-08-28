@@ -153,6 +153,7 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
                 <button
                   ref={triggerRef}
                   title="Menú"
+                  data-guia="varios.header_menu"
                   className="px-3 py-2 md:px-5 md:py-2.5 md:text-base bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground font-medium rounded-lg transition-all duration-200 text-sm flex items-center gap-1.5 md:gap-2 whitespace-nowrap flex-shrink-0 outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0"
                 >
                   <Menu className="w-4 h-4 md:w-5 md:h-5" />
@@ -162,28 +163,28 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" sideOffset={menuOffset} className="w-72 rounded-xl shadow-xl">
                 {canInstall && (
-                  <DropdownMenuItem onClick={installApp} className="gap-2 cursor-pointer whitespace-nowrap py-2.5 text-base">
+                  <DropdownMenuItem onClick={installApp} data-guia="varios.header_descargar_app" className="gap-2 cursor-pointer whitespace-nowrap py-2.5 text-base">
                     <Download className="w-4 h-4" /> Descargar App
                   </DropdownMenuItem>
                 )}
                 {enImpersonacion && (
-                  <DropdownMenuItem onClick={handleVolverPlataforma} className="gap-2 cursor-pointer whitespace-nowrap py-2.5 text-base">
+                  <DropdownMenuItem onClick={handleVolverPlataforma} data-guia="varios.header_cambiar_institucion" className="gap-2 cursor-pointer whitespace-nowrap py-2.5 text-base">
                     <Repeat className="w-4 h-4" /> Cambiar institución
                   </DropdownMenuItem>
                 )}
                 {!enImpersonacion && getSession().multi_membership && (
-                  <DropdownMenuItem onClick={handleSwitchProfile} disabled={switching} className="gap-2 cursor-pointer whitespace-nowrap py-2.5 text-base">
+                  <DropdownMenuItem onClick={handleSwitchProfile} disabled={switching} data-guia="varios.header_cambiar_perfil" className="gap-2 cursor-pointer whitespace-nowrap py-2.5 text-base">
                     <Repeat className="w-4 h-4" /> Cambiar perfil
                   </DropdownMenuItem>
                 )}
                 {!esPlataforma && waDigitos && (
                   <DropdownMenuItem asChild className="gap-2 cursor-pointer whitespace-nowrap py-2.5 text-base">
-                    <a href={`https://wa.me/${waDigitos}`} target="_blank" rel="noopener noreferrer">
+                    <a href={`https://wa.me/${waDigitos}`} target="_blank" rel="noopener noreferrer" data-guia="varios.header_whatsapp">
                       <MessageCircle className="w-4 h-4 shrink-0" /> WhatsApp{waNumeroTexto ? `: ${waNumeroTexto}` : ""}
                     </a>
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={() => setShowCambiarContrasena(true)} className="gap-2 cursor-pointer whitespace-nowrap py-2.5 text-base">
+                <DropdownMenuItem onClick={() => setShowCambiarContrasena(true)} data-guia="varios.header_cambiar_contrasena" className="gap-2 cursor-pointer whitespace-nowrap py-2.5 text-base">
                   <KeyRound className="w-4 h-4" /> {((getSession() as any).sin_contrasena) ? "Crear contraseña" : "Cambiar contraseña"}
                 </DropdownMenuItem>
                 {guia.disponible && (
@@ -191,7 +192,7 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
                     <Sparkles className="w-4 h-4" /> Normi te guía
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={handleLogout} className="gap-2 cursor-pointer whitespace-nowrap py-2.5 text-base text-destructive focus:text-destructive">
+                <DropdownMenuItem onClick={handleLogout} data-guia="varios.header_cerrar_sesion" className="gap-2 cursor-pointer whitespace-nowrap py-2.5 text-base text-destructive focus:text-destructive">
                   <LogOut className="w-4 h-4" /> Cerrar sesión
                 </DropdownMenuItem>
               </DropdownMenuContent>

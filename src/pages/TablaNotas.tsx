@@ -303,6 +303,7 @@ const BotonAgregarConLongPress = ({
   return (
     <button
       type="button"
+      data-guia="notas.boton_mas_columna"
       disabled={disabled}
       onPointerDown={start}
       onPointerUp={end}
@@ -4526,6 +4527,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               <Button
                 variant="outline"
                 size="sm"
+                data-guia="notas.boton_exportar_excel"
                 onClick={descargarExcel}
                 disabled={descargandoExcel}
                 className="gap-2"
@@ -4536,6 +4538,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               <Button
                 variant="outline"
                 size="sm"
+                data-guia="notas.boton_exportar_pdf"
                 onClick={descargarPDF}
                 disabled={descargandoPDF}
                 className="gap-2"
@@ -4577,7 +4580,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         {/* Pestañas de Períodos */}
         <div className="bg-card rounded-lg shadow-soft md:flex-1 md:flex md:flex-col md:min-h-0 md:overflow-hidden">
           {/* Tab Headers */}
-          <div className="flex border-b border-border rounded-t-lg overflow-hidden">
+          <div data-guia="notas.selector_periodo" className="flex border-b border-border rounded-t-lg overflow-hidden">
             {periodos.map((periodo) => {
               const porcentajeUsado = getPorcentajeUsado(periodo.numero);
               const isActive = periodoActivo === periodo.numero;
@@ -4614,6 +4617,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               const estaCompleto = porcentajePromedio === 100;
               return (
                 <button
+                  data-guia="notas.tab_definitiva_anual"
                   onClick={() => irAPeriodo(0)}
                   className={`flex-1 px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm font-medium transition-colors relative
                     ${esFinalDefinitiva 
@@ -4675,7 +4679,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                 )}
               </div>
             )}
-            <div ref={tableContainerRef} className="overflow-x-auto md:overflow-auto md:flex-1 md:min-h-0 border-l border-t border-border">
+            <div ref={tableContainerRef} data-guia="notas.tabla" className="overflow-x-auto md:overflow-auto md:flex-1 md:min-h-0 border-l border-t border-border">
               {soloLectura && (
                 <style>{`.ro-notas thead button{display:none!important;}`}</style>
               )}
@@ -4749,17 +4753,18 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                         </ColumnaActividadDnD>
                                         <DropdownMenu>
                                           <DropdownMenuTrigger asChild>
-                                            <button className="p-1 hover:bg-emerald-200 rounded transition-colors">
+                                            <button data-guia="notas.boton_menu_actividad" className="p-1 hover:bg-emerald-200 rounded transition-colors">
                                               <MoreVertical className="w-3 h-3" />
                                             </button>
                                           </DropdownMenuTrigger>
                                           <DropdownMenuContent align="end" className="bg-background z-50">
-                                            <DropdownMenuItem onClick={() => handleAbrirModalEditar(actividad)}>
+                                            <DropdownMenuItem data-guia="notas.menu_editar_actividad" onClick={() => handleAbrirModalEditar(actividad)}>
                                               <Pencil className="w-4 h-4 mr-2" />
                                               Editar actividad
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
-                                              onClick={() => handleConfirmarEliminar(actividad)}
+                                              data-guia="notas.menu_eliminar_actividad"
+                                          onClick={() => handleConfirmarEliminar(actividad)}
                                               className="text-destructive focus:text-destructive"
                                             >
                                               <Trash2 className="w-4 h-4 mr-2" />
@@ -4793,7 +4798,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                       {!soloLectura && (
                                       <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                          <button className="absolute top-1 right-1 p-1 rounded hover:bg-white/20" title="Más opciones">
+                                          <button data-guia="notas.boton_menu_grupo" className="absolute top-1 right-1 p-1 rounded hover:bg-white/20" title="Más opciones">
                                             <MoreVertical className="w-3 h-3 text-white" />
                                           </button>
                                         </DropdownMenuTrigger>
@@ -4808,10 +4813,10 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                               <Plus className="w-4 h-4 mr-2" /> Agregar subgrupo
                                             </DropdownMenuItem>
                                           )}
-                                          <DropdownMenuItem onClick={() => handleAbrirEditarGrupo(sec.grupo as any)}>
+                                          <DropdownMenuItem data-guia="notas.menu_editar_grupo" onClick={() => handleAbrirEditarGrupo(sec.grupo as any)}>
                                             <Pencil className="w-4 h-4 mr-2" /> Editar grupo
                                           </DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => setGrupoAEliminar(sec.grupo as any)} className="text-destructive focus:text-destructive">
+                                          <DropdownMenuItem data-guia="notas.menu_eliminar_grupo" onClick={() => setGrupoAEliminar(sec.grupo as any)} className="text-destructive focus:text-destructive">
                                             <Trash2 className="w-4 h-4 mr-2" /> Eliminar grupo
                                           </DropdownMenuItem>
                                         </DropdownMenuContent>
@@ -4839,7 +4844,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                     {!soloLectura && (
                                     <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
-                                        <button className="absolute top-1 right-1 p-1 rounded hover:bg-white/20" title="Más opciones">
+                                        <button data-guia="notas.boton_menu_grupo" className="absolute top-1 right-1 p-1 rounded hover:bg-white/20" title="Más opciones">
                                           <MoreVertical className="w-3 h-3 text-white" />
                                         </button>
                                       </DropdownMenuTrigger>
@@ -4849,10 +4854,10 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                         <DropdownMenuItem onClick={() => handleAbrirModal(periodoActivo, 'grupo', sec.grupo.id)}>
                                           <Plus className="w-4 h-4 mr-2" /> Agregar subgrupo
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleAbrirEditarGrupo(sec.grupo as any)}>
+                                        <DropdownMenuItem data-guia="notas.menu_editar_grupo" onClick={() => handleAbrirEditarGrupo(sec.grupo as any)}>
                                           <Pencil className="w-4 h-4 mr-2" /> Editar grupo
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setGrupoAEliminar(sec.grupo as any)} className="text-destructive focus:text-destructive">
+                                        <DropdownMenuItem data-guia="notas.menu_eliminar_grupo" onClick={() => setGrupoAEliminar(sec.grupo as any)} className="text-destructive focus:text-destructive">
                                           <Trash2 className="w-4 h-4 mr-2" /> Eliminar grupo
                                         </DropdownMenuItem>
                                       </DropdownMenuContent>
@@ -4879,7 +4884,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                     <div className="flex flex-col items-center gap-1">
                                       <span>Definitiva Periodo</span>
                                       {!soloLectura && ((calificable || marcado) ? (
-                                        <label className="flex items-center gap-1 cursor-pointer text-xs text-primary-foreground/90 hover:text-primary-foreground">
+                                        <label data-guia="notas.check_periodo_completo" className="flex items-center gap-1 cursor-pointer text-xs text-primary-foreground/90 hover:text-primary-foreground">
                                           <span>(¿Periodo completo?)</span>
                                           <input
                                             type="checkbox"
@@ -4919,16 +4924,17 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                     </div>
                                     <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
-                                        <button className="p-1 hover:bg-primary-foreground/20 rounded transition-colors">
+                                        <button data-guia="notas.boton_menu_actividad" className="p-1 hover:bg-primary-foreground/20 rounded transition-colors">
                                           <MoreVertical className="w-3 h-3" />
                                         </button>
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent align="end" className="bg-background z-50">
-                                        <DropdownMenuItem onClick={() => handleAbrirModalEditar(actividad)}>
+                                        <DropdownMenuItem data-guia="notas.menu_editar_actividad" onClick={() => handleAbrirModalEditar(actividad)}>
                                           <Pencil className="w-4 h-4 mr-2" />
                                           Editar actividad
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
+                                          data-guia="notas.menu_eliminar_actividad"
                                           onClick={() => handleConfirmarEliminar(actividad)}
                                           className="text-destructive focus:text-destructive"
                                         >
@@ -4961,7 +4967,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                     <div className="flex flex-col items-center gap-1">
                                       <span>Definitiva Periodo</span>
                                       {!soloLectura && (calificable || marcado) ? (
-                                        <label className="flex items-center gap-1 cursor-pointer text-xs text-primary-foreground/90 hover:text-primary-foreground">
+                                        <label data-guia="notas.check_periodo_completo" className="flex items-center gap-1 cursor-pointer text-xs text-primary-foreground/90 hover:text-primary-foreground">
                                           <span>(¿Periodo completo?)</span>
                                           <input
                                             type="checkbox"
@@ -5010,16 +5016,17 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                         </ColumnaActividadDnD>
                                         <DropdownMenu>
                                           <DropdownMenuTrigger asChild>
-                                            <button className="p-1 hover:bg-emerald-200 rounded transition-colors">
+                                            <button data-guia="notas.boton_menu_actividad" className="p-1 hover:bg-emerald-200 rounded transition-colors">
                                               <MoreVertical className="w-3 h-3" />
                                             </button>
                                           </DropdownMenuTrigger>
                                           <DropdownMenuContent align="end" className="bg-background z-50">
-                                            <DropdownMenuItem onClick={() => handleAbrirModalEditar(actividad)}>
+                                            <DropdownMenuItem data-guia="notas.menu_editar_actividad" onClick={() => handleAbrirModalEditar(actividad)}>
                                               <Pencil className="w-4 h-4 mr-2" /> Editar actividad
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
-                                              onClick={() => handleConfirmarEliminar(actividad)}
+                                              data-guia="notas.menu_eliminar_actividad"
+                                          onClick={() => handleConfirmarEliminar(actividad)}
                                               className="text-destructive focus:text-destructive"
                                             >
                                               <Trash2 className="w-4 h-4 mr-2" /> Eliminar actividad
@@ -5048,7 +5055,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                     </BandaTitulo>
                                     <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
-                                        <button className="absolute top-1 right-1 p-1 rounded hover:bg-white/20" title="Más opciones">
+                                        <button data-guia="notas.boton_menu_grupo" className="absolute top-1 right-1 p-1 rounded hover:bg-white/20" title="Más opciones">
                                           <MoreVertical className="w-3 h-3 text-white" />
                                         </button>
                                       </DropdownMenuTrigger>
@@ -5056,10 +5063,10 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                         <DropdownMenuItem onClick={() => handleAbrirModal(periodoActivo, 'actividad', sub.grupo!.id)}>
                                           <Plus className="w-4 h-4 mr-2" /> Agregar actividad
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleAbrirEditarGrupo(sub.grupo as any)}>
+                                        <DropdownMenuItem data-guia="notas.menu_editar_grupo" onClick={() => handleAbrirEditarGrupo(sub.grupo as any)}>
                                           <Pencil className="w-4 h-4 mr-2" /> Editar subgrupo
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setGrupoAEliminar(sub.grupo as any)} className="text-destructive focus:text-destructive">
+                                        <DropdownMenuItem data-guia="notas.menu_eliminar_grupo" onClick={() => setGrupoAEliminar(sub.grupo as any)} className="text-destructive focus:text-destructive">
                                           <Trash2 className="w-4 h-4 mr-2" /> Eliminar subgrupo
                                         </DropdownMenuItem>
                                       </DropdownMenuContent>
@@ -5129,16 +5136,17 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                     </ColumnaActividadDnD>
                                     <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
-                                        <button className="p-1 hover:bg-emerald-200 rounded transition-colors">
+                                        <button data-guia="notas.boton_menu_actividad" className="p-1 hover:bg-emerald-200 rounded transition-colors">
                                           <MoreVertical className="w-3 h-3" />
                                         </button>
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent align="end" className="bg-background z-50">
-                                        <DropdownMenuItem onClick={() => handleAbrirModalEditar(actividad)}>
+                                        <DropdownMenuItem data-guia="notas.menu_editar_actividad" onClick={() => handleAbrirModalEditar(actividad)}>
                                           <Pencil className="w-4 h-4 mr-2" />
                                           Editar actividad
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
+                                          data-guia="notas.menu_eliminar_actividad"
                                           onClick={() => handleConfirmarEliminar(actividad)}
                                           className="text-destructive focus:text-destructive"
                                         >
@@ -5158,7 +5166,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                     );
                   })()}
                 </thead>
-                <tbody>
+                <tbody data-guia="notas.celda_nota">
                   {estudiantes.map((estudiante, studentIndex) => {
                     const rowBg = studentIndex % 2 === 0 ? 'bg-background' : 'bg-muted/30';
                     
@@ -5428,6 +5436,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                         <td className="border-r border-b border-border p-1 text-center">
                           {hayFinalDefinitiva() && (
                             <button
+                              data-guia="notas.boton_notificar_masivo"
                               onClick={handleNotificarDefinitivaMasiva}
                               className="w-full px-1 py-1 text-xs rounded-md bg-green-100 hover:bg-green-200 text-green-800 transition-colors flex flex-col items-center justify-center h-10"
                             >
@@ -5572,6 +5581,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               </Label>
               <Input
                 id="nombre"
+                data-guia={tipoNuevoItem === 'grupo' && !actividadEditando ? "notas.modal_grupo_nombre" : "notas.modal_actividad_nombre"}
                 placeholder={tipoNuevoItem === 'grupo' && !actividadEditando
                   ? 'Ej: Cognitivo, Praxeológico, Actitudinal'
                   : 'Ej: Evaluación 1, Taller, Exposición'}
@@ -5611,6 +5621,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                   <Label htmlFor="porcentajeGrupo">Porcentaje (opcional)</Label>
                   <Input
                     id="porcentajeGrupo"
+                    data-guia="notas.modal_grupo_porcentaje"
                     type="number"
                     placeholder={`Ej: ${Math.min(60, disponible || 60)}`}
                     min={0.01}
@@ -5680,6 +5691,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                   <Label htmlFor="porcentaje">Porcentaje (opcional)</Label>
                   <Input
                     id="porcentaje"
+                    data-guia="notas.modal_actividad_porcentaje"
                     type="number"
                     placeholder={`Ej: ${Math.min(25, disponible || 25)}`}
                     min={0}
@@ -5742,6 +5754,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               Cancelar
             </Button>
             <Button
+              data-guia={tipoNuevoItem === 'grupo' && !actividadEditando ? "notas.modal_grupo_guardar" : "notas.modal_actividad_guardar"}
               onClick={handleGuardarActividad}
               className="bg-primary hover:bg-primary/90"
               disabled={guardandoMultiple || (!actividadEditando && tipoNuevoItem === 'actividad' && modoEfectivo() === 'grupos' && gruposPeriodoActual.length === 0)}
@@ -5787,6 +5800,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
+              data-guia="notas.confirmar_eliminar_actividad"
               onClick={handleEliminarActividad}
               className="bg-destructive hover:bg-destructive/90"
             >
@@ -5807,6 +5821,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               <Label htmlFor="editNombreGrupo">Nombre *</Label>
               <Input
                 id="editNombreGrupo"
+                data-guia="notas.modal_grupo_nombre"
                 value={editNombre}
                 onChange={(e) => setEditNombre(e.target.value)}
                 maxLength={100}
@@ -5886,7 +5901,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setGrupoAEditar(null)}>Cancelar</Button>
-            <Button onClick={handleGuardarEdicionGrupo} className="bg-primary hover:bg-primary/90">Guardar cambios</Button>
+            <Button data-guia="notas.modal_grupo_guardar" onClick={handleGuardarEdicionGrupo} className="bg-primary hover:bg-primary/90">Guardar cambios</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -5906,7 +5921,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleEliminarGrupo} className="bg-destructive hover:bg-destructive/90">
+            <AlertDialogAction data-guia="notas.confirmar_eliminar_grupo" onClick={handleEliminarGrupo} className="bg-destructive hover:bg-destructive/90">
               Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -5986,6 +6001,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                   <Label htmlFor="hab-nota">Nota de la habilitación</Label>
                   <Input
                     id="hab-nota"
+                    data-guia="notas.modal_habilitacion_nota"
                     type="number"
                     step="0.1"
                     min={colegioConfig.escala_min}
@@ -6055,13 +6071,13 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
           })()}
           <DialogFooter className="gap-2 sm:justify-between">
             {habContexto?.existe ? (
-              <Button variant="ghost" onClick={quitarHabilitacion} disabled={habGuardando} className="text-destructive hover:text-destructive hover:bg-destructive/10">
+              <Button variant="ghost" data-guia="notas.modal_habilitacion_quitar" onClick={quitarHabilitacion} disabled={habGuardando} className="text-destructive hover:text-destructive hover:bg-destructive/10">
                 Quitar habilitación
               </Button>
             ) : <span />}
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setHabModalOpen(false)} disabled={habGuardando}>Cancelar</Button>
-              <Button onClick={guardarHabilitacion} disabled={habGuardando}>
+              <Button data-guia="notas.modal_habilitacion_guardar" onClick={guardarHabilitacion} disabled={habGuardando}>
                 {habGuardando ? "Guardando…" : "Guardar"}
               </Button>
             </div>

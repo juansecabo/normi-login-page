@@ -244,7 +244,7 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
         <CardContent className="space-y-3">
           {/* columns-2 (no grid): el orden alfabético fluye VERTICAL — primera
               mitad en la columna izquierda, segunda en la derecha. */}
-          <div className="columns-1 sm:columns-2 gap-x-4 rounded-lg border p-3">
+          <div className="columns-1 sm:columns-2 gap-x-4 rounded-lg border p-3" data-guia="configurar_institucion.asignatura_check">
             {listaCombinada.map((nombre) => {
               const a = porNombre.get(nombre.toLowerCase());
               // Marcada = existe Y activa. Una desactivada aparece sin chulo
@@ -264,6 +264,7 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
                   {a && (
                     <button
                       type="button"
+                      data-guia="configurar_institucion.asignatura_renombrar"
                       onClick={() => { setRenombrando(a); setNuevoNombre(a.nombre); }}
                       className="p-1 text-muted-foreground hover:text-primary shrink-0"
                       title="Renombrar (actualiza notas, actividades y carga académica)"
@@ -278,12 +279,13 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
 
           <div className="flex gap-2">
             <Input
+              data-guia="configurar_institucion.asignatura_nueva"
               placeholder="¿Falta una? Escríbela aquí (ej. Science)"
               value={nuevaAsig}
               onChange={(e) => setNuevaAsig(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && nuevaAsig.trim()) agregarAsignatura([nuevaAsig.trim()]); }}
             />
-            <Button onClick={() => nuevaAsig.trim() && agregarAsignatura([nuevaAsig.trim()])} disabled={!nuevaAsig.trim() || agregando} className="gap-1 shrink-0">
+            <Button data-guia="configurar_institucion.asignatura_agregar" onClick={() => nuevaAsig.trim() && agregarAsignatura([nuevaAsig.trim()])} disabled={!nuevaAsig.trim() || agregando} className="gap-1 shrink-0">
               {agregando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} Agregar
             </Button>
           </div>
@@ -311,7 +313,7 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
             </p>
           ) : (
             <>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1.5" data-guia="configurar_institucion.plan_grado">
                 {grados.map((g) => (
                   <button
                     key={g.id}
@@ -330,7 +332,7 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
                 placeholder="Buscar asignatura…"
               />
 
-              <div className="divide-y rounded-lg border">
+              <div className="divide-y rounded-lg border" data-guia="configurar_institucion.plan_asignatura_check">
                 {activas
                   .filter((a) => {
                     const norm = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -348,6 +350,7 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
                       {marcada && (
                         <div className="flex items-center gap-1.5 shrink-0">
                           <Input
+                            data-guia="configurar_institucion.plan_horas"
                             type="number"
                             min={1}
                             max={40}
@@ -385,6 +388,7 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
             </DialogDescription>
           </DialogHeader>
           <Input
+            data-guia="configurar_institucion.asignatura_renombrar_input"
             value={nuevoNombre}
             onChange={(e) => setNuevoNombre(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") renombrarAsignatura(); }}
@@ -392,7 +396,7 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setRenombrando(null)} disabled={guardandoNombre}>Cancelar</Button>
-            <Button onClick={renombrarAsignatura} disabled={guardandoNombre || !nuevoNombre.trim() || nuevoNombre.trim() === renombrando?.nombre} className="gap-2">
+            <Button data-guia="configurar_institucion.asignatura_renombrar_guardar" onClick={renombrarAsignatura} disabled={guardandoNombre || !nuevoNombre.trim() || nuevoNombre.trim() === renombrando?.nombre} className="gap-2">
               {guardandoNombre ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Renombrar
             </Button>
           </DialogFooter>
