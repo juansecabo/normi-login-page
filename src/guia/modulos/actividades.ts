@@ -457,7 +457,7 @@ export const ACTIVIDADES: Capacidad[] = [
         campo: "fecha",
       },
       {
-        narracion: "En la tarjeta de la actividad toca 'Editar'.",
+        narracion: "En la tarjeta de la actividad toca el lápiz (a la derecha).",
         accion: "click",
         ancla: "actividades.btn_editar",
       },
@@ -505,7 +505,7 @@ export const ACTIVIDADES: Capacidad[] = [
         campo: "fecha",
       },
       {
-        narracion: "En la tarjeta de la actividad toca 'Eliminar'.",
+        narracion: "En la tarjeta de la actividad toca la caneca roja (a la derecha).",
         accion: "click",
         ancla: "actividades.btn_eliminar",
       },
@@ -880,6 +880,11 @@ export const ACTIVIDADES: Capacidad[] = [
           "En la actividad, toque 'Entregas': se abre la página con quién entregó (fecha y atraso si fue tarde), sus archivos con 'Ver' y 'Descargar', y quién falta. Arriba puede buscar a un estudiante por su nombre.",
         accion: "click",
         ancla: "actividades.ver_entregas",
+      },
+      {
+        narracion:
+          "Cuando termine de calificar, en la tarjeta de la actividad toque 'Sin revisar' para marcarla como '✓ Revisado' y así saber cuáles ya revisó. Puede volver a tocarla para deshacer.",
+        accion: "explicar",
       },
     ],
   },
