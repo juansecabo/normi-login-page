@@ -211,6 +211,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
   // Limpiadores del paso actual (listeners, timeouts, polls).
   const cleanupsRef = useRef<Array<() => void>>([]);
   const avanzarRef = useRef<() => void>(() => {});
+  const entrarPasoRef = useRef<(cap: Capacidad, idx: number) => void>(() => {});
   const atascoRef = useRef<() => void>(() => {});
   // Elemento actualmente señalado y bandera de "objetivo perdido" (vigilante).
   const senaladoRef = useRef<HTMLElement | null>(null);
@@ -368,13 +369,19 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
         zona.addEventListener("click", onZonaClick);
         cleanupsRef.current.push(() => zona.removeEventListener("click", onZonaClick));
       };
-      // Respaldo: la guía avanza con el siguiente click del usuario (fuera del globo).
+      // Respaldo cuando Normi está PERDIDA (no encontró el objetivo): el
+      // siguiente click del usuario ya NO avanza el paso a ciegas (eso
+      // descarrilaba la guía: iba pidiendo periodo, tabla y calificación con
+      // el usuario parado en el salón). En su lugar RE-SINCRONIZA: vuelve a
+      // buscar el objetivo del paso actual en la pantalla nueva, y el
+      // retroceso/avance automático la reubica.
       const armarClickLibre = () => {
         const onDocClick = (e: MouseEvent) => {
           if ((e.target as HTMLElement)?.closest?.("[data-guia-ui]")) return;
           document.removeEventListener("click", onDocClick, true);
-          guiaLog("avance", { causa: "click_libre" });
-          window.setTimeout(() => avanzarRef.current(), 250);
+          guiaLog("resync", { causa: "click_con_guia_perdida" });
+          const cap = capacidadRef.current;
+          if (cap) window.setTimeout(() => entrarPasoRef.current(cap, pasoIdxRef.current), 400);
         };
         document.addEventListener("click", onDocClick, true);
         cleanupsRef.current.push(() => document.removeEventListener("click", onDocClick, true));
@@ -460,6 +467,43 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
       // ¿Este paso puede tener un objetivo exacto? (ancla o etiqueta entre comillas)
       const puedeExacto = !!paso.ancla || !!etiquetaDe(paso.narracion || "");
       let intentos = 0;
+      // ¿El usuario se DEVOLVIÓ (ej. por la miga de pan, para elegir otra
+      // asignatura)? Si el objetivo de ESTE paso no aparece pero el selector de
+      // un paso de llegada ANTERIOR (asignatura/grado/salón) sí está visible,
+      // la guía RETROCEDE a ese paso en vez de pedir algo que ya no existe
+      // (bug: decía "Y el salón." parada en la pantalla del grado).
+      const anclaVisible = (ancla?: string): boolean =>
+        !!ancla &&
+        !!Array.from(document.querySelectorAll<HTMLElement>(`[data-guia="${ancla}"]`)).find(esVisible);
+      const retrocederSiVolvio = (): boolean => {
+        const cap = capacidadRef.current;
+        if (!cap) return false;
+        // Hacia ATRÁS: si el selector de un paso de llegada anterior
+        // (asignatura/grado/salón) está visible, el usuario se devolvió.
+        for (let k = pasoIdxRef.current - 1; k >= 0; k--) {
+          const p = cap.pasos[k];
+          if (!p.ancla || !p.campo || !CAMPOS_LLEGADA.has(normTxt(p.campo))) continue;
+          if (anclaVisible(p.ancla)) {
+            guiaLog("retroceso", { de: pasoIdxRef.current, a: k });
+            pasoIdxRef.current = k;
+            setPasoIdx(k);
+            entrarPasoRef.current(cap, k);
+            return true;
+          }
+        }
+        // Hacia ADELANTE (solo el paso siguiente inmediato): si el objetivo de
+        // ESTE paso ya no existe pero el del siguiente sí, el usuario ya hizo
+        // este paso por su cuenta y la pantalla cambió.
+        const sig = cap.pasos[pasoIdxRef.current + 1];
+        if (sig?.ancla && anclaVisible(sig.ancla)) {
+          guiaLog("resync_adelante", { de: pasoIdxRef.current, a: pasoIdxRef.current + 1 });
+          pasoIdxRef.current += 1;
+          setPasoIdx(pasoIdxRef.current);
+          entrarPasoRef.current(cap, pasoIdxRef.current);
+          return true;
+        }
+        return false;
+      };
       const buscar = () => {
         if (!vivo) return;
         const el = puedeExacto ? localizar(paso) : null;
@@ -471,6 +515,9 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
           elegirConCerebro(paso.narracion || "");
           return;
         }
+        // Desde el segundo intento (0.5 s) ya se evalúa el retroceso, para que
+        // la corrección se sienta inmediata al devolverse.
+        if (intentos >= 2 && retrocederSiVolvio()) return;
         if (++intentos < 14) {
           window.setTimeout(buscar, 250);
           return;
@@ -535,6 +582,10 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     avanzarRef.current = avanzar;
   }, [avanzar]);
+
+  useEffect(() => {
+    entrarPasoRef.current = entrarPaso;
+  }, [entrarPaso]);
 
   /**
    * El usuario le escribe a Normi. Normi decide sola: conversar, empezar a
