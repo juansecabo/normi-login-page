@@ -1127,8 +1127,7 @@ const ProgramarActividad = () => {
                             onChange={(e) => setPermitirEntregas(e.target.checked)}
                           />
                           <span>
-                            <span className="text-sm font-medium text-foreground">Permitir entregas por la plataforma</span>
-                            <span className="block text-xs text-muted-foreground">Los estudiantes podrán subir sus trabajos y tú los revisas desde Actividades Programadas.</span>
+                            <span className="text-sm font-medium text-foreground">Entrega en plataforma</span>
                           </span>
                         </label>
                         {permitirEntregas && (
@@ -1412,8 +1411,7 @@ const ProgramarActividad = () => {
                   onChange={(e) => setEditPermitir(e.target.checked)}
                 />
                 <span>
-                  <span className="text-sm font-medium text-foreground">Permitir entregas por la plataforma</span>
-                  <span className="block text-xs text-muted-foreground">Los estudiantes podrán subir sus trabajos y tú los revisas desde Actividades Programadas.</span>
+                  <span className="text-sm font-medium text-foreground">Entrega en plataforma</span>
                 </span>
               </label>
               {editPermitir && (
