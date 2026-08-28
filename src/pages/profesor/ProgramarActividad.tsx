@@ -1319,8 +1319,8 @@ const ProgramarActividad = () => {
             const act = misActividades.find((a) => a.auto_id === entregasActId);
             return (
               <div className="bg-card rounded-lg shadow-soft p-6 md:p-8">
-                <h2 className="text-xl font-bold text-foreground mb-1">
-                  Entregas{act ? ` — ${act.Asignatura} · ${act.Grado} ${act.Salon}` : ""}
+                <h2 className="text-base font-semibold text-foreground mb-1">
+                  {act ? `${act.Asignatura} - ${act.Grado} ${act.Salon}` : "Entregas"}
                 </h2>
                 {act && <p className="text-sm text-muted-foreground mb-5 line-clamp-2">{act.Descripción}</p>}
                 <EntregasDeActividad autoId={entregasActId || null} />
