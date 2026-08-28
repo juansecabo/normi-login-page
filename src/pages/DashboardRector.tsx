@@ -166,7 +166,7 @@ const DashboardRector = () => {
   }
   if (!esAdministrativo) {
     items.push({ id: 'notas', render: (
-      <button onClick={() => navigate("/seleccionar-grado")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-emerald-100 transition-all duration-200 hover:shadow-md hover:bg-emerald-200">
+      <button data-guia="dashboard.ficha_notas" onClick={() => navigate("/seleccionar-grado")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-emerald-100 transition-all duration-200 hover:shadow-md hover:bg-emerald-200">
         <img src={iconNotas} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground">Notas</span>
       </button>
