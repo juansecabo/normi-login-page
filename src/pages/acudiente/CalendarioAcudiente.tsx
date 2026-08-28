@@ -79,24 +79,6 @@ const handleDescargarArchivo = async (url: string) => {
 };
 
 
-/** "vence hoy 11:59 pm", "vence mañana", "venció el 26 de ago" — plazo legible. */
-const textoPlazo = (iso: string | null | undefined): { texto: string; vencido: boolean } => {
-  if (!iso) return { texto: "sin plazo", vencido: false };
-  const lim = new Date(iso);
-  const ahora = new Date();
-  const vencido = ahora > lim;
-  const bog = (d: Date, opts: Intl.DateTimeFormatOptions) =>
-    d.toLocaleString("es-CO", { ...opts, timeZone: "America/Bogota" });
-  const hoyK = bog(ahora, { year: "numeric", month: "2-digit", day: "2-digit" });
-  const limK = bog(lim, { year: "numeric", month: "2-digit", day: "2-digit" });
-  const manana = new Date(ahora.getTime() + 86400000);
-  const mananaK = bog(manana, { year: "numeric", month: "2-digit", day: "2-digit" });
-  const hora = bog(lim, { hour: "numeric", minute: "2-digit", hour12: true });
-  if (vencido) return { texto: `venció el ${bog(lim, { day: "numeric", month: "short" })}`, vencido: true };
-  if (limK === hoyK) return { texto: `vence hoy ${hora}`, vencido: false };
-  if (limK === mananaK) return { texto: `vence mañana ${hora}`, vencido: false };
-  return { texto: `vence el ${bog(lim, { day: "numeric", month: "short" })} ${hora}`, vencido: false };
-};
 
 const CalendarioAcudiente = () => {
   const navigate = useNavigate();
@@ -183,9 +165,14 @@ const CalendarioAcudiente = () => {
     }
   });
 
-  const diasConActividades = Object.keys(actividadesPorFecha).map(key => {
+  // Fechas con actividades: pasadas (gris) y próximas (verde), como el
+  // calendario del profesor.
+  const hoyKey = fechaKey(new Date());
+  const diasPasados: Date[] = [];
+  const diasProximos: Date[] = [];
+  Object.keys(actividadesPorFecha).forEach(key => {
     const [y, m, d] = key.split('-').map(Number);
-    return new Date(y, m - 1, d);
+    (key < hoyKey ? diasPasados : diasProximos).push(new Date(y, m - 1, d));
   });
 
   // Actividades del día agrupadas por acudido
@@ -223,42 +210,6 @@ const CalendarioAcudiente = () => {
           </div>
         </div>
 
-        {(() => {
-          // Franja informativa: trabajos pendientes de entrega por cada acudido
-          // (el acudiente no entrega; le sirve para estar encima del plazo).
-          const pendientes: Array<{ hijo: string; a: ActividadConHijo }> = [];
-          for (const act of actividades) {
-            if (!act.permite_entregas) continue;
-            const auto = (act as { auto_id?: number }).auto_id ?? -1;
-            if (entregasPorAcudido[String(act.acudido.id)]?.[auto]) continue;
-            pendientes.push({ hijo: `${act.acudido.nombre} ${act.acudido.apellidos}`, a: act });
-          }
-          pendientes.sort((x, y) => (x.a.fecha_limite_entrega || "9999").localeCompare(y.a.fecha_limite_entrega || "9999"));
-          if (loading || pendientes.length === 0) return null;
-          return (
-            <div className="bg-card rounded-lg shadow-soft p-6 mb-6 border-l-4 border-amber-500">
-              <h2 className="text-lg font-bold text-foreground mb-4">
-                Trabajos por entregar <span className="text-amber-600">({pendientes.length})</span>
-              </h2>
-              <div className="space-y-2">
-                {pendientes.map(({ hijo, a }, i) => {
-                  const plazo = textoPlazo(a.fecha_limite_entrega);
-                  return (
-                    <div key={i} className="border border-border rounded-lg p-3">
-                      <p className="text-sm text-foreground">
-                        A <b>{hijo}</b> le falta entregar: <b>{a.Asignatura}</b> — {a.Descripción}
-                      </p>
-                      <p className={`text-xs mt-0.5 font-medium ${plazo.vencido ? "text-amber-700" : "text-muted-foreground"}`}>
-                        {plazo.texto}{plazo.vencido ? " — le queda una sola oportunidad de entrega" : ""}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })()}
-
         <div className="bg-card rounded-lg shadow-soft p-6">
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6">
             <ClipboardList className="h-5 w-5 text-primary" />
@@ -269,19 +220,26 @@ const CalendarioAcudiente = () => {
             <div className="text-center py-8 text-muted-foreground">Cargando...</div>
           ) : (
             <div className="flex flex-col lg:flex-row lg:items-start gap-6">
-              <div data-guia="act.dia_calendario" className="flex justify-center lg:sticky lg:top-4 shrink-0">
+              <div data-guia="act.dia_calendario" className="flex flex-col items-center lg:sticky lg:top-4 shrink-0">
                 <Calendar
                   mode="single"
-                  classNames={{ day_today: "bg-red-600 text-white hover:bg-red-600 hover:text-white focus:bg-red-600 focus:text-white aria-selected:bg-red-600 aria-selected:text-white" }}
+                  classNames={{ day_selected: "!bg-red-600 !text-white hover:!bg-red-600 focus:!bg-red-600" }}
                   selected={diaSeleccionado}
                   onSelect={setDiaSeleccionado}
                   month={mesActual}
                   onMonthChange={setMesActual}
                   locale={es}
-                  modifiers={{ conActividad: diasConActividades }}
-                  modifiersClassNames={{ conActividad: "bg-orange-400 text-white hover:bg-orange-500 !h-8 !w-8" }}
+                  modifiers={{ pasada: diasPasados, proxima: diasProximos }}
+                  modifiersClassNames={{
+                    pasada: "bg-slate-300 text-slate-700 hover:bg-slate-400 !h-8 !w-8",
+                    proxima: "bg-emerald-500 text-white hover:bg-emerald-600 !h-8 !w-8",
+                  }}
                   className="rounded-md border shadow-sm"
                 />
+                <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-emerald-500 inline-block" /> Próximas</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-slate-300 inline-block" /> Ya pasaron</span>
+                </div>
               </div>
 
               <div className="flex-1 min-w-0 lg:max-h-[500px] lg:overflow-y-auto">

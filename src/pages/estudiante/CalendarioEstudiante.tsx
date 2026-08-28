@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ClipboardList, X, Paperclip, Eye, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,7 @@ import { markLastSeen } from "@/utils/notificaciones";
 import { apiRequest } from "@/lib/apiClient";
 import { EntregarTrabajoModal, type EntregaMia } from "@/components/EntregarTrabajoModal";
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
+import ResponsiveSelect from "@/components/ResponsiveSelect";
 
 interface ActividadCalendario {
   column_id: string;
@@ -77,24 +78,6 @@ const handleDescargarArchivo = async (url: string) => {
 };
 
 
-/** "vence hoy 11:59 pm", "vence mañana", "venció el 26 de ago" — plazo legible. */
-const textoPlazo = (iso: string | null | undefined): { texto: string; vencido: boolean } => {
-  if (!iso) return { texto: "sin plazo", vencido: false };
-  const lim = new Date(iso);
-  const ahora = new Date();
-  const vencido = ahora > lim;
-  const bog = (d: Date, opts: Intl.DateTimeFormatOptions) =>
-    d.toLocaleString("es-CO", { ...opts, timeZone: "America/Bogota" });
-  const hoyK = bog(ahora, { year: "numeric", month: "2-digit", day: "2-digit" });
-  const limK = bog(lim, { year: "numeric", month: "2-digit", day: "2-digit" });
-  const manana = new Date(ahora.getTime() + 86400000);
-  const mananaK = bog(manana, { year: "numeric", month: "2-digit", day: "2-digit" });
-  const hora = bog(lim, { hour: "numeric", minute: "2-digit", hour12: true });
-  if (vencido) return { texto: `venció el ${bog(lim, { day: "numeric", month: "short" })}`, vencido: true };
-  if (limK === hoyK) return { texto: `vence hoy ${hora}`, vencido: false };
-  if (limK === mananaK) return { texto: `vence mañana ${hora}`, vencido: false };
-  return { texto: `vence el ${bog(lim, { day: "numeric", month: "short" })} ${hora}`, vencido: false };
-};
 
 const CalendarioEstudiante = () => {
   const navigate = useNavigate();
@@ -106,10 +89,8 @@ const CalendarioEstudiante = () => {
   // Entregas de trabajos: mis entregas por actividad + modal de entrega.
   const [entregas, setEntregas] = useState<Record<number, EntregaMia>>({});
   const [entregando, setEntregando] = useState<ActividadCalendario | null>(null);
-  // "Entrega virtual" es una página propia (?v=entregas) con breadcrumb.
-  const [searchParams, setSearchParams] = useSearchParams();
-  const vistaEntregas = searchParams.get("v") === "entregas";
-  const [filtroEntAsig, setFiltroEntAsig] = useState("todas");
+  // Filtro por asignatura del calendario de actividades.
+  const [filtroAsig, setFiltroAsig] = useState("todas");
 
   const cargarEntregas = async () => {
     try {
@@ -211,9 +192,14 @@ const CalendarioEstudiante = () => {
     } catch {}
   };
 
-  // Mapear actividades por fecha
+  // Opciones del filtro por asignatura (todas las asignaturas con actividades).
+  const opcionesAsignaturas = [...new Set(actividades.map((a) => a.Asignatura).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "es"));
+
+  // Mapear actividades por fecha (respetando el filtro por asignatura)
   const actividadesPorFecha: Record<string, ActividadCalendario[]> = {};
   actividades.forEach(a => {
+    if (filtroAsig !== "todas" && a.Asignatura !== filtroAsig) return;
     const fecha = parsearFecha(a.fecha_de_presentacion);
     if (fecha) {
       const key = fechaKey(fecha);
@@ -222,10 +208,14 @@ const CalendarioEstudiante = () => {
     }
   });
 
-  // Fechas con actividades para marcar en el calendario
-  const diasConActividades = Object.keys(actividadesPorFecha).map(key => {
+  // Fechas con actividades: pasadas (gris) y próximas (verde), como el
+  // calendario del profesor.
+  const hoyKey = fechaKey(new Date());
+  const diasPasados: Date[] = [];
+  const diasProximos: Date[] = [];
+  Object.keys(actividadesPorFecha).forEach(key => {
     const [y, m, d] = key.split('-').map(Number);
-    return new Date(y, m - 1, d);
+    (key < hoyKey ? diasPasados : diasProximos).push(new Date(y, m - 1, d));
   });
 
   // Actividades del día seleccionado (ordenadas por asignatura)
@@ -240,131 +230,59 @@ const CalendarioEstudiante = () => {
       <main className="flex-1 container mx-auto p-4 md:p-8">
         {/* Breadcrumb */}
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <BreadcrumbDeslizable clave={vistaEntregas ? "entregas" : "actividades"}>
+          <BreadcrumbDeslizable clave="actividades">
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">
               Inicio
             </button>
             <span className="text-muted-foreground">→</span>
-            {vistaEntregas ? (
-              <>
-                <button onClick={() => setSearchParams({})} className="text-primary hover:underline">Actividades</button>
-                <span className="text-muted-foreground">→</span>
-                <span className="text-foreground font-medium">Entrega virtual</span>
-              </>
-            ) : (
-              <span className="text-foreground font-medium">Actividades</span>
-            )}
+            <span className="text-foreground font-medium">Actividades</span>
           </BreadcrumbDeslizable>
         </div>
 
-        {(() => {
-          // "Actividades con entrega virtual": botón que lleva a su página
-          // (?v=entregas). Pendientes primero, luego entregadas, por plazo.
-          const conEntrega = actividades
-            .filter((a) => a.permite_entregas)
-            .sort((x, y) => {
-              const px = entregas[x.auto_id] ? 1 : 0;
-              const py = entregas[y.auto_id] ? 1 : 0;
-              if (px !== py) return px - py;
-              return (x.fecha_limite_entrega || "9999").localeCompare(y.fecha_limite_entrega || "9999");
-            });
-          if (loading || conEntrega.length === 0) return null;
-          if (!vistaEntregas) {
-            return (
-              <button
-                onClick={() => setSearchParams({ v: "entregas" })}
-                data-guia="entrega.franja"
-                className="w-full rounded-lg bg-primary/10 border-l-4 border-primary px-4 py-3 mb-6 flex items-center justify-between gap-3 hover:bg-primary/20 transition-colors text-left"
-              >
-                <p className="text-sm font-medium text-foreground">Actividades con entrega virtual</p>
-              </button>
-            );
-          }
-          const opcAsig = [...new Set(conEntrega.map((a) => a.Asignatura).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es"));
-          const filtradas = filtroEntAsig === "todas" ? conEntrega : conEntrega.filter((a) => a.Asignatura === filtroEntAsig);
-          return (
-            <div className="bg-card rounded-lg shadow-soft p-6">
-              <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-5">
-                <Paperclip className="h-5 w-5 text-primary" />
-                Actividades con entrega virtual
-              </h2>
-              <div className="mb-4 max-w-xs">
-                <select
-                  value={filtroEntAsig}
-                  onChange={(e) => setFiltroEntAsig(e.target.value)}
-                  className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
-                >
-                  <option value="todas">Asignaturas</option>
-                  {opcAsig.map((a) => (
-                    <option key={a} value={a}>{a}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-2">
-                {filtradas.length === 0 && (
-                  <p className="text-sm text-muted-foreground py-2">No hay actividades de esa asignatura.</p>
-                )}
-                {filtradas.map((a) => {
-                  const entrega = entregas[a.auto_id];
-                  const plazo = textoPlazo(a.fecha_limite_entrega);
-                  return (
-                    <div key={a.auto_id} className="flex items-center justify-between gap-3 flex-wrap border border-border rounded-lg p-3">
-                      <div className="min-w-0">
-                        <span className="inline-block px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full">{a.Asignatura}</span>
-                        <p className="text-sm text-foreground mt-1 line-clamp-1">{a.Descripción}</p>
-                        <p className={`text-xs mt-0.5 font-medium ${!entrega && plazo.vencido ? "text-amber-700" : "text-muted-foreground"}`}>
-                          {plazo.texto}{!entrega && plazo.vencido ? " — te queda una sola oportunidad" : ""}
-                        </p>
-                      </div>
-                      {entrega ? (
-                        <button
-                          onClick={() => setEntregando(a)}
-                          className={`shrink-0 px-4 py-2 text-sm font-semibold rounded-full transition-colors ${entrega.tarde ? "bg-amber-100 text-amber-800 hover:bg-amber-200" : "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"}`}
-                        >
-                          {entrega.tarde ? "✓ Entregado tarde" : "✓ Entregado"}
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => setEntregando(a)}
-                          className="shrink-0 px-4 py-2 text-sm font-semibold rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                        >
-                          Entregar trabajo
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* En la página "Entrega virtual" el calendario se oculta (sigue montado
-            para conservar el día seleccionado al volver). */}
-        <div className={vistaEntregas ? "hidden" : "bg-card rounded-lg shadow-soft p-6"}>
-          <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6">
+        <div className="bg-card rounded-lg shadow-soft p-6">
+          <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-4">
             <ClipboardList className="h-5 w-5 text-primary" />
             Actividades Asignadas
           </h2>
+
+          {/* Filtro por asignatura: afecta los días marcados y la lista del día. */}
+          {!loading && opcionesAsignaturas.length > 1 && (
+            <div className="mb-4 max-w-xs" data-guia="entrega.franja">
+              <ResponsiveSelect
+                sinOpcionPlaceholder
+                value={filtroAsig}
+                onValueChange={setFiltroAsig}
+                placeholder="Asignaturas"
+                options={[{ value: "todas", label: "Asignaturas" }, ...opcionesAsignaturas.map((a) => ({ value: a, label: a }))]}
+              />
+            </div>
+          )}
 
           {loading ? (
             <div className="text-center py-8 text-muted-foreground">Cargando...</div>
           ) : (
             <div className="flex flex-col lg:flex-row lg:items-start gap-6">
               {/* Calendario */}
-              <div data-guia="act.dia_calendario" className="flex justify-center lg:sticky lg:top-4 shrink-0">
+              <div data-guia="act.dia_calendario" className="flex flex-col items-center lg:sticky lg:top-4 shrink-0">
                 <Calendar
                   mode="single"
-                  classNames={{ day_today: "bg-red-600 text-white hover:bg-red-600 hover:text-white focus:bg-red-600 focus:text-white aria-selected:bg-red-600 aria-selected:text-white" }}
+                  classNames={{ day_selected: "!bg-red-600 !text-white hover:!bg-red-600 focus:!bg-red-600" }}
                   selected={diaSeleccionado}
                   onSelect={setDiaSeleccionado}
                   month={mesActual}
                   onMonthChange={setMesActual}
                   locale={es}
-                  modifiers={{ conActividad: diasConActividades }}
-                  modifiersClassNames={{ conActividad: "bg-orange-400 text-white hover:bg-orange-500 !h-8 !w-8" }}
+                  modifiers={{ pasada: diasPasados, proxima: diasProximos }}
+                  modifiersClassNames={{
+                    pasada: "bg-slate-300 text-slate-700 hover:bg-slate-400 !h-8 !w-8",
+                    proxima: "bg-emerald-500 text-white hover:bg-emerald-600 !h-8 !w-8",
+                  }}
                   className="rounded-md border shadow-sm"
                 />
+                <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-emerald-500 inline-block" /> Próximas</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-slate-300 inline-block" /> Ya pasaron</span>
+                </div>
               </div>
 
               {/* Detalle del día seleccionado */}

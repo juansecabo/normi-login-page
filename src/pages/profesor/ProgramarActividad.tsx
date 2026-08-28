@@ -50,25 +50,6 @@ import { Calendar, Paperclip, FileText, X, Loader2, Pencil, Trash2, Eye, Downloa
 const diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 
 
-/** "vence hoy 11:59 pm", "vence mañana", "venció el 26 de ago" — plazo legible. */
-const textoPlazo = (iso: string | null | undefined): { texto: string; vencido: boolean } => {
-  if (!iso) return { texto: "sin plazo", vencido: false };
-  const lim = new Date(iso);
-  const ahora = new Date();
-  const vencido = ahora > lim;
-  const bog = (d: Date, opts: Intl.DateTimeFormatOptions) =>
-    d.toLocaleString("es-CO", { ...opts, timeZone: "America/Bogota" });
-  const hoyK = bog(ahora, { year: "numeric", month: "2-digit", day: "2-digit" });
-  const limK = bog(lim, { year: "numeric", month: "2-digit", day: "2-digit" });
-  const manana = new Date(ahora.getTime() + 86400000);
-  const mananaK = bog(manana, { year: "numeric", month: "2-digit", day: "2-digit" });
-  const hora = bog(lim, { hour: "numeric", minute: "2-digit", hour12: true });
-  if (vencido) return { texto: `venció el ${bog(lim, { day: "numeric", month: "short" })}`, vencido: true };
-  if (limK === hoyK) return { texto: `vence hoy ${hora}`, vencido: false };
-  if (limK === mananaK) return { texto: `vence mañana ${hora}`, vencido: false };
-  return { texto: `vence el ${bog(lim, { day: "numeric", month: "short" })} ${hora}`, vencido: false };
-};
-
 const formatearFecha = (date: Date): string => {
   const y = date.getFullYear();
   const m = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -210,35 +191,20 @@ const ProgramarActividad = () => {
   const [editPermitir, setEditPermitir] = useState(false);
   const [editFechaLimiteStr, setEditFechaLimiteStr] = useState("");
   const [editHoraLimite, setEditHoraLimite] = useState("23:59");
-  const [filtroEntAsig, setFiltroEntAsig] = useState("todas");
-  const [filtroEntGrado, setFiltroEntGrado] = useState("todos");
-  const [filtroEntSalon, setFiltroEntSalon] = useState("todos");
-  const [resumenEntregas, setResumenEntregas] = useState<Array<{
-    actividad_id: number; asignatura: string; descripcion: string; grado: string; salon: string;
-    fecha_limite_entrega: string | null; entregados: number; esperados: number;
-  }>>([]);
-  const cargarResumenEntregas = () => {
-    apiRequest('/api/entregas/resumen')
-      .then((r) => setResumenEntregas((r as { resumen: typeof resumenEntregas }).resumen || []))
-      .catch(() => setResumenEntregas([]));
-  };
   const [loadingMias, setLoadingMias] = useState(false);
   const [mesCal, setMesCal] = useState<Date>(new Date());
   const [diaSelCal, setDiaSelCal] = useState<Date | undefined>(new Date());
   // Vista actual en la URL (?v=programar|actividades) para que sobreviva al refrescar.
   const [searchParams, setSearchParams] = useSearchParams();
-  const vista: "menu" | "programar" | "actividades" | "entregas" | "entregas-act" =
+  const vista: "menu" | "programar" | "actividades" | "entregas-act" =
     searchParams.get("v") === "programar" ? "programar"
     : searchParams.get("v") === "actividades" ? "actividades"
-    : searchParams.get("v") === "entregas" ? "entregas"
     : searchParams.get("v") === "entregas-act" ? "entregas-act"
     : "menu";
-  const irA = (v: "menu" | "programar" | "actividades" | "entregas") => setSearchParams(v === "menu" ? {} : { v });
+  const irA = (v: "menu" | "programar" | "actividades") => setSearchParams(v === "menu" ? {} : { v });
   // Página de entregas de UNA actividad (?v=entregas-act&act=ID).
   const entregasActId = Number(searchParams.get("act") || 0);
   const irAEntregasAct = (autoId: number) => setSearchParams({ v: "entregas-act", act: String(autoId) });
-  // El resumen se refresca al entrar/volver a estas vistas (tras revisar entregas).
-  useEffect(() => { cargarResumenEntregas(); }, [vista]); // eslint-disable-line react-hooks/exhaustive-deps
   // Filtros del calendario de actividades del profesor.
   const [filtroAsig, setFiltroAsig] = useState("todas");
   const [filtroGrado, setFiltroGrado] = useState("todos");
@@ -895,19 +861,11 @@ const ProgramarActividad = () => {
               <>
                 <button onClick={() => irA("menu")} className="text-primary hover:underline">Programar Actividad</button>
                 <span className="text-muted-foreground">→</span>
-                {vista === "entregas" || vista === "entregas-act" ? (
+                {vista === "entregas-act" ? (
                   <>
                     <button onClick={() => irA("actividades")} className="text-primary hover:underline">Actividades Programadas</button>
                     <span className="text-muted-foreground">→</span>
-                    {vista === "entregas-act" ? (
-                      <>
-                        <button onClick={() => irA("entregas")} className="text-primary hover:underline">Entrega virtual</button>
-                        <span className="text-muted-foreground">→</span>
-                        <span className="text-foreground font-medium">Entregas</span>
-                      </>
-                    ) : (
-                      <span className="text-foreground font-medium">Entrega virtual</span>
-                    )}
+                    <span className="text-foreground font-medium">Entregas</span>
                   </>
                 ) : (
                   <span className="text-foreground font-medium">{vista === "programar" ? "Nueva actividad" : "Actividades Programadas"}</span>
@@ -1235,15 +1193,6 @@ const ProgramarActividad = () => {
                 <div className="text-center text-muted-foreground py-8">Cargando...</div>
               ) : (
                 <>
-                  {resumenEntregas.length > 0 && (
-                    <button
-                      onClick={() => irA("entregas")}
-                      data-guia="entregas.franja_profe"
-                      className="w-full rounded-lg bg-primary/10 border-l-4 border-primary px-4 py-3 mb-4 flex items-center justify-between gap-3 hover:bg-primary/20 transition-colors text-left"
-                    >
-                      <p className="text-sm font-medium text-foreground">Actividades con entrega virtual</p>
-                    </button>
-                  )}
                   {(() => {
                     // Opciones de filtro derivadas de TODAS las actividades del profe.
                     const opcAsig = [...new Set(misActividades.map((a) => a.Asignatura).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es"));
@@ -1292,7 +1241,7 @@ const ProgramarActividad = () => {
                         <div className="flex flex-col items-center lg:sticky lg:top-4 shrink-0">
                           <CalendarComponent
                             mode="single"
-                            classNames={{ day_today: "bg-red-600 text-white hover:bg-red-600 hover:text-white focus:bg-red-600 focus:text-white aria-selected:bg-red-600 aria-selected:text-white" }}
+                            classNames={{ day_selected: "!bg-red-600 !text-white hover:!bg-red-600 focus:!bg-red-600" }}
                             selected={diaSelCal}
                             onSelect={setDiaSelCal}
                             month={mesCal}
@@ -1362,55 +1311,6 @@ const ProgramarActividad = () => {
                   })()}
                 </>
               )}
-            </div>
-          )}
-
-          {/* ===== Actividades con entrega virtual ===== */}
-          {vista === "entregas" && (
-            <div className="bg-card rounded-lg shadow-soft p-6 md:p-8">
-              <h2 className="text-xl font-bold text-foreground mb-5">Actividades con entrega virtual</h2>
-              {(() => {
-                const opcEntAsig = [...new Set(resumenEntregas.map((r) => r.asignatura).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es"));
-                const opcEntGrado = [...new Set(resumenEntregas.map((r) => r.grado).filter(Boolean))].sort((a, b) => rankGrado(a) - rankGrado(b));
-                const opcEntSalon = [...new Set(resumenEntregas.map((r) => r.salon).filter(Boolean))].sort((a, b) => Number(a) - Number(b));
-                const filtradas = resumenEntregas.filter((r) =>
-                  (filtroEntAsig === "todas" || r.asignatura === filtroEntAsig) &&
-                  (filtroEntGrado === "todos" || r.grado === filtroEntGrado) &&
-                  (filtroEntSalon === "todos" || r.salon === filtroEntSalon)
-                );
-                return (
-                  <>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
-                      <ResponsiveSelect sinOpcionPlaceholder value={filtroEntAsig} onValueChange={setFiltroEntAsig} placeholder="Asignaturas" options={[{ value: "todas", label: "Asignaturas" }, ...opcEntAsig.map((a) => ({ value: a, label: a }))]} />
-                      <ResponsiveSelect sinOpcionPlaceholder value={filtroEntGrado} onValueChange={setFiltroEntGrado} placeholder="Grados" options={[{ value: "todos", label: "Grados" }, ...opcEntGrado.map((g) => ({ value: g, label: g }))]} />
-                      <ResponsiveSelect sinOpcionPlaceholder value={filtroEntSalon} onValueChange={setFiltroEntSalon} placeholder="Salones" options={[{ value: "todos", label: "Salones" }, ...opcEntSalon.map((s) => ({ value: s, label: `Salón ${s}` }))]} />
-                    </div>
-                    <div className="space-y-2">
-                      {filtradas.length === 0 && (
-                        <p className="text-sm text-muted-foreground py-2">No hay actividades con esos filtros.</p>
-                      )}
-                      {filtradas.map((r) => {
-                        const plazo = textoPlazo(r.fecha_limite_entrega);
-                        return (
-                          <div key={r.actividad_id} className="flex items-center justify-between gap-3 flex-wrap border border-border rounded-lg p-3">
-                            <div className="min-w-0">
-                              <span className="inline-block px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full">{r.asignatura} · {r.grado} {r.salon}</span>
-                              <p className="text-sm text-foreground mt-1 line-clamp-1">{r.descripcion}</p>
-                              <p className="text-xs mt-0.5 font-medium text-muted-foreground">{plazo.texto}</p>
-                            </div>
-                            <button
-                              onClick={() => irAEntregasAct(r.actividad_id)}
-                              className={`shrink-0 px-4 py-2 text-sm font-semibold rounded-full transition-colors ${r.entregados >= r.esperados && r.esperados > 0 ? "bg-emerald-600 text-white hover:bg-emerald-700" : "bg-primary text-primary-foreground hover:opacity-90"}`}
-                            >
-                              {r.entregados}/{r.esperados} entregas
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </>
-                );
-              })()}
             </div>
           )}
 
