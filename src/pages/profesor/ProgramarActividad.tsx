@@ -637,6 +637,7 @@ const ProgramarActividad = () => {
               fecha: mostrarFecha(fechaFormateada),
               ...(archivoUrlFinal ? { archivo_url: archivoUrlFinal } : {}),
               ...(destinoEspecifico ? { estudiantes_ids: idsEsteSalon } : {}),
+              ...(permitirEntregas ? { permite_entregas: true } : {}),
             }),
           });
         } catch (err) {
