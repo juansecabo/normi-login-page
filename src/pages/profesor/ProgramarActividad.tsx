@@ -874,10 +874,10 @@ const ProgramarActividad = () => {
             </button>
             <span className="text-muted-foreground">→</span>
             {vista === "menu" ? (
-              <span className="text-foreground font-medium">Programar Actividad</span>
+              <span className="text-foreground font-medium">Actividades</span>
             ) : (
               <>
-                <button onClick={() => irA("menu")} className="text-primary hover:underline">Programar Actividad</button>
+                <button onClick={() => irA("menu")} className="text-primary hover:underline">Actividades</button>
                 <span className="text-muted-foreground">→</span>
                 {vista === "entregas-act" ? (
                   <>
@@ -1358,9 +1358,20 @@ const ProgramarActividad = () => {
             const act = misActividades.find((a) => a.auto_id === entregasActId);
             return (
               <div className="bg-card rounded-lg shadow-soft p-6 md:p-8">
-                <h2 className="text-base font-semibold text-foreground mb-1">
-                  {act ? `${act.Asignatura} - ${act.Grado} ${act.Salon}` : "Entregas"}
-                </h2>
+                <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
+                  <h2 className="text-base font-semibold text-foreground">
+                    {act ? `${act.Asignatura} - ${act.Grado} ${act.Salon}` : "Entregas"}
+                  </h2>
+                  {act && (
+                    <button
+                      onClick={() => toggleEntregasRevisadas(act)}
+                      title="Cambiar estado de revisión"
+                      className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${act.entregas_revisadas ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200" : "bg-amber-100 text-amber-800 hover:bg-amber-200"}`}
+                    >
+                      {act.entregas_revisadas ? "✓ Revisado" : "Sin revisar"}
+                    </button>
+                  )}
+                </div>
                 {act && (
                   <div className="rounded-md bg-emerald-50 border border-emerald-100 px-3 py-2 mb-5">
                     <p className="text-base text-foreground">{act.Descripción}</p>

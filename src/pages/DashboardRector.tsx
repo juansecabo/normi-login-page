@@ -325,7 +325,7 @@ const DashboardRector = () => {
     { id: 'programar-actividad', render: (
       <button onClick={() => navigate("/profesor/programar-actividad")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-cyan-100 transition-all duration-200 hover:shadow-md hover:bg-cyan-200">
         <img src={iconActividades} alt="" className="w-16 h-16 object-contain" />
-        <span className="font-semibold text-foreground text-center">Programar Actividad</span>
+        <span className="font-semibold text-foreground text-center">Actividades</span>
       </button>
     ) },
     { id: 'perfil', render: (

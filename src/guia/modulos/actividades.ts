@@ -61,7 +61,7 @@ const VEN_NOTAS = [
 const abrirNuevaActividad = () =>
   [
     {
-      narracion: "Entramos a Programar Actividad.",
+      narracion: "Entramos a Actividades.",
       accion: "navegar" as const,
       ruta: "/profesor/programar-actividad",
     },
@@ -361,7 +361,7 @@ export const ACTIVIDADES: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion: "Entramos a Programar Actividad.",
+        narracion: "Entramos a Actividades.",
         accion: "navegar",
         ruta: "/profesor/programar-actividad",
       },
@@ -398,7 +398,7 @@ export const ACTIVIDADES: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion: "Entramos a Programar Actividad.",
+        narracion: "Entramos a Actividades.",
         accion: "navegar",
         ruta: "/profesor/programar-actividad",
       },
@@ -441,7 +441,7 @@ export const ACTIVIDADES: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion: "Entramos a Programar Actividad.",
+        narracion: "Entramos a Actividades.",
         accion: "navegar",
         ruta: "/profesor/programar-actividad",
       },
@@ -489,7 +489,7 @@ export const ACTIVIDADES: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion: "Entramos a Programar Actividad.",
+        narracion: "Entramos a Actividades.",
         accion: "navegar",
         ruta: "/profesor/programar-actividad",
       },
@@ -531,7 +531,7 @@ export const ACTIVIDADES: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion: "Vamos a Programar Actividad.",
+        narracion: "Vamos a Actividades.",
         accion: "navegar",
         ruta: "/profesor/programar-actividad",
       },
@@ -567,7 +567,7 @@ export const ACTIVIDADES: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion: "Vamos a Programar Actividad.",
+        narracion: "Vamos a Actividades.",
         accion: "navegar",
         ruta: "/profesor/programar-actividad",
       },

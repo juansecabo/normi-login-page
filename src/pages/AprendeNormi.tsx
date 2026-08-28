@@ -110,7 +110,7 @@ const MISIONES_PROFESOR: Mision[] = [
 ];
 
 const PROXIMAMENTE = [
-  { nombre: "Programar Actividad", emoji: "📅" },
+  { nombre: "Actividades", emoji: "📅" },
   { nombre: "Comunicados", emoji: "📣" },
   { nombre: "Permisos y Excusas", emoji: "📋" },
 ];
