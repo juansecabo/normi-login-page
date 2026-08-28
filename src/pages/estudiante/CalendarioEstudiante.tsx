@@ -269,7 +269,6 @@ const CalendarioEstudiante = () => {
               return (x.fecha_limite_entrega || "9999").localeCompare(y.fecha_limite_entrega || "9999");
             });
           if (loading || conEntrega.length === 0) return null;
-          const pendientes = conEntrega.filter((a) => !entregas[a.auto_id]).length;
           if (!vistaEntregas) {
             return (
               <button
@@ -277,12 +276,7 @@ const CalendarioEstudiante = () => {
                 data-guia="entrega.franja"
                 className="w-full rounded-lg bg-primary/10 border-l-4 border-primary px-4 py-3 mb-6 flex items-center justify-between gap-3 hover:bg-primary/20 transition-colors text-left"
               >
-                <p className="font-bold text-foreground">Actividades con entrega virtual</p>
-                {pendientes > 0 && (
-                  <span className="shrink-0 min-w-7 h-7 px-2 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center">
-                    {pendientes}
-                  </span>
-                )}
+                <p className="text-sm font-medium text-foreground">Actividades con entrega virtual</p>
               </button>
             );
           }

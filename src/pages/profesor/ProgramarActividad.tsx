@@ -1241,10 +1241,7 @@ const ProgramarActividad = () => {
                       data-guia="entregas.franja_profe"
                       className="w-full rounded-lg bg-primary/10 border-l-4 border-primary px-4 py-3 mb-4 flex items-center justify-between gap-3 hover:bg-primary/20 transition-colors text-left"
                     >
-                      <p className="font-bold text-foreground">Actividades con entrega virtual</p>
-                      <span className="shrink-0 min-w-7 h-7 px-2 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center">
-                        {resumenEntregas.length}
-                      </span>
+                      <p className="text-sm font-medium text-foreground">Actividades con entrega virtual</p>
                     </button>
                   )}
                   {(() => {
