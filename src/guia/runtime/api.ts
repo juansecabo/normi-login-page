@@ -53,6 +53,16 @@ export function resumenPantalla(): string {
   const partes: string[] = ["Ruta: " + window.location.pathname];
   const visibles = (sel: string) =>
     Array.from(document.querySelectorAll<HTMLElement>(sel)).filter((v) => v.offsetParent !== null);
+  // Miga de pan (ubicación exacta): el div MÁS interno que contenga "→" con
+  // texto corto. Le dice a Normi dónde está parado el usuario y por dónde
+  // puede devolverse (ej. "Asignaturas → Ciencias Naturales").
+  const bc = visibles("div")
+    .filter((d) => {
+      const t = (d.textContent || "").trim();
+      return t.includes("→") && t.length < 120 && d.querySelector("button");
+    })
+    .pop();
+  if (bc) partes.push("Ubicación (miga de pan, sus nombres son tocables para devolverse): " + (bc.textContent || "").trim().replace(/\s+/g, " "));
   const titulos = visibles("h1,h2,h3")
     .map((v) => (v.textContent || "").trim().replace(/\s+/g, " "))
     .filter(Boolean)

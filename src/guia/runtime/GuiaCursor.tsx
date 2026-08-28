@@ -141,16 +141,14 @@ export function GuiaCursor() {
             style={{ animation: "guiaGloboIn 0.4s ease-out both" }}
             className="relative bg-card border border-border rounded-2xl shadow-2xl p-4 w-fit max-w-full"
           >
-            {guiando && narracion && (
+            {/* UNA sola voz a la vez (las personas dicen una cosa a la vez):
+                si Normi acaba de responder al chat, esa respuesta REEMPLAZA la
+                narración del paso; al avanzar de paso la narración vuelve. */}
+            {guiando && narracion && !respuesta && !pensando && (
               <p className="text-sm text-foreground leading-snug">{narracion}</p>
             )}
             {(respuesta || pensando) && (
-              <div
-                className={
-                  "text-sm text-foreground leading-snug " +
-                  (guiando && narracion ? "mt-2 bg-muted rounded-xl px-3 py-2" : "")
-                }
-              >
+              <div className="text-sm text-foreground leading-snug">
                 {pensando ? (
                   // Puntos suspensivos animados (aparecen y desaparecen en ola).
                   <span className="inline-flex items-center gap-1.5 py-1">
