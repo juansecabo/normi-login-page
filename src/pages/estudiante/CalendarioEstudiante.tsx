@@ -85,7 +85,6 @@ const CalendarioEstudiante = () => {
   const [loading, setLoading] = useState(true);
   const [mesActual, setMesActual] = useState(new Date());
   const [diaSeleccionado, setDiaSeleccionado] = useState<Date | undefined>(new Date());
-  const [marcas, setMarcas] = useState<Record<number, 'hecho' | 'estudiar'>>({});
   // Entregas de trabajos: mis entregas por actividad + modal de entrega.
   const [entregas, setEntregas] = useState<Record<number, EntregaMia>>({});
   const [entregando, setEntregando] = useState<ActividadCalendario | null>(null);
@@ -140,58 +139,7 @@ const CalendarioEstudiante = () => {
     };
 
     cargar();
-
-    // Cargar marcas desde Supabase
-    const cargarMarcas = async () => {
-      try {
-        const { data } = await supabase
-          .from('Actividades_Marcas')
-          .select('actividad_id, marca')
-          .eq('estudiante_id', session.id);
-        if (data) {
-          const m: Record<number, 'hecho' | 'estudiar'> = {};
-          data.forEach((r: any) => { m[r.actividad_id] = r.marca; });
-          setMarcas(m);
-        }
-      } catch {}
-    };
-    cargarMarcas();
   }, [navigate]);
-
-  const toggleMarca = async (columnId: number, tipo: 'hecho' | 'estudiar') => {
-    const session = getSession();
-    const id = session.id!;
-    const yaEsta = marcas[columnId] === tipo;
-
-    // Actualizar UI inmediatamente
-    setMarcas(prev => {
-      const next = { ...prev };
-      if (yaEsta) {
-        delete next[columnId];
-      } else {
-        next[columnId] = tipo;
-      }
-      return next;
-    });
-
-    // Persistir en Supabase
-    try {
-      if (yaEsta) {
-        await supabase
-          .from('Actividades_Marcas')
-          .delete()
-          .eq('estudiante_id', id)
-          .eq('actividad_id', columnId);
-      } else {
-        await supabase
-          .from('Actividades_Marcas')
-          .upsert(
-            { estudiante_id: id, actividad_id: columnId, marca: tipo, updated_at: new Date().toISOString() },
-            { onConflict: 'estudiante_id,actividad_id' }
-          );
-      }
-    } catch {}
-  };
 
   // Opciones del filtro por asignatura (todas las asignaturas con actividades).
   const opcionesAsignaturas = [...new Set(actividades.map((a) => a.Asignatura).filter(Boolean))]
@@ -318,13 +266,12 @@ const CalendarioEstudiante = () => {
                     </p>
                     <div className="space-y-3">
                       {actividadesDelDia.map(actividad => {
-                        const marca = marcas[actividad.column_id];
                         return (
                           <div
                             key={actividad.column_id}
                             data-guia="act.card_actividad"
                             onClick={() => setDetalle(actividad)}
-                            className={`border rounded-lg p-4 transition-colors cursor-pointer hover:bg-muted/30 ${marca === 'hecho' ? 'border-green-300 bg-green-50/50' : marca === 'estudiar' ? 'border-yellow-300 bg-yellow-50/50' : 'border-border hover:border-primary/50'}`}
+                            className="border rounded-lg p-4 transition-colors cursor-pointer hover:bg-muted/30 border-border hover:border-primary/50"
                           >
                             <div>
                               <span className="inline-block px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full mb-2">
@@ -351,18 +298,6 @@ const CalendarioEstudiante = () => {
                                 </div>
                               ))}
                               <div className="flex gap-2 mt-3">
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); toggleMarca(actividad.column_id, 'hecho'); }}
-                                  className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${marca === 'hecho' ? 'bg-green-500 text-white' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}
-                                >
-                                  Hecho
-                                </button>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); toggleMarca(actividad.column_id, 'estudiar'); }}
-                                  className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${marca === 'estudiar' ? 'bg-yellow-500 text-white' : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'}`}
-                                >
-                                  Estudiar
-                                </button>
                                 {actividad.permite_entregas && (() => {
                                   const ent = entregas[actividad.auto_id];
                                   return (
