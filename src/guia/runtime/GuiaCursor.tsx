@@ -18,8 +18,15 @@ export function GuiaCursor() {
 
   // Al abrir la guía el cursor queda listo en el cuadro: se escribe de una,
   // sin tener que hacer click primero (pedido de Juan 2026-08-28).
+  // El menú del header (Radix) devuelve el foco a su botón AL CERRARSE, un
+  // instante después de que este componente monta — por eso el focus simple
+  // a veces perdía la carrera. Se enfoca ya, al siguiente frame y con un
+  // reintento tardío para ganar en todos los casos.
   useEffect(() => {
     inputRef.current?.focus();
+    const raf = requestAnimationFrame(() => inputRef.current?.focus());
+    const t = setTimeout(() => inputRef.current?.focus(), 300);
+    return () => { cancelAnimationFrame(raf); clearTimeout(t); };
   }, []);
 
   const ajustarAlto = (el: HTMLTextAreaElement) => {
