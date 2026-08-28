@@ -541,7 +541,7 @@ export const ACTIVIDADES: Capacidad[] = [
         ancla: "actividades.menu_programadas",
       },
       {
-        narracion: "En el calendario, toca el día de la actividad (naranja = con actividades).",
+        narracion: "En el calendario, toca el día de la actividad (verde = próximas, gris = ya pasaron).",
         accion: "click",
         ancla: "actividades.calendario_propio_dia",
         campo: "fecha",
@@ -577,7 +577,7 @@ export const ACTIVIDADES: Capacidad[] = [
         ancla: "actividades.menu_programadas",
       },
       {
-        narracion: "En el calendario, toca el día de la actividad (naranja = con actividades).",
+        narracion: "En el calendario, toca el día de la actividad (verde = próximas, gris = ya pasaron).",
         accion: "click",
         ancla: "actividades.calendario_propio_dia",
         campo: "fecha",
@@ -741,7 +741,7 @@ export const ACTIVIDADES: Capacidad[] = [
         ruta: "/admin/todas-actividades",
       },
       {
-        narracion: "En el calendario toca un día marcado (naranja = con actividades).",
+        narracion: "En el calendario toca un día marcado (verde = próximas, gris = ya pasaron).",
         accion: "click",
         ancla: "actividades.admin_calendario_dia",
         campo: "fecha",
@@ -774,7 +774,7 @@ export const ACTIVIDADES: Capacidad[] = [
         ruta: "/admin/todas-actividades",
       },
       {
-        narracion: "En el calendario toca el día de la actividad (naranja = con actividades).",
+        narracion: "En el calendario toca el día de la actividad (verde = próximas, gris = ya pasaron).",
         accion: "click",
         ancla: "actividades.admin_calendario_dia",
         campo: "fecha",
@@ -817,7 +817,7 @@ export const ACTIVIDADES: Capacidad[] = [
         ruta: "/admin/todas-actividades",
       },
       {
-        narracion: "En el calendario toca el día de la actividad (naranja = con actividades).",
+        narracion: "En el calendario toca el día de la actividad (verde = próximas, gris = ya pasaron).",
         accion: "click",
         ancla: "actividades.admin_calendario_dia",
         campo: "fecha",
@@ -847,7 +847,7 @@ export const ACTIVIDADES: Capacidad[] = [
     pasos: [
       { narracion: "Entramos a programar la actividad.", accion: "navegar", ruta: "/programar-actividad" },
       {
-        narracion: "Llene la actividad como siempre y marque la casilla 'Permitir entregas por la plataforma'.",
+        narracion: "Llene la actividad como siempre y marque la casilla 'Entrega en plataforma'.",
         accion: "click",
         ancla: "actividades.permitir_entregas",
       },
@@ -870,9 +870,14 @@ export const ACTIVIDADES: Capacidad[] = [
     sinonimos: ["ver los trabajos", "quién me entregó", "revisar tareas enviadas", "entregas de los estudiantes"],
     pasos: [
       { narracion: "Entramos a sus actividades.", accion: "navegar", ruta: "/programar-actividad" },
-      { narracion: "Abra la pestaña 'Actividades Programadas' y toque el día de la actividad.", accion: "click" },
       {
-        narracion: "En la actividad, toque 'Entregas': verá quién entregó, sus archivos con 'Ver' y 'Descargar', y quién falta.",
+        narracion:
+          "Abra la pestaña 'Actividades Programadas' y toque el día de la actividad. La casilla 'Con entrega en plataforma' de los filtros le muestra solo las actividades que reciben entregas.",
+        accion: "click",
+      },
+      {
+        narracion:
+          "En la actividad, toque 'Entregas': se abre la página con quién entregó (fecha y atraso si fue tarde), sus archivos con 'Ver' y 'Descargar', y quién falta. Arriba puede buscar a un estudiante por su nombre.",
         accion: "click",
         ancla: "actividades.ver_entregas",
       },

@@ -103,7 +103,7 @@ export const ESTUDIANTE: Capacidad[] = [
     id: "est.ver_actividades",
     titulo: "Ver tus tareas y actividades",
     descripcion:
-      "Consultar en el calendario las tareas, evaluaciones y actividades que te asignaron. Los días con actividades salen en naranja.",
+      "Consultar en el calendario las tareas, evaluaciones y actividades que te asignaron. Los días con actividades salen en verde (próximas) o gris (ya pasaron).",
     categoria: "Actividades",
     roles: ["estudiante"],
     ruta: "/estudiante/actividades",
@@ -112,7 +112,7 @@ export const ESTUDIANTE: Capacidad[] = [
       { narracion: "Toca la ficha 'Actividades' en tu tablero.", accion: "navegar", ruta: "/estudiante/actividades" },
       {
         narracion:
-          "Los días pintados de naranja tienen actividades. Toca un día para ver qué te asignaron; con las flechas de arriba cambias de mes.",
+          "Los días en verde tienen actividades próximas y los grises actividades que ya pasaron. Toca un día para ver qué te asignaron; con las flechas de arriba cambias de mes. Arriba puedes filtrar por asignatura o dejar solo las que tienen entrega en plataforma.",
         accion: "click",
         ancla: "act.dia_calendario",
       },
@@ -137,7 +137,7 @@ export const ESTUDIANTE: Capacidad[] = [
       { narracion: "Toca la ficha 'Actividades' en tu tablero.", accion: "navegar", ruta: "/estudiante/actividades" },
       { narracion: "Toca el día de la actividad que vas a entregar.", accion: "click", ancla: "act.dia_calendario" },
       {
-        narracion: "En la actividad, toca 'Entregar trabajo'. Si ya entregaste, el botón dice 'Entregado' y puedes cambiarla mientras no venza el plazo.",
+        narracion: "En la actividad, toca 'Entregar trabajo'. Si ya entregaste, el botón dice 'Entregado'.",
         accion: "click",
         ancla: "entrega.abrir",
       },

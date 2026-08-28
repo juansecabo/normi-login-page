@@ -108,7 +108,7 @@ export const ACUDIENTE: Capacidad[] = [
     id: "acu.ver_actividades",
     titulo: "Ver las tareas y actividades de tus hijos",
     descripcion:
-      "Consultar en el calendario las tareas y evaluaciones de todos tus acudidos, agrupadas por estudiante. Los días con actividades salen en naranja.",
+      "Consultar en el calendario las tareas y evaluaciones de todos tus acudidos, agrupadas por estudiante. Los días con actividades salen en verde (próximas) o gris (ya pasaron).",
     categoria: "Actividades",
     roles: ["acudiente"],
     ruta: "/acudiente/actividades",
@@ -117,7 +117,7 @@ export const ACUDIENTE: Capacidad[] = [
       { narracion: "Toca la ficha 'Actividades' en tu tablero.", accion: "navegar", ruta: "/acudiente/actividades" },
       {
         narracion:
-          "Los días naranjas tienen actividades. Toca un día: verás las actividades de todos tus acudidos, agrupadas por cada uno.",
+          "Los días en verde tienen actividades próximas y los grises actividades que ya pasaron. Toca un día: verás las actividades de todos tus acudidos, agrupadas por cada uno.",
         accion: "click",
         ancla: "act.dia_calendario",
       },
