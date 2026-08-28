@@ -3,7 +3,7 @@
 // escritura FLOTANTE separado (crece hasta 5 líneas y luego scroll). Único
 // botón: Cancelar (X roja). El borde de luz señala dónde hacer click; la guía
 // avanza sola cuando el usuario hace lo señalado.
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useGuia } from "./GuiaProvider";
@@ -15,6 +15,12 @@ export function GuiaCursor() {
   const { rect, narracion, respuesta, pensando, enviar, cancelar, guiando } = useGuia();
   const [texto, setTexto] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Al abrir la guía el cursor queda listo en el cuadro: se escribe de una,
+  // sin tener que hacer click primero (pedido de Juan 2026-08-28).
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   const ajustarAlto = (el: HTMLTextAreaElement) => {
     el.style.height = "auto";
