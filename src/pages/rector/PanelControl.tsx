@@ -1742,18 +1742,21 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                 </div>
               ) : (
                 <div ref={estListRef} className="overflow-x-auto">
-                  <Table>
+                  {/* table-fixed: anchos de columna estables — con la lista virtualizada,
+                      el layout automático recalculaba anchos con cada scroll y la tabla
+                      "parpadeaba" (nombres saltando entre 1 y 2 líneas). */}
+                  <Table className="table-fixed min-w-[880px]">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Foto</TableHead>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Apellidos</TableHead>
-                        <TableHead>Nombres</TableHead>
-                        <TableHead>Grado</TableHead>
-                        <TableHead>Salón</TableHead>
-                        <TableHead>Teléfono</TableHead>
-                        <TableHead>Contraseña</TableHead>
-                        <TableHead className="text-right">Acciones</TableHead>
+                        <TableHead className="w-16">Foto</TableHead>
+                        <TableHead className="w-28">ID</TableHead>
+                        <TableHead className="w-40">Apellidos</TableHead>
+                        <TableHead className="w-40">Nombres</TableHead>
+                        <TableHead className="w-24">Grado</TableHead>
+                        <TableHead className="w-16">Salón</TableHead>
+                        <TableHead className="w-32">Teléfono</TableHead>
+                        <TableHead className="w-28">Contraseña</TableHead>
+                        <TableHead className="w-24 text-right">Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1853,17 +1856,18 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                 </div>
               ) : (
                 <div ref={perfListRef} className="overflow-x-auto">
-                  <Table>
+                  {/* table-fixed: mismos anchos estables que la tabla de estudiantes. */}
+                  <Table className="table-fixed min-w-[880px]">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Foto</TableHead>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Apellidos</TableHead>
-                        <TableHead>Nombres</TableHead>
-                        <TableHead>Grado/Salón</TableHead>
-                        <TableHead>Teléfono</TableHead>
-                        <TableHead>Contraseña</TableHead>
-                        <TableHead className="text-right">Acciones</TableHead>
+                        <TableHead className="w-16">Foto</TableHead>
+                        <TableHead className="w-28">ID</TableHead>
+                        <TableHead className="w-40">Apellidos</TableHead>
+                        <TableHead className="w-40">Nombres</TableHead>
+                        <TableHead className="w-32">Grado/Salón</TableHead>
+                        <TableHead className="w-32">Teléfono</TableHead>
+                        <TableHead className="w-28">Contraseña</TableHead>
+                        <TableHead className="w-24 text-right">Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>

@@ -653,18 +653,21 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
         // de Juan 2026-07-15). Teléfono/contraseña solo llegan del server para
         // roles del panel. El detalle (género, carga académica) vive en Editar.
         <div ref={listRef} className="overflow-x-auto border border-border rounded-lg bg-card">
-          <Table>
+          {/* table-fixed: anchos de columna estables — con la lista virtualizada,
+              el layout automático recalculaba anchos con cada scroll y la tabla
+              "parpadeaba" (nombres saltando entre 1 y 2 líneas). */}
+          <Table className="table-fixed min-w-[880px]">
             <TableHeader>
               <TableRow className="bg-muted/60 hover:bg-muted/60">
                 <TableHead className="w-10"></TableHead>
-                <TableHead>ID</TableHead>
-                <TableHead>Apellidos</TableHead>
-                <TableHead>Nombres</TableHead>
-                <TableHead>Detalle</TableHead>
-                <TableHead>Teléfono</TableHead>
-                <TableHead>Contraseña</TableHead>
+                <TableHead className="w-28">ID</TableHead>
+                <TableHead className="w-40">Apellidos</TableHead>
+                <TableHead className="w-40">Nombres</TableHead>
+                <TableHead className="w-40">Detalle</TableHead>
+                <TableHead className="w-32">Teléfono</TableHead>
+                <TableHead className="w-28">Contraseña</TableHead>
                 {esStaff && rol !== null && cargosAgregables.includes(rol) && (
-                  <TableHead className="text-right">Acciones</TableHead>
+                  <TableHead className="w-24 text-right">Acciones</TableHead>
                 )}
               </TableRow>
             </TableHeader>
