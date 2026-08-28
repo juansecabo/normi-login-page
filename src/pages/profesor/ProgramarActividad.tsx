@@ -87,6 +87,7 @@ interface ActividadCalendario {
   column_id: number;
   auto_id: number;
   permite_entregas?: boolean;
+  entregas_revisadas?: boolean;
   fecha_limite_entrega?: string | null;
   id_profesor: string;
   Nombres: string;
@@ -776,6 +777,21 @@ const ProgramarActividad = () => {
     }
   };
 
+  // ===== Marca "Revisado" de las entregas de una actividad (personal del profesor) =====
+  const toggleEntregasRevisadas = async (actividad: ActividadCalendario) => {
+    const nuevo = !actividad.entregas_revisadas;
+    // UI inmediata; si el guardado falla, se revierte.
+    setMisActividades((prev) => prev.map((a) => a.column_id === actividad.column_id ? { ...a, entregas_revisadas: nuevo } : a));
+    const { error } = await supabase
+      .from('Calendario Actividades')
+      .update({ entregas_revisadas: nuevo })
+      .eq('column_id', actividad.column_id);
+    if (error) {
+      setMisActividades((prev) => prev.map((a) => a.column_id === actividad.column_id ? { ...a, entregas_revisadas: !nuevo } : a));
+      toast({ title: "No se pudo guardar", description: "Intenta de nuevo.", variant: "destructive" });
+    }
+  };
+
   // ===== Delete activity =====
   const handleConfirmarEliminar = (actividad: ActividadCalendario) => {
     setActividadAEliminar(actividad);
@@ -1298,14 +1314,26 @@ const ProgramarActividad = () => {
                                         </div>
                                       </div>
                                     ))}
-                                    <div className="flex gap-2 mt-3 flex-wrap">
+                                    <div className="flex items-center gap-2 mt-3 flex-wrap">
                                       {actividad.permite_entregas && (
-                                        <Button variant="secondary" size="sm" data-guia="actividades.ver_entregas" onClick={() => irAEntregasAct(actividad.auto_id)} className="gap-1">
-                                          <FileText className="h-4 w-4" /> Entregas
-                                        </Button>
+                                        <>
+                                          <Button variant="secondary" size="sm" data-guia="actividades.ver_entregas" onClick={() => irAEntregasAct(actividad.auto_id)} className="gap-1">
+                                            <FileText className="h-4 w-4" /> Entregas
+                                          </Button>
+                                          {/* Marca personal del profesor: ya revisó (calificó) las entregas de esta actividad. */}
+                                          <button
+                                            onClick={() => toggleEntregasRevisadas(actividad)}
+                                            title="Cambiar estado de revisión"
+                                            className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${actividad.entregas_revisadas ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200" : "bg-amber-100 text-amber-800 hover:bg-amber-200"}`}
+                                          >
+                                            {actividad.entregas_revisadas ? "✓ Revisado" : "Sin revisar"}
+                                          </button>
+                                        </>
                                       )}
-                                      <Button variant="outline" size="sm" onClick={() => handleAbrirEditar(actividad)} className="gap-1"><Pencil className="h-4 w-4" /> Editar</Button>
-                                      <Button variant="destructive" size="sm" onClick={() => handleConfirmarEliminar(actividad)} className="gap-1"><Trash2 className="h-4 w-4" /> Eliminar</Button>
+                                      <div className="ml-auto flex items-center gap-1">
+                                        <Button variant="outline" size="sm" aria-label="Editar" title="Editar" onClick={() => handleAbrirEditar(actividad)}><Pencil className="h-4 w-4" /></Button>
+                                        <Button variant="destructive" size="sm" aria-label="Eliminar" title="Eliminar" onClick={() => handleConfirmarEliminar(actividad)}><Trash2 className="h-4 w-4" /></Button>
+                                      </div>
                                     </div>
                                   </div>
                                 ))}
