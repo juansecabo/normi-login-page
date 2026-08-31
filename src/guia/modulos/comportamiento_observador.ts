@@ -145,7 +145,7 @@ export const COMPORTAMIENTO_OBSERVADOR: Capacidad[] = [
     id: "comportamiento_observador.registro_crear",
     titulo: "Crear un registro de comportamiento",
     descripcion:
-      "Diligenciar un registro formal (académico y/o de disciplina) de un estudiante, con firma, que al guardarse avisa por WhatsApp al rector, los coordinadores y, si aplica, al director de grupo.",
+      "Diligenciar un registro formal (académico y/o de disciplina) de un estudiante, con firma, que al guardarse avisa por WhatsApp al rector, a los coordinadores del nivel del estudiante y, si aplica, al director de grupo.",
     categoria: "Comportamiento y Observador",
     roles: [...CREAN_REGISTROS],
     ruta: "/registros-comportamiento",

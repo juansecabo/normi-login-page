@@ -621,8 +621,14 @@ const RegistrosComportamiento = () => {
         const asigLabel = asignaturasSel.length === 1 ? `asignatura ${asignaturaTexto}` : `asignaturas ${asignaturaTexto}`;
         const mensaje = `${autor.nombreSimple} envió un Registro de Comportamiento (${tipoLabel}) sobre ${estLabel}, ${asigLabel}.\n\nPueden consultarlo y descargarlo entrando a notasnormi.com → Registros de Comportamiento.`;
 
-        const partes = ["Rector", "Coordinadores"];
-        const segmentos: any[] = [{ perfil: ["Rector", "Coordinadores"] }];
+        // Coordinadores SOLO los del nivel del estudiante (decisión de Juan
+        // 2026-08-31): el segmento lleva el grado y el resolver del server lo
+        // cruza con Internos.niveles_coordina (vacío = coordina todos).
+        const partes = ["Rector", `Coordinadores del nivel de ${grupoEst}`];
+        const segmentos: any[] = [
+          { perfil: ["Rector"] },
+          { perfil: ["Coordinadores"], grados: [estSeleccionado.grado] },
+        ];
         if (director && director.cargo === "Profesor(a)" && String(director.id) !== autor.id) {
           partes.push(`Profesor(a) con id ${director.id}`);
           segmentos.push({ perfil: ["Profesores"], id_destinatarios: [String(director.id)] });
