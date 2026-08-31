@@ -248,6 +248,13 @@ const RegistrosComportamiento = () => {
   const [guardando, setGuardando] = useState(false);
   const [editandoId, setEditandoId] = useState<number | null>(null);
 
+  // Deep link ?registro=ID (el link que llega en el aviso de WhatsApp): al
+  // terminar de cargar, abre el historial con ese registro expandido.
+  const [deepLinkId, setDeepLinkId] = useState<number | null>(() => {
+    const v = new URLSearchParams(window.location.search).get("registro");
+    return v && /^\d+$/.test(v) ? parseInt(v) : null;
+  });
+
   // Expandir / eliminar
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
   const [eliminarId, setEliminarId] = useState<number | null>(null);
@@ -272,7 +279,11 @@ const RegistrosComportamiento = () => {
 
   useEffect(() => {
     const session = getSession();
-    if (!session.id) { navigate("/"); return; }
+    if (!session.id) {
+      // Sin sesión: al login, y de vuelta aquí (conserva ?registro= del deep link)
+      navigate(`/?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      return;
+    }
     if (!isProfesor() && !isOrientador() && !isAdmin() && !isRectorOrCoordinador()) {
       navigate("/"); return;
     }
@@ -389,6 +400,21 @@ const RegistrosComportamiento = () => {
     }
     return registros;
   }, [registros, autor.id]);
+
+  // Deep link: con los registros ya cargados, salta al registro del link.
+  // Si no existe (borrado) o el rol no lo puede ver, queda el historial normal.
+  useEffect(() => {
+    if (deepLinkId == null || loading) return;
+    const r = registrosVisibles.find(x => x.id === deepLinkId);
+    setDeepLinkId(null);
+    if (!r) return;
+    setTab("historial");
+    setEstVistaId(r.estudiante_id);
+    setExpandedIds(new Set([r.id]));
+    setTimeout(() => {
+      document.querySelector(`[data-registro-id="${r.id}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 150);
+  }, [deepLinkId, loading, registrosVisibles]);
 
   // Estudiantes con registros (deduplicados), en orden alfabético
   const estudiantesConRegistros = useMemo(() => {
@@ -608,7 +634,7 @@ const RegistrosComportamiento = () => {
     } else {
       // INSERT — se notifica por WhatsApp
       const insertPayload = { ...payload, autor_id: autor.id, autor_nombre: autor.nombre };
-      const { error } = await supabase.from("Registros_Comportamiento").insert(insertPayload);
+      const { data: insertado, error } = await supabase.from("Registros_Comportamiento").insert(insertPayload).select("id");
       if (error) {
         console.error("Insert registro:", error);
         setGuardando(false);
@@ -619,7 +645,12 @@ const RegistrosComportamiento = () => {
         const estLabel = `${estSeleccionado.nombres} ${estSeleccionado.apellidos} (${grupoEst})`;
         const tipoLabel = TIPO_LABEL[tipo];
         const asigLabel = asignaturasSel.length === 1 ? `asignatura ${asignaturaTexto}` : `asignaturas ${asignaturaTexto}`;
-        const mensaje = `${autor.nombreSimple} envió un Registro de Comportamiento (${tipoLabel}) sobre ${estLabel}, ${asigLabel}.\n\nPueden consultarlo y descargarlo entrando a notasnormi.com → Registros de Comportamiento.`;
+        // Link directo al registro recién creado (la página lo abre expandido)
+        const nuevoId = Array.isArray(insertado) ? (insertado[0] as any)?.id : (insertado as any)?.id;
+        const linkDirecto = nuevoId != null
+          ? `, o entrando a este link:\nhttps://notasnormi.com/registros-comportamiento?registro=${nuevoId}`
+          : ".";
+        const mensaje = `${autor.nombreSimple} envió un Registro de Comportamiento (${tipoLabel}) sobre ${estLabel}, ${asigLabel}.\n\nPueden consultarlo y descargarlo entrando a notasnormi.com → Registros de Comportamiento${linkDirecto}`;
 
         // Coordinadores SOLO los del nivel del estudiante (decisión de Juan
         // 2026-08-31): el segmento lleva el grado y el resolver del server lo
@@ -949,7 +980,7 @@ const RegistrosComportamiento = () => {
                   {registrosDelEstudiante.map(r => {
                     const isExp = expandedIds.has(r.id);
                     return (
-                      <div key={r.id} className="border border-border rounded-lg overflow-hidden">
+                      <div key={r.id} data-registro-id={r.id} className="border border-border rounded-lg overflow-hidden">
                         <div className="flex items-stretch hover:bg-muted/30 transition-colors">
                           <button onClick={() => toggleExpanded(r.id)} className="flex-1 flex items-center justify-between p-4 text-left cursor-pointer">
                             <div>
