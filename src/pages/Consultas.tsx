@@ -657,6 +657,9 @@ export default function Consultas() {
           destinatarios_label: destinatariosTexto,
           mensaje: mensajeFinal,
           segmentos,
+          // Interruptor propio en Perfil → Notificaciones al WhatsApp: el aviso
+          // de una consulta responde a 'consultas', no al de Comunicados.
+          tipo_notificacion: 'consultas',
         }),
       });
       // El server guarda automáticamente en Comunicados con grupo_comunicado_id.
