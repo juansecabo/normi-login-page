@@ -290,8 +290,8 @@ const Perfil = () => {
                   {notifTipos.map((t) => (
                     <div key={t.clave} className="flex items-center justify-between gap-4 border border-border rounded-lg p-4">
                       <div className="min-w-0">
-                        <p className="text-base font-semibold text-foreground">{t.etiqueta}</p>
-                        <p className="text-sm text-muted-foreground">{t.descripcion}</p>
+                        <p className="text-sm font-semibold text-foreground">{t.etiqueta}</p>
+                        <p className="text-xs text-muted-foreground">{t.descripcion}</p>
                       </div>
                       <button
                         role="switch"
