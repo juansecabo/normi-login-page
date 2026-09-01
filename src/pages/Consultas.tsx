@@ -733,15 +733,17 @@ export default function Consultas() {
     <div className="min-h-screen bg-background">
       <HeaderNormi backLink={backLink} />
       <div className="max-w-5xl mx-auto p-4 sm:p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Button onClick={() => navigate(backLink)} variant="outline" size="sm">
-            ← Volver
-          </Button>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <FileBarChart2 className="h-6 w-6 text-primary" />
-            Consultas
-          </h1>
+        <div className="bg-card rounded-lg shadow-soft p-4 mb-4">
+          <div className="flex items-center gap-2 text-sm flex-wrap">
+            <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
+            <span className="text-muted-foreground">&rarr;</span>
+            <span className="text-foreground font-medium">Consultas</span>
+          </div>
         </div>
+        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2 mb-4">
+          <FileBarChart2 className="h-6 w-6 text-primary" />
+          Consultas
+        </h1>
 
         <div className="flex gap-2 mb-4 border-b">
           <button

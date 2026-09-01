@@ -716,10 +716,18 @@ export default function ConsultaPublica() {
     <div className="min-h-screen bg-background">
       <HeaderNormi backLink={backLink} />
       <div className="max-w-2xl mx-auto space-y-4 px-4 py-6">
-        <div className="flex items-center gap-3">
-          <Button onClick={() => navigate(esInterno ? backLink : "/acudiente/consultas")} variant="outline" size="sm">
-            ← Volver
-          </Button>
+        <div className="bg-card rounded-lg shadow-soft p-4">
+          <div className="flex items-center gap-2 text-sm flex-wrap">
+            <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
+            <span className="text-muted-foreground">&rarr;</span>
+            {esInterno ? (
+              <button onClick={() => navigate("/consultas")} className="text-primary hover:underline">Consultas</button>
+            ) : (
+              <button onClick={() => navigate(isEstudiante() ? "/estudiante/consultas" : "/acudiente/consultas")} className="text-primary hover:underline">Mis Consultas</button>
+            )}
+            <span className="text-muted-foreground">&rarr;</span>
+            <span className="text-foreground font-medium truncate max-w-[55vw]">{consulta.titulo}</span>
+          </div>
         </div>
         <div className="text-center mb-2">
           <h1 className="text-xl sm:text-2xl font-bold text-foreground">{consulta.titulo}</h1>

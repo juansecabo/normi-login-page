@@ -138,15 +138,17 @@ export default function MisConsultas() {
     <div className="min-h-screen bg-background">
       <HeaderNormi backLink="/dashboard" />
       <div className="max-w-3xl mx-auto p-4 sm:p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Button onClick={() => navigate("/dashboard")} variant="outline" size="sm">
-            ← Volver
-          </Button>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <FileBarChart2 className="h-6 w-6 text-primary" />
-            Mis Consultas
-          </h1>
+        <div className="bg-card rounded-lg shadow-soft p-4 mb-4">
+          <div className="flex items-center gap-2 text-sm flex-wrap">
+            <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
+            <span className="text-muted-foreground">&rarr;</span>
+            <span className="text-foreground font-medium">Mis Consultas</span>
+          </div>
         </div>
+        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2 mb-4">
+          <FileBarChart2 className="h-6 w-6 text-primary" />
+          Mis Consultas
+        </h1>
 
         <p className="text-sm text-muted-foreground mb-4">
           Aquí puede ver las consultas que le han enviado desde el colegio y responder o editar sus respuestas.
