@@ -110,7 +110,7 @@ export default function MisConsultas() {
               const r = respMap.get(Number(h.id));
               return {
                 acudido: h,
-                opcion: r?.opcion_seleccionada || null,
+                opcion: r?.opcion_seleccionada || ((r as any)?.datos ? "Diligenciada" : null),
                 fecha_respuesta: r?.fecha_respuesta || null,
               };
             }),

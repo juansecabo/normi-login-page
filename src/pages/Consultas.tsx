@@ -92,6 +92,10 @@ export default function Consultas() {
   const [mensajeWhatsapp, setMensajeWhatsapp] = useState("");
   const [opciones, setOpciones] = useState<string[]>(["SÍ autorizo", "NO autorizo"]);
   const [requiereFirma, setRequiereFirma] = useState(true);
+  // Tipo de consulta: 'opciones' (responder eligiendo una opción, la clásica)
+  // o 'datos' (diligenciar un formulario con campos definidos por el creador).
+  const [tipoConsulta, setTipoConsulta] = useState<"opciones" | "datos">("opciones");
+  const [camposDatos, setCamposDatos] = useState<string[]>([""]);
 
   // Selectores estilo Enviar Comunicado (8 perfiles)
   const [perfilesMarcados, setPerfilesMarcados] = useState<Record<PerfilKey, boolean>>({
@@ -201,14 +205,14 @@ export default function Consultas() {
       const ids = consultasParaResponder.map((c) => c.id);
       const { data: misResp } = await supabase
         .from("Consultas_Respuestas" as any)
-        .select("consulta_id, opcion_seleccionada")
+        .select("consulta_id, opcion_seleccionada, datos")
         .eq("padre_id", String(session.id))
         .is("estudiante_id", null)
         .in("consulta_id", ids);
       const mapa: Record<number, "respondida" | "pendiente"> = {};
       consultasParaResponder.forEach((c) => {
         const r = (misResp || []).find((x: any) => Number(x.consulta_id) === c.id);
-        mapa[c.id] = r && r.opcion_seleccionada ? "respondida" : "pendiente";
+        mapa[c.id] = r && (r.opcion_seleccionada || (r as any).datos) ? "respondida" : "pendiente";
       });
       setMiRespuestaPorConsulta(mapa);
     } else {
@@ -342,12 +346,25 @@ export default function Consultas() {
     setOpciones(opciones.map((o, i) => (i === idx ? val : o)));
   };
 
+  // Campos de la consulta tipo 'datos'
+  const agregarCampo = () => {
+    if (camposDatos.length < 20) setCamposDatos([...camposDatos, ""]);
+  };
+  const quitarCampo = (idx: number) => {
+    if (camposDatos.length > 1) setCamposDatos(camposDatos.filter((_, i) => i !== idx));
+  };
+  const updateCampo = (idx: number, val: string) => {
+    setCamposDatos(camposDatos.map((c, i) => (i === idx ? val : c)));
+  };
+
   const resetForm = () => {
     setTitulo("");
     setMensajeConsulta("");
     setMensajeWhatsapp("");
     setOpciones(["SÍ autorizo", "NO autorizo"]);
     setRequiereFirma(true);
+    setTipoConsulta("opciones");
+    setCamposDatos([""]);
     setPerfilesMarcados({
       Estudiantes: false, Padres: false, Profesores: false, Coordinadores: false,
       Rector: false, Administrativos: false, Secretaria: false, Orientador: false,
@@ -534,9 +551,14 @@ export default function Consultas() {
     if (!titulo.trim()) return toast({ title: "Falta el título", variant: "destructive" });
     if (!mensajeConsulta.trim()) return toast({ title: "Falta el mensaje de la consulta", variant: "destructive" });
     if (!mensajeWhatsapp.trim()) return toast({ title: "Falta el mensaje de WhatsApp", variant: "destructive" });
-    const opcionesLimpias = opciones.map((o) => o.trim()).filter(Boolean);
-    if (opcionesLimpias.length < 1) return toast({ title: "Al menos 1 opción requerida", variant: "destructive" });
-    if (opcionesLimpias.length > 4) return toast({ title: "Máximo 4 opciones", variant: "destructive" });
+    const opcionesLimpias = tipoConsulta === "datos" ? [] : opciones.map((o) => o.trim()).filter(Boolean);
+    const camposLimpios = tipoConsulta === "datos" ? camposDatos.map((c) => c.trim()).filter(Boolean) : [];
+    if (tipoConsulta === "opciones") {
+      if (opcionesLimpias.length < 1) return toast({ title: "Al menos 1 opción requerida", variant: "destructive" });
+      if (opcionesLimpias.length > 4) return toast({ title: "Máximo 4 opciones", variant: "destructive" });
+    } else if (camposLimpios.length < 1) {
+      return toast({ title: "Agrega al menos un campo a diligenciar", variant: "destructive" });
+    }
     const algunPerfilMarcado = Object.values(perfilesMarcados).some(Boolean);
     if (!algunPerfilMarcado) {
       return toast({ title: "Selecciona al menos un perfil de destinatario", variant: "destructive" });
@@ -581,6 +603,8 @@ export default function Consultas() {
           mensaje_consulta: mensajeConsulta,
           mensaje_whatsapp: mensajeWhatsapp,
           opciones: opcionesLimpias,
+          tipo: tipoConsulta,
+          campos_datos: tipoConsulta === "datos" ? camposLimpios : null,
           grados_objetivo: gradosSeleccionados.length > 0 ? gradosSeleccionados : null,
           salones_objetivo: salonesSeleccionados.length > 0 ? salonesSeleccionados : null,
           estudiantes_objetivo: estudiantesSeleccionados.length > 0 ? estudiantesSeleccionados : null,
@@ -847,6 +871,31 @@ export default function Consultas() {
 
             <Card>
               <CardHeader>
+                <CardTitle className="text-base">Tipo de respuesta</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3" data-guia="consultas.tipo_consulta">
+                <button
+                  type="button"
+                  onClick={() => setTipoConsulta("opciones")}
+                  className={`p-4 rounded-lg border-2 text-left transition-colors cursor-pointer ${tipoConsulta === "opciones" ? "border-primary bg-primary/5" : "border-border hover:bg-muted/30"}`}
+                >
+                  <p className="font-semibold text-foreground text-sm">Elegir una opción</p>
+                  <p className="text-xs text-muted-foreground mt-1">El destinatario responde eligiendo entre las opciones que definas (ej. SÍ autorizo / NO autorizo).</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTipoConsulta("datos")}
+                  className={`p-4 rounded-lg border-2 text-left transition-colors cursor-pointer ${tipoConsulta === "datos" ? "border-primary bg-primary/5" : "border-border hover:bg-muted/30"}`}
+                >
+                  <p className="font-semibold text-foreground text-sm">Diligenciar datos</p>
+                  <p className="text-xs text-muted-foreground mt-1">El destinatario llena un formulario con los campos que definas (ej. Cédula, Dirección, Título profesional...).</p>
+                </button>
+              </CardContent>
+            </Card>
+
+            {tipoConsulta === "opciones" ? (
+            <Card>
+              <CardHeader>
                 <CardTitle className="text-base">Opciones de respuesta</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2" data-guia="consultas.opcion_input">
@@ -871,6 +920,39 @@ export default function Consultas() {
                 )}
               </CardContent>
             </Card>
+            ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Campos a diligenciar</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2" data-guia="consultas.campo_dato_input">
+                <p className="text-xs text-muted-foreground">
+                  Los campos que ya están en la plataforma (nombre, cédula, fecha de nacimiento, edad, teléfono)
+                  le aparecerán prellenados al destinatario para que solo confirme o corrija. Las respuestas solo
+                  las verán el rector, los coordinadores, administrativos y la secretaria.
+                </p>
+                {camposDatos.map((c, i) => (
+                  <div key={i} className="flex gap-2 items-center">
+                    <Input
+                      value={c}
+                      onChange={(e) => updateCampo(i, e.target.value)}
+                      placeholder={`Campo ${i + 1} (ej. Escalafón, Dirección, Título profesional...)`}
+                    />
+                    {camposDatos.length > 1 && (
+                      <Button type="button" variant="ghost" size="icon" onClick={() => quitarCampo(i)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                {camposDatos.length < 20 && (
+                  <Button type="button" variant="outline" size="sm" onClick={agregarCampo} data-guia="consultas.boton_agregar_campo">
+                    <Plus className="h-3 w-3 mr-1" /> Añadir campo
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+            )}
 
             <Card>
               <CardHeader>
