@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { apiClient } from "@/lib/apiClient";
 import { CheckCircle2, Pencil } from "lucide-react";
 
 interface ConsultaRow {
@@ -24,6 +25,9 @@ interface ConsultaRow {
   internos_objetivo: string[] | null;
   perfiles_objetivo: string[] | null;
   activa: boolean;
+  /** 'opciones' (clásica) | 'datos' (formulario con campos a diligenciar) */
+  tipo?: string | null;
+  campos_datos?: string[] | null;
 }
 
 // Una "fila" de respuesta. Para padres, hay una fila por acudido. Para internos
@@ -122,6 +126,8 @@ export default function ConsultaPublica() {
   // padreId / respondenteId — siempre el session.id (text), tanto para padre como para interno.
   const [respondenteId, setRespondenteId] = useState<string>("");
   const [respuestas, setRespuestas] = useState<Record<number, string>>({});
+  // Consulta tipo 'datos': valores del formulario por respondente y campo.
+  const [datosForm, setDatosForm] = useState<Record<number, Record<string, string>>>({});
   const [firmaNombre, setFirmaNombre] = useState("");
   const [firmaData, setFirmaData] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -441,6 +447,71 @@ export default function ConsultaPublica() {
     })();
   }, [id, navigate]);
 
+  // Consulta tipo 'datos': precargar el formulario con la respuesta previa
+  // (columna jsonb `datos`) o, si no la hay, con lo que la plataforma ya sabe
+  // del respondente (nombre, cédula, fecha de nacimiento, edad, teléfono).
+  // Los flujos base solo miran opcion_seleccionada, así que aquí también se
+  // corrige el estado "respondido"/"enviado" para este tipo.
+  useEffect(() => {
+    if (!consulta || consulta.tipo !== "datos" || respondents.length === 0) return;
+    (async () => {
+      const campos = consulta.campos_datos || [];
+      const sess = getSession();
+      const { data: prevs } = await supabase
+        .from("Consultas_Respuestas" as any)
+        .select("estudiante_id, datos")
+        .eq("consulta_id", consulta.id)
+        .eq("padre_id", String(sess.id || ""));
+      const prevPorKey = new Map<number, Record<string, string>>();
+      for (const p of (prevs || []) as any[]) {
+        if (p.datos) prevPorKey.set(p.estudiante_id == null ? 0 : Number(p.estudiante_id), p.datos);
+      }
+      let propios: { nombres?: string | null; apellidos?: string | null; numero_de_telefono?: string | null; fecha_de_nacimiento?: string | null } | null = null;
+      try { propios = await apiClient.perfil.datos(); } catch { propios = null; }
+      const normCampo = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+      const valorSugerido = (campo: string, r: Respondent): string => {
+        const c = normCampo(campo);
+        const esPropia = r.tipoRespondente !== "padre";
+        if (c.includes("nombre")) {
+          return esPropia
+            ? `${propios?.nombres || sess.nombres || ""} ${propios?.apellidos || sess.apellidos || ""}`.trim()
+            : `${r.estudianteNombre || ""} ${r.estudianteApellidos || ""}`.trim();
+        }
+        if (c.includes("cedula") || c.includes("documento") || c.includes("identidad")) {
+          return esPropia ? String(sess.id || "") : String(r.estudianteId || "");
+        }
+        if (c.includes("nacimiento")) return esPropia ? (propios?.fecha_de_nacimiento || "") : "";
+        if (c.includes("edad")) {
+          const f = esPropia ? propios?.fecha_de_nacimiento : null;
+          if (!f) return "";
+          const [y, m, d] = String(f).split("-").map(Number);
+          if (!y || !m || !d) return "";
+          const hoy = new Date();
+          let e = hoy.getFullYear() - y;
+          if (hoy.getMonth() + 1 < m || (hoy.getMonth() + 1 === m && hoy.getDate() < d)) e--;
+          return String(e);
+        }
+        if (c.includes("telefono") || c.includes("celular")) return esPropia ? (propios?.numero_de_telefono || "") : "";
+        return "";
+      };
+      const inicial: Record<number, Record<string, string>> = {};
+      for (const r of respondents) {
+        const prev = prevPorKey.get(r.key);
+        const form: Record<string, string> = {};
+        for (const campo of campos) {
+          form[campo] = prev && prev[campo] != null ? String(prev[campo]) : valorSugerido(campo, r);
+        }
+        inicial[r.key] = form;
+      }
+      setDatosForm(inicial);
+      if (prevPorKey.size > 0) {
+        setRespondents((rs) => rs.map((r) => (prevPorKey.has(r.key) ? { ...r, respondido: true } : r)));
+        if (respondents.every((r) => prevPorKey.has(r.key))) setEnviado(true);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [consulta?.id, consulta?.tipo, respondents.length]);
+
   const limpiarFirma = () => {
     sigCanvas.current?.clear();
     setFirmaData(null);
@@ -482,9 +553,19 @@ export default function ConsultaPublica() {
 
   const handleEnviar = async () => {
     if (!consulta) return;
+    const esDatos = consulta.tipo === "datos";
 
-    const aUpsertar = respondents.filter((r) => respuestas[r.key]);
-    const aBorrar = respondents.filter((r) => !respuestas[r.key] && r.respondido);
+    // Tipo 'datos': se envían TODOS los respondentes con el formulario completo.
+    if (esDatos) {
+      const campos = consulta.campos_datos || [];
+      const incompleto = respondents.some((r) => campos.some((c) => !(datosForm[r.key]?.[c] || "").trim()));
+      if (incompleto) {
+        return toast({ title: "Completa todos los campos antes de enviar", variant: "destructive" });
+      }
+    }
+
+    const aUpsertar = esDatos ? respondents : respondents.filter((r) => respuestas[r.key]);
+    const aBorrar = esDatos ? [] : respondents.filter((r) => !respuestas[r.key] && r.respondido);
 
     if (aUpsertar.length === 0 && aBorrar.length === 0) {
       return toast({ title: "Seleccione al menos una respuesta", variant: "destructive" });
@@ -533,7 +614,10 @@ export default function ConsultaPublica() {
           estudiante_apellidos: r.estudianteApellidos,
           estudiante_grado: r.estudianteGrado,
           estudiante_salon: r.estudianteSalon,
-          opcion_seleccionada: respuestas[r.key],
+          opcion_seleccionada: consulta.tipo === "datos" ? null : respuestas[r.key],
+          datos: consulta.tipo === "datos"
+            ? Object.fromEntries((consulta.campos_datos || []).map((c) => [c, (datosForm[r.key]?.[c] || "").trim()]))
+            : null,
           firma_nombre:
             firmaNombre ||
             r.firmaPreviaNombre ||
@@ -584,7 +668,7 @@ export default function ConsultaPublica() {
             opcionPrevia: p.opcion_seleccionada,
             firmaPreviaUrl: p.firma_url,
             firmaPreviaNombre: p.firma_nombre,
-            respondido: !!p.opcion_seleccionada,
+            respondido: !!(p.opcion_seleccionada || p.datos),
           };
         })
       );
@@ -674,10 +758,10 @@ export default function ConsultaPublica() {
         <Card>
           <CardContent className="p-4 sm:p-6 space-y-4">
             <div className="font-semibold text-foreground">
-              {respondents.length > 1
+              {consulta.tipo === "datos"
+                ? "Diligencie los siguientes datos:"
+                : respondents.length > 1
                 ? "Indique su respuesta para cada estudiante:"
-                : esInterno
-                ? "Indique su respuesta:"
                 : "Indique su respuesta:"}
             </div>
             {respondents.map((r) => (
@@ -688,6 +772,26 @@ export default function ConsultaPublica() {
                     <span className="text-muted-foreground text-sm font-normal"> {r.contexto}</span>
                   )}
                 </div>
+                {consulta.tipo === "datos" ? (
+                <div data-guia="consulta.campos_datos" className="space-y-3">
+                  {(consulta.campos_datos || []).map((campo) => (
+                    <div key={campo}>
+                      <Label className="text-sm font-medium">{campo}</Label>
+                      <Input
+                        className="mt-1"
+                        value={datosForm[r.key]?.[campo] || ""}
+                        disabled={readonly || !consulta.activa}
+                        onChange={(e) =>
+                          setDatosForm((prev) => ({
+                            ...prev,
+                            [r.key]: { ...(prev[r.key] || {}), [campo]: e.target.value },
+                          }))
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
+                ) : (
                 <div data-guia="consulta.opciones" className="flex flex-wrap gap-2">
                   {consulta.opciones.map((op) => (
                     <button
@@ -714,6 +818,7 @@ export default function ConsultaPublica() {
                     </button>
                   ))}
                 </div>
+                )}
               </div>
             ))}
           </CardContent>

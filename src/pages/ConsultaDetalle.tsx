@@ -60,6 +60,9 @@ interface ConsultaRow {
   perfiles_objetivo: string[] | null;
   internos_objetivo: string[] | null;
   mensaje_whatsapp?: string | null;
+  /** 'opciones' (clásica) | 'datos' (formulario con campos a diligenciar) */
+  tipo?: string | null;
+  campos_datos?: string[] | null;
 }
 
 interface EstudianteRow {
@@ -111,6 +114,9 @@ interface RespuestaRow {
   firma_url: string | null;
   firma_nombre: string | null;
   fecha_respuesta: string | null;
+  padre_nombre?: string | null;
+  /** Consulta tipo 'datos': { campo: valor } diligenciado */
+  datos?: Record<string, string> | null;
 }
 
 interface RespuestaInternoTabla {
@@ -678,6 +684,51 @@ export default function ConsultaDetalle() {
     workbook.creator = "Normi";
     workbook.created = new Date();
 
+    // Consulta tipo 'datos': hoja con una columna por campo diligenciado.
+    if (consulta.tipo === "datos") {
+      const campos = consulta.campos_datos || [];
+      const filas = respuestas
+        .filter((r) => r.datos)
+        .sort((a, b) => (a.padre_nombre || "").localeCompare(b.padre_nombre || "", "es"));
+      const sheetD = workbook.addWorksheet(consulta.titulo.slice(0, 30).replace(/[:*?/\\[\]]/g, ""), {
+        properties: { tabColor: { argb: "FF15803D" } },
+        views: [{ state: "frozen", ySplit: 2 }],
+      });
+      const headers = ["Diligenciado por", ...campos, "Fecha"];
+      const lastCol = String.fromCharCode("A".charCodeAt(0) + headers.length - 1);
+      sheetD.mergeCells(`A1:${lastCol}1`);
+      const t = sheetD.getCell("A1");
+      t.value = consulta.titulo;
+      t.font = { bold: true, size: 14, color: { argb: "FF1A2332" } };
+      t.alignment = { horizontal: "center", vertical: "middle" };
+      sheetD.getRow(1).height = 26;
+      const headerRow = sheetD.getRow(2);
+      headers.forEach((h, i) => {
+        const cell = headerRow.getCell(i + 1);
+        cell.value = h;
+        cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF15803D" } };
+        cell.alignment = { horizontal: "left", vertical: "middle" };
+      });
+      for (const r of filas) {
+        sheetD.addRow([
+          r.padre_nombre || r.padre_id,
+          ...campos.map((c) => r.datos?.[c] || ""),
+          r.fecha_respuesta ? new Date(r.fecha_respuesta).toLocaleString("es-CO") : "",
+        ]);
+      }
+      sheetD.columns.forEach((col) => { col.width = 24; });
+      const buf = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${consulta.titulo.replace(/[^\wáéíóúñÁÉÍÓÚÑ ]/g, "").trim() || "consulta"}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
+
     const sheet = workbook.addWorksheet(consulta.titulo.slice(0, 30).replace(/[:*?/\\[\]]/g, ""), {
       properties: { tabColor: { argb: "FF15803D" } },
       views: [{ state: "frozen", ySplit: 4 }],
@@ -958,6 +1009,16 @@ export default function ConsultaDetalle() {
     );
   }
 
+  // Consulta tipo 'datos': las respuestas contienen datos personales, así que
+  // solo las ven estos cargos (los demás internos solo diligencian su formulario).
+  // El dbProxy aplica el mismo blindaje del lado del server.
+  const esDatos = consulta.tipo === "datos";
+  const CARGOS_VEN_RESPUESTAS = ["Administrador", "Rector", "Coordinador(a)", "Administrativo(a)", "Secretaria General"];
+  const veRespuestas = !esDatos || CARGOS_VEN_RESPUESTAS.includes(getSession().cargo || "");
+  const respuestasDatos = esDatos
+    ? respuestas.filter((r) => r.datos).sort((a, b) => (a.padre_nombre || "").localeCompare(b.padre_nombre || "", "es"))
+    : [];
+
   return (
     <div className="min-h-screen bg-background">
       <HeaderNormi />
@@ -991,9 +1052,11 @@ export default function ConsultaDetalle() {
                 </Button>
               );
             })()}
-            <Button onClick={exportarExcel} size="sm" data-guia="consultas.boton_excel">
-              <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
-            </Button>
+            {veRespuestas && (
+              <Button onClick={exportarExcel} size="sm" data-guia="consultas.boton_excel">
+                <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
+              </Button>
+            )}
           </div>
         </div>
 
@@ -1047,8 +1110,26 @@ export default function ConsultaDetalle() {
           </Card>
         )}
 
+        {/* Tipo 'datos': el interno destinatario diligencia en /consulta/:id */}
+        {puedoResponder && consulta.activa && esDatos && (
+          <Card className="border-primary/40">
+            <CardContent className="p-4 sm:p-6 flex items-center justify-between gap-3 flex-wrap">
+              <div className="text-sm font-semibold text-foreground flex items-center gap-2">
+                {miFechaRespuesta ? (
+                  <><CheckCircle2 className="h-4 w-4 text-emerald-600" /> Ya diligenciaste este formulario</>
+                ) : (
+                  <>Debes diligenciar este formulario</>
+                )}
+              </div>
+              <Button size="sm" onClick={() => navigate(`/consulta/${consulta.id}`)} data-guia="consultas.boton_diligenciar">
+                {miFechaRespuesta ? "Ver o editar mis datos" : "Diligenciar formulario"}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Panel "Tu respuesta" — sólo internos destinatarios */}
-        {puedoResponder && consulta.activa && (
+        {puedoResponder && consulta.activa && !esDatos && (
           <Card className="border-primary/40">
             <CardContent className="p-4 sm:p-6 space-y-4">
               <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -1140,7 +1221,70 @@ export default function ConsultaDetalle() {
           </Card>
         )}
 
-        {((consulta.grados_objetivo && consulta.grados_objetivo.length > 0) ||
+        {/* Tipo 'datos': tabla única con los datos diligenciados (solo cargos autorizados) */}
+        {esDatos && veRespuestas && (
+          <div className="mt-6">
+            <h2 className="text-lg font-bold text-foreground mb-3">Datos diligenciados</h2>
+            {respuestasDatos.length === 0 ? (
+              <div className="text-sm text-muted-foreground border rounded-lg bg-white p-4">
+                Nadie ha diligenciado el formulario todavía.
+              </div>
+            ) : (
+              <div className="overflow-x-auto border rounded-lg bg-white shadow-sm">
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="bg-primary text-primary-foreground">
+                      <th className="text-left p-3 font-semibold border-r border-primary-foreground/20">Diligenciado por</th>
+                      {respuestasDatos.some((r) => r.estudiante_id != null) && (
+                        <th className="text-left p-3 font-semibold border-r border-primary-foreground/20">Estudiante</th>
+                      )}
+                      {(consulta.campos_datos || []).map((campo) => (
+                        <th key={campo} className="text-left p-3 font-semibold border-r border-primary-foreground/20">{campo}</th>
+                      ))}
+                      {consulta.requiere_firma && (
+                        <th className="text-center p-3 font-semibold border-r border-primary-foreground/20">Firma</th>
+                      )}
+                      <th className="text-center p-3 font-semibold last:border-r-0">Fecha</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {respuestasDatos.map((r) => (
+                      <tr key={r.id} className="border-t border-border hover:bg-muted/30">
+                        <td className="p-3 border-r border-border font-medium whitespace-nowrap">{r.padre_nombre || r.padre_id}</td>
+                        {respuestasDatos.some((x) => x.estudiante_id != null) && (
+                          <td className="p-3 border-r border-border whitespace-nowrap">
+                            {r.estudiante_id != null ? `${r.estudiante_nombre || ""} ${r.estudiante_apellidos || ""}`.trim() : "—"}
+                          </td>
+                        )}
+                        {(consulta.campos_datos || []).map((campo) => (
+                          <td key={campo} className="p-3 border-r border-border">{r.datos?.[campo] || "—"}</td>
+                        ))}
+                        {consulta.requiere_firma && (
+                          <td className="p-3 border-r border-border text-center">
+                            {r.firma_url ? (
+                              <button type="button" onClick={() => setFirmaModal(r.firma_url)} className="text-primary hover:underline text-xs cursor-pointer">
+                                Ver firma
+                              </button>
+                            ) : "—"}
+                          </td>
+                        )}
+                        <td className="p-3 text-center whitespace-nowrap text-xs text-muted-foreground">
+                          {r.fecha_respuesta ? new Date(r.fecha_respuesta).toLocaleString("es-CO", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground mt-2">
+              {respuestasDatos.length} {respuestasDatos.length === 1 ? "persona ha diligenciado" : "personas han diligenciado"} el formulario.
+              Esta información solo es visible para rectoría, coordinadores, administrativos y secretaría.
+            </p>
+          </div>
+        )}
+
+        {!esDatos && ((consulta.grados_objetivo && consulta.grados_objetivo.length > 0) ||
           (consulta.salones_objetivo && consulta.salones_objetivo.length > 0) ||
           (consulta.estudiantes_objetivo && consulta.estudiantes_objetivo.length > 0)) && (
         <>
@@ -1306,7 +1450,7 @@ export default function ConsultaDetalle() {
         </>
         )}
 
-        {(consulta?.cargos_objetivo && consulta.cargos_objetivo.length > 0) || respuestasInternos.length > 0 ? (
+        {!esDatos && ((consulta?.cargos_objetivo && consulta.cargos_objetivo.length > 0) || respuestasInternos.length > 0) ? (
           <div className="mt-6">
             <h2 className="text-lg font-bold text-foreground mb-3">Respuestas de internos</h2>
             <div className="overflow-x-auto border rounded-lg bg-white shadow-sm">
@@ -1382,7 +1526,7 @@ export default function ConsultaDetalle() {
         ) : null}
 
         {/* Respuestas de estudiantes que respondieron directo (esquema nuevo) */}
-        {respuestasEstudiantes.length > 0 ? (
+        {!esDatos && respuestasEstudiantes.length > 0 ? (
           <div className="mt-6">
             <h2 className="text-lg font-bold text-foreground mb-3">Respuestas de estudiantes</h2>
             <div className="overflow-x-auto border rounded-lg bg-white shadow-sm">

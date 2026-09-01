@@ -97,7 +97,7 @@ export const CONSULTAS: Capacidad[] = [
     id: "consultas.crear",
     titulo: "Crear y enviar una consulta",
     descripcion:
-      "Armar una consulta o autorización (título, mensaje, opciones y destinatarios) y enviarla por WhatsApp con su link.",
+      "Armar una consulta o autorización (título, mensaje y destinatarios) y enviarla por WhatsApp con su link. Puede ser de opciones (sí/no) o de 'Diligenciar datos': un formulario con campos definidos por ti (ej. cédula, dirección, escalafón) cuyas respuestas solo ven rector, coordinadores, administrativos y secretaría.",
     categoria: "Consultas",
     roles: [...ALL_INTERNOS],
     ruta: "/consultas",
@@ -116,6 +116,9 @@ export const CONSULTAS: Capacidad[] = [
       "nueva consulta",
       "pedir autorización de salida",
       "encuesta de sí o no a los acudientes",
+      "recolectar datos de los docentes",
+      "formato para que los profesores llenen sus datos",
+      "formulario de datos del personal",
     ],
     pasos: [
       {
@@ -150,7 +153,14 @@ export const CONSULTAS: Capacidad[] = [
       },
       {
         narracion:
-          "Revisa las opciones de respuesta. Vienen 'SÍ autorizo' y 'NO autorizo', pero puedes cambiarlas.",
+          "Elige el tipo de respuesta: 'Elegir una opción' (la clásica de sí/no) o 'Diligenciar datos' (el destinatario llena un formulario con los campos que definas, ej. cédula, dirección, escalafón; esas respuestas solo las ven rector, coordinadores, administrativos y secretaría).",
+        accion: "click",
+        ancla: "consultas.tipo_consulta",
+        opcional: true,
+      },
+      {
+        narracion:
+          "Revisa las opciones de respuesta. Vienen 'SÍ autorizo' y 'NO autorizo', pero puedes cambiarlas. (Si elegiste 'Diligenciar datos', en su lugar escribe los campos del formulario y agrega más con 'Añadir campo'.)",
         accion: "escribir",
         ancla: "consultas.opcion_input",
         campo: "opcion",
