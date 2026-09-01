@@ -193,7 +193,7 @@ const JustificacionInasistencia = () => {
         ? fmtFecha(payload.fecha_inicio)
         : `${fmtFecha(payload.fecha_inicio)} — ${fmtFecha(payload.fecha_fin)} (${diasAusente} días)`;
       const mensaje =
-        `Nueva justificación por inasistencia registrada en la plataforma.\n\n` +
+        `Nueva justificación por inasistencia registrada.\n\n` +
         `Estudiante: ${acudidoSeleccionado.nombre} ${acudidoSeleccionado.apellidos} — ${acudidoSeleccionado.grado} ${acudidoSeleccionado.salon} (id ${acudidoSeleccionado.id}).\n` +
         `Fecha(s): ${fechasTexto}.\n` +
         `Motivo: ${motivoTexto}.\n` +
