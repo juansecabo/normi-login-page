@@ -126,7 +126,7 @@ const JustificacionUniforme = () => {
       setShowSuccess(true);
 
       const mensaje =
-        `Nueva justificación por uniforme registrada en la plataforma.\n\n` +
+        `Nueva justificación por uniforme registrada.\n\n` +
         `Estudiante: ${acudidoSeleccionado.nombre} ${acudidoSeleccionado.apellidos} — ${acudidoSeleccionado.grado} ${acudidoSeleccionado.salon} (id ${acudidoSeleccionado.id}).\n` +
         `Fecha: ${fmtFecha(payload.fecha)}.\n` +
         `Justificación: ${justificacion.trim()}.\n` +

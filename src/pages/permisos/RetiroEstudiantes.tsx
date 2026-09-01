@@ -217,7 +217,7 @@ const RetiroEstudiantes = () => {
         ? ""
         : `\nPersona autorizada: ${nombrePersona}${tipoSalida === "familiar" && parentesco ? ` (${parentesco})` : ""}.`;
       const mensaje =
-        `Nueva autorización de retiro registrada en la plataforma.\n\n` +
+        `Nueva autorización de retiro registrada.\n\n` +
         `Estudiante: ${acudidoSeleccionado.nombre} ${acudidoSeleccionado.apellidos} — ${acudidoSeleccionado.grado} ${acudidoSeleccionado.salon} (id ${acudidoSeleccionado.id}).\n` +
         `Fecha de retiro: ${fechaLabel}.\n` +
         `Hora de retiro: ${horaLabel}.\n` +
