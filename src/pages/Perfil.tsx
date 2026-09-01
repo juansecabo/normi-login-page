@@ -245,9 +245,15 @@ const Perfil = () => {
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-6">
-          <h2 className="text-xl font-bold text-foreground flex items-center gap-3 mb-6">
-            <img src={iconPerfil} alt="" className="h-8 w-8 object-contain" /> Perfil
-          </h2>
+          {vista === "menu" ? (
+            <h2 className="text-xl font-bold text-foreground flex items-center gap-3 mb-6">
+              <img src={iconPerfil} alt="" className="h-8 w-8 object-contain" /> Perfil
+            </h2>
+          ) : (
+            <h2 className="text-xl font-bold text-foreground text-center mb-6">
+              {vista === "datos" ? "Cambiar datos" : vista === "recuperacion" ? "Recuperación de contraseña" : "Notificaciones al WhatsApp"}
+            </h2>
+          )}
 
           {vista === "menu" && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -273,7 +279,6 @@ const Perfil = () => {
 
           {vista === "notificaciones" && (
             <div className="space-y-4 max-w-xl mx-auto">
-              <h3 className="text-lg font-semibold text-foreground">Notificaciones al WhatsApp</h3>
               <p className="text-sm text-muted-foreground">
                 Apaga los avisos que no quieras recibir en tu WhatsApp. Todo sigue quedando registrado
                 en la plataforma igual que siempre, lo único que se silencia es el mensaje.
@@ -306,7 +311,6 @@ const Perfil = () => {
 
           {vista === "datos" && (
             <div className="space-y-6 max-w-md mx-auto">
-              <h3 className="text-lg font-semibold text-foreground">Cambiar datos</h3>
               {cargandoDatos ? <p className="text-muted-foreground text-sm">Cargando...</p> : (
                 <>
                   {!esEstudiante && (
@@ -359,7 +363,6 @@ const Perfil = () => {
 
           {vista === "recuperacion" && (
             <div className="space-y-5 max-w-md mx-auto">
-              <h3 className="text-lg font-semibold text-foreground">Recuperación de contraseña</h3>
 
               {!verificada ? (
                 <div className="flex items-center gap-2 text-muted-foreground text-sm py-4">
