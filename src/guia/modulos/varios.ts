@@ -244,7 +244,7 @@ export const VARIOS: Capacidad[] = [
     id: "varios.perfil_notificaciones_whatsapp",
     titulo: "Elegir qué notificaciones te llegan al WhatsApp",
     descripcion:
-      "Encender o apagar cada tipo de aviso que te llega al WhatsApp según tu cargo (comunicados, registros de comportamiento, excusas, permisos, cumpleaños...). Todo sigue quedando en la plataforma; solo se silencia el mensaje de WhatsApp.",
+      "Encender o apagar cada tipo de aviso que te llega al WhatsApp según tu cargo (comunicados, registros de comportamiento, excusas, permisos...). Todo sigue quedando en la plataforma; solo se silencia el mensaje de WhatsApp.",
     categoria: "Varios",
     roles: [...INTERNOS_CON_PERFIL],
     ruta: "/perfil",

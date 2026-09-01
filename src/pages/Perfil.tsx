@@ -250,7 +250,7 @@ const Perfil = () => {
           </h2>
 
           {vista === "menu" && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <button onClick={() => setVista("datos")} data-guia="varios.perfil_ficha_datos" className="flex flex-col items-center gap-3 p-10 rounded-xl bg-sky-100 hover:bg-sky-200 transition-colors cursor-pointer">
                 <UserRound className="w-12 h-12 text-sky-700" />
                 <span className="text-lg font-semibold text-foreground">Cambiar datos</span>
@@ -273,7 +273,6 @@ const Perfil = () => {
 
           {vista === "notificaciones" && (
             <div className="space-y-4 max-w-xl mx-auto">
-              <button onClick={() => setVista("menu")} className="inline-flex items-center gap-1 text-sm text-primary hover:underline"><ArrowLeft className="w-4 h-4" /> Volver</button>
               <p className="text-sm text-muted-foreground">
                 Apaga los avisos que no quieras recibir en tu WhatsApp. Todo sigue quedando registrado
                 en la plataforma igual que siempre, lo único que se silencia es el mensaje.
