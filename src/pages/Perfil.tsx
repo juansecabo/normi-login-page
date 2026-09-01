@@ -5,7 +5,7 @@ import HeaderNormi from "@/components/HeaderNormi";
 import PhoneInput from "@/components/PhoneInput";
 import { apiClient } from "@/lib/apiClient";
 import { useToast } from "@/hooks/use-toast";
-import { UserRound, KeyRound, Eye, EyeOff, Loader2, MessageCircle, Mail, ArrowLeft, BellRing } from "lucide-react";
+import { UserRound, KeyRound, Eye, EyeOff, Loader2, MessageCircle, Mail, BellRing } from "lucide-react";
 import iconPerfil from "@/assets/icons/perfil.png";
 
 /**
@@ -273,6 +273,7 @@ const Perfil = () => {
 
           {vista === "notificaciones" && (
             <div className="space-y-4 max-w-xl mx-auto">
+              <h3 className="text-lg font-semibold text-foreground">Notificaciones al WhatsApp</h3>
               <p className="text-sm text-muted-foreground">
                 Apaga los avisos que no quieras recibir en tu WhatsApp. Todo sigue quedando registrado
                 en la plataforma igual que siempre, lo único que se silencia es el mensaje.
@@ -305,7 +306,7 @@ const Perfil = () => {
 
           {vista === "datos" && (
             <div className="space-y-6 max-w-md mx-auto">
-              <button onClick={() => setVista("menu")} className="inline-flex items-center gap-1 text-sm text-primary hover:underline"><ArrowLeft className="w-4 h-4" /> Volver</button>
+              <h3 className="text-lg font-semibold text-foreground">Cambiar datos</h3>
               {cargandoDatos ? <p className="text-muted-foreground text-sm">Cargando...</p> : (
                 <>
                   {!esEstudiante && (
@@ -358,7 +359,7 @@ const Perfil = () => {
 
           {vista === "recuperacion" && (
             <div className="space-y-5 max-w-md mx-auto">
-              <button onClick={() => setVista("menu")} className="inline-flex items-center gap-1 text-sm text-primary hover:underline"><ArrowLeft className="w-4 h-4" /> Volver</button>
+              <h3 className="text-lg font-semibold text-foreground">Recuperación de contraseña</h3>
 
               {!verificada ? (
                 <div className="flex items-center gap-2 text-muted-foreground text-sm py-4">
