@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getSession, hasValidSession, isAdmin, puedeAccederDashboard } from "@/hooks/useSession";
+import { cargoSegunGenero } from "@/lib/entrevistadores";
 import { supabase } from "@/integrations/supabase/client";
 import HeaderNormi from "@/components/HeaderNormi";
 import { Button } from "@/components/ui/button";
@@ -595,6 +596,16 @@ export default function Consultas() {
     const session = getSession();
     setEnviando(true);
     try {
+      // El cargo del creador se guarda YA con género ("Coordinadora", no
+      // "Coordinador(a)") — es solo display; la única comparación exacta es
+      // contra "Administrador", que el helper no modifica.
+      const { data: uGen } = await supabase
+        .from("Usuarios")
+        .select("genero")
+        .eq("id", String(session.id))
+        .maybeSingle();
+      const cargoConGenero = cargoSegunGenero(session.cargo || undefined, (uGen as any)?.genero ?? null) || session.cargo || null;
+
       // 1. Insertar la consulta en Supabase
       const { data: consultaInsertada, error: errIns } = await supabase
         .from("Consultas" as any)
@@ -614,7 +625,7 @@ export default function Consultas() {
           requiere_firma: requiereFirma,
           creado_por: Number(session.id),
           creado_por_nombre: `${session.nombres || ""} ${session.apellidos || ""}`.trim(),
-          creado_por_cargo: session.cargo || null,
+          creado_por_cargo: cargoConGenero,
         })
         .select()
         .single();
