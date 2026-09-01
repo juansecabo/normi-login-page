@@ -158,6 +158,8 @@ export default function Consultas() {
 
   // Mapa de consultaId → estado de respuesta del usuario actual (si es interno target)
   const [miRespuestaPorConsulta, setMiRespuestaPorConsulta] = useState<Record<number, "respondida" | "pendiente">>({});
+  // Opción que el usuario actual eligió en cada consulta (para resaltar solo ese chip).
+  const [miOpcionPorConsulta, setMiOpcionPorConsulta] = useState<Record<number, string>>({});
 
   const cargarConsultas = async () => {
     setLoading(true);
@@ -221,13 +223,17 @@ export default function Consultas() {
         .is("estudiante_id", null)
         .in("consulta_id", ids);
       const mapa: Record<number, "respondida" | "pendiente"> = {};
+      const opciones: Record<number, string> = {};
       consultasParaResponder.forEach((c) => {
         const r = (misResp || []).find((x: any) => Number(x.consulta_id) === c.id);
         mapa[c.id] = r && (r.opcion_seleccionada || (r as any).datos) ? "respondida" : "pendiente";
+        if (r?.opcion_seleccionada) opciones[c.id] = String(r.opcion_seleccionada);
       });
       setMiRespuestaPorConsulta(mapa);
+      setMiOpcionPorConsulta(opciones);
     } else {
       setMiRespuestaPorConsulta({});
+      setMiOpcionPorConsulta({});
     }
     setLoading(false);
   };
@@ -787,18 +793,23 @@ export default function Consultas() {
                 return (
                   <Card
                     key={c.id}
-                    className={`cursor-pointer hover:border-primary transition-colors ${meTocaResponder ? "border-primary border-2" : ""}`}
+                    className={`relative overflow-hidden cursor-pointer hover:border-primary transition-colors ${meTocaResponder ? "border-primary border-2" : ""}`}
                     onClick={() => navigate(`/consultas/${c.id}`)}
                   >
+                    {yaRespondi && (
+                      <div
+                        aria-label="Respondida"
+                        className="pointer-events-none absolute right-4 top-3 -rotate-12 select-none rounded border-[3px] border-double border-emerald-600/80 px-2 py-0.5 text-[11px] font-black uppercase tracking-[0.2em] text-emerald-700/80"
+                      >
+                        Respondida
+                      </div>
+                    )}
                     <CardContent className="p-4">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-foreground truncate">{c.titulo}</h3>
                         {!c.activa && <Badge variant="secondary">Cerrada</Badge>}
                         {meTocaResponder && (
                           <Badge variant="default" className="bg-amber-500 hover:bg-amber-600">Pendiente tu respuesta</Badge>
-                        )}
-                        {yaRespondi && (
-                          <Badge variant="secondary" className="bg-green-100 text-green-800 border border-green-300">Ya respondiste</Badge>
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">
@@ -815,11 +826,15 @@ export default function Consultas() {
                             Formulario de datos
                           </Badge>
                         ) : (
-                          c.opciones.slice(0, 4).map((op, i) => (
-                            <Badge key={i} variant="outline" className={`text-xs ${colorOpcion(op, i)}`}>
-                              {op}
-                            </Badge>
-                          ))
+                          c.opciones.slice(0, 4).map((op, i) => {
+                            // Solo la opción que la persona eligió va con color; las demás en gris.
+                            const elegida = miOpcionPorConsulta[c.id] === op;
+                            return (
+                              <Badge key={i} variant="outline" className={`text-xs ${elegida ? colorOpcion(op, i) : "bg-muted text-muted-foreground border-border"}`}>
+                                {op}
+                              </Badge>
+                            );
+                          })
                         )}
                       </div>
                       {(meTocaResponder || yaRespondi) && (
