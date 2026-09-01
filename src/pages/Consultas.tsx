@@ -78,6 +78,16 @@ function perfilToKey(perfil: string): PerfilKey {
 }
 
 // Webhooks viejos de n8n eliminados — todos los envíos van vía /api/comunicados/enviar.
+// Color de fondo de los chips de opciones en la lista: verde para las
+// afirmativas ("SÍ autorizo", "Acepto"), rojo para las negativas ("NO autorizo"),
+// y azul/ámbar alternados para el resto.
+const colorOpcion = (op: string, i: number): string => {
+  const t = op.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  if (/^no\b/.test(t) || /\bno (autorizo|acepto|asist)/.test(t)) return "bg-rose-100 text-rose-800 border-rose-200";
+  if (/^si\b/.test(t) || /\b(autorizo|acepto|de acuerdo|asistir[ae])\b/.test(t)) return "bg-emerald-100 text-emerald-800 border-emerald-200";
+  return i % 2 === 0 ? "bg-sky-100 text-sky-800 border-sky-200" : "bg-amber-100 text-amber-800 border-amber-200";
+};
+
 const CONSULTAS_BASE = "https://notasnormi.com/consulta";
 
 export default function Consultas() {
@@ -799,12 +809,18 @@ export default function Consultas() {
                         {" "}—{" "}
                         {new Date(c.fecha_creacion).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })}
                       </p>
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {c.opciones.slice(0, 4).map((op, i) => (
-                          <Badge key={i} variant="outline" className="text-xs">
-                            {op}
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {(c as any).tipo === "datos" ? (
+                          <Badge variant="outline" className="text-xs bg-violet-100 text-violet-800 border-violet-200">
+                            Formulario de datos
                           </Badge>
-                        ))}
+                        ) : (
+                          c.opciones.slice(0, 4).map((op, i) => (
+                            <Badge key={i} variant="outline" className={`text-xs ${colorOpcion(op, i)}`}>
+                              {op}
+                            </Badge>
+                          ))
+                        )}
                       </div>
                       {(meTocaResponder || yaRespondi) && (
                         <div className="mt-3">
