@@ -133,40 +133,14 @@ const PorteriaLlegadaTarde = () => {
     if (lista.length === 0) return;
     setEnviando(true);
     try {
-      const r = await apiRequest<{
-        reportados: number; notificados: number; sin_acudiente: string[];
-        coordinadores_notificados?: number; directores_notificados?: number; profesores_notificados?: number;
-      }>(
+      const r = await apiRequest<{ reportados: number; notificados: number; sin_acudiente: string[] }>(
         "/api/porteria/reportar-tarde",
         { method: "POST", body: JSON.stringify({ estudiante_ids: lista.map(e => e.id) }) },
       );
-      // "Se notificó a N acudientes, al coordinador / a los coordinadores y
-      // al director de grupo / a los directores de grupo." (solo lo que aplique)
-      const partes: string[] = [`a ${r.notificados} acudiente${r.notificados === 1 ? "" : "s"}`];
-      const nc = r.coordinadores_notificados || 0;
-      const nd = r.directores_notificados || 0;
-      const np = r.profesores_notificados || 0;
-      if (nc > 0) partes.push(nc === 1 ? "al coordinador" : "a los coordinadores");
-      if (nd > 0) partes.push(nd === 1 ? "al director de grupo" : "a los directores de grupo");
-      if (np > 0) partes.push(np === 1 ? "al profesor del salón" : "a los profesores del salón");
-      const quienes = partes.length > 1
-        ? partes.slice(0, -1).join(", ") + " y " + partes[partes.length - 1]
-        : partes[0];
+      const sin = r.sin_acudiente?.length ? ` Sin acudiente registrado: ${r.sin_acudiente.join(", ")}.` : "";
       toast({
         title: `Reporte enviado (${r.reportados} estudiante${r.reportados === 1 ? "" : "s"})`,
-        description: (
-          <div className="space-y-2">
-            <p>Se notificó {quienes}.</p>
-            {r.sin_acudiente?.length ? (
-              <div>
-                <p>Sin acudiente registrado:</p>
-                <ul className="list-disc pl-5">
-                  {r.sin_acudiente.map((n) => <li key={n}>{n}</li>)}
-                </ul>
-              </div>
-            ) : null}
-          </div>
-        ) as any,
+        description: `Se notificó a ${r.notificados} acudiente${r.notificados === 1 ? "" : "s"}.${sin}`,
         variant: "success" as any,
       });
       setSeleccionados({});
