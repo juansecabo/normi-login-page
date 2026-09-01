@@ -109,7 +109,7 @@ export default function MisConsultasEstudiante() {
           const r = respMap.get(c.id);
           return {
             consulta: c,
-            opcion: r?.opcion_seleccionada || ((r as any)?.datos ? "Diligenciada" : null),
+            opcion: r?.opcion_seleccionada || null,
             fecha_respuesta: r?.fecha_respuesta || null,
           };
         });
