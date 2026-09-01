@@ -610,6 +610,12 @@ export const apiClient = {
     recuperacionGuardar(body: { metodo: 'whatsapp' | 'correo'; pregunta?: string; respuesta?: string; correo?: string }): Promise<{ ok: true }> {
       return request('/api/perfil/recuperacion', { method: 'POST', body: JSON.stringify(body) });
     },
+    notificaciones(): Promise<{ tipos: Array<{ clave: string; etiqueta: string; descripcion: string; activo: boolean }> }> {
+      return request('/api/perfil/notificaciones');
+    },
+    guardarNotificaciones(apagadas: string[]): Promise<{ ok: true; apagadas: string[] }> {
+      return request('/api/perfil/notificaciones', { method: 'POST', body: JSON.stringify({ apagadas }) });
+    },
   },
 
   plataforma: {

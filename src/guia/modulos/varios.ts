@@ -240,6 +240,36 @@ export const VARIOS: Capacidad[] = [
       },
     ],
   },
+  {
+    id: "varios.perfil_notificaciones_whatsapp",
+    titulo: "Elegir qué notificaciones te llegan al WhatsApp",
+    descripcion:
+      "Encender o apagar cada tipo de aviso que te llega al WhatsApp según tu cargo (comunicados, registros de comportamiento, excusas, permisos, cumpleaños...). Todo sigue quedando en la plataforma; solo se silencia el mensaje de WhatsApp.",
+    categoria: "Varios",
+    roles: [...INTERNOS_CON_PERFIL],
+    ruta: "/perfil",
+    endpoint: "POST /api/perfil/notificaciones (JWT propio — Preferencias_Notificaciones)",
+    sinonimos: [
+      "silenciar notificaciones",
+      "apagar avisos de whatsapp",
+      "no quiero que me lleguen los registros de comportamiento",
+      "dejar de recibir mensajes",
+      "elegir qué me llega al whatsapp",
+    ],
+    pasos: [
+      { narracion: "Entramos a tu perfil.", accion: "navegar", ruta: "/perfil" },
+      {
+        narracion: "Abre la tarjeta 'Notificaciones al WhatsApp'.",
+        accion: "click",
+        ancla: "varios.perfil_ficha_notificaciones",
+      },
+      {
+        narracion: "Apaga o enciende el interruptor de cada tipo de aviso. El cambio se guarda solo.",
+        accion: "click",
+        ancla: "varios.perfil_lista_notificaciones",
+      },
+    ],
+  },
 
   // ──────────────────  MENÚ GLOBAL DEL ENCABEZADO  ──────────────────
   {

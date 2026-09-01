@@ -646,6 +646,26 @@ export const ACUDIENTE: Capacidad[] = [
     ],
   },
   {
+    id: "acu.notificaciones_whatsapp",
+    titulo: "Elegir qué notificaciones te llegan al WhatsApp",
+    descripcion:
+      "Encender o apagar cada tipo de aviso que te llega al WhatsApp (comunicados, actividades, notas, inasistencias, observador, portería...). Todo sigue quedando en la plataforma; solo se silencia el mensaje.",
+    categoria: "Perfil",
+    roles: ["acudiente"],
+    ruta: "/perfil",
+    endpoint: "POST /api/perfil/notificaciones (JWT propio)",
+    sinonimos: ["silenciar notificaciones", "no quiero que me lleguen mensajes", "apagar avisos de whatsapp", "elegir qué me llega al whatsapp"],
+    pasos: [
+      { narracion: "Toca la ficha 'Perfil' en tu tablero.", accion: "navegar", ruta: "/perfil" },
+      { narracion: "Abre 'Notificaciones al WhatsApp'.", accion: "click", ancla: "varios.perfil_ficha_notificaciones" },
+      {
+        narracion: "Apaga o enciende el interruptor de cada tipo de aviso. El cambio se guarda solo.",
+        accion: "click",
+        ancla: "varios.perfil_lista_notificaciones",
+      },
+    ],
+  },
+  {
     id: "acu.cambiar_foto",
     titulo: "Poner o cambiar tu foto de perfil",
     descripcion:

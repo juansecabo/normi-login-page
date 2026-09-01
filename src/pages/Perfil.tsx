@@ -5,7 +5,7 @@ import HeaderNormi from "@/components/HeaderNormi";
 import PhoneInput from "@/components/PhoneInput";
 import { apiClient } from "@/lib/apiClient";
 import { useToast } from "@/hooks/use-toast";
-import { UserRound, KeyRound, Eye, EyeOff, Loader2, MessageCircle, Mail, ArrowLeft } from "lucide-react";
+import { UserRound, KeyRound, Eye, EyeOff, Loader2, MessageCircle, Mail, ArrowLeft, BellRing } from "lucide-react";
 import iconPerfil from "@/assets/icons/perfil.png";
 
 /**
@@ -18,7 +18,7 @@ import iconPerfil from "@/assets/icons/perfil.png";
  * perfiles/colegios de la persona.
  */
 
-type Vista = "menu" | "datos" | "recuperacion";
+type Vista = "menu" | "datos" | "recuperacion" | "notificaciones";
 
 const Perfil = () => {
   const navigate = useNavigate();
@@ -26,7 +26,7 @@ const Perfil = () => {
   // La sección vive en la URL (?seccion=recuperacion) para que un F5 no devuelva
   // al menú: al recargar se restaura la sección donde estaba.
   const [searchParams, setSearchParams] = useSearchParams();
-  const SECCIONES: Vista[] = ["menu", "datos", "recuperacion"];
+  const SECCIONES: Vista[] = ["menu", "datos", "recuperacion", "notificaciones"];
   const sUrl = searchParams.get("seccion") as Vista | null;
   const vista: Vista = sUrl && SECCIONES.includes(sUrl) ? sUrl : "menu";
   // PUSH (no replace): el botón "atrás" del navegador vuelve sección → menú.
@@ -71,6 +71,25 @@ const Perfil = () => {
   const [correo2, setCorreo2] = useState("");
   const [guardandoRec, setGuardandoRec] = useState(false);
 
+  // ── Notificaciones al WhatsApp ──
+  // Interruptores por tipo. La plataforma registra todo igual; apagar solo
+  // silencia el mensaje de WhatsApp. Guardado inmediato con revert si falla.
+  const [notifTipos, setNotifTipos] = useState<Array<{ clave: string; etiqueta: string; descripcion: string; activo: boolean }>>([]);
+  const [cargandoNotif, setCargandoNotif] = useState(false);
+  const [notifCargadas, setNotifCargadas] = useState(false);
+
+  const toggleNotificacion = async (clave: string) => {
+    const previo = notifTipos;
+    const nuevos = notifTipos.map((t) => (t.clave === clave ? { ...t, activo: !t.activo } : t));
+    setNotifTipos(nuevos);
+    try {
+      await apiClient.perfil.guardarNotificaciones(nuevos.filter((t) => !t.activo).map((t) => t.clave));
+    } catch (e: any) {
+      setNotifTipos(previo);
+      toast({ title: "Error", description: e?.body?.detail || "No se pudo guardar el cambio.", variant: "destructive" });
+    }
+  };
+
   useEffect(() => {
     const session = getSession();
     if (!session.id) {
@@ -95,6 +114,13 @@ const Perfil = () => {
   // disparar la llamada (fallaría con 401 y mostraría un pop-up de error).
   useEffect(() => {
     if (vista === "recuperacion" && !verificada && getSession().id) cargarRecuperacion();
+    if (vista === "notificaciones" && !notifCargadas && getSession().id) {
+      setCargandoNotif(true);
+      apiClient.perfil.notificaciones()
+        .then((r) => { setNotifTipos(r.tipos); setNotifCargadas(true); })
+        .catch(() => toast({ title: "Error", description: "No se pudieron cargar las notificaciones.", variant: "destructive" }))
+        .finally(() => setCargandoNotif(false));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vista]);
 
@@ -214,6 +240,7 @@ const Perfil = () => {
             <button onClick={() => setVista("menu")} className={vista === "menu" ? "text-foreground font-medium" : "text-primary hover:underline"}>Perfil</button>
             {vista === "datos" && (<><span className="text-muted-foreground">&rarr;</span><span className="text-foreground font-medium">Cambiar datos</span></>)}
             {vista === "recuperacion" && (<><span className="text-muted-foreground">&rarr;</span><span className="text-foreground font-medium">Recuperación de contraseña</span></>)}
+            {vista === "notificaciones" && (<><span className="text-muted-foreground">&rarr;</span><span className="text-foreground font-medium">Notificaciones al WhatsApp</span></>)}
           </div>
         </div>
 
@@ -236,6 +263,44 @@ const Perfil = () => {
                 <span className="text-lg font-semibold text-foreground">Recuperación de contraseña</span>
                 <span className="text-sm text-muted-foreground text-center">Configura cómo recuperarla cuando se te olvide</span>
               </button>
+              <button onClick={() => setVista("notificaciones")} data-guia="varios.perfil_ficha_notificaciones" className="flex flex-col items-center gap-3 p-10 rounded-xl bg-emerald-100 hover:bg-emerald-200 transition-colors cursor-pointer">
+                <BellRing className="w-12 h-12 text-emerald-700" />
+                <span className="text-lg font-semibold text-foreground">Notificaciones al WhatsApp</span>
+                <span className="text-sm text-muted-foreground text-center">Elige qué avisos quieres recibir en tu WhatsApp</span>
+              </button>
+            </div>
+          )}
+
+          {vista === "notificaciones" && (
+            <div className="space-y-4 max-w-xl mx-auto">
+              <button onClick={() => setVista("menu")} className="inline-flex items-center gap-1 text-sm text-primary hover:underline"><ArrowLeft className="w-4 h-4" /> Volver</button>
+              <p className="text-sm text-muted-foreground">
+                Apaga los avisos que no quieras recibir en tu WhatsApp. Todo sigue quedando registrado
+                en la plataforma igual que siempre, lo único que se silencia es el mensaje.
+              </p>
+              {cargandoNotif ? (
+                <p className="text-muted-foreground text-sm">Cargando...</p>
+              ) : (
+                <div className="space-y-2" data-guia="varios.perfil_lista_notificaciones">
+                  {notifTipos.map((t) => (
+                    <div key={t.clave} className="flex items-center justify-between gap-4 border border-border rounded-lg p-4">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-foreground">{t.etiqueta}</p>
+                        <p className="text-xs text-muted-foreground">{t.descripcion}</p>
+                      </div>
+                      <button
+                        role="switch"
+                        aria-checked={t.activo}
+                        aria-label={`${t.activo ? "Apagar" : "Encender"} ${t.etiqueta}`}
+                        onClick={() => toggleNotificacion(t.clave)}
+                        className={`relative shrink-0 w-11 h-6 rounded-full transition-colors cursor-pointer ${t.activo ? "bg-primary" : "bg-muted-foreground/30"}`}
+                      >
+                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${t.activo ? "translate-x-5" : ""}`} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
