@@ -1,7 +1,8 @@
 // Catálogo "Normi te guía" — Módulo CONSULTAS.
 //
-// Flujo: /consultas tiene dos pestañas ("Todas las consultas" = listar y
-// "Nueva consulta" = crear). Cada consulta abre su detalle en /consultas/:id
+// Flujo: /consultas abre directo en la lista; el botón verde "Nueva consulta"
+// (arriba a la derecha) cambia a la vista de crear. Cada consulta abre su
+// detalle en /consultas/:id
 // (ConsultaDetalle), donde se ven las respuestas, se responde (si eres
 // destinatario interno), se edita, se cierra, se elimina y se exporta a Excel.
 //
@@ -44,12 +45,6 @@ const abrirDetalleConsulta = () =>
       ruta: "/consultas",
     },
     {
-      narracion: "Nos quedamos en la pestaña 'Todas las consultas'.",
-      accion: "click" as const,
-      ancla: "consultas.tab_listar",
-      opcional: true,
-    },
-    {
       narracion: "Abre la consulta que quieres, tocando su tarjeta en la lista.",
       accion: "click" as const,
       ancla: "consultas.card_consulta",
@@ -88,7 +83,7 @@ export const CONSULTAS: Capacidad[] = [
       },
       {
         narracion:
-          "Estás en 'Todas las consultas'. Las que te toca responder salen resaltadas con la etiqueta 'Pendiente tu respuesta'.",
+          "Aquí ves todas las consultas del colegio. Las que te toca responder salen resaltadas con la etiqueta 'Pendiente tu respuesta'.",
         accion: "explicar",
       },
     ],
@@ -127,7 +122,7 @@ export const CONSULTAS: Capacidad[] = [
         ruta: "/consultas",
       },
       {
-        narracion: "Abre la pestaña 'Nueva consulta'.",
+        narracion: "Toca el botón verde 'Nueva consulta', arriba a la derecha.",
         accion: "click",
         ancla: "consultas.tab_crear",
       },
@@ -260,7 +255,7 @@ export const CONSULTAS: Capacidad[] = [
         ruta: "/consultas",
       },
       {
-        narracion: "Abre la pestaña 'Nueva consulta'.",
+        narracion: "Toca el botón verde 'Nueva consulta', arriba a la derecha.",
         accion: "click",
         ancla: "consultas.tab_crear",
       },

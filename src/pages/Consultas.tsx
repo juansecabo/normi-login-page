@@ -737,34 +737,28 @@ export default function Consultas() {
           <div className="flex items-center gap-2 text-sm flex-wrap">
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
-            <span className="text-foreground font-medium">Consultas</span>
+            {tab === "crear" ? (
+              <>
+                <button onClick={() => setTab("listar")} className="text-primary hover:underline">Consultas</button>
+                <span className="text-muted-foreground">&rarr;</span>
+                <span className="text-foreground font-medium">Nueva consulta</span>
+              </>
+            ) : (
+              <span className="text-foreground font-medium">Consultas</span>
+            )}
           </div>
         </div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2 mb-4">
-          <FileBarChart2 className="h-6 w-6 text-primary" />
-          Consultas
-        </h1>
-
-        <div className="flex gap-2 mb-4 border-b">
-          <button
-            data-guia="consultas.tab_listar"
-            className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
-              tab === "listar" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-            onClick={() => setTab("listar")}
-          >
-            Todas las consultas
-          </button>
-          <button
-            data-guia="consultas.tab_crear"
-            className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
-              tab === "crear" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-            onClick={() => setTab("crear")}
-          >
-            <Plus className="h-4 w-4 inline mr-1" />
-            Nueva consulta
-          </button>
+        <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <FileBarChart2 className="h-6 w-6 text-primary" />
+            Consultas
+          </h1>
+          {tab === "listar" && (
+            <Button data-guia="consultas.tab_crear" onClick={() => setTab("crear")}>
+              <Plus className="h-4 w-4 mr-1" />
+              Nueva consulta
+            </Button>
+          )}
         </div>
 
         {tab === "listar" && (
