@@ -940,7 +940,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
       ...abrirRolPersonas("Profesor(a)", "Entra a la tarjeta Profesores."),
       { narracion: "Agrega o edita al profesor (Agregar, o el lápiz de su fila).", accion: "click", ancla: "configurar_institucion.persona_editar" },
       { narracion: "Baja a 'Carga académica' y marca las asignaturas, los grados y los salones de la asignación.", accion: "click", ancla: "configurar_institucion.carga_seleccion", campo: "asignatura_grado_salon" },
-      { narracion: "Toca 'Añadir asignación'. Repite para cada bloque de carga.", accion: "click", ancla: "configurar_institucion.carga_anadir" },
+      { narracion: "Toca 'Añadir asignación'. Repite para cada bloque de carga. Si es la única, puedes saltarte este paso: el botón Guardar/Agregar de abajo también la confirma.", accion: "click", ancla: "configurar_institucion.carga_anadir", opcional: true },
       { narracion: "Guarda al profesor con 'Guardar' (o 'Agregar' si es nuevo).", accion: "click", ancla: "configurar_institucion.persona_guardar" },
     ],
   },
