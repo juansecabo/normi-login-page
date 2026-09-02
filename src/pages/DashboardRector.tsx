@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, cloneElement, isValidElement } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { cargoSegunGenero } from "@/lib/entrevistadores";
@@ -338,9 +338,21 @@ const DashboardRector = () => {
 
   // El Portero(a) solo ve un conjunto acotado de fichas (en este orden).
   const FICHAS_PORTERO = ['porteria', 'enviar-comunicado', 'comunicados-recibidos', 'documentos-recibidos', 'consultas', 'calendario-escolar', 'perfil'];
-  const itemsVisibles = cargo === 'Portero'
+  const itemsPortero = cargo === 'Portero'
     ? (FICHAS_PORTERO.map(fid => items.find(i => i.id === fid)).filter(Boolean) as ReordItem[])
     : items;
+  // PRUEBA TEMPORAL (2026-09-02, pedido de Juan): fichas SIN fondo de color solo
+  // para el portero demo de Cailico, para comparar a ojo. REVERTIR después.
+  const pruebaSinColor = cargo === 'Portero' && String(getSession().id) === '8000009000';
+  const itemsVisibles = pruebaSinColor
+    ? itemsPortero.map((it) => {
+        if (!isValidElement(it.render)) return it;
+        const cls = String((it.render.props as any).className || '')
+          .replace(/hover:bg-\S+/g, '')
+          .replace(/bg-\S+/g, '');
+        return { ...it, render: cloneElement(it.render as any, { className: `${cls} bg-white border border-border hover:bg-muted/40` }) };
+      })
+    : itemsPortero;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
