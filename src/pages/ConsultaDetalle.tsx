@@ -405,12 +405,25 @@ export default function ConsultaDetalle() {
     }
 
     // Tipo 'datos': una fila por formulario diligenciado, sin importar el perfil.
+    // El nombre se arma "Apellidos Nombres" desde Usuarios (el guardado al
+    // diligenciar viene "Nombres Apellidos" y el orden alfabético SIEMPRE
+    // empieza por los apellidos). Fallback: el nombre guardado.
+    const filasDatos = respsRows.filter((r) => r.datos);
+    const idsDatos = Array.from(new Set(filasDatos.map((r) => String(r.padre_id))))
+      .filter((k) => !nombreInternoPorId.has(k));
+    if (idsDatos.length > 0) {
+      const { data: usuDatos } = await supabase
+        .from("Usuarios" as any)
+        .select("id, nombres, apellidos")
+        .in("id" as any, idsDatos);
+      (usuDatos || []).forEach((u: any) =>
+        nombreInternoPorId.set(String(u.id), `${u.apellidos || ""} ${u.nombres || ""}`.trim()));
+    }
     setRespuestasDatos(
-      respsRows
-        .filter((r) => r.datos)
+      filasDatos
         .map((r) => ({
           ...r,
-          padre_nombre: r.padre_nombre || r.acudiente_nombre || nombreInternoPorId.get(String(r.padre_id)) || null,
+          padre_nombre: nombreInternoPorId.get(String(r.padre_id)) || r.padre_nombre || r.acudiente_nombre || null,
         }))
         .sort((a, b) => (a.padre_nombre || "").localeCompare(b.padre_nombre || "", "es")),
     );
