@@ -197,6 +197,10 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
   const [detalle, setDetalle] = useState<Detalle | null>(null);
   const [motivoEdit, setMotivoEdit] = useState("");
   const [eventoEdit, setEventoEdit] = useState("");
+  // El detalle abre mostrando (texto plano). Solo al tocar "Editar" aparece el
+  // cuadro de texto: así el clic sobre un día no salta a editar con el cursor
+  // metido en el campo.
+  const [editandoDetalle, setEditandoDetalle] = useState(false);
   const guardarNombreEvento = async () => {
     if (!detalle || detalle.tipo !== "evento" || !eventoEdit.trim()) return;
     setGuardando(true);
@@ -245,10 +249,10 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
       // Modo inspección: mostrar qué hay en ese día (y permitir editarlo).
       const evs = eventos.filter((e) => e.fecha_inicio <= f && f <= e.fecha_fin);
       const dia = dias.find((d) => d.fecha_inicio <= f && f <= d.fecha_fin);
-      if (dia) { setMotivoEdit(dia.motivo || ""); setDetalle({ tipo: "dia", dia, fecha: f, eventos: evs }); return; }
+      if (dia) { setMotivoEdit(dia.motivo || ""); setEditandoDetalle(false); setDetalle({ tipo: "dia", dia, fecha: f, eventos: evs }); return; }
       if (evs.length > 1) { setDetalle({ tipo: "eventos", fecha: f, eventos: evs }); return; }
       const ev = evs[0];
-      if (ev) { setEventoEdit(ev.nombre); setDetalle({ tipo: "evento", evento: ev }); return; }
+      if (ev) { setEventoEdit(ev.nombre); setEditandoDetalle(false); setDetalle({ tipo: "evento", evento: ev }); return; }
       const nombreFestivo = festivos.get(f);
       if (nombreFestivo) { setDetalle({ tipo: "festivo", fecha: f, nombre: nombreFestivo }); return; }
       const per = periodos.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin);
@@ -305,7 +309,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
             )}
           </div>
           {!soloLectura && (<>
-            <Button variant="outline" size="sm" className="gap-1" onClick={() => { setEventoEdit(ev.nombre); setDetalle({ tipo: "evento", evento: ev, desde: { fecha, eventos: evs } }); }}>
+            <Button variant="outline" size="sm" className="gap-1" onClick={() => { setEventoEdit(ev.nombre); setEditandoDetalle(true); setDetalle({ tipo: "evento", evento: ev, desde: { fecha, eventos: evs } }); }}>
               <Pencil className="w-3.5 h-3.5" /> Editar
             </Button>
             <Button variant="ghost" size="icon" title="Eliminar" onClick={() => { setVolverAEventos({ fecha, eventos: evs }); setDetalle(null); setConfirmEvento(ev); }}>
@@ -573,10 +577,22 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
                 {listaEventosDia(detalle.fecha, detalle.eventos)}
               </div>
             )}
-            {soloLectura ? (
-              <p className="text-sm text-muted-foreground">{detalle.dia.motivo || "Sin motivo"}</p>
-            ) : (<>
-            <Textarea data-guia="configurar_institucion.cal_detalle_texto" value={motivoEdit} onChange={(e) => setMotivoEdit(e.target.value)} placeholder="Motivo: semana de receso, jornada pedagógica…" maxLength={80} rows={3} className="resize-none" />
+            {soloLectura || !editandoDetalle ? (
+              <p className="text-sm text-foreground">{detalle.dia.motivo || <span className="text-muted-foreground">Sin motivo</span>}</p>
+            ) : (
+              <Textarea data-guia="configurar_institucion.cal_detalle_texto" value={motivoEdit} onChange={(e) => setMotivoEdit(e.target.value)} placeholder="Motivo: semana de receso, jornada pedagógica…" maxLength={80} rows={3} className="resize-none" />
+            )}
+            {!soloLectura && !editandoDetalle && (
+              <DialogFooter>
+                <Button variant="destructive" onClick={() => { const d = detalle.dia; setDetalle(null); setConfirmDia(d); }} disabled={guardando} className="gap-2">
+                  <Trash2 className="w-4 h-4" /> Eliminar
+                </Button>
+                <Button data-guia="configurar_institucion.cal_detalle_editar" variant="outline" onClick={() => setEditandoDetalle(true)} className="gap-2">
+                  <Pencil className="w-4 h-4" /> Editar
+                </Button>
+              </DialogFooter>
+            )}
+            {!soloLectura && editandoDetalle && (<>
             <DialogFooter>
               <Button variant="destructive" onClick={() => { const d = detalle.dia; setDetalle(null); setConfirmDia(d); }} disabled={guardando} className="gap-2">
                 <Trash2 className="w-4 h-4" /> Eliminar
@@ -603,11 +619,23 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
                   : `${fechaLinda(detalle.evento.fecha_inicio)} — ${fechaLinda(detalle.evento.fecha_fin)}`}
               </DialogDescription>
             </DialogHeader>
-            {soloLectura ? (
-              <p className="text-sm text-muted-foreground">{detalle.evento.nombre}</p>
+            {soloLectura || !editandoDetalle ? (
+              <p className="text-sm text-foreground whitespace-pre-wrap break-words">{detalle.evento.nombre}</p>
             ) : (<>
-            <Textarea data-guia="configurar_institucion.cal_detalle_texto" value={eventoEdit} onChange={(e) => setEventoEdit(e.target.value)} placeholder="Nombre del evento" maxLength={889} rows={4} className="resize-none" />
-            <p className="text-xs text-muted-foreground text-right">{eventoEdit.length}/889</p>
+              <Textarea data-guia="configurar_institucion.cal_detalle_texto" value={eventoEdit} onChange={(e) => setEventoEdit(e.target.value)} placeholder="Nombre del evento" maxLength={889} rows={4} className="resize-none" />
+              <p className="text-xs text-muted-foreground text-right">{eventoEdit.length}/889</p>
+            </>)}
+            {!soloLectura && !editandoDetalle && (
+              <DialogFooter>
+                <Button variant="destructive" onClick={() => { const ev = detalle.evento; setVolverAEventos(detalle.desde ?? null); setDetalle(null); setConfirmEvento(ev); }} disabled={guardando} className="gap-2">
+                  <Trash2 className="w-4 h-4" /> Eliminar
+                </Button>
+                <Button data-guia="configurar_institucion.cal_detalle_editar" variant="outline" onClick={() => setEditandoDetalle(true)} className="gap-2">
+                  <Pencil className="w-4 h-4" /> Editar
+                </Button>
+              </DialogFooter>
+            )}
+            {!soloLectura && editandoDetalle && (<>
             <DialogFooter>
               <Button variant="destructive" onClick={() => { const ev = detalle.evento; setVolverAEventos(detalle.desde ?? null); setDetalle(null); setConfirmEvento(ev); }} disabled={guardando} className="gap-2">
                 <Trash2 className="w-4 h-4" /> Eliminar
