@@ -443,6 +443,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
     if (rol === "Profesor(a)" && esDirector && (!dirGrado || !dirSalon)) {
       toast({ title: "Falta el grupo", description: "Elige el grado y el salón del que es director(a).", variant: "destructive" }); return;
     }
+    if (rol === "Profesor(a)" && !(await confirmarCargaEnCurso())) return;
     setGuardando(true);
     try {
       // Corrección de identificación: si cambió la cédula, migrarla en TODO el
