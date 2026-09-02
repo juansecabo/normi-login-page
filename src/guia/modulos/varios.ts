@@ -51,8 +51,8 @@ const STAFF_DASHBOARD: RolGuia[] = [
 // rutas, asi que la guia solo puede llevar al admin.
 const ADMIN_RECTOR_COORD: RolGuia[] = ["admin"];
 
-// Internos con la tarjeta Perfil en su dashboard (el portero no la tiene en
-// FICHAS_PORTERO, asi que la guia no puede llevarlo a /perfil).
+// Internos con la tarjeta Perfil en su dashboard (todos; el portero la tiene
+// en FICHAS_PORTERO desde 2026-09-02).
 const INTERNOS_CON_PERFIL: RolGuia[] = [
   "profesor",
   "rector",
@@ -60,6 +60,7 @@ const INTERNOS_CON_PERFIL: RolGuia[] = [
   "secretaria",
   "administrativo",
   "orientador",
+  "portero",
   "admin",
 ];
 
