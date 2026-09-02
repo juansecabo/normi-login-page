@@ -543,7 +543,7 @@ export const CONSULTAS: Capacidad[] = [
     id: "consultas.editar",
     titulo: "Editar una consulta",
     descripcion:
-      "Cambiar el título, el mensaje o los destinatarios de una consulta. Solo se notifica a los destinatarios nuevos que agregues.",
+      "Cambiar el título, el mensaje o los destinatarios de una consulta. En las de 'Diligenciar datos' también se pueden agregar, renombrar o quitar campos del formulario. Solo se notifica a los destinatarios nuevos que agregues.",
     categoria: "Consultas",
     roles: [...ALL_INTERNOS],
     ruta: "/consultas/:id",
@@ -554,6 +554,8 @@ export const CONSULTAS: Capacidad[] = [
       "cambiar el mensaje de la consulta",
       "agregar más destinatarios a la consulta",
       "corregir el título de la consulta",
+      "agregar un campo al formulario de datos",
+      "cambiar los campos de la consulta de datos",
     ],
     pasos: [
       ...abrirDetalleConsulta(),
@@ -575,6 +577,14 @@ export const CONSULTAS: Capacidad[] = [
         accion: "escribir",
         ancla: "consultas.modal_editar_mensaje",
         campo: "mensaje_consulta",
+        opcional: true,
+      },
+      {
+        narracion:
+          "Si la consulta es de 'Diligenciar datos', en 'Campos a diligenciar' puedes agregar campos, renombrarlos (las respuestas ya dadas pasan al nombre nuevo) o quitarlos (se borran las respuestas de ese campo).",
+        accion: "escribir",
+        ancla: "consultas.modal_editar_campos",
+        campo: "campo_dato",
         opcional: true,
       },
       {

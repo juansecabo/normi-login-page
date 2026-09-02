@@ -11,7 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Search, FileSpreadsheet, Eye, Copy, Pencil, Trash2, CheckCircle2 } from "lucide-react";
+import { Search, FileSpreadsheet, Eye, Copy, Pencil, Trash2, CheckCircle2, Plus } from "lucide-react";
 import SignatureCanvas from "react-signature-canvas";
 import DestinatariosSelector, {
   type DestinatariosValue,
@@ -160,6 +160,10 @@ export default function ConsultaDetalle() {
   const [respuestas, setRespuestas] = useState<RespuestaRow[]>([]);
   const [respuestasInternos, setRespuestasInternos] = useState<RespuestaInternoTabla[]>([]);
   const [respuestasEstudiantes, setRespuestasEstudiantes] = useState<RespuestaRow[]>([]);
+  // Consulta tipo 'datos': TODAS las filas con formulario diligenciado (padres,
+  // internos y estudiantes), con el nombre ya resuelto. Antes la tabla solo
+  // miraba las filas de padres y los docentes (internos) no aparecían.
+  const [respuestasDatos, setRespuestasDatos] = useState<RespuestaRow[]>([]);
 
   // Panel de "Tu respuesta" inline para internos destinatarios
   const sigRef = useRef<SignatureCanvas | null>(null);
@@ -184,6 +188,8 @@ export default function ConsultaDetalle() {
   const [eliminando, setEliminando] = useState(false);
   const [editTitulo, setEditTitulo] = useState("");
   const [editMensaje, setEditMensaje] = useState("");
+  // Campos del formulario (tipo 'datos') en edición: orig = nombre guardado (null si es nuevo).
+  const [editCampos, setEditCampos] = useState<{ orig: string | null; val: string }[]>([]);
   const [guardandoEdit, setGuardandoEdit] = useState(false);
 
   useEffect(() => {
@@ -351,6 +357,7 @@ export default function ConsultaDetalle() {
 
     // Enriquecer internos con cargo desde la tabla Internos.
     // El teléfono ahora vive solo en Usuarios (Fase 10.E.15) — query aparte.
+    const nombreInternoPorId = new Map<string, string>();
     if (filasInternos.length > 0) {
       const idsInternos = Array.from(new Set(filasInternos.map((r) => r.padre_id)));
       const idsNumericos = idsInternos.map((i) => Number(i)).filter((n) => Number.isFinite(n));
@@ -373,6 +380,7 @@ export default function ConsultaDetalle() {
       (internosRes.data || []).forEach((i: any) => internoMap.set(String(i.id), i));
       const usuMap = new Map<string, any>();
       (usuariosRes.data || []).forEach((u: any) => usuMap.set(String(u.id), u));
+      usuMap.forEach((u, k) => nombreInternoPorId.set(k, `${u.apellidos || ""} ${u.nombres || ""}`.trim()));
       const filasEnriquecidas: RespuestaInternoTabla[] = filasInternos.map((r) => {
         const info = internoMap.get(String(r.padre_id));
         const usu = usuMap.get(String(r.padre_id));
@@ -395,6 +403,17 @@ export default function ConsultaDetalle() {
     } else {
       setRespuestasInternos([]);
     }
+
+    // Tipo 'datos': una fila por formulario diligenciado, sin importar el perfil.
+    setRespuestasDatos(
+      respsRows
+        .filter((r) => r.datos)
+        .map((r) => ({
+          ...r,
+          padre_nombre: r.padre_nombre || r.acudiente_nombre || nombreInternoPorId.get(String(r.padre_id)) || null,
+        }))
+        .sort((a, b) => (a.padre_nombre || "").localeCompare(b.padre_nombre || "", "es")),
+    );
 
     setLoading(false);
   };
@@ -687,9 +706,7 @@ export default function ConsultaDetalle() {
     // Consulta tipo 'datos': hoja con una columna por campo diligenciado.
     if (consulta.tipo === "datos") {
       const campos = consulta.campos_datos || [];
-      const filas = respuestas
-        .filter((r) => r.datos)
-        .sort((a, b) => (a.padre_nombre || "").localeCompare(b.padre_nombre || "", "es"));
+      const filas = respuestasDatos;
       const sheetD = workbook.addWorksheet(consulta.titulo.slice(0, 30).replace(/[:*?/\\[\]]/g, ""), {
         properties: { tabColor: { argb: "FF15803D" } },
         views: [{ state: "frozen", ySplit: 2 }],
@@ -875,6 +892,7 @@ export default function ConsultaDetalle() {
     if (!consulta) return;
     setEditTitulo(consulta.titulo);
     setEditMensaje(consulta.mensaje_consulta);
+    setEditCampos((consulta.campos_datos || []).map((c) => ({ orig: c, val: c })));
 
     // Construir snapshot ORIGINAL para el diff.
     const orig: DestinatariosSnapshot = {
@@ -924,6 +942,34 @@ export default function ConsultaDetalle() {
     }
     if (destinatariosNuevo && destinatariosNuevo.isEmpty) {
       return toast({ title: "Selecciona al menos un perfil destinatario", variant: "destructive" });
+    }
+    // 0) Consulta tipo 'datos': campos del formulario (agregar / renombrar / eliminar).
+    if (consulta.tipo === "datos") {
+      const campos = editCampos.map((c) => c.val.trim()).filter(Boolean);
+      if (campos.length === 0) {
+        return toast({ title: "El formulario debe tener al menos un campo", variant: "destructive" });
+      }
+      if (new Set(campos).size !== campos.length) {
+        return toast({ title: "Hay campos con el mismo nombre", variant: "destructive" });
+      }
+      const renombres: Record<string, string> = {};
+      for (const c of editCampos) {
+        const v = c.val.trim();
+        if (c.orig && v && v !== c.orig) renombres[c.orig] = v;
+      }
+      const cambiaron = JSON.stringify(campos) !== JSON.stringify(consulta.campos_datos || []);
+      if (cambiaron || Object.keys(renombres).length > 0) {
+        setGuardandoEdit(true);
+        try {
+          await apiRequest(`/api/consultas/${consulta.id}/campos`, {
+            method: "POST",
+            body: JSON.stringify({ campos, renombres }),
+          });
+        } catch (err: any) {
+          setGuardandoEdit(false);
+          return toast({ title: "No se pudieron guardar los campos", description: err?.message || String(err), variant: "destructive" });
+        }
+      }
     }
     setGuardandoEdit(true);
 
@@ -1015,9 +1061,6 @@ export default function ConsultaDetalle() {
   const esDatos = consulta.tipo === "datos";
   const CARGOS_VEN_RESPUESTAS = ["Administrador", "Rector", "Coordinador(a)", "Administrativo(a)", "Secretaria General"];
   const veRespuestas = !esDatos || CARGOS_VEN_RESPUESTAS.includes(getSession().cargo || "");
-  const respuestasDatos = esDatos
-    ? respuestas.filter((r) => r.datos).sort((a, b) => (a.padre_nombre || "").localeCompare(b.padre_nombre || "", "es"))
-    : [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -1666,9 +1709,38 @@ export default function ConsultaDetalle() {
                 rows={12}
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Lo verán tanto los nuevos acudientes que entren al link, como los que ya respondieron y vuelvan a abrirlo.
+                Lo verán tanto los nuevos destinatarios que entren al link, como los que ya respondieron y vuelvan a abrirlo.
               </p>
             </div>
+
+            {consulta?.tipo === "datos" && (
+              <div className="border-t pt-3 space-y-2" data-guia="consultas.modal_editar_campos">
+                <Label className="font-medium">Campos a diligenciar</Label>
+                <p className="text-xs text-muted-foreground">
+                  Puedes agregar campos, renombrarlos (las respuestas ya dadas pasan al nombre nuevo) o eliminarlos
+                  (se borran las respuestas que había en ese campo).
+                </p>
+                {editCampos.map((c, i) => (
+                  <div key={i} className="flex gap-2 items-center">
+                    <Input
+                      value={c.val}
+                      onChange={(e) => setEditCampos(editCampos.map((x, j) => (j === i ? { ...x, val: e.target.value } : x)))}
+                      placeholder={`Campo ${i + 1}`}
+                    />
+                    {editCampos.length > 1 && (
+                      <Button type="button" variant="ghost" size="icon" onClick={() => setEditCampos(editCampos.filter((_, j) => j !== i))}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                {editCampos.length < 20 && (
+                  <Button type="button" variant="outline" size="sm" onClick={() => setEditCampos([...editCampos, { orig: null, val: "" }])}>
+                    <Plus className="h-3 w-3 mr-1" /> Añadir campo
+                  </Button>
+                )}
+              </div>
+            )}
 
             <div className="border-t pt-3" data-guia="consultas.modal_editar_destinatarios">
               <Label className="font-medium">Destinatarios</Label>
