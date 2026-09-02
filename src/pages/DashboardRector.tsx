@@ -337,7 +337,7 @@ const DashboardRector = () => {
   );
 
   // El Portero(a) solo ve un conjunto acotado de fichas (en este orden).
-  const FICHAS_PORTERO = ['porteria', 'enviar-comunicado', 'comunicados-recibidos', 'documentos-recibidos', 'consultas', 'calendario-escolar'];
+  const FICHAS_PORTERO = ['porteria', 'enviar-comunicado', 'comunicados-recibidos', 'documentos-recibidos', 'consultas', 'calendario-escolar', 'perfil'];
   const itemsVisibles = cargo === 'Portero'
     ? (FICHAS_PORTERO.map(fid => items.find(i => i.id === fid)).filter(Boolean) as ReordItem[])
     : items;
