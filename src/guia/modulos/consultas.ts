@@ -155,10 +155,18 @@ export const CONSULTAS: Capacidad[] = [
       },
       {
         narracion:
-          "Revisa las opciones de respuesta. Vienen 'SÍ autorizo' y 'NO autorizo', pero puedes cambiarlas. (Si elegiste 'Diligenciar datos', en su lugar escribe los campos del formulario y agrega más con 'Añadir campo'.)",
+          "Revisa las opciones de respuesta. Vienen 'SÍ autorizo' y 'NO autorizo', pero puedes cambiarlas.",
         accion: "escribir",
         ancla: "consultas.opcion_input",
         campo: "opcion",
+        opcional: true,
+      },
+      {
+        narracion:
+          "Si elegiste 'Diligenciar datos', aquí escribes el nombre de cada campo del formulario (ej. Cédula, Dirección, Escalafón) y agregas más con 'Añadir campo'.",
+        accion: "escribir",
+        ancla: "consultas.campo_dato_input",
+        campo: "campo_dato",
         opcional: true,
       },
       {
@@ -378,6 +386,43 @@ export const CONSULTAS: Capacidad[] = [
         narracion: "Toca 'Enviar respuesta'. Listo.",
         accion: "click",
         ancla: "consultas.boton_enviar_respuesta",
+      },
+    ],
+  },
+  {
+    id: "consultas.diligenciar_datos",
+    titulo: "Diligenciar una consulta de datos (formulario)",
+    descripcion:
+      "Cuando una consulta es de tipo 'Diligenciar datos' (por ejemplo la actualización de datos del personal), llenar el formulario con los campos que pidió quien la creó. Los datos ya conocidos (nombre, cédula, fecha de nacimiento, edad, teléfono) aparecen prellenados; solo se confirman o corrigen.",
+    categoria: "Consultas",
+    roles: [...ALL_INTERNOS],
+    ruta: "/consultas/:id",
+    endpoint: "supabase upsert Consultas_Respuestas (columna datos jsonb; tipo_respondente=interno)",
+    sinonimos: [
+      "diligenciar el formato de datos",
+      "llenar el formulario de la consulta",
+      "actualizar mis datos que pidió coordinación",
+      "responder la consulta de datos",
+      "diligenciar la consulta",
+    ],
+    pasos: [
+      ...abrirDetalleConsulta(),
+      {
+        narracion:
+          "Si la consulta es de datos y te toca diligenciarla, arriba aparece 'Debes diligenciar este formulario'. Toca 'Diligenciar formulario'.",
+        accion: "click",
+        ancla: "consultas.boton_diligenciar",
+      },
+      {
+        narracion:
+          "Llena cada campo. Los que la plataforma ya conoce vienen prellenados: revísalos y corrige si hace falta.",
+        accion: "escribir",
+        ancla: "consulta.campos_datos",
+        campo: "datos",
+      },
+      {
+        narracion: "Si pide firma, firma en el recuadro. Luego toca 'Enviar respuesta'. Puedes volver a editar tus datos después.",
+        accion: "click",
       },
     ],
   },

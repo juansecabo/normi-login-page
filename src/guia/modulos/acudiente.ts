@@ -297,7 +297,7 @@ export const ACUDIENTE: Capacidad[] = [
     id: "acu.responder_consulta",
     titulo: "Responder una consulta del colegio",
     descripcion:
-      "Contestar una consulta o autorización que el colegio envió, eligiendo tu respuesta por cada acudido y firmando si la consulta lo pide.",
+      "Contestar una consulta o autorización que el colegio envió: eligiendo tu respuesta por cada acudido, o llenando el formulario si es una consulta de datos, y firmando si la consulta lo pide.",
     categoria: "Consultas",
     roles: ["acudiente"],
     ruta: "/acudiente/consultas",
@@ -314,6 +314,15 @@ export const ACUDIENTE: Capacidad[] = [
           "Toca la opción con la que respondes. Si tienes varios acudidos en la consulta, respondes por cada uno.",
         accion: "click",
         ancla: "consulta.opciones",
+        opcional: true,
+      },
+      {
+        narracion:
+          "Si en vez de opciones la consulta trae un formulario ('Diligencie los siguientes datos'), llena cada campo; los que ya conocemos vienen prellenados.",
+        accion: "escribir",
+        ancla: "consulta.campos_datos",
+        campo: "datos",
+        opcional: true,
       },
       {
         narracion:

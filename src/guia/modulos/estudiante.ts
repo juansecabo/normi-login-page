@@ -262,7 +262,7 @@ export const ESTUDIANTE: Capacidad[] = [
     id: "est.responder_consulta",
     titulo: "Responder una consulta del colegio",
     descripcion:
-      "Contestar una consulta o encuesta que el colegio te envió, eligiendo tu opción y firmando si la consulta lo pide.",
+      "Contestar una consulta o encuesta que el colegio te envió: eligiendo tu opción, o llenando el formulario si es una consulta de datos, y firmando si la consulta lo pide.",
     categoria: "Consultas",
     roles: ["estudiante"],
     ruta: "/estudiante/consultas",
@@ -278,6 +278,15 @@ export const ESTUDIANTE: Capacidad[] = [
         narracion: "Toca la opción con la que quieres responder.",
         accion: "click",
         ancla: "consulta.opciones",
+        opcional: true,
+      },
+      {
+        narracion:
+          "Si en vez de opciones la consulta trae un formulario ('Diligencie los siguientes datos'), llena cada campo; los que ya conocemos vienen prellenados.",
+        accion: "escribir",
+        ancla: "consulta.campos_datos",
+        campo: "datos",
+        opcional: true,
       },
       {
         narracion:

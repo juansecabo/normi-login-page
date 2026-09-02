@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useRef, useLayoutEffect } from "react";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { useNavigate } from "react-router-dom";
 import { getSession, isProfesor, isOrientador, isAdmin, isRectorOrCoordinador } from "@/hooks/useSession";
+import { cargoSegunGenero } from "@/lib/entrevistadores";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -92,10 +93,18 @@ const fmtFechaCorta = (s: string) => new Date(s + "T12:00:00").toLocaleDateStrin
 
 // Quita cualquier prefijo de cargo conocido del nombre completo guardado
 const CARGOS_PREFIX = [
-  "Profesor(a)", "Rector", "Coordinador(a)", "Administrador",
+  "Profesor(a)", "Profesora", "Profesor", "Rector", "Rectora", "Coordinador(a)", "Coordinadora", "Coordinador", "Administrador", "Administradora",
+  "Administrativa", "Orientadora Escolar", "Orientador Escolar", "Portera",
   "Administrativo(a)", "Secretaria General", "Orientador(a) Escolar",
   "Portero", "Servicios Generales",
 ];
+// "Profesora:" / "Profesor:" según el cargo guardado en autor_nombre; neutro solo si no se sabe.
+const labelDocente = (n: string): string => {
+  const t = (n || "").trim();
+  if (/^(Profesora|Coordinadora|Rectora|Orientadora Escolar)\b/.test(t)) return t.split(" ")[0] === "Orientadora" ? "Orientadora" : t.split(" ")[0];
+  if (/^(Profesor|Coordinador|Rector|Orientador Escolar)\b/.test(t)) return t.split(" ")[0] === "Orientador" ? "Orientador" : t.split(" ")[0];
+  return "Profesor(a)";
+};
 const stripCargo = (n: string): string => {
   for (const c of CARGOS_PREFIX) if (n.startsWith(c + " ")) return n.slice(c.length + 1);
   return n;
@@ -289,7 +298,8 @@ const RegistrosComportamiento = () => {
     }
     setAutor({
       id: session.id,
-      nombre: [session.cargo, session.nombres, session.apellidos].filter(Boolean).join(" "),
+      // Cargo con género ("Profesora Lucía..."), nunca "Profesor(a)".
+      nombre: [cargoSegunGenero(session.cargo || undefined, session.genero) || session.cargo, session.nombres, session.apellidos].filter(Boolean).join(" "),
       nombreSimple: [session.nombres, session.apellidos].filter(Boolean).join(" "),
       cargo: session.cargo || "",
     });
@@ -1020,7 +1030,7 @@ const RegistrosComportamiento = () => {
                               <p><span className="font-medium">Fecha:</span> <span className="text-primary font-medium">{fmtFecha(r.fecha)}</span></p>
                               <p><span className="font-medium">Edad:</span> <span className="text-primary font-medium">{r.estudiante_edad ?? "—"}</span></p>
                               <p className="sm:col-span-2"><span className="font-medium">Grado:</span> <span className="text-primary font-medium">{r.estudiante_grado} {r.estudiante_salon}</span></p>
-                              <p><span className="font-medium">Profesor(a):</span> <span className="text-primary font-medium">{stripCargo(r.autor_nombre)}</span></p>
+                              <p><span className="font-medium">{labelDocente(r.autor_nombre)}:</span> <span className="text-primary font-medium">{stripCargo(r.autor_nombre)}</span></p>
                               <p><span className="font-medium">Asignatura(s):</span> <span className="text-primary font-medium">{r.asignatura}</span></p>
                               {r.director_grupo_nombre && (
                                 <p className="sm:col-span-2"><span className="font-medium">Director de grupo:</span> <span className="text-primary font-medium">{r.director_grupo_nombre}</span></p>
