@@ -11,7 +11,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Search, FileSpreadsheet, Eye, Copy, Pencil, Trash2, CheckCircle2, Plus, ChevronUp, ChevronDown } from "lucide-react";
+import { Search, FileSpreadsheet, Eye, Copy, Pencil, Trash2, CheckCircle2, Plus, GripVertical } from "lucide-react";
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import SignatureCanvas from "react-signature-canvas";
 import DestinatariosSelector, {
   type DestinatariosValue,
@@ -40,6 +43,17 @@ const PERFIL_OBJETIVO_NUEVO: Record<string, string[]> = {
   "Administrativos": ["Administrativo(a)", "Administrador"],
   "Orientador(a) Escolar": ["Orientador(a) Escolar"],
 };
+
+/** Fila arrastrable del editor de campos. El asa recibe los listeners para que
+ *  el input siga siendo editable con normalidad. */
+function CampoSortable({ id, children }: { id: string; children: (handle: Record<string, any>) => React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  return (
+    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1, zIndex: isDragging ? 50 : undefined }} className={isDragging ? "relative" : undefined}>
+      {children({ ...attributes, ...listeners })}
+    </div>
+  );
+}
 
 interface ConsultaRow {
   id: number;
@@ -189,13 +203,13 @@ export default function ConsultaDetalle() {
   const [editTitulo, setEditTitulo] = useState("");
   const [editMensaje, setEditMensaje] = useState("");
   // Campos del formulario (tipo 'datos') en edición: orig = nombre guardado (null si es nuevo).
-  const [editCampos, setEditCampos] = useState<{ orig: string | null; val: string }[]>([]);
-  const moverCampo = (i: number, dir: -1 | 1) => {
-    const j = i + dir;
-    if (j < 0 || j >= editCampos.length) return;
-    const arr = [...editCampos];
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-    setEditCampos(arr);
+  const [editCampos, setEditCampos] = useState<{ key: string; orig: string | null; val: string }[]>([]);
+  const camposSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  const onDragCampo = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const ids = editCampos.map((c) => c.key);
+    setEditCampos(arrayMove(editCampos, ids.indexOf(String(active.id)), ids.indexOf(String(over.id))));
   };
   const [guardandoEdit, setGuardandoEdit] = useState(false);
 
@@ -912,7 +926,7 @@ export default function ConsultaDetalle() {
     if (!consulta) return;
     setEditTitulo(consulta.titulo);
     setEditMensaje(consulta.mensaje_consulta);
-    setEditCampos((consulta.campos_datos || []).map((c) => ({ orig: c, val: c })));
+    setEditCampos((consulta.campos_datos || []).map((c, i) => ({ key: `c${i}`, orig: c, val: c })));
 
     // Construir snapshot ORIGINAL para el diff.
     const orig: DestinatariosSnapshot = {
@@ -1738,30 +1752,36 @@ export default function ConsultaDetalle() {
                 <Label className="font-medium">Campos a diligenciar</Label>
                 <p className="text-xs text-muted-foreground">
                   Puedes agregar campos, renombrarlos (las respuestas ya dadas pasan al nombre nuevo), eliminarlos
-                  (se borran las respuestas que había en ese campo) o cambiarles el orden con las flechas.
+                  (se borran las respuestas que había en ese campo) o arrastrarlos desde el asa para cambiarles el orden.
+                  El orden nuevo se aplica a los formularios y a la tabla.
                 </p>
-                {editCampos.map((c, i) => (
-                  <div key={i} className="flex gap-2 items-center">
-                    <Input
-                      value={c.val}
-                      onChange={(e) => setEditCampos(editCampos.map((x, j) => (j === i ? { ...x, val: e.target.value } : x)))}
-                      placeholder={`Campo ${i + 1}`}
-                    />
-                    <Button type="button" variant="ghost" size="icon" title="Subir" disabled={i === 0} onClick={() => moverCampo(i, -1)}>
-                      <ChevronUp className="h-4 w-4" />
-                    </Button>
-                    <Button type="button" variant="ghost" size="icon" title="Bajar" disabled={i === editCampos.length - 1} onClick={() => moverCampo(i, 1)}>
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                    {editCampos.length > 1 && (
-                      <Button type="button" variant="ghost" size="icon" title="Eliminar campo" onClick={() => setEditCampos(editCampos.filter((_, j) => j !== i))}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
+                <DndContext sensors={camposSensors} collisionDetection={closestCenter} onDragEnd={onDragCampo}>
+                  <SortableContext items={editCampos.map((c) => c.key)} strategy={verticalListSortingStrategy}>
+                    {editCampos.map((c, i) => (
+                      <CampoSortable key={c.key} id={c.key}>
+                        {(handle) => (
+                          <div className="flex gap-2 items-center bg-card">
+                            <button type="button" {...handle} className="text-muted-foreground hover:text-primary cursor-grab active:cursor-grabbing touch-none shrink-0 p-1" title="Arrastrar para reordenar">
+                              <GripVertical className="h-4 w-4" />
+                            </button>
+                            <Input
+                              value={c.val}
+                              onChange={(e) => setEditCampos(editCampos.map((x, j) => (j === i ? { ...x, val: e.target.value } : x)))}
+                              placeholder={`Campo ${i + 1}`}
+                            />
+                            {editCampos.length > 1 && (
+                              <Button type="button" variant="ghost" size="icon" title="Eliminar campo" onClick={() => setEditCampos(editCampos.filter((_, j) => j !== i))}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </CampoSortable>
+                    ))}
+                  </SortableContext>
+                </DndContext>
                 {editCampos.length < 20 && (
-                  <Button type="button" variant="outline" size="sm" onClick={() => setEditCampos([...editCampos, { orig: null, val: "" }])}>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setEditCampos([...editCampos, { key: `n${Date.now()}`, orig: null, val: "" }])}>
                     <Plus className="h-3 w-3 mr-1" /> Añadir campo
                   </Button>
                 )}

@@ -581,7 +581,7 @@ export const CONSULTAS: Capacidad[] = [
       },
       {
         narracion:
-          "Si la consulta es de 'Diligenciar datos', en 'Campos a diligenciar' puedes agregar campos, renombrarlos (las respuestas ya dadas pasan al nombre nuevo), quitarlos (se borran las respuestas de ese campo) o cambiarles el orden con las flechas de subir y bajar.",
+          "Si la consulta es de 'Diligenciar datos', en 'Campos a diligenciar' puedes agregar campos, renombrarlos (las respuestas ya dadas pasan al nombre nuevo), quitarlos (se borran las respuestas de ese campo) o cambiarles el orden arrastrándolos desde el asa de la izquierda (las seis bolitas). El orden nuevo se aplica a los formularios y a la tabla de datos.",
         accion: "escribir",
         ancla: "consultas.modal_editar_campos",
         campo: "campo_dato",
