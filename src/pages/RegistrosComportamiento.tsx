@@ -715,7 +715,15 @@ const RegistrosComportamiento = () => {
           <div className="flex items-center gap-2 text-sm flex-wrap">
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
-            <span className="text-foreground font-medium">Registros de Comportamiento</span>
+            {tab === "historial" && estVistaId != null ? (
+              <>
+                <button onClick={() => setEstVistaId(null)} className="text-primary hover:underline">Registros de Comportamiento</button>
+                <span className="text-muted-foreground">&rarr;</span>
+                <span className="text-foreground font-medium">{estVista ? `${estVista.apellidos} ${estVista.nombres}` : "Estudiante"}</span>
+              </>
+            ) : (
+              <span className="text-foreground font-medium">Registros de Comportamiento</span>
+            )}
           </div>
         </div>
 
@@ -957,7 +965,6 @@ const RegistrosComportamiento = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-4">
-                  <button onClick={() => setEstVistaId(null)} className="text-sm text-primary hover:underline">&larr; Volver</button>
                   <div>
                     <p className="font-semibold text-foreground">{estVista?.apellidos} {estVista?.nombres}</p>
                     <p className="text-xs text-muted-foreground">{estVista?.grado} {estVista?.salon}</p>
