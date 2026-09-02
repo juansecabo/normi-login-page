@@ -151,12 +151,17 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
   const [confirmDia, setConfirmDia] = useState<DiaNoLectivo | null>(null);
   const [confirmPeriodo, setConfirmPeriodo] = useState<number | null>(null);
   const [confirmEvento, setConfirmEvento] = useState<Evento | null>(null);
+  // Lista de eventos del día desde la que se pidió eliminar (para volver a ella).
+  const [volverAEventos, setVolverAEventos] = useState<{ fecha: string; eventos: Evento[] } | null>(null);
   const eliminarEvento = async () => {
     if (!confirmEvento) return;
     setGuardando(true);
     try {
       await apiRequest(`/api/institucion/calendario/eventos/${confirmEvento.id}${qCid}`, { method: "DELETE" });
+      const restantes = volverAEventos ? volverAEventos.eventos.filter((e) => e.id !== confirmEvento.id) : [];
       setConfirmEvento(null);
+      setVolverAEventos(null);
+      if (volverAEventos && restantes.length > 0) setDetalle({ tipo: "eventos", fecha: volverAEventos.fecha, eventos: restantes });
       await cargar();
     } catch (e: any) {
       err("No se pudo eliminar", (e?.body as any)?.detail || e?.message);
@@ -182,7 +187,8 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
   // ── Detalle de un día (sin herramienta): ver/editar lo que hay ahí ──
   type Detalle =
     | { tipo: "dia"; dia: DiaNoLectivo }
-    | { tipo: "evento"; evento: Evento }
+    /** `desde`: lista de eventos del día de la que se abrió (para volver a ella). */
+    | { tipo: "evento"; evento: Evento; desde?: { fecha: string; eventos: Evento[] } }
     /** Varios eventos caen en el mismo día: se listan para elegir cuál editar o quitar. */
     | { tipo: "eventos"; fecha: string; eventos: Evento[] }
     | { tipo: "festivo"; fecha: string; nombre: string }
@@ -198,7 +204,11 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
         method: "PATCH",
         body: JSON.stringify(withCid({ nombre: eventoEdit.trim() })),
       });
-      setDetalle(null);
+      const nombreNuevo = eventoEdit.trim();
+      const desde = detalle.desde;
+      setDetalle(desde
+        ? { tipo: "eventos", fecha: desde.fecha, eventos: desde.eventos.map((e) => (e.id === detalle.evento.id ? { ...e, nombre: nombreNuevo } : e)) }
+        : null);
       await cargar();
     } catch (e: any) {
       err("No se pudo guardar", (e?.body as any)?.detail || e?.message);
@@ -541,6 +551,13 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
             </>)}
           </>)}
           {detalle?.tipo === "evento" && (<>
+            {detalle.desde && (
+              <div className="flex items-center gap-2 text-sm flex-wrap">
+                <button type="button" onClick={() => { const d = detalle.desde!; setDetalle({ tipo: "eventos", fecha: d.fecha, eventos: d.eventos }); }} className="text-primary hover:underline">Eventos del día</button>
+                <span className="text-muted-foreground">&rarr;</span>
+                <span className="text-foreground font-medium truncate max-w-[16rem]">{detalle.evento.nombre}</span>
+              </div>
+            )}
             <DialogHeader>
               <DialogTitle>Evento</DialogTitle>
               <DialogDescription>
@@ -555,7 +572,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
             <Textarea data-guia="configurar_institucion.cal_detalle_texto" value={eventoEdit} onChange={(e) => setEventoEdit(e.target.value)} placeholder="Nombre del evento" maxLength={889} rows={4} className="resize-none" />
             <p className="text-xs text-muted-foreground text-right">{eventoEdit.length}/889</p>
             <DialogFooter>
-              <Button variant="destructive" onClick={() => { const ev = detalle.evento; setDetalle(null); setConfirmEvento(ev); }} disabled={guardando} className="gap-2">
+              <Button variant="destructive" onClick={() => { const ev = detalle.evento; setVolverAEventos(detalle.desde ?? null); setDetalle(null); setConfirmEvento(ev); }} disabled={guardando} className="gap-2">
                 <Trash2 className="w-4 h-4" /> Eliminar
               </Button>
               <Button data-guia="configurar_institucion.cal_detalle_guardar" onClick={guardarNombreEvento} disabled={guardando || !eventoEdit.trim()} className="gap-2">
@@ -579,10 +596,10 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
                     )}
                   </div>
                   {!soloLectura && (<>
-                    <Button variant="outline" size="sm" className="gap-1" onClick={() => { setEventoEdit(ev.nombre); setDetalle({ tipo: "evento", evento: ev }); }}>
+                    <Button variant="outline" size="sm" className="gap-1" onClick={() => { const desde = { fecha: detalle.fecha, eventos: detalle.eventos }; setEventoEdit(ev.nombre); setDetalle({ tipo: "evento", evento: ev, desde }); }}>
                       <Pencil className="w-3.5 h-3.5" /> Editar
                     </Button>
-                    <Button variant="ghost" size="icon" title="Eliminar" onClick={() => { setDetalle(null); setConfirmEvento(ev); }}>
+                    <Button variant="ghost" size="icon" title="Eliminar" onClick={() => { setVolverAEventos({ fecha: detalle.fecha, eventos: detalle.eventos }); setDetalle(null); setConfirmEvento(ev); }}>
                       <Trash2 className="w-4 h-4 text-destructive" />
                     </Button>
                   </>)}
