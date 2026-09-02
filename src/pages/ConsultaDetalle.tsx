@@ -11,7 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Search, FileSpreadsheet, Eye, Copy, Pencil, Trash2, CheckCircle2, Plus } from "lucide-react";
+import { Search, FileSpreadsheet, Eye, Copy, Pencil, Trash2, CheckCircle2, Plus, ChevronUp, ChevronDown } from "lucide-react";
 import SignatureCanvas from "react-signature-canvas";
 import DestinatariosSelector, {
   type DestinatariosValue,
@@ -190,6 +190,13 @@ export default function ConsultaDetalle() {
   const [editMensaje, setEditMensaje] = useState("");
   // Campos del formulario (tipo 'datos') en edición: orig = nombre guardado (null si es nuevo).
   const [editCampos, setEditCampos] = useState<{ orig: string | null; val: string }[]>([]);
+  const moverCampo = (i: number, dir: -1 | 1) => {
+    const j = i + dir;
+    if (j < 0 || j >= editCampos.length) return;
+    const arr = [...editCampos];
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+    setEditCampos(arr);
+  };
   const [guardandoEdit, setGuardandoEdit] = useState(false);
 
   useEffect(() => {
@@ -1730,8 +1737,8 @@ export default function ConsultaDetalle() {
               <div className="border-t pt-3 space-y-2" data-guia="consultas.modal_editar_campos">
                 <Label className="font-medium">Campos a diligenciar</Label>
                 <p className="text-xs text-muted-foreground">
-                  Puedes agregar campos, renombrarlos (las respuestas ya dadas pasan al nombre nuevo) o eliminarlos
-                  (se borran las respuestas que había en ese campo).
+                  Puedes agregar campos, renombrarlos (las respuestas ya dadas pasan al nombre nuevo), eliminarlos
+                  (se borran las respuestas que había en ese campo) o cambiarles el orden con las flechas.
                 </p>
                 {editCampos.map((c, i) => (
                   <div key={i} className="flex gap-2 items-center">
@@ -1740,8 +1747,14 @@ export default function ConsultaDetalle() {
                       onChange={(e) => setEditCampos(editCampos.map((x, j) => (j === i ? { ...x, val: e.target.value } : x)))}
                       placeholder={`Campo ${i + 1}`}
                     />
+                    <Button type="button" variant="ghost" size="icon" title="Subir" disabled={i === 0} onClick={() => moverCampo(i, -1)}>
+                      <ChevronUp className="h-4 w-4" />
+                    </Button>
+                    <Button type="button" variant="ghost" size="icon" title="Bajar" disabled={i === editCampos.length - 1} onClick={() => moverCampo(i, 1)}>
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
                     {editCampos.length > 1 && (
-                      <Button type="button" variant="ghost" size="icon" onClick={() => setEditCampos(editCampos.filter((_, j) => j !== i))}>
+                      <Button type="button" variant="ghost" size="icon" title="Eliminar campo" onClick={() => setEditCampos(editCampos.filter((_, j) => j !== i))}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     )}
