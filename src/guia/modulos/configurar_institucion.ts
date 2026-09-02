@@ -726,7 +726,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
   {
     id: "configurar_institucion.crear_evento",
     titulo: "Crear un evento en el calendario",
-    descripcion: "Marcar un día CON clases donde además pasa algo (entrega de boletines, día deportivo, izada de bandera).",
+    descripcion: "Marcar un día CON clases donde además pasa algo (entrega de boletines, día deportivo, izada de bandera). Un evento no indica si hay o no clases: puede caer en un día normal o en uno marcado sin clases.",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
     ruta: RUTA,
@@ -764,7 +764,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     pasos: [
       ...abrirFicha("calendario", "Abrimos el Calendario."),
       { narracion: "Sin herramienta seleccionada (si hay una activa, tócala de nuevo para soltarla), haz clic en el día pintado.", accion: "click", ancla: "configurar_institucion.cal_dia" },
-      { narracion: "Si ese día tiene varios eventos, primero salen listados: toca 'Editar' en el que quieras (o la papelera para quitarlo).", accion: "click", opcional: true },
+      { narracion: "Si ese día tiene varios eventos, primero salen listados: toca 'Editar' en el que quieras (o la papelera para quitarlo). Si es un día sin clases que además tiene eventos, el detalle muestra el motivo y, debajo, la lista de esos eventos.", accion: "click", opcional: true },
       { narracion: "En el detalle, ajusta el motivo (día sin clases) o el nombre (evento).", accion: "escribir", ancla: "configurar_institucion.cal_detalle_texto", campo: "motivo_o_nombre" },
       { narracion: "Y toca 'Guardar'.", accion: "click", ancla: "configurar_institucion.cal_detalle_guardar" },
     ],
