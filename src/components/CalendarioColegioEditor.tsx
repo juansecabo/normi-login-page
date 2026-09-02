@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/apiClient";
-import { CalendarDays, Eraser, Loader2, Trash2 } from "lucide-react";
+import { CalendarDays, Eraser, Loader2, Trash2, Pencil } from "lucide-react";
 
 /**
  * Ficha "Calendario" de Configurar Institución — calendario ANUAL visual:
@@ -183,6 +183,8 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
   type Detalle =
     | { tipo: "dia"; dia: DiaNoLectivo }
     | { tipo: "evento"; evento: Evento }
+    /** Varios eventos caen en el mismo día: se listan para elegir cuál editar o quitar. */
+    | { tipo: "eventos"; fecha: string; eventos: Evento[] }
     | { tipo: "festivo"; fecha: string; nombre: string }
     | { tipo: "periodo"; periodo: Periodo };
   const [detalle, setDetalle] = useState<Detalle | null>(null);
@@ -232,7 +234,9 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
       // Modo inspección: mostrar qué hay en ese día (y permitir editarlo).
       const dia = dias.find((d) => d.fecha_inicio <= f && f <= d.fecha_fin);
       if (dia) { setMotivoEdit(dia.motivo || ""); setDetalle({ tipo: "dia", dia }); return; }
-      const ev = eventos.find((e) => e.fecha_inicio <= f && f <= e.fecha_fin);
+      const evs = eventos.filter((e) => e.fecha_inicio <= f && f <= e.fecha_fin);
+      if (evs.length > 1) { setDetalle({ tipo: "eventos", fecha: f, eventos: evs }); return; }
+      const ev = evs[0];
       if (ev) { setEventoEdit(ev.nombre); setDetalle({ tipo: "evento", evento: ev }); return; }
       const nombreFestivo = festivos.get(f);
       if (nombreFestivo) { setDetalle({ tipo: "festivo", fecha: f, nombre: nombreFestivo }); return; }
@@ -559,6 +563,32 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
               </Button>
             </DialogFooter>
             </>)}
+          </>)}
+          {detalle?.tipo === "eventos" && (<>
+            <DialogHeader>
+              <DialogTitle>Eventos del día</DialogTitle>
+              <DialogDescription>{fechaLinda(detalle.fecha)} · Hay clases ese día. Elige cuál quieres ver.</DialogDescription>
+            </DialogHeader>
+            <ul className="divide-y divide-border rounded-md border border-border">
+              {detalle.eventos.map((ev) => (
+                <li key={ev.id} className="flex items-center gap-2 p-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium break-words">{ev.nombre}</p>
+                    {ev.fecha_inicio !== ev.fecha_fin && (
+                      <p className="text-xs text-muted-foreground">{fechaLinda(ev.fecha_inicio)} — {fechaLinda(ev.fecha_fin)}</p>
+                    )}
+                  </div>
+                  {!soloLectura && (<>
+                    <Button variant="outline" size="sm" className="gap-1" onClick={() => { setEventoEdit(ev.nombre); setDetalle({ tipo: "evento", evento: ev }); }}>
+                      <Pencil className="w-3.5 h-3.5" /> Editar
+                    </Button>
+                    <Button variant="ghost" size="icon" title="Eliminar" onClick={() => { setDetalle(null); setConfirmEvento(ev); }}>
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </>)}
+                </li>
+              ))}
+            </ul>
           </>)}
           {detalle?.tipo === "festivo" && (<>
             <DialogHeader>

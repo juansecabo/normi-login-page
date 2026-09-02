@@ -764,6 +764,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     pasos: [
       ...abrirFicha("calendario", "Abrimos el Calendario."),
       { narracion: "Sin herramienta seleccionada (si hay una activa, tócala de nuevo para soltarla), haz clic en el día pintado.", accion: "click", ancla: "configurar_institucion.cal_dia" },
+      { narracion: "Si ese día tiene varios eventos, primero salen listados: toca 'Editar' en el que quieras (o la papelera para quitarlo).", accion: "click", opcional: true },
       { narracion: "En el detalle, ajusta el motivo (día sin clases) o el nombre (evento).", accion: "escribir", ancla: "configurar_institucion.cal_detalle_texto", campo: "motivo_o_nombre" },
       { narracion: "Y toca 'Guardar'.", accion: "click", ancla: "configurar_institucion.cal_detalle_guardar" },
     ],
