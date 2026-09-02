@@ -270,10 +270,10 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
 
   // Añade una asignación: en edición escribe YA en la tabla; al agregar una
   // persona nueva queda pendiente y se inserta después de crear el interno.
-  const anadirCarga = async () => {
+  const anadirCarga = async (): Promise<boolean> => {
     if (nvAsigs.length === 0 || nvGrados.length === 0 || nvSalones.length === 0) {
       toast({ title: "Carga incompleta", description: "Elige al menos una asignatura, un grado y un salón.", variant: "destructive" });
-      return;
+      return false;
     }
     // ── Editar una asignación existente (fila en BD) ──
     if (editCarga?.rowId != null) {
@@ -282,7 +282,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
         .update({ "Asignatura(s)": nvAsigs, "Grado(s)": nvGrados, "Salon(es)": nvSalones })
         .eq("row_id", editCarga.rowId);
       setGuardandoCarga(false);
-      if (error) { toast({ title: "No se pudo actualizar", description: error.message, variant: "destructive" }); return; }
+      if (error) { toast({ title: "No se pudo actualizar", description: error.message, variant: "destructive" }); return false; }
       await cargarCargas(editando!);
     // ── Editar una asignación pendiente (persona nueva, aún sin crear) ──
     } else if (editCarga?.idx != null) {
@@ -294,13 +294,24 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
         id: parseInt(editando), "Asignatura(s)": nvAsigs, "Grado(s)": nvGrados, "Salon(es)": nvSalones,
       });
       setGuardandoCarga(false);
-      if (error) { toast({ title: "No se pudo guardar la carga", description: error.message, variant: "destructive" }); return; }
+      if (error) { toast({ title: "No se pudo guardar la carga", description: error.message, variant: "destructive" }); return false; }
       await cargarCargas(editando);
     // ── Añadir nueva pendiente (persona nueva) ──
     } else {
       setCargasPend((prev) => [...prev, { asignaturas: nvAsigs, grados: nvGrados, salones: nvSalones }]);
     }
     setNvAsigs([]); setNvGrados([]); setNvSalones([]); setEditCarga(null);
+    return true;
+  };
+
+  // El botón Guardar/Agregar del diálogo también confirma la asignación que
+  // esté a medio armar (editando una o con casillas marcadas), para que no se
+  // pierda por no haber tocado antes "Guardar cambios"/"Añadir asignación".
+  // Devuelve false si estaba incompleta (ya avisó) y hay que detener el guardado.
+  const confirmarCargaEnCurso = async (): Promise<boolean> => {
+    const hayAlgo = editCarga != null || nvAsigs.length > 0 || nvGrados.length > 0 || nvSalones.length > 0;
+    if (!hayAlgo) return true;
+    return anadirCarga();
   };
 
   // Carga una asignación existente/pendiente en el formulario para editarla.
@@ -363,6 +374,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
     if (rol === "Profesor(a)" && esDirector && (!dirGrado || !dirSalon)) {
       toast({ title: "Falta el grupo", description: "Elige el grado y el salón del que es director(a).", variant: "destructive" }); return;
     }
+    if (rol === "Profesor(a)" && !(await confirmarCargaEnCurso())) return;
     setGuardando(true);
     try {
       await apiRequest("/api/institucion/interno", {
@@ -431,6 +443,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
     if (rol === "Profesor(a)" && esDirector && (!dirGrado || !dirSalon)) {
       toast({ title: "Falta el grupo", description: "Elige el grado y el salón del que es director(a).", variant: "destructive" }); return;
     }
+    if (rol === "Profesor(a)" && !(await confirmarCargaEnCurso())) return;
     setGuardando(true);
     try {
       // Corrección de identificación: si cambió la cédula, migrarla en TODO el
