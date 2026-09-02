@@ -350,7 +350,7 @@ const DashboardRector = () => {
         const cls = String((it.render.props as any).className || '')
           .replace(/hover:bg-\S+/g, '')
           .replace(/bg-\S+/g, '');
-        return { ...it, render: cloneElement(it.render as any, { className: `${cls} bg-white border border-border hover:bg-muted/40` }) };
+        return { ...it, render: cloneElement(it.render as any, { className: `${cls} bg-transparent border border-border hover:bg-muted/30` }) };
       })
     : itemsPortero;
 
