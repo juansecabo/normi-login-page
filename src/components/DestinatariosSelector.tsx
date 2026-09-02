@@ -4,6 +4,7 @@ import { ChevronDown } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { ORDEN_GRADOS, NIVEL_DE_GRADO } from "@/utils/grados";
 import { useEstructuraOrden } from "@/utils/estructuraOrden";
+import { cargoSegunGenero } from "@/lib/entrevistadores";
 
 /**
  * Selector reusable de destinatarios para Consultas y similares.
@@ -138,8 +139,8 @@ interface EstudianteRow {
   nivel: string | null;
 }
 
-interface ProfRow { id: string; nombre: string; grados: string[]; salones: string[]; }
-interface InternoSimple { id: string; nombre: string; }
+interface ProfRow { id: string; nombre: string; genero?: string | null; grados: string[]; salones: string[]; }
+interface InternoSimple { id: string; nombre: string; genero?: string | null; }
 
 export default function DestinatariosSelector({ initial, onChange }: DestinatariosSelectorProps) {
   const [perfilesMarcados, setPerfilesMarcados] = useState<Record<PerfilKey, boolean>>(initial.perfiles);
@@ -232,6 +233,7 @@ export default function DestinatariosSelector({ initial, onChange }: Destinatari
           byId.set(rid, {
             id: rid,
             nombre: `${r.apellidos || ""} ${r.nombres || ""}`.trim(),
+            genero: r.genero ?? null,
             grados: [...((r["Grado(s)"] as string[]) || [])],
             salones: [...((r["Salon(es)"] as string[]) || [])],
           });
@@ -264,7 +266,7 @@ export default function DestinatariosSelector({ initial, onChange }: Destinatari
       const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
       const rows = sortByApellidosNombres(await enrichWithNombres((rawInt || []) as any));
       const mk = (cargo: string): InternoSimple[] =>
-        rows.filter((r: any) => r.cargo === cargo).map((r: any) => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}` }));
+        rows.filter((r: any) => r.cargo === cargo).map((r: any) => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}`, genero: r.genero ?? null }));
       setListaCoordinadores(mk("Coordinador(a)"));
       setListaAdministrativos(mk("Administrativo(a)"));
       setListaSecretarias(mk("Secretaria General"));
@@ -329,6 +331,8 @@ export default function DestinatariosSelector({ initial, onChange }: Destinatari
 
   const listaANombres = (ids: string[], lista: InternoSimple[]) =>
     ids.map((id) => lista.find((x) => x.id === id)?.nombre).filter(Boolean) as string[];
+  const generoDe = (ids: string[], lista: InternoSimple[]) =>
+    ids.map((id) => lista.find((x) => x.id === id)).find(Boolean)?.genero ?? null;
 
   const aulaFrase = (prefijo: string): string => {
     const gs = gradosSeleccionados;
@@ -360,7 +364,7 @@ export default function DestinatariosSelector({ initial, onChange }: Destinatari
     if (perfilesMarcados.Profesores) {
       if (profesoresSeleccionados.length > 0) {
         const nombres = listaANombres(profesoresSeleccionados, listaProfesoresFiltrada);
-        partes.push(nombres.length === 1 ? `Profesor(a) ${nombres[0]}` : `Profesores ${nombres.join(", ")}`);
+        partes.push(nombres.length === 1 ? `${cargoSegunGenero("Profesor(a)", generoDe(profesoresSeleccionados, listaProfesoresFiltrada))} ${nombres[0]}` : `Profesores ${nombres.join(", ")}`);
       } else if (gradosSeleccionados.length > 0 || salonesSeleccionados.length > 0) {
         partes.push(aulaFrase("Profesores"));
       } else partes.push("Profesores");
@@ -369,7 +373,7 @@ export default function DestinatariosSelector({ initial, onChange }: Destinatari
       if (coordinadoresSeleccionados.length === 0) partes.push("Coordinadores");
       else {
         const nombres = listaANombres(coordinadoresSeleccionados, listaCoordinadores);
-        partes.push(nombres.length === 1 ? `Coordinador(a) ${nombres[0]}` : `Coordinadores ${nombres.join(", ")}`);
+        partes.push(nombres.length === 1 ? `${cargoSegunGenero("Coordinador(a)", generoDe(coordinadoresSeleccionados, listaCoordinadores))} ${nombres[0]}` : `Coordinadores ${nombres.join(", ")}`);
       }
     }
     if (perfilesMarcados.Rector) partes.push("Rector");
@@ -377,7 +381,7 @@ export default function DestinatariosSelector({ initial, onChange }: Destinatari
       if (administrativosSeleccionados.length === 0) partes.push("Administrativos");
       else {
         const nombres = listaANombres(administrativosSeleccionados, listaAdministrativos);
-        partes.push(nombres.length === 1 ? `Administrativo(a) ${nombres[0]}` : `Administrativos ${nombres.join(", ")}`);
+        partes.push(nombres.length === 1 ? `${cargoSegunGenero("Administrativo(a)", generoDe(administrativosSeleccionados, listaAdministrativos))} ${nombres[0]}` : `Administrativos ${nombres.join(", ")}`);
       }
     }
     if (perfilesMarcados.Secretaria) {
@@ -391,7 +395,7 @@ export default function DestinatariosSelector({ initial, onChange }: Destinatari
       if (orientadoresSeleccionados.length === 0) partes.push("Orientador(a) Escolar");
       else {
         const nombres = listaANombres(orientadoresSeleccionados, listaOrientadores);
-        partes.push(nombres.length === 1 ? `Orientador(a) ${nombres[0]}` : `Orientadores ${nombres.join(", ")}`);
+        partes.push(nombres.length === 1 ? `${cargoSegunGenero("Orientador(a)", generoDe(orientadoresSeleccionados, listaOrientadores))} ${nombres[0]}` : `Orientadores ${nombres.join(", ")}`);
       }
     }
     if (partes.length === 0) return "";

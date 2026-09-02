@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { User } from "lucide-react";
+import { cargoSegunGenero } from "@/lib/entrevistadores";
 
 interface ComentarioModalReadOnlyProps {
   open: boolean;
@@ -15,6 +16,8 @@ interface ComentarioModalReadOnlyProps {
   nombreActividad: string;
   comentario: string | null;
   nombreProfesor?: string;
+  /** M/F del profesor para "Profesor:"/"Profesora:"; sin dato queda neutro. */
+  generoProfesor?: string | null;
 }
 
 const ComentarioModalReadOnly = ({
@@ -24,6 +27,7 @@ const ComentarioModalReadOnly = ({
   nombreActividad,
   comentario,
   nombreProfesor,
+  generoProfesor,
 }: ComentarioModalReadOnlyProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -38,7 +42,7 @@ const ComentarioModalReadOnly = ({
           {nombreProfesor && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
               <User className="w-4 h-4" />
-              <span>Profesor(a): <span className="font-medium text-foreground">{nombreProfesor}</span></span>
+              <span>{cargoSegunGenero("Profesor(a)", generoProfesor)}: <span className="font-medium text-foreground">{nombreProfesor}</span></span>
             </div>
           )}
           {comentario ? (

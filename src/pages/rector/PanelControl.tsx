@@ -26,6 +26,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Plus, Pencil, Trash2, Search, X } from "lucide-react";
 import { useAsignaturas } from "@/hooks/useAsignaturas";
 import { apiClient, apiRequest } from "@/lib/apiClient";
+import { cargoSegunGenero } from "@/lib/entrevistadores";
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
@@ -2463,7 +2464,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                 placeholder="Ej: 3001234567"
               />
               {(esProfesor && (perfUsuarioExiste || !!editingPerf)) && (
-                <p className="text-xs text-muted-foreground">Como director(a) de grupo puedes vincular o desvincular estudiantes, pero no modificar los datos del acudiente.</p>
+                <p className="text-xs text-muted-foreground">Como {cargoSegunGenero("director(a)", getSession().genero)} de grupo puedes vincular o desvincular estudiantes, pero no modificar los datos del acudiente.</p>
               )}
             </div>
 

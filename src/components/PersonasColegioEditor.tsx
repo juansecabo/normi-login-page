@@ -801,7 +801,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
             <div className="space-y-2" data-guia="configurar_institucion.persona_extras">
               <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
                 <input type="checkbox" checked={esDirector} onChange={(e) => { setEsDirector(e.target.checked); if (!e.target.checked) { setDirGrado(""); setDirSalon(""); } }} className="w-4 h-4 accent-primary cursor-pointer" />
-                Es director(a) de grupo
+                Es {cargoSegunGenero("director(a)", genero || null)} de grupo
               </label>
               {esDirector && (
                 gradosCol.length === 0 ? (

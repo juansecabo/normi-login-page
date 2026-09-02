@@ -11,6 +11,7 @@ import { capitalizarNombre } from "@/utils/texto";
 import { ArrowLeft, Check, Eye, EyeOff, Loader2, Plus, Trash2 } from "lucide-react";
 import normiImg from "@/assets/normi-registro.webp";
 import cailicoLogo from "@/assets/cailico-logo.webp";
+import { cargoSegunGenero } from "@/lib/entrevistadores";
 
 /** Barra de progreso del registro viejo de Vercel: paso X de N + porcentaje. */
 const ProgressBar = ({ paso, total }: { paso: number; total: number }) => {
@@ -185,7 +186,7 @@ const RegistroAcudiente = () => {
               <p className="text-sm text-muted-foreground">
                 {exito.agregado
                   ? <>Los estudiantes quedaron agregados a tu cuenta de acudiente en <strong>{exito.colegio}</strong>.</>
-                  : <>Quedaste registrado(a) como acudiente en <strong>{exito.colegio}</strong>.</>}{" "}
+                  : <>Quedaste {cargoSegunGenero("registrado(a)", genero || null)} como acudiente en <strong>{exito.colegio}</strong>.</>}{" "}
                 {exito.contrasenaConservada
                   ? "Ya tenías una cuenta, así que tu contraseña sigue siendo la de siempre (si no la recuerdas, usa “¿Olvidó su contraseña?”)."
                   : "Ya puedes iniciar sesión con tu cédula y la contraseña que elegiste."}

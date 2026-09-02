@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Clock, Search, FileUp, Download, Eye, Paperclip } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { remitenteVisible } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface Comunicado {
@@ -144,7 +145,7 @@ const ListaComunicados = ({ comunicados, loading, showDocumentLink = false }: Li
           </div>
           <p className="text-sm break-words">
             <span className="font-medium text-foreground">De:</span>{" "}
-            {c.remitente}
+            {remitenteVisible(c.remitente)}
           </p>
           {c.destinatarios && (
             <p className="text-sm break-words">
@@ -173,7 +174,7 @@ const ListaComunicados = ({ comunicados, loading, showDocumentLink = false }: Li
             <>
               <DialogHeader>
                 <DialogTitle className="text-base break-words">
-                  De: {selectedItem.remitente}
+                  De: {remitenteVisible(selectedItem.remitente)}
                 </DialogTitle>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Clock className="w-3 h-3" />

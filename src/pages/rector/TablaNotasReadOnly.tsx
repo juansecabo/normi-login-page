@@ -57,6 +57,7 @@ const TablaNotasReadOnly = () => {
   const ocultarDef = !!(config as any).ocultar_definitivas && (isEstudiante() || isPadreDeFamilia());
   const [periodoActivo, setPeriodoActivo] = useState<number>(getPeriodoActual());
   const [nombreProfesor, setNombreProfesor] = useState<string>("");
+  const [generoProfesor, setGeneroProfesor] = useState<string | null>(null);
 
   // Modal de comentarios
   const [comentarioModalOpen, setComentarioModalOpen] = useState(false);
@@ -65,6 +66,7 @@ const TablaNotasReadOnly = () => {
     nombreActividad: string;
     comentario: string | null;
     nombreProfesor: string;
+    generoProfesor: string | null;
   } | null>(null);
 
   useEffect(() => {
@@ -115,12 +117,13 @@ const TablaNotasReadOnly = () => {
             // Fase 10.E.19: nombres viven en Usuarios.
             const { data: profesorData } = await supabase
               .from('Usuarios')
-              .select('nombres, apellidos')
+              .select('nombres, apellidos, genero')
               .eq('id', String(asignacionCorrecta.id))
               .maybeSingle();
 
             if (profesorData) {
               setNombreProfesor(`${profesorData.nombres} ${profesorData.apellidos}`);
+              setGeneroProfesor((profesorData as any).genero ?? null);
             }
           }
         }
@@ -513,6 +516,7 @@ const TablaNotasReadOnly = () => {
                                             nombreActividad: actividad.nombre,
                                             comentario: comentario,
                                             nombreProfesor: nombreProfesor,
+                                            generoProfesor: generoProfesor,
                                           });
                                           setComentarioModalOpen(true);
                                         }}
@@ -559,6 +563,7 @@ const TablaNotasReadOnly = () => {
           nombreActividad={comentarioModalData.nombreActividad}
           comentario={comentarioModalData.comentario}
           nombreProfesor={comentarioModalData.nombreProfesor}
+          generoProfesor={comentarioModalData.generoProfesor}
         />
       )}
     </div>

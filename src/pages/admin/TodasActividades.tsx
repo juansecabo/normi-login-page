@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "@/hooks/use-toast";
+import { fetchNombresPorIds } from "@/lib/nombresUsuarios";
+import { cargoSegunGenero } from "@/lib/entrevistadores";
 
 interface Actividad {
   column_id: number;
@@ -100,6 +102,8 @@ const TodasActividades = () => {
   const [diaSeleccionado, setDiaSeleccionado] = useState<Date | undefined>(new Date());
 
   const [detalle, setDetalle] = useState<Actividad | null>(null);
+  // Género del profesor por cédula (Usuarios.genero) para "Profesor:"/"Profesora:".
+  const [generoProfes, setGeneroProfes] = useState<Record<string, string | null>>({});
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editing, setEditing] = useState<Actividad | null>(null);
   const [descripcion, setDescripcion] = useState("");
@@ -122,7 +126,13 @@ const TodasActividades = () => {
       .from('Calendario Actividades')
       .select('*')
       .order('fecha_de_presentacion', { ascending: true });
-    if (!error && data) setActividades(data as Actividad[]);
+    if (!error && data) {
+      setActividades(data as Actividad[]);
+      const mapG = await fetchNombresPorIds((data as Actividad[]).map((a) => a.id_profesor || "").filter(Boolean));
+      const g: Record<string, string | null> = {};
+      mapG.forEach((u, id) => { g[id] = u.genero; });
+      setGeneroProfes(g);
+    }
     setLoading(false);
   };
 
@@ -337,7 +347,7 @@ const TodasActividades = () => {
                   📅 {detalle.fecha_de_presentacion && parsearFecha(detalle.fecha_de_presentacion)?.toLocaleDateString("es-CO", { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Profesor(a): <span className="text-foreground font-medium">{detalle.Nombres} {detalle.Apellidos}</span>
+                  {cargoSegunGenero("Profesor(a)", generoProfes[String(detalle.id_profesor || "")])}: <span className="text-foreground font-medium">{detalle.Nombres} {detalle.Apellidos}</span>
                 </p>
                 <div className="text-sm whitespace-pre-wrap bg-muted p-3 rounded-md">
                   {detalle.Descripción}

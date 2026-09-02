@@ -20,9 +20,11 @@ import { useToast } from "@/hooks/use-toast";
 import ComunicadoEnviadoDialog from "@/components/ComunicadoEnviadoDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { apiRequest } from "@/lib/apiClient";
+import { remitenteVisible } from "@/lib/utils";
 import FormatoWhatsAppToolbar, { EditorComunicado, EditorComunicadoHandle } from "@/components/FormatoWhatsAppToolbar";
 import DictadoMic from "@/components/DictadoMic";
 import { filtrarPorNombre } from "@/lib/nombresUsuarios";
+import { cargoSegunGenero } from "@/lib/entrevistadores";
 import CharCircle from "@/components/CharCircle";
 import { buildAdminBodyPreview, MAX_WA_TEMPLATE_BODY, WA_TEMPLATE_OVERHEAD } from "@/lib/wapBody";
 
@@ -140,10 +142,10 @@ const EnviarComunicadoAdmin = () => {
   const [openGrado, setOpenGrado] = useState(false);
   const [openSalon, setOpenSalon] = useState(false);
 
-  const [listaCoordinadores, setListaCoordinadores] = useState<{ id: string; nombre: string }[]>([]);
-  const [listaAdministrativos, setListaAdministrativos] = useState<{ id: string; nombre: string }[]>([]);
-  const [listaSecretarias, setListaSecretarias] = useState<{ id: string; nombre: string }[]>([]);
-  const [listaOrientadores, setListaOrientadores] = useState<{ id: string; nombre: string }[]>([]);
+  const [listaCoordinadores, setListaCoordinadores] = useState<{ id: string; nombre: string; genero?: string | null }[]>([]);
+  const [listaAdministrativos, setListaAdministrativos] = useState<{ id: string; nombre: string; genero?: string | null }[]>([]);
+  const [listaSecretarias, setListaSecretarias] = useState<{ id: string; nombre: string; genero?: string | null }[]>([]);
+  const [listaOrientadores, setListaOrientadores] = useState<{ id: string; nombre: string; genero?: string | null }[]>([]);
   const [coordinadoresSeleccionados, setCoordinadoresSeleccionados] = useState<string[]>([]);
   const [administrativosSeleccionados, setAdministrativosSeleccionados] = useState<string[]>([]);
   const [secretariasSeleccionadas, setSecretariasSeleccionadas] = useState<string[]>([]);
@@ -160,7 +162,7 @@ const EnviarComunicadoAdmin = () => {
   const [salonesDisponibles, setSalonesDisponibles] = useState<string[]>([]);
 
   // Profesores específicos (filtrados por grados/salones marcados)
-  const [listaProfesoresFiltrada, setListaProfesoresFiltrada] = useState<{ id: string; nombre: string; grados: string[]; salones: string[] }[]>([]);
+  const [listaProfesoresFiltrada, setListaProfesoresFiltrada] = useState<{ id: string; nombre: string; genero?: string | null; grados: string[]; salones: string[] }[]>([]);
   const [profesoresSeleccionados, setProfesoresSeleccionados] = useState<string[]>([]);
   const [loadingListaProfesores, setLoadingListaProfesores] = useState(false);
   const [mostrarProfesores, setMostrarProfesores] = useState(false);
@@ -321,13 +323,14 @@ const EnviarComunicadoAdmin = () => {
         if (salonesSel.length > 0 && !salonesSel.some(s => salones.includes(s))) return false;
         return true;
       });
-      const byId = new Map<string, { id: string; nombre: string; grados: string[]; salones: string[] }>();
+      const byId = new Map<string, { id: string; nombre: string; genero?: string | null; grados: string[]; salones: string[] }>();
       for (const r of filtered) {
         const rid = String(r.id);
         if (!byId.has(rid)) {
           byId.set(rid, {
             id: rid,
             nombre: `${r.apellidos || ""} ${r.nombres || ""}`.trim(),
+            genero: r.genero ?? null,
             grados: [...(r["Grado(s)"] as string[] || [])],
             salones: [...(r["Salon(es)"] as string[] || [])],
           });
@@ -361,10 +364,10 @@ const EnviarComunicadoAdmin = () => {
         .in("cargo", ["Coordinador(a)", "Administrativo(a)", "Secretaria General", "Orientador(a) Escolar"]);
       const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
       const rows = sortByApellidosNombres(await enrichWithNombres((rawInt || []) as any));
-      setListaCoordinadores(rows.filter(r => r.cargo === "Coordinador(a)").map(r => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}` })));
-      setListaAdministrativos(rows.filter(r => r.cargo === "Administrativo(a)").map(r => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}` })));
-      setListaSecretarias(rows.filter(r => r.cargo === "Secretaria General").map(r => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}` })));
-      setListaOrientadores(rows.filter(r => r.cargo === "Orientador(a) Escolar").map(r => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}` })));
+      setListaCoordinadores(rows.filter(r => r.cargo === "Coordinador(a)").map(r => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}`, genero: r.genero ?? null })));
+      setListaAdministrativos(rows.filter(r => r.cargo === "Administrativo(a)").map(r => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}`, genero: r.genero ?? null })));
+      setListaSecretarias(rows.filter(r => r.cargo === "Secretaria General").map(r => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}`, genero: r.genero ?? null })));
+      setListaOrientadores(rows.filter(r => r.cargo === "Orientador(a) Escolar").map(r => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}`, genero: r.genero ?? null })));
       setLoadingInternos(false);
     };
     fetchInternos();
@@ -444,6 +447,9 @@ const EnviarComunicadoAdmin = () => {
   const listaANombres = (ids: string[], lista: { id: string; nombre: string }[]) =>
     ids.map(id => lista.find(x => x.id === id)?.nombre).filter(Boolean) as string[];
 
+  const generoDe = (ids: string[], lista: { id: string; genero?: string | null }[]) =>
+    ids.map((id) => lista.find((x) => x.id === id)).find(Boolean)?.genero ?? null;
+
   const joinConY = (arr: string[]): string => {
     if (arr.length === 0) return "";
     if (arr.length === 1) return arr[0];
@@ -514,7 +520,7 @@ const EnviarComunicadoAdmin = () => {
     if (sel.Profesores) {
       if (profesoresSeleccionados.length > 0) {
         const nombres = listaANombres(profesoresSeleccionados, listaProfesoresFiltrada);
-        partes.push(nombres.length === 1 ? `Profesor(a) ${nombres[0]}` : `Profesores ${nombres.join(", ")}`);
+        partes.push(nombres.length === 1 ? `${cargoSegunGenero("Profesor(a)", generoDe(profesoresSeleccionados, listaProfesoresFiltrada))} ${nombres[0]}` : `Profesores ${nombres.join(", ")}`);
       } else {
         const frase = aulaFrase("Profesores");
         partes.push(frase || "Profesores");
@@ -525,7 +531,7 @@ const EnviarComunicadoAdmin = () => {
       if (coordinadoresSeleccionados.length === 0) partes.push("Coordinadores");
       else {
         const nombres = listaANombres(coordinadoresSeleccionados, listaCoordinadores);
-        partes.push(nombres.length === 1 ? `Coordinador(a) ${nombres[0]}` : `Coordinadores ${nombres.join(", ")}`);
+        partes.push(nombres.length === 1 ? `${cargoSegunGenero("Coordinador(a)", generoDe(coordinadoresSeleccionados, listaCoordinadores))} ${nombres[0]}` : `Coordinadores ${nombres.join(", ")}`);
       }
     }
     if (sel.Rector) partes.push("Rector");
@@ -533,7 +539,7 @@ const EnviarComunicadoAdmin = () => {
       if (administrativosSeleccionados.length === 0) partes.push("Administrativos");
       else {
         const nombres = listaANombres(administrativosSeleccionados, listaAdministrativos);
-        partes.push(nombres.length === 1 ? `Administrativo(a) ${nombres[0]}` : `Administrativos ${nombres.join(", ")}`);
+        partes.push(nombres.length === 1 ? `${cargoSegunGenero("Administrativo(a)", generoDe(administrativosSeleccionados, listaAdministrativos))} ${nombres[0]}` : `Administrativos ${nombres.join(", ")}`);
       }
     }
     if (sel.Secretaria) {
@@ -547,7 +553,7 @@ const EnviarComunicadoAdmin = () => {
       if (orientadoresSeleccionados.length === 0) partes.push("Orientador(a) Escolar");
       else {
         const nombres = listaANombres(orientadoresSeleccionados, listaOrientadores);
-        partes.push(nombres.length === 1 ? `Orientador(a) ${nombres[0]}` : `Orientadores ${nombres.join(", ")}`);
+        partes.push(nombres.length === 1 ? `${cargoSegunGenero("Orientador(a)", generoDe(orientadoresSeleccionados, listaOrientadores))} ${nombres[0]}` : `Orientadores ${nombres.join(", ")}`);
       }
     }
 
@@ -1443,7 +1449,7 @@ const EnviarComunicadoAdmin = () => {
                       {c.remitente && (
                         <p className="text-sm break-words">
                           <span className="font-medium text-foreground">De:</span>{" "}
-                          {c.remitente}
+                          {remitenteVisible(c.remitente)}
                         </p>
                       )}
                       <p className="text-sm break-words">
@@ -1583,7 +1589,7 @@ const EnviarComunicadoAdmin = () => {
             <>
               <DialogHeader>
                 <DialogTitle className="text-base break-words">
-                  {selectedHistorial.remitente ? `De: ${selectedHistorial.remitente}` : `Para: ${selectedHistorial.destinatarios}`}
+                  {selectedHistorial.remitente ? `De: ${remitenteVisible(selectedHistorial.remitente)}` : `Para: ${selectedHistorial.destinatarios}`}
                 </DialogTitle>
                 {selectedHistorial.remitente && (
                   <p className="text-sm text-left break-words">

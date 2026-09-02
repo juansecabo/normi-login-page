@@ -16,6 +16,8 @@ import { useNivelesCoordina } from "@/hooks/useNivelesCoordina";
 import { useAulasProfesor } from "@/hooks/useAulasProfesor";
 import { NIVEL_DE_GRADO } from "@/utils/grados";
 import CalendarioFiltroDia, { keyDeDate } from "@/components/CalendarioFiltroDia";
+import { cargoSegunGenero } from "@/lib/entrevistadores";
+import { fetchNombresPorIds } from "@/lib/nombresUsuarios";
 
 const GRADO_ORDEN: Record<string, number> = {
   "Párvulo": 0, "Prejardín": 1, "Jardín": 2, "Transición": 3,
@@ -63,6 +65,8 @@ interface Autorizacion {
 const RetiroEstudiantesStaff = () => {
   const navigate = useNavigate();
   const [autorizaciones, setAutorizaciones] = useState<Autorizacion[]>([]);
+  // Género de los acudientes (Usuarios.genero) para "identificado/identificada".
+  const [generoAcudientes, setGeneroAcudientes] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(true);
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
   const toggleExpanded = (id: number) => {
@@ -99,6 +103,11 @@ const RetiroEstudiantesStaff = () => {
         .order("created_at", { ascending: false });
       const lista = data || [];
       setAutorizaciones(lista);
+      fetchNombresPorIds(lista.map((a: any) => a.acudiente_id).filter(Boolean)).then((m) => {
+        const g: Record<string, string | null> = {};
+        m.forEach((u, id) => { g[id] = u.genero; });
+        setGeneroAcudientes(g);
+      });
       const maxId = lista.length > 0 ? Math.max(...lista.map((a: any) => a.id)) : 0;
       if (maxId > 0) markLastSeen('retiro', session.id!, maxId);
       setLoading(false);
@@ -282,7 +291,7 @@ const RetiroEstudiantesStaff = () => {
                           <div className="border-t border-border p-4 bg-muted/10 text-sm text-foreground leading-relaxed space-y-3">
                             <p className="font-bold text-center">AUTORIZACIÓN PARA RETIRO DE ESTUDIANTES EN JORNADA ESCOLAR</p>
                             <p><span className="font-medium text-red-600">La autorización es para el día:</span> <span className="text-primary font-medium">{fechaAut}</span>{auth.hora_retiro && <> · <span className="font-medium text-red-600">Hora del retiro:</span> <span className="text-primary font-medium">{fmtHora(auth.hora_retiro.slice(0, 5))}</span></>}</p>
-                            <p>Yo <span className="text-primary font-medium">{[auth.acudiente_nombres, auth.acudiente_apellidos].filter(Boolean).join(" ")}</span> identificado(a) con C.C. No. <span className="text-primary font-medium">{auth.acudiente_id}</span> autorizo a mi acudido(a) <span className="text-primary font-medium">{auth.estudiante_nombre} {auth.estudiante_apellidos}</span> del grado: <span className="text-primary font-medium">{auth.estudiante_grado} {auth.estudiante_salon}</span>, para que salga de la institución:</p>
+                            <p>Yo <span className="text-primary font-medium">{[auth.acudiente_nombres, auth.acudiente_apellidos].filter(Boolean).join(" ")}</span> {cargoSegunGenero("identificado(a)", generoAcudientes[String(auth.acudiente_id)])} con C.C. No. <span className="text-primary font-medium">{auth.acudiente_id}</span> autorizo a mi acudido(a) <span className="text-primary font-medium">{auth.estudiante_nombre} {auth.estudiante_apellidos}</span> del grado: <span className="text-primary font-medium">{auth.estudiante_grado} {auth.estudiante_salon}</span>, para que salga de la institución:</p>
                             <p><Check className="w-4 h-4 inline text-primary" /> {TIPOS_SALIDA[auth.tipo_salida] || auth.tipo_salida}{auth.nombre_persona_autorizada && <span>. Nombre: <span className="text-primary font-medium">{auth.nombre_persona_autorizada}</span></span>}{auth.parentesco && <><br/>Parentesco: <span className="text-primary font-medium">{auth.parentesco}</span></>}</p>
                             <p>Motivo: <span className="text-primary font-medium">{auth.motivo}</span></p>
                             {auth.firma_url && <div><p className="font-medium mb-1">Firma:</p><FirmaImage url={auth.firma_url} /></div>}

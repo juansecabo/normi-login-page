@@ -144,7 +144,11 @@ export async function notifyOrientadora(
   try {
     await postComunicadoSistema({
       mensaje,
-      remitenteTag: extraerTagDeRemitente(remitente) || 'Remisión',
+      // El tag solo se extrae de un remitente de sistema ("Sistema Normi (X)").
+      // Si viene el docente ("Profesora Ana…" o el legacy "Profesor(a) Ana…") el
+      // tag es siempre 'Remisión'; antes la regex sacaba la "a" de "(a)" y el
+      // comunicado quedaba como "Sistema Normi (a)" sin título ni interruptor.
+      remitenteTag: (remitente.startsWith('Sistema Normi') && extraerTagDeRemitente(remitente)) || 'Remisión',
       perfiles: ['Orientadores'],
       destinatariosLabel: 'Orientador(a) Escolar',
     });

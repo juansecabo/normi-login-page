@@ -2,6 +2,8 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatTelefono } from "@/utils/telefono";
 import { getSession, isPadreDeFamilia, AcudidoData } from "@/hooks/useSession";
+import { cargoSegunGenero } from "@/lib/entrevistadores";
+import { fetchNombresPorIds } from "@/lib/nombresUsuarios";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -56,6 +58,10 @@ const RetiroEstudiantes = () => {
   const [horaM, setHoraM] = useState("");
   const [horaAP, setHoraAP] = useState("");
   const [acudidoSeleccionado, setAcudidoSeleccionado] = useState<AcudidoData | null>(null);
+  // Género del acudiente logueado y de sus acudidos (Usuarios.genero) para
+  // "identificado/identificada" y "acudido/acudida"; sin dato queda neutro.
+  const [generoAcudiente, setGeneroAcudiente] = useState<string | null>(null);
+  const [generoAcudidos, setGeneroAcudidos] = useState<Record<string, string | null>>({});
   const [tipoSalida, setTipoSalida] = useState("");
   const [nombrePersona, setNombrePersona] = useState("");
   const [parentesco, setParentesco] = useState("");
@@ -93,6 +99,12 @@ const RetiroEstudiantes = () => {
     setApellidosAcudiente(session.apellidos || "");
     setIdAcudiente(session.id);
     setAcudidos(session.acudidos || []);
+    setGeneroAcudiente(session.genero ?? null);
+    fetchNombresPorIds((session.acudidos || []).map((a) => a.id)).then((m) => {
+      const g: Record<string, string | null> = {};
+      m.forEach((u, id) => { g[id] = u.genero; });
+      setGeneroAcudidos(g);
+    });
     // Tel del acudiente logueado vive en Usuarios (fuente única).
     supabase.from("Usuarios").select("numero_de_telefono").eq("id", session.id).maybeSingle()
       .then(({ data }) => { if (data?.numero_de_telefono) setTelefonoAcudiente(data.numero_de_telefono); });
@@ -351,7 +363,7 @@ const RetiroEstudiantes = () => {
               {/* Yo ___ identificado(a) con C.C. No. ___ autorizo a mi acudido(a) ___ del grado ___ */}
               <div className="text-sm text-foreground leading-relaxed space-y-3">
                 <p className="items-baseline" style={{ wordBreak: "normal", overflowWrap: "normal" }}>
-                  Yo <span className="inline px-1 border-b-2 border-primary/40 text-primary font-medium">{nombreAcudiente || "___"}</span> identificado(a) con C.C. No. <span className="inline px-1 border-b-2 border-primary/40 text-primary font-medium">{idAcudiente || "___"}</span> autorizo a mi acudido(a)
+                  Yo <span className="inline px-1 border-b-2 border-primary/40 text-primary font-medium">{nombreAcudiente || "___"}</span> {cargoSegunGenero("identificado(a)", generoAcudiente)} con C.C. No. <span className="inline px-1 border-b-2 border-primary/40 text-primary font-medium">{idAcudiente || "___"}</span> autorizo a mi {cargoSegunGenero("acudido(a)", acudidoSeleccionado ? generoAcudidos[String(acudidoSeleccionado.id)] : null)}
                   <select
                     value={acudidoSeleccionado?.id || ""}
                     onChange={(e) => {
@@ -595,7 +607,7 @@ const RetiroEstudiantes = () => {
                             </p>
 
                             <p>
-                              Yo <span className="text-primary font-medium">{[auth.acudiente_nombres, auth.acudiente_apellidos].filter(Boolean).join(" ")}</span> identificado(a) con C.C. No. <span className="text-primary font-medium">{auth.acudiente_id}</span> autorizo a mi acudido(a) <span className="text-primary font-medium">{auth.estudiante_nombre} {auth.estudiante_apellidos}</span> del grado: <span className="text-primary font-medium">{auth.estudiante_grado} {auth.estudiante_salon}</span>, para que salga de la institución:
+                              Yo <span className="text-primary font-medium">{[auth.acudiente_nombres, auth.acudiente_apellidos].filter(Boolean).join(" ")}</span> {cargoSegunGenero("identificado(a)", generoAcudiente)} con C.C. No. <span className="text-primary font-medium">{auth.acudiente_id}</span> autorizo a mi acudido(a) <span className="text-primary font-medium">{auth.estudiante_nombre} {auth.estudiante_apellidos}</span> del grado: <span className="text-primary font-medium">{auth.estudiante_grado} {auth.estudiante_salon}</span>, para que salga de la institución:
                             </p>
 
                             <p>

@@ -12,12 +12,15 @@ import { apiRequest } from "@/lib/apiClient";
 import { EntregarTrabajoModal, type EntregaMia } from "@/components/EntregarTrabajoModal";
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 import ResponsiveSelect from "@/components/ResponsiveSelect";
+import { fetchNombresPorIds } from "@/lib/nombresUsuarios";
+import { cargoSegunGenero } from "@/lib/entrevistadores";
 
 interface ActividadCalendario {
   column_id: string;
   auto_id: number;
   permite_entregas?: boolean;
   fecha_limite_entrega?: string | null;
+  id_profesor?: string | null;
   Nombres: string;
   Apellidos: string;
   Asignatura: string;
@@ -102,6 +105,8 @@ const CalendarioEstudiante = () => {
   };
   useEffect(() => { cargarEntregas(); }, []);
   const [detalle, setDetalle] = useState<ActividadCalendario | null>(null);
+  // Género del profesor por cédula (Usuarios.genero) para "Profesor:"/"Profesora:".
+  const [generoProfes, setGeneroProfes] = useState<Record<string, string | null>>({});
 
   useEffect(() => {
     const session = getSession();
@@ -130,6 +135,10 @@ const CalendarioEstudiante = () => {
           const ids = propias.map((a: any) => Number(a.auto_id)).filter((id: number) => !isNaN(id) && id > 0);
           const maxId = ids.length > 0 ? Math.max(...ids) : 0;
           markLastSeen('actividades', session.id!, maxId);
+          const mapG = await fetchNombresPorIds(propias.map((a: any) => a.id_profesor || "").filter(Boolean));
+          const g: Record<string, string | null> = {};
+          mapG.forEach((u, id) => { g[id] = u.genero; });
+          setGeneroProfes(g);
         }
       } catch (err) {
         console.error('Error:', err);
@@ -360,7 +369,7 @@ const CalendarioEstudiante = () => {
                   📅 {detalle.fecha_de_presentacion && parsearFecha(detalle.fecha_de_presentacion)?.toLocaleDateString("es-CO", { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Profesor(a): <span className="text-foreground font-medium">{detalle.Nombres} {detalle.Apellidos}</span>
+                  {cargoSegunGenero("Profesor(a)", generoProfes[String(detalle.id_profesor || "")])}: <span className="text-foreground font-medium">{detalle.Nombres} {detalle.Apellidos}</span>
                 </p>
                 <div className="text-sm whitespace-pre-wrap bg-muted p-3 rounded-md">
                   {detalle.Descripción}

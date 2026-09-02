@@ -17,6 +17,7 @@ import imgProfesor from "@/assets/salon/profesor.webp";
 import imgProfesora from "@/assets/salon/profesora.webp";
 import imgAlumno from "@/assets/salon/alumno.webp";
 import imgAlumna from "@/assets/salon/alumna.webp";
+import { cargoSegunGenero } from "@/lib/entrevistadores";
 
 /**
  * "Armar salón" — vista cenital del aula para armar los salones de forma
@@ -525,7 +526,7 @@ const ArmarSalon = () => {
           {/* Escritorio + director(a) de grupo (el profesor va reflejado en espejo) */}
           <div className="flex items-center justify-center gap-4 mt-6 mb-2">
             <img src={imgEscritorio} alt="Escritorio" className="h-32 object-contain" />
-            {imgDirector && <img src={imgDirector} alt="Director(a) de grupo" className={`h-36 object-contain ${director?.genero !== "F" ? "-scale-x-100" : ""}`} />}
+            {imgDirector && <img src={imgDirector} alt={cargoSegunGenero("Director(a) de grupo", director?.genero)} className={`h-36 object-contain ${director?.genero !== "F" ? "-scale-x-100" : ""}`} />}
           </div>
           <p className="text-center text-sm font-medium mb-8">
             {director
@@ -537,7 +538,7 @@ const ArmarSalon = () => {
                 data-guia="configurar_institucion.armar_director_boton"
                 onClick={abrirDirDialog}
                 className="inline-flex align-middle ml-2 text-muted-foreground hover:text-foreground cursor-pointer"
-                title={director ? "Cambiar director(a) de grupo" : "Asignar director(a) de grupo"}
+                title={director ? cargoSegunGenero("Cambiar director(a) de grupo", director.genero) : "Asignar director(a) de grupo"}
               >
                 {director ? <Pencil className="w-3.5 h-3.5" /> : <Plus className="w-4 h-4" />}
               </button>
@@ -724,7 +725,7 @@ const ArmarSalon = () => {
       <Dialog open={dirDialog} onOpenChange={setDirDialog}>
         <DialogContent className="max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
-            <DialogTitle>{director ? "Director(a) de grupo" : "Asignar director(a) de grupo"}</DialogTitle>
+            <DialogTitle>{director ? cargoSegunGenero("Director(a) de grupo", director.genero) : "Asignar director(a) de grupo"}</DialogTitle>
             <DialogDescription>{grado} {salon}</DialogDescription>
           </DialogHeader>
           {director ? (

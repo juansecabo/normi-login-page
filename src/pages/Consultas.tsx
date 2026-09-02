@@ -119,10 +119,10 @@ export default function Consultas() {
   const [estudiantesMarcados, setEstudiantesMarcados] = useState<Record<number, boolean>>({});
 
   // Listas de internos (cargadas on-demand)
-  const [listaCoordinadores, setListaCoordinadores] = useState<{ id: string; nombre: string }[]>([]);
-  const [listaAdministrativos, setListaAdministrativos] = useState<{ id: string; nombre: string }[]>([]);
-  const [listaSecretarias, setListaSecretarias] = useState<{ id: string; nombre: string }[]>([]);
-  const [listaOrientadores, setListaOrientadores] = useState<{ id: string; nombre: string }[]>([]);
+  const [listaCoordinadores, setListaCoordinadores] = useState<{ id: string; nombre: string; genero?: string | null }[]>([]);
+  const [listaAdministrativos, setListaAdministrativos] = useState<{ id: string; nombre: string; genero?: string | null }[]>([]);
+  const [listaSecretarias, setListaSecretarias] = useState<{ id: string; nombre: string; genero?: string | null }[]>([]);
+  const [listaOrientadores, setListaOrientadores] = useState<{ id: string; nombre: string; genero?: string | null }[]>([]);
   const [coordinadoresSeleccionados, setCoordinadoresSeleccionados] = useState<string[]>([]);
   const [administrativosSeleccionados, setAdministrativosSeleccionados] = useState<string[]>([]);
   const [secretariasSeleccionadas, setSecretariasSeleccionadas] = useState<string[]>([]);
@@ -130,7 +130,7 @@ export default function Consultas() {
   const [loadingInternos, setLoadingInternos] = useState(false);
 
   // Profesores filtrados (por grado/salón)
-  const [listaProfesoresFiltrada, setListaProfesoresFiltrada] = useState<{ id: string; nombre: string; grados: string[]; salones: string[] }[]>([]);
+  const [listaProfesoresFiltrada, setListaProfesoresFiltrada] = useState<{ id: string; nombre: string; genero?: string | null; grados: string[]; salones: string[] }[]>([]);
   const [profesoresSeleccionados, setProfesoresSeleccionados] = useState<string[]>([]);
   const [loadingListaProfesores, setLoadingListaProfesores] = useState(false);
   const [mostrarProfesores, setMostrarProfesores] = useState(false);
@@ -284,13 +284,14 @@ export default function Consultas() {
         if (salonesSel.length > 0 && !salonesSel.some((s) => salones.includes(s))) return false;
         return true;
       });
-      const byId = new Map<string, { id: string; nombre: string; grados: string[]; salones: string[] }>();
+      const byId = new Map<string, { id: string; nombre: string; genero?: string | null; grados: string[]; salones: string[] }>();
       for (const r of filtered as any[]) {
         const rid = String(r.id);
         if (!byId.has(rid)) {
           byId.set(rid, {
             id: rid,
             nombre: `${r.apellidos || ""} ${r.nombres || ""}`.trim(),
+            genero: r.genero ?? null,
             grados: [...((r["Grado(s)"] as string[]) || [])],
             salones: [...((r["Salon(es)"] as string[]) || [])],
           });
@@ -323,10 +324,10 @@ export default function Consultas() {
         .in("cargo", ["Coordinador(a)", "Administrativo(a)", "Secretaria General", "Orientador(a) Escolar"]);
       const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
       const rows = sortByApellidosNombres(await enrichWithNombres((rawInt || []) as any));
-      setListaCoordinadores(rows.filter((r: any) => r.cargo === "Coordinador(a)").map((r: any) => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}` })));
-      setListaAdministrativos(rows.filter((r: any) => r.cargo === "Administrativo(a)").map((r: any) => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}` })));
-      setListaSecretarias(rows.filter((r: any) => r.cargo === "Secretaria General").map((r: any) => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}` })));
-      setListaOrientadores(rows.filter((r: any) => r.cargo === "Orientador(a) Escolar").map((r: any) => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}` })));
+      setListaCoordinadores(rows.filter((r: any) => r.cargo === "Coordinador(a)").map((r: any) => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}`, genero: r.genero ?? null })));
+      setListaAdministrativos(rows.filter((r: any) => r.cargo === "Administrativo(a)").map((r: any) => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}`, genero: r.genero ?? null })));
+      setListaSecretarias(rows.filter((r: any) => r.cargo === "Secretaria General").map((r: any) => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}`, genero: r.genero ?? null })));
+      setListaOrientadores(rows.filter((r: any) => r.cargo === "Orientador(a) Escolar").map((r: any) => ({ id: String(r.id), nombre: `${r.apellidos} ${r.nombres}`, genero: r.genero ?? null })));
       setLoadingInternos(false);
     };
     fetchInternos();
@@ -472,6 +473,9 @@ export default function Consultas() {
   const listaANombres = (ids: string[], lista: { id: string; nombre: string }[]) =>
     ids.map((id) => lista.find((x) => x.id === id)?.nombre).filter(Boolean) as string[];
 
+  const generoDe = (ids: string[], lista: { id: string; genero?: string | null }[]) =>
+    ids.map((id) => lista.find((x) => x.id === id)).find(Boolean)?.genero ?? null;
+
   const aulaFrase = (prefijo: string): string => {
     const gs = gradosSeleccionados;
     const ss = salonesSeleccionados;
@@ -522,7 +526,7 @@ export default function Consultas() {
     if (perfilesMarcados.Profesores) {
       if (profesoresSeleccionados.length > 0) {
         const nombres = listaANombres(profesoresSeleccionados, listaProfesoresFiltrada);
-        partes.push(nombres.length === 1 ? `Profesor(a) ${nombres[0]}` : `Profesores ${nombres.join(", ")}`);
+        partes.push(nombres.length === 1 ? `${cargoSegunGenero("Profesor(a)", generoDe(profesoresSeleccionados, listaProfesoresFiltrada))} ${nombres[0]}` : `Profesores ${nombres.join(", ")}`);
       } else if (gradosSeleccionados.length > 0 || salonesSeleccionados.length > 0) {
         partes.push(aulaFrase("Profesores"));
       } else {
@@ -534,7 +538,7 @@ export default function Consultas() {
       if (coordinadoresSeleccionados.length === 0) partes.push("Coordinadores");
       else {
         const nombres = listaANombres(coordinadoresSeleccionados, listaCoordinadores);
-        partes.push(nombres.length === 1 ? `Coordinador(a) ${nombres[0]}` : `Coordinadores ${nombres.join(", ")}`);
+        partes.push(nombres.length === 1 ? `${cargoSegunGenero("Coordinador(a)", generoDe(coordinadoresSeleccionados, listaCoordinadores))} ${nombres[0]}` : `Coordinadores ${nombres.join(", ")}`);
       }
     }
     if (perfilesMarcados.Rector) partes.push("Rector");
@@ -542,7 +546,7 @@ export default function Consultas() {
       if (administrativosSeleccionados.length === 0) partes.push("Administrativos");
       else {
         const nombres = listaANombres(administrativosSeleccionados, listaAdministrativos);
-        partes.push(nombres.length === 1 ? `Administrativo(a) ${nombres[0]}` : `Administrativos ${nombres.join(", ")}`);
+        partes.push(nombres.length === 1 ? `${cargoSegunGenero("Administrativo(a)", generoDe(administrativosSeleccionados, listaAdministrativos))} ${nombres[0]}` : `Administrativos ${nombres.join(", ")}`);
       }
     }
     if (perfilesMarcados.Secretaria) {
@@ -556,7 +560,7 @@ export default function Consultas() {
       if (orientadoresSeleccionados.length === 0) partes.push("Orientador(a) Escolar");
       else {
         const nombres = listaANombres(orientadoresSeleccionados, listaOrientadores);
-        partes.push(nombres.length === 1 ? `Orientador(a) ${nombres[0]}` : `Orientadores ${nombres.join(", ")}`);
+        partes.push(nombres.length === 1 ? `${cargoSegunGenero("Orientador(a)", generoDe(orientadoresSeleccionados, listaOrientadores))} ${nombres[0]}` : `Orientadores ${nombres.join(", ")}`);
       }
     }
 

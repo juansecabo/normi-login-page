@@ -10,6 +10,7 @@ import { useColegioConfig } from "@/hooks/useColegioConfig";
 import { ChevronDown, Plus, Search, Trash2, Pencil, FileDown, Send } from "lucide-react";
 import SignatureCanvas from "react-signature-canvas";
 import FirmaImage from "@/components/FirmaImage";
+import { cargoSegunGenero } from "@/lib/entrevistadores";
 import iconCasos from "@/assets/icons/casos.png";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -743,7 +744,7 @@ const CasoDetalle = () => {
             <p style="margin:0 0 6pt; white-space:pre-wrap;">${escapeHtml(sg.anotacion || dash)}</p>
             <p style="margin:6pt 0 2pt;"><strong>Observaciones:</strong></p>
             <p style="margin:0 0 6pt; white-space:pre-wrap;">${escapeHtml(sg.observaciones || dash)}</p>
-            <p style="margin:30pt 0 4pt; border-top:1pt solid #000; padding-top:2pt; width:240pt;">Firma del Orientador(a)</p>
+            <p style="margin:30pt 0 4pt; border-top:1pt solid #000; padding-top:2pt; width:240pt;">${getSession().genero === "F" ? "Firma de la Orientadora" : getSession().genero === "M" ? "Firma del Orientador" : "Firma del Orientador(a)"}</p>
           </div>`).join("")
       : "";
 
@@ -1001,7 +1002,7 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
             <p className="font-semibold text-blue-700 mb-3">Firmas</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FirmaBlock
-                label="Orientador(a) Escolar"
+                label={cargoSegunGenero("Orientador(a) Escolar", getSession().genero)}
                 urlGuardada={c.firma_orientadora_url}
                 onSave={(d) => subirFirma(d, "orientadora")}
                 onClear={() => borrarFirma("orientadora")}

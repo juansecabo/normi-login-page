@@ -9,12 +9,15 @@ import HeaderNormi from "@/components/HeaderNormi";
 import { Calendar } from "@/components/ui/calendar";
 import { es } from "date-fns/locale";
 import { markLastSeen } from "@/utils/notificaciones";
+import { fetchNombresPorIds } from "@/lib/nombresUsuarios";
+import { cargoSegunGenero } from "@/lib/entrevistadores";
 
 interface ActividadCalendario {
   permite_entregas?: boolean;
   fecha_limite_entrega?: string | null;
   column_id: string;
   auto_id: number;
+  id_profesor?: string | null;
   Nombres: string;
   Apellidos: string;
   Asignatura: string;
@@ -90,6 +93,8 @@ const CalendarioAcudiente = () => {
   const [mesActual, setMesActual] = useState(new Date());
   const [diaSeleccionado, setDiaSeleccionado] = useState<Date | undefined>(new Date());
   const [detalle, setDetalle] = useState<ActividadConHijo | null>(null);
+  // Género del profesor por cédula (Usuarios.genero) para "Profesor:"/"Profesora:".
+  const [generoProfes, setGeneroProfes] = useState<Record<string, string | null>>({});
 
   useEffect(() => {
     const session = getSession();
@@ -144,6 +149,10 @@ const CalendarioAcudiente = () => {
         }
 
         setActividades(todasActividades);
+        const mapG = await fetchNombresPorIds(todasActividades.map((a) => a.id_profesor || "").filter(Boolean));
+        const g: Record<string, string | null> = {};
+        mapG.forEach((u, id) => { g[id] = u.genero; });
+        setGeneroProfes(g);
       } catch (err) {
         console.error('Error:', err);
       } finally {
@@ -341,7 +350,7 @@ const CalendarioAcudiente = () => {
                   📅 {detalle.fecha_de_presentacion && parsearFecha(detalle.fecha_de_presentacion)?.toLocaleDateString("es-CO", { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Profesor(a): <span className="text-foreground font-medium">{detalle.Nombres} {detalle.Apellidos}</span>
+                  {cargoSegunGenero("Profesor(a)", generoProfes[String(detalle.id_profesor || "")])}: <span className="text-foreground font-medium">{detalle.Nombres} {detalle.Apellidos}</span>
                 </p>
                 <div className="text-sm whitespace-pre-wrap bg-muted p-3 rounded-md">
                   {detalle.Descripción}

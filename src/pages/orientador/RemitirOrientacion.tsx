@@ -10,6 +10,7 @@ import SignatureCanvas from "react-signature-canvas";
 import { Search } from "lucide-react";
 import iconEntrevista from "@/assets/icons/entrevista.webp";
 import { notifyOrientadora, notifyRectorCoord } from "@/lib/notifyStaff";
+import { cargoSegunGenero } from "@/lib/entrevistadores";
 
 interface Estudiante {
   id: number;
@@ -47,8 +48,8 @@ const RemitirOrientacion = () => {
   const { toast } = useToast();
   const sigRef = useRef<SignatureCanvas>(null);
 
-  const [autor, setAutor] = useState<{ id: string; nombres: string; apellidos: string; cargo: string }>({
-    id: "", nombres: "", apellidos: "", cargo: "",
+  const [autor, setAutor] = useState<{ id: string; nombres: string; apellidos: string; cargo: string; genero: string | null }>({
+    id: "", nombres: "", apellidos: "", cargo: "", genero: null,
   });
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,6 +84,7 @@ const RemitirOrientacion = () => {
       nombres: session.nombres || "",
       apellidos: session.apellidos || "",
       cargo: session.cargo || "",
+      genero: session.genero,
     });
 
     const cargar = async () => {
@@ -245,7 +247,7 @@ const RemitirOrientacion = () => {
       tipo_documento: tipoDoc,
       docente_id: autor.id,
       docente_nombre: docenteNombre,
-      docente_cargo: autor.cargo || null,
+      docente_cargo: cargoSegunGenero(autor.cargo, autor.genero) || null,
       firma_url: firmaUrl,
     };
 
@@ -270,7 +272,7 @@ const RemitirOrientacion = () => {
       const motivoCorto = motivo.trim().length > 200
         ? motivo.trim().slice(0, 200) + "..."
         : motivo.trim();
-      const remitente = [autor.cargo, autor.nombres, autor.apellidos].filter(Boolean).join(" ");
+      const remitente = [cargoSegunGenero(autor.cargo, autor.genero), autor.nombres, autor.apellidos].filter(Boolean).join(" ");
       const destLabels = [
         destinos.orientacion && "Orientación Escolar",
         destinos.director_grupo && "Director de Grupo",
@@ -507,7 +509,7 @@ const RemitirOrientacion = () => {
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Docente que remite</label>
                 <div className="text-sm border rounded px-3 py-2 bg-muted/30">
-                  {[autor.cargo, autor.nombres, autor.apellidos].filter(Boolean).join(" ") || "—"}
+                  {[cargoSegunGenero(autor.cargo, autor.genero), autor.nombres, autor.apellidos].filter(Boolean).join(" ") || "—"}
                 </div>
               </div>
 

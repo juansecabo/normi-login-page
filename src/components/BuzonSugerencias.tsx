@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { getSession } from "@/hooks/useSession";
+import { cargoSegunGenero } from "@/lib/entrevistadores";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -39,11 +40,11 @@ const BuzonSugerencias = () => {
         }
         break;
       case "Profesor(a)":
-        rol = "Profesor(a)";
+        rol = cargoSegunGenero("Profesor(a)", session.genero);
         contacto = session.id || "";
         break;
       default:
-        rol = session.cargo || "Desconocido";
+        rol = cargoSegunGenero(session.cargo || undefined, session.genero) || "Desconocido";
         contacto = session.id || "";
     }
 

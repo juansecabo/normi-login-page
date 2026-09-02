@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/apiClient";
 import { CheckCircle2, Pencil } from "lucide-react";
+import { cargoSegunGenero } from "@/lib/entrevistadores";
 
 interface ConsultaRow {
   id: number;
@@ -733,7 +734,7 @@ export default function ConsultaPublica() {
           <h1 className="text-xl sm:text-2xl font-bold text-foreground">{consulta.titulo}</h1>
           {sesion.nombres && (
             <p className="text-sm text-muted-foreground mt-1">
-              Estimado(a) <strong>{sesion.nombres} {sesion.apellidos}</strong>
+              {cargoSegunGenero("Estimado(a)", sesion.genero)} <strong>{sesion.nombres} {sesion.apellidos}</strong>
             </p>
           )}
         </div>

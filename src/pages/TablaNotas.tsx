@@ -62,6 +62,7 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { getEventCoordinates } from "@dnd-kit/utilities";
+import { cargoSegunGenero } from "@/lib/entrevistadores";
 
 // Modificador: centra el "fantasma" (DragOverlay) bajo el dedo/cursor, para que
 // lo que se arrastra siga exactamente al dedo (sin el desfase que tenía antes).
@@ -349,6 +350,8 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   // (formato: "Nombre1 Apellidos1, Nombre2 Apellidos2", orden alfabético).
   // Se usa en el header del PDF descargado.
   const [nombresProfesores, setNombresProfesores] = useState<string>("");
+  // Género del único profesor del aula (Usuarios.genero) para "Profesor:"/"Profesora:".
+  const [generoProfesorAula, setGeneroProfesorAula] = useState<string | null>(null);
   
   // Estado para período activo (pestañas)
   const [periodoActivo, setPeriodoActivo] = useState<number>(getPeriodoActual());
@@ -698,12 +701,13 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         if (idsProfes.size > 0) {
           const { data: usrs } = await supabase
             .from('Usuarios')
-            .select('id, nombres, apellidos')
+            .select('id, nombres, apellidos, genero')
             .in('id', [...idsProfes].map(String));
           const ordenados = (usrs || [])
             .map((u: any) => ({
               nombres: (u.nombres || '').trim(),
               apellidos: (u.apellidos || '').trim(),
+              genero: (u.genero as string | null) ?? null,
             }))
             .sort((a, b) => a.apellidos.localeCompare(b.apellidos, 'es'));
           const formateados = ordenados
@@ -711,6 +715,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
             .filter(Boolean)
             .join(', ');
           setNombresProfesores(formateados);
+          setGeneroProfesorAula(ordenados.length === 1 ? ordenados[0].genero : null);
         }
       } catch (error) {
         console.error('Error obteniendo nombres de profesores del aula:', error);
@@ -2053,7 +2058,9 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
           if (nombresHeader) {
             const profDiv = document.createElement("div");
             profDiv.style.cssText = "font-size:13px;color:#444;margin-bottom:4px;font-weight:500;";
-            const etiqueta = nombresHeader.includes(",") ? "Profesores(as)" : "Profesor(a)";
+            const etiqueta = nombresHeader.includes(",")
+              ? "Profesores(as)"
+              : cargoSegunGenero("Profesor(a)", nombresProfesores ? generoProfesorAula : session.genero);
             profDiv.textContent = `${etiqueta}: ${nombresHeader}`;
             container.appendChild(profDiv);
           }
@@ -4555,7 +4562,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
           <div className="text-sm text-foreground">
             {nombresProfesores ? (
               <span>
-                <span className="font-semibold">{nombresProfesores.includes(',') ? 'Profesores(as): ' : 'Profesor(a): '}</span>
+                <span className="font-semibold">{nombresProfesores.includes(',') ? 'Profesores(as): ' : `${cargoSegunGenero('Profesor(a)', generoProfesorAula)}: `}</span>
                 {nombresProfesores}
               </span>
             ) : (

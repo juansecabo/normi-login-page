@@ -11,7 +11,7 @@ import { CalendarIcon, Check, ChevronDown, UserRound, Plus, X, XCircle, RefreshC
 import { descargarCitacionEntrevista } from "@/utils/citacionEntrevistaPdf";
 import FirmaImage from "@/components/FirmaImage";
 import { apiRequest } from "@/lib/apiClient";
-import { joinEntrevistadores, entrevistadoresDeSolicitud } from "@/lib/entrevistadores";
+import { joinEntrevistadores, entrevistadoresDeSolicitud, cargoSegunGenero } from "@/lib/entrevistadores";
 import FormatoWhatsAppToolbar, { EditorComunicado, whatsappToHtml, type EditorComunicadoHandle } from "@/components/FormatoWhatsAppToolbar";
 import { useGradosColegio, rankGrado } from "@/utils/grados";
 import { es } from "date-fns/locale";
@@ -22,16 +22,6 @@ import {
 
 interface Estudiante { id: string; nombres: string; apellidos: string; grado: string; salon: string; }
 interface Interno { id: number; nombres: string; apellidos: string; cargo: string; genero?: string | null; }
-
-
-const cargoDisplay = (cargo: string, nombres: string) => {
-  const nombre = nombres.split(" ")[0];
-  const femeninos = ["Coordinador(a)","Secretaria General"];
-  if (cargo === "Rector") return `Rector ${nombres}`;
-  if (cargo === "Coordinador(a)") return `Coordinador(a) ${nombres}`;
-  if (cargo === "Profesor(a)") return `Profesor(a) ${nombres}`;
-  return `${cargo} ${nombres}`;
-};
 
 
 const SolicitudEntrevistaStaff = () => {
@@ -459,11 +449,11 @@ const SolicitudEntrevistaStaff = () => {
         estudiante_salon: est.salon,
         estudiante_id: Number(est.id),
         solicitante_nombre: [entrevistadores[0].nombres, entrevistadores[0].apellidos].filter(Boolean).join(" "),
-        solicitante_cargo: entrevistadores[0].cargo,
+        solicitante_cargo: cargoSegunGenero(entrevistadores[0].cargo, entrevistadores[0].genero),
         solicitante_id: entrevistadores[0].id,
         entrevistadores: entrevistadores.map(e => ({ id: e.id, cargo: e.cargo, nombres: e.nombres, apellidos: e.apellidos, genero: e.genero ?? null })),
         creado_por: Number(session.id),
-        creado_por_nombre: [session.cargo, session.nombres, session.apellidos].filter(Boolean).join(" "),
+        creado_por_nombre: [cargoSegunGenero(session.cargo || undefined, session.genero), session.nombres, session.apellidos].filter(Boolean).join(" "),
         firma_url: firmaUrl,
         mensaje: mensajeAdicional.trim() || null,
       });
@@ -694,7 +684,7 @@ const SolicitudEntrevistaStaff = () => {
               <p>Atentamente,</p>
 
               {/* Nombre y cargo del solicitante (quien está logueado) */}
-              <p className="text-primary font-medium">{session.cargo} {[session.nombres, session.apellidos].filter(Boolean).join(" ")}</p>
+              <p className="text-primary font-medium">{cargoSegunGenero(session.cargo || undefined, session.genero)} {[session.nombres, session.apellidos].filter(Boolean).join(" ")}</p>
 
               {/* Firma */}
               <div className="space-y-2">
