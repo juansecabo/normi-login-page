@@ -17,6 +17,7 @@ import { rankGrado, NIVEL_DE_GRADO } from "@/utils/grados";
 import PanelControl from "@/pages/rector/PanelControl";
 import PhoneInput from "@/components/PhoneInput";
 import { capitalizarNombre } from "@/utils/texto";
+import { formatTelefono } from "@/utils/telefono";
 import { cargoSegunGenero } from "@/lib/entrevistadores";
 
 /**
@@ -697,7 +698,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
                       Array.isArray(p.niveles_coordina) && p.niveles_coordina.length > 0 ? `Coordina: ${p.niveles_coordina.join(", ")}` : "",
                     ].filter(Boolean).join(" · ") || "—"}
                   </TableCell>
-                  <TableCell className="font-mono text-xs">{p.numero_de_telefono || "—"}</TableCell>
+                  <TableCell className="font-mono text-xs">{formatTelefono(p.numero_de_telefono) || "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{"contrasena" in p ? (p.contrasena || "(su cédula)") : "—"}</TableCell>
                   {esStaff && rol !== null && cargosAgregables.includes(rol) && (
                     <TableCell className="text-right space-x-1 whitespace-nowrap">
