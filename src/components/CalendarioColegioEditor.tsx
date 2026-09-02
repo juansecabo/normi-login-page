@@ -186,8 +186,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
 
   // ── Detalle de un día (sin herramienta): ver/editar lo que hay ahí ──
   type Detalle =
-    /** `eventos`: los que caen ese día (un evento puede existir en un día con o sin clases). */
-    | { tipo: "dia"; dia: DiaNoLectivo; fecha: string; eventos: Evento[] }
+    | { tipo: "dia"; dia: DiaNoLectivo }
     /** `desde`: lista de eventos del día de la que se abrió (para volver a ella). */
     | { tipo: "evento"; evento: Evento; desde?: { fecha: string; eventos: Evento[] } }
     /** Varios eventos caen en el mismo día: se listan para elegir cuál editar o quitar. */
@@ -243,9 +242,9 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
     }
     if (!herramienta) {
       // Modo inspección: mostrar qué hay en ese día (y permitir editarlo).
-      const evs = eventos.filter((e) => e.fecha_inicio <= f && f <= e.fecha_fin);
       const dia = dias.find((d) => d.fecha_inicio <= f && f <= d.fecha_fin);
-      if (dia) { setMotivoEdit(dia.motivo || ""); setDetalle({ tipo: "dia", dia, fecha: f, eventos: evs }); return; }
+      if (dia) { setMotivoEdit(dia.motivo || ""); setDetalle({ tipo: "dia", dia }); return; }
+      const evs = eventos.filter((e) => e.fecha_inicio <= f && f <= e.fecha_fin);
       if (evs.length > 1) { setDetalle({ tipo: "eventos", fecha: f, eventos: evs }); return; }
       const ev = evs[0];
       if (ev) { setEventoEdit(ev.nombre); setDetalle({ tipo: "evento", evento: ev }); return; }
@@ -292,41 +291,11 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
     const [ini, fin] = arrastre.ini <= arrastre.fin ? [arrastre.ini, arrastre.fin] : [arrastre.fin, arrastre.ini];
     return ini <= f && f <= fin;
   };
-  // Lista de eventos de un día con Editar / Eliminar (la usan el detalle
-  // "eventos" y el detalle de un día sin clases que también tenga eventos).
-  const listaEventosDia = (fecha: string, evs: Evento[]) => (
-    <ul className="divide-y divide-border rounded-md border border-border">
-      {evs.map((ev) => (
-        <li key={ev.id} className="flex items-center gap-2 p-3">
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium break-words">{ev.nombre}</p>
-            {ev.fecha_inicio !== ev.fecha_fin && (
-              <p className="text-xs text-muted-foreground">{fechaLinda(ev.fecha_inicio)} — {fechaLinda(ev.fecha_fin)}</p>
-            )}
-          </div>
-          {!soloLectura && (<>
-            <Button variant="outline" size="sm" className="gap-1" onClick={() => { setEventoEdit(ev.nombre); setDetalle({ tipo: "evento", evento: ev, desde: { fecha, eventos: evs } }); }}>
-              <Pencil className="w-3.5 h-3.5" /> Editar
-            </Button>
-            <Button variant="ghost" size="icon" title="Eliminar" onClick={() => { setVolverAEventos({ fecha, eventos: evs }); setDetalle(null); setConfirmEvento(ev); }}>
-              <Trash2 className="w-4 h-4 text-destructive" />
-            </Button>
-          </>)}
-        </li>
-      ))}
-    </ul>
-  );
-
   const claseDia = (f: string, dow: number): { cls: string; title: string } => {
     const base = "cursor-pointer select-none";
     if (enSeleccion(f)) return { cls: `${base} ring-2 ring-primary bg-primary/20`, title: "" };
     const dia = dias.find((d) => d.fecha_inicio <= f && f <= d.fecha_fin);
-    if (dia) {
-      const evsDia = eventos.filter((e) => e.fecha_inicio <= f && f <= e.fecha_fin);
-      const conEventos = evsDia.length > 0 ? ` ring-2 ring-inset ring-indigo-400` : "";
-      const titulo = [dia.motivo || "Día sin clases", ...evsDia.map((e) => e.nombre)].join(" · ");
-      return { cls: `${base} bg-red-200 hover:bg-red-300 text-red-900${conEventos}`, title: titulo };
-    }
+    if (dia) return { cls: `${base} bg-red-200 hover:bg-red-300 text-red-900`, title: dia.motivo || "Día sin clases" };
     const ev = eventos.find((e) => e.fecha_inicio <= f && f <= e.fecha_fin);
     if (ev) return { cls: `${base} bg-indigo-200 hover:bg-indigo-300 text-indigo-900`, title: ev.nombre };
     const nombreFestivo = festivos.get(f);
@@ -398,7 +367,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
               </span>
             ))}
             <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-red-200 border border-red-400" /> Sin clases</span>
-            <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-indigo-200 border border-indigo-400" /> Evento</span>
+            <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-indigo-200 border border-indigo-400" /> Evento (con clases)</span>
             <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-fuchsia-300 border border-fuchsia-400" /> Festivo (automático)</span>
           </div>
           )}
@@ -445,7 +414,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
               );
             })}
             <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-red-200 border border-red-400" /> Sin clases</span>
-            <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-indigo-200 border border-indigo-400" /> Evento</span>
+            <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-indigo-200 border border-indigo-400" /> Evento (con clases)</span>
             <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-fuchsia-300 border border-fuchsia-400" /> Festivo (automático)</span>
           </div>
         </CardContent>
@@ -538,7 +507,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
             <DialogDescription>
               {eventoDialog && (eventoDialog.ini === eventoDialog.fin
                 ? fechaLinda(eventoDialog.ini)
-                : `${fechaLinda(eventoDialog.ini)} — ${fechaLinda(eventoDialog.fin)}`)}.
+                : `${fechaLinda(eventoDialog.ini)} — ${fechaLinda(eventoDialog.fin)}`)} · Hay clases ese día, solo se realiza el evento.
             </DialogDescription>
           </DialogHeader>
           <div>
@@ -567,12 +536,6 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
                   : `${fechaLinda(detalle.dia.fecha_inicio)} — ${fechaLinda(detalle.dia.fecha_fin)}`}
               </DialogDescription>
             </DialogHeader>
-            {detalle.eventos.length > 0 && (
-              <div className="space-y-1.5">
-                <p className="text-sm font-medium">Eventos ese día</p>
-                {listaEventosDia(detalle.fecha, detalle.eventos)}
-              </div>
-            )}
             {soloLectura ? (
               <p className="text-sm text-muted-foreground">{detalle.dia.motivo || "Sin motivo"}</p>
             ) : (<>
@@ -600,7 +563,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
               <DialogDescription>
                 {detalle.evento.fecha_inicio === detalle.evento.fecha_fin
                   ? fechaLinda(detalle.evento.fecha_inicio)
-                  : `${fechaLinda(detalle.evento.fecha_inicio)} — ${fechaLinda(detalle.evento.fecha_fin)}`}
+                  : `${fechaLinda(detalle.evento.fecha_inicio)} — ${fechaLinda(detalle.evento.fecha_fin)}`} · Hay clases ese día.
               </DialogDescription>
             </DialogHeader>
             {soloLectura ? (
@@ -621,9 +584,28 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
           {detalle?.tipo === "eventos" && (<>
             <DialogHeader>
               <DialogTitle>Eventos del día</DialogTitle>
-              <DialogDescription>{fechaLinda(detalle.fecha)} · Elige cuál quieres ver.</DialogDescription>
+              <DialogDescription>{fechaLinda(detalle.fecha)} · Hay clases ese día. Elige cuál quieres ver.</DialogDescription>
             </DialogHeader>
-            {listaEventosDia(detalle.fecha, detalle.eventos)}
+            <ul className="divide-y divide-border rounded-md border border-border">
+              {detalle.eventos.map((ev) => (
+                <li key={ev.id} className="flex items-center gap-2 p-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium break-words">{ev.nombre}</p>
+                    {ev.fecha_inicio !== ev.fecha_fin && (
+                      <p className="text-xs text-muted-foreground">{fechaLinda(ev.fecha_inicio)} — {fechaLinda(ev.fecha_fin)}</p>
+                    )}
+                  </div>
+                  {!soloLectura && (<>
+                    <Button variant="outline" size="sm" className="gap-1" onClick={() => { const desde = { fecha: detalle.fecha, eventos: detalle.eventos }; setEventoEdit(ev.nombre); setDetalle({ tipo: "evento", evento: ev, desde }); }}>
+                      <Pencil className="w-3.5 h-3.5" /> Editar
+                    </Button>
+                    <Button variant="ghost" size="icon" title="Eliminar" onClick={() => { setVolverAEventos({ fecha: detalle.fecha, eventos: detalle.eventos }); setDetalle(null); setConfirmEvento(ev); }}>
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </>)}
+                </li>
+              ))}
+            </ul>
           </>)}
           {detalle?.tipo === "festivo" && (<>
             <DialogHeader>
