@@ -350,7 +350,9 @@ const DashboardRector = () => {
         const cls = String((it.render.props as any).className || '')
           .replace(/hover:bg-\S+/g, '')
           .replace(/bg-\S+/g, '');
-        return { ...it, render: cloneElement(it.render as any, { className: `${cls} bg-transparent border border-border hover:bg-muted/30` }) };
+        // Estilo en línea: gana sobre cualquier clase de color (también las de hover)
+        // que se haya colado; el hover gris va con !important por la misma razón.
+        return { ...it, render: cloneElement(it.render as any, { className: `${cls} bg-transparent hover:!bg-muted/30`, style: { backgroundColor: 'transparent', boxShadow: 'none' } }) };
       })
     : itemsPortero;
 
