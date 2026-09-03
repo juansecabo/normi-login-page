@@ -658,7 +658,7 @@ export const ACUDIENTE: Capacidad[] = [
     id: "acu.notificaciones_whatsapp",
     titulo: "Elegir qué notificaciones te llegan al WhatsApp",
     descripcion:
-      "Encender o apagar los avisos de WhatsApp que son opcionales para acudientes: reportes de actividades, aviso diario de actividades y notificaciones de notas. Los demás (comunicados, inasistencias, observador, portería...) llegan siempre. Todo sigue quedando en la plataforma; solo se silencia el mensaje.",
+      "Encender o apagar los avisos de WhatsApp que son opcionales para acudientes: comunicados, reportes de actividades, aviso diario de actividades y notificaciones de notas. Los demás (inasistencias, observador, portería...) llegan siempre. Todo sigue quedando en la plataforma; solo se silencia el mensaje.",
     categoria: "Perfil",
     roles: ["acudiente"],
     ruta: "/perfil",
