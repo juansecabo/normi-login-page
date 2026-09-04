@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getSession, isOrientador, isAdmin } from "@/hooks/useSession";
+import { getSession, isOrientador, isAdmin, isRectorOrCoordinador, isProfesor } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronDown, Download, Check, Search, CalendarPlus, Phone } from "lucide-react";
+import { ChevronDown, Download, Check, Search, CalendarPlus, Phone, Plus } from "lucide-react";
 import iconCasos from "@/assets/icons/casos.png";
 import { markLastSeen } from "@/utils/notificaciones";
 import { apiClient, apiRequest } from "@/lib/apiClient";
@@ -25,6 +25,10 @@ interface Remision {
   recibido_por_id: string | null;
   recibido_por_nombre: string | null;
   fecha_recibido: string | null;
+  /** Marca de Orientación: el caso ya fue atendido (control pedido por coordinación). */
+  atendida_at: string | null;
+  atendida_por_id: string | null;
+  atendida_por_nombre: string | null;
   created_at: string;
   destinos: string[] | null;
   tipo_documento: string | null;
@@ -154,6 +158,9 @@ const descargarWord = async (r: Remision) => {
       DOCENTE: [r.docente_cargo, r.docente_nombre].filter(Boolean).join(" "),
       ROL: r.docente_cargo || "",
       RECIBIDO_POR: r.recibido_por_nombre || "",
+      ESTADO: r.atendida_at ? "Atendida" : r.recibido_por_id ? "Recibida" : "Pendiente",
+      ATENDIDA_POR: r.atendida_por_nombre || "",
+      FECHA_ATENDIDA: r.atendida_at ? fmtFecha(r.atendida_at.slice(0, 10)) : "",
       RECIBIDO_CARGO: "",
       RECIBIDO_FECHA: recibidoFecha,
     });
@@ -215,6 +222,8 @@ const RemisionesOrientacion = () => {
   // Filtros
   const [filtroGrado, setFiltroGrado] = useState("");
   const [filtroSalon, setFiltroSalon] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState<"" | "pendiente" | "recibida" | "atendida">("");
+  const [filtroDocente, setFiltroDocente] = useState("");
   const [busqueda, setBusqueda] = useState("");
 
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
@@ -223,16 +232,20 @@ const RemisionesOrientacion = () => {
   useEffect(() => {
     const session = getSession();
     if (!session.id) { navigate("/"); return; }
-    if (!isOrientador() && !isAdmin()) { navigate("/dashboard"); return; }
+    // Orientador y admin gestionan; rector y coordinadores consultan todas;
+    // los profesores solo ven las que ellos remitieron.
+    const puedeEntrar = isOrientador() || isAdmin() || isRectorOrCoordinador() || isProfesor();
+    if (!puedeEntrar) { navigate("/dashboard"); return; }
 
     setAutorId(session.id);
     setAutorNombre([session.nombres, session.apellidos].filter(Boolean).join(" "));
 
     const cargar = async () => {
+      const soloMias = isProfesor() && !isOrientador() && !isAdmin() && !isRectorOrCoordinador();
+      let q = supabase.from("Remisiones_Orientacion").select("*").order("created_at", { ascending: false });
+      if (soloMias) q = q.eq("docente_id", String(session.id));
       const [remR, vistaR] = await Promise.all([
-        supabase.from("Remisiones_Orientacion")
-          .select("*")
-          .order("created_at", { ascending: false }),
+        q,
         supabase.from("Notificaciones_Vistas")
           .select("ultimo_id_visto")
           .eq("usuario_id", session.id!)
@@ -244,7 +257,7 @@ const RemisionesOrientacion = () => {
       setRemisiones(lista);
       setLastSeen((vistaR.data as any)?.ultimo_id_visto ?? 0);
 
-      if (lista.length > 0) {
+      if (lista.length > 0 && (isOrientador() || isAdmin())) {
         const maxId = Math.max(...lista.map(r => r.id));
         markLastSeen("remisiones", session.id!, maxId).catch(() => {});
       }
@@ -262,12 +275,24 @@ const RemisionesOrientacion = () => {
       .map(r => r.estudiante_salon).filter(s => s && s.trim())
   )].sort(), [remisiones, filtroGrado]);
 
+  const estadoDe = (r: Remision): "pendiente" | "recibida" | "atendida" =>
+    r.atendida_at ? "atendida" : r.recibido_por_id ? "recibida" : "pendiente";
+
+  // Docentes que han remitido (para el filtro "Remitido por"), ordenados por nombre.
+  const docentesUnicos = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const r of remisiones) if (r.docente_id && !m.has(String(r.docente_id))) m.set(String(r.docente_id), [r.docente_cargo, r.docente_nombre].filter(Boolean).join(" "));
+    return [...m.entries()].sort((a, b) => a[1].localeCompare(b[1], "es"));
+  }, [remisiones]);
+
   const remisionesFiltradas = useMemo(() => {
     const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     const q = norm(busqueda.trim());
     return remisiones.filter(r => {
       if (filtroGrado && r.estudiante_grado !== filtroGrado) return false;
       if (filtroSalon && r.estudiante_salon !== filtroSalon) return false;
+      if (filtroEstado && estadoDe(r) !== filtroEstado) return false;
+      if (filtroDocente && String(r.docente_id) !== filtroDocente) return false;
       if (q) {
         const full = norm(`${r.estudiante_nombre} ${r.estudiante_apellidos} ${r.docente_nombre}`);
         const tokens = q.split(/\s+/).filter(Boolean);
@@ -275,7 +300,7 @@ const RemisionesOrientacion = () => {
       }
       return true;
     });
-  }, [remisiones, busqueda, filtroGrado, filtroSalon]);
+  }, [remisiones, busqueda, filtroGrado, filtroSalon, filtroEstado, filtroDocente]);
 
   // Contacto del estudiante (teléfono + acudientes), cargado al expandir.
   const [contactos, setContactos] = useState<Record<number, { estudiante_telefono: string; acudientes: { nombre: string; telefono: string }[] } | "loading">>({});
@@ -316,6 +341,33 @@ const RemisionesOrientacion = () => {
     }
   };
 
+  const marcarAtendida = async (r: Remision) => {
+    if (marcando != null) return;
+    setMarcando(r.id);
+    try {
+      const res = await apiClient.orientacion.remisionAtendida(r.id);
+      setRemisiones(prev => prev.map(x =>
+        x.id === r.id
+          ? {
+              ...x,
+              atendida_at: res.atendida_at, atendida_por_id: autorId, atendida_por_nombre: res.atendida_por_nombre || autorNombre,
+              recibido_por_id: x.recibido_por_id || autorId, recibido_por_nombre: x.recibido_por_nombre || autorNombre,
+              fecha_recibido: x.fecha_recibido || res.atendida_at,
+            }
+          : x
+      ));
+      toast({ title: "Atendida", description: "Marcada como atendida. Se avisó al docente por WhatsApp." });
+    } catch (e: any) {
+      console.error("Marcar atendida:", e);
+      toast({ title: "Error", description: "No se pudo marcar como atendida.", variant: "destructive" });
+    } finally {
+      setMarcando(null);
+    }
+  };
+
+  // Quién gestiona (recibir, atender, agendar): Orientación y admin. Los demás solo consultan.
+  const gestiona = isOrientador() || isAdmin();
+
   const backLink = isAdmin() ? "/dashboard" : "/dashboard";
 
   return (
@@ -326,18 +378,31 @@ const RemisionesOrientacion = () => {
           <div className="flex items-center gap-2 text-sm flex-wrap">
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
-            <span className="text-foreground font-medium">Remisiones a Orientación</span>
+            <span className="text-foreground font-medium">{gestiona ? "Remisiones a Orientación" : "Orientación Escolar"}</span>
           </div>
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-6">
-          <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6">
-            <img src={iconCasos} alt="" className="h-6 w-6 object-contain" />
-            Remisiones a Orientación
-          </h2>
+          <div className="flex items-center justify-between gap-3 flex-wrap mb-6">
+            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+              <img src={iconCasos} alt="" className="h-6 w-6 object-contain" />
+              {gestiona ? "Remisiones a Orientación" : "Orientación Escolar"}
+            </h2>
+            {/* Quien no es Orientación remite desde aquí (misma ficha: ver y crear, como en Consultas). */}
+            {!isOrientador() && (
+              <button
+                type="button"
+                data-guia="orientacion.boton_nueva_remision"
+                onClick={() => navigate("/remitir-orientacion")}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700"
+              >
+                <Plus className="w-4 h-4" /> Nueva remisión
+              </button>
+            )}
+          </div>
 
           {/* Filtros */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
             <div className="relative col-span-2 md:col-span-1">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <input
@@ -348,6 +413,28 @@ const RemisionesOrientacion = () => {
                 className="w-full border rounded pl-8 pr-3 py-2 text-sm bg-background"
               />
             </div>
+            <select
+              data-guia="orientacion.remisiones_filtro_estado"
+              value={filtroEstado}
+              onChange={e => setFiltroEstado(e.target.value as any)}
+              className="text-sm border rounded px-2 py-2 bg-background"
+            >
+              <option value="">Todos los estados</option>
+              <option value="pendiente">Pendientes</option>
+              <option value="recibida">Recibidas</option>
+              <option value="atendida">Atendidas</option>
+            </select>
+            {docentesUnicos.length > 1 && (
+              <select
+                data-guia="orientacion.remisiones_filtro_docente"
+                value={filtroDocente}
+                onChange={e => setFiltroDocente(e.target.value)}
+                className="text-sm border rounded px-2 py-2 bg-background"
+              >
+                <option value="">Remitido por: todos</option>
+                {docentesUnicos.map(([id, nombre]) => <option key={id} value={id}>{nombre}</option>)}
+              </select>
+            )}
             <select
               value={filtroGrado}
               onChange={e => { setFiltroGrado(e.target.value); setFiltroSalon(""); }}
@@ -396,9 +483,17 @@ const RemisionesOrientacion = () => {
                               Nueva
                             </span>
                           )}
-                          {r.recibido_por_id && (
+                          {r.atendida_at ? (
+                            <span className="px-2 py-0.5 text-[10px] rounded-full bg-indigo-100 text-indigo-700 font-semibold">
+                              Atendida
+                            </span>
+                          ) : r.recibido_por_id ? (
                             <span className="px-2 py-0.5 text-[10px] rounded-full bg-emerald-100 text-emerald-700 font-semibold">
                               Recibida
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 text-[10px] rounded-full bg-amber-100 text-amber-700 font-semibold">
+                              Pendiente
                             </span>
                           )}
                         </div>
@@ -455,6 +550,11 @@ const RemisionesOrientacion = () => {
                             {r.fecha_recibido && ` el ${new Date(r.fecha_recibido).toLocaleString("es-CO")}`}
                           </div>
                         )}
+                        {r.atendida_at && (
+                          <div className="text-xs text-muted-foreground">
+                            Atendida por <strong>{r.atendida_por_nombre}</strong> el {new Date(r.atendida_at).toLocaleString("es-CO")}
+                          </div>
+                        )}
                         <div className="flex flex-wrap gap-2 pt-1">
                           <button
                             type="button"
@@ -464,6 +564,7 @@ const RemisionesOrientacion = () => {
                           >
                             <Download className="w-3.5 h-3.5" /> Descargar Word
                           </button>
+                          {gestiona && (
                           <button
                             type="button"
                             data-guia="orientacion.remision_agendar_cita"
@@ -472,7 +573,20 @@ const RemisionesOrientacion = () => {
                           >
                             <CalendarPlus className="w-3.5 h-3.5" /> Agendar cita
                           </button>
-                          {!r.recibido_por_id && (
+                          )}
+                          {gestiona && !r.atendida_at && (
+                            <button
+                              type="button"
+                              data-guia="orientacion.remision_marcar_atendida"
+                              disabled={marcando === r.id}
+                              onClick={() => marcarAtendida(r)}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              {marcando === r.id ? "Marcando..." : "Marcar como atendida"}
+                            </button>
+                          )}
+                          {gestiona && !r.recibido_por_id && (
                             <button
                               type="button"
                               data-guia="orientacion.remision_marcar_recibida"

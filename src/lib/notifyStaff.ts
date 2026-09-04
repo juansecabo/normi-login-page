@@ -136,6 +136,27 @@ export async function notifyRectorCoord(
   }
 }
 
+// Notifica SOLO a los coordinadores del nivel del aula (el server cruza el aula
+// con Internos.niveles_coordina). Se usa para que el coordinador siempre se
+// entere de una remisión aunque no haya sido marcado como destino.
+export async function notifyCoordinadoresNivel(
+  mensaje: string,
+  aula: Aula,
+  remitenteTag = "Remisión"
+): Promise<void> {
+  try {
+    await postComunicadoSistema({
+      mensaje,
+      remitenteTag,
+      perfiles: ["Coordinadores"],
+      aula,
+      destinatariosLabel: `Coordinadores del nivel de ${aula.grado} ${aula.salon}`,
+    });
+  } catch (e) {
+    console.warn('notifyCoordinadoresNivel falló:', e);
+  }
+}
+
 // Notifica a la(s) Orientadora(s) Escolar(es).
 export async function notifyOrientadora(
   mensaje: string,

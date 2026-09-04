@@ -231,9 +231,9 @@ const Dashboard = () => {
       </button>
     ) },
     { id: 'remitir-orientacion', render: (
-      <button onClick={() => navigate("/remitir-orientacion")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-sky-100 transition-all duration-200 hover:shadow-md hover:bg-sky-200">
+      <button onClick={() => navigate("/orientador/remisiones")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-sky-100 transition-all duration-200 hover:shadow-md hover:bg-sky-200">
         <img src={iconEntrevista} alt="" className="w-16 h-16 object-contain" />
-        <span className="font-semibold text-foreground text-center">Remitir a Orientación</span>
+        <span className="font-semibold text-foreground text-center">Orientación Escolar</span>
       </button>
     ) },
     { id: 'permisos-excusas', render: (

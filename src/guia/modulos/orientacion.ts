@@ -761,7 +761,7 @@ export const ORIENTACION: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion: "Abrimos el formulario de Remitir a Orientación Escolar.",
+        narracion: "Abrimos Orientación Escolar y tocamos el botón verde 'Nueva remisión' (arriba a la derecha) para llegar al formulario.",
         accion: "navegar",
         ruta: "/remitir-orientacion",
       },
@@ -827,11 +827,11 @@ export const ORIENTACION: Capacidad[] = [
   // ── Remisiones recibidas (bandeja) ─────────────────────────────────────
   {
     id: "orientacion.consultar_remisiones",
-    titulo: "Consultar las remisiones recibidas",
+    titulo: "Consultar las remisiones a orientación",
     descripcion:
-      "Ver la bandeja de remisiones a orientación, buscar y filtrar, y desplegar el detalle (motivo, contacto, firma).",
+      "Ver la lista de remisiones a orientación con su estado (Pendiente, Recibida o Atendida), buscar por estudiante o docente, filtrar por grado y salón y desplegar el detalle (motivo, contacto, firma). Orientación, rector y coordinadores ven todas las del colegio; un profesor ve solo las que él remitió. Para rector, coordinadores y profesores la ficha se llama 'Orientación Escolar' y arriba tiene el botón verde 'Nueva remisión'. Se puede filtrar por estado y por quién remitió.",
     categoria: "Orientación",
-    roles: [...ORIENTADOR_ADMIN],
+    roles: [...ORIENTADOR_ADMIN, "rector", "coordinador", "profesor"],
     ruta: "/orientador/remisiones",
     endpoint: "Supabase select Remisiones_Orientacion + GET /api/orientacion/contacto-estudiante",
     sinonimos: [
@@ -840,6 +840,10 @@ export const ORIENTACION: Capacidad[] = [
       "consultar la bandeja de remisiones",
       "qué remisiones me llegaron",
       "revisar remisiones a orientación",
+      "a qué estudiantes he remitido",
+      "qué remisiones han hecho los profesores",
+      "cuáles remisiones ya fueron atendidas",
+      "mis remisiones",
     ],
     pasos: [
       {
@@ -860,6 +864,40 @@ export const ORIENTACION: Capacidad[] = [
           "Toca una remisión para desplegar el motivo, el contacto del estudiante y sus acudientes, y la firma del docente.",
         accion: "click",
         ancla: "orientacion.remision_item",
+      },
+    ],
+  },
+  {
+    id: "orientacion.remision_marcar_atendida",
+    titulo: "Marcar una remisión como atendida",
+    descripcion:
+      "Registrar que el caso remitido ya fue atendido por Orientación. Queda con fecha y nombre, se ve en la lista como 'Atendida' (también para rector y coordinadores) y se avisa por WhatsApp al docente que remitió.",
+    categoria: "Orientación",
+    roles: [...ORIENTADOR_ADMIN],
+    ruta: "/orientador/remisiones",
+    endpoint: "POST /api/orientacion/remision-atendida",
+    sinonimos: [
+      "marcar remisión como atendida",
+      "ya atendí la remisión",
+      "cerrar una remisión",
+      "dar por atendido un caso remitido",
+    ],
+    pasos: [
+      {
+        narracion: "Entramos a Remisiones a Orientación.",
+        accion: "navegar",
+        ruta: "/orientador/remisiones",
+      },
+      {
+        narracion: "Toca la remisión para desplegarla.",
+        accion: "click",
+        ancla: "orientacion.remision_item",
+      },
+      {
+        narracion:
+          "Toca 'Marcar como atendida'. Queda registrado con tu nombre y la fecha, y el docente recibe el aviso por WhatsApp.",
+        accion: "click",
+        ancla: "orientacion.remision_marcar_atendida",
       },
     ],
   },

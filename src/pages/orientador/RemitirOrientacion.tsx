@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import SignatureCanvas from "react-signature-canvas";
 import { Search } from "lucide-react";
 import iconEntrevista from "@/assets/icons/entrevista.webp";
-import { notifyOrientadora, notifyRectorCoord } from "@/lib/notifyStaff";
+import { notifyOrientadora, notifyRectorCoord, notifyCoordinadoresNivel } from "@/lib/notifyStaff";
 import { cargoSegunGenero } from "@/lib/entrevistadores";
 
 interface Estudiante {
@@ -292,6 +292,10 @@ const RemitirOrientacion = () => {
       // director de grupo). Solo cuando alguno de esos dos fue elegido.
       if ((destinos.director_grupo || destinos.coordinador) && estSeleccionado.salon) {
         await notifyRectorCoord(mensaje, `Sistema Normi (Remisión)`, { grado: estSeleccionado.grado, salon: estSeleccionado.salon }, "remision");
+      } else if (estSeleccionado.salon) {
+        // Aunque la remisión vaya solo a Orientación, el coordinador del nivel
+        // del estudiante debe enterarse (pedido de la coordinadora Nancy, 2026-09-04).
+        await notifyCoordinadoresNivel(mensaje + `\n\nConsúltala en notasnormi.com → Remisiones.`, { grado: estSeleccionado.grado, salon: estSeleccionado.salon }, "Remisión");
       }
     } catch (e) {
       console.warn("notificar remisión:", e);
@@ -310,7 +314,9 @@ const RemitirOrientacion = () => {
           <div className="flex items-center gap-2 text-sm flex-wrap">
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
-            <span className="text-foreground font-medium">Remitir a Orientación Escolar</span>
+            <button onClick={() => navigate("/orientador/remisiones")} className="text-primary hover:underline">Orientación Escolar</button>
+            <span className="text-muted-foreground">&rarr;</span>
+            <span className="text-foreground font-medium">Nueva remisión</span>
           </div>
         </div>
 
