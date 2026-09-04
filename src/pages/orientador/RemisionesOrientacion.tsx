@@ -581,16 +581,17 @@ const RemisionesOrientacion = () => {
                   <span className="text-sm text-muted-foreground font-normal">{grupoDe(remVista)}</span>
                   {badgeEstado(remVista)}
                 </h2>
-                <div className="text-sm text-muted-foreground mt-1">
-                  {fmtFecha(remVista.fecha)} · <span className="font-semibold text-foreground">Remitido por:</span> {[remVista.docente_cargo, remVista.docente_nombre].filter(Boolean).join(" ")}
-                  {remVista.destinos && remVista.destinos.length > 0 && (<>
-                    {" · "}<span className="font-semibold text-foreground">Dirigida a:</span> {destinosLegibles(remVista.destinos)}
-                  </>)}
+                <div className="text-sm mt-3 space-y-1">
+                  <p><span className="font-semibold text-foreground">Fecha:</span> <span className="text-muted-foreground">{fmtFecha(remVista.fecha)}{remVista.created_at ? `, ${horaDe(remVista.created_at)}` : ""}</span></p>
+                  <p><span className="font-semibold text-foreground">Remitido por:</span> <span className="text-muted-foreground">{[remVista.docente_cargo, remVista.docente_nombre].filter(Boolean).join(" ")}</span></p>
+                  {remVista.destinos && remVista.destinos.length > 0 && (
+                    <p><span className="font-semibold text-foreground">Dirigida a:</span> <span className="text-muted-foreground">{destinosLegibles(remVista.destinos)}</span></p>
+                  )}
                 </div>
               </div>
-              <div>
-                <div className="text-xs font-medium text-muted-foreground mb-1">Motivo</div>
-                <div className="text-sm whitespace-pre-wrap">{remVista.motivo}</div>
+              <div className="pt-2">
+                <div className="text-base font-semibold text-foreground mb-2">Motivo</div>
+                <div className="text-base leading-relaxed whitespace-pre-wrap">{remVista.motivo}</div>
               </div>
               {remVista.especificacion_conducta && (
                 <div>
