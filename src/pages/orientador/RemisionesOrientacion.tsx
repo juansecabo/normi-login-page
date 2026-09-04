@@ -403,6 +403,16 @@ const RemisionesOrientacion = () => {
 
           {/* Filtros */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
+            <div className="relative col-span-2 md:col-span-1">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <input
+                data-guia="orientacion.remisiones_buscador"
+                value={busqueda}
+                onChange={e => setBusqueda(e.target.value)}
+                placeholder="Buscar por nombre..."
+                className="w-full border rounded pl-8 pr-3 py-2 text-sm bg-background"
+              />
+            </div>
             <select
               data-guia="orientacion.remisiones_filtro_estado"
               value={filtroEstado}
@@ -441,16 +451,6 @@ const RemisionesOrientacion = () => {
               <option value="">Todos los salones</option>
               {salonesUnicos.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
-            <div className="relative col-span-2 md:col-span-3 lg:col-span-2">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <input
-                data-guia="orientacion.remisiones_buscador"
-                value={busqueda}
-                onChange={e => setBusqueda(e.target.value)}
-                placeholder="Buscar por nombre..."
-                className="w-full border rounded pl-8 pr-3 py-2 text-sm bg-background"
-              />
-            </div>
           </div>
 
           {loading ? (
@@ -461,7 +461,7 @@ const RemisionesOrientacion = () => {
             <div className="space-y-3" data-guia="orientacion.remision_item">
               {remisionesFiltradas.map(r => {
                 const isOpen = expandedIds.has(r.id);
-                const isNueva = gestiona && r.id > lastSeen && !r.recibido_por_id;
+                const isNueva = r.id > lastSeen && !r.recibido_por_id;
                 const grupo = r.estudiante_salon
                   ? `${r.estudiante_grado} ${r.estudiante_salon}`
                   : r.estudiante_grado;
