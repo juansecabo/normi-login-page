@@ -582,8 +582,10 @@ const RemisionesOrientacion = () => {
                   {badgeEstado(remVista)}
                 </h2>
                 <div className="text-sm text-muted-foreground mt-1">
-                  {fmtFecha(remVista.fecha)} · Remitido por: {[remVista.docente_cargo, remVista.docente_nombre].filter(Boolean).join(" ")}
-                  {remVista.destinos && remVista.destinos.length > 0 && ` · Dirigida a: ${destinosLegibles(remVista.destinos)}`}
+                  {fmtFecha(remVista.fecha)} · <span className="font-semibold text-foreground">Remitido por:</span> {[remVista.docente_cargo, remVista.docente_nombre].filter(Boolean).join(" ")}
+                  {remVista.destinos && remVista.destinos.length > 0 && (<>
+                    {" · "}<span className="font-semibold text-foreground">Dirigida a:</span> {destinosLegibles(remVista.destinos)}
+                  </>)}
                 </div>
               </div>
               <div>
