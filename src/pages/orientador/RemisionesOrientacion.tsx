@@ -4,7 +4,7 @@ import { getSession, isOrientador, isAdmin, isRectorOrCoordinador, isProfesor } 
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronDown, Download, Check, Search, CalendarPlus, Phone, Plus } from "lucide-react";
+import { ChevronRight, Download, Check, Search, CalendarPlus, Phone, Plus } from "lucide-react";
 import iconCasos from "@/assets/icons/casos.png";
 import { markLastSeen } from "@/utils/notificaciones";
 import { apiClient, apiRequest } from "@/lib/apiClient";
@@ -226,7 +226,10 @@ const RemisionesOrientacion = () => {
   const [filtroDocente, setFiltroDocente] = useState("");
   const [busqueda, setBusqueda] = useState("");
 
-  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+  // Navegación en tres niveles (como Registros de Comportamiento):
+  //   1) estudiantes con remisiones  2) remisiones de un estudiante  3) detalle.
+  const [estVistaId, setEstVistaId] = useState<number | null>(null);
+  const [remVistaId, setRemVistaId] = useState<number | null>(null);
   const [marcando, setMarcando] = useState<number | null>(null);
 
   useEffect(() => {
@@ -241,9 +244,37 @@ const RemisionesOrientacion = () => {
     setAutorNombre([session.nombres, session.apellidos].filter(Boolean).join(" "));
 
     const cargar = async () => {
-      const soloMias = isProfesor() && !isOrientador() && !isAdmin() && !isRectorOrCoordinador();
+      const veTodas = isOrientador() || isAdmin() || session.cargo === "Rector";
+      const esCoordinador = !veTodas && session.cargo === "Coordinador(a)";
+      const esProfesor = !veTodas && !esCoordinador && isProfesor();
+      const miId = String(session.id);
+
+      // Dirección de grupo y niveles que coordina (para acotar el alcance).
+      let dirGrupo: { grado: string; salon: string | null } | null = null;
+      let nivelesCoord: string[] | null = null;
+      if (esProfesor || esCoordinador) {
+        const { data: yo } = await supabase.from("Internos")
+          .select("direccion_de_grupo, niveles_coordina")
+          .eq("id", parseInt(miId)).maybeSingle();
+        const dg = String((yo as any)?.direccion_de_grupo || "").trim();
+        if (dg) {
+          const partes = dg.split(" ");
+          dirGrupo = partes.length > 1 ? { grado: partes.slice(0, -1).join(" "), salon: partes[partes.length - 1] } : { grado: dg, salon: null };
+        }
+        nivelesCoord = ((yo as any)?.niveles_coordina as string[] | null) || null;
+      }
+
       let q = supabase.from("Remisiones_Orientacion").select("*").order("created_at", { ascending: false });
-      if (soloMias) q = q.eq("docente_id", String(session.id));
+      if (esProfesor) {
+        if (dirGrupo) {
+          const cond = dirGrupo.salon
+            ? `and(estudiante_grado.eq."${dirGrupo.grado}",estudiante_salon.eq."${dirGrupo.salon}")`
+            : `estudiante_grado.eq."${dirGrupo.grado}"`;
+          q = q.or(`docente_id.eq.${miId},${cond}`);
+        } else {
+          q = q.eq("docente_id", miId);
+        }
+      }
       const [remR, vistaR] = await Promise.all([
         q,
         supabase.from("Notificaciones_Vistas")
@@ -253,7 +284,18 @@ const RemisionesOrientacion = () => {
           .maybeSingle(),
       ]);
 
-      const lista = (remR.data || []) as Remision[];
+      let lista = (remR.data || []) as Remision[];
+      // Coordinador: las suyas + las de estudiantes de sus niveles (nivel real del
+      // estudiante en Estudiantes; niveles_coordina vacío = todos los niveles).
+      if (esCoordinador && nivelesCoord && nivelesCoord.length > 0) {
+        const ids = [...new Set(lista.map(r => r.estudiante_id).filter(Boolean))];
+        const nivelPorEst = new Map<string, string>();
+        if (ids.length > 0) {
+          const { data: ests } = await supabase.from("Estudiantes").select("id, nivel").in("id", ids);
+          (ests || []).forEach((e: any) => nivelPorEst.set(String(e.id), String(e.nivel || "")));
+        }
+        lista = lista.filter(r => String(r.docente_id) === miId || nivelesCoord!.includes(nivelPorEst.get(String(r.estudiante_id)) || ""));
+      }
       setRemisiones(lista);
       setLastSeen((vistaR.data as any)?.ultimo_id_visto ?? 0);
 
@@ -305,20 +347,49 @@ const RemisionesOrientacion = () => {
   // Contacto del estudiante (teléfono + acudientes), cargado al expandir.
   const [contactos, setContactos] = useState<Record<number, { estudiante_telefono: string; acudientes: { nombre: string; telefono: string }[] } | "loading">>({});
 
-  const toggleExpanded = (id: number) => {
-    setExpandedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-    // Cargar contacto del estudiante la primera vez que se expande.
-    const rem = remisiones.find(r => r.id === id);
-    if (rem && contactos[id] === undefined) {
-      setContactos(prev => ({ ...prev, [id]: "loading" }));
+  const abrirRemision = (rem: Remision) => {
+    setRemVistaId(rem.id);
+    if (contactos[rem.id] === undefined) {
+      setContactos(prev => ({ ...prev, [rem.id]: "loading" }));
       apiClient.orientacion.contactoEstudiante(rem.estudiante_id)
-        .then(c => setContactos(prev => ({ ...prev, [id]: c })))
-        .catch(() => setContactos(prev => ({ ...prev, [id]: { estudiante_telefono: "", acudientes: [] } })));
+        .then(c => setContactos(prev => ({ ...prev, [rem.id]: c })))
+        .catch(() => setContactos(prev => ({ ...prev, [rem.id]: { estudiante_telefono: "", acudientes: [] } })));
     }
+  };
+
+  // Agrupación por estudiante (nivel 1), a partir de las remisiones ya filtradas.
+  const estudiantesAgrupados = useMemo(() => {
+    const m = new Map<number, { estudiante_id: number; nombres: string; apellidos: string; grado: string; salon: string; total: number; pendientes: number; recibidas: number; atendidas: number; ultima: string }>();
+    for (const r of remisionesFiltradas) {
+      const g = m.get(r.estudiante_id) || { estudiante_id: r.estudiante_id, nombres: r.estudiante_nombre, apellidos: r.estudiante_apellidos, grado: r.estudiante_grado, salon: r.estudiante_salon, total: 0, pendientes: 0, recibidas: 0, atendidas: 0, ultima: r.fecha };
+      g.total++;
+      const e = estadoDe(r);
+      if (e === "pendiente") g.pendientes++; else if (e === "recibida") g.recibidas++; else g.atendidas++;
+      if (r.fecha > g.ultima) { g.ultima = r.fecha; g.grado = r.estudiante_grado; g.salon = r.estudiante_salon; }
+      m.set(r.estudiante_id, g);
+    }
+    // Orden alfabético por apellidos, luego nombres.
+    return [...m.values()].sort((a, b) => `${a.apellidos} ${a.nombres}`.localeCompare(`${b.apellidos} ${b.nombres}`, "es"));
+  }, [remisionesFiltradas]);
+
+  const estVista = estVistaId != null ? estudiantesAgrupados.find(g => g.estudiante_id === estVistaId) || null : null;
+  const remsDelEst = useMemo(
+    () => (estVistaId == null ? [] : remisionesFiltradas.filter(r => r.estudiante_id === estVistaId)),
+    [remisionesFiltradas, estVistaId],
+  );
+  const remVista = remVistaId != null ? remisiones.find(r => r.id === remVistaId) || null : null;
+  const remsPorEstudianteNuevas = useMemo(() => {
+    const set = new Set<number>();
+    for (const r of remisiones) if (r.id > lastSeen && !r.recibido_por_id) set.add(r.estudiante_id);
+    return set;
+  }, [remisiones, lastSeen]);
+  const grupoDe = (r: { estudiante_grado: string; estudiante_salon: string }) =>
+    r.estudiante_salon ? `${r.estudiante_grado} ${r.estudiante_salon}` : r.estudiante_grado;
+  const badgeEstado = (r: Remision) => {
+    const e = estadoDe(r);
+    const cls = e === "atendida" ? "bg-indigo-100 text-indigo-700" : e === "recibida" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700";
+    const txt = e === "atendida" ? "Atendida" : e === "recibida" ? "Recibida" : "Pendiente";
+    return <span className={`px-2 py-0.5 text-[10px] rounded-full font-semibold ${cls}`}>{txt}</span>;
   };
 
   const marcarRecibida = async (r: Remision) => {
@@ -378,11 +449,28 @@ const RemisionesOrientacion = () => {
           <div className="flex items-center gap-2 text-sm flex-wrap">
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
-            <span className="text-foreground font-medium">{gestiona ? "Remisiones a Orientación" : "Orientación Escolar"}</span>
+            {estVista ? (
+              <button onClick={() => { setEstVistaId(null); setRemVistaId(null); }} className="text-primary hover:underline">{gestiona ? "Remisiones a Orientación" : "Orientación Escolar"}</button>
+            ) : (
+              <span className="text-foreground font-medium">{gestiona ? "Remisiones a Orientación" : "Orientación Escolar"}</span>
+            )}
+            {estVista && (<>
+              <span className="text-muted-foreground">&rarr;</span>
+              {remVista ? (
+                <button onClick={() => setRemVistaId(null)} className="text-primary hover:underline">{estVista.apellidos} {estVista.nombres}</button>
+              ) : (
+                <span className="text-foreground font-medium">{estVista.apellidos} {estVista.nombres}</span>
+              )}
+            </>)}
+            {remVista && (<>
+              <span className="text-muted-foreground">&rarr;</span>
+              <span className="text-foreground font-medium">Remisión del {fmtFecha(remVista.fecha)}</span>
+            </>)}
           </div>
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-6">
+          {estVistaId == null && (<>
           <div className="flex items-center justify-between gap-3 flex-wrap mb-6">
             <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
               <img src={iconCasos} alt="" className="h-6 w-6 object-contain" />
@@ -441,7 +529,7 @@ const RemisionesOrientacion = () => {
               <option value="">Todos los salones</option>
               {salonesUnicos.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
-            <div className="relative col-span-2 md:col-span-3 lg:col-span-2">
+            <div className="relative col-span-2 md:col-span-3 lg:col-span-2 order-last lg:order-first">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <input
                 data-guia="orientacion.remisiones_buscador"
@@ -453,155 +541,184 @@ const RemisionesOrientacion = () => {
             </div>
           </div>
 
+          </>)}
+
           {loading ? (
             <div className="text-muted-foreground text-sm">Cargando...</div>
-          ) : remisionesFiltradas.length === 0 ? (
+          ) : remVista ? (
+            /* ── Nivel 3: detalle de una remisión ── */
+            <div className="space-y-4" data-guia="orientacion.remision_detalle">
+              <div>
+                <h2 className="text-xl font-bold text-foreground flex items-center gap-2 flex-wrap">
+                  {remVista.estudiante_apellidos} {remVista.estudiante_nombre}
+                  <span className="text-sm text-muted-foreground font-normal">{grupoDe(remVista)}</span>
+                  {badgeEstado(remVista)}
+                </h2>
+                <div className="text-sm text-muted-foreground mt-1">
+                  {fmtFecha(remVista.fecha)} · Remitido por: {[remVista.docente_cargo, remVista.docente_nombre].filter(Boolean).join(" ")}
+                  {remVista.destinos && remVista.destinos.length > 0 && ` · Dirigida a: ${remVista.destinos.join(", ")}`}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-medium text-muted-foreground mb-1">Motivo</div>
+                <div className="text-sm whitespace-pre-wrap">{remVista.motivo}</div>
+              </div>
+              {remVista.especificacion_conducta && (
+                <div>
+                  <div className="text-xs font-medium text-muted-foreground mb-1">Especificación de la conducta</div>
+                  <div className="text-sm whitespace-pre-wrap">{remVista.especificacion_conducta}</div>
+                </div>
+              )}
+              {remVista.medidas_previas && (
+                <div>
+                  <div className="text-xs font-medium text-muted-foreground mb-1">Medidas previas</div>
+                  <div className="text-sm whitespace-pre-wrap">{remVista.medidas_previas}</div>
+                </div>
+              )}
+              <div className="rounded-md border border-border bg-background p-3">
+                <div className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> Contacto</div>
+                {contactos[remVista.id] === undefined || contactos[remVista.id] === "loading" ? (
+                  <p className="text-sm text-muted-foreground">Cargando…</p>
+                ) : (
+                  <div className="text-sm space-y-0.5">
+                    <p><span className="font-medium">Estudiante:</span> {(contactos[remVista.id] as any).estudiante_telefono || "No registrado"}</p>
+                    {((contactos[remVista.id] as any).acudientes || []).length > 0 ? (
+                      <div>
+                        <span className="font-medium">Acudientes:</span>
+                        <ul className="list-disc ml-5">
+                          {(contactos[remVista.id] as any).acudientes.map((a: any, i: number) => (
+                            <li key={i}>{a.nombre}{a.telefono ? ` — ${a.telefono}` : ""}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : <p className="text-muted-foreground">Sin acudientes registrados.</p>}
+                  </div>
+                )}
+              </div>
+              {remVista.firma_url && (
+                <div>
+                  <div className="text-xs font-medium text-muted-foreground mb-1">Firma del docente</div>
+                  <a href={remVista.firma_url} target="_blank" rel="noreferrer">
+                    <img src={remVista.firma_url} alt="Firma" className="max-h-32 border rounded bg-white" />
+                  </a>
+                </div>
+              )}
+              {remVista.recibido_por_id && (
+                <div className="text-xs text-muted-foreground">
+                  Recibida por <strong>{remVista.recibido_por_nombre}</strong>
+                  {remVista.fecha_recibido && ` el ${new Date(remVista.fecha_recibido).toLocaleString("es-CO")}`}
+                </div>
+              )}
+              {remVista.atendida_at && (
+                <div className="text-xs text-muted-foreground">
+                  Atendida por <strong>{remVista.atendida_por_nombre}</strong> el {new Date(remVista.atendida_at).toLocaleString("es-CO")}
+                </div>
+              )}
+              <div className="flex flex-wrap gap-2 pt-1">
+                <button
+                  type="button"
+                  data-guia="orientacion.remision_descargar_word"
+                  onClick={() => descargarWord(remVista)}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md border border-input bg-background hover:bg-accent"
+                >
+                  <Download className="w-3.5 h-3.5" /> Descargar Word
+                </button>
+                {gestiona && (
+                  <button
+                    type="button"
+                    data-guia="orientacion.remision_agendar_cita"
+                    onClick={() => navigate(`/orientador/citas?estudianteId=${remVista.estudiante_id}`)}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md border border-input bg-background hover:bg-accent"
+                  >
+                    <CalendarPlus className="w-3.5 h-3.5" /> Agendar cita
+                  </button>
+                )}
+                {gestiona && !remVista.recibido_por_id && (
+                  <button
+                    type="button"
+                    data-guia="orientacion.remision_marcar_recibida"
+                    disabled={marcando === remVista.id}
+                    onClick={() => marcarRecibida(remVista)}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    {marcando === remVista.id ? "Marcando..." : "Marcar como recibida"}
+                  </button>
+                )}
+                {gestiona && !remVista.atendida_at && (
+                  <button
+                    type="button"
+                    data-guia="orientacion.remision_marcar_atendida"
+                    disabled={marcando === remVista.id}
+                    onClick={() => marcarAtendida(remVista)}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    {marcando === remVista.id ? "Marcando..." : "Marcar como atendida"}
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : estVista ? (
+            /* ── Nivel 2: remisiones de un estudiante ── */
+            <div className="space-y-3" data-guia="orientacion.remision_item">
+              <h2 className="text-xl font-bold text-foreground flex items-center gap-2 flex-wrap mb-2">
+                {estVista.apellidos} {estVista.nombres}
+                <span className="text-sm text-muted-foreground font-normal">{estVista.salon ? `${estVista.grado} ${estVista.salon}` : estVista.grado}</span>
+              </h2>
+              <p className="text-sm text-muted-foreground">{remsDelEst.length === 1 ? "1 remisión" : `${remsDelEst.length} remisiones`}. Toca una para abrirla.</p>
+              {remsDelEst.map(r => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => abrirRemision(r)}
+                  className="w-full flex items-start justify-between gap-3 px-4 py-3 border border-border rounded-md bg-card hover:bg-muted/30 text-left"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold text-foreground">{fmtFecha(r.fecha)}</span>
+                      {badgeEstado(r)}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Remitido por: {[r.docente_cargo, r.docente_nombre].filter(Boolean).join(" ")}
+                    </div>
+                    <div className="text-sm mt-1 line-clamp-2">{r.motivo}</div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+                </button>
+              ))}
+            </div>
+          ) : estudiantesAgrupados.length === 0 ? (
             <div className="text-muted-foreground text-sm">No hay remisiones.</div>
           ) : (
-            <div className="space-y-3" data-guia="orientacion.remision_item">
-              {remisionesFiltradas.map(r => {
-                const isOpen = expandedIds.has(r.id);
-                const isNueva = gestiona && r.id > lastSeen && !r.recibido_por_id;
-                const grupo = r.estudiante_salon
-                  ? `${r.estudiante_grado} ${r.estudiante_salon}`
-                  : r.estudiante_grado;
+            /* ── Nivel 1: estudiantes con remisiones ── */
+            <div className="space-y-3" data-guia="orientacion.remision_estudiante">
+              {estudiantesAgrupados.map(g => {
+                const tieneNueva = gestiona && remsPorEstudianteNuevas.has(g.estudiante_id);
                 return (
-                  <div key={r.id} className="border border-border rounded-md overflow-hidden">
-                    <button
-                      type="button"
-                      onClick={() => toggleExpanded(r.id)}
-                      className="w-full flex items-start justify-between gap-3 px-4 py-3 bg-card hover:bg-muted/30 text-left"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-foreground">
-                            {r.estudiante_nombre} {r.estudiante_apellidos}
-                          </span>
-                          <span className="text-xs text-muted-foreground">{grupo}</span>
-                          {isNueva && (
-                            <span className="px-2 py-0.5 text-[10px] rounded-full bg-red-500 text-white font-semibold">
-                              Nueva
-                            </span>
-                          )}
-                          {r.atendida_at ? (
-                            <span className="px-2 py-0.5 text-[10px] rounded-full bg-indigo-100 text-indigo-700 font-semibold">
-                              Atendida
-                            </span>
-                          ) : r.recibido_por_id ? (
-                            <span className="px-2 py-0.5 text-[10px] rounded-full bg-emerald-100 text-emerald-700 font-semibold">
-                              Recibida
-                            </span>
-                          ) : (
-                            <span className="px-2 py-0.5 text-[10px] rounded-full bg-amber-100 text-amber-700 font-semibold">
-                              Pendiente
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {fmtFecha(r.fecha)} · Remitido por: {[r.docente_cargo, r.docente_nombre].filter(Boolean).join(" ")}
-                        </div>
-                        <div className="text-sm mt-1 line-clamp-2">{r.motivo}</div>
+                  <button
+                    key={g.estudiante_id}
+                    type="button"
+                    onClick={() => setEstVistaId(g.estudiante_id)}
+                    className="w-full flex items-center justify-between gap-3 px-4 py-3 border border-border rounded-md bg-card hover:bg-muted/30 text-left"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-foreground">{g.apellidos} {g.nombres}</span>
+                        <span className="text-xs text-muted-foreground">{g.salon ? `${g.grado} ${g.salon}` : g.grado}</span>
+                        {tieneNueva && (
+                          <span className="px-2 py-0.5 text-[10px] rounded-full bg-red-500 text-white font-semibold">Nueva</span>
+                        )}
                       </div>
-                      <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`} />
-                    </button>
-
-                    {isOpen && (
-                      <div className="px-4 py-4 border-t border-border space-y-3 bg-muted/10">
-                        <div>
-                          <div className="text-xs font-medium text-muted-foreground mb-1">Motivo</div>
-                          <div className="text-sm whitespace-pre-wrap">{r.motivo}</div>
-                        </div>
-                        {/* Contacto del estudiante y acudientes */}
-                        <div className="rounded-md border border-border bg-background p-3">
-                          <div className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> Contacto</div>
-                          {contactos[r.id] === undefined || contactos[r.id] === "loading" ? (
-                            <p className="text-sm text-muted-foreground">Cargando…</p>
-                          ) : (
-                            <div className="text-sm space-y-0.5">
-                              <p><span className="font-medium">Estudiante:</span> {(contactos[r.id] as any).estudiante_telefono || "No registrado"}</p>
-                              {((contactos[r.id] as any).acudientes || []).length > 0 ? (
-                                <div>
-                                  <span className="font-medium">Acudientes:</span>
-                                  <ul className="list-disc ml-5">
-                                    {(contactos[r.id] as any).acudientes.map((a: any, i: number) => (
-                                      <li key={i}>{a.nombre}{a.telefono ? ` — ${a.telefono}` : ""}</li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              ) : <p className="text-muted-foreground">Sin acudientes registrados.</p>}
-                            </div>
-                          )}
-                        </div>
-                        {r.firma_url && (
-                          <div>
-                            <div className="text-xs font-medium text-muted-foreground mb-1">Firma del docente</div>
-                            <a href={r.firma_url} target="_blank" rel="noreferrer">
-                              <img
-                                src={r.firma_url}
-                                alt="Firma"
-                                className="max-h-32 border rounded bg-white"
-                              />
-                            </a>
-                          </div>
-                        )}
-                        {r.recibido_por_id && (
-                          <div className="text-xs text-muted-foreground">
-                            Recibida por <strong>{r.recibido_por_nombre}</strong>
-                            {r.fecha_recibido && ` el ${new Date(r.fecha_recibido).toLocaleString("es-CO")}`}
-                          </div>
-                        )}
-                        {r.atendida_at && (
-                          <div className="text-xs text-muted-foreground">
-                            Atendida por <strong>{r.atendida_por_nombre}</strong> el {new Date(r.atendida_at).toLocaleString("es-CO")}
-                          </div>
-                        )}
-                        <div className="flex flex-wrap gap-2 pt-1">
-                          <button
-                            type="button"
-                            data-guia="orientacion.remision_descargar_word"
-                            onClick={() => descargarWord(r)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md border border-input bg-background hover:bg-accent"
-                          >
-                            <Download className="w-3.5 h-3.5" /> Descargar Word
-                          </button>
-                          {gestiona && (
-                          <button
-                            type="button"
-                            data-guia="orientacion.remision_agendar_cita"
-                            onClick={() => navigate(`/orientador/citas?estudianteId=${r.estudiante_id}`)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md border border-input bg-background hover:bg-accent"
-                          >
-                            <CalendarPlus className="w-3.5 h-3.5" /> Agendar cita
-                          </button>
-                          )}
-                          {gestiona && !r.atendida_at && (
-                            <button
-                              type="button"
-                              data-guia="orientacion.remision_marcar_atendida"
-                              disabled={marcando === r.id}
-                              onClick={() => marcarAtendida(r)}
-                              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
-                            >
-                              <Check className="w-3.5 h-3.5" />
-                              {marcando === r.id ? "Marcando..." : "Marcar como atendida"}
-                            </button>
-                          )}
-                          {gestiona && !r.recibido_por_id && (
-                            <button
-                              type="button"
-                              data-guia="orientacion.remision_marcar_recibida"
-                              disabled={marcando === r.id}
-                              onClick={() => marcarRecibida(r)}
-                              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
-                            >
-                              <Check className="w-3.5 h-3.5" />
-                              {marcando === r.id ? "Marcando..." : "Marcar como recibida"}
-                            </button>
-                          )}
-                        </div>
+                      <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
+                        <span>{g.total === 1 ? "1 remisión" : `${g.total} remisiones`} · última: {fmtFecha(g.ultima)}</span>
+                        {g.pendientes > 0 && <span className="px-2 py-0.5 text-[10px] rounded-full bg-amber-100 text-amber-700 font-semibold">{g.pendientes} pendiente{g.pendientes > 1 ? "s" : ""}</span>}
+                        {g.recibidas > 0 && <span className="px-2 py-0.5 text-[10px] rounded-full bg-emerald-100 text-emerald-700 font-semibold">{g.recibidas} recibida{g.recibidas > 1 ? "s" : ""}</span>}
+                        {g.atendidas > 0 && <span className="px-2 py-0.5 text-[10px] rounded-full bg-indigo-100 text-indigo-700 font-semibold">{g.atendidas} atendida{g.atendidas > 1 ? "s" : ""}</span>}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+                  </button>
                 );
               })}
             </div>

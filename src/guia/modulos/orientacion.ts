@@ -829,7 +829,7 @@ export const ORIENTACION: Capacidad[] = [
     id: "orientacion.consultar_remisiones",
     titulo: "Consultar las remisiones a orientación",
     descripcion:
-      "Ver la lista de remisiones a orientación con su estado (Pendiente, Recibida o Atendida), buscar por estudiante o docente, filtrar por grado y salón y desplegar el detalle (motivo, contacto, firma). Orientación, rector y coordinadores ven todas las del colegio; un profesor ve solo las que él remitió. Para rector, coordinadores y profesores la ficha se llama 'Orientación Escolar' y arriba tiene el botón verde 'Nueva remisión'. Se puede filtrar por estado y por quién remitió.",
+      "Ver la lista de remisiones a orientación con su estado (Pendiente, Recibida o Atendida), buscar por estudiante o docente, filtrar por grado y salón. La lista va por estudiante: al tocarlo se ven sus remisiones y al tocar una se abre el detalle (motivo, contacto, firma). Orientación y rector ven todas las del colegio; un coordinador ve las que remitió y todas las de los estudiantes de sus niveles; un director de grupo, las que remitió y las de su salón; un profesor, solo las que él remitió. Para rector, coordinadores y profesores la ficha se llama 'Orientación Escolar' y arriba tiene el botón verde 'Nueva remisión'. Se puede filtrar por estado y por quién remitió.",
     categoria: "Orientación",
     roles: [...ORIENTADOR_ADMIN, "rector", "coordinador", "profesor"],
     ruta: "/orientador/remisiones",
@@ -861,7 +861,13 @@ export const ORIENTACION: Capacidad[] = [
       },
       {
         narracion:
-          "Toca una remisión para desplegar el motivo, el contacto del estudiante y sus acudientes, y la firma del docente.",
+          "La lista muestra un estudiante por fila, con cuántas remisiones tiene y en qué estado. Toca el estudiante.",
+        accion: "click",
+        ancla: "orientacion.remision_estudiante",
+      },
+      {
+        narracion:
+          "Aparecen sus remisiones (una por fecha). Toca la que quieras para abrirla: motivo, contacto del estudiante y sus acudientes, y firma del docente.",
         accion: "click",
         ancla: "orientacion.remision_item",
       },
@@ -889,7 +895,12 @@ export const ORIENTACION: Capacidad[] = [
         ruta: "/orientador/remisiones",
       },
       {
-        narracion: "Toca la remisión para desplegarla.",
+        narracion: "Toca el estudiante en la lista.",
+        accion: "click",
+        ancla: "orientacion.remision_estudiante",
+      },
+      {
+        narracion: "Toca la remisión que quieres para abrirla.",
         accion: "click",
         ancla: "orientacion.remision_item",
       },
@@ -923,7 +934,12 @@ export const ORIENTACION: Capacidad[] = [
         ruta: "/orientador/remisiones",
       },
       {
-        narracion: "Toca la remisión para desplegarla.",
+        narracion: "Toca el estudiante en la lista.",
+        accion: "click",
+        ancla: "orientacion.remision_estudiante",
+      },
+      {
+        narracion: "Toca la remisión que quieres para abrirla.",
         accion: "click",
         ancla: "orientacion.remision_item",
       },
@@ -957,7 +973,12 @@ export const ORIENTACION: Capacidad[] = [
         ruta: "/orientador/remisiones",
       },
       {
-        narracion: "Toca la remisión para desplegarla.",
+        narracion: "Toca el estudiante en la lista.",
+        accion: "click",
+        ancla: "orientacion.remision_estudiante",
+      },
+      {
+        narracion: "Toca la remisión que quieres para abrirla.",
         accion: "click",
         ancla: "orientacion.remision_item",
       },
@@ -989,7 +1010,12 @@ export const ORIENTACION: Capacidad[] = [
         ruta: "/orientador/remisiones",
       },
       {
-        narracion: "Toca la remisión para desplegarla.",
+        narracion: "Toca el estudiante en la lista.",
+        accion: "click",
+        ancla: "orientacion.remision_estudiante",
+      },
+      {
+        narracion: "Toca la remisión que quieres para abrirla.",
         accion: "click",
         ancla: "orientacion.remision_item",
       },
