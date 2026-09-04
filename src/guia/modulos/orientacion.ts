@@ -877,9 +877,9 @@ export const ORIENTACION: Capacidad[] = [
     id: "orientacion.remision_marcar_atendida",
     titulo: "Marcar una remisión como atendida",
     descripcion:
-      "Registrar que el caso remitido ya fue atendido por Orientación. Queda con fecha y nombre, se ve en la lista como 'Atendida' (también para rector y coordinadores) y se avisa por WhatsApp al docente que remitió.",
+      "Registrar que el caso remitido ya fue atendido. Lo marca la persona a la que va dirigida la remisión: Orientación si va a Orientación, el coordinador del nivel si va a Coordinación, o el director de grupo del salón si va a Dirección de grupo. Queda con fecha y nombre, se ve como 'Atendida' y se avisa por WhatsApp a quien remitió.",
     categoria: "Orientación",
-    roles: [...ORIENTADOR_ADMIN],
+    roles: [...ORIENTADOR_ADMIN, "coordinador", "profesor"],
     ruta: "/orientador/remisiones",
     endpoint: "POST /api/orientacion/remision-atendida",
     sinonimos: [
@@ -916,9 +916,9 @@ export const ORIENTACION: Capacidad[] = [
     id: "orientacion.remision_marcar_recibida",
     titulo: "Marcar una remisión como recibida",
     descripcion:
-      "Confirmar la recepción de una remisión; se avisa por WhatsApp al docente que la envió.",
+      "Confirmar la recepción de una remisión; se avisa por WhatsApp a quien la envió. La marca la persona a la que va dirigida: Orientación, el coordinador del nivel o el director de grupo, según el destino elegido al remitir.",
     categoria: "Orientación",
-    roles: [...ORIENTADOR_ADMIN],
+    roles: [...ORIENTADOR_ADMIN, "coordinador", "profesor"],
     ruta: "/orientador/remisiones",
     endpoint: "POST /api/orientacion/remision-recibida",
     sinonimos: [

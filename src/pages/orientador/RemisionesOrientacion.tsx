@@ -218,6 +218,7 @@ const RemisionesOrientacion = () => {
   const [loading, setLoading] = useState(true);
   const [autorId, setAutorId] = useState("");
   const [autorNombre, setAutorNombre] = useState("");
+  const [miDirGrupo, setMiDirGrupo] = useState<{ grado: string; salon: string | null } | null>(null);
 
   // Filtros
   const [filtroGrado, setFiltroGrado] = useState("");
@@ -270,6 +271,7 @@ const RemisionesOrientacion = () => {
           const partes = dg.split(" ");
           dirGrupo = partes.length > 1 ? { grado: partes.slice(0, -1).join(" "), salon: partes[partes.length - 1] } : { grado: dg, salon: null };
         }
+        setMiDirGrupo(dirGrupo);
         nivelesCoord = ((yo as any)?.niveles_coordina as string[] | null) || null;
       }
 
@@ -463,8 +465,23 @@ const RemisionesOrientacion = () => {
     }
   };
 
-  // Quién gestiona (recibir, atender, agendar): Orientación y admin. Los demás solo consultan.
+  // Orientación y admin: bandeja propia (etiqueta "Nueva", agendar cita).
   const gestiona = isOrientador() || isAdmin();
+  // Recibida/Atendida las marca la persona a la que va DIRIGIDA la remisión
+  // (regla de Juan 2026-09-04). El server aplica la misma regla.
+  const puedeMarcar = (r: Remision): boolean => {
+    if (isAdmin()) return true;
+    const destinos = r.destinos || [];
+    const cargo = getSession().cargo || "";
+    if (isOrientador()) return destinos.length === 0 || destinos.includes("orientacion");
+    if (cargo === "Coordinador(a)") return destinos.includes("coordinador");
+    if (destinos.includes("director_grupo") && miDirGrupo) {
+      const conSalon = r.estudiante_salon ? `${r.estudiante_grado} ${r.estudiante_salon}` : "";
+      const mio = miDirGrupo.salon ? `${miDirGrupo.grado} ${miDirGrupo.salon}` : miDirGrupo.grado;
+      return mio === conSalon || mio === r.estudiante_grado;
+    }
+    return false;
+  };
 
   const backLink = isAdmin() ? "/dashboard" : "/dashboard";
 
@@ -663,7 +680,7 @@ const RemisionesOrientacion = () => {
                     <CalendarPlus className="w-3.5 h-3.5" /> Agendar cita
                   </button>
                 )}
-                {gestiona && !remVista.recibido_por_id && (
+                {puedeMarcar(remVista) && !remVista.recibido_por_id && (
                   <button
                     type="button"
                     data-guia="orientacion.remision_marcar_recibida"
@@ -675,7 +692,7 @@ const RemisionesOrientacion = () => {
                     {marcando === remVista.id ? "Marcando..." : "Marcar como recibida"}
                   </button>
                 )}
-                {gestiona && !remVista.atendida_at && (
+                {puedeMarcar(remVista) && !remVista.atendida_at && (
                   <button
                     type="button"
                     data-guia="orientacion.remision_marcar_atendida"
