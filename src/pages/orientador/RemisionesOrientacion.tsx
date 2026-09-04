@@ -345,7 +345,7 @@ const RemisionesOrientacion = () => {
       if (filtroEstado && estadoDe(r) !== filtroEstado) return false;
       if (filtroDocente && String(r.docente_id) !== filtroDocente) return false;
       if (q) {
-        const full = norm(`${r.estudiante_nombre} ${r.estudiante_apellidos} ${r.docente_nombre}`);
+        const full = norm(`${r.estudiante_nombre} ${r.estudiante_apellidos} ${r.docente_nombre} ${r.motivo || ""}`);
         const tokens = q.split(/\s+/).filter(Boolean);
         if (!tokens.every(t => full.includes(t))) return false;
       }
@@ -394,6 +394,13 @@ const RemisionesOrientacion = () => {
     () => (estVistaId == null ? [] : remisionesFiltradas.filter(r => r.estudiante_id === estVistaId)),
     [remisionesFiltradas, estVistaId],
   );
+  const docentesDelEst = useMemo(() => {
+    if (estVistaId == null) return [] as [string, string][];
+    const m = new Map<string, string>();
+    for (const r of remisiones) if (r.estudiante_id === estVistaId && r.docente_id && !m.has(String(r.docente_id))) m.set(String(r.docente_id), [r.docente_cargo, r.docente_nombre].filter(Boolean).join(" "));
+    return [...m.entries()].sort((a, b) => a[1].localeCompare(b[1], "es"));
+  }, [remisiones, estVistaId]);
+  const horaDe = (iso: string) => new Date(iso).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
   const remVista = remVistaId != null ? remisiones.find(r => r.id === remVistaId) || null : null;
   const remsPorEstudianteNuevas = useMemo(() => {
     const set = new Set<number>();
@@ -683,6 +690,28 @@ const RemisionesOrientacion = () => {
                 {estVista.apellidos} {estVista.nombres}
                 <span className="text-sm text-muted-foreground font-normal">{estVista.salon ? `${estVista.grado} ${estVista.salon}` : estVista.grado}</span>
               </h2>
+              {/* Filtros dentro del estudiante */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-2">
+                <div className="relative col-span-2 order-last lg:order-first">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <input
+                    value={busqueda}
+                    onChange={e => setBusqueda(e.target.value)}
+                    placeholder="Buscar en el motivo o por quien remitió..."
+                    className="w-full border rounded pl-8 pr-3 py-2 text-sm bg-background"
+                  />
+                </div>
+                <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value as any)} className="text-sm border rounded px-2 py-2 bg-background">
+                  <option value="">Todos los estados</option>
+                  <option value="pendiente">Pendientes</option>
+                  <option value="recibida">Recibidas</option>
+                  <option value="atendida">Atendidas</option>
+                </select>
+                <select value={filtroDocente} onChange={e => setFiltroDocente(e.target.value)} className="text-sm border rounded px-2 py-2 bg-background">
+                  <option value="">Remitido por: todos</option>
+                  {docentesDelEst.map(([id, nombre]) => <option key={id} value={id}>{nombre}</option>)}
+                </select>
+              </div>
               <p className="text-sm text-muted-foreground">{remsDelEst.length === 1 ? "1 remisión" : `${remsDelEst.length} remisiones`}. Toca una para abrirla.</p>
               {remsDelEst.map(r => (
                 <button
@@ -693,11 +722,11 @@ const RemisionesOrientacion = () => {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-foreground">{fmtFecha(r.fecha)}</span>
+                      <span className="font-semibold text-foreground">{[r.docente_cargo, r.docente_nombre].filter(Boolean).join(" ")}</span>
                       {badgeEstado(r)}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      Remitido por: {[r.docente_cargo, r.docente_nombre].filter(Boolean).join(" ")}
+                      {fmtFecha(r.fecha)}{r.created_at ? ` · ${horaDe(r.created_at)}` : ""}
                     </div>
                     <div className="text-sm mt-1 line-clamp-2">{r.motivo}</div>
                   </div>
