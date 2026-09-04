@@ -434,18 +434,24 @@ const RemisionesOrientacion = () => {
   }, [remisiones, lastSeen]);
   const grupoDe = (r: { estudiante_grado: string; estudiante_salon: string }) =>
     r.estudiante_salon ? `${r.estudiante_grado} ${r.estudiante_salon}` : r.estudiante_grado;
-  const chip = (activo: boolean) =>
-    `px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors ${activo ? "bg-primary text-primary-foreground border-primary" : "bg-background text-foreground border-input hover:bg-accent"}`;
+  // Colores de estado: Todas azul (neutro), Pendientes ámbar, Atendidas verde.
+  const COLOR_ACTIVO: Record<"" | "pendiente" | "atendida", string> = {
+    "": "bg-sky-600 text-white border-sky-600",
+    pendiente: "bg-amber-500 text-white border-amber-500",
+    atendida: "bg-emerald-600 text-white border-emerald-600",
+  };
+  const chip = (activo: boolean, colorActivo = "bg-primary text-primary-foreground border-primary") =>
+    `px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors ${activo ? colorActivo : "bg-background text-foreground border-input hover:bg-accent"}`;
   const botonesEstado = (
     <div className="flex flex-wrap gap-2" data-guia="orientacion.remisiones_filtro_estado">
       {([["", "Todas"], ["pendiente", "Pendientes"], ["atendida", "Atendidas"]] as const).map(([v, t]) => (
-        <button key={v || "todas"} type="button" onClick={() => setFiltroEstado(v)} className={chip(filtroEstado === v)}>{t}</button>
+        <button key={v || "todas"} type="button" onClick={() => setFiltroEstado(v)} className={chip(filtroEstado === v, COLOR_ACTIVO[v])}>{t}</button>
       ))}
     </div>
   );
   const badgeEstado = (r: Remision) => {
     const e = estadoDe(r);
-    const cls = e === "atendida" ? "bg-indigo-100 text-indigo-700" : "bg-amber-100 text-amber-700";
+    const cls = e === "atendida" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700";
     const txt = e === "atendida" ? "Atendida" : "Pendiente";
     return <span className={`px-2 py-0.5 text-[10px] rounded-full font-semibold ${cls}`}>{txt}</span>;
   };
@@ -686,7 +692,7 @@ const RemisionesOrientacion = () => {
                     data-guia="orientacion.remision_marcar_atendida"
                     disabled={marcando === remVista.id}
                     onClick={() => marcarAtendida(remVista)}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
                   >
                     <Check className="w-3.5 h-3.5" />
                     {marcando === remVista.id ? "Marcando..." : "Marcar como atendida"}
@@ -768,7 +774,7 @@ const RemisionesOrientacion = () => {
                       <div className="text-xs font-semibold text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
                         <span>{g.total === 1 ? "1 remisión" : `${g.total} remisiones`} · última: {fmtFecha(g.ultima)}</span>
                         {g.pendientes > 0 && <span className="px-2 py-0.5 text-[10px] rounded-full bg-amber-100 text-amber-700 font-semibold">{g.pendientes} pendiente{g.pendientes > 1 ? "s" : ""}</span>}
-                        {g.atendidas > 0 && <span className="px-2 py-0.5 text-[10px] rounded-full bg-indigo-100 text-indigo-700 font-semibold">{g.atendidas} atendida{g.atendidas > 1 ? "s" : ""}</span>}
+                        {g.atendidas > 0 && <span className="px-2 py-0.5 text-[10px] rounded-full bg-emerald-100 text-emerald-700 font-semibold">{g.atendidas} atendida{g.atendidas > 1 ? "s" : ""}</span>}
                       </div>
                     </div>
                     <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
