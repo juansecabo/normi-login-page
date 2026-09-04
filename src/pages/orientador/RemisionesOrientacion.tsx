@@ -225,6 +225,8 @@ const RemisionesOrientacion = () => {
   const [filtroSalon, setFiltroSalon] = useState("");
   const [filtroEstado, setFiltroEstado] = useState<"" | "pendiente" | "recibida" | "atendida">("");
   const [filtroDocente, setFiltroDocente] = useState("");
+  const [filtroAMi, setFiltroAMi] = useState(false);
+  const [filtroPorMi, setFiltroPorMi] = useState(false);
   const [busqueda, setBusqueda] = useState("");
 
   // Navegación en tres niveles (como Registros de Comportamiento):
@@ -328,6 +330,24 @@ const RemisionesOrientacion = () => {
       .map(r => r.estudiante_salon).filter(s => s && s.trim())
   )].sort(), [remisiones, filtroGrado]);
 
+  // ¿Esta remisión va DIRIGIDA a mí? (según destinos y mi cargo/dirección de grupo)
+  const dirigidaAMi = (r: Remision): boolean => {
+    const destinos = r.destinos || [];
+    const cargo = getSession().cargo || "";
+    if (isOrientador()) return destinos.length === 0 || destinos.includes("orientacion");
+    if (cargo === "Coordinador(a)") return destinos.includes("coordinador");
+    if (destinos.includes("director_grupo") && miDirGrupo) {
+      const conSalon = r.estudiante_salon ? `${r.estudiante_grado} ${r.estudiante_salon}` : "";
+      const mio = miDirGrupo.salon ? `${miDirGrupo.grado} ${miDirGrupo.salon}` : miDirGrupo.grado;
+      return mio === conSalon || mio === r.estudiante_grado;
+    }
+    return false;
+  };
+  // Recibida/Atendida las marca la persona a la que va dirigida (regla de Juan
+  // 2026-09-04); el admin siempre. El server aplica la misma regla.
+  const puedeMarcar = (r: Remision): boolean => isAdmin() || dirigidaAMi(r);
+  const miIdSesion = String(getSession().id || "");
+
   const estadoDe = (r: Remision): "pendiente" | "recibida" | "atendida" =>
     r.atendida_at ? "atendida" : r.recibido_por_id ? "recibida" : "pendiente";
 
@@ -346,6 +366,8 @@ const RemisionesOrientacion = () => {
       if (filtroSalon && r.estudiante_salon !== filtroSalon) return false;
       if (filtroEstado && estadoDe(r) !== filtroEstado) return false;
       if (filtroDocente && String(r.docente_id) !== filtroDocente) return false;
+      if (filtroPorMi && String(r.docente_id) !== miIdSesion) return false;
+      if (filtroAMi && !dirigidaAMi(r)) return false;
       if (q) {
         const full = norm(`${r.estudiante_nombre} ${r.estudiante_apellidos} ${r.docente_nombre} ${r.motivo || ""}`);
         const tokens = q.split(/\s+/).filter(Boolean);
@@ -353,7 +375,7 @@ const RemisionesOrientacion = () => {
       }
       return true;
     });
-  }, [remisiones, busqueda, filtroGrado, filtroSalon, filtroEstado, filtroDocente]);
+  }, [remisiones, busqueda, filtroGrado, filtroSalon, filtroEstado, filtroDocente, filtroAMi, filtroPorMi, miDirGrupo]);
 
   // Contacto del estudiante (teléfono + acudientes), cargado al expandir.
   const [contactos, setContactos] = useState<Record<number, { estudiante_telefono: string; acudientes: { nombre: string; telefono: string }[] } | "loading">>({});
@@ -414,6 +436,15 @@ const RemisionesOrientacion = () => {
   }, [remisiones, lastSeen]);
   const grupoDe = (r: { estudiante_grado: string; estudiante_salon: string }) =>
     r.estudiante_salon ? `${r.estudiante_grado} ${r.estudiante_salon}` : r.estudiante_grado;
+  const chip = (activo: boolean) =>
+    `px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors ${activo ? "bg-primary text-primary-foreground border-primary" : "bg-background text-foreground border-input hover:bg-accent"}`;
+  const botonesEstado = (
+    <div className="flex flex-wrap gap-2" data-guia="orientacion.remisiones_filtro_estado">
+      {([["", "Todas"], ["pendiente", "Pendientes"], ["recibida", "Recibidas"], ["atendida", "Atendidas"]] as const).map(([v, t]) => (
+        <button key={v || "todas"} type="button" onClick={() => setFiltroEstado(v)} className={chip(filtroEstado === v)}>{t}</button>
+      ))}
+    </div>
+  );
   const badgeEstado = (r: Remision) => {
     const e = estadoDe(r);
     const cls = e === "atendida" ? "bg-indigo-100 text-indigo-700" : e === "recibida" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700";
@@ -467,21 +498,6 @@ const RemisionesOrientacion = () => {
 
   // Orientación y admin: bandeja propia (etiqueta "Nueva", agendar cita).
   const gestiona = isOrientador() || isAdmin();
-  // Recibida/Atendida las marca la persona a la que va DIRIGIDA la remisión
-  // (regla de Juan 2026-09-04). El server aplica la misma regla.
-  const puedeMarcar = (r: Remision): boolean => {
-    if (isAdmin()) return true;
-    const destinos = r.destinos || [];
-    const cargo = getSession().cargo || "";
-    if (isOrientador()) return destinos.length === 0 || destinos.includes("orientacion");
-    if (cargo === "Coordinador(a)") return destinos.includes("coordinador");
-    if (destinos.includes("director_grupo") && miDirGrupo) {
-      const conSalon = r.estudiante_salon ? `${r.estudiante_grado} ${r.estudiante_salon}` : "";
-      const mio = miDirGrupo.salon ? `${miDirGrupo.grado} ${miDirGrupo.salon}` : miDirGrupo.grado;
-      return mio === conSalon || mio === r.estudiante_grado;
-    }
-    return false;
-  };
 
   const backLink = isAdmin() ? "/dashboard" : "/dashboard";
 
@@ -534,29 +550,7 @@ const RemisionesOrientacion = () => {
           </div>
 
           {/* Filtros */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
-            <select
-              data-guia="orientacion.remisiones_filtro_estado"
-              value={filtroEstado}
-              onChange={e => setFiltroEstado(e.target.value as any)}
-              className="text-sm border rounded px-2 py-2 bg-background"
-            >
-              <option value="">Todos los estados</option>
-              <option value="pendiente">Pendientes</option>
-              <option value="recibida">Recibidas</option>
-              <option value="atendida">Atendidas</option>
-            </select>
-            {docentesUnicos.length > 1 && (
-              <select
-                data-guia="orientacion.remisiones_filtro_docente"
-                value={filtroDocente}
-                onChange={e => setFiltroDocente(e.target.value)}
-                className="text-sm border rounded px-2 py-2 bg-background"
-              >
-                <option value="">Remitido por: todos</option>
-                {docentesUnicos.map(([id, nombre]) => <option key={id} value={id}>{nombre}</option>)}
-              </select>
-            )}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
             <select
               value={filtroGrado}
               onChange={e => { setFiltroGrado(e.target.value); setFiltroSalon(""); }}
@@ -573,7 +567,7 @@ const RemisionesOrientacion = () => {
               <option value="">Todos los salones</option>
               {salonesUnicos.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
-            <div className="relative col-span-2 md:col-span-3 lg:col-span-2 order-last lg:order-first">
+            <div className="relative col-span-2 order-last md:order-first">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <input
                 data-guia="orientacion.remisiones_buscador"
@@ -583,6 +577,12 @@ const RemisionesOrientacion = () => {
                 className="w-full border rounded pl-8 pr-3 py-2 text-sm bg-background"
               />
             </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            {botonesEstado}
+            <span className="hidden sm:inline-block w-px h-5 bg-border mx-1" />
+            <button type="button" data-guia="orientacion.remisiones_filtro_a_mi" onClick={() => setFiltroAMi(v => !v)} className={chip(filtroAMi)}>Remitidas a mí</button>
+            <button type="button" data-guia="orientacion.remisiones_filtro_por_mi" onClick={() => setFiltroPorMi(v => !v)} className={chip(filtroPorMi)}>Remitidas por mí</button>
           </div>
 
           </>)}
@@ -724,17 +724,12 @@ const RemisionesOrientacion = () => {
                     className="w-full border rounded pl-8 pr-3 py-2 text-sm bg-background"
                   />
                 </div>
-                <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value as any)} className="text-sm border rounded px-2 py-2 bg-background">
-                  <option value="">Todos los estados</option>
-                  <option value="pendiente">Pendientes</option>
-                  <option value="recibida">Recibidas</option>
-                  <option value="atendida">Atendidas</option>
-                </select>
-                <select value={filtroDocente} onChange={e => setFiltroDocente(e.target.value)} className="text-sm border rounded px-2 py-2 bg-background">
+                <select value={filtroDocente} onChange={e => setFiltroDocente(e.target.value)} className="text-sm border rounded px-2 py-2 bg-background col-span-2 lg:col-span-2">
                   <option value="">Remitido por: todos</option>
                   {docentesDelEst.map(([id, nombre]) => <option key={id} value={id}>{nombre}</option>)}
                 </select>
               </div>
+              <div className="mb-2">{botonesEstado}</div>
               <p className="text-sm text-muted-foreground">{remsDelEst.length === 1 ? "1 remisión" : `${remsDelEst.length} remisiones`}. Toca una para abrirla.</p>
               {remsDelEst.map(r => (
                 <button
@@ -777,12 +772,12 @@ const RemisionesOrientacion = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-foreground">{g.apellidos} {g.nombres}</span>
-                        <span className="text-xs text-muted-foreground">{g.salon ? `${g.grado} ${g.salon}` : g.grado}</span>
+                        <span className="text-xs font-semibold text-muted-foreground">{g.salon ? `${g.grado} ${g.salon}` : g.grado}</span>
                         {tieneNueva && (
                           <span className="px-2 py-0.5 text-[10px] rounded-full bg-red-500 text-white font-semibold">Nueva</span>
                         )}
                       </div>
-                      <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
+                      <div className="text-xs font-semibold text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
                         <span>{g.total === 1 ? "1 remisión" : `${g.total} remisiones`} · última: {fmtFecha(g.ultima)}</span>
                         {g.pendientes > 0 && <span className="px-2 py-0.5 text-[10px] rounded-full bg-amber-100 text-amber-700 font-semibold">{g.pendientes} pendiente{g.pendientes > 1 ? "s" : ""}</span>}
                         {g.recibidas > 0 && <span className="px-2 py-0.5 text-[10px] rounded-full bg-emerald-100 text-emerald-700 font-semibold">{g.recibidas} recibida{g.recibidas > 1 ? "s" : ""}</span>}
