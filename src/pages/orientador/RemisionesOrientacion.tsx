@@ -600,9 +600,9 @@ const RemisionesOrientacion = () => {
                 </h2>
                 <div className="text-sm mt-3 space-y-1">
                   <p><span className="font-semibold text-foreground">Fecha:</span> <span className="text-muted-foreground">{fmtFecha(remVista.fecha)}{remVista.created_at ? `, ${horaDe(remVista.created_at)}` : ""}</span></p>
-                  <p><span className="font-semibold text-foreground">Remitido por:</span> <span className="text-muted-foreground">{[remVista.docente_cargo, remVista.docente_nombre].filter(Boolean).join(" ")}</span></p>
+                  <p><span className="font-semibold text-foreground">Remitido por:</span> <span className="font-bold text-red-600">{[remVista.docente_cargo, remVista.docente_nombre].filter(Boolean).join(" ")}</span></p>
                   {remVista.destinos && remVista.destinos.length > 0 && (
-                    <p><span className="font-semibold text-foreground">Dirigida a:</span> <span className="text-muted-foreground">{destinosLegibles(remVista.destinos)}</span></p>
+                    <p><span className="font-semibold text-foreground">Dirigida a:</span> <span className="font-bold text-red-600">{destinosLegibles(remVista.destinos)}</span></p>
                   )}
                 </div>
               </div>
@@ -745,11 +745,11 @@ const RemisionesOrientacion = () => {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm"><span className="font-semibold text-foreground">Remitido por:</span> <span className="text-muted-foreground">{[r.docente_cargo, r.docente_nombre].filter(Boolean).join(" ")}</span></span>
+                      <span className="text-sm"><span className="font-semibold text-foreground">Remitido por:</span> <span className="font-bold text-red-600">{[r.docente_cargo, r.docente_nombre].filter(Boolean).join(" ")}</span></span>
                       {badgeEstado(r)}
                     </div>
                     <div className="text-sm mt-0.5">
-                      <span className="font-semibold text-foreground">Dirigida a:</span> <span className="text-muted-foreground">{destinosLegibles(r.destinos) || "Orientación Escolar"}</span>
+                      <span className="font-semibold text-foreground">Dirigida a:</span> <span className="font-bold text-red-600">{destinosLegibles(r.destinos) || "Orientación Escolar"}</span>
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
                       {fmtFecha(r.fecha)}{r.created_at ? ` · ${horaDe(r.created_at)}` : ""}
