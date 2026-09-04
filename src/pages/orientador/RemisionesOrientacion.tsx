@@ -425,6 +425,16 @@ const RemisionesOrientacion = () => {
   // Destinos guardados como claves internas → nombre legible.
   const DESTINO_LABEL: Record<string, string> = { orientacion: "Orientación Escolar", director_grupo: "Director de grupo", coordinador: "Coordinación" };
   const destinosLegibles = (d: string[] | null) => (d || []).map(x => DESTINO_LABEL[x] || x).join(", ");
+  const numeroPorRemision = useMemo(() => {
+    const m = new Map<number, number>();
+    const porEst = new Map<number, Remision[]>();
+    for (const r of remisiones) { const arr = porEst.get(r.estudiante_id) || []; arr.push(r); porEst.set(r.estudiante_id, arr); }
+    porEst.forEach(arr => {
+      arr.sort((a, b) => (a.created_at || a.fecha).localeCompare(b.created_at || b.fecha) || a.id - b.id);
+      arr.forEach((r, i) => m.set(r.id, i + 1));
+    });
+    return m;
+  }, [remisiones]);
   const horaDe = (iso: string) => new Date(iso).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
   const remVista = remVistaId != null ? remisiones.find(r => r.id === remVistaId) || null : null;
   const remsPorEstudianteNuevas = useMemo(() => {
@@ -745,7 +755,10 @@ const RemisionesOrientacion = () => {
                     </div>
                     <div className="text-sm mt-1 line-clamp-2">{r.motivo}</div>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-xs font-bold text-primary">#{numeroPorRemision.get(r.id) ?? "?"}</span>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                  </div>
                 </button>
               ))}
             </div>
