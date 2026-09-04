@@ -829,7 +829,7 @@ export const ORIENTACION: Capacidad[] = [
     id: "orientacion.consultar_remisiones",
     titulo: "Consultar las remisiones a orientación",
     descripcion:
-      "Ver la lista de remisiones a orientación con su estado (Pendiente, Recibida o Atendida), buscar por estudiante o docente, filtrar por grado y salón. La lista va por estudiante: al tocarlo se ven sus remisiones y al tocar una se abre el detalle (motivo, contacto, firma). Orientación y rector ven todas las del colegio; un coordinador ve las que remitió y todas las de los estudiantes de sus niveles; un director de grupo, las que remitió y las de su salón; un profesor, solo las que él remitió. Para rector, coordinadores y profesores la ficha se llama 'Orientación Escolar' y arriba tiene el botón verde 'Nueva remisión'. Se filtra con botones por estado (Todas, Pendientes, Recibidas, Atendidas) y con 'Remitidas a mí' / 'Remitidas por mí'; dentro de un estudiante también por quién remitió.",
+      "Ver la lista de remisiones a orientación con su estado (Pendiente o Atendida), buscar por estudiante o docente, filtrar por grado y salón. La lista va por estudiante: al tocarlo se ven sus remisiones y al tocar una se abre el detalle (motivo, contacto, firma). Orientación y rector ven todas las del colegio; un coordinador ve las que remitió y todas las de los estudiantes de sus niveles; un director de grupo, las que remitió y las de su salón; un profesor, solo las que él remitió. Para rector, coordinadores y profesores la ficha se llama 'Orientación Escolar' y arriba tiene el botón verde 'Nueva remisión'. Cada remisión está Pendiente o Atendida. Se filtra con botones por estado (Todas, Pendientes, Atendidas) y con el menú 'Todas las remisiones / Remitidas a mí / Remitidas por mí'; dentro de un estudiante también por quién remitió.",
     categoria: "Orientación",
     roles: [...ORIENTADOR_ADMIN, "rector", "coordinador", "profesor"],
     ruta: "/orientador/remisiones",
@@ -861,7 +861,7 @@ export const ORIENTACION: Capacidad[] = [
       },
       {
         narracion:
-          "La lista muestra un estudiante por fila, con cuántas remisiones tiene y en qué estado. Toca el estudiante.",
+          "La lista muestra un estudiante por fila, con cuántas remisiones tiene y cuántas están pendientes o atendidas. Toca el estudiante.",
         accion: "click",
         ancla: "orientacion.remision_estudiante",
       },
@@ -909,45 +909,6 @@ export const ORIENTACION: Capacidad[] = [
           "Toca 'Marcar como atendida'. Queda registrado con tu nombre y la fecha, y el docente recibe el aviso por WhatsApp.",
         accion: "click",
         ancla: "orientacion.remision_marcar_atendida",
-      },
-    ],
-  },
-  {
-    id: "orientacion.remision_marcar_recibida",
-    titulo: "Marcar una remisión como recibida",
-    descripcion:
-      "Confirmar la recepción de una remisión; se avisa por WhatsApp a quien la envió. La marca la persona a la que va dirigida: Orientación, el coordinador del nivel o el director de grupo, según el destino elegido al remitir.",
-    categoria: "Orientación",
-    roles: [...ORIENTADOR_ADMIN, "coordinador", "profesor"],
-    ruta: "/orientador/remisiones",
-    endpoint: "POST /api/orientacion/remision-recibida",
-    sinonimos: [
-      "marcar remisión como recibida",
-      "recibir una remisión",
-      "confirmar que recibí la remisión",
-      "dar por recibida una remisión",
-    ],
-    pasos: [
-      {
-        narracion: "Entramos a Remisiones a Orientación.",
-        accion: "navegar",
-        ruta: "/orientador/remisiones",
-      },
-      {
-        narracion: "Toca el estudiante en la lista.",
-        accion: "click",
-        ancla: "orientacion.remision_estudiante",
-      },
-      {
-        narracion: "Toca la remisión que quieres para abrirla.",
-        accion: "click",
-        ancla: "orientacion.remision_item",
-      },
-      {
-        narracion:
-          "Toca 'Marcar como recibida'. Se registra tu recepción y se avisa al docente por WhatsApp.",
-        accion: "click",
-        ancla: "orientacion.remision_marcar_recibida",
       },
     ],
   },

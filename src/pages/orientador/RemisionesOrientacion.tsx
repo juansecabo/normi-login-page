@@ -158,7 +158,7 @@ const descargarWord = async (r: Remision) => {
       DOCENTE: [r.docente_cargo, r.docente_nombre].filter(Boolean).join(" "),
       ROL: r.docente_cargo || "",
       RECIBIDO_POR: r.recibido_por_nombre || "",
-      ESTADO: r.atendida_at ? "Atendida" : r.recibido_por_id ? "Recibida" : "Pendiente",
+      ESTADO: r.atendida_at ? "Atendida" : "Pendiente",
       ATENDIDA_POR: r.atendida_por_nombre || "",
       FECHA_ATENDIDA: r.atendida_at ? fmtFecha(r.atendida_at.slice(0, 10)) : "",
       RECIBIDO_CARGO: "",
@@ -223,10 +223,10 @@ const RemisionesOrientacion = () => {
   // Filtros
   const [filtroGrado, setFiltroGrado] = useState("");
   const [filtroSalon, setFiltroSalon] = useState("");
-  const [filtroEstado, setFiltroEstado] = useState<"" | "pendiente" | "recibida" | "atendida">("");
+  const [filtroEstado, setFiltroEstado] = useState<"" | "pendiente" | "atendida">("");
   const [filtroDocente, setFiltroDocente] = useState("");
-  const [filtroAMi, setFiltroAMi] = useState(false);
-  const [filtroPorMi, setFiltroPorMi] = useState(false);
+  // "" = todas · "ami" = remitidas a mí · "pormi" = remitidas por mí
+  const [filtroQuien, setFiltroQuien] = useState<"" | "ami" | "pormi">("");
   const [busqueda, setBusqueda] = useState("");
 
   // Navegación en tres niveles (como Registros de Comportamiento):
@@ -348,8 +348,7 @@ const RemisionesOrientacion = () => {
   const puedeMarcar = (r: Remision): boolean => isAdmin() || dirigidaAMi(r);
   const miIdSesion = String(getSession().id || "");
 
-  const estadoDe = (r: Remision): "pendiente" | "recibida" | "atendida" =>
-    r.atendida_at ? "atendida" : r.recibido_por_id ? "recibida" : "pendiente";
+  const estadoDe = (r: Remision): "pendiente" | "atendida" => (r.atendida_at ? "atendida" : "pendiente");
 
   // Docentes que han remitido (para el filtro "Remitido por"), ordenados por nombre.
   const docentesUnicos = useMemo(() => {
@@ -366,8 +365,8 @@ const RemisionesOrientacion = () => {
       if (filtroSalon && r.estudiante_salon !== filtroSalon) return false;
       if (filtroEstado && estadoDe(r) !== filtroEstado) return false;
       if (filtroDocente && String(r.docente_id) !== filtroDocente) return false;
-      if (filtroPorMi && String(r.docente_id) !== miIdSesion) return false;
-      if (filtroAMi && !dirigidaAMi(r)) return false;
+      if (filtroQuien === "pormi" && String(r.docente_id) !== miIdSesion) return false;
+      if (filtroQuien === "ami" && !dirigidaAMi(r)) return false;
       if (q) {
         const full = norm(`${r.estudiante_nombre} ${r.estudiante_apellidos} ${r.docente_nombre} ${r.motivo || ""}`);
         const tokens = q.split(/\s+/).filter(Boolean);
@@ -375,7 +374,7 @@ const RemisionesOrientacion = () => {
       }
       return true;
     });
-  }, [remisiones, busqueda, filtroGrado, filtroSalon, filtroEstado, filtroDocente, filtroAMi, filtroPorMi, miDirGrupo]);
+  }, [remisiones, busqueda, filtroGrado, filtroSalon, filtroEstado, filtroDocente, filtroQuien, miDirGrupo]);
 
   // Contacto del estudiante (teléfono + acudientes), cargado al expandir.
   const [contactos, setContactos] = useState<Record<number, { estudiante_telefono: string; acudientes: { nombre: string; telefono: string }[] } | "loading">>({});
@@ -400,12 +399,11 @@ const RemisionesOrientacion = () => {
 
   // Agrupación por estudiante (nivel 1), a partir de las remisiones ya filtradas.
   const estudiantesAgrupados = useMemo(() => {
-    const m = new Map<number, { estudiante_id: number; nombres: string; apellidos: string; grado: string; salon: string; total: number; pendientes: number; recibidas: number; atendidas: number; ultima: string }>();
+    const m = new Map<number, { estudiante_id: number; nombres: string; apellidos: string; grado: string; salon: string; total: number; pendientes: number; atendidas: number; ultima: string }>();
     for (const r of remisionesFiltradas) {
-      const g = m.get(r.estudiante_id) || { estudiante_id: r.estudiante_id, nombres: r.estudiante_nombre, apellidos: r.estudiante_apellidos, grado: r.estudiante_grado, salon: r.estudiante_salon, total: 0, pendientes: 0, recibidas: 0, atendidas: 0, ultima: r.fecha };
+      const g = m.get(r.estudiante_id) || { estudiante_id: r.estudiante_id, nombres: r.estudiante_nombre, apellidos: r.estudiante_apellidos, grado: r.estudiante_grado, salon: r.estudiante_salon, total: 0, pendientes: 0, atendidas: 0, ultima: r.fecha };
       g.total++;
-      const e = estadoDe(r);
-      if (e === "pendiente") g.pendientes++; else if (e === "recibida") g.recibidas++; else g.atendidas++;
+      if (estadoDe(r) === "pendiente") g.pendientes++; else g.atendidas++;
       if (r.fecha > g.ultima) { g.ultima = r.fecha; g.grado = r.estudiante_grado; g.salon = r.estudiante_salon; }
       m.set(r.estudiante_id, g);
     }
@@ -431,7 +429,7 @@ const RemisionesOrientacion = () => {
   const remVista = remVistaId != null ? remisiones.find(r => r.id === remVistaId) || null : null;
   const remsPorEstudianteNuevas = useMemo(() => {
     const set = new Set<number>();
-    for (const r of remisiones) if (r.id > lastSeen && !r.recibido_por_id) set.add(r.estudiante_id);
+    for (const r of remisiones) if (r.id > lastSeen && !r.atendida_at) set.add(r.estudiante_id);
     return set;
   }, [remisiones, lastSeen]);
   const grupoDe = (r: { estudiante_grado: string; estudiante_salon: string }) =>
@@ -440,15 +438,15 @@ const RemisionesOrientacion = () => {
     `px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors ${activo ? "bg-primary text-primary-foreground border-primary" : "bg-background text-foreground border-input hover:bg-accent"}`;
   const botonesEstado = (
     <div className="flex flex-wrap gap-2" data-guia="orientacion.remisiones_filtro_estado">
-      {([["", "Todas"], ["pendiente", "Pendientes"], ["recibida", "Recibidas"], ["atendida", "Atendidas"]] as const).map(([v, t]) => (
+      {([["", "Todas"], ["pendiente", "Pendientes"], ["atendida", "Atendidas"]] as const).map(([v, t]) => (
         <button key={v || "todas"} type="button" onClick={() => setFiltroEstado(v)} className={chip(filtroEstado === v)}>{t}</button>
       ))}
     </div>
   );
   const badgeEstado = (r: Remision) => {
     const e = estadoDe(r);
-    const cls = e === "atendida" ? "bg-indigo-100 text-indigo-700" : e === "recibida" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700";
-    const txt = e === "atendida" ? "Atendida" : e === "recibida" ? "Recibida" : "Pendiente";
+    const cls = e === "atendida" ? "bg-indigo-100 text-indigo-700" : "bg-amber-100 text-amber-700";
+    const txt = e === "atendida" ? "Atendida" : "Pendiente";
     return <span className={`px-2 py-0.5 text-[10px] rounded-full font-semibold ${cls}`}>{txt}</span>;
   };
 
@@ -581,8 +579,16 @@ const RemisionesOrientacion = () => {
           <div className="flex flex-wrap items-center gap-2 mb-4">
             {botonesEstado}
             <span className="hidden sm:inline-block w-px h-5 bg-border mx-1" />
-            <button type="button" data-guia="orientacion.remisiones_filtro_a_mi" onClick={() => setFiltroAMi(v => !v)} className={chip(filtroAMi)}>Remitidas a mí</button>
-            <button type="button" data-guia="orientacion.remisiones_filtro_por_mi" onClick={() => setFiltroPorMi(v => !v)} className={chip(filtroPorMi)}>Remitidas por mí</button>
+            <select
+              data-guia="orientacion.remisiones_filtro_quien"
+              value={filtroQuien}
+              onChange={e => setFiltroQuien(e.target.value as any)}
+              className="text-sm border rounded px-2 py-1.5 bg-background"
+            >
+              <option value="">Todas las remisiones</option>
+              <option value="ami">Remitidas a mí</option>
+              <option value="pormi">Remitidas por mí</option>
+            </select>
           </div>
 
           </>)}
@@ -650,12 +656,6 @@ const RemisionesOrientacion = () => {
                   </a>
                 </div>
               )}
-              {remVista.recibido_por_id && (
-                <div className="text-xs text-muted-foreground">
-                  Recibida por <strong>{remVista.recibido_por_nombre}</strong>
-                  {remVista.fecha_recibido && ` el ${new Date(remVista.fecha_recibido).toLocaleString("es-CO")}`}
-                </div>
-              )}
               {remVista.atendida_at && (
                 <div className="text-xs text-muted-foreground">
                   Atendida por <strong>{remVista.atendida_por_nombre}</strong> el {new Date(remVista.atendida_at).toLocaleString("es-CO")}
@@ -678,18 +678,6 @@ const RemisionesOrientacion = () => {
                     className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md border border-input bg-background hover:bg-accent"
                   >
                     <CalendarPlus className="w-3.5 h-3.5" /> Agendar cita
-                  </button>
-                )}
-                {puedeMarcar(remVista) && !remVista.recibido_por_id && (
-                  <button
-                    type="button"
-                    data-guia="orientacion.remision_marcar_recibida"
-                    disabled={marcando === remVista.id}
-                    onClick={() => marcarRecibida(remVista)}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    {marcando === remVista.id ? "Marcando..." : "Marcar como recibida"}
                   </button>
                 )}
                 {puedeMarcar(remVista) && !remVista.atendida_at && (
@@ -780,7 +768,6 @@ const RemisionesOrientacion = () => {
                       <div className="text-xs font-semibold text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
                         <span>{g.total === 1 ? "1 remisión" : `${g.total} remisiones`} · última: {fmtFecha(g.ultima)}</span>
                         {g.pendientes > 0 && <span className="px-2 py-0.5 text-[10px] rounded-full bg-amber-100 text-amber-700 font-semibold">{g.pendientes} pendiente{g.pendientes > 1 ? "s" : ""}</span>}
-                        {g.recibidas > 0 && <span className="px-2 py-0.5 text-[10px] rounded-full bg-emerald-100 text-emerald-700 font-semibold">{g.recibidas} recibida{g.recibidas > 1 ? "s" : ""}</span>}
                         {g.atendidas > 0 && <span className="px-2 py-0.5 text-[10px] rounded-full bg-indigo-100 text-indigo-700 font-semibold">{g.atendidas} atendida{g.atendidas > 1 ? "s" : ""}</span>}
                       </div>
                     </div>
