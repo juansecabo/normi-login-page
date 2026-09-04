@@ -400,6 +400,9 @@ const RemisionesOrientacion = () => {
     for (const r of remisiones) if (r.estudiante_id === estVistaId && r.docente_id && !m.has(String(r.docente_id))) m.set(String(r.docente_id), [r.docente_cargo, r.docente_nombre].filter(Boolean).join(" "));
     return [...m.entries()].sort((a, b) => a[1].localeCompare(b[1], "es"));
   }, [remisiones, estVistaId]);
+  // Destinos guardados como claves internas → nombre legible.
+  const DESTINO_LABEL: Record<string, string> = { orientacion: "Orientación Escolar", director_grupo: "Director de grupo", coordinador: "Coordinación" };
+  const destinosLegibles = (d: string[] | null) => (d || []).map(x => DESTINO_LABEL[x] || x).join(", ");
   const horaDe = (iso: string) => new Date(iso).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
   const remVista = remVistaId != null ? remisiones.find(r => r.id === remVistaId) || null : null;
   const remsPorEstudianteNuevas = useMemo(() => {
@@ -580,7 +583,7 @@ const RemisionesOrientacion = () => {
                 </h2>
                 <div className="text-sm text-muted-foreground mt-1">
                   {fmtFecha(remVista.fecha)} · Remitido por: {[remVista.docente_cargo, remVista.docente_nombre].filter(Boolean).join(" ")}
-                  {remVista.destinos && remVista.destinos.length > 0 && ` · Dirigida a: ${remVista.destinos.join(", ")}`}
+                  {remVista.destinos && remVista.destinos.length > 0 && ` · Dirigida a: ${destinosLegibles(remVista.destinos)}`}
                 </div>
               </div>
               <div>
