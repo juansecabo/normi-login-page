@@ -756,7 +756,7 @@ const RemisionesOrientacion = () => {
                     <div className="text-sm mt-1 line-clamp-2">{r.motivo}</div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-2xl font-extrabold text-primary leading-none">#{numeroPorRemision.get(r.id) ?? "?"}</span>
+                    <span className="text-4xl font-black text-muted-foreground/30 leading-none select-none">#{numeroPorRemision.get(r.id) ?? "?"}</span>
                     <ChevronRight className="w-5 h-5 text-muted-foreground" />
                   </div>
                 </button>
