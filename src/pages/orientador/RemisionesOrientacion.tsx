@@ -477,7 +477,7 @@ const RemisionesOrientacion = () => {
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             {estVista ? (
-              <button onClick={() => { setEstVistaId(null); setRemVistaId(null); }} className="text-primary hover:underline">{gestiona ? "Remisiones a Orientación" : "Orientación Escolar"}</button>
+              <button onClick={() => setEstVistaId(null)} className="text-primary hover:underline">{gestiona ? "Remisiones a Orientación" : "Orientación Escolar"}</button>
             ) : (
               <span className="text-foreground font-medium">{gestiona ? "Remisiones a Orientación" : "Orientación Escolar"}</span>
             )}
