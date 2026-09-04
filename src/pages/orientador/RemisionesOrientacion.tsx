@@ -743,9 +743,8 @@ const RemisionesOrientacion = () => {
                   className="w-full flex items-start justify-between gap-3 px-4 py-3 border border-border rounded-md bg-card hover:bg-muted/30 text-left"
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm"><span className="font-semibold text-foreground">Remitido por:</span> <span className="font-bold text-red-600">{[r.docente_cargo, r.docente_nombre].filter(Boolean).join(" ")}</span></span>
-                      {badgeEstado(r)}
+                    <div className="text-sm">
+                      <span className="font-semibold text-foreground">Remitido por:</span> <span className="font-bold text-red-600">{[r.docente_cargo, r.docente_nombre].filter(Boolean).join(" ")}</span>
                     </div>
                     <div className="text-sm mt-0.5">
                       <span className="font-semibold text-foreground">Dirigida a:</span> <span className="font-bold text-red-600">{destinosLegibles(r.destinos) || "Orientación Escolar"}</span>
@@ -755,9 +754,12 @@ const RemisionesOrientacion = () => {
                     </div>
                     <div className="text-sm mt-1 line-clamp-2">{r.motivo}</div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-4xl font-black text-muted-foreground/30 leading-none select-none">#{numeroPorRemision.get(r.id) ?? "?"}</span>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                  <div className="flex flex-col items-end gap-2 shrink-0">
+                    {badgeEstado(r)}
+                    <div className="flex items-center gap-2">
+                      <span className="text-4xl font-black text-muted-foreground/30 leading-none select-none">#{numeroPorRemision.get(r.id) ?? "?"}</span>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </div>
                   </div>
                 </button>
               ))}
