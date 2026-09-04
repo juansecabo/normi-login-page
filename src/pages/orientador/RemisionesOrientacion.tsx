@@ -745,8 +745,11 @@ const RemisionesOrientacion = () => {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-foreground">{[r.docente_cargo, r.docente_nombre].filter(Boolean).join(" ")}</span>
+                      <span className="text-sm"><span className="font-semibold text-foreground">Remitido por:</span> <span className="text-muted-foreground">{[r.docente_cargo, r.docente_nombre].filter(Boolean).join(" ")}</span></span>
                       {badgeEstado(r)}
+                    </div>
+                    <div className="text-sm mt-0.5">
+                      <span className="font-semibold text-foreground">Dirigida a:</span> <span className="text-muted-foreground">{destinosLegibles(r.destinos) || "Orientación Escolar"}</span>
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
                       {fmtFecha(r.fecha)}{r.created_at ? ` · ${horaDe(r.created_at)}` : ""}
