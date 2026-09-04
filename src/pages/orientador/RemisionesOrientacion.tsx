@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { getSession, isOrientador, isAdmin, isRectorOrCoordinador, isProfesor } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
@@ -228,8 +228,17 @@ const RemisionesOrientacion = () => {
 
   // Navegación en tres niveles (como Registros de Comportamiento):
   //   1) estudiantes con remisiones  2) remisiones de un estudiante  3) detalle.
-  const [estVistaId, setEstVistaId] = useState<number | null>(null);
-  const [remVistaId, setRemVistaId] = useState<number | null>(null);
+  // El nivel va en la URL (?est=ID&rem=ID) para que Atrás del navegador baje un
+  // nivel en vez de saltar al tablero.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const estVistaId = searchParams.get("est") ? Number(searchParams.get("est")) : null;
+  const remVistaId = searchParams.get("rem") ? Number(searchParams.get("rem")) : null;
+  const setEstVistaId = (id: number | null) => setSearchParams(id == null ? {} : { est: String(id) });
+  const setRemVistaId = (id: number | null) => {
+    const p = new URLSearchParams(searchParams);
+    if (id == null) p.delete("rem"); else p.set("rem", String(id));
+    setSearchParams(p);
+  };
   const [marcando, setMarcando] = useState<number | null>(null);
 
   useEffect(() => {
@@ -347,15 +356,23 @@ const RemisionesOrientacion = () => {
   // Contacto del estudiante (teléfono + acudientes), cargado al expandir.
   const [contactos, setContactos] = useState<Record<number, { estudiante_telefono: string; acudientes: { nombre: string; telefono: string }[] } | "loading">>({});
 
+  const cargarContacto = (rem: Remision) => {
+    if (contactos[rem.id] !== undefined) return;
+    setContactos(prev => ({ ...prev, [rem.id]: "loading" }));
+    apiClient.orientacion.contactoEstudiante(rem.estudiante_id)
+      .then(c => setContactos(prev => ({ ...prev, [rem.id]: c })))
+      .catch(() => setContactos(prev => ({ ...prev, [rem.id]: { estudiante_telefono: "", acudientes: [] } })));
+  };
   const abrirRemision = (rem: Remision) => {
     setRemVistaId(rem.id);
-    if (contactos[rem.id] === undefined) {
-      setContactos(prev => ({ ...prev, [rem.id]: "loading" }));
-      apiClient.orientacion.contactoEstudiante(rem.estudiante_id)
-        .then(c => setContactos(prev => ({ ...prev, [rem.id]: c })))
-        .catch(() => setContactos(prev => ({ ...prev, [rem.id]: { estudiante_telefono: "", acudientes: [] } })));
-    }
+    cargarContacto(rem);
   };
+  useEffect(() => {
+    if (remVistaId == null) return;
+    const rem = remisiones.find(r => r.id === remVistaId);
+    if (rem) cargarContacto(rem);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [remVistaId, remisiones]);
 
   // Agrupación por estudiante (nivel 1), a partir de las remisiones ya filtradas.
   const estudiantesAgrupados = useMemo(() => {
