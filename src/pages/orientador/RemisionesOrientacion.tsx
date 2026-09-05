@@ -529,6 +529,7 @@ const RemisionesOrientacion = () => {
   }, [remisiones]);
   const ultimoPasoDe = (r: Remision): Paso | null => { const ps = pasosPorRem[r.id]; return ps && ps.length > 0 ? ps[ps.length - 1] : null; };
   const llegadaDe = (r: Remision): string => ultimoPasoDe(r)?.created_at || r.created_at || r.fecha;
+  const fechaHoraLocal = (iso: string) => new Date(iso).toLocaleString("es-CO", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
   const remitenteActualDe = (r: Remision): string => {
     const p = ultimoPasoDe(r);
     return p ? [p.docente_cargo, p.docente_nombre].filter(Boolean).join(" ") : [r.docente_cargo, r.docente_nombre].filter(Boolean).join(" ");
@@ -541,7 +542,7 @@ const RemisionesOrientacion = () => {
   const sinRevisar = useMemo(
     () => remisiones
       .filter(r => idsSinRevisar ? idsSinRevisar.has(r.id) : (dirigidaAMi(r) && !vistasPorMi.has(r.id)))
-      .sort((a, b) => llegadaDe(b).localeCompare(llegadaDe(a))),
+      .sort((a, b) => new Date(llegadaDe(b)).getTime() - new Date(llegadaDe(a)).getTime()),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [remisiones, vistasPorMi, miDirGrupo, idsSinRevisar, pasosPorRem],
   );
@@ -1010,7 +1011,7 @@ const RemisionesOrientacion = () => {
                         </div>
                         <div className="text-xs text-muted-foreground mt-0.5">
                           <span className="font-semibold text-foreground">Remitido por:</span> <span className="font-bold text-red-600">{remitenteActualDe(r)}</span>
-                          {" · "}{fmtFecha(llegadaDe(r).slice(0, 10))} · {horaDe(llegadaDe(r))}
+                          {" · "}{fechaHoraLocal(llegadaDe(r))}
                           {ultimoPasoDe(r) && <span className="ml-1">(remisión #{numeroPorRemision.get(r.id)}, creada por {[r.docente_cargo, r.docente_nombre].filter(Boolean).join(" ")})</span>}
                         </div>
                         <div className="text-sm mt-0.5 line-clamp-1">{ultimoPasoDe(r)?.motivo || r.motivo}</div>
