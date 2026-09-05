@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
  * - Si hay niveles ocultos a la izquierda o derecha, aparece una flecha
  *   clicable sobre un degradado que difumina lo de abajo para que se lea bien.
  */
-const BreadcrumbDeslizable = ({ clave, children }: { clave: string; children: ReactNode }) => {
+const BreadcrumbDeslizable = ({ clave, children }: { clave?: string; children: ReactNode }) => {
   const ref = useRef<HTMLDivElement | null>(null);
   const [flechas, setFlechas] = useState({ izq: false, der: false });
 
@@ -24,11 +24,15 @@ const BreadcrumbDeslizable = ({ clave, children }: { clave: string; children: Re
     const el = ref.current;
     if (!el) return;
     // Mostrar el final del camino al entrar a la página.
-    el.scrollLeft = el.scrollWidth;
-    recalcular();
+    const alFinal = () => { el.scrollLeft = el.scrollWidth; recalcular(); };
+    alFinal();
     const ro = new ResizeObserver(recalcular);
     ro.observe(el);
-    return () => ro.disconnect();
+    // Si cambia el camino (otro nivel dentro de la misma página), volver a
+    // mostrar el final aunque no se pase `clave`.
+    const mo = new MutationObserver(alFinal);
+    mo.observe(el, { childList: true, subtree: true, characterData: true });
+    return () => { ro.disconnect(); mo.disconnect(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clave]);
 
@@ -39,7 +43,7 @@ const BreadcrumbDeslizable = ({ clave, children }: { clave: string; children: Re
       <div
         ref={ref}
         onScroll={recalcular}
-        className="flex items-center gap-2 text-sm overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden text-center"
+        className="flex items-center gap-2 text-sm whitespace-nowrap overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden text-center"
       >
         {children}
       </div>

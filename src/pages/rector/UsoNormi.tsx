@@ -7,6 +7,7 @@ import HeaderNormi from "@/components/HeaderNormi";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 interface ProfesorStats {
   numero_de_telefono: string;
   id: string;
@@ -225,11 +226,11 @@ const UsoNormi = () => {
 
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6 max-w-3xl mx-auto">
-          <div className="flex items-center gap-2 text-sm">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">→</span>
             <span className="text-foreground font-medium">Uso de Normi</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-6 md:p-8 max-w-3xl mx-auto">

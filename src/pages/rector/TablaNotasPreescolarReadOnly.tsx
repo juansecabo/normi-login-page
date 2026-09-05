@@ -8,6 +8,7 @@ import { ACTIVIDADES_PREESCOLAR } from "@/utils/preescolar";
 import HeaderNormi from "@/components/HeaderNormi";
 import { Loader2 } from "lucide-react";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 interface Estudiante {
   id: string;
   apellidos: string;
@@ -135,7 +136,7 @@ const TablaNotasPreescolarReadOnly = () => {
       <main className="flex-1 container mx-auto p-4 md:p-8">
         {/* Breadcrumb */}
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex flex-wrap items-center gap-2 text-sm">
+          <BreadcrumbDeslizable>
             <button
               onClick={() => navigate("/dashboard")}
               className="text-primary hover:underline"
@@ -158,7 +159,7 @@ const TablaNotasPreescolarReadOnly = () => {
             </button>
             <span className="text-muted-foreground">→</span>
             <span className="text-foreground font-medium">{salonSeleccionado}</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         {/* Tabs de periodo */}

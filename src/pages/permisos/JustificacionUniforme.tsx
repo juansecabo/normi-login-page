@@ -13,6 +13,7 @@ import { CalendarIcon, ChevronDown } from "lucide-react";
 import { notifyRectorCoord } from "@/lib/notifyStaff";
 import FirmaImage from "@/components/FirmaImage";
 import { es } from "date-fns/locale";
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -148,13 +149,13 @@ const JustificacionUniforme = () => {
       <HeaderNormi />
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm flex-wrap">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             <button onClick={() => navigate("/permisos-excusas")} className="text-primary hover:underline">Permisos y Excusas</button>
             <span className="text-muted-foreground">&rarr;</span>
             <span className="text-foreground font-medium">Justificación por Uniforme</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         <div className="flex gap-2 mb-6">

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getSession, isRectorOrCoordinador } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 const SeleccionarSalonRector = () => {
   const navigate = useNavigate();
   const [gradoSeleccionado, setGradoSeleccionado] = useState("");
@@ -70,7 +71,7 @@ const SeleccionarSalonRector = () => {
       <main className="flex-1 container mx-auto p-8">
         {/* Breadcrumb */}
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex flex-wrap items-center gap-2 text-sm">
+          <BreadcrumbDeslizable>
             <button 
               onClick={() => navigate("/dashboard")}
               className="text-primary hover:underline"
@@ -86,7 +87,7 @@ const SeleccionarSalonRector = () => {
             </button>
             <span className="text-muted-foreground">→</span>
             <span className="text-foreground font-medium">{gradoSeleccionado}</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         {/* Selector de Salón */}

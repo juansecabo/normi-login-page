@@ -4,6 +4,7 @@ import { getSession, isRectorOrCoordinador } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { BookOpen, Users } from "lucide-react";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 const ModoVisualizacion = () => {
   const navigate = useNavigate();
   const [gradoSeleccionado, setGradoSeleccionado] = useState("");
@@ -66,7 +67,7 @@ const ModoVisualizacion = () => {
       <main className="flex-1 container mx-auto p-8">
         {/* Breadcrumb */}
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex flex-wrap items-center gap-2 text-sm">
+          <BreadcrumbDeslizable>
             <button
               onClick={() => navigate("/dashboard")}
               className="text-primary hover:underline"
@@ -89,7 +90,7 @@ const ModoVisualizacion = () => {
             </button>
             <span className="text-muted-foreground">→</span>
             <span className="text-foreground font-medium">{salonSeleccionado}</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         {/* Selector de Modo */}

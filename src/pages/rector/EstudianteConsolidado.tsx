@@ -7,6 +7,7 @@ import { getPeriodoActual } from "@/utils/periodoActual";
 import { anoEscolarActual } from "@/utils/anoEscolar";
 import HeaderNormi from "@/components/HeaderNormi";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 interface Estudiante {
   id: string;
   apellidos: string;
@@ -282,7 +283,7 @@ const EstudianteConsolidado = () => {
       <main className="flex-1 container mx-auto p-4 md:p-8">
         {/* Breadcrumb */}
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex flex-wrap items-center gap-2 text-sm">
+          <BreadcrumbDeslizable>
             <button
               onClick={() => navigate("/dashboard")}
               className="text-primary hover:underline"
@@ -329,7 +330,7 @@ const EstudianteConsolidado = () => {
             ) : (
               <span className="text-foreground font-medium">{estudiante?.apellidos} {estudiante?.nombres}</span>
             )}
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         {/* Notas: mismo diseño que ve el estudiante/acudiente (vertical, grupos,

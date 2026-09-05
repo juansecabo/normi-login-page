@@ -13,6 +13,7 @@ import { apiClient } from "@/lib/apiClient";
 import { CheckCircle2, Pencil } from "lucide-react";
 import { cargoSegunGenero } from "@/lib/entrevistadores";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 interface ConsultaRow {
   id: number;
   titulo: string;
@@ -718,7 +719,7 @@ export default function ConsultaPublica() {
       <HeaderNormi backLink={backLink} />
       <div className="max-w-2xl mx-auto space-y-4 px-4 py-6">
         <div className="bg-card rounded-lg shadow-soft p-4">
-          <div className="flex items-center gap-2 text-sm flex-wrap">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             {esInterno ? (
@@ -728,7 +729,7 @@ export default function ConsultaPublica() {
             )}
             <span className="text-muted-foreground">&rarr;</span>
             <span className="text-foreground font-medium truncate max-w-[55vw]">{consulta.titulo}</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
         <div className="text-center mb-2">
           <h1 className="text-xl sm:text-2xl font-bold text-foreground">{consulta.titulo}</h1>

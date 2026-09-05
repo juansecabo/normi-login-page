@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import SignatureCanvas from "react-signature-canvas";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 const TIPOS = [
   { value: "academico_disciplina", label: "Académico y de Disciplina", titulo: "REGISTRO DE COMPORTAMIENTO ACADÉMICO Y DE DISCIPLINA", titulo_var: "ACADÉMICO Y DE DISCIPLINA" },
   { value: "academico", label: "Académico", titulo: "REGISTRO DE COMPORTAMIENTO ACADÉMICO", titulo_var: "ACADÉMICO" },
@@ -722,7 +723,7 @@ const RegistrosComportamiento = () => {
       <HeaderNormi backLink={backLink} />
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm flex-wrap">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             {tab === "historial" && estVistaId != null ? (
@@ -734,7 +735,7 @@ const RegistrosComportamiento = () => {
             ) : (
               <span className="text-foreground font-medium">Registros de Comportamiento</span>
             )}
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-6">

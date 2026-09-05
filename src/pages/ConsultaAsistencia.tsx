@@ -10,6 +10,7 @@ import MatrizCurso from "@/components/asistencia/MatrizCurso";
 import CalendarioEstudiante from "@/components/asistencia/CalendarioEstudiante";
 import { resumen, rangoMes, MESES, hoyBogota } from "@/components/asistencia/estados";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 type Clase = { asignatura: string; grado: string; salon: string };
 
 const Selector = ({ label, value, onChange, options, disabled, dataGuia }: {
@@ -117,7 +118,7 @@ const ConsultaAsistencia = () => {
       <HeaderNormi />
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate(computeBackLinkFromSession())} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             {isProfesor() ? (
@@ -129,7 +130,7 @@ const ConsultaAsistencia = () => {
             ) : (
               <span className="text-foreground font-medium">Asistencia</span>
             )}
-          </div>
+          </BreadcrumbDeslizable>
         </div>
         <div className="max-w-5xl mx-auto">
           <h2 className="text-2xl font-bold text-foreground mb-1 text-center">{isProfesor() ? "Registro de asistencia" : "Asistencia"}</h2>

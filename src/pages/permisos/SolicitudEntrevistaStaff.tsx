@@ -15,6 +15,7 @@ import { joinEntrevistadores, entrevistadoresDeSolicitud, cargoSegunGenero } fro
 import FormatoWhatsAppToolbar, { EditorComunicado, whatsappToHtml, type EditorComunicadoHandle } from "@/components/FormatoWhatsAppToolbar";
 import { useGradosColegio, rankGrado } from "@/utils/grados";
 import { es } from "date-fns/locale";
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -495,7 +496,7 @@ const SolicitudEntrevistaStaff = () => {
       <HeaderNormi />
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm flex-wrap">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             {vista ? (
@@ -507,7 +508,7 @@ const SolicitudEntrevistaStaff = () => {
             ) : (
               <span className="text-foreground font-medium">Solicitud de Entrevista</span>
             )}
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         {/* Menú: dos fichas (Crear solicitud / Solicitudes creadas) */}

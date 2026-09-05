@@ -9,6 +9,7 @@ import { rankGrado } from "@/utils/grados";
 import SignatureCanvas from "react-signature-canvas";
 import { Save, Download, Plus, X } from "lucide-react";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 // Planilla de control — Plan de Nivelación por período (exclusivo del Pestalozziano; Cailico demo).
 const PESTA_ID = "94c1414b-22d1-40dd-945a-5857b62e5f6c";
 const CAILICO_ID = "2f96f076-83df-4b84-8bbc-9c1df79a372b"; // demo, para revisión
@@ -197,13 +198,13 @@ const NivelacionPlanilla = () => {
       <main className="container mx-auto px-4 py-6 max-w-4xl">
         {/* Breadcrumb */}
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm flex-wrap">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">→</span>
             <button onClick={() => navigate("/formatos")} className="text-primary hover:underline">Formatos</button>
             <span className="text-muted-foreground">→</span>
             <span className="text-foreground font-medium">Plan de Nivelación por período</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         <h1 className="text-2xl font-bold text-foreground">Plan de Nivelación por período</h1>

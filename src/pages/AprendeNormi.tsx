@@ -5,6 +5,7 @@ import HeaderNormi from "@/components/HeaderNormi";
 import normiImg from "@/assets/normi-placeholder.webp";
 import { Check, Lock, Star, ArrowLeft, Download, Plus, MoreVertical, History } from "lucide-react";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 /**
  * "Aprende con Normi" — tutorial jugable por cargo (Fase 1: PROFESOR, solo
  * colegio Cailico de demo). Ficha propia con un mapa de misiones; cada misión
@@ -441,11 +442,11 @@ const AprendeNormi = () => {
       <HeaderNormi />
       <main className="flex-1 container mx-auto p-4 md:p-8 max-w-2xl">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm flex-wrap">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             <span className="text-foreground font-medium">Aprende con Normi</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         <div className="flex items-center gap-4 mb-6">

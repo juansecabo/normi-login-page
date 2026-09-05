@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 const GRADO_ORDEN: Record<string, number> = {
   "Párvulo": 0, "Pre-Jardín": 1, "Prejardín": 1, "Jardín": 2, "Transición": 3,
   "Primero": 4, "Segundo": 5, "Tercero": 6, "Cuarto": 7, "Quinto": 8,
@@ -338,7 +339,7 @@ const ObservadorEstudiantil = () => {
       <HeaderNormi backLink="/dashboard" />
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm flex-wrap">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">→</span>
             {estSel ? (
@@ -350,7 +351,7 @@ const ObservadorEstudiantil = () => {
             ) : (
               <span className="text-foreground font-medium">Observador Estudiantil</span>
             )}
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-6">

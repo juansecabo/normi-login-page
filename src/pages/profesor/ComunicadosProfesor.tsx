@@ -7,6 +7,7 @@ import ListaComunicados from "@/components/ListaComunicados";
 import { markLastSeen } from "@/utils/notificaciones";
 import { NIVEL_DE_GRADO } from "@/utils/grados";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 interface Comunicado {
   id: number;
   remitente: string;
@@ -108,13 +109,13 @@ const ComunicadosProfesor = () => {
 
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">
               Inicio
             </button>
             <span className="text-muted-foreground">&rarr;</span>
             <span className="text-foreground font-medium">Comunicados Recibidos</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-6 md:p-8 max-w-2xl mx-auto">

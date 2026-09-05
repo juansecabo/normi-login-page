@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { UserRound, KeyRound, Eye, EyeOff, Loader2, MessageCircle, Mail, BellRing } from "lucide-react";
 import iconPerfil from "@/assets/icons/perfil.png";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 /**
  * Ficha "Perfil" (todos los roles).
  *  - Cambiar datos: nombre, teléfono, fecha de nacimiento y contraseña.
@@ -234,14 +235,14 @@ const Perfil = () => {
       <HeaderNormi backLink={backLink} />
       <main className="flex-1 container mx-auto p-4 md:p-8 max-w-5xl">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm flex-wrap">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             <button onClick={() => setVista("menu")} className={vista === "menu" ? "text-foreground font-medium" : "text-primary hover:underline"}>Perfil</button>
             {vista === "datos" && (<><span className="text-muted-foreground">&rarr;</span><span className="text-foreground font-medium">Cambiar datos</span></>)}
             {vista === "recuperacion" && (<><span className="text-muted-foreground">&rarr;</span><span className="text-foreground font-medium">Recuperación de contraseña</span></>)}
             {vista === "notificaciones" && (<><span className="text-muted-foreground">&rarr;</span><span className="text-foreground font-medium">Notificaciones al WhatsApp</span></>)}
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-6">

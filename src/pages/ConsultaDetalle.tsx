@@ -26,6 +26,7 @@ import DestinatariosSelector, {
 } from "@/components/DestinatariosSelector";
 import { apiRequest } from "@/lib/apiClient";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 // Mapeo entre etiqueta legacy (cargos_objetivo) y cargos reales del usuario.
 const CARGO_OBJETIVO_LEGACY: Record<string, string[]> = {
   Rector: ["Rector"],
@@ -1101,13 +1102,13 @@ export default function ConsultaDetalle() {
       <HeaderNormi />
       <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-4" data-guia="consultas.detalle_cargado">
         <div className="bg-card rounded-lg shadow-soft p-4">
-          <div className="flex items-center gap-2 text-sm flex-wrap">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             <button onClick={() => navigate("/consultas")} className="text-primary hover:underline">Consultas</button>
             <span className="text-muted-foreground">&rarr;</span>
             <span className="text-foreground font-medium truncate max-w-[60vw]">{consulta.titulo}</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
         <div className="flex items-center justify-end gap-2 flex-wrap">
           <div className="flex gap-2">

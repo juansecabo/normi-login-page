@@ -14,6 +14,7 @@ import { BookOpenCheck, Plus, Pencil, Trash2, Loader2, Sparkles, Check } from "l
 import { rankGrado } from "@/utils/grados";
 import { getPeriodoActual } from "@/utils/periodoActual";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 /**
  * Logros del periodo — una sola columna. Cada logro tiene una casilla (chulo = agregado) y los
  * salones del grado marcables en la misma fila. Marcar/desmarcar se guarda al instante (sin
@@ -201,11 +202,11 @@ const LogrosProfesor = () => {
       <HeaderNormi backLink="/dashboard" />
       <main className="flex-1 container mx-auto p-4 md:p-8 max-w-6xl">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm flex-wrap">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             <span className="text-foreground font-medium">Logros del periodo</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-6">

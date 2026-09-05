@@ -28,6 +28,7 @@ import { useAsignaturas } from "@/hooks/useAsignaturas";
 import { apiClient, apiRequest } from "@/lib/apiClient";
 import { cargoSegunGenero } from "@/lib/entrevistadores";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
 const SALONES = ["1", "2", "3", "4", "5", "6"];
@@ -1658,13 +1659,13 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
       <main className={embedded ? "" : "flex-1 container mx-auto p-4 md:p-8"}>
         {!embedded && (
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">
               Inicio
             </button>
             <span className="text-muted-foreground">→</span>
             <span className="text-foreground font-medium">Panel de Control</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
         )}
 

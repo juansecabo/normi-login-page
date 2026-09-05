@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Loader2, Search, Download, X } from "lucide-react";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const SALONES = ["1", "2", "3", "4", "5", "6"];
@@ -481,11 +482,11 @@ const RegistroNormi = () => {
 
       <main className="flex-1 container mx-auto p-4 lg:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6 max-w-4xl mx-auto">
-          <div className="flex flex-wrap items-center gap-2 text-sm">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             <span className="text-foreground font-medium">Registro en Normi</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
         <p className="text-sm text-muted-foreground max-w-4xl mx-auto mb-6 text-center">Revisa qué estudiantes y acudientes están registrados o no con Normi.</p>
 

@@ -7,6 +7,7 @@ import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNorm
 import AvatarUploader from "@/components/AvatarUploader";
 import { Search, Users } from "lucide-react";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 type Est = {
   id: string;
   grado: string;
@@ -84,13 +85,13 @@ const MiGrupo = () => {
       <HeaderNormi />
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate(computeBackLinkFromSession())} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             <button onClick={() => navigate("/direccion-grupo")} className="text-primary hover:underline">Dirección de grupo</button>
             <span className="text-muted-foreground">&rarr;</span>
             <span className="text-foreground font-medium">Fotos de mi grupo</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         <div className="max-w-5xl mx-auto">

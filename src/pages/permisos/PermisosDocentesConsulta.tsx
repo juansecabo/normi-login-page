@@ -6,6 +6,7 @@ import { apiRequest } from "@/lib/apiClient";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, Download, Loader2 } from "lucide-react";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 interface Cargo { hora?: string; grado?: string; asignatura?: string; docente?: string; }
 interface Permiso {
   id: number;
@@ -90,13 +91,13 @@ const PermisosDocentesConsulta = () => {
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm flex-wrap">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">→</span>
             <button onClick={() => navigate("/formatos")} className="text-primary hover:underline">Formatos</button>
             <span className="text-muted-foreground">→</span>
             <span className="text-foreground font-medium">Permisos docentes</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
         <h1 className="text-2xl font-bold text-foreground">Permisos docentes</h1>
         <p className="text-muted-foreground mt-1 text-sm">

@@ -21,6 +21,7 @@ import DictadoMic from "@/components/DictadoMic";
 import CharCircle from "@/components/CharCircle";
 import { buildTemplateBodyPreview, MAX_WA_TEMPLATE_BODY, WA_TEMPLATE_OVERHEAD } from "@/lib/wapBody";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 // Comunicados con firma. La pestaña "Enviar" replica EXACTAMENTE la interfaz de
 // Enviar Comunicado (mismo selector de perfiles, filtros en cascada, editor y
 // adjuntos). La diferencia es que el envío va a /api/comunicados-firma/enviar y
@@ -1094,11 +1095,11 @@ const ComunicadosFirma = () => {
       <main className="flex-1 container mx-auto p-4 md:p-8">
         {/* Índice de navegación */}
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6 max-w-2xl mx-auto">
-          <div className="flex items-center gap-2 text-sm">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">→</span>
             <span className="text-foreground font-medium">Comunicados con firma</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
         <p className="text-sm text-muted-foreground max-w-2xl mx-auto mb-6 text-center">
           Envía un comunicado que la persona debe firmar para confirmar que lo leyó.

@@ -22,6 +22,7 @@ import { toast } from "@/hooks/use-toast";
 import { fetchNombresPorIds } from "@/lib/nombresUsuarios";
 import { cargoSegunGenero } from "@/lib/entrevistadores";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 interface Actividad {
   column_id: number;
   id_profesor: string;
@@ -216,13 +217,13 @@ const TodasActividades = () => {
 
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">
               Inicio
             </button>
             <span className="text-muted-foreground">→</span>
             <span className="text-foreground font-medium">Todas las Actividades</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-6">

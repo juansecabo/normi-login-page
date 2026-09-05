@@ -64,6 +64,7 @@ import {
 import { getEventCoordinates } from "@dnd-kit/utilities";
 import { cargoSegunGenero } from "@/lib/entrevistadores";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 // Modificador: centra el "fantasma" (DragOverlay) bajo el dedo/cursor, para que
 // lo que se arrastra siga exactamente al dedo (sin el desfase que tenía antes).
 const pegarFantasmaAlDedo = ({ activatorEvent, draggingNodeRect, transform }: any) => {
@@ -4362,7 +4363,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         <main className="flex-1 container mx-auto p-4 md:p-8">
           <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
             {soloLectura ? (
-              <div className="flex flex-wrap items-center gap-2 text-sm">
+              <BreadcrumbDeslizable>
                 <button onClick={() => navigate(isAdmin() ? "/dashboard" : "/dashboard")} className="text-primary hover:underline">Inicio</button>
                 <span className="text-muted-foreground">→</span>
                 <button onClick={() => navigate("/seleccionar-grado")} className="text-primary hover:underline">Notas</button>
@@ -4374,7 +4375,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                 <button onClick={() => navigate("/lista-asignaturas")} className="text-primary hover:underline">Por Asignatura</button>
                 <span className="text-muted-foreground">→</span>
                 <span className="text-foreground font-medium">{asignaturaSeleccionada}</span>
-              </div>
+              </BreadcrumbDeslizable>
             ) : (
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Asignaturas</button>
@@ -4472,7 +4473,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             {soloLectura ? (
-              <div className="flex flex-wrap items-center gap-2 text-sm">
+              <BreadcrumbDeslizable>
                 <button onClick={() => navigate(isAdmin() ? "/dashboard" : "/dashboard")} className="text-primary hover:underline">Inicio</button>
                 <span className="text-muted-foreground">→</span>
                 <button onClick={() => navigate("/seleccionar-grado")} className="text-primary hover:underline">Notas</button>
@@ -4488,7 +4489,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                 <span className="text-foreground font-medium">
                   {periodoActivo === 0 ? 'Definitiva Anual' : (periodos[periodoActivo - 1]?.nombre || `Periodo ${periodoActivo}`)}
                 </span>
-              </div>
+              </BreadcrumbDeslizable>
             ) : (
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <button

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import NotificacionModal from "@/components/notas/NotificacionModal";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 // Notificación migrada al server. Antes apuntaba a
 // https://n8n.notasnormi.com/webhook/notificar-preescolar.
 
@@ -464,7 +465,7 @@ const TablaNotasPreescolar = () => {
       <main className="flex-1 container mx-auto p-4 md:p-8">
         {/* Breadcrumb */}
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex flex-wrap items-center gap-2 text-sm">
+          <BreadcrumbDeslizable>
             <button
               onClick={() => navigate("/dashboard")}
               className="text-primary hover:underline"
@@ -487,7 +488,7 @@ const TablaNotasPreescolar = () => {
             </button>
             <span className="text-muted-foreground">→</span>
             <span className="text-foreground font-medium">{salonSeleccionado}</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         {/* Tabs de periodos */}

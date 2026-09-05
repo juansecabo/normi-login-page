@@ -22,6 +22,7 @@ import DictadoMic from "@/components/DictadoMic";
 import CharCircle from "@/components/CharCircle";
 import { buildTemplateBodyPreview, MAX_WA_TEMPLATE_BODY, WA_TEMPLATE_OVERHEAD } from "@/lib/wapBody";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 // Migrado de n8n → normi-server: ya no llamamos a webhook externo. El endpoint
 // /api/comunicados/enviar del server hace toda la lógica (resolver
 // destinatarios + WhatsApp + guardar) en proceso, con multi-tenant filtrado
@@ -895,11 +896,11 @@ const EnviarComunicado = () => {
       <main className="flex-1 container mx-auto p-4 md:p-8">
         {/* Breadcrumb */}
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6 max-w-2xl mx-auto">
-          <div className="flex items-center gap-2 text-sm">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">→</span>
             <span className="text-foreground font-medium">Enviar Comunicado</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
         <p className="text-sm text-muted-foreground max-w-2xl mx-auto mb-6 text-center">Envía un mensaje o documento a cualquier grupo o individuo dentro de la institución.</p>
 

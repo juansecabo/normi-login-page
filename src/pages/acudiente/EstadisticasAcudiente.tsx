@@ -8,6 +8,7 @@ import { AnalisisEstudiante } from "@/components/estadisticas/AnalisisEstudiante
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, User } from "lucide-react";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 const EstadisticasAcudiente = () => {
   const navigate = useNavigate();
   const { loading } = useEstadisticas();
@@ -60,7 +61,7 @@ const EstadisticasAcudiente = () => {
 
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm flex-wrap">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">
               Inicio
             </button>
@@ -76,7 +77,7 @@ const EstadisticasAcudiente = () => {
             ) : (
               <span className="text-foreground font-medium">Estadísticas{acudido ? ` de ${acudido.nombre}` : ''}</span>
             )}
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         {!acudido && acudidos.length > 1 && (

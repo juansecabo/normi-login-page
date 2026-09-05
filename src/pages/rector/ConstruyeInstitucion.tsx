@@ -22,6 +22,7 @@ import ChatwootColegioEditor from "@/components/ChatwootColegioEditor";
 import WhatsAppColegioEditor from "@/components/WhatsAppColegioEditor";
 import ArmarSalon from "@/components/ArmarSalon";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 /**
  * "Construye tu Institución" — el Rector (o Administrador) declara la estructura
  * del colegio: Jornadas (con su hora de aviso), Grados y Salones (cada salón con
@@ -220,7 +221,7 @@ const ConstruyeInstitucion = () => {
       <HeaderNormi backLink={backLink} />
       <main className={`flex-1 container mx-auto p-4 md:p-8 ${vista === "personas" || vista === "armar-salon" ? "" : "max-w-4xl"}`}>
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm flex-wrap">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             <button onClick={() => setVista("menu")} className={vista === "menu" ? "text-foreground font-medium" : "text-primary hover:underline"}>Configurar Institución</button>
@@ -236,7 +237,7 @@ const ConstruyeInstitucion = () => {
                 <span className="text-foreground font-medium">{({ "Administrador": "Administrador(a)", "Rector": "Rector(a)", "Coordinador(a)": "Coordinadores", "Administrativo(a)": "Administrativos", "Orientador(a) Escolar": "Orientación escolar", "Profesor(a)": "Profesores", estudiante: "Estudiantes", acudiente: "Acudientes" } as Record<string, string>)[rolPersonas] || rolPersonas}</span>
               </>)}
             </>)}
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6">

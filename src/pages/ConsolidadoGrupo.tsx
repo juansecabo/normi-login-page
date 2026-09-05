@@ -7,6 +7,7 @@ import { useColegioConfig } from "@/hooks/useColegioConfig";
 import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNormi";
 import { Users, Download, Loader2 } from "lucide-react";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 const PERIODOS = [1, 2, 3, 4] as const;
 const ORDINAL: Record<number, string> = { 1: "Primer", 2: "Segundo", 3: "Tercer", 4: "Cuarto" };
 
@@ -152,7 +153,7 @@ const ConsolidadoGrupo = () => {
       <HeaderNormi />
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex flex-wrap items-center gap-2 text-sm">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate(computeBackLinkFromSession())} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             <button onClick={() => navigate("/direccion-grupo")} className="text-primary hover:underline">Dirección de grupo</button>
@@ -166,7 +167,7 @@ const ConsolidadoGrupo = () => {
                 <span className="text-foreground font-medium">{ORDINAL[periodo]} periodo</span>
               </>
             )}
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         {loadingDg ? (

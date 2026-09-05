@@ -12,6 +12,7 @@ import SignatureCanvas from "react-signature-canvas";
 import FirmaImage from "@/components/FirmaImage";
 import { cargoSegunGenero } from "@/lib/entrevistadores";
 import iconCasos from "@/assets/icons/casos.png";
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -865,13 +866,13 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
       <HeaderNormi backLink="/orientador/casos" />
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm flex-wrap">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             <button onClick={() => navigate("/orientador/casos")} className="text-primary hover:underline">Casos de Seguimiento</button>
             <span className="text-muted-foreground">&rarr;</span>
             <span className="text-foreground font-medium">{c.estudiante_apellidos} {c.estudiante_nombre}</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         <div data-guia="orientacion.caso_detalle" className="bg-card rounded-lg shadow-soft p-6 space-y-6">

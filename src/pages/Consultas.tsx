@@ -16,6 +16,7 @@ import { ChevronDown, Plus, Trash2, Users, Send, FileBarChart2, X } from "lucide
 import { apiRequest } from "@/lib/apiClient";
 import { useEstructuraOrden } from "@/utils/estructuraOrden";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 interface ConsultaRow {
   id: number;
   titulo: string;
@@ -754,7 +755,7 @@ export default function Consultas() {
       <HeaderNormi backLink={backLink} />
       <div className="max-w-5xl mx-auto p-4 sm:p-6">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-4">
-          <div className="flex items-center gap-2 text-sm flex-wrap">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             {tab === "crear" ? (
@@ -766,7 +767,7 @@ export default function Consultas() {
             ) : (
               <span className="text-foreground font-medium">Consultas</span>
             )}
-          </div>
+          </BreadcrumbDeslizable>
         </div>
         <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">

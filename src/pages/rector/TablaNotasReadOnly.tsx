@@ -10,6 +10,7 @@ import { MessageSquare } from "lucide-react";
 import { promedioGeneral, esPeriodoCompleto, type NotaCalc, type GrupoCalc } from "@/lib/gradeCalculator";
 import { useColegioConfig } from "@/hooks/useColegioConfig";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 interface Estudiante {
   id: string;
   apellidos: string;
@@ -345,7 +346,7 @@ const TablaNotasReadOnly = () => {
       <main className="flex-1 min-w-0 md:flex md:flex-col md:overflow-hidden container mx-auto p-4 md:p-8">
         {/* Breadcrumb */}
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex flex-wrap items-center gap-2 text-sm">
+          <BreadcrumbDeslizable>
             <button
               onClick={() => navigate("/dashboard")}
               className="text-primary hover:underline"
@@ -382,7 +383,7 @@ const TablaNotasReadOnly = () => {
             </button>
             <span className="text-muted-foreground">→</span>
             <span className="text-foreground font-medium">{asignaturaSeleccionada}</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         {/* Info del profesor */}

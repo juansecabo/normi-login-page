@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import CalendarioFiltroDia, { keyDeDate } from "@/components/CalendarioFiltroDia";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 /**
  * Portería → Llegada tarde. Dos pantallas:
  *  - Reportar (PorteriaLlegadaTarde): selecciona estudiantes y notifica a los
@@ -182,13 +183,13 @@ const PorteriaLlegadaTarde = () => {
       <HeaderNormi backLink="/dashboard" />
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm flex-wrap">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">→</span>
             <button onClick={() => navigate("/porteria")} className="text-primary hover:underline">Portería</button>
             <span className="text-muted-foreground">→</span>
             <span className="text-foreground font-medium">Reportar llegada tarde</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-6 space-y-4">
@@ -411,13 +412,13 @@ export const PorteriaRegistro = () => {
       <HeaderNormi backLink="/dashboard" />
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm flex-wrap">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">→</span>
             <button onClick={() => navigate("/porteria")} className="text-primary hover:underline">Portería</button>
             <span className="text-muted-foreground">→</span>
             <span className="text-foreground font-medium">Registro de llegada tarde</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         <div data-guia="porteria.tabs_registro" className="flex gap-2 mb-4">
@@ -573,11 +574,11 @@ export const PorteriaHub = () => {
       <HeaderNormi backLink="/dashboard" />
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm flex-wrap">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">→</span>
             <span className="text-foreground font-medium">Portería</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
         <div data-guia="porteria.hub" className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button onClick={() => navigate("/porteria/llegada-tarde")}

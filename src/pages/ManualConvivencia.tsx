@@ -5,6 +5,7 @@ import { getSession } from "@/hooks/useSession";
 import { apiClient } from "@/lib/apiClient";
 import HeaderNormi from "@/components/HeaderNormi";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 const normalize = (text: string): string =>
   text
     .toLowerCase()
@@ -196,13 +197,13 @@ const ManualConvivencia = () => {
       <main className="flex-1 container mx-auto p-4 md:p-8">
         {/* Breadcrumb */}
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">
               Inicio
             </button>
             <span className="text-muted-foreground">&rarr;</span>
             <span className="text-foreground font-medium">Manual de Convivencia</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         {pdfUrl ? (

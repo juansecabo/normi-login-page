@@ -4,6 +4,7 @@ import { getSession } from "@/hooks/useSession";
 import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNormi";
 import { ClipboardCheck, ClipboardList, ChevronRight } from "lucide-react";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 /**
  * Menú de Asistencia del profesor: al entrar elige entre TOMAR asistencia
  * (swipe del día) o ver el REGISTRO de asistencia (consulta/corrección por
@@ -21,11 +22,11 @@ const AsistenciaMenu = () => {
       <HeaderNormi />
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate(computeBackLinkFromSession())} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             <span className="text-foreground font-medium">Asistencia</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
         <div className="max-w-xl mx-auto">
           <h2 className="text-2xl font-bold text-foreground mb-1 text-center">Asistencia</h2>

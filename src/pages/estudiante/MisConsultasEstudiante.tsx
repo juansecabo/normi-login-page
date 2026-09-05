@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Clock, FileBarChart2, ExternalLink } from "lucide-react";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 interface ConsultaRow {
   id: number;
   titulo: string;
@@ -133,11 +134,11 @@ export default function MisConsultasEstudiante() {
       <HeaderNormi backLink="/dashboard" />
       <div className="max-w-3xl mx-auto p-4 sm:p-6">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-4">
-          <div className="flex items-center gap-2 text-sm flex-wrap">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             <span className="text-foreground font-medium">Mis Consultas</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2 mb-4">
           <FileBarChart2 className="h-6 w-6 text-primary" />

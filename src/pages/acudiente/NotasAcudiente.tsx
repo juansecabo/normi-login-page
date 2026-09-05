@@ -8,6 +8,7 @@ import { markLastSeen, getAllLastSeen, countNewItems } from "@/utils/notificacio
 import { anoEscolarActual } from "@/utils/anoEscolar";
 import { User } from "lucide-react";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 const PERIODO_LABEL = ["", "1er Periodo", "2do Periodo", "3er Periodo", "4to Periodo"];
 
 const NotasAcudiente = () => {
@@ -102,7 +103,7 @@ const NotasAcudiente = () => {
 
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm flex-wrap">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">
               Inicio
             </button>
@@ -126,7 +127,7 @@ const NotasAcudiente = () => {
             ) : (
               <span className="text-foreground font-medium">Notas{acudido ? ` de ${acudido.nombre}` : ''}</span>
             )}
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         {!acudido && acudidos.length > 1 && (

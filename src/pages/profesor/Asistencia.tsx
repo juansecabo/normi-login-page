@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { rankGrado } from "@/utils/grados";
 import { Check, X, FileText, ArrowLeft, RotateCcw, Clock } from "lucide-react";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 interface AsignacionRow {
   "Asignatura(s)": string[] | string[][];
   "Grado(s)": string[] | string[][];
@@ -286,13 +287,13 @@ const Asistencia = () => {
       <HeaderNormi backLink="/dashboard" />
       <main className="flex-1 container mx-auto p-6 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate(computeBackLinkFromSession())} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             <button onClick={() => navigate("/profesor/asistencia")} className="text-primary hover:underline">Asistencia</button>
             <span className="text-muted-foreground">&rarr;</span>
             <span className="text-foreground font-medium">Tomar asistencia</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         {step === "select" && (

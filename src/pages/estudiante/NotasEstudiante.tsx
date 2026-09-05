@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { markLastSeen } from "@/utils/notificaciones";
 import { anoEscolarActual } from "@/utils/anoEscolar";
 
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 const PERIODO_LABEL = ["", "1er Periodo", "2do Periodo", "3er Periodo", "4to Periodo"];
 
 const NotasEstudiante = () => {
@@ -52,7 +53,7 @@ const NotasEstudiante = () => {
 
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm">
+          <BreadcrumbDeslizable>
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">
               Inicio
             </button>
@@ -66,7 +67,7 @@ const NotasEstudiante = () => {
             ) : (
               <span className="text-foreground font-medium">Notas</span>
             )}
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         <ConsolidadoNotas
