@@ -138,10 +138,6 @@ const RemitirOrientacion = () => {
       }
       // Preselección por URL (remisión encadenada): se busca en TODOS los
       // estudiantes del colegio, no solo en los del aula del docente.
-      if (estudiantePre) {
-        const pre = todos.find(e => String(e.id) === estudiantePre);
-        if (pre) setEstSeleccionado(pre);
-      }
       setLoading(false);
     };
     cargar();
