@@ -866,13 +866,18 @@ const RemisionesOrientacion = () => {
                   <input
                     value={busqueda}
                     onChange={e => setBusqueda(e.target.value)}
-                    placeholder="Buscar en el motivo o por quien remitió..."
+                    placeholder="Buscar en el motivo..."
                     className="w-full border rounded pl-8 pr-3 py-2 text-sm bg-background"
                   />
                 </div>
-                <select value={filtroDocente} onChange={e => setFiltroDocente(e.target.value)} className="text-sm border rounded px-2 py-2 bg-background col-span-2 lg:col-span-2">
-                  <option value="">Remitido por: todos</option>
-                  {docentesDelEst.map(([id, nombre]) => <option key={id} value={id}>{nombre}</option>)}
+                <select
+                  value={filtroQuien}
+                  onChange={e => setFiltroQuien(e.target.value as any)}
+                  className="text-sm border rounded px-2 py-2 bg-background col-span-2 lg:col-span-2"
+                >
+                  <option value="">Todas las remisiones</option>
+                  <option value="ami">Remitidas a mí</option>
+                  <option value="pormi">Remitidas por mí</option>
                 </select>
               </div>
               <div className="mb-2">{botonesEstado}</div>
