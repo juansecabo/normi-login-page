@@ -477,7 +477,11 @@ const RemisionesOrientacion = () => {
     return [...m.values()].sort((a, b) => `${a.apellidos} ${a.nombres}`.localeCompare(`${b.apellidos} ${b.nombres}`, "es"));
   }, [remisionesFiltradas]);
 
-  const estVista = estVistaId != null ? estudiantesAgrupados.find(g => g.estudiante_id === estVistaId) || null : null;
+  const estVista = useMemo(() => {
+    if (estVistaId == null) return null;
+    const r = remisiones.find(x => x.estudiante_id === estVistaId);
+    return r ? { estudiante_id: r.estudiante_id, nombres: r.estudiante_nombre, apellidos: r.estudiante_apellidos, grado: r.estudiante_grado, salon: r.estudiante_salon } : null;
+  }, [remisiones, estVistaId]);
   const remsDelEst = useMemo(
     () => (estVistaId == null ? [] : remisionesFiltradas.filter(r => r.estudiante_id === estVistaId)),
     [remisionesFiltradas, estVistaId],
@@ -907,7 +911,9 @@ const RemisionesOrientacion = () => {
                 </select>
               </div>
               <div className="mb-2">{botonesEstado}</div>
-              <p className="text-sm text-muted-foreground">{remsDelEst.length === 1 ? "1 remisión" : `${remsDelEst.length} remisiones`}. Toca una para abrirla.</p>
+              <p className="text-sm text-muted-foreground">
+                {remsDelEst.length === 0 ? "Ninguna remisión coincide con los filtros." : `${remsDelEst.length === 1 ? "1 remisión" : `${remsDelEst.length} remisiones`}. Toca una para abrirla.`}
+              </p>
               {remsDelEst.map(r => (
                 <button
                   key={r.id}
