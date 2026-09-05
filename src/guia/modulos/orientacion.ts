@@ -861,6 +861,13 @@ export const ORIENTACION: Capacidad[] = [
       },
       {
         narracion:
+          "Si te han dirigido remisiones que todavía no has abierto, arriba aparece el recuadro rojo 'Remitidas a ti sin revisar', de la más reciente a la más antigua. Tocar una la abre directo y sale del recuadro.",
+        accion: "click",
+        ancla: "orientacion.remisiones_sin_revisar",
+        opcional: true,
+      },
+      {
+        narracion:
           "La lista muestra un estudiante por fila, con cuántas remisiones tiene y cuántas están pendientes o atendidas. Toca el estudiante.",
         accion: "click",
         ancla: "orientacion.remision_estudiante",
