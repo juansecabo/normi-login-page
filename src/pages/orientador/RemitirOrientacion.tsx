@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   getSession, isProfesor, isAdmin, puedeAccederDashboard,
 } from "@/hooks/useSession";
@@ -10,6 +10,7 @@ import SignatureCanvas from "react-signature-canvas";
 import { Search } from "lucide-react";
 import iconEntrevista from "@/assets/icons/entrevista.webp";
 import { notifyOrientadora, notifyRectorCoord, notifyCoordinadoresNivel } from "@/lib/notifyStaff";
+import { apiClient } from "@/lib/apiClient";
 import { cargoSegunGenero } from "@/lib/entrevistadores";
 
 interface Estudiante {
@@ -47,6 +48,12 @@ const RemitirOrientacion = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const sigRef = useRef<SignatureCanvas>(null);
+  // Remisión encadenada: viene desde el detalle de otra remisión
+  // ("Remitir a otra persona"): ?estudiante=ID preselecciona al estudiante y
+  // ?padre=REM enlaza la nueva con la anterior (que queda atendida al guardar).
+  const [searchParams] = useSearchParams();
+  const estudiantePre = searchParams.get("estudiante");
+  const padreId = searchParams.get("padre") ? Number(searchParams.get("padre")) : null;
 
   const [autor, setAutor] = useState<{ id: string; nombres: string; apellidos: string; cargo: string; genero: string | null }>({
     id: "", nombres: "", apellidos: "", cargo: "", genero: null,
@@ -128,6 +135,12 @@ const RemitirOrientacion = () => {
         ));
       } else {
         setEstudiantes(todos);
+      }
+      // Preselección por URL (remisión encadenada): se busca en TODOS los
+      // estudiantes del colegio, no solo en los del aula del docente.
+      if (estudiantePre) {
+        const pre = todos.find(e => String(e.id) === estudiantePre);
+        if (pre) setEstSeleccionado(pre);
       }
       setLoading(false);
     };
@@ -249,6 +262,7 @@ const RemitirOrientacion = () => {
       docente_nombre: docenteNombre,
       docente_cargo: cargoSegunGenero(autor.cargo, autor.genero) || null,
       firma_url: firmaUrl,
+      remision_padre_id: padreId,
     };
 
     const { error: insErr } = await supabase
@@ -301,6 +315,15 @@ const RemitirOrientacion = () => {
       console.warn("notificar remisión:", e);
     }
 
+    // Remisión encadenada: la anterior (que me dirigieron) queda atendida al
+    // remitirla, y volvemos a las remisiones del estudiante.
+    if (padreId) {
+      try { await apiClient.orientacion.remisionAtendida(padreId); } catch (e) { console.warn("marcar padre atendida:", e); }
+      toast({ title: "Remisión enviada", description: "Quedó encadenada a la anterior y se notificó a los destinos." });
+      setGuardando(false);
+      navigate(`/orientador/remisiones?est=${estSeleccionado.id}`);
+      return;
+    }
     toast({ title: "Remisión enviada", description: "Quedó registrada y se notificó a los destinos." });
     resetForm();
     setGuardando(false);
@@ -316,6 +339,10 @@ const RemitirOrientacion = () => {
             <span className="text-muted-foreground">&rarr;</span>
             <button onClick={() => navigate("/orientador/remisiones")} className="text-primary hover:underline">Orientación Escolar</button>
             <span className="text-muted-foreground">&rarr;</span>
+            {padreId && estSeleccionado && (<>
+              <button onClick={() => navigate(`/orientador/remisiones?est=${estSeleccionado.id}`)} className="text-primary hover:underline">{estSeleccionado.apellidos} {estSeleccionado.nombres}</button>
+              <span className="text-muted-foreground">&rarr;</span>
+            </>)}
             <span className="text-foreground font-medium">Nueva remisión</span>
           </div>
         </div>
