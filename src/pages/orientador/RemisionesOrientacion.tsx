@@ -527,6 +527,12 @@ const RemisionesOrientacion = () => {
     });
     return m;
   }, [remisiones]);
+  const ultimoPasoDe = (r: Remision): Paso | null => { const ps = pasosPorRem[r.id]; return ps && ps.length > 0 ? ps[ps.length - 1] : null; };
+  const llegadaDe = (r: Remision): string => ultimoPasoDe(r)?.created_at || r.created_at || r.fecha;
+  const remitenteActualDe = (r: Remision): string => {
+    const p = ultimoPasoDe(r);
+    return p ? [p.docente_cargo, p.docente_nombre].filter(Boolean).join(" ") : [r.docente_cargo, r.docente_nombre].filter(Boolean).join(" ");
+  };
   const recorridoDe = (r: Remision): string[] => {
     const ps = pasosPorRem[r.id] || [];
     return [destinosLegibles(r.destinos) || "Orientación Escolar", ...ps.map(p => destinosLegibles([p.destino]))];
@@ -535,7 +541,7 @@ const RemisionesOrientacion = () => {
   const sinRevisar = useMemo(
     () => remisiones
       .filter(r => idsSinRevisar ? idsSinRevisar.has(r.id) : (dirigidaAMi(r) && !vistasPorMi.has(r.id)))
-      .sort((a, b) => (b.created_at || b.fecha).localeCompare(a.created_at || a.fecha)),
+      .sort((a, b) => llegadaDe(b).localeCompare(llegadaDe(a))),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [remisiones, vistasPorMi, miDirGrupo, idsSinRevisar, pasosPorRem],
   );
@@ -1003,10 +1009,11 @@ const RemisionesOrientacion = () => {
                           <span className="text-xs font-semibold text-muted-foreground ml-2">{grupoDe(r)}</span>
                         </div>
                         <div className="text-xs text-muted-foreground mt-0.5">
-                          <span className="font-semibold text-foreground">Remitido por:</span> <span className="font-bold text-red-600">{[r.docente_cargo, r.docente_nombre].filter(Boolean).join(" ")}</span>
-                          {" · "}{fmtFecha(r.fecha)}{r.created_at ? ` · ${horaDe(r.created_at)}` : ""}
+                          <span className="font-semibold text-foreground">Remitido por:</span> <span className="font-bold text-red-600">{remitenteActualDe(r)}</span>
+                          {" · "}{fmtFecha(llegadaDe(r).slice(0, 10))} · {horaDe(llegadaDe(r))}
+                          {ultimoPasoDe(r) && <span className="ml-1">(remisión #{numeroPorRemision.get(r.id)}, creada por {[r.docente_cargo, r.docente_nombre].filter(Boolean).join(" ")})</span>}
                         </div>
-                        <div className="text-sm mt-0.5 line-clamp-1">{r.motivo}</div>
+                        <div className="text-sm mt-0.5 line-clamp-1">{ultimoPasoDe(r)?.motivo || r.motivo}</div>
                       </div>
                       <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
                     </button>
