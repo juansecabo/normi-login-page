@@ -548,6 +548,14 @@ const RemisionesOrientacion = () => {
   );
   const sinRevisarIds = useMemo(() => new Set(sinRevisar.map(r => r.id)), [sinRevisar]);
   const remVista = remVistaId != null ? remisiones.find(r => r.id === remVistaId) || null : null;
+  // Lo que se muestra como principal es el escrito dirigido al destinatario ACTUAL
+  // (último paso); si no hay pasos, el de la remisión original.
+  const vigente = remVista ? (() => {
+    const p = ultimoPasoDe(remVista);
+    return p
+      ? { motivo: p.motivo, especificacion: p.especificacion_conducta, medidas: p.medidas_previas, firma: p.firma_url, remitente: [p.docente_cargo, p.docente_nombre].filter(Boolean).join(" "), fecha: p.created_at, esPaso: true }
+      : { motivo: remVista.motivo, especificacion: remVista.especificacion_conducta, medidas: remVista.medidas_previas, firma: remVista.firma_url, remitente: [remVista.docente_cargo, remVista.docente_nombre].filter(Boolean).join(" "), fecha: remVista.created_at || remVista.fecha, esPaso: false };
+  })() : null;
   const remsPorEstudianteNuevas = useMemo(() => {
     const set = new Set<number>();
     for (const r of remisiones) if (r.id > lastSeen && !r.atendida_at) set.add(r.estudiante_id);
@@ -736,28 +744,29 @@ const RemisionesOrientacion = () => {
                   ) : badgeEstado(remVista)}
                 </h2>
                 <div className="text-sm mt-3 space-y-1">
-                  <p><span className="font-semibold text-foreground">Fecha:</span> <span className="text-muted-foreground">{fmtFecha(remVista.fecha)}{remVista.created_at ? `, ${horaDe(remVista.created_at)}` : ""}</span></p>
-                  <p><span className="font-semibold text-foreground">Remitido por:</span> <span className="font-bold text-red-600">{[remVista.docente_cargo, remVista.docente_nombre].filter(Boolean).join(" ")}</span></p>
+                  <p><span className="font-semibold text-foreground">Fecha:</span> <span className="text-muted-foreground">{fechaHoraLocal(vigente!.fecha)}</span></p>
+                  <p><span className="font-semibold text-foreground">Remitido por:</span> <span className="font-bold text-red-600">{vigente!.remitente}</span></p>
                   <p><span className="font-semibold text-foreground">Dirigida a:</span> <span className="font-bold text-red-600">{destinosLegibles(destinoActual(remVista)) || "Orientación Escolar"}</span></p>
-                  {(pasosPorRem[remVista.id] || []).length > 0 && (
+                  {vigente!.esPaso && (<>
+                    <p><span className="font-semibold text-foreground">Creada por:</span> <span className="text-muted-foreground">{[remVista.docente_cargo, remVista.docente_nombre].filter(Boolean).join(" ")} · {fechaHoraLocal(remVista.created_at || remVista.fecha)}</span></p>
                     <p><span className="font-semibold text-foreground">Recorrido:</span> <span className="text-muted-foreground">{recorridoDe(remVista).join(" → ")}</span></p>
-                  )}
+                  </>)}
                 </div>
               </div>
               <div className="pt-2">
                 <div className="text-base font-semibold text-foreground mb-2">Motivo</div>
-                <div className="text-base leading-relaxed whitespace-pre-wrap">{remVista.motivo}</div>
+                <div className="text-base leading-relaxed whitespace-pre-wrap">{vigente!.motivo}</div>
               </div>
-              {remVista.especificacion_conducta && (
+              {vigente!.especificacion && (
                 <div>
                   <div className="text-xs font-medium text-muted-foreground mb-1">Especificación de la conducta</div>
-                  <div className="text-sm whitespace-pre-wrap">{remVista.especificacion_conducta}</div>
+                  <div className="text-sm whitespace-pre-wrap">{vigente!.especificacion}</div>
                 </div>
               )}
-              {remVista.medidas_previas && (
+              {vigente!.medidas && (
                 <div>
                   <div className="text-xs font-medium text-muted-foreground mb-1">Medidas previas</div>
-                  <div className="text-sm whitespace-pre-wrap">{remVista.medidas_previas}</div>
+                  <div className="text-sm whitespace-pre-wrap">{vigente!.medidas}</div>
                 </div>
               )}
               <div className="rounded-md border border-border bg-background p-3">
@@ -780,11 +789,11 @@ const RemisionesOrientacion = () => {
                   </div>
                 )}
               </div>
-              {remVista.firma_url && (
+              {vigente!.firma && (
                 <div>
-                  <div className="text-xs font-medium text-muted-foreground mb-1">Firma del docente</div>
-                  <a href={remVista.firma_url} target="_blank" rel="noreferrer">
-                    <img src={remVista.firma_url} alt="Firma" className="max-h-32 border rounded bg-white" />
+                  <div className="text-xs font-medium text-muted-foreground mb-1">Firma de quien remite</div>
+                  <a href={vigente!.firma} target="_blank" rel="noreferrer">
+                    <img src={vigente!.firma} alt="Firma" className="max-h-32 border rounded bg-white" />
                   </a>
                 </div>
               )}
@@ -830,8 +839,10 @@ const RemisionesOrientacion = () => {
               <div className="rounded-md border border-border p-3 space-y-3" data-guia="orientacion.remision_seguimiento">
                 <div className="text-sm font-semibold text-foreground flex items-center gap-1"><MessagesSquare className="w-4 h-4" /> Recorrido y seguimiento</div>
                 {(() => {
-                  type Entrada = { t: string; tipo: "paso"; paso: Paso } | { t: string; tipo: "nota"; nota: Seguimiento };
+                  type Entrada = { t: string; tipo: "paso"; paso: Paso } | { t: string; tipo: "nota"; nota: Seguimiento } | { t: string; tipo: "origen" };
+                  const hayPasos = (pasosPorRem[remVista.id] || []).length > 0;
                   const entradas: Entrada[] = [
+                    ...(hayPasos ? [{ t: remVista.created_at || remVista.fecha, tipo: "origen" as const }] : []),
                     ...(pasosPorRem[remVista.id] || []).map(p => ({ t: p.created_at, tipo: "paso" as const, paso: p })),
                     ...(seguimientos[remVista.id] || []).map(n => ({ t: n.created_at, tipo: "nota" as const, nota: n })),
                   ].sort((a, b) => a.t.localeCompare(b.t));
@@ -839,7 +850,20 @@ const RemisionesOrientacion = () => {
                   const fmt = (iso: string) => new Date(iso).toLocaleString("es-CO", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
                   return (
                     <ol className="relative border-l-2 border-border ml-2 space-y-3">
-                      {entradas.map((e, i) => e.tipo === "paso" ? (
+                      {entradas.map((e, i) => e.tipo === "origen" ? (
+                        <li key="origen" className="ml-4">
+                          <span className="absolute -left-[7px] mt-1.5 w-3 h-3 rounded-full bg-slate-400" />
+                          <div className="rounded-md border border-border bg-muted/20 px-3 py-2 text-sm space-y-1">
+                            <div className="text-xs text-muted-foreground">
+                              <span className="font-semibold text-foreground">{[remVista.docente_cargo, remVista.docente_nombre].filter(Boolean).join(" ")}</span> creó la remisión dirigida a <span className="font-bold text-red-600">{destinosLegibles(remVista.destinos) || "Orientación Escolar"}</span> · {fmt(remVista.created_at || remVista.fecha)}
+                            </div>
+                            <div><span className="font-semibold">Motivo:</span> <span className="whitespace-pre-wrap">{remVista.motivo}</span></div>
+                            {remVista.especificacion_conducta && <div><span className="font-semibold">Especificación de la conducta:</span> <span className="whitespace-pre-wrap">{remVista.especificacion_conducta}</span></div>}
+                            {remVista.medidas_previas && <div><span className="font-semibold">Medidas previas:</span> <span className="whitespace-pre-wrap">{remVista.medidas_previas}</span></div>}
+                            {remVista.firma_url && <a href={remVista.firma_url} target="_blank" rel="noreferrer"><img src={remVista.firma_url} alt="Firma" className="max-h-20 border rounded bg-white mt-1" /></a>}
+                          </div>
+                        </li>
+                      ) : e.tipo === "paso" ? (
                         <li key={`p${e.paso.id}`} className="ml-4">
                           <span className="absolute -left-[7px] mt-1.5 w-3 h-3 rounded-full bg-violet-500" />
                           <div className="rounded-md border border-violet-200 bg-violet-50 px-3 py-2 text-sm space-y-1">
@@ -966,7 +990,8 @@ const RemisionesOrientacion = () => {
                   <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <div className="relative">
                     <div className="text-sm">
-                      <span className="font-semibold text-foreground">Remitido por:</span> <span className="font-bold text-red-600">{[r.docente_cargo, r.docente_nombre].filter(Boolean).join(" ")}</span>
+                      <span className="font-semibold text-foreground">Remitido por:</span> <span className="font-bold text-red-600">{remitenteActualDe(r)}</span>
+                      {ultimoPasoDe(r) && <span className="text-xs text-muted-foreground ml-1">(creada por {[r.docente_cargo, r.docente_nombre].filter(Boolean).join(" ")})</span>}
                     </div>
                     <div className="text-sm mt-0.5">
                       <span className="font-semibold text-foreground">Dirigida a:</span> <span className="font-bold text-red-600">{destinosLegibles(destinoActual(r)) || "Orientación Escolar"}</span>
@@ -975,13 +1000,13 @@ const RemisionesOrientacion = () => {
                       <div className="text-xs text-muted-foreground mt-0.5"><span className="font-semibold text-foreground">Recorrido:</span> {recorridoDe(r).join(" → ")}</div>
                     )}
                     <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
-                      <span>{fmtFecha(r.fecha)}{r.created_at ? ` · ${horaDe(r.created_at)}` : ""}</span>
+                      <span>{fechaHoraLocal(llegadaDe(r))}</span>
                       {badgeEstado(r)}
                       {sinRevisarIds.has(r.id) && (
                         <span className="px-2 py-0.5 text-[10px] rounded-full bg-red-500 text-white font-semibold">Sin revisar</span>
                       )}
                     </div>
-                    <div className="text-sm mt-1 line-clamp-2">{r.motivo}</div>
+                    <div className="text-sm mt-1 line-clamp-2">{ultimoPasoDe(r)?.motivo || r.motivo}</div>
                   </div>
                 </button>
               ))}
