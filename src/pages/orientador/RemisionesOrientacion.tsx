@@ -303,7 +303,8 @@ const RemisionesOrientacion = () => {
           q = q.eq("docente_id", miId);
         }
       }
-      const [remR, vistaR, misVistasR] = await Promise.all([
+      // OJO al orden: 2º = Remisiones_Vistas (mis aperturas), 3º = Notificaciones_Vistas (badge).
+      const [remR, misVistasR, vistaR] = await Promise.all([
         q,
         supabase.from("Remisiones_Vistas").select("remision_id").eq("usuario_id", miId),
         supabase.from("Notificaciones_Vistas")
