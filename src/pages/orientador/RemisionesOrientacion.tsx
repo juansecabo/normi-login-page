@@ -31,8 +31,6 @@ interface Remision {
   atendida_at: string | null;
   atendida_por_id: string | null;
   atendida_por_nombre: string | null;
-  /** Remisión de la que se derivó esta (cadena director → coordinador → orientación). */
-  remision_padre_id?: number | null;
   created_at: string;
   destinos: string[] | null;
   tipo_documento: string | null;
@@ -229,6 +227,10 @@ const RemisionesOrientacion = () => {
   // Ids "dirigidas a mí y sin abrir" según el server (aplica la regla de bandeja
   // compartida en Orientación). Se recalcula al abrir una remisión.
   const [idsSinRevisar, setIdsSinRevisar] = useState<Set<number> | null>(null);
+  // Pasos de cada remisión (a quién se remitió después, con qué escrito). Una
+  // remisión es UN expediente: su destino actual es el del último paso.
+  type Paso = { id: number; remision_id: number; orden: number; destino: string; motivo: string; especificacion_conducta: string | null; medidas_previas: string | null; firma_url: string | null; docente_id: string; docente_nombre: string | null; docente_cargo: string | null; created_at: string };
+  const [pasosPorRem, setPasosPorRem] = useState<Record<number, Paso[]>>({});
   // Seguimiento y remisión encadenada (detalle)
   type Seguimiento = { id: number; remision_id: number; autor_id: string; autor_nombre: string | null; texto: string; created_at: string };
   const [seguimientos, setSeguimientos] = useState<Record<number, Seguimiento[]>>({});
@@ -295,15 +297,24 @@ const RemisionesOrientacion = () => {
         nivelesCoord = ((yo as any)?.niveles_coordina as string[] | null) || null;
       }
 
+      // Pasos de todas las remisiones del colegio (RLS acota al colegio).
+      const { data: pasosData } = await supabase.from("Remisiones_Pasos").select("*").order("orden", { ascending: true });
+      const agrup: Record<number, Paso[]> = {};
+      for (const p of (pasosData || []) as Paso[]) (agrup[p.remision_id] ||= []).push(p);
+      setPasosPorRem(agrup);
+      // Remisiones en las que yo di algún paso (las remití después): cuentan como mías.
+      const idsConMiPaso = ((pasosData || []) as Paso[]).filter(p => String(p.docente_id) === miId).map(p => p.remision_id);
+
       let q = supabase.from("Remisiones_Orientacion").select("*").order("created_at", { ascending: false });
       if (esProfesor) {
+        const mias = [`docente_id.eq.${miId}`, ...(idsConMiPaso.length ? [`id.in.(${idsConMiPaso.join(",")})`] : [])];
         if (dirGrupo) {
           const cond = dirGrupo.salon
             ? `and(estudiante_grado.eq."${dirGrupo.grado}",estudiante_salon.eq."${dirGrupo.salon}")`
             : `estudiante_grado.eq."${dirGrupo.grado}"`;
-          q = q.or(`docente_id.eq.${miId},${cond}`);
+          q = q.or(`${mias.join(",")},${cond}`);
         } else {
-          q = q.eq("docente_id", miId);
+          q = q.or(mias.join(","));
         }
       }
       // OJO al orden: 2º = Remisiones_Vistas (mis aperturas), 3º = Notificaciones_Vistas (badge).
@@ -357,8 +368,15 @@ const RemisionesOrientacion = () => {
   )].sort(), [remisiones, filtroGrado]);
 
   // ¿Esta remisión va DIRIGIDA a mí? (según destinos y mi cargo/dirección de grupo)
+  const miIdSesion = String(getSession().id || "");
+  const destinoActual = (r: Remision): string[] => {
+    const ps = pasosPorRem[r.id];
+    return ps && ps.length > 0 ? [ps[ps.length - 1].destino] : (r.destinos || []);
+  };
+  const remitidaPorMi = (r: Remision): boolean =>
+    String(r.docente_id) === miIdSesion || (pasosPorRem[r.id] || []).some(p => String(p.docente_id) === miIdSesion);
   const dirigidaAMi = (r: Remision): boolean => {
-    const destinos = r.destinos || [];
+    const destinos = destinoActual(r);
     const cargo = getSession().cargo || "";
     if (isOrientador()) return destinos.length === 0 || destinos.includes("orientacion");
     if (cargo === "Coordinador(a)") return destinos.includes("coordinador");
@@ -372,7 +390,6 @@ const RemisionesOrientacion = () => {
   // Recibida/Atendida las marca la persona a la que va dirigida (regla de Juan
   // 2026-09-04); el admin siempre. El server aplica la misma regla.
   const puedeMarcar = (r: Remision): boolean => isAdmin() || dirigidaAMi(r);
-  const miIdSesion = String(getSession().id || "");
 
   const estadoDe = (r: Remision): "pendiente" | "atendida" => (r.atendida_at ? "atendida" : "pendiente");
 
@@ -391,7 +408,7 @@ const RemisionesOrientacion = () => {
       if (filtroSalon && r.estudiante_salon !== filtroSalon) return false;
       if (filtroEstado && estadoDe(r) !== filtroEstado) return false;
       if (filtroDocente && String(r.docente_id) !== filtroDocente) return false;
-      if (filtroQuien === "pormi" && String(r.docente_id) !== miIdSesion) return false;
+      if (filtroQuien === "pormi" && !remitidaPorMi(r)) return false;
       if (filtroQuien === "ami" && !dirigidaAMi(r)) return false;
       if (q) {
         const full = norm(`${r.estudiante_nombre} ${r.estudiante_apellidos} ${r.docente_nombre} ${r.motivo || ""}`);
@@ -400,7 +417,7 @@ const RemisionesOrientacion = () => {
       }
       return true;
     });
-  }, [remisiones, busqueda, filtroGrado, filtroSalon, filtroEstado, filtroDocente, filtroQuien, miDirGrupo]);
+  }, [remisiones, busqueda, filtroGrado, filtroSalon, filtroEstado, filtroDocente, filtroQuien, miDirGrupo, pasosPorRem]);
 
   // Contacto del estudiante (teléfono + acudientes), cargado al expandir.
   const [contactos, setContactos] = useState<Record<number, { estudiante_telefono: string; acudientes: { nombre: string; telefono: string }[] } | "loading">>({});
@@ -510,13 +527,17 @@ const RemisionesOrientacion = () => {
     });
     return m;
   }, [remisiones]);
+  const recorridoDe = (r: Remision): string[] => {
+    const ps = pasosPorRem[r.id] || [];
+    return [destinosLegibles(r.destinos) || "Orientación Escolar", ...ps.map(p => destinosLegibles([p.destino]))];
+  };
   const horaDe = (iso: string) => new Date(iso).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
   const sinRevisar = useMemo(
     () => remisiones
       .filter(r => idsSinRevisar ? idsSinRevisar.has(r.id) : (dirigidaAMi(r) && !vistasPorMi.has(r.id)))
       .sort((a, b) => (b.created_at || b.fecha).localeCompare(a.created_at || a.fecha)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [remisiones, vistasPorMi, miDirGrupo, idsSinRevisar],
+    [remisiones, vistasPorMi, miDirGrupo, idsSinRevisar, pasosPorRem],
   );
   const sinRevisarIds = useMemo(() => new Set(sinRevisar.map(r => r.id)), [sinRevisar]);
   const remVista = remVistaId != null ? remisiones.find(r => r.id === remVistaId) || null : null;
@@ -710,8 +731,9 @@ const RemisionesOrientacion = () => {
                 <div className="text-sm mt-3 space-y-1">
                   <p><span className="font-semibold text-foreground">Fecha:</span> <span className="text-muted-foreground">{fmtFecha(remVista.fecha)}{remVista.created_at ? `, ${horaDe(remVista.created_at)}` : ""}</span></p>
                   <p><span className="font-semibold text-foreground">Remitido por:</span> <span className="font-bold text-red-600">{[remVista.docente_cargo, remVista.docente_nombre].filter(Boolean).join(" ")}</span></p>
-                  {remVista.destinos && remVista.destinos.length > 0 && (
-                    <p><span className="font-semibold text-foreground">Dirigida a:</span> <span className="font-bold text-red-600">{destinosLegibles(remVista.destinos)}</span></p>
+                  <p><span className="font-semibold text-foreground">Dirigida a:</span> <span className="font-bold text-red-600">{destinosLegibles(destinoActual(remVista)) || "Orientación Escolar"}</span></p>
+                  {(pasosPorRem[remVista.id] || []).length > 0 && (
+                    <p><span className="font-semibold text-foreground">Recorrido:</span> <span className="text-muted-foreground">{recorridoDe(remVista).join(" → ")}</span></p>
                   )}
                 </div>
               </div>
@@ -797,42 +819,44 @@ const RemisionesOrientacion = () => {
                 )}
               </div>
 
-              {/* ── Cadena de remisiones ── */}
-              {(() => {
-                const padre = remVista.remision_padre_id ? remisiones.find(r => r.id === remVista.remision_padre_id) : null;
-                const hijas = remisiones.filter(r => r.remision_padre_id === remVista.id);
-                if (!padre && hijas.length === 0) return null;
-                return (
-                  <div className="rounded-md border border-border bg-muted/20 p-3 text-sm space-y-1">
-                    {padre && (
-                      <p>
-                        Viene de la remisión <button type="button" onClick={() => setRemVistaId(padre.id)} className="text-primary hover:underline font-semibold">#{numeroPorRemision.get(padre.id)}</button> de {[padre.docente_cargo, padre.docente_nombre].filter(Boolean).join(" ")} ({fmtFecha(padre.fecha)}).
-                      </p>
-                    )}
-                    {hijas.map(h => (
-                      <p key={h.id}>
-                        Remitida después a <span className="font-semibold">{destinosLegibles(h.destinos)}</span> por {[h.docente_cargo, h.docente_nombre].filter(Boolean).join(" ")} (<button type="button" onClick={() => setRemVistaId(h.id)} className="text-primary hover:underline font-semibold">#{numeroPorRemision.get(h.id)}</button>, {fmtFecha(h.fecha)}).
-                      </p>
-                    ))}
-                  </div>
-                );
-              })()}
-
-              {/* ── Seguimiento ── */}
+              {/* ── Recorrido y seguimiento del expediente (pasos + notas, en orden) ── */}
               <div className="rounded-md border border-border p-3 space-y-3" data-guia="orientacion.remision_seguimiento">
-                <div className="text-sm font-semibold text-foreground flex items-center gap-1"><MessagesSquare className="w-4 h-4" /> Seguimiento</div>
-                {(seguimientos[remVista.id] || []).length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Sin notas de seguimiento todavía.</p>
-                ) : (
-                  <ul className="space-y-2">
-                    {(seguimientos[remVista.id] || []).map(sg => (
-                      <li key={sg.id} className="rounded bg-muted/30 px-3 py-2 text-sm">
-                        <div className="text-xs text-muted-foreground mb-0.5"><span className="font-semibold text-foreground">{sg.autor_nombre || sg.autor_id}</span> · {new Date(sg.created_at).toLocaleString("es-CO", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</div>
-                        <div className="whitespace-pre-wrap">{sg.texto}</div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                <div className="text-sm font-semibold text-foreground flex items-center gap-1"><MessagesSquare className="w-4 h-4" /> Recorrido y seguimiento</div>
+                {(() => {
+                  type Entrada = { t: string; tipo: "paso"; paso: Paso } | { t: string; tipo: "nota"; nota: Seguimiento };
+                  const entradas: Entrada[] = [
+                    ...(pasosPorRem[remVista.id] || []).map(p => ({ t: p.created_at, tipo: "paso" as const, paso: p })),
+                    ...(seguimientos[remVista.id] || []).map(n => ({ t: n.created_at, tipo: "nota" as const, nota: n })),
+                  ].sort((a, b) => a.t.localeCompare(b.t));
+                  if (entradas.length === 0) return <p className="text-sm text-muted-foreground">Sin notas de seguimiento todavía.</p>;
+                  const fmt = (iso: string) => new Date(iso).toLocaleString("es-CO", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+                  return (
+                    <ol className="relative border-l-2 border-border ml-2 space-y-3">
+                      {entradas.map((e, i) => e.tipo === "paso" ? (
+                        <li key={`p${e.paso.id}`} className="ml-4">
+                          <span className="absolute -left-[7px] mt-1.5 w-3 h-3 rounded-full bg-violet-500" />
+                          <div className="rounded-md border border-violet-200 bg-violet-50 px-3 py-2 text-sm space-y-1">
+                            <div className="text-xs text-muted-foreground">
+                              <span className="font-semibold text-foreground">{[e.paso.docente_cargo, e.paso.docente_nombre].filter(Boolean).join(" ")}</span> remitió a <span className="font-bold text-red-600">{destinosLegibles([e.paso.destino])}</span> · {fmt(e.paso.created_at)}
+                            </div>
+                            <div><span className="font-semibold">Motivo:</span> <span className="whitespace-pre-wrap">{e.paso.motivo}</span></div>
+                            {e.paso.especificacion_conducta && <div><span className="font-semibold">Especificación de la conducta:</span> <span className="whitespace-pre-wrap">{e.paso.especificacion_conducta}</span></div>}
+                            {e.paso.medidas_previas && <div><span className="font-semibold">Medidas previas:</span> <span className="whitespace-pre-wrap">{e.paso.medidas_previas}</span></div>}
+                            {e.paso.firma_url && <a href={e.paso.firma_url} target="_blank" rel="noreferrer"><img src={e.paso.firma_url} alt="Firma" className="max-h-20 border rounded bg-white mt-1" /></a>}
+                          </div>
+                        </li>
+                      ) : (
+                        <li key={`n${e.nota.id}`} className="ml-4">
+                          <span className="absolute -left-[7px] mt-1.5 w-3 h-3 rounded-full bg-emerald-500" />
+                          <div className="rounded bg-muted/30 px-3 py-2 text-sm">
+                            <div className="text-xs text-muted-foreground mb-0.5"><span className="font-semibold text-foreground">{e.nota.autor_nombre || e.nota.autor_id}</span> · {fmt(e.nota.created_at)}</div>
+                            <div className="whitespace-pre-wrap">{e.nota.texto}</div>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  );
+                })()}
                 {puedeMarcar(remVista) && (
                   <div className="space-y-2">
                     <textarea
@@ -859,15 +883,15 @@ const RemisionesOrientacion = () => {
                 )}
               </div>
 
-              {/* ── Remitir a otra persona: mismo formulario de Nueva remisión, con el
-                     estudiante ya puesto y encadenada a esta (esta queda atendida). ── */}
+              {/* ── Remitir a otra persona: la MISMA remisión pasa a otra instancia con
+                     un paso nuevo (escrito + firma); queda pendiente para quien la recibe. ── */}
               {puedeMarcar(remVista) && (
                 <div className="rounded-md border border-border p-3 flex items-center justify-between gap-3 flex-wrap" data-guia="orientacion.remision_remitir">
-                  <p className="text-sm text-muted-foreground">¿El caso debe seguir a otra instancia? Crea una remisión nueva de {remVista.estudiante_apellidos} {remVista.estudiante_nombre} con tu escrito y firma. Esta quedará marcada como atendida.</p>
+                  <p className="text-sm text-muted-foreground">¿El caso debe seguir a otra instancia? Esta misma remisión pasa a esa persona con tu escrito y firma, le queda pendiente y todo el recorrido se conserva aquí.</p>
                   <button
                     type="button"
                     data-guia="orientacion.remision_remitir_boton"
-                    onClick={() => navigate(`/remitir-orientacion?estudiante=${remVista.estudiante_id}&padre=${remVista.id}`)}
+                    onClick={() => navigate(`/remitir-orientacion?remision=${remVista.id}`)}
                     className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-emerald-600 text-white hover:bg-emerald-700"
                   >
                     <Send className="w-3.5 h-3.5" /> Remitir a otra persona
@@ -938,8 +962,11 @@ const RemisionesOrientacion = () => {
                       <span className="font-semibold text-foreground">Remitido por:</span> <span className="font-bold text-red-600">{[r.docente_cargo, r.docente_nombre].filter(Boolean).join(" ")}</span>
                     </div>
                     <div className="text-sm mt-0.5">
-                      <span className="font-semibold text-foreground">Dirigida a:</span> <span className="font-bold text-red-600">{destinosLegibles(r.destinos) || "Orientación Escolar"}</span>
+                      <span className="font-semibold text-foreground">Dirigida a:</span> <span className="font-bold text-red-600">{destinosLegibles(destinoActual(r)) || "Orientación Escolar"}</span>
                     </div>
+                    {(pasosPorRem[r.id] || []).length > 0 && (
+                      <div className="text-xs text-muted-foreground mt-0.5"><span className="font-semibold text-foreground">Recorrido:</span> {recorridoDe(r).join(" → ")}</div>
+                    )}
                     <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
                       <span>{fmtFecha(r.fecha)}{r.created_at ? ` · ${horaDe(r.created_at)}` : ""}</span>
                       {badgeEstado(r)}

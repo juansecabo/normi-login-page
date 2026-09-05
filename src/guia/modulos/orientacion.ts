@@ -940,7 +940,7 @@ export const ORIENTACION: Capacidad[] = [
     id: "orientacion.remision_seguimiento",
     titulo: "Agregar seguimiento a una remisión",
     descripcion:
-      "Dejar notas de seguimiento en una remisión (qué se hizo, con quién se habló, acuerdos). Solo la persona a la que va dirigida puede escribirlas; todos los que ven la remisión las leen.",
+      "Dejar notas de seguimiento en una remisión (qué se hizo, con quién se habló, acuerdos). Se ven en 'Recorrido y seguimiento' junto con cada paso a otra instancia, en orden de fecha. Solo la persona a la que va dirigida puede escribirlas; todos los que ven la remisión las leen.",
     categoria: "Orientación",
     roles: [...ORIENTADOR_ADMIN, "coordinador", "profesor"],
     ruta: "/orientador/remisiones",
@@ -958,7 +958,7 @@ export const ORIENTACION: Capacidad[] = [
     id: "orientacion.remision_remitir_otro",
     titulo: "Remitir el caso a otra persona",
     descripcion:
-      "Desde una remisión que te dirigieron, remitir el caso a otra instancia (Orientación, director de grupo o coordinación). Se abre el formulario completo de Nueva remisión con el estudiante ya puesto: eliges UN destino, escribes motivo, especificación y medidas, firmas y envías. Queda encadenada a la anterior (que pasa a atendida) y se avisa por WhatsApp al nuevo destino.",
+      "Desde una remisión que te dirigieron, pasarla a otra instancia (Orientación, director de grupo o coordinación). No se crea otra remisión: es la misma, que cambia de destinatario con tu escrito y firma, le queda pendiente a esa persona y conserva todo el recorrido (quién la creó, cada paso y las notas de seguimiento). Se avisa por WhatsApp al nuevo destinatario.",
     categoria: "Orientación",
     roles: [...ORIENTADOR_ADMIN, "coordinador", "profesor"],
     ruta: "/orientador/remisiones",
@@ -968,11 +968,11 @@ export const ORIENTACION: Capacidad[] = [
       { narracion: "Entramos a Remisiones a Orientación.", accion: "navegar", ruta: "/orientador/remisiones" },
       { narracion: "Toca el estudiante en la lista.", accion: "click", ancla: "orientacion.remision_estudiante" },
       { narracion: "Toca la remisión que te dirigieron para abrirla.", accion: "click", ancla: "orientacion.remision_item" },
-      { narracion: "Abajo, toca 'Remitir a otra persona'. Se abre el formulario de Nueva remisión con el estudiante ya seleccionado.", accion: "click", ancla: "orientacion.remision_remitir_boton" },
+      { narracion: "Abajo, toca 'Remitir a otra persona'. Se abre el formulario con el estudiante fijo y el número de la remisión.", accion: "click", ancla: "orientacion.remision_remitir_boton" },
       { narracion: "Elige a quién la remites (una sola opción).", accion: "click", ancla: "orientacion.remitir_destino", campo: "destino" },
       { narracion: "Escribe el motivo, la especificación de la conducta y las medidas previas.", accion: "escribir", ancla: "orientacion.remitir_motivo", campo: "motivo" },
       { narracion: "Firma en el recuadro.", accion: "click", ancla: "orientacion.remitir_firma" },
-      { narracion: "Toca 'Enviar remisión'. Vuelves a las remisiones del estudiante; la anterior queda atendida y las dos muestran el enlace entre sí.", accion: "click" },
+      { narracion: "Toca 'Enviar remisión'. Vuelves al detalle de la misma remisión: ahora dice a quién va dirigida, y en 'Recorrido y seguimiento' aparece tu paso con el escrito.", accion: "click" },
     ],
   },
   {

@@ -49,12 +49,11 @@ const RemitirOrientacion = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const sigRef = useRef<SignatureCanvas>(null);
-  // Remisión encadenada: viene desde el detalle de otra remisión
-  // ("Remitir a otra persona"): ?estudiante=ID preselecciona al estudiante y
-  // ?padre=REM enlaza la nueva con la anterior (que queda atendida al guardar).
+  // "Remitir a otra persona" (?remision=ID): la MISMA remisión pasa a otra
+  // instancia con un paso nuevo (escrito + firma). El estudiante viene fijo.
   const [searchParams] = useSearchParams();
-  const estudiantePre = searchParams.get("estudiante");
-  const padreId = searchParams.get("padre") ? Number(searchParams.get("padre")) : null;
+  const remisionId = searchParams.get("remision") ? Number(searchParams.get("remision")) : null;
+  const [remBase, setRemBase] = useState<{ id: number; estudiante_id: number; numero: number } | null>(null);
 
   const [autor, setAutor] = useState<{ id: string; nombres: string; apellidos: string; cargo: string; genero: string | null }>({
     id: "", nombres: "", apellidos: "", cargo: "", genero: null,
@@ -137,11 +136,18 @@ const RemitirOrientacion = () => {
       } else {
         setEstudiantes(todos);
       }
-      // Preselección por URL (remisión encadenada): se busca en TODOS los
-      // estudiantes del colegio, no solo en los del aula del docente.
-      if (estudiantePre) {
-        const pre = todos.find(e => String(e.id) === estudiantePre);
-        if (pre) setEstSeleccionado(pre);
+      // Modo "remitir a otra persona": el estudiante es el de la remisión (se
+      // busca en TODOS los del colegio) y se calcula su número (#n) del estudiante.
+      if (remisionId) {
+        const { data: rem } = await supabase.from("Remisiones_Orientacion").select("id, estudiante_id, created_at, fecha").eq("id", remisionId).maybeSingle();
+        if (rem) {
+          const { data: delEst } = await supabase.from("Remisiones_Orientacion").select("id, created_at, fecha").eq("estudiante_id", (rem as any).estudiante_id);
+          const orden = ((delEst || []) as any[]).sort((a, b) => (a.created_at || a.fecha).localeCompare(b.created_at || b.fecha) || a.id - b.id);
+          const numero = orden.findIndex(x => x.id === (rem as any).id) + 1;
+          setRemBase({ id: (rem as any).id, estudiante_id: (rem as any).estudiante_id, numero });
+          const pre = todos.find(e => String(e.id) === String((rem as any).estudiante_id));
+          if (pre) setEstSeleccionado(pre);
+        }
       }
       setLoading(false);
     };
@@ -263,8 +269,28 @@ const RemitirOrientacion = () => {
       docente_nombre: docenteNombre,
       docente_cargo: cargoSegunGenero(autor.cargo, autor.genero) || null,
       firma_url: firmaUrl,
-      remision_padre_id: padreId,
     };
+
+    // Modo "remitir a otra persona": paso dentro de la misma remisión (el server
+    // cambia el destino, la deja pendiente y avisa al nuevo destinatario).
+    if (remisionId && remBase) {
+      const destinoSel = destinosSel[0];
+      try {
+        const res = await apiClient.orientacion.remisionRemitir({
+          remision_id: remisionId, destino: destinoSel, motivo: motivo.trim(),
+          especificacion_conducta: especificacion.trim(), medidas_previas: medidas.trim(), firma_url: firmaUrl,
+        });
+        const n = res.aviso?.directos ?? 0;
+        toast({ title: "Remisión remitida", description: `La remisión #${remBase.numero} pasó a ${destinoSel === "orientacion" ? "Orientación Escolar" : destinoSel === "coordinador" ? "Coordinación" : "el director de grupo"}${n ? ` y se avisó por WhatsApp a ${n} persona${n === 1 ? "" : "s"}` : ""}.` });
+        setGuardando(false);
+        navigate(`/orientador/remisiones?est=${remBase.estudiante_id}&rem=${remisionId}`);
+      } catch (e: any) {
+        console.error("remitir a otra persona:", e);
+        toast({ title: "Error", description: (e?.body as any)?.detail || "No se pudo remitir.", variant: "destructive" });
+        setGuardando(false);
+      }
+      return;
+    }
 
     const { error: insErr } = await supabase
       .from("Remisiones_Orientacion")
@@ -316,15 +342,6 @@ const RemitirOrientacion = () => {
       console.warn("notificar remisión:", e);
     }
 
-    // Remisión encadenada: la anterior (que me dirigieron) queda atendida al
-    // remitirla, y volvemos a las remisiones del estudiante.
-    if (padreId) {
-      try { await apiClient.orientacion.remisionAtendida(padreId); } catch (e) { console.warn("marcar padre atendida:", e); }
-      toast({ title: "Remisión enviada", description: "Quedó encadenada a la anterior y se notificó a los destinos." });
-      setGuardando(false);
-      navigate(`/orientador/remisiones?est=${estSeleccionado.id}`);
-      return;
-    }
     toast({ title: "Remisión enviada", description: "Quedó registrada y se notificó a los destinos." });
     resetForm();
     setGuardando(false);
@@ -335,24 +352,29 @@ const RemitirOrientacion = () => {
       <HeaderNormi backLink={backLink} />
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <BreadcrumbDeslizable clave={`remitir-${padreId ?? ""}`}>
+          <BreadcrumbDeslizable clave={`remitir-${remisionId ?? ""}`}>
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             <button onClick={() => navigate("/orientador/remisiones")} className="text-primary hover:underline">Orientación Escolar</button>
             <span className="text-muted-foreground">&rarr;</span>
-            {padreId && estSeleccionado && (<>
+            {remisionId && remBase && estSeleccionado && (<>
               <button onClick={() => navigate(`/orientador/remisiones?est=${estSeleccionado.id}`)} className="text-primary hover:underline">{estSeleccionado.apellidos} {estSeleccionado.nombres}</button>
               <span className="text-muted-foreground">&rarr;</span>
+              <button onClick={() => navigate(`/orientador/remisiones?est=${estSeleccionado.id}&rem=${remBase.id}`)} className="text-primary hover:underline">Remisión #{remBase.numero}</button>
+              <span className="text-muted-foreground">&rarr;</span>
             </>)}
-            <span className="text-foreground font-medium">Nueva remisión</span>
+            <span className="text-foreground font-medium">{remisionId ? "Remitir a otra persona" : "Nueva remisión"}</span>
           </BreadcrumbDeslizable>
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-6 max-w-3xl mx-auto">
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6">
             <img src={iconEntrevista} alt="" className="h-6 w-6 object-contain" />
-            Remitir a Orientación Escolar
+            {remisionId ? `Remitir a otra persona · Remisión #${remBase?.numero ?? ""}` : "Remitir a Orientación Escolar"}
           </h2>
+          {remisionId && (
+            <p className="text-sm text-muted-foreground -mt-4 mb-6">Es la misma remisión: pasa a la instancia que elijas con tu escrito y firma, y queda pendiente para esa persona. Todo el recorrido se conserva.</p>
+          )}
 
           {loading ? (
             <div className="text-muted-foreground text-sm">Cargando...</div>
@@ -398,13 +420,15 @@ const RemitirOrientacion = () => {
                       <strong>{estSeleccionado.apellidos} {estSeleccionado.nombres}</strong>
                       <span className="text-muted-foreground"> — {estSeleccionado.grado}{estSeleccionado.salon ? ` ${estSeleccionado.salon}` : ""}</span>
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => setEstSeleccionado(null)}
-                      className="text-xs text-primary hover:underline"
-                    >
-                      Cambiar
-                    </button>
+                    {!remisionId && (
+                      <button
+                        type="button"
+                        onClick={() => setEstSeleccionado(null)}
+                        className="text-xs text-primary hover:underline"
+                      >
+                        Cambiar
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div className="relative">

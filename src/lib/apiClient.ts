@@ -830,6 +830,9 @@ export const apiClient = {
     remisionNotificar(remision_id: number): Promise<{ ok: true; directos: number; copias: number; resultados: Array<{ id: string; tipo: 'directo' | 'copia'; ok: boolean; silenciado?: boolean; error?: string }> }> {
       return request('/api/orientacion/remision-notificar', { method: 'POST', body: JSON.stringify({ remision_id }) });
     },
+    remisionRemitir(body: { remision_id: number; destino: string; motivo: string; especificacion_conducta?: string; medidas_previas?: string; firma_url?: string | null }): Promise<{ ok: true; paso: any; aviso: { directos: number; copias: number } | null }> {
+      return request('/api/orientacion/remision-remitir', { method: 'POST', body: JSON.stringify(body) });
+    },
     remisionPendiente(remision_id: number): Promise<{ ok: true }> {
       return request('/api/orientacion/remision-pendiente', { method: 'POST', body: JSON.stringify({ remision_id }) });
     },
