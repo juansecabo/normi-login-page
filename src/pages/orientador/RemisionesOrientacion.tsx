@@ -313,7 +313,11 @@ const RemisionesOrientacion = () => {
           .maybeSingle(),
       ]);
 
-      setVistasPorMi(new Set(((misVistasR.data || []) as { remision_id: number }[]).map(v => v.remision_id)));
+      setVistasPorMi(prev => {
+        const next = new Set(prev);
+        for (const v of (misVistasR.data || []) as { remision_id: number }[]) next.add(v.remision_id);
+        return next;
+      });
       let lista = (remR.data || []) as Remision[];
       // Coordinador: las suyas + las de estudiantes de sus niveles (nivel real del
       // estudiante en Estudiantes; niveles_coordina vacío = todos los niveles).
@@ -410,7 +414,6 @@ const RemisionesOrientacion = () => {
   useEffect(() => {
     if (remVistaId == null) return;
     const rem = remisiones.find(r => r.id === remVistaId);
-    if (rem) cargarContacto(rem);
     if (rem && !vistasPorMi.has(rem.id)) {
       const uid = String(getSession().id || "");
       setVistasPorMi(prev => new Set(prev).add(rem.id));
@@ -418,6 +421,7 @@ const RemisionesOrientacion = () => {
         .upsert({ remision_id: rem.id, usuario_id: uid, visto_at: new Date().toISOString() }, { onConflict: "remision_id,usuario_id" })
         .then(({ error }) => { if (error) console.warn("Remisiones_Vistas:", error.message); });
     }
+    if (rem) cargarContacto(rem);
     if (seguimientos[remVistaId] === undefined) {
       supabase.from("Remisiones_Seguimientos").select("*").eq("remision_id", remVistaId).order("created_at", { ascending: true })
         .then(({ data }) => setSeguimientos(prev => ({ ...prev, [remVistaId]: (data || []) as Seguimiento[] })));
