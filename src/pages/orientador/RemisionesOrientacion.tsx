@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getSession, isOrientador, isAdmin, isRectorOrCoordinador, isProfesor } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ChevronRight, Download, Check, Search, CalendarPlus, Phone, Plus, Send, MessagesSquare } from "lucide-react";
@@ -566,7 +567,8 @@ const RemisionesOrientacion = () => {
       <HeaderNormi backLink={backLink} />
       <main className="flex-1 container mx-auto p-4 md:p-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
-          <div className="flex items-center gap-2 text-sm flex-nowrap whitespace-nowrap overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <BreadcrumbDeslizable clave={`remisiones-${estVistaId ?? ""}-${remVistaId ?? ""}`}>
+            <span className="contents whitespace-nowrap">
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             {estVista ? (
@@ -586,7 +588,8 @@ const RemisionesOrientacion = () => {
               <span className="text-muted-foreground">&rarr;</span>
               <span className="text-foreground font-medium">Remisión #{numeroPorRemision.get(remVista.id) ?? "?"}</span>
             </>)}
-          </div>
+            </span>
+          </BreadcrumbDeslizable>
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-6">
