@@ -4,7 +4,10 @@ import { getSession, isOrientador, isAdmin, isRectorOrCoordinador, isProfesor } 
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronRight, Download, Check, Search, CalendarPlus, Phone, Plus } from "lucide-react";
+import { ChevronRight, Download, Check, Search, CalendarPlus, Phone, Plus, RotateCcw, Send, MessagesSquare } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { cargoSegunGenero } from "@/lib/entrevistadores";
+import { notifyOrientadora, notifyRectorCoord, notifyCoordinadoresNivel } from "@/lib/notifyStaff";
 import iconCasos from "@/assets/icons/casos.png";
 import { markLastSeen } from "@/utils/notificaciones";
 import { apiClient, apiRequest } from "@/lib/apiClient";
@@ -29,6 +32,8 @@ interface Remision {
   atendida_at: string | null;
   atendida_por_id: string | null;
   atendida_por_nombre: string | null;
+  /** Remisión de la que se derivó esta (cadena director → coordinador → orientación). */
+  remision_padre_id?: number | null;
   created_at: string;
   destinos: string[] | null;
   tipo_documento: string | null;
@@ -219,6 +224,16 @@ const RemisionesOrientacion = () => {
   const [autorId, setAutorId] = useState("");
   const [autorNombre, setAutorNombre] = useState("");
   const [miDirGrupo, setMiDirGrupo] = useState<{ grado: string; salon: string | null } | null>(null);
+  // Seguimiento y remisión encadenada (detalle)
+  type Seguimiento = { id: number; remision_id: number; autor_id: string; autor_nombre: string | null; texto: string; created_at: string };
+  const [seguimientos, setSeguimientos] = useState<Record<number, Seguimiento[]>>({});
+  const [nuevoSeg, setNuevoSeg] = useState("");
+  const [guardandoSeg, setGuardandoSeg] = useState(false);
+  const [confirmPendiente, setConfirmPendiente] = useState(false);
+  const [remitirOpen, setRemitirOpen] = useState(false);
+  const [remitirDest, setRemitirDest] = useState<{ orientacion: boolean; director_grupo: boolean; coordinador: boolean }>({ orientacion: false, director_grupo: false, coordinador: false });
+  const [remitirTexto, setRemitirTexto] = useState("");
+  const [remitiendo, setRemitiendo] = useState(false);
 
   // Filtros
   const [filtroGrado, setFiltroGrado] = useState("");
@@ -394,8 +409,119 @@ const RemisionesOrientacion = () => {
     if (remVistaId == null) return;
     const rem = remisiones.find(r => r.id === remVistaId);
     if (rem) cargarContacto(rem);
+    if (seguimientos[remVistaId] === undefined) {
+      supabase.from("Remisiones_Seguimientos").select("*").eq("remision_id", remVistaId).order("created_at", { ascending: true })
+        .then(({ data }) => setSeguimientos(prev => ({ ...prev, [remVistaId]: (data || []) as Seguimiento[] })));
+    }
+    setRemitirOpen(false); setRemitirTexto(""); setNuevoSeg("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remVistaId, remisiones]);
+
+  // Volver a Pendiente (por si quien la marcó se equivocó).
+  const volverPendiente = async (r: Remision) => {
+    if (marcando != null) return;
+    setMarcando(r.id);
+    try {
+      await apiClient.orientacion.remisionPendiente(r.id);
+      setRemisiones(prev => prev.map(x => x.id === r.id ? { ...x, atendida_at: null, atendida_por_id: null, atendida_por_nombre: null } : x));
+      setConfirmPendiente(false);
+      toast({ title: "Pendiente", description: "La remisión volvió a Pendiente." });
+    } catch (e: any) {
+      toast({ title: "Error", description: "No se pudo cambiar el estado.", variant: "destructive" });
+    } finally {
+      setMarcando(null);
+    }
+  };
+
+  // Agregar nota de seguimiento.
+  const agregarSeguimiento = async (r: Remision) => {
+    const texto = nuevoSeg.trim();
+    if (!texto || guardandoSeg) return;
+    setGuardandoSeg(true);
+    try {
+      const res = await apiClient.orientacion.remisionSeguimiento(r.id, texto);
+      setSeguimientos(prev => ({ ...prev, [r.id]: [...(prev[r.id] || []), res.seguimiento] }));
+      setNuevoSeg("");
+    } catch (e: any) {
+      toast({ title: "Error", description: "No se pudo guardar el seguimiento.", variant: "destructive" });
+    } finally {
+      setGuardandoSeg(false);
+    }
+  };
+
+  // Remitir a otra persona: crea una remisión nueva (misma estudiante, mi escrito)
+  // encadenada a esta, marca esta como atendida y avisa a los nuevos destinos.
+  const remitirAOtro = async (padre: Remision) => {
+    const destinosSel = (Object.keys(remitirDest) as Array<keyof typeof remitirDest>).filter(k => remitirDest[k]);
+    const texto = remitirTexto.trim();
+    if (destinosSel.length === 0) { toast({ title: "Elige a quién remitir", variant: "destructive" }); return; }
+    if (!texto) { toast({ title: "Escribe el motivo de la remisión", variant: "destructive" }); return; }
+    if (remitiendo) return;
+    setRemitiendo(true);
+    const session = getSession();
+    const cargo = cargoSegunGenero(session.cargo || undefined, session.genero) || session.cargo || "";
+    const docenteNombre = [session.nombres, session.apellidos].filter(Boolean).join(" ");
+    try {
+      const { data: nuevo, error } = await supabase.from("Remisiones_Orientacion").insert({
+        estudiante_id: padre.estudiante_id,
+        estudiante_nombre: padre.estudiante_nombre,
+        estudiante_apellidos: padre.estudiante_apellidos,
+        estudiante_grado: padre.estudiante_grado,
+        estudiante_salon: padre.estudiante_salon,
+        motivo: texto,
+        destinos: destinosSel,
+        tipo_documento: padre.tipo_documento,
+        docente_id: String(session.id),
+        docente_nombre: docenteNombre,
+        docente_cargo: cargo || null,
+        firma_url: null,
+        remision_padre_id: padre.id,
+      } as any).select("*").single();
+      if (error || !nuevo) throw error || new Error("sin datos");
+      // La remisión que recibí queda atendida (la atendí remitiéndola).
+      let padreActualizado = padre;
+      if (!padre.atendida_at) {
+        try {
+          const res = await apiClient.orientacion.remisionAtendida(padre.id);
+          padreActualizado = { ...padre, atendida_at: res.atendida_at, atendida_por_id: String(session.id), atendida_por_nombre: res.atendida_por_nombre };
+        } catch { /* si falla, queda pendiente; el usuario puede marcarla */ }
+      }
+      setRemisiones(prev => [nuevo as Remision, ...prev.map(x => x.id === padre.id ? padreActualizado : x)]);
+      // Avisos por WhatsApp a los nuevos destinos (mismo esquema de Nueva remisión).
+      try {
+        const grupo = padre.estudiante_salon ? `${padre.estudiante_grado} ${padre.estudiante_salon}` : padre.estudiante_grado;
+        const motivoCorto = texto.length > 200 ? texto.slice(0, 200) + "..." : texto;
+        const remitente = [cargo, docenteNombre].filter(Boolean).join(" ");
+        const destLabels = [
+          remitirDest.orientacion && "Orientación Escolar",
+          remitirDest.director_grupo && "Director de Grupo",
+          remitirDest.coordinador && "Coordinador",
+        ].filter(Boolean).join(", ");
+        const mensaje =
+          `Nueva remisión (Formato 005).\n` +
+          `Estudiante: ${padre.estudiante_nombre} ${padre.estudiante_apellidos} (${grupo}).\n` +
+          `Dirigida a: ${destLabels}.\n` +
+          `Motivo: ${motivoCorto}\n` +
+          `Remitido por: ${remitente}.`;
+        if (remitirDest.orientacion) {
+          await notifyOrientadora(mensaje + `\n\nConsúltala en notasnormi.com → Remisiones.`, remitente || "Sistema Normi");
+        }
+        if ((remitirDest.director_grupo || remitirDest.coordinador) && padre.estudiante_salon) {
+          await notifyRectorCoord(mensaje, `Sistema Normi (Remisión)`, { grado: padre.estudiante_grado, salon: padre.estudiante_salon }, "remision");
+        } else if (padre.estudiante_salon) {
+          await notifyCoordinadoresNivel(mensaje + `\n\nConsúltala en notasnormi.com → Remisiones.`, { grado: padre.estudiante_grado, salon: padre.estudiante_salon }, "Remisión");
+        }
+      } catch (e) { console.warn("notificar remisión encadenada:", e); }
+      setRemitirOpen(false); setRemitirTexto(""); setRemitirDest({ orientacion: false, director_grupo: false, coordinador: false });
+      toast({ title: "Remisión enviada", description: "Quedó encadenada a esta y se notificó a los destinos." });
+      setRemVistaId((nuevo as Remision).id);
+    } catch (e: any) {
+      console.error("remitir a otro:", e);
+      toast({ title: "Error", description: "No se pudo crear la remisión.", variant: "destructive" });
+    } finally {
+      setRemitiendo(false);
+    }
+  };
 
   // Agrupación por estudiante (nivel 1), a partir de las remisiones ya filtradas.
   const estudiantesAgrupados = useMemo(() => {
@@ -618,7 +744,12 @@ const RemisionesOrientacion = () => {
                 <h2 className="text-xl font-bold text-foreground flex items-center gap-2 flex-wrap">
                   {remVista.estudiante_apellidos} {remVista.estudiante_nombre}
                   <span className="text-sm text-muted-foreground font-normal">{grupoDe(remVista)}</span>
-                  {badgeEstado(remVista)}
+                  {puedeMarcar(remVista) && remVista.atendida_at ? (
+                    <button type="button" data-guia="orientacion.remision_estado_toggle" title="Volver a Pendiente" onClick={() => setConfirmPendiente(true)} className="inline-flex items-center gap-1 cursor-pointer">
+                      {badgeEstado(remVista)}
+                      <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" />
+                    </button>
+                  ) : badgeEstado(remVista)}
                 </h2>
                 <div className="text-sm mt-3 space-y-1">
                   <p><span className="font-semibold text-foreground">Fecha:</span> <span className="text-muted-foreground">{fmtFecha(remVista.fecha)}{remVista.created_at ? `, ${horaDe(remVista.created_at)}` : ""}</span></p>
@@ -709,6 +840,130 @@ const RemisionesOrientacion = () => {
                   </button>
                 )}
               </div>
+
+              {/* ── Cadena de remisiones ── */}
+              {(() => {
+                const padre = remVista.remision_padre_id ? remisiones.find(r => r.id === remVista.remision_padre_id) : null;
+                const hijas = remisiones.filter(r => r.remision_padre_id === remVista.id);
+                if (!padre && hijas.length === 0) return null;
+                return (
+                  <div className="rounded-md border border-border bg-muted/20 p-3 text-sm space-y-1">
+                    {padre && (
+                      <p>
+                        Viene de la remisión <button type="button" onClick={() => setRemVistaId(padre.id)} className="text-primary hover:underline font-semibold">#{numeroPorRemision.get(padre.id)}</button> de {[padre.docente_cargo, padre.docente_nombre].filter(Boolean).join(" ")} ({fmtFecha(padre.fecha)}).
+                      </p>
+                    )}
+                    {hijas.map(h => (
+                      <p key={h.id}>
+                        Remitida después a <span className="font-semibold">{destinosLegibles(h.destinos)}</span> por {[h.docente_cargo, h.docente_nombre].filter(Boolean).join(" ")} (<button type="button" onClick={() => setRemVistaId(h.id)} className="text-primary hover:underline font-semibold">#{numeroPorRemision.get(h.id)}</button>, {fmtFecha(h.fecha)}).
+                      </p>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              {/* ── Seguimiento ── */}
+              <div className="rounded-md border border-border p-3 space-y-3" data-guia="orientacion.remision_seguimiento">
+                <div className="text-sm font-semibold text-foreground flex items-center gap-1"><MessagesSquare className="w-4 h-4" /> Seguimiento</div>
+                {(seguimientos[remVista.id] || []).length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Sin notas de seguimiento todavía.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {(seguimientos[remVista.id] || []).map(sg => (
+                      <li key={sg.id} className="rounded bg-muted/30 px-3 py-2 text-sm">
+                        <div className="text-xs text-muted-foreground mb-0.5"><span className="font-semibold text-foreground">{sg.autor_nombre || sg.autor_id}</span> · {new Date(sg.created_at).toLocaleString("es-CO", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</div>
+                        <div className="whitespace-pre-wrap">{sg.texto}</div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {puedeMarcar(remVista) && (
+                  <div className="space-y-2">
+                    <textarea
+                      data-guia="orientacion.remision_seguimiento_texto"
+                      value={nuevoSeg}
+                      onChange={e => setNuevoSeg(e.target.value)}
+                      rows={3}
+                      maxLength={4000}
+                      placeholder="Escribe una nota de seguimiento (qué se hizo, con quién se habló, acuerdos...)"
+                      className="w-full border rounded px-3 py-2 text-sm bg-background resize-none"
+                    />
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        data-guia="orientacion.remision_seguimiento_agregar"
+                        disabled={guardandoSeg || !nuevoSeg.trim()}
+                        onClick={() => agregarSeguimiento(remVista)}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> {guardandoSeg ? "Guardando..." : "Agregar seguimiento"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ── Remitir a otra persona ── */}
+              {puedeMarcar(remVista) && (
+                <div className="rounded-md border border-border p-3 space-y-3" data-guia="orientacion.remision_remitir">
+                  {!remitirOpen ? (
+                    <button
+                      type="button"
+                      data-guia="orientacion.remision_remitir_boton"
+                      onClick={() => setRemitirOpen(true)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md border border-input bg-background hover:bg-accent"
+                    >
+                      <Send className="w-3.5 h-3.5" /> Remitir a otra persona
+                    </button>
+                  ) : (
+                    <>
+                      <div className="text-sm font-semibold text-foreground">Remitir a otra persona</div>
+                      <p className="text-xs text-muted-foreground">Se crea una remisión nueva de {remVista.estudiante_apellidos} {remVista.estudiante_nombre} con tu escrito, encadenada a esta. Esta queda marcada como atendida.</p>
+                      <div className="flex flex-wrap gap-2">
+                        {([["orientacion", "Orientación Escolar"], ["director_grupo", "Director(a) de grupo"], ["coordinador", "Coordinador(a)"]] as const).map(([k, t]) => (
+                          <label key={k} className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm rounded-md border cursor-pointer ${remitirDest[k] ? "border-primary bg-primary/10" : "border-input bg-background"}`}>
+                            <input type="checkbox" checked={remitirDest[k]} onChange={e => setRemitirDest(d => ({ ...d, [k]: e.target.checked }))} className="accent-primary" />
+                            {t}
+                          </label>
+                        ))}
+                      </div>
+                      <textarea
+                        data-guia="orientacion.remision_remitir_texto"
+                        value={remitirTexto}
+                        onChange={e => setRemitirTexto(e.target.value)}
+                        rows={5}
+                        placeholder="Tu escrito: qué observaste, qué hiciste y por qué remites..."
+                        className="w-full border rounded px-3 py-2 text-sm bg-background resize-none"
+                      />
+                      <div className="flex justify-end gap-2">
+                        <button type="button" onClick={() => setRemitirOpen(false)} className="px-3 py-1.5 text-xs rounded-md border border-input bg-background hover:bg-accent">Cancelar</button>
+                        <button
+                          type="button"
+                          data-guia="orientacion.remision_remitir_enviar"
+                          disabled={remitiendo}
+                          onClick={() => remitirAOtro(remVista)}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+                        >
+                          <Send className="w-3.5 h-3.5" /> {remitiendo ? "Remitiendo..." : "Remitir"}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              <Dialog open={confirmPendiente} onOpenChange={setConfirmPendiente}>
+                <DialogContent className="max-w-sm">
+                  <DialogHeader>
+                    <DialogTitle>¿Volver a Pendiente?</DialogTitle>
+                    <DialogDescription>La remisión dejará de estar Atendida y volverá a aparecer como Pendiente.</DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <button type="button" onClick={() => setConfirmPendiente(false)} className="px-3 py-1.5 text-sm rounded-md border border-input bg-background hover:bg-accent">Cancelar</button>
+                    <button type="button" disabled={marcando != null} onClick={() => volverPendiente(remVista)} className="px-3 py-1.5 text-sm rounded-md bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50">Sí, volver a Pendiente</button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           ) : estVista ? (
             /* ── Nivel 2: remisiones de un estudiante ── */

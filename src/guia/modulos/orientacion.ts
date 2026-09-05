@@ -913,6 +913,60 @@ export const ORIENTACION: Capacidad[] = [
     ],
   },
   {
+    id: "orientacion.remision_volver_pendiente",
+    titulo: "Devolver una remisión a Pendiente",
+    descripcion:
+      "Si una remisión se marcó como atendida por error, la persona a la que va dirigida puede tocar la etiqueta 'Atendida' y devolverla a Pendiente.",
+    categoria: "Orientación",
+    roles: [...ORIENTADOR_ADMIN, "coordinador", "profesor"],
+    ruta: "/orientador/remisiones",
+    endpoint: "POST /api/orientacion/remision-pendiente",
+    sinonimos: ["volver a pendiente", "quitar atendida", "me equivoqué al marcar atendida", "desmarcar atendida"],
+    pasos: [
+      { narracion: "Entramos a Remisiones a Orientación.", accion: "navegar", ruta: "/orientador/remisiones" },
+      { narracion: "Toca el estudiante en la lista.", accion: "click", ancla: "orientacion.remision_estudiante" },
+      { narracion: "Toca la remisión que quieres para abrirla.", accion: "click", ancla: "orientacion.remision_item" },
+      { narracion: "Toca la etiqueta verde 'Atendida' junto al nombre y confirma. Vuelve a Pendiente.", accion: "click", ancla: "orientacion.remision_estado_toggle" },
+    ],
+  },
+  {
+    id: "orientacion.remision_seguimiento",
+    titulo: "Agregar seguimiento a una remisión",
+    descripcion:
+      "Dejar notas de seguimiento en una remisión (qué se hizo, con quién se habló, acuerdos). Solo la persona a la que va dirigida puede escribirlas; todos los que ven la remisión las leen.",
+    categoria: "Orientación",
+    roles: [...ORIENTADOR_ADMIN, "coordinador", "profesor"],
+    ruta: "/orientador/remisiones",
+    endpoint: "POST /api/orientacion/remision-seguimiento",
+    sinonimos: ["hacer seguimiento a la remisión", "anotar en la remisión", "registrar lo que hice con el caso", "nota de seguimiento"],
+    pasos: [
+      { narracion: "Entramos a Remisiones a Orientación.", accion: "navegar", ruta: "/orientador/remisiones" },
+      { narracion: "Toca el estudiante en la lista.", accion: "click", ancla: "orientacion.remision_estudiante" },
+      { narracion: "Toca la remisión que quieres para abrirla.", accion: "click", ancla: "orientacion.remision_item" },
+      { narracion: "En 'Seguimiento', escribe la nota.", accion: "escribir", ancla: "orientacion.remision_seguimiento_texto", campo: "seguimiento" },
+      { narracion: "Toca 'Agregar seguimiento'. Queda con tu nombre y la fecha.", accion: "click", ancla: "orientacion.remision_seguimiento_agregar" },
+    ],
+  },
+  {
+    id: "orientacion.remision_remitir_otro",
+    titulo: "Remitir el caso a otra persona",
+    descripcion:
+      "Desde una remisión que te dirigieron, remitir el caso a otra instancia (Orientación, director de grupo o coordinación) con tu propio escrito. Se crea una remisión nueva encadenada a la anterior, la tuya queda como atendida y se avisa por WhatsApp a los nuevos destinos.",
+    categoria: "Orientación",
+    roles: [...ORIENTADOR_ADMIN, "coordinador", "profesor"],
+    ruta: "/orientador/remisiones",
+    endpoint: "insert Remisiones_Orientacion (remision_padre_id) + POST /api/orientacion/remision-atendida + POST /api/comunicados/enviar",
+    sinonimos: ["remitir a coordinación", "pasar el caso a orientación", "remitir a otra persona", "escalar la remisión", "encadenar remisión"],
+    pasos: [
+      { narracion: "Entramos a Remisiones a Orientación.", accion: "navegar", ruta: "/orientador/remisiones" },
+      { narracion: "Toca el estudiante en la lista.", accion: "click", ancla: "orientacion.remision_estudiante" },
+      { narracion: "Toca la remisión que te dirigieron para abrirla.", accion: "click", ancla: "orientacion.remision_item" },
+      { narracion: "Abajo, toca 'Remitir a otra persona'.", accion: "click", ancla: "orientacion.remision_remitir_boton" },
+      { narracion: "Marca a quién la remites y escribe tu escrito (qué observaste, qué hiciste y por qué remites).", accion: "escribir", ancla: "orientacion.remision_remitir_texto", campo: "motivo" },
+      { narracion: "Toca 'Remitir'. Se abre la remisión nueva; en la anterior queda el enlace a esta.", accion: "click", ancla: "orientacion.remision_remitir_enviar" },
+    ],
+  },
+  {
     id: "orientacion.remision_descargar_word",
     titulo: "Descargar una remisión en Word",
     descripcion:

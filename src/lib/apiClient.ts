@@ -824,6 +824,12 @@ export const apiClient = {
     remisionAtendida(remision_id: number): Promise<{ ok: true; atendida_por_nombre: string; atendida_at: string }> {
       return request('/api/orientacion/remision-atendida', { method: 'POST', body: JSON.stringify({ remision_id }) });
     },
+    remisionPendiente(remision_id: number): Promise<{ ok: true }> {
+      return request('/api/orientacion/remision-pendiente', { method: 'POST', body: JSON.stringify({ remision_id }) });
+    },
+    remisionSeguimiento(remision_id: number, texto: string): Promise<{ ok: true; seguimiento: { id: number; remision_id: number; autor_id: string; autor_nombre: string | null; texto: string; created_at: string } }> {
+      return request('/api/orientacion/remision-seguimiento', { method: 'POST', body: JSON.stringify({ remision_id, texto }) });
+    },
   },
 };
 
