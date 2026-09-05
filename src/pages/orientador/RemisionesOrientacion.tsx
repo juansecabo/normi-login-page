@@ -518,6 +518,7 @@ const RemisionesOrientacion = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [remisiones, vistasPorMi, miDirGrupo, idsSinRevisar],
   );
+  const sinRevisarIds = useMemo(() => new Set(sinRevisar.map(r => r.id)), [sinRevisar]);
   const remVista = remVistaId != null ? remisiones.find(r => r.id === remVistaId) || null : null;
   const remsPorEstudianteNuevas = useMemo(() => {
     const set = new Set<number>();
@@ -942,6 +943,9 @@ const RemisionesOrientacion = () => {
                     <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
                       <span>{fmtFecha(r.fecha)}{r.created_at ? ` · ${horaDe(r.created_at)}` : ""}</span>
                       {badgeEstado(r)}
+                      {sinRevisarIds.has(r.id) && (
+                        <span className="px-2 py-0.5 text-[10px] rounded-full bg-red-500 text-white font-semibold">Sin revisar</span>
+                      )}
                     </div>
                     <div className="text-sm mt-1 line-clamp-2">{r.motivo}</div>
                   </div>
@@ -983,7 +987,7 @@ const RemisionesOrientacion = () => {
                 </div>
               )}
               {estudiantesAgrupados.map(g => {
-                const tieneNueva = gestiona && remsPorEstudianteNuevas.has(g.estudiante_id);
+                const nSinRevisar = remisiones.filter(r => r.estudiante_id === g.estudiante_id && sinRevisarIds.has(r.id)).length;
                 return (
                   <button
                     key={g.estudiante_id}
@@ -995,8 +999,8 @@ const RemisionesOrientacion = () => {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-foreground">{g.apellidos} {g.nombres}</span>
                         <span className="text-xs font-semibold text-muted-foreground">{g.salon ? `${g.grado} ${g.salon}` : g.grado}</span>
-                        {tieneNueva && (
-                          <span className="px-2 py-0.5 text-[10px] rounded-full bg-red-500 text-white font-semibold">Nueva</span>
+                        {nSinRevisar > 0 && (
+                          <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold" title="Dirigidas a ti sin revisar">{nSinRevisar}</span>
                         )}
                       </div>
                       <div className="text-xs font-semibold text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
