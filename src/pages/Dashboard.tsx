@@ -32,6 +32,7 @@ import BuzonSugerencias from "@/components/BuzonSugerencias";
 import ReordenableDashboard, { type ReordItem } from "@/components/ReordenableDashboard";
 import { getAllLastSeen } from "@/utils/notificaciones";
 
+import { apiClient } from "@/lib/apiClient";
 const Badge = ({ count }: { count: number }) => {
   if (count <= 0) return null;
   return (
@@ -48,6 +49,8 @@ const Dashboard = () => {
   const [apellidos, setApellidos] = useState("");
   const [asignaturas, setAsignaturas] = useState<string[]>([]);
   const [badges, setBadges] = useState({ comunicados: 0, documentos: 0, retiro: 0, inasistencia: 0, uniforme: 0, entrevista: 0 });
+  // Remisiones dirigidas a mí (como director de grupo) sin abrir.
+  const [remisionesSinRevisar, setRemisionesSinRevisar] = useState(0);
   const pendFirma = usePendientesFirma();
   const [selectedAsignatura, setSelectedAsignatura] = useState<string | null>(null);
   const [loadingAsignaturas, setLoadingAsignaturas] = useState(true);
@@ -73,6 +76,8 @@ const Dashboard = () => {
 
     setNombres(session.nombres || "");
     setApellidos(session.apellidos || "");
+
+    apiClient.orientacion.remisionesSinRevisar().then(r => setRemisionesSinRevisar(r.ids.length)).catch(() => {});
 
     // ¿Es director de grupo? (para mostrar la ficha "Fotos de mi grupo")
     supabase.from("Internos").select("direccion_de_grupo").eq("id", parseInt(session.id!)).maybeSingle()
@@ -231,7 +236,8 @@ const Dashboard = () => {
       </button>
     ) },
     { id: 'remitir-orientacion', render: (
-      <button onClick={() => navigate("/orientador/remisiones")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-sky-100 transition-all duration-200 hover:shadow-md hover:bg-sky-200">
+      <button onClick={() => navigate("/orientador/remisiones")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-sky-100 transition-all duration-200 hover:shadow-md hover:bg-sky-200">
+        <Badge count={remisionesSinRevisar} />
         <img src={iconEntrevista} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground text-center">Orientación Escolar</span>
       </button>

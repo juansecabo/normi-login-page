@@ -34,6 +34,7 @@ import AvatarUploader from "@/components/AvatarUploader";
 import ReordenableDashboard, { type ReordItem } from "@/components/ReordenableDashboard";
 import { getAllLastSeen } from "@/utils/notificaciones";
 
+import { apiClient } from "@/lib/apiClient";
 const perfilesDelCargo = (cargo: string | undefined): string[] => {
   switch (cargo) {
     case 'Rector': return ['Rector'];
@@ -103,11 +104,10 @@ const DashboardRector = () => {
           .overlaps('perfil', perfiles)
           .gt('id', minComLastSeen);
 
-        const esOrientador = session.cargo === 'Orientador(a) Escolar';
+        // Remisiones dirigidas a mí sin abrir (el server aplica la regla de
+        // Orientación compartida). Sirve para orientador, coordinador y director.
         const [remisionesRes, retiroRes, inasistenciaRes, uniformeRes, entrevistaRes] = await Promise.all([
-          esOrientador
-            ? supabase.from('Remisiones_Orientacion').select('*', { count: 'exact', head: true }).gt('id', lastSeen['remisiones'] ?? 0)
-            : Promise.resolve({ count: 0 } as any),
+          apiClient.orientacion.remisionesSinRevisar().then(r => ({ count: r.ids.length })).catch(() => ({ count: 0 })),
           supabase.from('Autorizaciones_Retiro').select('*', { count: 'exact', head: true }).gt('id', lastSeen['retiro'] ?? 0),
           supabase.from('Justificaciones_Inasistencia').select('*', { count: 'exact', head: true }).gt('id', lastSeen['inasistencia'] ?? 0),
           supabase.from('Justificaciones_Uniforme').select('*', { count: 'exact', head: true }).gt('id', lastSeen['uniforme'] ?? 0),
@@ -265,7 +265,8 @@ const DashboardRector = () => {
       </button>
     ) },
     { id: 'remitir-orientacion', render: (
-      <button onClick={() => navigate("/orientador/remisiones")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-sky-100 transition-all duration-200 hover:shadow-md hover:bg-sky-200">
+      <button onClick={() => navigate("/orientador/remisiones")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-sky-100 transition-all duration-200 hover:shadow-md hover:bg-sky-200">
+        <Badge count={badges.remisiones} />
         <img src={iconEntrevista} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground text-center">Orientación Escolar</span>
       </button>

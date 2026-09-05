@@ -226,6 +226,9 @@ const RemisionesOrientacion = () => {
   // Remisiones que este usuario ya ABRIÓ (tabla Remisiones_Vistas). Sirve para la
   // sección "Remitidas a ti sin revisar": dirigidas a mí y nunca abiertas.
   const [vistasPorMi, setVistasPorMi] = useState<Set<number>>(new Set());
+  // Ids "dirigidas a mí y sin abrir" según el server (aplica la regla de bandeja
+  // compartida en Orientación). Se recalcula al abrir una remisión.
+  const [idsSinRevisar, setIdsSinRevisar] = useState<Set<number> | null>(null);
   // Seguimiento y remisión encadenada (detalle)
   type Seguimiento = { id: number; remision_id: number; autor_id: string; autor_nombre: string | null; texto: string; created_at: string };
   const [seguimientos, setSeguimientos] = useState<Record<number, Seguimiento[]>>({});
@@ -304,6 +307,7 @@ const RemisionesOrientacion = () => {
         }
       }
       // OJO al orden: 2º = Remisiones_Vistas (mis aperturas), 3º = Notificaciones_Vistas (badge).
+      apiClient.orientacion.remisionesSinRevisar().then(r => setIdsSinRevisar(new Set(r.ids))).catch(() => setIdsSinRevisar(new Set()));
       const [remR, misVistasR, vistaR] = await Promise.all([
         q,
         supabase.from("Remisiones_Vistas").select("remision_id").eq("usuario_id", miId),
@@ -418,6 +422,7 @@ const RemisionesOrientacion = () => {
     if (rem && !vistasPorMi.has(rem.id)) {
       const uid = String(getSession().id || "");
       setVistasPorMi(prev => new Set(prev).add(rem.id));
+      setIdsSinRevisar(prev => { if (!prev) return prev; const n = new Set(prev); n.delete(rem.id); return n; });
       supabase.from("Remisiones_Vistas")
         .upsert({ remision_id: rem.id, usuario_id: uid, visto_at: new Date().toISOString() }, { onConflict: "remision_id,usuario_id" })
         .then(({ error }) => { if (error) console.warn("Remisiones_Vistas:", error.message); });
@@ -508,10 +513,10 @@ const RemisionesOrientacion = () => {
   const horaDe = (iso: string) => new Date(iso).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
   const sinRevisar = useMemo(
     () => remisiones
-      .filter(r => dirigidaAMi(r) && !vistasPorMi.has(r.id))
+      .filter(r => idsSinRevisar ? idsSinRevisar.has(r.id) : (dirigidaAMi(r) && !vistasPorMi.has(r.id)))
       .sort((a, b) => (b.created_at || b.fecha).localeCompare(a.created_at || a.fecha)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [remisiones, vistasPorMi, miDirGrupo],
+    [remisiones, vistasPorMi, miDirGrupo, idsSinRevisar],
   );
   const remVista = remVistaId != null ? remisiones.find(r => r.id === remVistaId) || null : null;
   const remsPorEstudianteNuevas = useMemo(() => {
