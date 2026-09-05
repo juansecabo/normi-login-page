@@ -223,6 +223,9 @@ const RemisionesOrientacion = () => {
   const [autorId, setAutorId] = useState("");
   const [autorNombre, setAutorNombre] = useState("");
   const [miDirGrupo, setMiDirGrupo] = useState<{ grado: string; salon: string | null } | null>(null);
+  // Remisiones que este usuario ya ABRIÓ (tabla Remisiones_Vistas). Sirve para la
+  // sección "Remitidas a ti sin revisar": dirigidas a mí y nunca abiertas.
+  const [vistasPorMi, setVistasPorMi] = useState<Set<number>>(new Set());
   // Seguimiento y remisión encadenada (detalle)
   type Seguimiento = { id: number; remision_id: number; autor_id: string; autor_nombre: string | null; texto: string; created_at: string };
   const [seguimientos, setSeguimientos] = useState<Record<number, Seguimiento[]>>({});
@@ -298,8 +301,9 @@ const RemisionesOrientacion = () => {
           q = q.eq("docente_id", miId);
         }
       }
-      const [remR, vistaR] = await Promise.all([
+      const [remR, vistaR, misVistasR] = await Promise.all([
         q,
+        supabase.from("Remisiones_Vistas").select("remision_id").eq("usuario_id", miId),
         supabase.from("Notificaciones_Vistas")
           .select("ultimo_id_visto")
           .eq("usuario_id", session.id!)
@@ -307,6 +311,7 @@ const RemisionesOrientacion = () => {
           .maybeSingle(),
       ]);
 
+      setVistasPorMi(new Set(((misVistasR.data || []) as { remision_id: number }[]).map(v => v.remision_id)));
       let lista = (remR.data || []) as Remision[];
       // Coordinador: las suyas + las de estudiantes de sus niveles (nivel real del
       // estudiante en Estudiantes; niveles_coordina vacío = todos los niveles).
@@ -404,6 +409,13 @@ const RemisionesOrientacion = () => {
     if (remVistaId == null) return;
     const rem = remisiones.find(r => r.id === remVistaId);
     if (rem) cargarContacto(rem);
+    if (rem && !vistasPorMi.has(rem.id)) {
+      const uid = String(getSession().id || "");
+      setVistasPorMi(prev => new Set(prev).add(rem.id));
+      supabase.from("Remisiones_Vistas")
+        .upsert({ remision_id: rem.id, usuario_id: uid, visto_at: new Date().toISOString() }, { onConflict: "remision_id,usuario_id" })
+        .then(({ error }) => { if (error) console.warn("Remisiones_Vistas:", error.message); });
+    }
     if (seguimientos[remVistaId] === undefined) {
       supabase.from("Remisiones_Seguimientos").select("*").eq("remision_id", remVistaId).order("created_at", { ascending: true })
         .then(({ data }) => setSeguimientos(prev => ({ ...prev, [remVistaId]: (data || []) as Seguimiento[] })));
@@ -483,6 +495,13 @@ const RemisionesOrientacion = () => {
     return m;
   }, [remisiones]);
   const horaDe = (iso: string) => new Date(iso).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
+  const sinRevisar = useMemo(
+    () => remisiones
+      .filter(r => dirigidaAMi(r) && !vistasPorMi.has(r.id))
+      .sort((a, b) => (b.created_at || b.fecha).localeCompare(a.created_at || a.fecha)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [remisiones, vistasPorMi, miDirGrupo],
+  );
   const remVista = remVistaId != null ? remisiones.find(r => r.id === remVistaId) || null : null;
   const remsPorEstudianteNuevas = useMemo(() => {
     const set = new Set<number>();
@@ -915,6 +934,35 @@ const RemisionesOrientacion = () => {
           ) : (
             /* ── Nivel 1: estudiantes con remisiones ── */
             <div className="space-y-3" data-guia="orientacion.remision_estudiante">
+              {sinRevisar.length > 0 && (
+                <div className="rounded-md border-2 border-red-300 bg-red-50/60 p-3 space-y-2 mb-4" data-guia="orientacion.remisiones_sin_revisar">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center min-w-6 h-6 px-1.5 rounded-full bg-red-500 text-white text-xs font-bold">{sinRevisar.length}</span>
+                    <h3 className="font-semibold text-foreground">Remitidas a ti sin revisar</h3>
+                  </div>
+                  {sinRevisar.map(r => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => { setEstVistaId(r.estudiante_id); setTimeout(() => setRemVistaId(r.id), 0); }}
+                      className="w-full flex items-center justify-between gap-3 px-4 py-2.5 border border-border rounded-md bg-card hover:bg-muted/30 text-left"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm">
+                          <span className="font-semibold text-foreground">{r.estudiante_apellidos} {r.estudiante_nombre}</span>
+                          <span className="text-xs font-semibold text-muted-foreground ml-2">{grupoDe(r)}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          <span className="font-semibold text-foreground">Remitido por:</span> <span className="font-bold text-red-600">{[r.docente_cargo, r.docente_nombre].filter(Boolean).join(" ")}</span>
+                          {" · "}{fmtFecha(r.fecha)}{r.created_at ? ` · ${horaDe(r.created_at)}` : ""}
+                        </div>
+                        <div className="text-sm mt-0.5 line-clamp-1">{r.motivo}</div>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              )}
               {estudiantesAgrupados.map(g => {
                 const tieneNueva = gestiona && remsPorEstudianteNuevas.has(g.estudiante_id);
                 return (
