@@ -255,6 +255,8 @@ const RemisionesOrientacion = () => {
     if (id == null) p.delete("rem"); else p.set("rem", String(id));
     setSearchParams(p);
   };
+  // Abrir directo una remisión (atajo): estudiante y remisión en un solo cambio de URL.
+  const abrirDirecto = (estId: number, remId: number) => setSearchParams({ est: String(estId), rem: String(remId) });
   const [marcando, setMarcando] = useState<number | null>(null);
 
   useEffect(() => {
@@ -944,7 +946,7 @@ const RemisionesOrientacion = () => {
                     <button
                       key={r.id}
                       type="button"
-                      onClick={() => { setEstVistaId(r.estudiante_id); setTimeout(() => setRemVistaId(r.id), 0); }}
+                      onClick={() => abrirDirecto(r.estudiante_id, r.id)}
                       className="w-full flex items-center justify-between gap-3 px-4 py-2.5 border border-border rounded-md bg-card hover:bg-muted/30 text-left"
                     >
                       <div className="flex-1 min-w-0">
