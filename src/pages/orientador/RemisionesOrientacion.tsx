@@ -919,7 +919,7 @@ const RemisionesOrientacion = () => {
                   key={r.id}
                   type="button"
                   onClick={() => abrirRemision(r)}
-                  className={`relative w-full block px-4 py-3 pr-10 border rounded-md text-left overflow-hidden ${dirigidaAMi(r) ? "border-amber-300 bg-amber-50 hover:bg-amber-100/70" : "border-border bg-card hover:bg-muted/30"}`}
+                  className={`relative w-full block px-4 py-3 pr-10 border rounded-md text-left overflow-hidden ${dirigidaAMi(r) ? "border-sky-300 bg-sky-50 hover:bg-sky-100/70" : "border-border bg-card hover:bg-muted/30"}`}
                   title={dirigidaAMi(r) ? "Dirigida a ti" : undefined}
                 >
                   {/* Número de la remisión, como marca de agua detrás del texto */}
