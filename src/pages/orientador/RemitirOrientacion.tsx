@@ -370,7 +370,7 @@ const RemitirOrientacion = () => {
         <div className="bg-card rounded-lg shadow-soft p-6 max-w-3xl mx-auto">
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6">
             <img src={iconEntrevista} alt="" className="h-6 w-6 object-contain" />
-            {remisionId ? `Remitir a otra persona · Remisión #${remBase?.numero ?? ""}` : "Remitir a Orientación Escolar"}
+            {remisionId ? `Remitir a otra persona${remBase ? ` · Remisión #${remBase.numero}` : ""}` : "Remitir a Orientación Escolar"}
           </h2>
           {remisionId && (
             <p className="text-sm text-muted-foreground -mt-4 mb-6">Es la misma remisión: pasa a la instancia que elijas con tu escrito y firma, y queda pendiente para esa persona. Todo el recorrido se conserva.</p>
