@@ -584,7 +584,7 @@ const RemisionesOrientacion = () => {
             </>)}
             {remVista && (<>
               <span className="text-muted-foreground">&rarr;</span>
-              <span className="text-foreground font-medium">Remisión del {fmtFecha(remVista.fecha)}</span>
+              <span className="text-foreground font-medium">Remisión #{numeroPorRemision.get(remVista.id) ?? "?"}</span>
             </>)}
           </div>
         </div>
