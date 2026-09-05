@@ -4,7 +4,7 @@ import { getSession, isOrientador, isAdmin, isRectorOrCoordinador, isProfesor } 
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronRight, Download, Check, Search, CalendarPlus, Phone, Plus, RotateCcw, Send, MessagesSquare } from "lucide-react";
+import { ChevronRight, Download, Check, Search, CalendarPlus, Phone, Plus, Send, MessagesSquare } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cargoSegunGenero } from "@/lib/entrevistadores";
 import { notifyOrientadora, notifyRectorCoord, notifyCoordinadoresNivel } from "@/lib/notifyStaff";
@@ -745,9 +745,8 @@ const RemisionesOrientacion = () => {
                   {remVista.estudiante_apellidos} {remVista.estudiante_nombre}
                   <span className="text-sm text-muted-foreground font-normal">{grupoDe(remVista)}</span>
                   {puedeMarcar(remVista) && remVista.atendida_at ? (
-                    <button type="button" data-guia="orientacion.remision_estado_toggle" title="Volver a Pendiente" onClick={() => setConfirmPendiente(true)} className="inline-flex items-center gap-1 cursor-pointer">
+                    <button type="button" data-guia="orientacion.remision_estado_toggle" title="Volver a Pendiente" onClick={() => setConfirmPendiente(true)} className="inline-flex items-center cursor-pointer hover:opacity-80">
                       {badgeEstado(remVista)}
-                      <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" />
                     </button>
                   ) : badgeEstado(remVista)}
                 </h2>
