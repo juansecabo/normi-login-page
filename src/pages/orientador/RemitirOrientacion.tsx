@@ -10,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import SignatureCanvas from "react-signature-canvas";
 import { Search } from "lucide-react";
 import iconEntrevista from "@/assets/icons/entrevista.webp";
-import { notifyOrientadora, notifyRectorCoord, notifyCoordinadoresNivel } from "@/lib/notifyStaff";
 import { apiClient } from "@/lib/apiClient";
 import { cargoSegunGenero } from "@/lib/entrevistadores";
 
@@ -292,9 +291,11 @@ const RemitirOrientacion = () => {
       return;
     }
 
-    const { error: insErr } = await supabase
+    const { data: insertada, error: insErr } = await supabase
       .from("Remisiones_Orientacion")
-      .insert(payload as any);
+      .insert(payload as any)
+      .select("id")
+      .single();
 
     if (insErr) {
       console.error("Insert remisión:", insErr);
@@ -303,46 +304,23 @@ const RemitirOrientacion = () => {
       return;
     }
 
-    // 3) Notificar a los destinos elegidos. (Director de grupo / coordinador se
-    //    resuelven y notifican en el server — Fase 2. Aquí, orientación por ahora.)
+    // 3) Notificar: el server avisa por WhatsApp a la PERSONA destinataria
+    //    (orientadores, coordinador del nivel o director del salón), con copia
+    //    al coordinador del nivel cuando no es el destinatario.
+    let notif: { directos: number; copias: number } | null = null;
     try {
-      const grupo = estSeleccionado.salon
-        ? `${estSeleccionado.grado} ${estSeleccionado.salon}`
-        : estSeleccionado.grado;
-      const estLabel = `${estSeleccionado.nombres} ${estSeleccionado.apellidos}`;
-      const motivoCorto = motivo.trim().length > 200
-        ? motivo.trim().slice(0, 200) + "..."
-        : motivo.trim();
-      const remitente = [cargoSegunGenero(autor.cargo, autor.genero), autor.nombres, autor.apellidos].filter(Boolean).join(" ");
-      const destLabels = [
-        destinos.orientacion && "Orientación Escolar",
-        destinos.director_grupo && "Director de Grupo",
-        destinos.coordinador && "Coordinador",
-      ].filter(Boolean).join(", ");
-      const mensaje =
-        `Nueva remisión (Formato 005).\n` +
-        `Estudiante: ${estLabel} (${grupo}).\n` +
-        `Dirigida a: ${destLabels}.\n` +
-        `Motivo: ${motivoCorto}\n` +
-        `Remitido por: ${remitente}.`;
-      if (destinos.orientacion) {
-        await notifyOrientadora(mensaje + `\n\nConsúltala en notasnormi.com → Remisiones.`, remitente || "Sistema Normi");
-      }
-      // Director de grupo y/o coordinador: notifyRectorCoord con el aula avisa al
-      // coordinador correcto (por nivel) y a los docentes del aula (incluye al
-      // director de grupo). Solo cuando alguno de esos dos fue elegido.
-      if ((destinos.director_grupo || destinos.coordinador) && estSeleccionado.salon) {
-        await notifyRectorCoord(mensaje, `Sistema Normi (Remisión)`, { grado: estSeleccionado.grado, salon: estSeleccionado.salon }, "remision");
-      } else if (estSeleccionado.salon) {
-        // Aunque la remisión vaya solo a Orientación, el coordinador del nivel
-        // del estudiante debe enterarse (pedido de la coordinadora Nancy, 2026-09-04).
-        await notifyCoordinadoresNivel(mensaje + `\n\nConsúltala en notasnormi.com → Remisiones.`, { grado: estSeleccionado.grado, salon: estSeleccionado.salon }, "Remisión");
-      }
+      const idNueva = (insertada as any)?.id;
+      if (idNueva) notif = await apiClient.orientacion.remisionNotificar(idNueva);
     } catch (e) {
       console.warn("notificar remisión:", e);
     }
 
-    toast({ title: "Remisión enviada", description: "Quedó registrada y se notificó a los destinos." });
+    toast({
+      title: "Remisión enviada",
+      description: notif
+        ? `Quedó registrada. Se avisó por WhatsApp a ${notif.directos} destinatario${notif.directos === 1 ? "" : "s"}${notif.copias ? ` y ${notif.copias} en copia` : ""}.`
+        : "Quedó registrada. No se pudo enviar el aviso por WhatsApp.",
+    });
     resetForm();
     setGuardando(false);
   };
