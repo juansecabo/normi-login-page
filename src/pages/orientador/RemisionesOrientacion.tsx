@@ -70,7 +70,8 @@ const drawingXmlForImage = (rId: string, widthPx: number, heightPx: number, id =
 };
 
 // Convierte cualquier imagen (incl. WebP) a PNG (ArrayBuffer) usando canvas.
-const imgToPng = (url: string): Promise<ArrayBuffer | null> => new Promise((resolve) => {
+type PngImg = { buf: ArrayBuffer; w: number; h: number };
+const imgToPng = (url: string): Promise<PngImg | null> => new Promise((resolve) => {
   const img = new Image();
   img.crossOrigin = "anonymous";
   img.onload = () => {
@@ -80,12 +81,17 @@ const imgToPng = (url: string): Promise<ArrayBuffer | null> => new Promise((reso
       const ctx = canvas.getContext("2d");
       if (!ctx) return resolve(null);
       ctx.drawImage(img, 0, 0);
-      canvas.toBlob((blob) => blob ? blob.arrayBuffer().then(resolve).catch(() => resolve(null)) : resolve(null), "image/png");
+      canvas.toBlob((blob) => blob ? blob.arrayBuffer().then(buf => resolve({ buf, w: canvas.width, h: canvas.height })).catch(() => resolve(null)) : resolve(null), "image/png");
     } catch { resolve(null); }
   };
   img.onerror = () => resolve(null);
   img.src = url;
 });
+/** Ancho/alto en px para que una imagen quepa en una caja conservando su proporción. */
+const encajar = (w: number, h: number, maxW: number, maxH: number) => {
+  const k = Math.min(maxW / w, maxH / h);
+  return { w: Math.round(w * k), h: Math.round(h * k) };
+};
 
 const edadDesde = (fechaNac?: string | null): string => {
   if (!fechaNac) return "";
@@ -112,7 +118,7 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
     const { default: PizZip } = await import("pizzip");
     const { default: Docxtemplater } = await import("docxtemplater");
 
-    const templateBuf = await loadBinary("/remision_005_template.docx");
+    const templateBuf = await loadBinary("/remision_template.docx");
 
     // Datos del colegio (membrete) + escudo, identidad y contacto del estudiante.
     let colegioNombre = "", dane = "", nit = "", ciudad = "", logoUrl: string | null = null;
@@ -151,8 +157,8 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
       fechaNac = (data as any)?.fecha_de_nacimiento || "";
     } catch { /* ignore */ }
 
-    const [firmaBuf, escudoBuf] = await Promise.all([
-      r.firma_url ? loadBinary(r.firma_url).catch(() => null) : Promise.resolve(null),
+    const [firmaImg, escudoImg] = await Promise.all([
+      r.firma_url ? imgToPng(r.firma_url) : Promise.resolve(null),
       logoUrl ? imgToPng(logoUrl) : Promise.resolve(null),
     ]);
 
@@ -167,7 +173,6 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
     // Tipo de documento: el guardado; si la remisión es vieja y no lo trae, se infiere por edad.
     const edadNum = parseInt(edadDesde(fechaNac), 10);
     const td = (r.tipo_documento || (isNaN(edadNum) ? "" : edadNum < 7 ? "RC" : edadNum < 18 ? "TI" : "CC")).toUpperCase();
-    const X = "X";
     const fechaAtendida = r.atendida_at || r.fecha_recibido;
     const recibidoFecha = fechaAtendida ? new Date(fechaAtendida).toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "long", timeStyle: "short" }) : "";
     const fmtLargo = (iso: string) => new Date(iso).toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "long", timeStyle: "short" });
@@ -178,24 +183,26 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
         (p.especificacion_conducta ? `\nEspecificación de la conducta: ${p.especificacion_conducta}` : "") +
         (p.medidas_previas ? `\nMedidas previas: ${p.medidas_previas}` : "") })),
       ...notas.map(n => ({ t: n.created_at, txt: `${fmtLargo(n.created_at)} · Seguimiento de ${n.autor_nombre || ""}: ${n.texto}` })),
-    ].sort((a, b) => a.t.localeCompare(b.t)).map(e => e.txt).join("\n\n");
+    ].sort((a, b) => a.t.localeCompare(b.t)).map(e => e.txt);
+    const parrafos = (s: string | null) => (s || "").split(/\n+/).map(x => x.trim()).filter(Boolean);
+    const CB = (on: boolean) => (on ? "☒" : "☐");
+    const marcado = { DG: destinos.includes("director_grupo"), COORD: destinos.includes("coordinador"), ORIENT: destinos.includes("orientacion") };
+    const sublinea = [dane ? `Código DANE ${dane}` : "", nit ? `NIT ${nit}` : "", ciudad].filter(Boolean).join("  ·  ");
 
     doc.render({
-      COLEGIO: colegioNombre, DANE: dane, NIT: nit, CIUDAD: ciudad,
+      COLEGIO_MAYUS: colegioNombre.toUpperCase(), SUBLINEA: sublinea,
+      PIE_IZQ: [colegioNombre, ciudad].filter(Boolean).join("  ·  "),
       NOMBRE_ESTUDIANTE: `${r.estudiante_nombre} ${r.estudiante_apellidos}`,
       GRADO: grupo,
       DOCUMENTO: String(r.estudiante_id),
-      X_RC: td === "RC" ? X : "", X_TI: td === "TI" ? X : "", X_CC: td === "CC" ? X : "",
+      CB_RC: CB(td === "RC"), CB_TI: CB(td === "TI"), CB_CC: CB(td === "CC"),
       FECHA_NAC: fechaNac ? fmtFecha(fechaNac) : "", EDAD: edadDesde(fechaNac),
       ACUDIENTE: acuStr, TELEFONO: telEst, FECHA: fmtFecha(r.fecha),
-      TITULO_FORMATO: "REMISIÓN ESCOLAR",
-      X_DG: destinos.includes("director_grupo") ? X : "",
-      X_COORD: destinos.includes("coordinador") ? X : "",
-      X_ORIENT: destinos.includes("orientacion") ? X : "",
-      RECORRIDO: recorrido,
-      MOTIVO: r.motivo || "",
-      ESPECIFICACION: r.especificacion_conducta || "",
-      MEDIDAS: r.medidas_previas || "",
+      CB_DG: CB(marcado.DG), CB_COORD: CB(marcado.COORD), CB_ORIENT: CB(marcado.ORIENT),
+      RECORRIDO_P: recorrido,
+      MOTIVO_P: parrafos(r.motivo),
+      ESPECIFICACION_P: parrafos(r.especificacion_conducta),
+      MEDIDAS_P: parrafos(r.medidas_previas),
       DOCENTE: [r.docente_cargo, r.docente_nombre].filter(Boolean).join(" "),
       ESTADO: r.atendida_at ? "Atendida" : "Pendiente",
       RECIBIDO_POR: r.atendida_at ? atendio.nombre : "",
@@ -205,6 +212,20 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
 
     const renderedZip = doc.getZip();
     let docXml = renderedZip.file("word/document.xml")?.asText() || "";
+
+    // Condicionales de estilo que docxtemplater no puede resolver: la plantilla trae
+    // colores "testigo" que aquí se cambian por el color real (casilla marcada en verde
+    // con fondo suave, estado verde si Atendida o ámbar si Pendiente).
+    const testigos: Array<[string, string]> = [
+      ['w:fill="FFFFF1"', `w:fill="${marcado.DG ? "F2F8F4" : "FFFFFF"}"`],
+      ['w:fill="FFFFF2"', `w:fill="${marcado.COORD ? "F2F8F4" : "FFFFFF"}"`],
+      ['w:fill="FFFFF3"', `w:fill="${marcado.ORIENT ? "F2F8F4" : "FFFFFF"}"`],
+      ['w:val="0F6B31"', `w:val="${marcado.DG ? "0F6B3F" : "6D7A72"}"`],
+      ['w:val="0F6B32"', `w:val="${marcado.COORD ? "0F6B3F" : "6D7A72"}"`],
+      ['w:val="0F6B33"', `w:val="${marcado.ORIENT ? "0F6B3F" : "6D7A72"}"`],
+      ['w:val="0F6B34"', `w:val="${r.atendida_at ? "0F6B3F" : "B45309"}"`],
+    ];
+    for (const [a, b] of testigos) docXml = docXml.split(a).join(b);
 
     const inyectar = (buf: ArrayBuffer, placeholder: string, filename: string, wPx: number, hPx: number, id: number, name: string) => {
       renderedZip.file(`word/media/${filename}`, buf, { binary: true });
@@ -225,10 +246,10 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
       docXml = docXml.replace(re, `<w:r>${drawing}</w:r>`);
     };
 
-    if (escudoBuf) inyectar(escudoBuf, "__ESCUDO_PLACEHOLDER__", "escudo_remision.png", 70, 70, 101, "Escudo");
+    if (escudoImg) { const d = encajar(escudoImg.w, escudoImg.h, 90, 58); inyectar(escudoImg.buf, "__ESCUDO_PLACEHOLDER__", "escudo_remision.png", d.w, d.h, 101, "Escudo"); }
     else docXml = docXml.replace("__ESCUDO_PLACEHOLDER__", "");
-    if (firmaBuf) inyectar(firmaBuf, "__FIRMA_PLACEHOLDER__", "firma_remision.png", 180, 60, 100, "Firma");
-    else docXml = docXml.replace("__FIRMA_PLACEHOLDER__", "_________________________");
+    if (firmaImg) { const d = encajar(firmaImg.w, firmaImg.h, 200, 60); inyectar(firmaImg.buf, "__FIRMA_PLACEHOLDER__", "firma_remision.png", d.w, d.h, 100, "Firma"); }
+    else docXml = docXml.replace("__FIRMA_PLACEHOLDER__", "");
 
     renderedZip.file("word/document.xml", docXml);
 
