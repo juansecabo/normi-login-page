@@ -185,7 +185,10 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
         return { t: p.created_at, TITULO: `Remitió a ${DESTINO_DOC[p.destino] || p.destino}`, META: `${quien}  ·  ${fmtLargo(p.created_at)}`, esPaso: true,
           MOTIVO: p.motivo || "", ESPECIFICACION: p.especificacion_conducta || "", MEDIDAS: p.medidas_previas || "", FIRMA_TAG: p.firma_url ? tag : "", QUIEN: quien };
       }),
-      ...notas.map(n => ({ t: n.created_at, TITULO: "Seguimiento", META: `${n.autor_nombre || ""}  ·  ${fmtLargo(n.created_at)}`, esNota: true, TEXTO: n.texto })),
+      ...notas.map(n => {
+        const a = separarCargoNombre(n.autor_nombre); // "Cargo (Nombre)" → "Cargo Nombre", igual que en los pasos
+        return { t: n.created_at, TITULO: "Seguimiento", META: `${[a.cargo, a.nombre].filter(Boolean).join(" ")}  ·  ${fmtLargo(n.created_at)}`, esNota: true, TEXTO: n.texto };
+      }),
     ].sort((a, b) => a.t.localeCompare(b.t));
     const parrafos = (s: string | null) => (s || "").split(/\n+/).map(x => x.trim()).filter(Boolean);
     const CB = (on: boolean) => (on ? "☒" : "☐");
