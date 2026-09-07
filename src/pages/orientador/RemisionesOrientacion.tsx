@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import iconCasos from "@/assets/icons/casos.png";
 import { markLastSeen } from "@/utils/notificaciones";
 import { apiClient, apiRequest } from "@/lib/apiClient";
+import { formatTelefono } from "@/utils/telefono";
+import { cargoSegunGenero } from "@/lib/entrevistadores";
 
 interface Remision {
   id: number;
@@ -95,7 +97,17 @@ const edadDesde = (fechaNac?: string | null): string => {
   return e >= 0 && e < 120 ? String(e) : "";
 };
 
-const descargarWord = async (r: Remision) => {
+type PasoDoc = { destino: string; motivo: string; especificacion_conducta: string | null; medidas_previas: string | null; docente_nombre: string | null; docente_cargo: string | null; created_at: string };
+type SeguimientoDoc = { autor_nombre: string | null; texto: string; created_at: string };
+const DESTINO_DOC: Record<string, string> = { orientacion: "Orientación Escolar", director_grupo: "Dirección de grupo", coordinador: "Coordinación" };
+
+/** "Cargo (Nombre Apellido)" → { cargo, nombre }. Si no trae paréntesis, todo es nombre. */
+const separarCargoNombre = (s: string | null): { cargo: string; nombre: string } => {
+  const m = (s || "").match(/^(.+?)\s*\((.+)\)\s*$/);
+  return m ? { cargo: m[1].trim(), nombre: m[2].trim() } : { cargo: "", nombre: (s || "").trim() };
+};
+
+const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: SeguimientoDoc[] = []) => {
   try {
     const { default: PizZip } = await import("pizzip");
     const { default: Docxtemplater } = await import("docxtemplater");
@@ -111,12 +123,27 @@ const descargarWord = async (r: Remision) => {
       dane = cc.config?.dane || ""; nit = cc.config?.nit || ""; ciudad = cc.config?.ciudad || "";
     } catch (e) { console.warn("config colegio:", e); }
 
+    // Todos los acudientes, cada uno con su teléfono; el teléfono del estudiante va aparte.
     let telEst = "", acuStr = "";
     try {
       const c = await apiClient.orientacion.contactoEstudiante(r.estudiante_id);
-      telEst = c.estudiante_telefono || "";
-      if (c.acudientes.length > 0) acuStr = c.acudientes.map(a => `${a.nombre}${a.telefono ? ` (${a.telefono})` : ""}`).join("\n");
+      telEst = formatTelefono(c.estudiante_telefono) || "";
+      if (c.acudientes.length > 0) acuStr = c.acudientes.map(a => `${a.nombre}${a.telefono ? ` · ${formatTelefono(a.telefono)}` : ""}`).join("\n");
     } catch (e) { console.warn("Contacto:", e); }
+
+    // Quien atendió: "Cargo (Nombre)" en las nuevas; en las viejas solo venía el nombre,
+    // así que el cargo se busca en Internos (con género desde Usuarios).
+    const atendio = separarCargoNombre(r.atendida_por_nombre || r.recibido_por_nombre);
+    const atendioId = r.atendida_por_id || r.recibido_por_id;
+    if (!atendio.cargo && atendioId) {
+      try {
+        const [{ data: intn }, { data: usr }] = await Promise.all([
+          supabase.from("Internos").select("cargo").eq("id", atendioId).maybeSingle(),
+          supabase.from("Usuarios").select("genero").eq("id", atendioId).maybeSingle(),
+        ]);
+        atendio.cargo = cargoSegunGenero((intn as any)?.cargo || "", (usr as any)?.genero || null);
+      } catch { /* sin cargo */ }
+    }
 
     let fechaNac = "";
     try {
@@ -137,9 +164,22 @@ const descargarWord = async (r: Remision) => {
 
     const grupo = r.estudiante_salon ? `${r.estudiante_grado} ${r.estudiante_salon}` : r.estudiante_grado;
     const destinos = r.destinos || [];
-    const td = (r.tipo_documento || "").toUpperCase();
+    // Tipo de documento: el guardado; si la remisión es vieja y no lo trae, se infiere por edad.
+    const edadNum = parseInt(edadDesde(fechaNac), 10);
+    const td = (r.tipo_documento || (isNaN(edadNum) ? "" : edadNum < 7 ? "RC" : edadNum < 18 ? "TI" : "CC")).toUpperCase();
     const X = "X";
-    const recibidoFecha = r.fecha_recibido ? new Date(r.fecha_recibido).toLocaleString("es-CO") : "";
+    const fechaAtendida = r.atendida_at || r.fecha_recibido;
+    const recibidoFecha = fechaAtendida ? new Date(fechaAtendida).toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "long", timeStyle: "short" }) : "";
+    const fmtLargo = (iso: string) => new Date(iso).toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "long", timeStyle: "short" });
+    const recorrido = [
+      ...pasos.map(p => ({ t: p.created_at, txt:
+        `${fmtLargo(p.created_at)} · ${[p.docente_cargo, p.docente_nombre].filter(Boolean).join(" ")} remitió a ${DESTINO_DOC[p.destino] || p.destino}.\n` +
+        `Motivo: ${p.motivo}` +
+        (p.especificacion_conducta ? `\nEspecificación de la conducta: ${p.especificacion_conducta}` : "") +
+        (p.medidas_previas ? `\nMedidas previas: ${p.medidas_previas}` : "") })),
+      ...notas.map(n => ({ t: n.created_at, txt: `${fmtLargo(n.created_at)} · Seguimiento de ${n.autor_nombre || ""}: ${n.texto}` })),
+    ].sort((a, b) => a.t.localeCompare(b.t)).map(e => e.txt).join("\n\n");
+    const esPestalozziano = /pestalozziano/i.test(colegioNombre);
 
     doc.render({
       COLEGIO: colegioNombre, DANE: dane, NIT: nit, CIUDAD: ciudad,
@@ -149,22 +189,19 @@ const descargarWord = async (r: Remision) => {
       X_RC: td === "RC" ? X : "", X_TI: td === "TI" ? X : "", X_CC: td === "CC" ? X : "",
       FECHA_NAC: fechaNac ? fmtFecha(fechaNac) : "", EDAD: edadDesde(fechaNac),
       ACUDIENTE: acuStr, TELEFONO: telEst, FECHA: fmtFecha(r.fecha),
+      TITULO_FORMATO: esPestalozziano ? "FORMATO 005\nREMISIÓN ESCOLAR" : "REMISIÓN ESCOLAR",
       X_DG: destinos.includes("director_grupo") ? X : "",
+      X_COORD: destinos.includes("coordinador") ? X : "",
       X_ORIENT: destinos.includes("orientacion") ? X : "",
-      X_DOC: "",
-      X_OTRO: destinos.includes("coordinador") ? X : "",
-      OTRO_CUAL: destinos.includes("coordinador") ? "Coordinador" : "",
+      RECORRIDO: recorrido,
       MOTIVO: r.motivo || "",
       ESPECIFICACION: r.especificacion_conducta || "",
       MEDIDAS: r.medidas_previas || "",
       DOCENTE: [r.docente_cargo, r.docente_nombre].filter(Boolean).join(" "),
-      ROL: r.docente_cargo || "",
-      RECIBIDO_POR: r.recibido_por_nombre || "",
       ESTADO: r.atendida_at ? "Atendida" : "Pendiente",
-      ATENDIDA_POR: r.atendida_por_nombre || "",
-      FECHA_ATENDIDA: r.atendida_at ? fmtFecha(r.atendida_at.slice(0, 10)) : "",
-      RECIBIDO_CARGO: "",
-      RECIBIDO_FECHA: recibidoFecha,
+      RECIBIDO_POR: r.atendida_at ? atendio.nombre : "",
+      RECIBIDO_CARGO: r.atendida_at ? atendio.cargo : "",
+      RECIBIDO_FECHA: r.atendida_at ? recibidoFecha : "",
     });
 
     const renderedZip = doc.getZip();
@@ -184,7 +221,9 @@ const descargarWord = async (r: Remision) => {
       relsXml = relsXml.replace("</Relationships>", `<Relationship Id="${newRid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${filename}"/></Relationships>`);
       renderedZip.file(relsPath, relsXml);
       const drawing = drawingXmlForImage(newRid, wPx, hPx, id, name);
-      docXml = docXml.replace(new RegExp(`<w:r[^>]*>\\s*<w:t[^>]*>${placeholder}</w:t>\\s*</w:r>`), `<w:r>${drawing}</w:r>`);
+      const re = new RegExp(`<w:r[^>]*>(?:\\s*<w:rPr>[\\s\\S]*?</w:rPr>)?\\s*<w:t[^>]*>${placeholder}</w:t>\\s*</w:r>`);
+      if (!re.test(docXml)) console.warn("Word: no se encontró el marcador", placeholder);
+      docXml = docXml.replace(re, `<w:r>${drawing}</w:r>`);
     };
 
     if (escudoBuf) inyectar(escudoBuf, "__ESCUDO_PLACEHOLDER__", "escudo_remision.png", 70, 70, 101, "Escudo");
@@ -806,7 +845,7 @@ const RemisionesOrientacion = () => {
                 <button
                   type="button"
                   data-guia="orientacion.remision_descargar_word"
-                  onClick={() => descargarWord(remVista)}
+                  onClick={() => descargarWord(remVista, pasosPorRem[remVista.id] || [], seguimientos[remVista.id] || [])}
                   className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md border border-input bg-background hover:bg-accent"
                 >
                   <Download className="w-3.5 h-3.5" /> Descargar Word
