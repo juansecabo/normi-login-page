@@ -241,7 +241,9 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
       relsXml = relsXml.replace("</Relationships>", `<Relationship Id="${newRid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${filename}"/></Relationships>`);
       renderedZip.file(relsPath, relsXml);
       const drawing = drawingXmlForImage(newRid, wPx, hPx, id, name);
-      const re = new RegExp(`<w:r[^>]*>(?:\\s*<w:rPr>[\\s\\S]*?</w:rPr>)?\\s*<w:t[^>]*>${placeholder}</w:t>\\s*</w:r>`);
+      // Solo el run del marcador: el <w:rPr> opcional no puede cruzar a otros runs
+      // (un [\s\S]*? aquí se tragaba desde el membrete hasta la firma).
+      const re = new RegExp(`<w:r(?:\\s[^>]*)?>(?:\\s*<w:rPr>(?:(?!</w:rPr>)[\\s\\S])*</w:rPr>)?\\s*<w:t[^>]*>${placeholder}</w:t>\\s*</w:r>`);
       if (!re.test(docXml)) console.warn("Word: no se encontró el marcador", placeholder);
       docXml = docXml.replace(re, `<w:r>${drawing}</w:r>`);
     };
