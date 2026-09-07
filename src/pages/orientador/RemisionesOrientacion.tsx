@@ -107,6 +107,16 @@ type PasoDoc = { destino: string; motivo: string; especificacion_conducta: strin
 type SeguimientoDoc = { autor_nombre: string | null; texto: string; created_at: string };
 const DESTINO_DOC: Record<string, string> = { orientacion: "Orientación Escolar", director_grupo: "Dirección de grupo", coordinador: "Coordinación" };
 
+/** Área a la que pertenece un cargo, para titular las notas de seguimiento del Word. */
+const areaDeCargo = (cargo: string): string => {
+  const c = (cargo || "").toLowerCase();
+  if (c.includes("coordinador")) return "Coordinación";
+  if (c.includes("orientador")) return "Orientación Escolar";
+  if (c.includes("profesor") || c.includes("docente")) return "Dirección de grupo";
+  if (c.includes("rector")) return "Rectoría";
+  return cargo || "Seguimiento";
+};
+
 /** "Cargo (Nombre Apellido)" → { cargo, nombre }. Si no trae paréntesis, todo es nombre. */
 const separarCargoNombre = (s: string | null): { cargo: string; nombre: string } => {
   const m = (s || "").match(/^(.+?)\s*\((.+)\)\s*$/);
@@ -187,9 +197,11 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
       }),
       ...notas.map(n => {
         const a = separarCargoNombre(n.autor_nombre); // "Cargo (Nombre)" → "Cargo Nombre", igual que en los pasos
-        return { t: n.created_at, TITULO: "Seguimiento", META: `${[a.cargo, a.nombre].filter(Boolean).join(" ")}  ·  ${fmtLargo(n.created_at)}`, esNota: true, TEXTO: n.texto };
+        return { t: n.created_at, TITULO: `Seguimiento · ${areaDeCargo(a.cargo)}`, META: `${[a.cargo, a.nombre].filter(Boolean).join(" ")}  ·  ${fmtLargo(n.created_at)}`, esNota: true, TEXTO: n.texto };
       }),
     ].sort((a, b) => a.t.localeCompare(b.t));
+    // La línea de tiempo es un loop de fila: sin entradas quedaría una tabla sin filas (docx inválido).
+    if (entradas.length === 0) entradas.push({ t: "", TITULO: "Sin pasos ni notas de seguimiento", META: "Nadie ha remitido esta remisión a otra persona ni ha dejado notas.", esNota: false } as any);
     const parrafos = (s: string | null) => (s || "").split(/\n+/).map(x => x.trim()).filter(Boolean);
     const CB = (on: boolean) => (on ? "☒" : "☐");
     const marcado = { DG: destinos.includes("director_grupo"), COORD: destinos.includes("coordinador"), ORIENT: destinos.includes("orientacion") };
@@ -205,7 +217,7 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
       FECHA_NAC: fechaNac ? fmtFecha(fechaNac) : "", EDAD: edadDesde(fechaNac),
       ACUDIENTE: acuStr, TELEFONO: telEst, FECHA: fmtFecha(r.fecha),
       CB_DG: CB(marcado.DG), CB_COORD: CB(marcado.COORD), CB_ORIENT: CB(marcado.ORIENT),
-      ENTRADAS: entradas, SIN_ENTRADAS: entradas.length === 0,
+      ENTRADAS: entradas,
       MOTIVO_P: parrafos(r.motivo),
       ESPECIFICACION_P: parrafos(r.especificacion_conducta),
       MEDIDAS_P: parrafos(r.medidas_previas),
