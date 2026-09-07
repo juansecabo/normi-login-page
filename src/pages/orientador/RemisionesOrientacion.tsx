@@ -179,7 +179,6 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
         (p.medidas_previas ? `\nMedidas previas: ${p.medidas_previas}` : "") })),
       ...notas.map(n => ({ t: n.created_at, txt: `${fmtLargo(n.created_at)} · Seguimiento de ${n.autor_nombre || ""}: ${n.texto}` })),
     ].sort((a, b) => a.t.localeCompare(b.t)).map(e => e.txt).join("\n\n");
-    const esPestalozziano = /pestalozziano/i.test(colegioNombre);
 
     doc.render({
       COLEGIO: colegioNombre, DANE: dane, NIT: nit, CIUDAD: ciudad,
@@ -189,7 +188,7 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
       X_RC: td === "RC" ? X : "", X_TI: td === "TI" ? X : "", X_CC: td === "CC" ? X : "",
       FECHA_NAC: fechaNac ? fmtFecha(fechaNac) : "", EDAD: edadDesde(fechaNac),
       ACUDIENTE: acuStr, TELEFONO: telEst, FECHA: fmtFecha(r.fecha),
-      TITULO_FORMATO: esPestalozziano ? "FORMATO 005\nREMISIÓN ESCOLAR" : "REMISIÓN ESCOLAR",
+      TITULO_FORMATO: "REMISIÓN ESCOLAR",
       X_DG: destinos.includes("director_grupo") ? X : "",
       X_COORD: destinos.includes("coordinador") ? X : "",
       X_ORIENT: destinos.includes("orientacion") ? X : "",
@@ -239,7 +238,7 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
     });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(out);
-    a.download = `Remision_005_${sanitizeFilename(r.estudiante_apellidos + "_" + r.estudiante_nombre)}_${r.fecha}.docx`;
+    a.download = `Remision_${sanitizeFilename(r.estudiante_apellidos + "_" + r.estudiante_nombre)}_${r.fecha}.docx`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
