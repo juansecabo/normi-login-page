@@ -103,7 +103,7 @@ const edadDesde = (fechaNac?: string | null): string => {
   return e >= 0 && e < 120 ? String(e) : "";
 };
 
-type PasoDoc = { destino: string; motivo: string; especificacion_conducta: string | null; medidas_previas: string | null; docente_nombre: string | null; docente_cargo: string | null; created_at: string };
+type PasoDoc = { destino: string; motivo: string; especificacion_conducta: string | null; medidas_previas: string | null; firma_url: string | null; docente_nombre: string | null; docente_cargo: string | null; created_at: string };
 type SeguimientoDoc = { autor_nombre: string | null; texto: string; created_at: string };
 const DESTINO_DOC: Record<string, string> = { orientacion: "Orientación Escolar", director_grupo: "Dirección de grupo", coordinador: "Coordinación" };
 
@@ -157,9 +157,10 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
       fechaNac = (data as any)?.fecha_de_nacimiento || "";
     } catch { /* ignore */ }
 
-    const [firmaImg, escudoImg] = await Promise.all([
+    const [firmaImg, escudoImg, ...firmasPasosImg] = await Promise.all([
       r.firma_url ? imgToPng(r.firma_url) : Promise.resolve(null),
       logoUrl ? imgToPng(logoUrl) : Promise.resolve(null),
+      ...pasos.map(p => (p.firma_url ? imgToPng(p.firma_url) : Promise.resolve(null))),
     ]);
 
     const zip = new PizZip(templateBuf);
@@ -176,14 +177,16 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
     const fechaAtendida = r.atendida_at || r.fecha_recibido;
     const recibidoFecha = fechaAtendida ? new Date(fechaAtendida).toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "long", timeStyle: "short" }) : "";
     const fmtLargo = (iso: string) => new Date(iso).toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "long", timeStyle: "short" });
-    const recorrido = [
-      ...pasos.map(p => ({ t: p.created_at, txt:
-        `${fmtLargo(p.created_at)} · ${[p.docente_cargo, p.docente_nombre].filter(Boolean).join(" ")} remitió a ${DESTINO_DOC[p.destino] || p.destino}.\n` +
-        `Motivo: ${p.motivo}` +
-        (p.especificacion_conducta ? `\nEspecificación de la conducta: ${p.especificacion_conducta}` : "") +
-        (p.medidas_previas ? `\nMedidas previas: ${p.medidas_previas}` : "") })),
-      ...notas.map(n => ({ t: n.created_at, txt: `${fmtLargo(n.created_at)} · Seguimiento de ${n.autor_nombre || ""}: ${n.texto}` })),
-    ].sort((a, b) => a.t.localeCompare(b.t)).map(e => e.txt);
+    // Sección 6: una tarjeta por paso (con su escrito y firma) y por nota, en orden cronológico.
+    const entradas = [
+      ...pasos.map((p, i) => {
+        const tag = `__FIRMA_PASO_${i}__`;
+        const quien = [p.docente_cargo, p.docente_nombre].filter(Boolean).join(" ");
+        return { t: p.created_at, TITULO: `Remitió a ${DESTINO_DOC[p.destino] || p.destino}`, META: `${quien}  ·  ${fmtLargo(p.created_at)}`, esPaso: true,
+          MOTIVO: p.motivo || "", ESPECIFICACION: p.especificacion_conducta || "", MEDIDAS: p.medidas_previas || "", FIRMA_TAG: p.firma_url ? tag : "", QUIEN: quien };
+      }),
+      ...notas.map(n => ({ t: n.created_at, TITULO: "Seguimiento", META: `${n.autor_nombre || ""}  ·  ${fmtLargo(n.created_at)}`, esNota: true, TEXTO: n.texto })),
+    ].sort((a, b) => a.t.localeCompare(b.t));
     const parrafos = (s: string | null) => (s || "").split(/\n+/).map(x => x.trim()).filter(Boolean);
     const CB = (on: boolean) => (on ? "☒" : "☐");
     const marcado = { DG: destinos.includes("director_grupo"), COORD: destinos.includes("coordinador"), ORIENT: destinos.includes("orientacion") };
@@ -199,7 +202,7 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
       FECHA_NAC: fechaNac ? fmtFecha(fechaNac) : "", EDAD: edadDesde(fechaNac),
       ACUDIENTE: acuStr, TELEFONO: telEst, FECHA: fmtFecha(r.fecha),
       CB_DG: CB(marcado.DG), CB_COORD: CB(marcado.COORD), CB_ORIENT: CB(marcado.ORIENT),
-      RECORRIDO_P: recorrido,
+      ENTRADAS: entradas, SIN_ENTRADAS: entradas.length === 0,
       MOTIVO_P: parrafos(r.motivo),
       ESPECIFICACION_P: parrafos(r.especificacion_conducta),
       MEDIDAS_P: parrafos(r.medidas_previas),
@@ -252,6 +255,11 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
     else docXml = docXml.replace("__ESCUDO_PLACEHOLDER__", "");
     if (firmaImg) { const d = encajar(firmaImg.w, firmaImg.h, 200, 60); inyectar(firmaImg.buf, "__FIRMA_PLACEHOLDER__", "firma_remision.png", d.w, d.h, 100, "Firma"); }
     else docXml = docXml.replace("__FIRMA_PLACEHOLDER__", "");
+    pasos.forEach((p, i) => {
+      const tag = `__FIRMA_PASO_${i}__`; const img = firmasPasosImg[i];
+      if (p.firma_url && img) { const d = encajar(img.w, img.h, 160, 48); inyectar(img.buf, tag, `firma_paso_${i}.png`, d.w, d.h, 200 + i, `Firma paso ${i + 1}`); }
+      else docXml = docXml.split(tag).join("");
+    });
 
     renderedZip.file("word/document.xml", docXml);
 
