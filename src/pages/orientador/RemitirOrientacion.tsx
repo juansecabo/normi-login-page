@@ -304,9 +304,8 @@ const RemitirOrientacion = () => {
       return;
     }
 
-    // 3) Notificar: el server avisa por WhatsApp a la PERSONA destinataria
-    //    (orientadores, coordinador del nivel o director del salón), con copia
-    //    al coordinador del nivel cuando no es el destinatario.
+    // 3) Notificar: el server avisa por WhatsApp SOLO a la persona destinataria
+    //    (orientadores, coordinador del nivel o director del salón).
     let notif: { directos: number; copias: number } | null = null;
     try {
       const idNueva = (insertada as any)?.id;
@@ -318,7 +317,7 @@ const RemitirOrientacion = () => {
     toast({
       title: "Remisión enviada",
       description: notif
-        ? `Quedó registrada. Se avisó por WhatsApp a ${notif.directos} destinatario${notif.directos === 1 ? "" : "s"}${notif.copias ? ` y ${notif.copias} en copia` : ""}.`
+        ? `Quedó registrada. Se avisó por WhatsApp a ${notif.directos} destinatario${notif.directos === 1 ? "" : "s"}.`
         : "Quedó registrada. No se pudo enviar el aviso por WhatsApp.",
     });
     resetForm();
