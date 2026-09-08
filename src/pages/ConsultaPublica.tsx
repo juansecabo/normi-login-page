@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { getSession, hasValidSession, isPadreDeFamilia, isEstudiante } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -55,6 +54,13 @@ interface Respondent {
   firmaPreviaNombre: string | null;
   respondido: boolean;
 }
+
+/** Ajusta la altura de un textarea a su contenido (auto-crecimiento). */
+const ajustarAlto = (el: HTMLTextAreaElement | null) => {
+  if (!el) return;
+  el.style.height = "auto";
+  el.style.height = `${Math.max(el.scrollHeight, 60)}px`;
+};
 
 // Mapeo entre etiqueta legacy (cargos_objetivo) y el cargo real del usuario.
 const CARGO_OBJETIVO_MAP: Record<string, string[]> = {
@@ -787,16 +793,20 @@ export default function ConsultaPublica() {
                   {(consulta.campos_datos || []).map((campo) => (
                     <div key={campo}>
                       <Label className="text-sm font-medium">{campo}</Label>
-                      <Input
-                        className="mt-1"
+                      {/* Cuadro de texto que crece con lo escrito (Juan 2026-09-08: nada de casillas de una línea). */}
+                      <textarea
+                        rows={2}
+                        ref={ajustarAlto}
+                        className="mt-1 flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none overflow-hidden"
                         value={datosForm[r.key]?.[campo] || ""}
                         disabled={readonly || !consulta.activa}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          ajustarAlto(e.target);
                           setDatosForm((prev) => ({
                             ...prev,
                             [r.key]: { ...(prev[r.key] || {}), [campo]: e.target.value },
-                          }))
-                        }
+                          }));
+                        }}
                       />
                     </div>
                   ))}
