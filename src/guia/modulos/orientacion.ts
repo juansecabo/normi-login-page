@@ -940,7 +940,7 @@ export const ORIENTACION: Capacidad[] = [
     id: "orientacion.remision_seguimiento",
     titulo: "Agregar seguimiento a una remisión",
     descripcion:
-      "Dejar notas de seguimiento en una remisión (qué se hizo, con quién se habló, acuerdos). Se ven en 'Recorrido y seguimiento' junto con cada paso a otra instancia, en orden de fecha. Solo la persona a la que va dirigida puede escribirlas; todos los que ven la remisión las leen.",
+      "Dejar notas de seguimiento en una remisión (qué se hizo, con quién se habló, acuerdos). Las de la etapa actual se ven en 'Seguimiento', debajo del escrito vigente; las de etapas anteriores quedan dentro de cada etapa en 'Recorrido'. Solo la persona a la que va dirigida hoy puede escribirlas; todos los que ven la remisión las leen.",
     categoria: "Orientación",
     roles: [...ORIENTADOR_ADMIN, "coordinador", "profesor"],
     ruta: "/orientador/remisiones",
@@ -972,7 +972,7 @@ export const ORIENTACION: Capacidad[] = [
       { narracion: "Elige a quién la remites (una sola opción).", accion: "click", ancla: "orientacion.remitir_destino", campo: "destino" },
       { narracion: "Escribe el motivo, la especificación de la conducta y las medidas previas.", accion: "escribir", ancla: "orientacion.remitir_motivo", campo: "motivo" },
       { narracion: "Firma en el recuadro.", accion: "click", ancla: "orientacion.remitir_firma" },
-      { narracion: "Toca 'Enviar remisión'. Vuelves al detalle de la misma remisión: ahora dice a quién va dirigida, y en 'Recorrido y seguimiento' aparece tu paso con el escrito.", accion: "click" },
+      { narracion: "Toca 'Enviar remisión'. Vuelves al detalle de la misma remisión: ahora muestra tu escrito como el vigente, dice a quién va dirigida, y en 'Recorrido' quedan las etapas anteriores.", accion: "click" },
     ],
   },
   {

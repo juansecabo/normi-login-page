@@ -952,84 +952,99 @@ const RemisionesOrientacion = () => {
                 )}
               </div>
 
-              {/* ── Recorrido y seguimiento del expediente (pasos + notas, en orden) ── */}
-              <div className="rounded-md border border-border p-3 space-y-3" data-guia="orientacion.remision_seguimiento">
-                <div className="text-sm font-semibold text-foreground flex items-center gap-1"><MessagesSquare className="w-4 h-4" /> Recorrido y seguimiento</div>
-                {(() => {
-                  type Entrada = { t: string; tipo: "paso"; paso: Paso } | { t: string; tipo: "nota"; nota: Seguimiento } | { t: string; tipo: "origen" };
-                  const hayPasos = (pasosPorRem[remVista.id] || []).length > 0;
-                  const entradas: Entrada[] = [
-                    ...(hayPasos ? [{ t: remVista.created_at || remVista.fecha, tipo: "origen" as const }] : []),
-                    ...(pasosPorRem[remVista.id] || []).map(p => ({ t: p.created_at, tipo: "paso" as const, paso: p })),
-                    ...(seguimientos[remVista.id] || []).map(n => ({ t: n.created_at, tipo: "nota" as const, nota: n })),
-                  ].sort((a, b) => a.t.localeCompare(b.t));
-                  if (entradas.length === 0) return <p className="text-sm text-muted-foreground">Sin notas de seguimiento todavía.</p>;
-                  const fmt = (iso: string) => new Date(iso).toLocaleString("es-CO", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
-                  return (
-                    <ol className="relative border-l-2 border-border ml-2 space-y-3">
-                      {entradas.map((e, i) => e.tipo === "origen" ? (
-                        <li key="origen" className="ml-4">
-                          <span className="absolute -left-[7px] mt-1.5 w-3 h-3 rounded-full bg-slate-400" />
-                          <div className="rounded-md border border-border bg-muted/20 px-3 py-2 text-sm space-y-1">
-                            <div className="text-xs text-muted-foreground">
-                              <span className="font-semibold text-foreground">{[remVista.docente_cargo, remVista.docente_nombre].filter(Boolean).join(" ")}</span> creó la remisión dirigida a <span className="font-bold text-red-600">{destinosLegibles(remVista.destinos) || "Orientación Escolar"}</span> · {fmt(remVista.created_at || remVista.fecha)}
-                            </div>
-                            <div><span className="font-semibold">Motivo:</span> <span className="whitespace-pre-wrap">{remVista.motivo}</span></div>
-                            {remVista.especificacion_conducta && <div><span className="font-semibold">Especificación de la conducta:</span> <span className="whitespace-pre-wrap">{remVista.especificacion_conducta}</span></div>}
-                            {remVista.medidas_previas && <div><span className="font-semibold">Medidas previas:</span> <span className="whitespace-pre-wrap">{remVista.medidas_previas}</span></div>}
-                            {remVista.firma_url && <a href={remVista.firma_url} target="_blank" rel="noreferrer"><img src={remVista.firma_url} alt="Firma" className="max-h-20 border rounded bg-white mt-1" /></a>}
-                          </div>
-                        </li>
-                      ) : e.tipo === "paso" ? (
-                        <li key={`p${e.paso.id}`} className="ml-4">
-                          <span className="absolute -left-[7px] mt-1.5 w-3 h-3 rounded-full bg-violet-500" />
-                          <div className="rounded-md border border-violet-200 bg-violet-50 px-3 py-2 text-sm space-y-1">
-                            <div className="text-xs text-muted-foreground">
-                              <span className="font-semibold text-foreground">{[e.paso.docente_cargo, e.paso.docente_nombre].filter(Boolean).join(" ")}</span> remitió a <span className="font-bold text-red-600">{destinosLegibles([e.paso.destino])}</span> · {fmt(e.paso.created_at)}
-                            </div>
-                            <div><span className="font-semibold">Motivo:</span> <span className="whitespace-pre-wrap">{e.paso.motivo}</span></div>
-                            {e.paso.especificacion_conducta && <div><span className="font-semibold">Especificación de la conducta:</span> <span className="whitespace-pre-wrap">{e.paso.especificacion_conducta}</span></div>}
-                            {e.paso.medidas_previas && <div><span className="font-semibold">Medidas previas:</span> <span className="whitespace-pre-wrap">{e.paso.medidas_previas}</span></div>}
-                            {e.paso.firma_url && <a href={e.paso.firma_url} target="_blank" rel="noreferrer"><img src={e.paso.firma_url} alt="Firma" className="max-h-20 border rounded bg-white mt-1" /></a>}
-                          </div>
-                        </li>
-                      ) : (
-                        <li key={`n${e.nota.id}`} className="ml-4">
-                          <span className="absolute -left-[7px] mt-1.5 w-3 h-3 rounded-full bg-emerald-500" />
-                          <div className="rounded bg-muted/30 px-3 py-2 text-sm">
-                            <div className="text-xs text-muted-foreground mb-0.5"><span className="font-semibold text-foreground">{e.nota.autor_nombre || e.nota.autor_id}</span> · {fmt(e.nota.created_at)}</div>
-                            <div className="whitespace-pre-wrap">{e.nota.texto}</div>
-                          </div>
-                        </li>
-                      ))}
-                    </ol>
-                  );
-                })()}
-                {puedeMarcar(remVista) && (
-                  <div className="space-y-2">
-                    <textarea
-                      data-guia="orientacion.remision_seguimiento_texto"
-                      value={nuevoSeg}
-                      onChange={e => setNuevoSeg(e.target.value)}
-                      rows={3}
-                      maxLength={4000}
-                      placeholder="Escribe una nota de seguimiento (qué se hizo, con quién se habló, acuerdos...)"
-                      className="w-full border rounded px-3 py-2 text-sm bg-background resize-none"
-                    />
-                    <div className="flex justify-end">
-                      <button
-                        type="button"
-                        data-guia="orientacion.remision_seguimiento_agregar"
-                        disabled={guardandoSeg || !nuevoSeg.trim()}
-                        onClick={() => agregarSeguimiento(remVista)}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
-                      >
-                        <Plus className="w-3.5 h-3.5" /> {guardandoSeg ? "Guardando..." : "Agregar seguimiento"}
-                      </button>
-                    </div>
+              {/* ── Igual que el Word (Juan 2026-09-07): primero el Seguimiento de la etapa ACTUAL
+                     (notas de quien la lleva hoy), después el Recorrido con las etapas anteriores,
+                     de la más nueva a la más antigua, cada una con su escrito, su firma y sus notas. ── */}
+              {(() => {
+                const pasosAsc = [...(pasosPorRem[remVista.id] || [])].sort((a, b) => a.created_at.localeCompare(b.created_at));
+                const notasTodas = seguimientos[remVista.id] || [];
+                const etapaDe = (n: Seguimiento) => { let k = -1; pasosAsc.forEach((p, i) => { if (p.created_at <= n.created_at) k = i; }); return k; };
+                const notasDe = (k: number) => notasTodas.filter(n => etapaDe(n) === k).sort((a, b) => a.created_at.localeCompare(b.created_at));
+                const etapaActual = pasosAsc.length - 1;
+                const fmt = (iso: string) => new Date(iso).toLocaleString("es-CO", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+                const Notas = ({ notas }: { notas: Seguimiento[] }) => (
+                  <ol className="relative border-l-2 border-border ml-2 space-y-2">
+                    {notas.map(n => (
+                      <li key={`n${n.id}`} className="ml-4">
+                        <span className="absolute -left-[7px] mt-1.5 w-3 h-3 rounded-full bg-emerald-500" />
+                        <div className="rounded bg-muted/30 px-3 py-2 text-sm">
+                          <div className="text-xs text-muted-foreground mb-0.5"><span className="font-semibold text-foreground">{n.autor_nombre || n.autor_id}</span> · {fmt(n.created_at)}</div>
+                          <div className="whitespace-pre-wrap">{n.texto}</div>
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                );
+                type Etapa = { key: string; destino: string; encabezado: string; fecha: string; motivo: string; especificacion: string | null; medidas: string | null; firma: string | null; quien: string; notas: Seguimiento[]; esOrigen: boolean };
+                const etapas: Etapa[] = [
+                  ...pasosAsc.slice(0, -1).map((p, i): Etapa => ({ key: `p${p.id}`, destino: destinosLegibles([p.destino]), encabezado: "Remitida por", fecha: p.created_at,
+                    motivo: p.motivo, especificacion: p.especificacion_conducta, medidas: p.medidas_previas, firma: p.firma_url, quien: [p.docente_cargo, p.docente_nombre].filter(Boolean).join(" "), notas: notasDe(i), esOrigen: false })),
+                  ...(pasosAsc.length > 0 ? [{ key: "origen", destino: destinosLegibles(remVista.destinos) || "Orientación Escolar", encabezado: "Creada por", fecha: remVista.created_at || remVista.fecha,
+                    motivo: remVista.motivo, especificacion: remVista.especificacion_conducta, medidas: remVista.medidas_previas, firma: remVista.firma_url, quien: [remVista.docente_cargo, remVista.docente_nombre].filter(Boolean).join(" "), notas: notasDe(-1), esOrigen: true } as Etapa] : []),
+                ].sort((a, b) => b.fecha.localeCompare(a.fecha));
+                const notasActuales = notasDe(etapaActual);
+                return (<>
+                  <div className="rounded-md border border-border p-3 space-y-3" data-guia="orientacion.remision_seguimiento">
+                    <div className="text-sm font-semibold text-foreground flex items-center gap-1"><MessagesSquare className="w-4 h-4" /> Seguimiento</div>
+                    {notasActuales.length === 0
+                      ? <p className="text-sm text-muted-foreground">Sin notas de seguimiento en esta etapa todavía.</p>
+                      : <Notas notas={notasActuales} />}
+                    {puedeMarcar(remVista) && (
+                      <div className="space-y-2">
+                        <textarea
+                          data-guia="orientacion.remision_seguimiento_texto"
+                          value={nuevoSeg}
+                          onChange={e => setNuevoSeg(e.target.value)}
+                          rows={3}
+                          maxLength={4000}
+                          placeholder="Escribe una nota de seguimiento (qué se hizo, con quién se habló, acuerdos...)"
+                          className="w-full border rounded px-3 py-2 text-sm bg-background resize-none"
+                        />
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            data-guia="orientacion.remision_seguimiento_agregar"
+                            disabled={guardandoSeg || !nuevoSeg.trim()}
+                            onClick={() => agregarSeguimiento(remVista)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                          >
+                            <Plus className="w-3.5 h-3.5" /> {guardandoSeg ? "Guardando..." : "Agregar seguimiento"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+
+                  <div className="rounded-md border border-border p-3 space-y-3" data-guia="orientacion.remision_recorrido">
+                    <div className="text-sm font-semibold text-foreground">Recorrido</div>
+                    {etapas.length === 0
+                      ? <p className="text-sm text-muted-foreground">Esta remisión no ha sido remitida a otra persona.</p>
+                      : (
+                        <ol className="relative border-l-2 border-border ml-2 space-y-4">
+                          {etapas.map(e => (
+                            <li key={e.key} className="ml-4">
+                              <span className={`absolute -left-[7px] mt-1.5 w-3 h-3 rounded-full ${e.esOrigen ? "bg-slate-400" : "bg-violet-500"}`} />
+                              <div className={`rounded-md border px-3 py-2 text-sm space-y-1 ${e.esOrigen ? "border-border bg-muted/20" : "border-violet-200 bg-violet-50"}`}>
+                                <div className="font-semibold text-foreground">En <span className="font-bold text-red-600">{e.destino}</span></div>
+                                <div className="text-xs text-muted-foreground">{e.encabezado} <span className="font-semibold text-foreground">{e.quien}</span> · {fmt(e.fecha)}</div>
+                                <div><span className="font-semibold text-red-600">Motivo:</span> <span className="whitespace-pre-wrap">{e.motivo}</span></div>
+                                {e.especificacion && <div><span className="font-semibold text-red-600">Especificación de la conducta:</span> <span className="whitespace-pre-wrap">{e.especificacion}</span></div>}
+                                {e.medidas && <div><span className="font-semibold text-red-600">Medidas previas:</span> <span className="whitespace-pre-wrap">{e.medidas}</span></div>}
+                                {e.firma && (<div><a href={e.firma} target="_blank" rel="noreferrer"><img src={e.firma} alt="Firma" className="max-h-20 border rounded bg-white mt-1" /></a><div className="text-xs font-semibold mt-0.5">{e.quien}</div></div>)}
+                                {e.notas.length > 0 && (
+                                  <div className="pt-2">
+                                    <div className="text-xs font-semibold text-foreground mb-1">Seguimiento</div>
+                                    <Notas notas={e.notas} />
+                                  </div>
+                                )}
+                              </div>
+                            </li>
+                          ))}
+                        </ol>
+                      )}
+                  </div>
+                </>);
+              })()}
 
               {/* ── Remitir a otra persona: la MISMA remisión pasa a otra instancia con
                      un paso nuevo (escrito + firma); queda pendiente para quien la recibe. ── */}
