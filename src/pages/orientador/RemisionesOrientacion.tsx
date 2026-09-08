@@ -1101,11 +1101,11 @@ const RemisionesOrientacion = () => {
                     <div className="rounded-md border border-border p-3 space-y-2" data-guia="orientacion.remision_avance">
                       <div className="text-sm font-semibold text-foreground">Avance de esta etapa</div>
                       {puedeMarcar(remVista) ? (<>
-                        <p className="text-xs text-muted-foreground">Lo que escribas aquí se guarda y, si remites a otra persona, ya aparece llenado en el formulario: solo tendrás que escribir el motivo.</p>
-                        <label className="block text-xs font-medium text-foreground">Especificación de la conducta o dificultad</label>
+                        <p className="text-sm text-muted-foreground">Lo que escribas aquí se guarda y, si remites a otra persona, ya aparece llenado en el formulario: solo tendrás que escribir el motivo.</p>
+                        <label className="block text-sm font-medium text-foreground">Especificación de la conducta o dificultad</label>
                         <textarea data-guia="orientacion.remision_avance_especificacion" value={avanceEdit.especificacion} onChange={e => setAvanceEdit(v => ({ ...v, especificacion: e.target.value }))} rows={3} maxLength={4000}
                           placeholder="Describa con detalle la conducta o dificultad observada..." className="w-full border rounded px-3 py-2 text-sm bg-background resize-none" />
-                        <label className="block text-xs font-medium text-foreground">Medidas pedagógicas aplicadas</label>
+                        <label className="block text-sm font-medium text-foreground">Medidas pedagógicas aplicadas</label>
                         <textarea data-guia="orientacion.remision_avance_medidas" value={avanceEdit.medidas} onChange={e => setAvanceEdit(v => ({ ...v, medidas: e.target.value }))} rows={3} maxLength={4000}
                           placeholder="¿Qué acciones se han aplicado en esta etapa?" className="w-full border rounded px-3 py-2 text-sm bg-background resize-none" />
                         <div className="flex items-center justify-between gap-2 flex-wrap">
