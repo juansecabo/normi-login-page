@@ -855,9 +855,9 @@ const RemisionesOrientacion = () => {
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
             {estVista ? (
-              <button onClick={() => setEstVistaId(null)} className="text-primary hover:underline">{gestiona ? "Remisiones a Orientación" : "Orientación Escolar"}</button>
+              <button onClick={() => setEstVistaId(null)} className="text-primary hover:underline">"Orientación Escolar"</button>
             ) : (
-              <span className="text-foreground font-medium">{gestiona ? "Remisiones a Orientación" : "Orientación Escolar"}</span>
+              <span className="text-foreground font-medium">"Orientación Escolar"</span>
             )}
             {estVista && (<>
               <span className="text-muted-foreground">&rarr;</span>
@@ -879,7 +879,7 @@ const RemisionesOrientacion = () => {
           <div className="flex items-center justify-between gap-3 flex-wrap mb-6">
             <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
               <img src={iconCasos} alt="" className="h-6 w-6 object-contain" />
-              {gestiona ? "Remisiones a Orientación" : "Orientación Escolar"}
+              "Orientación Escolar"
             </h2>
             {/* Quien no es Orientación remite desde aquí (misma ficha: ver y crear, como en Consultas). */}
             {!isOrientador() && (
