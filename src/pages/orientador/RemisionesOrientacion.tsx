@@ -1162,6 +1162,7 @@ const RemisionesOrientacion = () => {
                   </DialogHeader>
                   <DialogFooter className="flex-col sm:flex-row gap-2">
                     <button type="button" onClick={() => setCasoExistente(null)} className="px-3 py-1.5 text-sm rounded-md border border-input bg-background hover:bg-accent">Cancelar</button>
+                    <button type="button" disabled={abriendoCaso} onClick={() => casoExistente && crearCasoDesdeRemision(casoExistente.rem)} className="px-3 py-1.5 text-sm rounded-md border border-input bg-background hover:bg-accent disabled:opacity-50">Abrir uno nuevo</button>
                     <button type="button" disabled={abriendoCaso} onClick={enlazarCasoExistente} className="px-3 py-1.5 text-sm rounded-md bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50">Enlazar al caso existente</button>
                   </DialogFooter>
                 </DialogContent>
