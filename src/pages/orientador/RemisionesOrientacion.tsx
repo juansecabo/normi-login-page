@@ -198,11 +198,13 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
       return { t: n.created_at, TITULO: areaDeCargo(a.cargo), META: `${[a.cargo, a.nombre].filter(Boolean).join(" ")}  ·  ${fmtLargo(n.created_at)}`, TEXTO: n.texto };
     };
     const etapaDe = (n: SeguimientoDoc) => { let k = -1; pasosAsc.forEach((p, i) => { if (p.created_at <= n.created_at) k = i; }); return k; };
-    const notas0 = notas.filter(n => etapaDe(n) === -1).map(notaDoc).sort(masNuevaPrimero);
+    // Las notas van de la más antigua a la más nueva (Juan 2026-09-07); las remisiones al revés.
+    const masAntiguaPrimero = (a: { t: string }, b: { t: string }) => a.t.localeCompare(b.t);
+    const notas0 = notas.filter(n => etapaDe(n) === -1).map(notaDoc).sort(masAntiguaPrimero);
     const pasosDoc = pasosAsc.map((p, i) => {
       const tag = `__FIRMA_PASO_${i}__`;
       const quien = [p.docente_cargo, p.docente_nombre].filter(Boolean).join(" ");
-      const NOTAS = notas.filter(n => etapaDe(n) === i).map(notaDoc).sort(masNuevaPrimero);
+      const NOTAS = notas.filter(n => etapaDe(n) === i).map(notaDoc).sort(masAntiguaPrimero);
       return { t: p.created_at, TITULO: `Remitió a ${DESTINO_DOC[p.destino] || p.destino}`, META: `${quien}  ·  ${fmtLargo(p.created_at)}`,
         MOTIVO: p.motivo || "", ESPECIFICACION: p.especificacion_conducta || "", MEDIDAS: p.medidas_previas || "", FIRMA_TAG: p.firma_url ? tag : "", QUIEN: quien,
         HAY_NOTAS: NOTAS.length > 0, NOTAS };
