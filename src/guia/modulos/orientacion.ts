@@ -827,9 +827,9 @@ export const ORIENTACION: Capacidad[] = [
   // ── Remisiones recibidas (bandeja) ─────────────────────────────────────
   {
     id: "orientacion.consultar_remisiones",
-    titulo: "Consultar las remisiones a orientación",
+    titulo: "Consultar la lista de remisiones (Orientación Escolar)",
     descripcion:
-      "Ver la lista de remisiones a orientación con su estado (Pendiente o Atendida), buscar por estudiante o docente, filtrar por grado y salón. La lista va por estudiante: al tocarlo se ven sus remisiones y al tocar una se abre el detalle (motivo, contacto, firma). Orientación y rector ven todas las del colegio; un coordinador ve las que remitió y todas las de los estudiantes de sus niveles; un director de grupo, las que remitió y las de su salón; un profesor, solo las que él remitió. Para rector, coordinadores y profesores la ficha se llama 'Orientación Escolar' y arriba tiene el botón verde 'Nueva remisión'. Cada remisión está Pendiente o Atendida. Se filtra con botones por estado (Todas, Pendientes, Atendidas) y con el menú 'Todas las remisiones / Remitidas a mí / Remitidas por mí'; dentro de un estudiante están los mismos filtros más un buscador en el motivo.",
+      "Ver la lista de remisiones en Orientación Escolar con su estado (Pendiente o Atendida), buscar un estudiante por nombre o filtrar por grado y salón. La lista va por estudiante: al tocarlo se ven sus remisiones y al tocar una se abre el detalle (motivo, contacto, firma). Orientación y rector ven todas las del colegio; un coordinador ve las que remitió y todas las de los estudiantes de sus niveles; un director de grupo, las que remitió y las de su salón; un profesor, solo las que él remitió. Para rector, coordinadores y profesores la ficha se llama 'Orientación Escolar' y arriba tiene el botón verde 'Nueva remisión'. Cada remisión está Pendiente o Atendida. Se filtra con botones por estado (Todas, Pendientes, Atendidas) y con el menú 'Todas las remisiones / Remitidas a mí / Remitidas por mí'; dentro de un estudiante están los mismos filtros más un buscador en el motivo.",
     categoria: "Orientación",
     roles: [...ORIENTADOR_ADMIN, "rector", "coordinador", "profesor"],
     ruta: "/orientador/remisiones",
@@ -838,22 +838,19 @@ export const ORIENTACION: Capacidad[] = [
       "ver las remisiones",
       "remisiones recibidas",
       "consultar la bandeja de remisiones",
-      "qué remisiones me llegaron",
       "revisar remisiones a orientación",
-      "a qué estudiantes he remitido",
       "qué remisiones han hecho los profesores",
-      "cuáles remisiones ya fueron atendidas",
-      "mis remisiones",
+      "buscar un estudiante remitido",
     ],
     pasos: [
       {
-        narracion: "Entramos a Remisiones a Orientación.",
+        narracion: "Entramos a Orientación Escolar.",
         accion: "navegar",
         ruta: "/orientador/remisiones",
       },
       {
         narracion:
-          "Busca por nombre del estudiante o del docente, o filtra por grado y salón. Las remisiones nuevas llevan una etiqueta roja.",
+          "Si buscas a un estudiante en particular, escribe su nombre aquí o filtra por grado y salón. Las que aún no has abierto llevan la etiqueta roja 'Sin revisar'.",
         accion: "escribir",
         ancla: "orientacion.remisiones_buscador",
         campo: "estudiante",
@@ -881,6 +878,76 @@ export const ORIENTACION: Capacidad[] = [
     ],
   },
   {
+    id: "orientacion.remisiones_por_mi",
+    titulo: "Ver las remisiones que yo he hecho",
+    descripcion:
+      "Mostrar solo las remisiones que tú creaste o remitiste a otra persona, con el menú 'Remitidas por mí'. Aplica a toda la lista, no hay que buscar estudiante por estudiante.",
+    categoria: "Orientación",
+    roles: [...ORIENTADOR_ADMIN, "rector", "coordinador", "profesor"],
+    ruta: "/orientador/remisiones",
+    sinonimos: [
+      "ver las remisiones hechas por mí",
+      "mis remisiones",
+      "remisiones que yo hice",
+      "a qué estudiantes he remitido",
+      "remitidas por mí",
+      "qué remisiones he enviado",
+    ],
+    pasos: [
+      { narracion: "Entramos a Orientación Escolar.", accion: "navegar", ruta: "/orientador/remisiones" },
+      {
+        narracion: "En este menú elige 'Remitidas por mí'. La lista queda solo con los estudiantes a los que tú has remitido; si además estás dentro de un estudiante, verás solo tus remisiones de él.",
+        accion: "click",
+        ancla: "orientacion.remisiones_filtro_quien",
+      },
+      { narracion: "Toca un estudiante para ver sus remisiones y abre la que quieras.", accion: "click", ancla: "orientacion.remision_estudiante" },
+    ],
+  },
+  {
+    id: "orientacion.remisiones_a_mi",
+    titulo: "Ver las remisiones dirigidas a mí",
+    descripcion:
+      "Mostrar solo las remisiones que van dirigidas a ti (como director de grupo, coordinador u Orientación), con el menú 'Remitidas a mí'. Las que no has abierto aparecen además en el recuadro rojo 'Remitidas a ti sin revisar'.",
+    categoria: "Orientación",
+    roles: [...ORIENTADOR_ADMIN, "coordinador", "profesor"],
+    ruta: "/orientador/remisiones",
+    sinonimos: [
+      "qué remisiones me llegaron",
+      "remisiones dirigidas a mí",
+      "remitidas a mí",
+      "qué me han remitido",
+      "remisiones que debo atender",
+    ],
+    pasos: [
+      { narracion: "Entramos a Orientación Escolar.", accion: "navegar", ruta: "/orientador/remisiones" },
+      {
+        narracion: "En este menú elige 'Remitidas a mí'. Las que aún no has abierto también están arriba, en el recuadro rojo.",
+        accion: "click",
+        ancla: "orientacion.remisiones_filtro_quien",
+      },
+      { narracion: "Toca un estudiante y abre la remisión.", accion: "click", ancla: "orientacion.remision_estudiante" },
+    ],
+  },
+  {
+    id: "orientacion.remisiones_por_estado",
+    titulo: "Filtrar remisiones pendientes o atendidas",
+    descripcion:
+      "Con los botones Todas, Pendientes y Atendidas la lista muestra solo las remisiones en ese estado. Se combina con los demás filtros y con el buscador.",
+    categoria: "Orientación",
+    roles: [...ORIENTADOR_ADMIN, "rector", "coordinador", "profesor"],
+    ruta: "/orientador/remisiones",
+    sinonimos: [
+      "cuáles remisiones ya fueron atendidas",
+      "ver solo las pendientes",
+      "remisiones sin atender",
+      "filtrar por estado",
+    ],
+    pasos: [
+      { narracion: "Entramos a Orientación Escolar.", accion: "navegar", ruta: "/orientador/remisiones" },
+      { narracion: "Toca 'Pendientes' o 'Atendidas'. 'Todas' quita el filtro.", accion: "click", ancla: "orientacion.remisiones_filtro_estado" },
+    ],
+  },
+  {
     id: "orientacion.remision_marcar_atendida",
     titulo: "Marcar una remisión como atendida",
     descripcion:
@@ -897,7 +964,7 @@ export const ORIENTACION: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion: "Entramos a Remisiones a Orientación.",
+        narracion: "Entramos a Orientación Escolar.",
         accion: "navegar",
         ruta: "/orientador/remisiones",
       },
@@ -1010,7 +1077,7 @@ export const ORIENTACION: Capacidad[] = [
     endpoint: "POST /api/orientacion/remision-pendiente",
     sinonimos: ["volver a pendiente", "quitar atendida", "me equivoqué al marcar atendida", "desmarcar atendida"],
     pasos: [
-      { narracion: "Entramos a Remisiones a Orientación.", accion: "navegar", ruta: "/orientador/remisiones" },
+      { narracion: "Entramos a Orientación Escolar.", accion: "navegar", ruta: "/orientador/remisiones" },
       { narracion: "Toca el estudiante en la lista.", accion: "click", ancla: "orientacion.remision_estudiante" },
       { narracion: "Toca la remisión que quieres para abrirla.", accion: "click", ancla: "orientacion.remision_item" },
       { narracion: "Toca la etiqueta verde 'Atendida' junto al nombre y confirma. Vuelve a Pendiente.", accion: "click", ancla: "orientacion.remision_estado_toggle" },
@@ -1027,7 +1094,7 @@ export const ORIENTACION: Capacidad[] = [
     endpoint: "POST /api/orientacion/remision-seguimiento",
     sinonimos: ["hacer seguimiento a la remisión", "anotar en la remisión", "registrar lo que hice con el caso", "nota de seguimiento"],
     pasos: [
-      { narracion: "Entramos a Remisiones a Orientación.", accion: "navegar", ruta: "/orientador/remisiones" },
+      { narracion: "Entramos a Orientación Escolar.", accion: "navegar", ruta: "/orientador/remisiones" },
       { narracion: "Toca el estudiante en la lista.", accion: "click", ancla: "orientacion.remision_estudiante" },
       { narracion: "Toca la remisión que quieres para abrirla.", accion: "click", ancla: "orientacion.remision_item" },
       { narracion: "En 'Seguimiento', escribe la nota.", accion: "escribir", ancla: "orientacion.remision_seguimiento_texto", campo: "seguimiento" },
@@ -1045,7 +1112,7 @@ export const ORIENTACION: Capacidad[] = [
     endpoint: "/remitir-orientacion?estudiante=&padre= → insert Remisiones_Orientacion (remision_padre_id) + POST /api/orientacion/remision-atendida + POST /api/comunicados/enviar",
     sinonimos: ["remitir a coordinación", "pasar el caso a orientación", "remitir a otra persona", "escalar la remisión", "encadenar remisión"],
     pasos: [
-      { narracion: "Entramos a Remisiones a Orientación.", accion: "navegar", ruta: "/orientador/remisiones" },
+      { narracion: "Entramos a Orientación Escolar.", accion: "navegar", ruta: "/orientador/remisiones" },
       { narracion: "Toca el estudiante en la lista.", accion: "click", ancla: "orientacion.remision_estudiante" },
       { narracion: "Toca la remisión que te dirigieron para abrirla.", accion: "click", ancla: "orientacion.remision_item" },
       { narracion: "Abajo, toca 'Remitir a otra persona'. Se abre el formulario con el estudiante fijo y el número de la remisión.", accion: "click", ancla: "orientacion.remision_remitir_boton" },
@@ -1072,7 +1139,7 @@ export const ORIENTACION: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion: "Entramos a Remisiones a Orientación.",
+        narracion: "Entramos a Orientación Escolar.",
         accion: "navegar",
         ruta: "/orientador/remisiones",
       },
@@ -1109,7 +1176,7 @@ export const ORIENTACION: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion: "Entramos a Remisiones a Orientación.",
+        narracion: "Entramos a Orientación Escolar.",
         accion: "navegar",
         ruta: "/orientador/remisiones",
       },
