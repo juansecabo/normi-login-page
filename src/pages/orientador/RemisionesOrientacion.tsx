@@ -965,7 +965,7 @@ const RemisionesOrientacion = () => {
                 </div>
               </div>
               <div className="pt-2">
-                <div className="text-base font-semibold text-foreground mb-2">Motivo</div>
+                <div className="text-base font-semibold text-red-600 mb-2">Motivo</div>
                 <div className="text-base leading-relaxed whitespace-pre-wrap">{vigente!.motivo}</div>
               </div>
               {vigente!.especificacion && (
@@ -1099,7 +1099,7 @@ const RemisionesOrientacion = () => {
                   {/* Avance de la etapa actual: lo llena quien la lleva; se autocompleta al remitir. */}
                   {(puedeMarcar(remVista) || (avance && (avance.especificacion || avance.medidas))) && (
                     <div className="rounded-md border border-border p-3 space-y-2" data-guia="orientacion.remision_avance">
-                      <div className="text-sm font-semibold text-foreground">Avance de esta etapa</div>
+                      <div className="text-sm font-semibold text-red-600">Avance de esta etapa</div>
                       {puedeMarcar(remVista) ? (<>
                         <p className="text-sm text-muted-foreground">Lo que escribas aquí se guarda y, si remites a otra persona, ya aparece llenado en el formulario: solo tendrás que escribir el motivo.</p>
                         <label className="block text-sm font-medium text-foreground">Especificación de la conducta o dificultad</label>
@@ -1123,7 +1123,7 @@ const RemisionesOrientacion = () => {
                     </div>
                   )}
                   <div className="rounded-md border border-border p-3 space-y-3" data-guia="orientacion.remision_seguimiento">
-                    <div className="text-sm font-semibold text-foreground flex items-center gap-1"><MessagesSquare className="w-4 h-4" /> Seguimiento</div>
+                    <div className="text-sm font-semibold text-red-600 flex items-center gap-1"><MessagesSquare className="w-4 h-4" /> Seguimiento</div>
                     {notasActuales.length === 0
                       ? <p className="text-sm text-muted-foreground">Sin notas de seguimiento en esta etapa todavía.</p>
                       : <Notas notas={notasActuales} />}
@@ -1170,7 +1170,7 @@ const RemisionesOrientacion = () => {
                 )}
 
                   <div className="rounded-md border border-border p-3 space-y-3" data-guia="orientacion.remision_recorrido">
-                    <div className="text-sm font-semibold text-foreground">Recorrido</div>
+                    <div className="text-sm font-semibold text-red-600">Recorrido</div>
                     {etapas.length === 0
                       ? <p className="text-sm text-muted-foreground">Esta remisión no ha sido remitida a otra persona.</p>
                       : (
