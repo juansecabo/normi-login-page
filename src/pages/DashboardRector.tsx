@@ -155,13 +155,6 @@ const DashboardRector = () => {
           <span className="font-semibold text-foreground text-center">Citas y Atención</span>
         </button>
       ) },
-      { id: 'remisiones', render: (
-        <button onClick={() => navigate("/orientador/remisiones")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-yellow-100 transition-all duration-200 hover:shadow-md hover:bg-yellow-200">
-          <Badge count={badges.remisiones} />
-          <img src={iconCasos} alt="" className="w-16 h-16 object-contain" />
-          <span className="font-semibold text-foreground text-center">Remisiones Recibidas</span>
-        </button>
-      ) },
     );
   }
   if (!esAdministrativo) {
