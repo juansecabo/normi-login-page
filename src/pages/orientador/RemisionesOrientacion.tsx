@@ -929,7 +929,7 @@ const RemisionesOrientacion = () => {
             <select
               data-guia="orientacion.remisiones_filtro_quien"
               value={filtroQuien}
-              onChange={e => { setFiltroQuien(e.target.value as any); e.target.blur(); }}
+              onChange={e => setFiltroQuien(e.target.value as any)}
               className="text-sm border rounded px-2 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
             >
               <option value="">Todas las remisiones</option>
