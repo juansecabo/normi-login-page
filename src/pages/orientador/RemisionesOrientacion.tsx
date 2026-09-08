@@ -1096,34 +1096,34 @@ const RemisionesOrientacion = () => {
                 ].sort((a, b) => b.fecha.localeCompare(a.fecha));
                 const notasActuales = notasDe(etapaActual);
                 return (<>
+                  {/* Avance de la etapa actual: lo llena quien la lleva; se autocompleta al remitir. */}
+                  {(puedeMarcar(remVista) || (avance && (avance.especificacion || avance.medidas))) && (
+                    <div className="rounded-md border border-border p-3 space-y-2" data-guia="orientacion.remision_avance">
+                      <div className="text-sm font-semibold text-foreground">Avance de esta etapa</div>
+                      {puedeMarcar(remVista) ? (<>
+                        <p className="text-xs text-muted-foreground">Lo que escribas aquí se guarda y, si remites a otra persona, ya aparece llenado en el formulario: solo tendrás que escribir el motivo.</p>
+                        <label className="block text-xs font-medium text-foreground">Especificación de la conducta o dificultad</label>
+                        <textarea data-guia="orientacion.remision_avance_especificacion" value={avanceEdit.especificacion} onChange={e => setAvanceEdit(v => ({ ...v, especificacion: e.target.value }))} rows={3} maxLength={4000}
+                          placeholder="Describa con detalle la conducta o dificultad observada..." className="w-full border rounded px-3 py-2 text-sm bg-background resize-none" />
+                        <label className="block text-xs font-medium text-foreground">Medidas pedagógicas aplicadas</label>
+                        <textarea data-guia="orientacion.remision_avance_medidas" value={avanceEdit.medidas} onChange={e => setAvanceEdit(v => ({ ...v, medidas: e.target.value }))} rows={3} maxLength={4000}
+                          placeholder="¿Qué acciones se han aplicado en esta etapa?" className="w-full border rounded px-3 py-2 text-sm bg-background resize-none" />
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <span className="text-xs text-muted-foreground">{avance?.updated_at ? `Guardado ${fechaHoraLocal(avance.updated_at)}` : ""}</span>
+                          <button type="button" data-guia="orientacion.remision_avance_guardar" disabled={guardandoAvance || avance === undefined || (avanceEdit.especificacion === (avance?.especificacion || "") && avanceEdit.medidas === (avance?.medidas || ""))}
+                            onClick={() => guardarAvance(remVista)} className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50">
+                            {guardandoAvance ? "Guardando..." : "Guardar avance"}
+                          </button>
+                        </div>
+                      </>) : (<>
+                        {avance?.especificacion && <div className="text-sm"><span className="font-semibold text-red-600">Especificación de la conducta:</span> <span className="whitespace-pre-wrap">{avance.especificacion}</span></div>}
+                        {avance?.medidas && <div className="text-sm"><span className="font-semibold text-red-600">Medidas pedagógicas aplicadas:</span> <span className="whitespace-pre-wrap">{avance.medidas}</span></div>}
+                        {avance?.autor_nombre && <div className="text-xs text-muted-foreground">{avance.autor_nombre}{avance.updated_at ? ` · ${fechaHoraLocal(avance.updated_at)}` : ""}</div>}
+                      </>)}
+                    </div>
+                  )}
                   <div className="rounded-md border border-border p-3 space-y-3" data-guia="orientacion.remision_seguimiento">
                     <div className="text-sm font-semibold text-foreground flex items-center gap-1"><MessagesSquare className="w-4 h-4" /> Seguimiento</div>
-                    {/* Avance de la etapa actual: lo llena quien la lleva; se autocompleta al remitir. */}
-                    {(puedeMarcar(remVista) || (avance && (avance.especificacion || avance.medidas))) && (
-                      <div className="rounded-md border border-dashed border-border p-3 space-y-2" data-guia="orientacion.remision_avance">
-                        <div className="text-xs font-semibold text-foreground">Avance de esta etapa</div>
-                        {puedeMarcar(remVista) ? (<>
-                          <p className="text-xs text-muted-foreground">Lo que escribas aquí se guarda y, si remites a otra persona, ya aparece llenado en el formulario: solo tendrás que escribir el motivo.</p>
-                          <label className="block text-xs font-medium text-foreground">Especificación de la conducta o dificultad</label>
-                          <textarea data-guia="orientacion.remision_avance_especificacion" value={avanceEdit.especificacion} onChange={e => setAvanceEdit(v => ({ ...v, especificacion: e.target.value }))} rows={3} maxLength={4000}
-                            placeholder="Describa con detalle la conducta o dificultad observada..." className="w-full border rounded px-3 py-2 text-sm bg-background resize-none" />
-                          <label className="block text-xs font-medium text-foreground">Medidas pedagógicas aplicadas</label>
-                          <textarea data-guia="orientacion.remision_avance_medidas" value={avanceEdit.medidas} onChange={e => setAvanceEdit(v => ({ ...v, medidas: e.target.value }))} rows={3} maxLength={4000}
-                            placeholder="¿Qué acciones se han aplicado en esta etapa?" className="w-full border rounded px-3 py-2 text-sm bg-background resize-none" />
-                          <div className="flex items-center justify-between gap-2 flex-wrap">
-                            <span className="text-xs text-muted-foreground">{avance?.updated_at ? `Guardado ${fechaHoraLocal(avance.updated_at)}` : ""}</span>
-                            <button type="button" data-guia="orientacion.remision_avance_guardar" disabled={guardandoAvance || avance === undefined || (avanceEdit.especificacion === (avance?.especificacion || "") && avanceEdit.medidas === (avance?.medidas || ""))}
-                              onClick={() => guardarAvance(remVista)} className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50">
-                              {guardandoAvance ? "Guardando..." : "Guardar avance"}
-                            </button>
-                          </div>
-                        </>) : (<>
-                          {avance?.especificacion && <div className="text-sm"><span className="font-semibold text-red-600">Especificación de la conducta:</span> <span className="whitespace-pre-wrap">{avance.especificacion}</span></div>}
-                          {avance?.medidas && <div className="text-sm"><span className="font-semibold text-red-600">Medidas pedagógicas aplicadas:</span> <span className="whitespace-pre-wrap">{avance.medidas}</span></div>}
-                          {avance?.autor_nombre && <div className="text-xs text-muted-foreground">{avance.autor_nombre}{avance.updated_at ? ` · ${fechaHoraLocal(avance.updated_at)}` : ""}</div>}
-                        </>)}
-                      </div>
-                    )}
                     {notasActuales.length === 0
                       ? <p className="text-sm text-muted-foreground">Sin notas de seguimiento en esta etapa todavía.</p>
                       : <Notas notas={notasActuales} />}

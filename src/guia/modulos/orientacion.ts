@@ -951,7 +951,7 @@ export const ORIENTACION: Capacidad[] = [
         ancla: "orientacion.remision_item",
       },
       {
-        narracion: "En 'Seguimiento' está 'Avance de esta etapa'. Escribe la especificación de la conducta y las medidas aplicadas.",
+        narracion: "Debajo de los botones está el cuadro 'Avance de esta etapa', aparte del Seguimiento. Escribe la especificación de la conducta y las medidas aplicadas.",
         accion: "click",
         ancla: "orientacion.remision_avance_especificacion",
       },
