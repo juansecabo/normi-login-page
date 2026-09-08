@@ -923,7 +923,7 @@ export const ORIENTACION: Capacidad[] = [
     id: "orientacion.remision_abrir_caso",
     titulo: "Abrir un caso de seguimiento desde una remisión",
     descripcion:
-      "Orientación puede abrir un Caso de Seguimiento directamente desde la remisión: el caso nace con el estudiante y el escrito vigente como motivo de atención, y queda enlazado a la remisión. Si ya existe, el botón cambia a 'Ver caso de seguimiento'; y desde el caso hay un enlace de vuelta a la remisión.",
+      "Orientación puede abrir un Caso de Seguimiento directamente desde la remisión: el caso nace con el estudiante y el escrito vigente como motivo de atención, y queda enlazado a la remisión. Si la remisión ya tiene caso, el botón cambia a 'Ver caso de seguimiento'. Si el estudiante ya tenía un caso creado aparte, pregunta si enlazarlo a esta remisión o abrir uno nuevo. Desde el caso hay un enlace de vuelta a la remisión.",
     categoria: "Orientación",
     roles: [...ORIENTADOR_ADMIN],
     ruta: "/orientador/remisiones",

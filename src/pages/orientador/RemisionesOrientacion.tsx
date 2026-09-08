@@ -762,8 +762,32 @@ const RemisionesOrientacion = () => {
 
   /** Abre un caso de seguimiento en Orientación a partir de la remisión (Juan 2026-09-07):
    *  toma el estudiante y el escrito vigente como motivo de atención, y queda enlazado por remision_id. */
+  // Si el estudiante ya tiene un caso sin remisión enlazada, se ofrece enlazarlo en vez de crear otro.
+  type CasoExistente = { id: number; estado: string; fecha_apertura: string; autor_nombre: string | null; motivo_atencion: string | null };
+  const [casoExistente, setCasoExistente] = useState<{ rem: Remision; caso: CasoExistente } | null>(null);
   const abrirCasoDesdeRemision = async (r: Remision) => {
     if (abriendoCaso) return;
+    setAbriendoCaso(true);
+    const { data: previos } = await supabase.from("Casos_Orientacion")
+      .select("id, estado, fecha_apertura, autor_nombre, motivo_atencion, remision_id")
+      .eq("estudiante_id", r.estudiante_id).is("remision_id", null).order("created_at", { ascending: false }).limit(5);
+    const lista = ((previos || []) as any[]) as (CasoExistente & { remision_id: number | null })[];
+    const candidato = lista.find(c => c.estado === "abierto") || lista[0];
+    setAbriendoCaso(false);
+    if (candidato) { setCasoExistente({ rem: r, caso: candidato }); return; }
+    await crearCasoDesdeRemision(r);
+  };
+  const enlazarCasoExistente = async () => {
+    if (!casoExistente) return;
+    const { rem, caso } = casoExistente;
+    setAbriendoCaso(true);
+    const { error } = await supabase.from("Casos_Orientacion").update({ remision_id: rem.id, updated_at: new Date().toISOString() } as any).eq("id", caso.id);
+    setAbriendoCaso(false);
+    if (error) { toast({ title: "No se pudo enlazar el caso", description: error.message, variant: "destructive" }); return; }
+    setCasoExistente(null); setCasoDeRem(caso.id);
+    navigate(`/orientador/casos/${caso.id}`);
+  };
+  const crearCasoDesdeRemision = async (r: Remision) => {
     setAbriendoCaso(true);
     const s = getSession();
     const p = ultimoPasoDe(r);
@@ -785,6 +809,7 @@ const RemisionesOrientacion = () => {
     const { data, error } = await supabase.from("Casos_Orientacion").insert(payload as any).select("id").maybeSingle();
     setAbriendoCaso(false);
     if (error || !(data as any)?.id) { toast({ title: "No se pudo abrir el caso", description: error?.message || "", variant: "destructive" }); return; }
+    setCasoExistente(null);
     navigate(`/orientador/casos/${(data as any).id}`);
   };
 
@@ -1121,6 +1146,27 @@ const RemisionesOrientacion = () => {
                   </div>
                 </>);
               })()}
+
+              <Dialog open={!!casoExistente} onOpenChange={(o) => { if (!o) setCasoExistente(null); }}>
+                <DialogContent className="max-w-md" data-guia="orientacion.remision_caso_existente">
+                  <DialogHeader>
+                    <DialogTitle>Este estudiante ya tiene un caso de seguimiento</DialogTitle>
+                    <DialogDescription>
+                      {casoExistente && (<>
+                        Caso {casoExistente.caso.estado === "abierto" ? "abierto" : "cerrado"} el {fmtFecha(casoExistente.caso.fecha_apertura)}
+                        {casoExistente.caso.autor_nombre ? ` por ${casoExistente.caso.autor_nombre}` : ""}.
+                        {casoExistente.caso.motivo_atencion ? ` Motivo: "${casoExistente.caso.motivo_atencion.slice(0, 140)}${casoExistente.caso.motivo_atencion.length > 140 ? "…" : ""}"` : ""}
+                        {" "}Puedes enlazar esta remisión a ese caso o abrir uno nuevo.
+                      </>)}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter className="flex-col sm:flex-row gap-2">
+                    <button type="button" onClick={() => setCasoExistente(null)} className="px-3 py-1.5 text-sm rounded-md border border-input bg-background hover:bg-accent">Cancelar</button>
+                    <button type="button" disabled={abriendoCaso} onClick={() => casoExistente && crearCasoDesdeRemision(casoExistente.rem)} className="px-3 py-1.5 text-sm rounded-md border border-input bg-background hover:bg-accent disabled:opacity-50">Abrir uno nuevo</button>
+                    <button type="button" disabled={abriendoCaso} onClick={enlazarCasoExistente} className="px-3 py-1.5 text-sm rounded-md bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50">Enlazar al caso existente</button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
 
               <Dialog open={confirmPendiente} onOpenChange={setConfirmPendiente}>
                 <DialogContent className="max-w-sm">
