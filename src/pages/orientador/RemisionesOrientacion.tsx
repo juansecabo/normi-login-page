@@ -170,7 +170,7 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
     const [firmaImg, escudoImg, ...firmasPasosImg] = await Promise.all([
       r.firma_url ? imgToPng(r.firma_url) : Promise.resolve(null),
       logoUrl ? imgToPng(logoUrl) : Promise.resolve(null),
-      ...pasos.map(p => (p.firma_url ? imgToPng(p.firma_url) : Promise.resolve(null))),
+      ...[...pasos].sort((a, b) => a.created_at.localeCompare(b.created_at)).map(p => (p.firma_url ? imgToPng(p.firma_url) : Promise.resolve(null))),
     ]);
 
     const zip = new PizZip(templateBuf);
@@ -187,22 +187,26 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
     const fechaAtendida = r.atendida_at || r.fecha_recibido;
     const recibidoFecha = fechaAtendida ? new Date(fechaAtendida).toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "long", timeStyle: "short" }) : "";
     const fmtLargo = (iso: string) => new Date(iso).toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "long", timeStyle: "short" });
-    // Sección 6 (Recorrido) = remisiones a otras personas; sección 7 (Seguimiento) = notas.
-    // Cada línea de tiempo va de la más nueva (arriba) a la más antigua (abajo).
+    // Cada nota de seguimiento pertenece a la etapa en que se escribió: a la remisión original
+    // (antes de cualquier paso) o al último paso anterior a la nota. Las de la original van en
+    // un bloque aparte bajo la firma; las demás debajo de su paso en el Recorrido (sección 6).
+    // Todo de lo más nuevo (arriba) a lo más antiguo (abajo).
     const masNuevaPrimero = (a: { t: string }, b: { t: string }) => b.t.localeCompare(a.t);
-    const pasosDoc = pasos.map((p, i) => {
+    const pasosAsc = [...pasos].sort((a, b) => a.created_at.localeCompare(b.created_at));
+    const notaDoc = (n: SeguimientoDoc) => {
+      const a = separarCargoNombre(n.autor_nombre); // "Cargo (Nombre)" → "Cargo Nombre"
+      return { t: n.created_at, TITULO: areaDeCargo(a.cargo), META: `${[a.cargo, a.nombre].filter(Boolean).join(" ")}  ·  ${fmtLargo(n.created_at)}`, TEXTO: n.texto };
+    };
+    const etapaDe = (n: SeguimientoDoc) => { let k = -1; pasosAsc.forEach((p, i) => { if (p.created_at <= n.created_at) k = i; }); return k; };
+    const notas0 = notas.filter(n => etapaDe(n) === -1).map(notaDoc).sort(masNuevaPrimero);
+    const pasosDoc = pasosAsc.map((p, i) => {
       const tag = `__FIRMA_PASO_${i}__`;
       const quien = [p.docente_cargo, p.docente_nombre].filter(Boolean).join(" ");
-      return { t: p.created_at, TITULO: `Remitió a ${DESTINO_DOC[p.destino] || p.destino}`, META: `${quien}  ·  ${fmtLargo(p.created_at)}`, esPaso: true,
-        MOTIVO: p.motivo || "", ESPECIFICACION: p.especificacion_conducta || "", MEDIDAS: p.medidas_previas || "", FIRMA_TAG: p.firma_url ? tag : "", QUIEN: quien };
+      const NOTAS = notas.filter(n => etapaDe(n) === i).map(notaDoc).sort(masNuevaPrimero);
+      return { t: p.created_at, TITULO: `Remitió a ${DESTINO_DOC[p.destino] || p.destino}`, META: `${quien}  ·  ${fmtLargo(p.created_at)}`,
+        MOTIVO: p.motivo || "", ESPECIFICACION: p.especificacion_conducta || "", MEDIDAS: p.medidas_previas || "", FIRMA_TAG: p.firma_url ? tag : "", QUIEN: quien,
+        HAY_NOTAS: NOTAS.length > 0, NOTAS };
     }).sort(masNuevaPrimero);
-    const notasDoc = notas.map(n => {
-      const a = separarCargoNombre(n.autor_nombre); // "Cargo (Nombre)" → "Cargo Nombre"
-      return { t: n.created_at, TITULO: areaDeCargo(a.cargo), META: `${[a.cargo, a.nombre].filter(Boolean).join(" ")}  ·  ${fmtLargo(n.created_at)}`, esNota: true, TEXTO: n.texto };
-    }).sort(masNuevaPrimero);
-    // Cada línea de tiempo es un loop de fila: sin entradas quedaría una tabla sin filas (docx inválido).
-    if (pasosDoc.length === 0) pasosDoc.push({ t: "", TITULO: "Sin remisiones a otras personas", META: "Esta remisión no ha pasado a nadie más.", esPaso: false } as any);
-    if (notasDoc.length === 0) notasDoc.push({ t: "", TITULO: "Sin notas de seguimiento", META: "", esNota: false } as any);
     const parrafos = (s: string | null) => (s || "").split(/\n+/).map(x => x.trim()).filter(Boolean);
     const CB = (on: boolean) => (on ? "☒" : "☐");
     const marcado = { DG: destinos.includes("director_grupo"), COORD: destinos.includes("coordinador"), ORIENT: destinos.includes("orientacion") };
@@ -218,7 +222,7 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
       FECHA_NAC: fechaNac ? fmtFecha(fechaNac) : "", EDAD: edadDesde(fechaNac),
       ACUDIENTE: acuStr, TELEFONO: telEst, FECHA: fmtFecha(r.fecha),
       CB_DG: CB(marcado.DG), CB_COORD: CB(marcado.COORD), CB_ORIENT: CB(marcado.ORIENT),
-      PASOS: pasosDoc, NOTAS: notasDoc,
+      HAY_NOTAS0: notas0.length > 0, NOTAS0: notas0, HAY_PASOS: pasosDoc.length > 0, PASOS: pasosDoc,
       MOTIVO_P: parrafos(r.motivo),
       ESPECIFICACION_P: parrafos(r.especificacion_conducta),
       MEDIDAS_P: parrafos(r.medidas_previas),
@@ -271,7 +275,7 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
     else docXml = docXml.replace("__ESCUDO_PLACEHOLDER__", "");
     if (firmaImg) { const d = encajar(firmaImg.w, firmaImg.h, 200, 60); inyectar(firmaImg.buf, "__FIRMA_PLACEHOLDER__", "firma_remision.png", d.w, d.h, 100, "Firma"); }
     else docXml = docXml.replace("__FIRMA_PLACEHOLDER__", "");
-    pasos.forEach((p, i) => {
+    pasosAsc.forEach((p, i) => {
       const tag = `__FIRMA_PASO_${i}__`; const img = firmasPasosImg[i];
       if (p.firma_url && img) { const d = encajar(img.w, img.h, 160, 48); inyectar(img.buf, tag, `firma_paso_${i}.png`, d.w, d.h, 200 + i, `Firma paso ${i + 1}`); }
       else docXml = docXml.split(tag).join("");
