@@ -107,6 +107,8 @@ type PasoDoc = { destino: string; motivo: string; especificacion_conducta: strin
 type SeguimientoDoc = { autor_nombre: string | null; texto: string; created_at: string };
 const DESTINO_DOC: Record<string, string> = { orientacion: "Orientación Escolar", director_grupo: "Dirección de grupo", coordinador: "Coordinación" };
 
+const destinosLegiblesDoc = (d: string[] | null) => (d || []).map(x => DESTINO_DOC[x] || x).join(", ") || "Orientación Escolar";
+
 /** Área a la que pertenece un cargo, para titular las notas de seguimiento del Word. */
 const areaDeCargo = (cargo: string): string => {
   const c = (cargo || "").toLowerCase();
@@ -167,10 +169,21 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
       fechaNac = (data as any)?.fecha_de_nacimiento || "";
     } catch { /* ignore */ }
 
-    const [firmaImg, escudoImg, ...firmasPasosImg] = await Promise.all([
-      r.firma_url ? imgToPng(r.firma_url) : Promise.resolve(null),
+    // El Word muestra la remisión en su momento ACTUAL (Juan 2026-09-07), igual que la
+    // plataforma: lo principal es el último paso (o la original si no hay pasos); la original
+    // y los pasos anteriores quedan en el Recorrido como etapas ya cerradas.
+    const pasosAsc = [...pasos].sort((a, b) => a.created_at.localeCompare(b.created_at));
+    const ultimo = pasosAsc.length ? pasosAsc[pasosAsc.length - 1] : null;
+    const vig = ultimo
+      ? { destinos: [ultimo.destino], motivo: ultimo.motivo, especificacion: ultimo.especificacion_conducta, medidas: ultimo.medidas_previas, firma_url: ultimo.firma_url,
+          quien: [ultimo.docente_cargo, ultimo.docente_nombre].filter(Boolean).join(" "), fecha: ultimo.created_at.slice(0, 10) }
+      : { destinos: r.destinos || [], motivo: r.motivo, especificacion: r.especificacion_conducta, medidas: r.medidas_previas, firma_url: r.firma_url,
+          quien: [r.docente_cargo, r.docente_nombre].filter(Boolean).join(" "), fecha: r.fecha };
+    const [firmaImg, escudoImg, firmaOrigImg, ...firmasPasosImg] = await Promise.all([
+      vig.firma_url ? imgToPng(vig.firma_url) : Promise.resolve(null),
       logoUrl ? imgToPng(logoUrl) : Promise.resolve(null),
-      ...[...pasos].sort((a, b) => a.created_at.localeCompare(b.created_at)).map(p => (p.firma_url ? imgToPng(p.firma_url) : Promise.resolve(null))),
+      r.firma_url ? imgToPng(r.firma_url) : Promise.resolve(null),
+      ...pasosAsc.map(p => (p.firma_url ? imgToPng(p.firma_url) : Promise.resolve(null))),
     ]);
 
     const zip = new PizZip(templateBuf);
@@ -180,7 +193,7 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
     });
 
     const grupo = r.estudiante_salon ? `${r.estudiante_grado} ${r.estudiante_salon}` : r.estudiante_grado;
-    const destinos = r.destinos || [];
+    const destinos = vig.destinos;
     // Tipo de documento: el guardado; si la remisión es vieja y no lo trae, se infiere por edad.
     const edadNum = parseInt(edadDesde(fechaNac), 10);
     const td = (r.tipo_documento || (isNaN(edadNum) ? "" : edadNum < 7 ? "RC" : edadNum < 18 ? "TI" : "CC")).toUpperCase();
@@ -192,7 +205,6 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
     // un bloque aparte bajo la firma; las demás debajo de su paso en el Recorrido (sección 6).
     // Todo de lo más nuevo (arriba) a lo más antiguo (abajo).
     const masNuevaPrimero = (a: { t: string }, b: { t: string }) => b.t.localeCompare(a.t);
-    const pasosAsc = [...pasos].sort((a, b) => a.created_at.localeCompare(b.created_at));
     const notaDoc = (n: SeguimientoDoc) => {
       const a = separarCargoNombre(n.autor_nombre); // "Cargo (Nombre)" → "Cargo Nombre"
       return { t: n.created_at, TITULO: areaDeCargo(a.cargo), META: `${[a.cargo, a.nombre].filter(Boolean).join(" ")}  ·  ${fmtLargo(n.created_at)}`, TEXTO: n.texto };
@@ -200,15 +212,26 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
     const etapaDe = (n: SeguimientoDoc) => { let k = -1; pasosAsc.forEach((p, i) => { if (p.created_at <= n.created_at) k = i; }); return k; };
     // Las notas van de la más antigua a la más nueva (Juan 2026-09-07); las remisiones al revés.
     const masAntiguaPrimero = (a: { t: string }, b: { t: string }) => a.t.localeCompare(b.t);
-    const notas0 = notas.filter(n => etapaDe(n) === -1).map(notaDoc).sort(masAntiguaPrimero);
-    const pasosDoc = pasosAsc.map((p, i) => {
-      const tag = `__FIRMA_PASO_${i}__`;
-      const quien = [p.docente_cargo, p.docente_nombre].filter(Boolean).join(" ");
-      const NOTAS = notas.filter(n => etapaDe(n) === i).map(notaDoc).sort(masAntiguaPrimero);
-      return { t: p.created_at, TITULO: `En ${DESTINO_DOC[p.destino] || p.destino}`, META: `Remitida por ${quien}  ·  ${fmtLargo(p.created_at)}`,
-        MOTIVO: p.motivo || "", ESPECIFICACION: p.especificacion_conducta || "", MEDIDAS: p.medidas_previas || "", FIRMA_TAG: p.firma_url ? tag : "", QUIEN: quien,
-        HAY_NOTAS: NOTAS.length > 0, NOTAS };
-    }).sort(masNuevaPrimero);
+    // Notas de la etapa vigente: bloque "Seguimiento" bajo la firma principal.
+    const etapaVigente = pasosAsc.length - 1; // -1 = la original, si no hay pasos
+    const notas0 = notas.filter(n => etapaDe(n) === etapaVigente).map(notaDoc).sort(masAntiguaPrimero);
+    // Recorrido: los pasos anteriores al vigente y, como etapa más antigua, la remisión original.
+    const quienOrig = [r.docente_cargo, r.docente_nombre].filter(Boolean).join(" ");
+    const etapaOriginal = { t: r.created_at || r.fecha, TITULO: `En ${destinosLegiblesDoc(r.destinos)}`, META: `Creada por ${quienOrig}  ·  ${fmtLargo(r.created_at || r.fecha)}`,
+      MOTIVO: r.motivo || "", ESPECIFICACION: r.especificacion_conducta || "", MEDIDAS: r.medidas_previas || "", FIRMA_TAG: r.firma_url ? "__FIRMA_ORIG__" : "", QUIEN: quienOrig,
+      HAY_NOTAS: false, NOTAS: [] as ReturnType<typeof notaDoc>[] };
+    etapaOriginal.NOTAS = notas.filter(n => etapaDe(n) === -1).map(notaDoc).sort(masAntiguaPrimero); etapaOriginal.HAY_NOTAS = etapaOriginal.NOTAS.length > 0;
+    const pasosDoc = [
+      ...pasosAsc.slice(0, -1).map((p, i) => {
+        const tag = `__FIRMA_PASO_${i}__`;
+        const quien = [p.docente_cargo, p.docente_nombre].filter(Boolean).join(" ");
+        const NOTAS = notas.filter(n => etapaDe(n) === i).map(notaDoc).sort(masAntiguaPrimero);
+        return { t: p.created_at, TITULO: `En ${DESTINO_DOC[p.destino] || p.destino}`, META: `Remitida por ${quien}  ·  ${fmtLargo(p.created_at)}`,
+          MOTIVO: p.motivo || "", ESPECIFICACION: p.especificacion_conducta || "", MEDIDAS: p.medidas_previas || "", FIRMA_TAG: p.firma_url ? tag : "", QUIEN: quien,
+          HAY_NOTAS: NOTAS.length > 0, NOTAS };
+      }),
+      ...(ultimo ? [etapaOriginal] : []),
+    ].sort(masNuevaPrimero);
     const parrafos = (s: string | null) => (s || "").split(/\n+/).map(x => x.trim()).filter(Boolean);
     const CB = (on: boolean) => (on ? "☒" : "☐");
     const marcado = { DG: destinos.includes("director_grupo"), COORD: destinos.includes("coordinador"), ORIENT: destinos.includes("orientacion") };
@@ -222,13 +245,14 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
       DOCUMENTO: String(r.estudiante_id),
       CB_RC: CB(td === "RC"), CB_TI: CB(td === "TI"), CB_CC: CB(td === "CC"),
       FECHA_NAC: fechaNac ? fmtFecha(fechaNac) : "", EDAD: edadDesde(fechaNac),
-      ACUDIENTE: acuStr, TELEFONO: telEst, FECHA: fmtFecha(r.fecha),
+      ACUDIENTE: acuStr, TELEFONO: telEst, FECHA: fmtFecha(vig.fecha),
+      REMITIDO_POR: vig.quien, DIRIGIDA_A: destinosLegiblesDoc(vig.destinos),
       CB_DG: CB(marcado.DG), CB_COORD: CB(marcado.COORD), CB_ORIENT: CB(marcado.ORIENT),
       HAY_NOTAS0: notas0.length > 0, NOTAS0: notas0, HAY_PASOS: pasosDoc.length > 0, PASOS: pasosDoc,
-      MOTIVO_P: parrafos(r.motivo),
-      ESPECIFICACION_P: parrafos(r.especificacion_conducta),
-      MEDIDAS_P: parrafos(r.medidas_previas),
-      DOCENTE: [r.docente_cargo, r.docente_nombre].filter(Boolean).join(" "),
+      MOTIVO_P: parrafos(vig.motivo),
+      ESPECIFICACION_P: parrafos(vig.especificacion),
+      MEDIDAS_P: parrafos(vig.medidas),
+      DOCENTE: vig.quien,
       ESTADO: r.atendida_at ? "Atendida" : "Pendiente",
       RECIBIDO_POR: r.atendida_at ? atendio.nombre : "",
       RECIBIDO_CARGO: r.atendida_at ? atendio.cargo : "",
@@ -277,11 +301,13 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
     else docXml = docXml.replace("__ESCUDO_PLACEHOLDER__", "");
     if (firmaImg) { const d = encajar(firmaImg.w, firmaImg.h, 200, 60); inyectar(firmaImg.buf, "__FIRMA_PLACEHOLDER__", "firma_remision.png", d.w, d.h, 100, "Firma"); }
     else docXml = docXml.replace("__FIRMA_PLACEHOLDER__", "");
-    pasosAsc.forEach((p, i) => {
+    pasosAsc.slice(0, -1).forEach((p, i) => {
       const tag = `__FIRMA_PASO_${i}__`; const img = firmasPasosImg[i];
       if (p.firma_url && img) { const d = encajar(img.w, img.h, 160, 48); inyectar(img.buf, tag, `firma_paso_${i}.png`, d.w, d.h, 200 + i, `Firma paso ${i + 1}`); }
       else docXml = docXml.split(tag).join("");
     });
+    if (ultimo && r.firma_url && firmaOrigImg) { const d = encajar(firmaOrigImg.w, firmaOrigImg.h, 160, 48); inyectar(firmaOrigImg.buf, "__FIRMA_ORIG__", "firma_original.png", d.w, d.h, 199, "Firma original"); }
+    else docXml = docXml.split("__FIRMA_ORIG__").join("");
 
     renderedZip.file("word/document.xml", docXml);
 
@@ -838,6 +864,9 @@ const RemisionesOrientacion = () => {
                   <p><span className="font-semibold text-foreground">Fecha:</span> <span className="text-muted-foreground">{fechaHoraLocal(vigente!.fecha)}</span></p>
                   <p><span className="font-semibold text-foreground">Remitido por:</span> <span className="font-bold text-red-600">{vigente!.remitente}</span></p>
                   <p><span className="font-semibold text-foreground">Dirigida a:</span> <span className="font-bold text-red-600">{destinosLegibles(destinoActual(remVista)) || "Orientación Escolar"}</span></p>
+                  {remVista.atendida_at && (
+                    <p><span className="font-semibold text-foreground">Atendida por:</span> <span className="text-muted-foreground">{remVista.atendida_por_nombre} · {fechaHoraLocal(remVista.atendida_at)}</span></p>
+                  )}
                   {vigente!.esPaso && (<>
                     <p><span className="font-semibold text-foreground">Creada por:</span> <span className="text-muted-foreground">{[remVista.docente_cargo, remVista.docente_nombre].filter(Boolean).join(" ")} · {fechaHoraLocal(remVista.created_at || remVista.fecha)}</span></p>
                     <p><span className="font-semibold text-foreground">Recorrido:</span> <span className="text-muted-foreground">{recorridoDe(remVista).join(" → ")}</span></p>
@@ -886,11 +915,7 @@ const RemisionesOrientacion = () => {
                   <a href={vigente!.firma} target="_blank" rel="noreferrer">
                     <img src={vigente!.firma} alt="Firma" className="max-h-32 border rounded bg-white" />
                   </a>
-                </div>
-              )}
-              {remVista.atendida_at && (
-                <div className="text-xs text-muted-foreground">
-                  Atendida por <strong>{remVista.atendida_por_nombre}</strong> el {new Date(remVista.atendida_at).toLocaleString("es-CO")}
+                  <div className="text-sm font-semibold mt-1">{vigente!.remitente}</div>
                 </div>
               )}
               <div className="flex flex-wrap gap-2 pt-1">
