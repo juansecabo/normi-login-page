@@ -1023,8 +1023,8 @@ const RemisionesOrientacion = () => {
                         <ol className="relative border-l-2 border-border ml-2 space-y-4">
                           {etapas.map(e => (
                             <li key={e.key} className="ml-4">
-                              <span className={`absolute -left-[7px] mt-1.5 w-3 h-3 rounded-full ${e.esOrigen ? "bg-slate-400" : "bg-violet-500"}`} />
-                              <div className={`rounded-md border px-3 py-2 text-sm space-y-1 ${e.esOrigen ? "border-border bg-muted/20" : "border-violet-200 bg-violet-50"}`}>
+                              <span className="absolute -left-[7px] mt-1.5 w-3 h-3 rounded-full bg-violet-500" />
+                              <div className="rounded-md border px-3 py-2 text-sm space-y-1 border-violet-200 bg-violet-50">
                                 <div className="font-semibold text-foreground">En <span className="font-bold text-red-600">{e.destino}</span></div>
                                 <div className="text-xs text-muted-foreground">{e.encabezado} <span className="font-semibold text-foreground">{e.quien}</span> · {fmt(e.fecha)}</div>
                                 <div><span className="font-semibold text-red-600">Motivo:</span> <span className="whitespace-pre-wrap">{e.motivo}</span></div>
