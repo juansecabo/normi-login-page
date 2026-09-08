@@ -247,6 +247,7 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
       FECHA_NAC: fechaNac ? fmtFecha(fechaNac) : "", EDAD: edadDesde(fechaNac),
       ACUDIENTE: acuStr, TELEFONO: telEst, FECHA: fmtFecha(vig.fecha),
       REMITIDO_POR: vig.quien, DIRIGIDA_A: destinosLegiblesDoc(vig.destinos),
+      RECORRIDO_LINEA: [destinosLegiblesDoc(r.destinos), ...pasosAsc.map(p => DESTINO_DOC[p.destino] || p.destino)].join(' → '),
       CB_DG: CB(marcado.DG), CB_COORD: CB(marcado.COORD), CB_ORIENT: CB(marcado.ORIENT),
       HAY_NOTAS0: notas0.length > 0, NOTAS0: notas0, HAY_PASOS: pasosDoc.length > 0, PASOS: pasosDoc,
       MOTIVO_P: parrafos(vig.motivo),
