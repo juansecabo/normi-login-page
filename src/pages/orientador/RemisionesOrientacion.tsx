@@ -898,16 +898,16 @@ const RemisionesOrientacion = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
             <select
               value={filtroGrado}
-              onChange={e => { setFiltroGrado(e.target.value); setFiltroSalon(""); }}
-              className="text-sm border rounded px-2 py-2 bg-background"
+              onChange={e => { setFiltroGrado(e.target.value); setFiltroSalon(""); e.target.blur(); }}
+              className="text-sm border rounded px-2 py-2 bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
             >
               <option value="">Todos los grados</option>
               {gradosUnicos.map(g => <option key={g} value={g}>{g}</option>)}
             </select>
             <select
               value={filtroSalon}
-              onChange={e => setFiltroSalon(e.target.value)}
-              className="text-sm border rounded px-2 py-2 bg-background"
+              onChange={e => { setFiltroSalon(e.target.value); e.target.blur(); }}
+              className="text-sm border rounded px-2 py-2 bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
             >
               <option value="">Todos los salones</option>
               {salonesUnicos.map(s => <option key={s} value={s}>{s}</option>)}
@@ -929,8 +929,8 @@ const RemisionesOrientacion = () => {
             <select
               data-guia="orientacion.remisiones_filtro_quien"
               value={filtroQuien}
-              onChange={e => setFiltroQuien(e.target.value as any)}
-              className="text-sm border rounded px-2 py-1.5 bg-background"
+              onChange={e => { setFiltroQuien(e.target.value as any); e.target.blur(); }}
+              className="text-sm border rounded px-2 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
             >
               <option value="">Todas las remisiones</option>
               <option value="ami">Remitidas a mí</option>
