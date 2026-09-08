@@ -554,7 +554,11 @@ const RemisionesOrientacion = () => {
   useEffect(() => {
     if (remVistaId == null) return;
     const rem = remisiones.find(r => r.id === remVistaId);
-    if (rem && !vistasPorMi.has(rem.id)) {
+    // Siempre se registra la apertura (aunque ya hubiera una vista vieja): el server
+    // considera "sin revisar" lo no abierto DESPUÉS de la última llegada, así que una
+    // vista anterior a un paso nuevo no cuenta. Gatear por vistasPorMi dejaba la
+    // remisión pegada en "Remitidas a ti sin revisar" (Juan 2026-09-08).
+    if (rem) {
       const uid = String(getSession().id || "");
       setVistasPorMi(prev => new Set(prev).add(rem.id));
       setIdsSinRevisar(prev => { if (!prev) return prev; const n = new Set(prev); n.delete(rem.id); return n; });
