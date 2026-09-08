@@ -20,6 +20,15 @@ import { capacidadesLite, capacidadPorId, guiaDisponible, prefetchDirectorGrupo 
 import { guiaChat, guiaObjetivo, resumenPantalla, type GuiaTurn } from "./api";
 import { GuiaCursor } from "./GuiaCursor";
 import { guiaLog } from "./logger";
+import { RUTAS_FICHAS } from "../rutas.generated";
+
+/** Narración que se muestra: para "navegar" se arma con el nombre REAL de la ficha
+ *  (mapa generado en cada build), así un cambio de nombre no deja la guía diciendo el viejo. */
+const narracionDe = (paso: Paso | null | undefined): string => {
+  if (!paso) return "";
+  if (paso.accion === "navegar" && paso.ruta && RUTAS_FICHAS[paso.ruta]) return `Entramos a ${RUTAS_FICHAS[paso.ruta]}.`;
+  return paso.narracion || "";
+};
 
 interface GuiaContextValue {
   disponible: boolean;
@@ -398,6 +407,17 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
         })
           .then((r) => {
             if (!vivo) return;
+            if (r.terminado) {
+              // La pantalla muestra que la tarea ya quedó hecha: se cierra la guía.
+              guiaLog("senalado", { modo: "terminado_modelo", nota: r.nota || null });
+              if (r.nota) {
+                setRespuesta(r.nota);
+                setMensajes((prev) => [...prev, { role: "assistant", content: r.nota! }]);
+              }
+              pasoIdxRef.current = cap.pasos.length - 1;
+              window.setTimeout(() => avanzarRef.current(), 300);
+              return;
+            }
             if (r.indice != null && cands[r.indice] && esVisible(cands[r.indice].el)) {
               senalarEl(cands[r.indice].el, "modelo", { el: cands[r.indice].txt });
               return;
@@ -450,8 +470,18 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
             senalarEl(link, "enlace");
             return;
           }
+          const nombreFicha = paso.ruta ? RUTAS_FICHAS[paso.ruta] : undefined;
+          if (nombreFicha) {
+            const ficha = Array.from(document.querySelectorAll<HTMLElement>("button, a")).find(
+              (el) => esVisible(el) && !el.closest("[data-guia-ui]") && normTxt(textoDe(el)) === normTxt(nombreFicha),
+            );
+            if (ficha) {
+              senalarEl(ficha, "ficha_por_nombre", { el: nombreFicha });
+              return;
+            }
+          }
           elegirConCerebro(
-            `El usuario debe tocar la opción o tarjeta que lo lleva a: ${paso.narracion || paso.ruta}`,
+            `El usuario debe tocar la opción o tarjeta que lo lleva a: ${nombreFicha || paso.narracion || paso.ruta}`,
           );
         };
         window.setTimeout(buscarNav, 120);
@@ -625,8 +655,27 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
         });
         setMensajes((prev) => [...prev, { role: "assistant", content: resp.text }]);
         setRespuesta(resp.text);
-        guiaLog("chat_normi", { texto: resp.text, guia: resp.guia?.capacidad_id || null });
-        if (resp.guia) {
+        guiaLog("chat_normi", { texto: resp.text, guia: resp.guia?.capacidad_id || null, libre: resp.libre?.tarea || null });
+        if (resp.libre?.tarea) {
+          // MODO LIBRE: no hay capacidad escrita para esto. Normi se adapta: en cada
+          // paso mira la pantalla real y el cerebro elige qué señalar hasta lograr la
+          // tarea (o hasta 12 pasos). Así una función nueva se guía sin catálogo.
+          const tarea = resp.libre.tarea;
+          const capLibre: Capacidad = {
+            id: `libre.${Date.now()}`,
+            titulo: tarea,
+            descripcion: tarea,
+            categoria: "Libre",
+            roles: ["profesor", "rector", "coordinador", "secretaria", "administrativo", "orientador", "portero", "admin", "estudiante", "acudiente"],
+            ruta: window.location.pathname,
+            pasos: Array.from({ length: 12 }, () => ({
+              accion: "click" as const,
+              narracion: `Siguiente paso para lograr: ${tarea}. Si en la pantalla ya está logrado o el usuario ya llegó al sitio final, responde terminado.`,
+            })),
+          } as Capacidad;
+          limpiarPaso();
+          iniciar(capLibre);
+        } else if (resp.guia) {
           const nueva = capacidadPorId(resp.guia.capacidad_id);
           if (nueva) {
             if (!capacidadRef.current) {
@@ -763,7 +812,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
     enviar,
     pensando,
     guiando,
-    narracion: pasoActual?.narracion || "",
+    narracion: narracionDe(pasoActual),
     respuesta,
     rect,
   };

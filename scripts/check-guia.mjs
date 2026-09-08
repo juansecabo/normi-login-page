@@ -1,6 +1,9 @@
 // Chequeo automático de "Normi te guía" contra la interfaz (Juan 2026-09-08).
-// Corre en cada build (prebuild). FALLA si el catálogo señala algo que ya no existe;
-// AVISA de anclas de la interfaz que ninguna capacidad usa (función sin guía).
+// Corre en cada build (prebuild). NUNCA bloquea el build (Juan 2026-09-08: los cambios no
+// se frenan por la guía): imprime PROBLEMAS (anclas o fichas que ya no existen) y AVISOS
+// (anclas sin capacidad = función sin guía). La guía se adapta sola en tiempo real
+// (nombre real de la ficha, cerebro que elige en pantalla, modo libre), pero estos
+// avisos dicen qué capacidad conviene escribir.
 //
 //   node scripts/check-guia.mjs            → falla con errores
 //   node scripts/check-guia.mjs --solo-avisar
@@ -77,15 +80,13 @@ for (const p of modulos) {
 // ── 3) Anclas de la interfaz sin ninguna capacidad que las señale (función sin guía)
 const sinGuia = [...anclasUi].filter((a) => !anclasUsadas.has(a) && !/^(guia|dashboard\.ficha)/.test(a)).sort();
 
-const soloAvisar = process.argv.includes("--solo-avisar");
 console.log(`[check-guia] anclas en la interfaz: ${anclasUi.size} · usadas por la guía: ${anclasUsadas.size} · fichas del tablero: ${fichas.size}`);
 if (sinGuia.length) console.log(`[check-guia] AVISO · ${sinGuia.length} ancla(s) sin ninguna capacidad que las señale:\n  - ${sinGuia.join("\n  - ")}`);
 const avisosU = [...new Set(avisos)];
 if (avisosU.length) console.log(`[check-guia] AVISO · ${avisosU.length} etiqueta(s) citadas que no aparecen literal en la interfaz:\n  - ${avisosU.join("\n  - ")}`);
 const erroresU = [...new Set(errores)];
 if (erroresU.length) {
-  console.error(`[check-guia] ERROR · ${erroresU.length} problema(s):\n  - ${erroresU.join("\n  - ")}`);
-  if (!soloAvisar) process.exit(1);
+  console.log(`[check-guia] PROBLEMA · ${erroresU.length} referencia(s) del catálogo que ya no existen (no bloquea el build):\n  - ${erroresU.join("\n  - ")}`);
 } else {
   console.log("[check-guia] OK: todas las anclas y fichas que señala la guía existen.");
 }

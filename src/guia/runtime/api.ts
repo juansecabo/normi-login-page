@@ -17,6 +17,8 @@ export interface GuiaTurn {
 export interface GuiaChatResp {
   text: string;
   guia?: { capacidad_id: string; parametros: Record<string, string> };
+  /** Modo libre: no hay capacidad escrita; Normi guía mirando la pantalla paso a paso. */
+  libre?: { tarea: string };
 }
 
 export function guiaChat(body: {
@@ -41,7 +43,7 @@ export function guiaObjetivo(body: {
   elementos: string[];
   /** Ruta y titulo de la pantalla actual (para que no diga "otra pantalla"). */
   contexto?: string;
-}): Promise<{ indice: number | null; nota?: string }> {
+}): Promise<{ indice: number | null; nota?: string; terminado?: boolean }> {
   return apiRequest("/api/guia/objetivo", {
     method: "POST",
     body: JSON.stringify(body),
