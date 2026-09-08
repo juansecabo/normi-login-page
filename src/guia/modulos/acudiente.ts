@@ -351,7 +351,7 @@ export const ACUDIENTE: Capacidad[] = [
     id: "acu.permiso_retiro",
     titulo: "Crear un permiso de salida (retiro)",
     descripcion:
-      "Autorizar que tu acudido salga del colegio en jornada escolar: fecha, hora, con quién sale, motivo y tu firma. Notifica al rector y coordinadores.",
+      "Autorizar que tu acudido salga del colegio en jornada escolar: fecha, hora, con quién sale, motivo y tu firma. Notifica al rector y coordinadores. Desde la hora del retiro, la asistencia que se tome ese día queda con excusa; la de antes no cambia.",
     categoria: "Permisos y excusas",
     roles: ["acudiente"],
     ruta: "/permisos-excusas/retiro",

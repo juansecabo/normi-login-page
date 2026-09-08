@@ -116,7 +116,7 @@ export const ASISTENCIA: Capacidad[] = [
       },
       {
         narracion:
-          "Cada marca se guarda sola y la tarjeta avanza a la siguiente. Si un estudiante ya tiene una excusa vigente ese día, la marca queda como excusa automáticamente. Cuando termines verás el resumen. Listo.",
+          "Cada marca se guarda sola y la tarjeta avanza a la siguiente. Si un estudiante ya tiene una excusa vigente ese día, o un retiro autorizado cuya hora ya pasó, la marca queda como excusa automáticamente. Cuando termines verás el resumen. Listo.",
         accion: "explicar",
       },
     ],
