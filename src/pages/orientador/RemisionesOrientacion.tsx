@@ -187,21 +187,22 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
     const fechaAtendida = r.atendida_at || r.fecha_recibido;
     const recibidoFecha = fechaAtendida ? new Date(fechaAtendida).toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "long", timeStyle: "short" }) : "";
     const fmtLargo = (iso: string) => new Date(iso).toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "long", timeStyle: "short" });
-    // Sección 6: una tarjeta por paso (con su escrito y firma) y por nota, en orden cronológico.
-    const entradas = [
-      ...pasos.map((p, i) => {
-        const tag = `__FIRMA_PASO_${i}__`;
-        const quien = [p.docente_cargo, p.docente_nombre].filter(Boolean).join(" ");
-        return { t: p.created_at, TITULO: `Remitió a ${DESTINO_DOC[p.destino] || p.destino}`, META: `${quien}  ·  ${fmtLargo(p.created_at)}`, esPaso: true,
-          MOTIVO: p.motivo || "", ESPECIFICACION: p.especificacion_conducta || "", MEDIDAS: p.medidas_previas || "", FIRMA_TAG: p.firma_url ? tag : "", QUIEN: quien };
-      }),
-      ...notas.map(n => {
-        const a = separarCargoNombre(n.autor_nombre); // "Cargo (Nombre)" → "Cargo Nombre", igual que en los pasos
-        return { t: n.created_at, TITULO: `Seguimiento · ${areaDeCargo(a.cargo)}`, META: `${[a.cargo, a.nombre].filter(Boolean).join(" ")}  ·  ${fmtLargo(n.created_at)}`, esNota: true, TEXTO: n.texto };
-      }),
-    ].sort((a, b) => a.t.localeCompare(b.t));
-    // La línea de tiempo es un loop de fila: sin entradas quedaría una tabla sin filas (docx inválido).
-    if (entradas.length === 0) entradas.push({ t: "", TITULO: "Sin pasos ni notas de seguimiento", META: "Nadie ha remitido esta remisión a otra persona ni ha dejado notas.", esNota: false } as any);
+    // Sección 6 (Recorrido) = remisiones a otras personas; sección 7 (Seguimiento) = notas.
+    // Cada línea de tiempo va de la más nueva (arriba) a la más antigua (abajo).
+    const masNuevaPrimero = (a: { t: string }, b: { t: string }) => b.t.localeCompare(a.t);
+    const pasosDoc = pasos.map((p, i) => {
+      const tag = `__FIRMA_PASO_${i}__`;
+      const quien = [p.docente_cargo, p.docente_nombre].filter(Boolean).join(" ");
+      return { t: p.created_at, TITULO: `Remitió a ${DESTINO_DOC[p.destino] || p.destino}`, META: `${quien}  ·  ${fmtLargo(p.created_at)}`, esPaso: true,
+        MOTIVO: p.motivo || "", ESPECIFICACION: p.especificacion_conducta || "", MEDIDAS: p.medidas_previas || "", FIRMA_TAG: p.firma_url ? tag : "", QUIEN: quien };
+    }).sort(masNuevaPrimero);
+    const notasDoc = notas.map(n => {
+      const a = separarCargoNombre(n.autor_nombre); // "Cargo (Nombre)" → "Cargo Nombre"
+      return { t: n.created_at, TITULO: areaDeCargo(a.cargo), META: `${[a.cargo, a.nombre].filter(Boolean).join(" ")}  ·  ${fmtLargo(n.created_at)}`, esNota: true, TEXTO: n.texto };
+    }).sort(masNuevaPrimero);
+    // Cada línea de tiempo es un loop de fila: sin entradas quedaría una tabla sin filas (docx inválido).
+    if (pasosDoc.length === 0) pasosDoc.push({ t: "", TITULO: "Sin remisiones a otras personas", META: "Esta remisión no ha pasado a nadie más.", esPaso: false } as any);
+    if (notasDoc.length === 0) notasDoc.push({ t: "", TITULO: "Sin notas de seguimiento", META: "", esNota: false } as any);
     const parrafos = (s: string | null) => (s || "").split(/\n+/).map(x => x.trim()).filter(Boolean);
     const CB = (on: boolean) => (on ? "☒" : "☐");
     const marcado = { DG: destinos.includes("director_grupo"), COORD: destinos.includes("coordinador"), ORIENT: destinos.includes("orientacion") };
@@ -217,7 +218,7 @@ const descargarWord = async (r: Remision, pasos: PasoDoc[] = [], notas: Seguimie
       FECHA_NAC: fechaNac ? fmtFecha(fechaNac) : "", EDAD: edadDesde(fechaNac),
       ACUDIENTE: acuStr, TELEFONO: telEst, FECHA: fmtFecha(r.fecha),
       CB_DG: CB(marcado.DG), CB_COORD: CB(marcado.COORD), CB_ORIENT: CB(marcado.ORIENT),
-      ENTRADAS: entradas,
+      PASOS: pasosDoc, NOTAS: notasDoc,
       MOTIVO_P: parrafos(r.motivo),
       ESPECIFICACION_P: parrafos(r.especificacion_conducta),
       MEDIDAS_P: parrafos(r.medidas_previas),
