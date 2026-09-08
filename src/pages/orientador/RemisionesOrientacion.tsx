@@ -864,6 +864,9 @@ const RemisionesOrientacion = () => {
                   <p><span className="font-semibold text-foreground">Fecha:</span> <span className="text-muted-foreground">{fechaHoraLocal(vigente!.fecha)}</span></p>
                   <p><span className="font-semibold text-foreground">Remitido por:</span> <span className="font-bold text-red-600">{vigente!.remitente}</span></p>
                   <p><span className="font-semibold text-foreground">Dirigida a:</span> <span className="font-bold text-red-600">{destinosLegibles(destinoActual(remVista)) || "Orientación Escolar"}</span></p>
+                  {remVista.atendida_at && (
+                    <p><span className="font-semibold text-foreground">Atendida por:</span> <span className="text-muted-foreground">{remVista.atendida_por_nombre} · {fechaHoraLocal(remVista.atendida_at)}</span></p>
+                  )}
                   {vigente!.esPaso && (<>
                     <p><span className="font-semibold text-foreground">Creada por:</span> <span className="text-muted-foreground">{[remVista.docente_cargo, remVista.docente_nombre].filter(Boolean).join(" ")} · {fechaHoraLocal(remVista.created_at || remVista.fecha)}</span></p>
                     <p><span className="font-semibold text-foreground">Recorrido:</span> <span className="text-muted-foreground">{recorridoDe(remVista).join(" → ")}</span></p>
