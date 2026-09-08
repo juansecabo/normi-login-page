@@ -920,6 +920,49 @@ export const ORIENTACION: Capacidad[] = [
     ],
   },
   {
+    id: "orientacion.remision_avance",
+    titulo: "Registrar el avance de una remisión (se autocompleta al remitir)",
+    descripcion:
+      "Quien lleva la remisión puede escribir y guardar, en 'Avance de esta etapa', la Especificación de la conducta o dificultad y las Medidas pedagógicas aplicadas. Si después remite a otra persona, esos dos campos ya aparecen llenos en el formulario y solo hay que escribir el motivo.",
+    categoria: "Orientación",
+    roles: [...ORIENTADOR_ADMIN, "coordinador", "profesor"],
+    ruta: "/orientador/remisiones",
+    endpoint: "POST /api/orientacion/remision-avance",
+    sinonimos: [
+      "guardar el avance de la remisión",
+      "escribir la especificación antes de remitir",
+      "medidas aplicadas en la remisión",
+      "que se autocomplete al remitir",
+    ],
+    pasos: [
+      {
+        narracion: "Entramos a Orientación Escolar.",
+        accion: "navegar",
+        ruta: "/orientador/remisiones",
+      },
+      {
+        narracion: "Toca el estudiante en la lista.",
+        accion: "click",
+        ancla: "orientacion.remision_estudiante",
+      },
+      {
+        narracion: "Toca la remisión para abrirla.",
+        accion: "click",
+        ancla: "orientacion.remision_item",
+      },
+      {
+        narracion: "En 'Seguimiento' está 'Avance de esta etapa'. Escribe la especificación de la conducta y las medidas aplicadas.",
+        accion: "click",
+        ancla: "orientacion.remision_avance_especificacion",
+      },
+      {
+        narracion: "Toca 'Guardar avance'. Cuando uses 'Remitir a otra persona', esos campos ya vendrán llenos.",
+        accion: "click",
+        ancla: "orientacion.remision_avance_guardar",
+      },
+    ],
+  },
+  {
     id: "orientacion.remision_abrir_caso",
     titulo: "Abrir un caso de seguimiento desde una remisión",
     descripcion:

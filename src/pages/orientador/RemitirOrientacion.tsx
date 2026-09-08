@@ -146,6 +146,14 @@ const RemitirOrientacion = () => {
           setRemBase({ id: (rem as any).id, estudiante_id: (rem as any).estudiante_id, numero });
           const pre = todos.find(e => String(e.id) === String((rem as any).estudiante_id));
           if (pre) setEstSeleccionado(pre);
+          // Autocompletar con el avance guardado en la etapa actual (Juan 2026-09-08):
+          // especificación y medidas ya vienen llenas; solo falta el motivo.
+          const { count } = await supabase.from("Remisiones_Pasos").select("id", { count: "exact", head: true }).eq("remision_id", (rem as any).id);
+          const { data: av } = await supabase.from("Remisiones_Avances").select("especificacion, medidas").eq("remision_id", (rem as any).id).eq("etapa", count || 0).maybeSingle();
+          if (av) {
+            if ((av as any).especificacion) setEspecificacion((av as any).especificacion);
+            if ((av as any).medidas) setMedidas((av as any).medidas);
+          }
         }
       }
       setLoading(false);
