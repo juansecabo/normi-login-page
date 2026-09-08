@@ -93,7 +93,7 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
     id: "permisos_excusas.consultar_retiro",
     titulo: "Consultar autorizaciones de retiro",
     descripcion:
-      "Abrir la lista de autorizaciones de retiro de estudiantes que enviaron los acudientes.",
+      "Abrir la lista de autorizaciones de retiro de estudiantes que enviaron los acudientes. Un retiro con hora también afecta la asistencia: la que se tome ese día a partir de esa hora queda con excusa; la tomada antes no cambia.",
     categoria: "Permisos y Excusas",
     roles: [...ALL_INTERNOS],
     ruta: "/permisos-excusas/retiro-staff",

@@ -203,6 +203,7 @@ const RetiroEstudiantes = () => {
       acudiente_id: idAcudiente,
       acudiente_telefono: telefonoAcudiente,
       acudiente_correo: correo || null,
+      estudiante_id: Number(acudidoSeleccionado.id),
       estudiante_nombre: acudidoSeleccionado.nombre,
       estudiante_apellidos: acudidoSeleccionado.apellidos,
       estudiante_grado: acudidoSeleccionado.grado,
