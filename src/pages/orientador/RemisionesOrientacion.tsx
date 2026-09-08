@@ -1015,6 +1015,22 @@ const RemisionesOrientacion = () => {
                     )}
                   </div>
 
+                {/* ── Remitir a otra persona: la MISMA remisión pasa a otra instancia con
+                       un paso nuevo (escrito + firma); queda pendiente para quien la recibe. ── */}
+                {puedeMarcar(remVista) && (
+                  <div className="rounded-md border border-border p-3 flex items-center justify-between gap-3 flex-wrap" data-guia="orientacion.remision_remitir">
+                    <p className="text-sm text-muted-foreground">¿El caso debe seguir a otra instancia? Esta misma remisión pasa a esa persona con tu escrito y firma, le queda pendiente y todo el recorrido se conserva aquí.</p>
+                    <button
+                      type="button"
+                      data-guia="orientacion.remision_remitir_boton"
+                      onClick={() => navigate(`/remitir-orientacion?remision=${remVista.id}`)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-emerald-600 text-white hover:bg-emerald-700"
+                    >
+                      <Send className="w-3.5 h-3.5" /> Remitir a otra persona
+                    </button>
+                  </div>
+                )}
+
                   <div className="rounded-md border border-border p-3 space-y-3" data-guia="orientacion.remision_recorrido">
                     <div className="text-sm font-semibold text-foreground">Recorrido</div>
                     {etapas.length === 0
@@ -1045,22 +1061,6 @@ const RemisionesOrientacion = () => {
                   </div>
                 </>);
               })()}
-
-              {/* ── Remitir a otra persona: la MISMA remisión pasa a otra instancia con
-                     un paso nuevo (escrito + firma); queda pendiente para quien la recibe. ── */}
-              {puedeMarcar(remVista) && (
-                <div className="rounded-md border border-border p-3 flex items-center justify-between gap-3 flex-wrap" data-guia="orientacion.remision_remitir">
-                  <p className="text-sm text-muted-foreground">¿El caso debe seguir a otra instancia? Esta misma remisión pasa a esa persona con tu escrito y firma, le queda pendiente y todo el recorrido se conserva aquí.</p>
-                  <button
-                    type="button"
-                    data-guia="orientacion.remision_remitir_boton"
-                    onClick={() => navigate(`/remitir-orientacion?remision=${remVista.id}`)}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-emerald-600 text-white hover:bg-emerald-700"
-                  >
-                    <Send className="w-3.5 h-3.5" /> Remitir a otra persona
-                  </button>
-                </div>
-              )}
 
               <Dialog open={confirmPendiente} onOpenChange={setConfirmPendiente}>
                 <DialogContent className="max-w-sm">
