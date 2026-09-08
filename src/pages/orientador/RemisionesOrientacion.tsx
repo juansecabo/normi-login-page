@@ -5,7 +5,7 @@ import HeaderNormi from "@/components/HeaderNormi";
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronRight, Download, Check, Search, CalendarPlus, Phone, Plus, Send, MessagesSquare } from "lucide-react";
+import { ChevronRight, Download, Check, Search, CalendarPlus, Phone, Plus, Send, MessagesSquare, FolderOpen } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import iconCasos from "@/assets/icons/casos.png";
 import { markLastSeen } from "@/utils/notificaciones";
@@ -750,6 +750,44 @@ const RemisionesOrientacion = () => {
   // Orientación y admin: bandeja propia (etiqueta "Nueva", agendar cita).
   const gestiona = isOrientador() || isAdmin();
 
+  // Caso de seguimiento abierto desde esta remisión (Casos_Orientacion.remision_id).
+  const [casoDeRem, setCasoDeRem] = useState<number | null | undefined>(undefined);
+  const [abriendoCaso, setAbriendoCaso] = useState(false);
+  useEffect(() => {
+    if (!remVistaId || !gestiona) { setCasoDeRem(undefined); return; }
+    setCasoDeRem(undefined);
+    supabase.from("Casos_Orientacion").select("id").eq("remision_id", remVistaId).limit(1)
+      .then(({ data }) => setCasoDeRem((data as any[])?.[0]?.id ?? null));
+  }, [remVistaId, gestiona]);
+
+  /** Abre un caso de seguimiento en Orientación a partir de la remisión (Juan 2026-09-07):
+   *  toma el estudiante y el escrito vigente como motivo de atención, y queda enlazado por remision_id. */
+  const abrirCasoDesdeRemision = async (r: Remision) => {
+    if (abriendoCaso) return;
+    setAbriendoCaso(true);
+    const s = getSession();
+    const p = ultimoPasoDe(r);
+    const hoy = new Date();
+    const payload = {
+      estudiante_id: r.estudiante_id,
+      estudiante_nombre: r.estudiante_nombre,
+      estudiante_apellidos: r.estudiante_apellidos,
+      estudiante_grado: r.estudiante_grado,
+      estudiante_salon: r.estudiante_salon,
+      motivo_atencion: p?.motivo || r.motivo,
+      situacion_reportada: (p ? p.especificacion_conducta : r.especificacion_conducta) || null,
+      estado: "abierto",
+      fecha_apertura: `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-${String(hoy.getDate()).padStart(2, "0")}`,
+      autor_id: s.id,
+      autor_nombre: `${s.nombres || ""} ${s.apellidos || ""}`.trim(),
+      remision_id: r.id,
+    };
+    const { data, error } = await supabase.from("Casos_Orientacion").insert(payload as any).select("id").maybeSingle();
+    setAbriendoCaso(false);
+    if (error || !(data as any)?.id) { toast({ title: "No se pudo abrir el caso", description: error?.message || "", variant: "destructive" }); return; }
+    navigate(`/orientador/casos/${(data as any).id}`);
+  };
+
   const backLink = isAdmin() ? "/dashboard" : "/dashboard";
 
   return (
@@ -928,6 +966,28 @@ const RemisionesOrientacion = () => {
                 >
                   <Download className="w-3.5 h-3.5" /> Descargar Word
                 </button>
+                {gestiona && (
+                  casoDeRem ? (
+                    <button
+                      type="button"
+                      data-guia="orientacion.remision_ver_caso"
+                      onClick={() => navigate(`/orientador/casos/${casoDeRem}`)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
+                    >
+                      <FolderOpen className="w-3.5 h-3.5" /> Ver caso de seguimiento
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      data-guia="orientacion.remision_abrir_caso"
+                      disabled={abriendoCaso || casoDeRem === undefined}
+                      onClick={() => abrirCasoDesdeRemision(remVista)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md border border-input bg-background hover:bg-accent disabled:opacity-50"
+                    >
+                      <FolderOpen className="w-3.5 h-3.5" /> {abriendoCaso ? "Abriendo..." : "Abrir caso de seguimiento"}
+                    </button>
+                  )
+                )}
                 {gestiona && (
                   <button
                     type="button"

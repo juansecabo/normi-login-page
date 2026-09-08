@@ -40,6 +40,7 @@ interface Seguimiento {
 
 interface Caso {
   id: number;
+  remision_id?: number | null;
   estudiante_id: number;
   estudiante_nombre: string;
   estudiante_apellidos: string;
@@ -889,6 +890,16 @@ ${seguimientosHtml ? `<div style="page-break-before: always;"></div>${seguimient
               <p className="text-xs text-muted-foreground mt-1">Identificación: {c.estudiante_id}</p>
               <p className="text-xs text-muted-foreground">Abierto el {fmtFecha(c.fecha_apertura)}{c.fecha_cierre ? ` · Cerrado el ${fmtFecha(c.fecha_cierre)}` : ""}</p>
               <p className="text-xs text-muted-foreground">Abierto por {c.autor_nombre}</p>
+              {c.remision_id && (
+                <button
+                  type="button"
+                  data-guia="orientacion.caso_ver_remision"
+                  onClick={() => navigate(`/orientador/remisiones?est=${c.estudiante_id}&rem=${c.remision_id}`)}
+                  className="text-xs text-primary hover:underline mt-1"
+                >
+                  Abierto desde una remisión · Ver la remisión
+                </button>
+              )}
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <button data-guia="orientacion.caso_descargar_word" onClick={descargarWord} className="inline-flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium border border-blue-600 text-blue-600 hover:bg-blue-50 cursor-pointer" title="Descargar en Word">

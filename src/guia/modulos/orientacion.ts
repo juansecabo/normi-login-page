@@ -920,6 +920,43 @@ export const ORIENTACION: Capacidad[] = [
     ],
   },
   {
+    id: "orientacion.remision_abrir_caso",
+    titulo: "Abrir un caso de seguimiento desde una remisión",
+    descripcion:
+      "Orientación puede abrir un Caso de Seguimiento directamente desde la remisión: el caso nace con el estudiante y el escrito vigente como motivo de atención, y queda enlazado a la remisión. Si ya existe, el botón cambia a 'Ver caso de seguimiento'; y desde el caso hay un enlace de vuelta a la remisión.",
+    categoria: "Orientación",
+    roles: [...ORIENTADOR_ADMIN],
+    ruta: "/orientador/remisiones",
+    sinonimos: [
+      "abrir caso desde la remisión",
+      "crear caso de seguimiento de una remisión",
+      "pasar la remisión a caso",
+      "ver el caso de una remisión",
+    ],
+    pasos: [
+      {
+        narracion: "Entramos a Orientación Escolar.",
+        accion: "navegar",
+        ruta: "/orientador/remisiones",
+      },
+      {
+        narracion: "Toca el estudiante en la lista.",
+        accion: "click",
+        ancla: "orientacion.remision_estudiante",
+      },
+      {
+        narracion: "Toca la remisión para abrirla.",
+        accion: "click",
+        ancla: "orientacion.remision_item",
+      },
+      {
+        narracion: "Toca 'Abrir caso de seguimiento'. Se crea el caso con los datos del estudiante y el motivo, y te lleva a él. Si la remisión ya tiene caso, aquí dice 'Ver caso de seguimiento'.",
+        accion: "click",
+        ancla: "orientacion.remision_abrir_caso",
+      },
+    ],
+  },
+  {
     id: "orientacion.remision_volver_pendiente",
     titulo: "Devolver una remisión a Pendiente",
     descripcion:
