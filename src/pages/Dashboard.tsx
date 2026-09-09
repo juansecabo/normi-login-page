@@ -9,6 +9,7 @@ import iconComunicadosRecibidos from "@/assets/icons/comunicados-recibidos.webp"
 import iconEstadisticas from "@/assets/icons/estadisticas.webp";
 import iconRegistroAgente from "@/assets/icons/registro-agente.webp";
 import iconEntrevista from "@/assets/icons/entrevista.webp";
+import iconOrientacion from "@/assets/icons/orientacion-escolar.webp";
 import iconDocumentos from "@/assets/icons/documentos.webp";
 import iconPermisos from "@/assets/icons/permisos-y-excusas.webp";
 import iconConsultas from "@/assets/icons/consultas.png";
@@ -238,7 +239,7 @@ const Dashboard = () => {
     { id: 'remitir-orientacion', render: (
       <button onClick={() => navigate("/orientador/remisiones")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-sky-100 transition-all duration-200 hover:shadow-md hover:bg-sky-200">
         <Badge count={remisionesSinRevisar} />
-        <img src={iconEntrevista} alt="" className="w-16 h-16 object-contain" />
+        <img src={iconOrientacion} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground text-center">Orientación Escolar</span>
       </button>
     ) },
