@@ -396,7 +396,11 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
         cleanupsRef.current.push(() => document.removeEventListener("click", onDocClick, true));
       };
       // El CEREBRO mira los elementos visibles y elige cuál señalar.
-      const elegirConCerebro = (descripcion: string) => {
+      const elegirConCerebro = (descripcionBase: string) => {
+        // En modo libre el cerebro además decide cuándo la tarea ya quedó lograda.
+        const descripcion = cap.id.startsWith("libre.")
+          ? `Siguiente acción en pantalla para lograr: ${cap.titulo}. Si ya está logrado o el usuario ya llegó al sitio final donde lo hace, responde terminado.`
+          : descripcionBase;
         const cands = candidatosVisibles();
         const titulo = document.querySelector<HTMLElement>("h1, h2")?.textContent?.trim() || "";
         guiaObjetivo({
@@ -670,7 +674,7 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
             ruta: window.location.pathname,
             pasos: Array.from({ length: 12 }, () => ({
               accion: "click" as const,
-              narracion: `Siguiente paso para lograr: ${tarea}. Si en la pantalla ya está logrado o el usuario ya llegó al sitio final, responde terminado.`,
+              narracion: `Te señalo dónde tocar para: ${tarea}.`,
             })),
           } as Capacidad;
           limpiarPaso();
