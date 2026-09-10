@@ -12,7 +12,8 @@ const OUT = path.join(ROOT, "src", "guia", "rutas.generated.ts");
 
 const rutas = new Map(); // ruta → Set(nombres)
 for (const f of fs.readdirSync(PAGES).filter((n) => /^Dashboard[A-Za-z]*\.tsx$/.test(n))) {
-  const s = fs.readFileSync(path.join(PAGES, f), "utf8");
+  // {nombreFicha("X")} = alias por colegio (src/lib/aliasColegio.ts); aquí cuenta el nombre base X.
+  const s = fs.readFileSync(path.join(PAGES, f), "utf8").replace(/\{nombreFicha\("([^"]+)"\)\}/g, "$1");
   // Cada tarjeta: <button onClick={() => navigate("/ruta")} ...> ... <span className="font-semibold text-foreground ...">Nombre</span>
   for (const m of s.matchAll(/navigate\("(\/[^"]*)"\)[^]{0,700}?<span className="font-semibold text-foreground[^"]*">([^<{]+)<\/span>/g)) {
     const ruta = m[1];

@@ -21,13 +21,14 @@ import { guiaChat, guiaObjetivo, resumenPantalla, type GuiaTurn } from "./api";
 import { GuiaCursor } from "./GuiaCursor";
 import { guiaLog } from "./logger";
 import { RUTAS_FICHAS } from "../rutas.generated";
+import { aliasTexto, nombreFicha } from "@/lib/aliasColegio";
 
 /** Narración que se muestra: para "navegar" se arma con el nombre REAL de la ficha
  *  (mapa generado en cada build), así un cambio de nombre no deja la guía diciendo el viejo. */
 const narracionDe = (paso: Paso | null | undefined): string => {
   if (!paso) return "";
-  if (paso.accion === "navegar" && paso.ruta && RUTAS_FICHAS[paso.ruta]) return `Entramos a ${RUTAS_FICHAS[paso.ruta]}.`;
-  return paso.narracion || "";
+  if (paso.accion === "navegar" && paso.ruta && RUTAS_FICHAS[paso.ruta]) return `Entramos a ${nombreFicha(RUTAS_FICHAS[paso.ruta])}.`;
+  return aliasTexto(paso.narracion || "");
 };
 
 interface GuiaContextValue {
@@ -474,18 +475,18 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
             senalarEl(link, "enlace");
             return;
           }
-          const nombreFicha = paso.ruta ? RUTAS_FICHAS[paso.ruta] : undefined;
-          if (nombreFicha) {
+          const nombreFichaRuta = paso.ruta && RUTAS_FICHAS[paso.ruta] ? nombreFicha(RUTAS_FICHAS[paso.ruta]) : undefined;
+          if (nombreFichaRuta) {
             const ficha = Array.from(document.querySelectorAll<HTMLElement>("button, a")).find(
-              (el) => esVisible(el) && !el.closest("[data-guia-ui]") && normTxt(textoDe(el)) === normTxt(nombreFicha),
+              (el) => esVisible(el) && !el.closest("[data-guia-ui]") && normTxt(textoDe(el)) === normTxt(nombreFichaRuta),
             );
             if (ficha) {
-              senalarEl(ficha, "ficha_por_nombre", { el: nombreFicha });
+              senalarEl(ficha, "ficha_por_nombre", { el: nombreFichaRuta });
               return;
             }
           }
           elegirConCerebro(
-            `El usuario debe tocar la opción o tarjeta que lo lleva a: ${nombreFicha || paso.narracion || paso.ruta}`,
+            `El usuario debe tocar la opción o tarjeta que lo lleva a: ${nombreFichaRuta || aliasTexto(paso.narracion || "") || paso.ruta}`,
           );
         };
         window.setTimeout(buscarNav, 120);

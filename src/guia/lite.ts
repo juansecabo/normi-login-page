@@ -4,6 +4,7 @@
 import { CATALOGO } from "./catalogo";
 import { capacidadesDe, type Capacidad, type RolGuia } from "./tipos";
 import { getSession } from "@/hooks/useSession";
+import { aliasTexto } from "@/lib/aliasColegio";
 import { supabase } from "@/integrations/supabase/client";
 
 const CAILICO_ID = "2f96f076-83df-4b84-8bbc-9c1df79a372b";
@@ -76,10 +77,12 @@ export function capacidadesDeSesion(): Capacidad[] {
  * modelo entiende por título + descripción y así el prompt es mucho más liviano
  * (más rápido y barato). */
 export function capacidadesLite() {
+  // Los nombres con alias por colegio (ej. Portería → Reporte de asistencia) se aplican
+  // aquí para que el cerebro y el usuario hablen del mismo nombre.
   return capacidadesDeSesion().map((c) => ({
     id: c.id,
-    titulo: c.titulo,
-    descripcion: c.descripcion,
+    titulo: aliasTexto(c.titulo),
+    descripcion: aliasTexto(c.descripcion),
     requisitos: c.requisitos,
   }));
 }

@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useRef, useLayoutEffect } from "react";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { useNavigate } from "react-router-dom";
 import { getSession } from "@/hooks/useSession";
+import { nombreFicha } from "@/lib/aliasColegio";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { apiRequest, ApiError } from "@/lib/apiClient";
@@ -186,7 +187,7 @@ const PorteriaLlegadaTarde = () => {
           <BreadcrumbDeslizable>
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">→</span>
-            <button onClick={() => navigate("/porteria")} className="text-primary hover:underline">Portería</button>
+            <button onClick={() => navigate("/porteria")} className="text-primary hover:underline">{nombreFicha("Portería")}</button>
             <span className="text-muted-foreground">→</span>
             <span className="text-foreground font-medium">Reportar llegada tarde</span>
           </BreadcrumbDeslizable>
@@ -415,7 +416,7 @@ export const PorteriaRegistro = () => {
           <BreadcrumbDeslizable>
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">→</span>
-            <button onClick={() => navigate("/porteria")} className="text-primary hover:underline">Portería</button>
+            <button onClick={() => navigate("/porteria")} className="text-primary hover:underline">{nombreFicha("Portería")}</button>
             <span className="text-muted-foreground">→</span>
             <span className="text-foreground font-medium">Registro de llegada tarde</span>
           </BreadcrumbDeslizable>
@@ -577,7 +578,7 @@ export const PorteriaHub = () => {
           <BreadcrumbDeslizable>
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">→</span>
-            <span className="text-foreground font-medium">Portería</span>
+            <span className="text-foreground font-medium">{nombreFicha("Portería")}</span>
           </BreadcrumbDeslizable>
         </div>
         <div data-guia="porteria.hub" className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
