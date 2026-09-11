@@ -7,7 +7,6 @@ const PESTALOZZIANO = "94c1414b-22d1-40dd-945a-5857b62e5f6c";
 
 const ALIAS_POR_COLEGIO: Record<string, Record<string, string>> = {
   [PESTALOZZIANO]: {
-    "Portería": "Reporte de asistencia",
   },
 };
 
