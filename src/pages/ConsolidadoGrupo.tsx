@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useEsquemaGrado, etiquetaCorteOrdinal } from "@/utils/esquema";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, isEstudiante, isPadreDeFamilia } from "@/hooks/useSession";
@@ -8,8 +9,6 @@ import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNorm
 import { Users, Download, Loader2 } from "lucide-react";
 
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
-const PERIODOS = [1, 2, 3, 4] as const;
-const ORDINAL: Record<number, string> = { 1: "Primer", 2: "Segundo", 3: "Tercer", 4: "Cuarto" };
 
 /**
  * "Consolidado de mi grupo": el director de grupo elige un periodo y ve UNA sola
@@ -28,12 +27,14 @@ const ConsolidadoGrupo = () => {
   const ocultarDef = !!(config as any).ocultar_definitivas && (isEstudiante() || isPadreDeFamilia());
   const [dirGrupo, setDirGrupo] = useState<string | null>(null);
   const [grado, setGrado] = useState<string | null>(null);
+  const esq = useEsquemaGrado(grado);
+  const PERIODOS = esq.cortes;
   const [salon, setSalon] = useState<string | null>(null);
   const [loadingDg, setLoadingDg] = useState(true);
 
   // El periodo vive en la URL (?periodo=2) para que recargar (F5) mantenga la rejilla.
   const periodoRaw = parseInt(searchParams.get("periodo") || "", 10);
-  const periodo: number | null = [1, 2, 3, 4].includes(periodoRaw) ? periodoRaw : null;
+  const periodo: number | null = periodoRaw >= 1 && periodoRaw <= 6 ? periodoRaw : null;
   const setPeriodo = (p: number | null) => {
     if (p == null) { searchParams.delete("periodo"); setSearchParams(searchParams, { replace: true }); }
     else { searchParams.set("periodo", String(p)); setSearchParams(searchParams, { replace: true }); }
@@ -140,7 +141,7 @@ const ConsolidadoGrupo = () => {
       });
 
       const buffer = await wb.xlsx.writeBuffer();
-      saveAs(new Blob([buffer]), `Consolidado ${dirGrupo} - ${ORDINAL[periodo]} periodo.xlsx`);
+      saveAs(new Blob([buffer]), `Consolidado ${dirGrupo} - ${etiquetaCorteOrdinal(esq, periodo)}.xlsx`);
     } catch (e) {
       console.error("Error al generar Excel:", e);
     } finally {
@@ -164,7 +165,7 @@ const ConsolidadoGrupo = () => {
               <>
                 <button onClick={() => setPeriodo(null)} className="text-primary hover:underline">Consolidado de mi grupo</button>
                 <span className="text-muted-foreground">&rarr;</span>
-                <span className="text-foreground font-medium">{ORDINAL[periodo]} periodo</span>
+                <span className="text-foreground font-medium">{etiquetaCorteOrdinal(esq, periodo)}</span>
               </>
             )}
           </BreadcrumbDeslizable>
@@ -187,12 +188,12 @@ const ConsolidadoGrupo = () => {
               </span>
             </p>
             <p className="text-sm text-muted-foreground mb-6 text-center">Elige un periodo para ver las definitivas de tus estudiantes.</p>
-            <div data-guia="varios.consolidado_periodo" className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div data-guia="varios.consolidado_periodo" className={`grid grid-cols-2 gap-4 ${PERIODOS.length <= 2 ? "sm:grid-cols-2" : PERIODOS.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-4"}`}>
               {PERIODOS.map((p) => (
                 <button key={p} onClick={() => setPeriodo(p)}
                   className="flex flex-col items-center justify-center gap-2 p-6 rounded-lg border-2 border-border bg-card transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/5">
                   <span className="text-3xl font-bold text-primary">{p}º</span>
-                  <span className="text-sm font-medium text-foreground">{ORDINAL[p]} periodo</span>
+                  <span className="text-sm font-medium text-foreground">{etiquetaCorteOrdinal(esq, p)}</span>
                 </button>
               ))}
             </div>
@@ -201,7 +202,7 @@ const ConsolidadoGrupo = () => {
           /* ── Rejilla del periodo ─────────────────────────────── */
           <div>
             <h2 className="text-xl font-bold text-foreground mb-4 text-center">
-              {ORDINAL[periodo]} periodo · {dirGrupo}
+              {etiquetaCorteOrdinal(esq, periodo)} · {dirGrupo}
             </h2>
 
             {!ocultarDef && data && data.estudiantes.length > 0 && data.asignaturas.length > 0 && (

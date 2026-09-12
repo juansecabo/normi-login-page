@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Trash2, Loader2, AlertTriangle, ChevronRight } from "lucide-react";
 import { apiClient } from "@/lib/apiClient";
+import { useEsquemaGrado, etiquetaCorte } from "@/utils/esquema";
 import { useToast } from "@/hooks/use-toast";
 import type { GrupoNotas } from "@/hooks/useGruposNotas";
 
@@ -42,6 +43,8 @@ const EditorGruposNotas = ({ open, onOpenChange, aula, grupos, otrosSalones = []
   const [nuevoPorcentaje, setNuevoPorcentaje] = useState("");
   const [nuevoParent, setNuevoParent] = useState<string>(""); // "" = grupo top
   const [replicarPeriodos, setReplicarPeriodos] = useState<number[]>([]);
+  const esq = useEsquemaGrado(aula.grado);
+  const cortes = esq.cortes;
   const [replicarSalones, setReplicarSalones] = useState<string[]>([]);
 
   // Confirmación de borrado
@@ -154,7 +157,7 @@ const EditorGruposNotas = ({ open, onOpenChange, aula, grupos, otrosSalones = []
         <DialogHeader>
           <DialogTitle>Configurar jerarquía de evaluación</DialogTitle>
           <DialogDescription>
-            {aula.asignatura} — {aula.grado} {aula.salon} — Periodo {aula.periodo}
+            {aula.asignatura} — {aula.grado} {aula.salon} — {etiquetaCorte(esq, aula.periodo)}
           </DialogDescription>
         </DialogHeader>
 
@@ -218,8 +221,8 @@ const EditorGruposNotas = ({ open, onOpenChange, aula, grupos, otrosSalones = []
               <label className="flex items-center gap-2 text-xs text-muted-foreground">
                 <input
                   type="checkbox"
-                  checked={replicarPeriodos.length === 3}
-                  onChange={(e) => setReplicarPeriodos(e.target.checked ? [1, 2, 3, 4].filter((p) => p !== aula.periodo) : [])}
+                  checked={replicarPeriodos.length > 0 && replicarPeriodos.length === cortes.length - 1}
+                  onChange={(e) => setReplicarPeriodos(e.target.checked ? cortes.filter((p) => p !== aula.periodo) : [])}
                 />
                 Aplicar también a los demás periodos de este salón
               </label>

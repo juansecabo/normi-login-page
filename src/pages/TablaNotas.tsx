@@ -1,4 +1,5 @@
 import { getPeriodoActual } from "@/utils/periodoActual";
+import { useEsquemaGrado, etiquetaCorteCorta } from "@/utils/esquema";
 import { anoEscolarActual } from "@/utils/anoEscolar";
 import { aNumero } from "@/utils/numero";
 import { useEffect, useState, useRef, useCallback, type ReactNode } from "react";
@@ -341,6 +342,12 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   const { config: colegioConfig, configCargada } = useColegioConfig();
   const [asignaturaSeleccionada, setAsignaturaSeleccionada] = useState("");
   const [gradoSeleccionado, setGradoSeleccionado] = useState("");
+  // Esquema de evaluación del nivel del grado (Juan 2026-09-12): periodos (4 cortes,
+  // definitiva anual) o semestres (2 cortes, cada uno con su definitiva).
+  const esq = useEsquemaGrado(gradoSeleccionado);
+  const CORTES = esq.cortes;
+  const N_CORTES = CORTES.length;
+  const hayDefAnual = !esq.definitivaPorCorte;
   const [salonSeleccionado, setSalonSeleccionado] = useState("");
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
   const [loading, setLoading] = useState(true);
@@ -366,7 +373,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   useEffect(() => {
     if (!hayPeriodoElegido) return;
     const n = Number(periodoParam);
-    if (!Number.isNaN(n) && n >= 0 && n <= 4) setPeriodoActivo(n);
+    if (!Number.isNaN(n) && n >= 0 && n <= 6) setPeriodoActivo(n);
   }, [periodoParam, hayPeriodoElegido]);
   const irAPeriodo = (n: number) => {
     const sp = new URLSearchParams(searchParams);
@@ -382,6 +389,17 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   // Modal state para crear/editar actividad
   const [modalOpen, setModalOpen] = useState(false);
   const [periodoActual, setPeriodoActual] = useState<number>(getPeriodoActual());
+  // Si el nivel tiene menos cortes (semestres) o no maneja definitiva anual, el
+  // periodo por defecto (fechas estándar) puede quedar fuera de rango: se ajusta.
+  useEffect(() => {
+    if (!esq.ready) return;
+    if (periodoActivo > N_CORTES || (periodoActivo === 0 && !hayDefAnual)) {
+      const n = periodoActivo === 0 ? 1 : N_CORTES;
+      setPeriodoActivo(n);
+      if (hayPeriodoElegido) irAPeriodo(n);
+    }
+    if (periodoActual > N_CORTES) setPeriodoActual(N_CORTES);
+  }, [esq.ready, N_CORTES, hayDefAnual, periodoActivo, periodoActual, hayPeriodoElegido]); // eslint-disable-line react-hooks/exhaustive-deps
   const [nombreActividad, setNombreActividad] = useState("");
   const [porcentajeActividad, setPorcentajeActividad] = useState("");
   const [actividadEditando, setActividadEditando] = useState<Actividad | null>(null);
@@ -726,12 +744,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     inicializar();
   }, [navigate]);
 
-  const periodos = [
-    { numero: 1, nombre: "1er Periodo" },
-    { numero: 2, nombre: "2do Periodo" },
-    { numero: 3, nombre: "3er Periodo" },
-    { numero: 4, nombre: "4to Periodo" },
-  ];
+  const periodos = CORTES.map((n) => ({ numero: n, nombre: etiquetaCorteCorta(esq, n) }));
   
   // Verificar si estamos en la pestaña Definitiva Anual
   const esFinalDefinitiva = periodoActivo === 0;
@@ -919,16 +932,16 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
 
   // Calcular porcentaje promedio anual (promedio de los 4 períodos)
   const getPorcentajePromedioAnual = () => {
-    const porcentajes = [1, 2, 3, 4].map(p => getPorcentajeUsado(p));
+    const porcentajes = CORTES.map(p => getPorcentajeUsado(p));
     const suma = porcentajes.reduce((acc, val) => acc + val, 0);
-    const promedio = suma / 4;
+    const promedio = suma / N_CORTES;
     // Redondear a 2 decimales
     return Math.round(promedio * 100) / 100;
   };
 
   // Verificar si al menos un período tiene porcentaje completo (100%) Y el estudiante tiene TODAS las notas
   const tieneAlMenosUnPeriodoCompletoConTodasNotas = (idEstudiantil: string): boolean => {
-    for (let periodo = 1; periodo <= 4; periodo++) {
+    for (let periodo = 1; periodo <= N_CORTES; periodo++) {
       // 1. Verificar que el período esté al 100%
       const porcentajeUsado = getPorcentajeUsado(periodo);
       if (porcentajeUsado !== 100) continue;
@@ -1096,7 +1109,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         // Replicación solo para grupos top
         if (!grupoPadrePara) {
           if (replicarGrupoOtrosPeriodos) {
-            body.replicar_periodos = [1, 2, 3, 4].filter(p => p !== periodoActual);
+            body.replicar_periodos = CORTES.filter(p => p !== periodoActual);
           }
           if (replicarGrupoOtrosSalones && otrosSalones.length > 0) {
             body.replicar_salones = otrosSalones;
@@ -1680,7 +1693,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
           // Recalcular Definitiva Anual
           let suma = 0;
           let tieneAlgunaNota = false;
-          for (let p = 1; p <= 4; p++) {
+          for (let p = 1; p <= N_CORTES; p++) {
             // Usar nuevas actividades para calcular
             const actsPeriodo = nuevasActividades.filter(a => a.periodo === p);
             const actsConPorc = actsPeriodo.filter(a => a.porcentaje !== null && a.porcentaje > 0);
@@ -1827,7 +1840,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     let suma = 0;
     let periodosConNota = 0;
 
-    for (let p = 1; p <= 4; p++) {
+    for (let p = 1; p <= N_CORTES; p++) {
       const finalPeriodo = calcularFinalPeriodo(idEstudiantil, p);
       if (finalPeriodo !== null) {
         suma += finalPeriodo;
@@ -1855,7 +1868,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
 
   // Verificar si un estudiante tiene AL MENOS UNA NOTA en CUALQUIER período del año
   const tieneAlgunaNotaEnAnio = useCallback((idEstudiantil: string): boolean => {
-    return [1, 2, 3, 4].some(periodo => tieneAlgunaNotaEnPeriodo(idEstudiantil, periodo));
+    return CORTES.some(periodo => tieneAlgunaNotaEnPeriodo(idEstudiantil, periodo));
   }, [tieneAlgunaNotaEnPeriodo]);
 
   // === Funciones de descarga ===
@@ -2948,7 +2961,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     // Clasificar estudiantes por tipo de reporte:
     // Completo = tiene los 4 períodos al 100% con TODAS las notas en cada uno
     const estudiantesCompletos = estudiantesElegibles.filter(est => {
-      for (let p = 1; p <= 4; p++) {
+      for (let p = 1; p <= N_CORTES; p++) {
         const porcentaje = getPorcentajeUsado(p);
         if (porcentaje !== 100) return false;
         
@@ -2976,7 +2989,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
       
       // Verificar si este estudiante tiene todos los períodos completos con notas
       const esteEstudianteCompleto = (() => {
-        for (let p = 1; p <= 4; p++) {
+        for (let p = 1; p <= N_CORTES; p++) {
           const porcentaje = getPorcentajeUsado(p);
           if (porcentaje !== 100) return false;
           
@@ -3019,11 +3032,11 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
       
       if (estudiantesCompletos.length > 0 && estudiantesParciales === 0) {
         // Todos recibirán reporte completo
-        descripcion += `Se enviará REPORTE FINAL COMPLETO a ${estudiantesCompletos.length} estudiante(s) sobre:\nDefinitiva Anual(4 períodos completados)`;
+        descripcion += `Se enviará REPORTE FINAL COMPLETO a ${estudiantesCompletos.length} estudiante(s) sobre:\nDefinitiva Anual(${N_CORTES} períodos completados)`;
       } else if (estudiantesCompletos.length > 0 && estudiantesParciales > 0) {
         // Mezcla de completos y parciales
         descripcion += `Se enviará notificación a ${estudiantesElegibles.length} estudiante(s):\n`;
-        descripcion += `• ${estudiantesCompletos.length} recibirá(n) REPORTE FINAL COMPLETO (4 períodos)\n`;
+        descripcion += `• ${estudiantesCompletos.length} recibirá(n) REPORTE FINAL COMPLETO (${N_CORTES} períodos)\n`;
         descripcion += `• ${estudiantesParciales} recibirá(n) REPORTE PARCIAL (períodos completados individualmente)`;
       } else {
         // Solo parciales
@@ -3327,7 +3340,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
             // Recalcular y guardar Definitiva Anual
             let suma = 0;
             let tieneAlgunaNota = false;
-            for (let p = 1; p <= 4; p++) {
+            for (let p = 1; p <= N_CORTES; p++) {
               const fp = calcularFinalPeriodoConNotas(nuevasNotas, idEstudiantil, p);
               if (fp !== null) {
                 suma += fp;
@@ -3444,7 +3457,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
             // Recalcular y guardar Definitiva Anual(siempre divide entre 4)
             let suma = 0;
             let tieneAlgunaNota = false;
-            for (let p = 1; p <= 4; p++) {
+            for (let p = 1; p <= N_CORTES; p++) {
               const fp = calcularFinalPeriodoConNotas(nuevasNotas, idEstudiantil, p);
               if (fp !== null) {
                 suma += fp;
@@ -3528,7 +3541,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         const nf = calcularFinalPeriodoConNotas(nuevasNotas, id, periodo);
         await guardarFinalPeriodo(id, periodo, nf);
         let suma = 0, tieneAlguna = false;
-        for (let p = 1; p <= 4; p++) {
+        for (let p = 1; p <= N_CORTES; p++) {
           const fp = calcularFinalPeriodoConNotas(nuevasNotas, id, p);
           if (fp !== null) { suma += fp; tieneAlguna = true; }
         }
@@ -4200,7 +4213,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
 
     // Desmarcar: bloquear si hay un periodo POSTERIOR marcado completo.
     const posteriorCompleto: number | null =
-      [periodo + 1, periodo + 2, periodo + 3, periodo + 4].find(p => p <= 4 && getPeriodoCompleto(p)) ?? null;
+      [periodo + 1, periodo + 2, periodo + 3, periodo + 4, periodo + 5].find(p => p <= N_CORTES && getPeriodoCompleto(p)) ?? null;
     if (posteriorCompleto !== null) {
       toast({
         title: 'Hay un periodo posterior completo',
@@ -4306,7 +4319,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     try {
       const body: any = { nombre: nombreLimpio, porcentaje: pct };
       if (editReplicarPeriodos) {
-        body.replicar_periodos = [1, 2, 3, 4].filter(p => p !== periodoActual);
+        body.replicar_periodos = CORTES.filter(p => p !== periodoActual);
       }
       if (editReplicarSalones && otrosSalones.length > 0) {
         body.replicar_salones = otrosSalones;
@@ -4390,7 +4403,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
           </div>
           <div className="bg-card rounded-lg shadow-soft p-6 md:p-8">
             <h2 className="text-xl font-bold text-foreground mb-6 text-center">Elige tu periodo:</h2>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className={`grid grid-cols-2 gap-4 ${({ 1: 'md:grid-cols-2', 2: 'md:grid-cols-3', 3: 'md:grid-cols-4', 4: 'md:grid-cols-5', 5: 'md:grid-cols-6', 6: 'md:grid-cols-7' } as Record<number, string>)[N_CORTES + (hayDefAnual ? 1 : 0) - 1] || 'md:grid-cols-5'}`}>
               {periodos.map((p) => {
                 const pct = getPorcentajeUsado(p.numero);
                 const completo = getPeriodoCompleto(p.numero);
@@ -4437,7 +4450,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                   </div>
                 );
               })}
-              {(() => {
+              {hayDefAnual && (() => {
                 const pct = getPorcentajePromedioAnual();
                 const completo = pct === 100;
                 return (
@@ -4619,8 +4632,8 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                 </button>
               );
             })}
-            {/* Pestaña Definitiva Anual*/}
-            {(() => {
+            {/* Pestaña Definitiva Anual (no aplica cuando cada corte cierra con su definitiva) */}
+            {hayDefAnual && (() => {
               const porcentajePromedio = getPorcentajePromedioAnual();
               const estaCompleto = porcentajePromedio === 100;
               return (

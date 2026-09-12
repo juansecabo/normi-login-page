@@ -4,6 +4,7 @@ import { getSession, isAdmin, puedeAccederDashboard } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { apiRequest } from "@/lib/apiClient";
+import { useEsquemaGrado, etiquetaCorteOrdinal } from "@/utils/esquema";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { FileText, Loader2, Download, AlertTriangle, CheckCircle2, Send } from "lucide-react";
@@ -85,8 +86,12 @@ const Boletines = () => {
   const [salon, setSalon] = useState(() => searchParams.get("s") || "");
   const [periodo, setPeriodo] = useState(() => {
     const p = parseInt(searchParams.get("p") || "", 10);
-    return p >= 1 && p <= 4 ? p : 1;
+    return p >= 1 && p <= 6 ? p : 1;
   });
+  const esq = useEsquemaGrado(grado);
+  // "Primero" (periodos, como siempre) o "Primer semestre" (niveles por semestres).
+  const nombreCorte = (n: number) => (esq.esquema === "semestres" ? etiquetaCorteOrdinal(esq, n) : ORDINAL[n]);
+  const nombreCorteLargo = (n: number) => (esq.esquema === "semestres" ? etiquetaCorteOrdinal(esq, n) : `${ORDINAL[n]} periodo`);
   const [cargando, setCargando] = useState(false);
   const [datos, setDatos] = useState<DatosBoletin | null>(null);
   const [generando, setGenerando] = useState(false);
@@ -223,7 +228,7 @@ const Boletines = () => {
         y += 8;
         filaInfo([
           { label: "No. Lista", valor: String(est.num_lista), w: 26 },
-          { label: "Periodo", valor: `${ORDINAL[datos.periodo]}${datos.periodo_peso ? ` (${datos.periodo_peso}%)` : ""}`, w: 45 },
+          { label: "Periodo", valor: `${nombreCorte(datos.periodo)}${datos.periodo_peso ? ` (${datos.periodo_peso}%)` : ""}`, w: 45 },
           { label: "Año Lectivo", valor: String(datos.ano_escolar), w: 30 },
           { label: "Fecha", valor: hoy, w: 40 },
           { label: "Sede", valor: datos.colegio.sede, w: 55 },
@@ -408,8 +413,8 @@ const Boletines = () => {
       }
 
       const nombreArchivo = soloEstudiante
-        ? `Boletin ${soloEstudiante.apellidos} ${soloEstudiante.nombres} - ${ORDINAL[datos.periodo]} periodo.pdf`
-        : `Boletines ${datos.grado} ${datos.salon} - ${ORDINAL[datos.periodo]} periodo.pdf`;
+        ? `Boletin ${soloEstudiante.apellidos} ${soloEstudiante.nombres} - ${nombreCorteLargo(datos.periodo)}.pdf`
+        : `Boletines ${datos.grado} ${datos.salon} - ${nombreCorteLargo(datos.periodo)}.pdf`;
       pdf.save(nombreArchivo);
     } catch (e) {
       console.error(e);
@@ -445,7 +450,7 @@ const Boletines = () => {
             </select>
             <select value={periodo} onChange={(e) => setPeriodo(parseInt(e.target.value, 10))}
               className="col-span-2 sm:col-span-1 px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer" data-guia="boletines.selector_periodo">
-              {[1, 2, 3, 4].map((p) => <option key={p} value={p}>{ORDINAL[p]} periodo</option>)}
+              {esq.cortes.map((p) => <option key={p} value={p}>{nombreCorteLargo(p)}</option>)}
             </select>
           </div>
 
@@ -498,7 +503,7 @@ const Boletines = () => {
             <AlertTriangle className="h-5 w-5 text-amber-500" /> Inconsistencias del periodo
           </h3>
           <p className="text-sm text-muted-foreground mb-4">
-            Planillas incompletas de TODO el colegio en el {ORDINAL[periodo].toLowerCase()} periodo, agrupadas por profesor.
+            Planillas incompletas de TODO el colegio en el {nombreCorteLargo(periodo).toLowerCase()}, agrupadas por profesor.
             El botón le envía a cada uno el detalle por WhatsApp.
           </p>
 

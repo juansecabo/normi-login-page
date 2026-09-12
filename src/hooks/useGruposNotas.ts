@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { apiClient } from "@/lib/apiClient";
+import { esquemaDeGrado } from "@/utils/esquema";
 import type { GrupoCalc } from "@/lib/gradeCalculator";
 
 export interface GrupoNotas extends GrupoCalc {
@@ -38,7 +39,7 @@ export function useGruposNotas(aula: Aula | null) {
     try {
       // Si no se especifica periodo, traemos los 4 periodos haciendo 4 calls
       // en paralelo. El endpoint hoy exige el periodo en la query.
-      const periodos = aula.periodo ? [aula.periodo] : [1, 2, 3, 4];
+      const periodos = aula.periodo ? [aula.periodo] : (await esquemaDeGrado(aula.grado)).cortes;
       const todos: GrupoNotas[] = [];
       await Promise.all(periodos.map(async (p) => {
         const params = new URLSearchParams({

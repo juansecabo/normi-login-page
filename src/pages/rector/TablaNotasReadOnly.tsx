@@ -1,6 +1,7 @@
 import { getPeriodoActual } from "@/utils/periodoActual";
 import { anoEscolarActual } from "@/utils/anoEscolar";
 import { useEffect, useState } from "react";
+import { useEsquemaGrado, etiquetaCorteCorta } from "@/utils/esquema";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, isRectorOrCoordinador, isEstudiante, isPadreDeFamilia } from "@/hooks/useSession";
@@ -45,6 +46,9 @@ const TablaNotasReadOnly = () => {
   const navigate = useNavigate();
   const [asignaturaSeleccionada, setAsignaturaSeleccionada] = useState("");
   const [gradoSeleccionado, setGradoSeleccionado] = useState("");
+  const esq = useEsquemaGrado(gradoSeleccionado);
+  const CORTES = esq.cortes;
+  const N_CORTES = CORTES.length;
   const [salonSeleccionado, setSalonSeleccionado] = useState("");
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
   const [loading, setLoading] = useState(true);
@@ -233,12 +237,7 @@ const TablaNotasReadOnly = () => {
     inicializar();
   }, [navigate]);
 
-  const periodos = [
-    { numero: 1, nombre: "1er Periodo" },
-    { numero: 2, nombre: "2do Periodo" },
-    { numero: 3, nombre: "3er Periodo" },
-    { numero: 4, nombre: "4to Periodo" },
-  ];
+  const periodos = CORTES.map((n) => ({ numero: n, nombre: etiquetaCorteCorta(esq, n) }));
 
   const esFinalDefinitiva = periodoActivo === 0;
 
@@ -278,9 +277,9 @@ const TablaNotasReadOnly = () => {
   };
 
   const getPorcentajePromedioAnual = () => {
-    const porcentajes = [1, 2, 3, 4].map(p => getPorcentajeUsado(p));
+    const porcentajes = CORTES.map(p => getPorcentajeUsado(p));
     const suma = porcentajes.reduce((acc, val) => acc + val, 0);
-    const promedio = suma / 4;
+    const promedio = suma / N_CORTES;
     return Math.round(promedio * 100) / 100;
   };
 
@@ -325,7 +324,7 @@ const TablaNotasReadOnly = () => {
     let suma = 0;
     let periodosConNota = 0;
 
-    for (let periodo = 1; periodo <= 4; periodo++) {
+    for (let periodo = 1; periodo <= N_CORTES; periodo++) {
       const finalPeriodo = calcularFinalPeriodo(idEstudiantil, periodo);
       if (finalPeriodo !== null) {
         suma += finalPeriodo;

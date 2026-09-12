@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useEsquemaGrado } from "@/utils/esquema";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import ConsolidadoNotas from "@/components/ConsolidadoNotas";
 import { supabase } from "@/integrations/supabase/client";
@@ -63,12 +64,8 @@ const EstudianteConsolidado = () => {
   const [periodosActivos, setPeriodosActivos] = useState<PeriodosActivos>({});
   const [loading, setLoading] = useState(true);
 
-  const periodos = [
-    { numero: 1, nombre: "1°" },
-    { numero: 2, nombre: "2°" },
-    { numero: 3, nombre: "3°" },
-    { numero: 4, nombre: "4°" },
-  ];
+  const esq = useEsquemaGrado(gradoSeleccionado);
+  const periodos = esq.cortes.map((n) => ({ numero: n, nombre: `${n}°` }));
 
   useEffect(() => {
     const inicializar = async () => {
@@ -249,7 +246,7 @@ const EstudianteConsolidado = () => {
     let suma = 0;
     let periodosConNota = 0;
 
-    for (let periodo = 1; periodo <= 4; periodo++) {
+    for (let periodo = 1; periodo <= esq.cortes.length; periodo++) {
       const finalPeriodo = calcularFinalPeriodo(asignatura, periodo);
       if (finalPeriodo !== null) {
         suma += finalPeriodo;

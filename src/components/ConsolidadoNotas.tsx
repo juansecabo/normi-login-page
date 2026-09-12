@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useEsquemaGrado, etiquetaCorteOrdinal } from "@/utils/esquema";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getPeriodoActual } from "@/utils/periodoActual";
@@ -61,12 +62,6 @@ type PeriodosActivos = {
   [asignatura: string]: number;
 };
 
-const periodos = [
-  { numero: 1, nombre: "1°" },
-  { numero: 2, nombre: "2°" },
-  { numero: 3, nombre: "3°" },
-  { numero: 4, nombre: "4°" },
-];
 
 // Posición en el nivel superior de la tabla del profesor = fecha_creacion (UTC).
 // Mismo criterio que TablaNotas: grupos y actividades sueltas se intercalan por
@@ -80,6 +75,8 @@ const parseFechaUTC = (f?: string): number => {
 };
 
 const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante, grado, salon }: ConsolidadoNotasProps) => {
+  const esq = useEsquemaGrado(grado);
+  const periodos = esq.cortes.map((n) => ({ numero: n, nombre: `${n}°` }));
   // Colegios con `ocultar_definitivas` (ej. Pestalozziano): NO se muestra la
   // definitiva del periodo — su cálculo no coincide con la plataforma oficial.
   const { config } = useColegioConfig();
@@ -441,7 +438,7 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
   const calcularFinalDefinitiva = (asignatura: string): number | null => {
     let suma = 0;
     let periodosConNota = 0;
-    for (let periodo = 1; periodo <= 4; periodo++) {
+    for (let periodo = 1; periodo <= esq.cortes.length; periodo++) {
       const finalPeriodo = calcularFinalPeriodo(asignatura, periodo);
       if (finalPeriodo !== null) {
         suma += finalPeriodo;
@@ -630,7 +627,7 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
                 className="p-6 rounded-lg border-2 border-border bg-background text-center hover:border-primary hover:bg-primary/10 transition-colors flex flex-col items-center gap-2 font-medium text-foreground"
               >
                 <span className="text-2xl font-bold text-primary">{p.numero}°</span>
-                <span>{["", "Primer", "Segundo", "Tercer", "Cuarto"][p.numero]} periodo</span>
+                <span>{etiquetaCorteOrdinal(esq, p.numero)}</span>
               </button>
             ))}
           </div>

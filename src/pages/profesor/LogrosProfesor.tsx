@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { BookOpenCheck, Plus, Pencil, Trash2, Loader2, Sparkles, Check } from "lucide-react";
 import { rankGrado } from "@/utils/grados";
+import { useEsquemaGrado, etiquetaCorteOrdinal } from "@/utils/esquema";
 import { getPeriodoActual } from "@/utils/periodoActual";
 
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
@@ -28,8 +29,6 @@ interface Logro {
   redacciones: Record<string, string>; salones: string[];
 }
 
-const PERIODOS = [1, 2, 3, 4];
-const ORDINAL: Record<number, string> = { 1: "Primer", 2: "Segundo", 3: "Tercer", 4: "Cuarto" };
 
 const LogrosProfesor = () => {
   const navigate = useNavigate();
@@ -44,8 +43,10 @@ const LogrosProfesor = () => {
   const [asignatura, setAsignatura] = useState(() => searchParams.get("a") || "");
   const [grado, setGrado] = useState(() => searchParams.get("g") || "");
   const [periodo, setPeriodo] = useState<number>(() => {
-    const p = Number(searchParams.get("p")); return p >= 1 && p <= 4 ? p : getPeriodoActual();
+    const p = Number(searchParams.get("p")); return p >= 1 && p <= 6 ? p : getPeriodoActual();
   });
+  const esq = useEsquemaGrado(grado);
+  const PERIODOS = esq.cortes;
 
   const [banco, setBanco] = useState<Logro[]>([]);
   const [niveles, setNiveles] = useState<Nivel[]>([]);
@@ -239,7 +240,7 @@ const LogrosProfesor = () => {
                 </select>
                 <select value={periodo} onChange={(e) => setPeriodo(parseInt(e.target.value, 10))}
                   className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer" data-guia="logros.select_periodo">
-                  {PERIODOS.map((p) => <option key={p} value={p}>{ORDINAL[p]} periodo</option>)}
+                  {PERIODOS.map((p) => <option key={p} value={p}>{etiquetaCorteOrdinal(esq, p)}</option>)}
                 </select>
               </div>
 
