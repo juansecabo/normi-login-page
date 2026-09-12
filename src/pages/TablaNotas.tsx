@@ -348,6 +348,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   const CORTES = esq.cortes;
   const N_CORTES = CORTES.length;
   const hayDefAnual = !esq.definitivaPorCorte;
+  const UNIDAD = esq.esquema === 'semestres' ? 'Semestre' : 'Periodo';
   const [salonSeleccionado, setSalonSeleccionado] = useState("");
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
   const [loading, setLoading] = useState(true);
@@ -4433,7 +4434,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                     ) : (calificable || completo) ? (
                       <label
                         onClick={(e) => e.stopPropagation()}
-                        title="Marcar/desmarcar periodo completo"
+                        title={`Marcar/desmarcar ${UNIDAD.toLowerCase()} completo`}
                         className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold cursor-pointer whitespace-nowrap ${completo ? 'bg-green-600 text-white' : 'bg-muted text-foreground'}`}
                       >
                         <input
@@ -4588,11 +4589,11 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
             // "Periodo completo" (ya no se cierra solo por %-suma en plano).
             (getPeriodoCompleto(periodoActivo)) ? (
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-semibold">
-                ✓ Periodo completo
+                ✓ {UNIDAD} completo
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-medium">
-                Periodo no completo
+                {UNIDAD} no completo
               </span>
             )
           )}
@@ -4903,10 +4904,10 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                 return (
                                   <th rowSpan={filasThead} className="border-r border-b border-border/30 p-2 text-center text-xs font-semibold min-w-[150px] bg-primary">
                                     <div className="flex flex-col items-center gap-1">
-                                      <span>Definitiva Periodo</span>
+                                      <span>Definitiva {UNIDAD}</span>
                                       {!soloLectura && ((calificable || marcado) ? (
                                         <label data-guia="notas.check_periodo_completo" className="flex items-center gap-1 cursor-pointer text-xs text-primary-foreground/90 hover:text-primary-foreground">
-                                          <span>(¿Periodo completo?)</span>
+                                          <span>(¿{UNIDAD} completo?)</span>
                                           <input
                                             type="checkbox"
                                             checked={marcado}
@@ -4986,10 +4987,10 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                 return (
                                   <th className="border-r border-b border-border/30 p-2 text-center text-xs font-medium min-w-[130px] bg-primary">
                                     <div className="flex flex-col items-center gap-1">
-                                      <span>Definitiva Periodo</span>
+                                      <span>Definitiva {UNIDAD}</span>
                                       {!soloLectura && (calificable || marcado) ? (
                                         <label data-guia="notas.check_periodo_completo" className="flex items-center gap-1 cursor-pointer text-xs text-primary-foreground/90 hover:text-primary-foreground">
-                                          <span>(¿Periodo completo?)</span>
+                                          <span>(¿{UNIDAD} completo?)</span>
                                           <input
                                             type="checkbox"
                                             checked={marcado}
@@ -5448,7 +5449,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                 className="w-full px-1 py-1 text-xs rounded-md bg-green-100 hover:bg-green-200 text-green-800 transition-colors flex flex-col items-center justify-center h-10"
                               >
                                 <span className="text-[10px]">📱 Notificar</span>
-                                <span className="font-semibold text-[10px] leading-tight">Definitiva Periodo</span>
+                                <span className="font-semibold text-[10px] leading-tight">Definitiva {UNIDAD}</span>
                               </button>
                             )}
                           </td>
@@ -5514,7 +5515,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                               className="w-full px-1 py-1 text-xs rounded-md bg-green-100 hover:bg-green-200 text-green-800 transition-colors flex flex-col items-center justify-center h-10"
                             >
                               <span className="text-[10px]">📱 Notificar</span>
-                              <span className="font-semibold text-[10px] leading-tight">Definitiva Periodo</span>
+                              <span className="font-semibold text-[10px] leading-tight">Definitiva {UNIDAD}</span>
                             </button>
                           )}
                         </td>

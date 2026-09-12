@@ -49,6 +49,7 @@ const TablaNotasReadOnly = () => {
   const esq = useEsquemaGrado(gradoSeleccionado);
   const CORTES = esq.cortes;
   const N_CORTES = CORTES.length;
+  const UNIDAD = esq.esquema === 'semestres' ? 'Semestre' : 'Periodo';
   const [salonSeleccionado, setSalonSeleccionado] = useState("");
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
   const [loading, setLoading] = useState(true);
@@ -471,7 +472,7 @@ const TablaNotasReadOnly = () => {
                         {!ocultarDef && (
                         <th className="border-r border-b border-border/30 p-2 text-center text-xs font-medium min-w-[130px] bg-primary">
                           <div className="flex flex-col items-center">
-                            <span>Definitiva Periodo</span>
+                            <span>Definitiva {UNIDAD}</span>
                             <span className="text-xs text-primary-foreground/70">
                               ({getPorcentajeUsado(periodoActivo)}/100%)
                             </span>
