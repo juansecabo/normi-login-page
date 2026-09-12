@@ -64,7 +64,6 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [anoEscolar, setAnoEscolar] = useState<number>(new Date().getFullYear());
-  const [periodos, setPeriodos] = useState<Periodo[]>([]);
   const [dias, setDias] = useState<DiaNoLectivo[]>([]);
   const [eventos, setEventos] = useState<Evento[]>([]);
   // Periodos POR NIVEL: '' = los generales del colegio; un nivel con esquema propio
@@ -697,13 +696,13 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
           </>)}
           {detalle?.tipo === "periodo" && (<>
             <DialogHeader>
-              <DialogTitle>{estiloPeriodo(, esqSel).nombre}</DialogTitle>
+              <DialogTitle>{estiloPeriodo(detalle.periodo.periodo, esqSel).nombre}</DialogTitle>
               <DialogDescription>
                 Del {fechaLinda(detalle.periodo.fecha_inicio)} al {fechaLinda(detalle.periodo.fecha_fin)}
               </DialogDescription>
             </DialogHeader>
             {!soloLectura && (<>
-            <p className="text-sm text-muted-foreground">Para cambiar sus fechas, elige la herramienta "{estiloPeriodo(, esqSel).nombre}" y pinta el nuevo rango.</p>
+            <p className="text-sm text-muted-foreground">Para cambiar sus fechas, elige la herramienta "{estiloPeriodo(detalle.periodo.periodo, esqSel).nombre}" y pinta el nuevo rango.</p>
             <DialogFooter>
               <Button variant="destructive" onClick={() => { const n = detalle.periodo.periodo; setDetalle(null); setConfirmPeriodo(n); }} disabled={guardando} className="gap-2">
                 <Eraser className="w-4 h-4" /> Quitar periodo
@@ -759,7 +758,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
       <Dialog open={confirmPeriodo != null} onOpenChange={(o) => { if (!o) setConfirmPeriodo(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Quitar {confirmPeriodo != null ? estiloPeriodo(, esqSel).nombre : ""}</DialogTitle>
+            <DialogTitle>Quitar {confirmPeriodo != null ? estiloPeriodo(confirmPeriodo, esqSel).nombre : ""}</DialogTitle>
             <DialogDescription className="pt-2 text-foreground">
               Se borran sus fechas del calendario (puedes volver a pintarlo cuando quieras).
             </DialogDescription>
