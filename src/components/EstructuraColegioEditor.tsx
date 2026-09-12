@@ -12,6 +12,7 @@ import { SortableContext, horizontalListSortingStrategy, verticalListSortingStra
 import { CSS } from "@dnd-kit/utilities";
 import { type ReactNode } from "react";
 import { apiRequest, ApiError } from "@/lib/apiClient";
+import { invalidarEsquemaCache } from "@/utils/esquema";
 import { ORDEN_GRADOS, rankGrado } from "@/utils/grados";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -29,7 +30,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 interface Jornada { id: number; nombre: string; hora_entrada: string | null; hora_salida: string | null; hora_aviso: string | null; orden: number | null; activa: boolean; }
 interface Grado { id: number; grado: string; nivel: string | null; orden: number | null; activo: boolean; }
 interface Salon { id: number; grado: string; salon: string; jornada_id: number | null; activo: boolean; }
-interface Nivel { id: number; nombre: string; orden: number | null; activo: boolean; }
+interface Nivel { id: number; nombre: string; orden: number | null; activo: boolean; esquema?: 'periodos' | 'semestres'; cortes?: number; definitiva?: 'anual' | 'por_corte'; }
 
 /** Jornadas estándar que se ofrecen de un tap (sin que el usuario las escriba). */
 const JORNADAS_ESTANDAR = ["Matutina", "Vespertina", "Nocturna"];
@@ -251,6 +252,15 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
     } catch (e) { err(e, "No se pudo renombrar el nivel."); }
     setGuardandoNivel(false);
   };
+  // Esquema de evaluación del nivel (Juan 2026-09-12): periodos (4 cortes, definitiva anual)
+  // o semestres (2 cortes, cada uno con su definitiva). Afecta tablas de notas, boletines y calendario.
+  const cambiarEsquemaNivel = async (id: number, esquema: 'periodos' | 'semestres') => {
+    try {
+      await apiRequest(`/api/institucion/niveles/${id}`, { method: "PATCH", body: JSON.stringify(withCid({ esquema })) });
+      invalidarEsquemaCache();
+      await cargar();
+    } catch (e: any) { toast({ title: "No se pudo cambiar el esquema", description: (e?.body as any)?.detail || e?.message, variant: "destructive" }); }
+  };
   const borrarNivel = async (id: number) => {
     try { await apiRequest(`/api/institucion/niveles/${id}${qCid}`, { method: "DELETE" }); await cargar(); }
     catch (e) { err(e, "No se pudo eliminar el nivel."); }
@@ -424,6 +434,26 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
                 </div>
               </SortableContext>
             </DndContext>
+          )}
+          {nivelesOrdenados.length > 0 && (
+            <div className="rounded-lg border border-border p-3 space-y-2" data-guia="configurar_institucion.nivel_esquema">
+              <p className="text-sm font-medium">Esquema de evaluación por nivel</p>
+              <p className="text-xs text-muted-foreground">Por periodos: cuatro cortes al año y definitiva anual (promedio). Por semestres: dos cortes al año y cada semestre cierra con su propia definitiva (por ejemplo, Formación Complementaria). Las fechas de cada corte se fijan en Calendario.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {nivelesOrdenados.map((n) => (
+                  <div key={`esq-${n.id}`} className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-1.5 text-sm">
+                    <span className="font-medium truncate">{n.nombre}</span>
+                    <Select value={n.esquema || "periodos"} onValueChange={(v) => cambiarEsquemaNivel(n.id, v as 'periodos' | 'semestres')}>
+                      <SelectTrigger className="h-8 w-[190px] text-xs" data-guia="configurar_institucion.nivel_esquema_select"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="periodos">Periodos (4 cortes)</SelectItem>
+                        <SelectItem value="semestres">Semestres (2 cortes)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
           {/* Niveles estándar de un tap */}
           {NIVELES_ESTANDAR.some((n) => !niveles.some((x) => x.nombre.toLowerCase() === n.toLowerCase())) && (

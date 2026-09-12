@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/apiClient";
+import { esquemasDelColegio, etiquetaCorte, type Esquema, type EsquemaNivel } from "@/utils/esquema";
 import { CalendarDays, Eraser, Loader2, Trash2, Pencil } from "lucide-react";
 
 /**
@@ -19,7 +20,7 @@ import { CalendarDays, Eraser, Loader2, Trash2, Pencil } from "lucide-react";
  * automáticos no se envían en días marcados sin clases.
  */
 
-interface Periodo { periodo: number; fecha_inicio: string; fecha_fin: string; ano_escolar?: number }
+interface Periodo { periodo: number; fecha_inicio: string; fecha_fin: string; ano_escolar?: number; nivel?: string }
 interface DiaNoLectivo { id: number; fecha_inicio: string; fecha_fin: string; motivo: string | null }
 interface Evento { id: number; fecha_inicio: string; fecha_fin: string; nombre: string }
 
@@ -32,14 +33,21 @@ const fechaLinda = (fISO: string) => {
   return new Date(y, m - 1, d).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" });
 };
 
-type Herramienta = "p1" | "p2" | "p3" | "p4" | "sinclases" | "evento" | "quitar";
+type Herramienta = `p${number}` | "sinclases" | "evento" | "quitar";
 
-const PERIODO_ESTILO: Record<number, { fondo: string; chip: string; nombre: string }> = {
-  1: { fondo: "bg-emerald-200 hover:bg-emerald-300", chip: "bg-emerald-200 border-emerald-400", nombre: "Periodo 1" },
-  2: { fondo: "bg-sky-200 hover:bg-sky-300", chip: "bg-sky-200 border-sky-400", nombre: "Periodo 2" },
-  3: { fondo: "bg-amber-200 hover:bg-amber-300", chip: "bg-amber-200 border-amber-400", nombre: "Periodo 3" },
-  4: { fondo: "bg-violet-200 hover:bg-violet-300", chip: "bg-violet-200 border-violet-400", nombre: "Periodo 4" },
-};
+// Paleta por corte (hasta 6). El nombre depende del esquema del nivel: "Periodo n" o "Semestre n".
+const PALETA: Array<{ fondo: string; chip: string }> = [
+  { fondo: "", chip: "" },
+  { fondo: "bg-emerald-200 hover:bg-emerald-300", chip: "bg-emerald-200 border-emerald-400" },
+  { fondo: "bg-sky-200 hover:bg-sky-300", chip: "bg-sky-200 border-sky-400" },
+  { fondo: "bg-amber-200 hover:bg-amber-300", chip: "bg-amber-200 border-amber-400" },
+  { fondo: "bg-violet-200 hover:bg-violet-300", chip: "bg-violet-200 border-violet-400" },
+  { fondo: "bg-rose-200 hover:bg-rose-300", chip: "bg-rose-200 border-rose-400" },
+  { fondo: "bg-teal-200 hover:bg-teal-300", chip: "bg-teal-200 border-teal-400" },
+];
+const estiloPeriodo = (n: number, esquema: Esquema): { fondo: string; chip: string; nombre: string } => ({
+  ...(PALETA[n] || PALETA[1]), nombre: etiquetaCorte(esquema, n),
+});
 
 interface Props {
   colegioId?: string;
@@ -59,13 +67,24 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
   const [periodos, setPeriodos] = useState<Periodo[]>([]);
   const [dias, setDias] = useState<DiaNoLectivo[]>([]);
   const [eventos, setEventos] = useState<Evento[]>([]);
+  // Periodos POR NIVEL: '' = los generales del colegio; un nivel con esquema propio
+  // (ej. Formación Complementaria por semestres) tiene sus propias fechas.
+  const [esquemas, setEsquemas] = useState<EsquemaNivel[]>([]);
+  const [nivelSel, setNivelSel] = useState<string>("");
+  const [todosPeriodos, setTodosPeriodos] = useState<Periodo[]>([]);
+  const nivelesPropios = esquemas.filter((e) => e.esquema !== "periodos" || e.cortes.length !== 4);
+  const esqSel: Esquema = nivelSel ? (esquemas.find((e) => e.nivel === nivelSel)?.esquema || "periodos") : "periodos";
+  const cortes: number[] = nivelSel ? (esquemas.find((e) => e.nivel === nivelSel)?.cortes || [1, 2, 3, 4]) : [1, 2, 3, 4];
+  const periodos = todosPeriodos.filter((p) => (p.nivel || "") === nivelSel);
+  const setPeriodos = (nuevos: Periodo[]) => setTodosPeriodos((prev) => [...prev.filter((p) => (p.nivel || "") !== nivelSel), ...nuevos.map((p) => ({ ...p, nivel: nivelSel }))]);
   const [festivos, setFestivos] = useState<Map<string, string>>(new Map());
 
   const cargar = async () => {
     try {
       const r = await apiRequest<{ periodos: Periodo[]; dias: DiaNoLectivo[]; eventos?: Evento[]; festivos: Array<{ fecha: string; nombre: string } | string>; ano_escolar: number }>(`/api/institucion/calendario${qCid}`);
       setAnoEscolar(r.ano_escolar);
-      setPeriodos((r.periodos || []).filter((p) => p.ano_escolar === r.ano_escolar));
+      setTodosPeriodos((r.periodos || []).filter((p) => p.ano_escolar === r.ano_escolar));
+      esquemasDelColegio().then(setEsquemas).catch(() => setEsquemas([]));
       setDias(r.dias || []);
       setEventos(r.eventos || []);
       setFestivos(new Map((r.festivos || []).map((f) => (typeof f === "string" ? [f, "Festivo"] : [f.fecha, f.nombre]))));
@@ -99,7 +118,8 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
         method: "PUT",
         body: JSON.stringify(withCid({
           ano_escolar: anoEscolar,
-          periodos: [1, 2, 3, 4].map((n) => {
+          nivel: nivelSel,
+          periodos: cortes.map((n) => {
             const p = nuevos.find((x) => x.periodo === n);
             return { periodo: n, fecha_inicio: p?.fecha_inicio || "", fecha_fin: p?.fecha_fin || "" };
           }),
@@ -336,7 +356,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
     const nombreFestivo = festivos.get(f);
     if (nombreFestivo) return { cls: `${base} bg-fuchsia-300 text-fuchsia-900`, title: `${nombreFestivo} (festivo automático)` };
     const per = periodos.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin);
-    if (per) return { cls: `${base} ${PERIODO_ESTILO[per.periodo].fondo}`, title: PERIODO_ESTILO[per.periodo].nombre };
+    if (per) return { cls: `${base} ${estiloPeriodo(per.periodo, esqSel).fondo}`, title: estiloPeriodo(per.periodo, esqSel).nombre };
     if (dow >= 5) return { cls: `${base} text-muted-foreground/50`, title: "" };
     return { cls: `${base} hover:bg-muted`, title: "" };
   };
@@ -366,12 +386,27 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
           {/* ── Herramientas (barra fija al hacer scroll: no hay que subir a
                 marcar/desmarcar mientras se recorren los 12 meses). En solo
                 lectura no hay herramientas. ── */}
+          {nivelesPropios.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2" data-guia="configurar_institucion.cal_nivel">
+              <span className="text-sm text-muted-foreground">Fechas de:</span>
+              <button type="button" onClick={() => { setNivelSel(""); setHerramienta(null); }}
+                className={`px-3 py-1 rounded-full border text-sm ${nivelSel === "" ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-accent"}`}>
+                Colegio (periodos)
+              </button>
+              {nivelesPropios.map((e) => (
+                <button key={e.nivel} type="button" onClick={() => { setNivelSel(e.nivel); setHerramienta(null); }}
+                  className={`px-3 py-1 rounded-full border text-sm ${nivelSel === e.nivel ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-accent"}`}>
+                  {e.nivel} ({e.esquema === "semestres" ? "semestres" : `${e.cortes.length} cortes`})
+                </button>
+              ))}
+            </div>
+          )}
           {!soloLectura && (
           <div className="sticky top-2 z-30 flex flex-wrap items-center gap-2 bg-card/95 backdrop-blur-sm border border-border rounded-xl shadow-md px-3 py-2 -mx-1">
-            {[1, 2, 3, 4].map((n) => (
+            {cortes.map((n) => (
               <button key={n} data-guia="configurar_institucion.cal_herramienta_periodo" onClick={(e) => toggleHerramienta(`p${n}` as Herramienta, e)}
-                className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer focus:outline-none ${PERIODO_ESTILO[n].chip} ${herramienta === `p${n}` ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
-                {PERIODO_ESTILO[n].nombre}
+                className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer focus:outline-none ${estiloPeriodo(n, esqSel).chip} ${herramienta === `p${n}` ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
+                {estiloPeriodo(n, esqSel).nombre}
               </button>
             ))}
             <button data-guia="configurar_institucion.cal_herramienta_evento" onClick={(e) => toggleHerramienta("evento", e)}
@@ -396,9 +431,9 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
           {/* ── Leyenda arriba (solo lectura: que se vea sin hacer scroll) ── */}
           {soloLectura && (
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground border border-border rounded-lg px-3 py-2 bg-muted/40">
-            {[1, 2, 3, 4].map((n) => (
+            {cortes.map((n) => (
               <span key={n} className="inline-flex items-center gap-1.5">
-                <span className={`w-3 h-3 rounded-sm ${PERIODO_ESTILO[n].chip}`} /> {PERIODO_ESTILO[n].nombre}
+                <span className={`w-3 h-3 rounded-sm ${estiloPeriodo(n, esqSel).chip}`} /> {estiloPeriodo(n, esqSel).nombre}
               </span>
             ))}
             <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-red-200 border border-red-400" /> Sin clases</span>
@@ -439,12 +474,12 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
 
           {/* ── Leyenda (abajo siempre) ── */}
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground pt-1">
-            {[1, 2, 3, 4].map((n) => {
+            {cortes.map((n) => {
               const p = periodos.find((x) => x.periodo === n);
               return (
                 <span key={n} className="inline-flex items-center gap-1.5">
-                  <span className={`w-3 h-3 rounded-sm ${PERIODO_ESTILO[n].chip}`} />
-                  {PERIODO_ESTILO[n].nombre}{p ? `: ${fechaLinda(p.fecha_inicio)} — ${fechaLinda(p.fecha_fin)}` : " (sin configurar)"}
+                  <span className={`w-3 h-3 rounded-sm ${estiloPeriodo(n, esqSel).chip}`} />
+                  {estiloPeriodo(n, esqSel).nombre}{p ? `: ${fechaLinda(p.fecha_inicio)} — ${fechaLinda(p.fecha_fin)}` : " (sin configurar)"}
                 </span>
               );
             })}
@@ -662,13 +697,13 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
           </>)}
           {detalle?.tipo === "periodo" && (<>
             <DialogHeader>
-              <DialogTitle>{PERIODO_ESTILO[detalle.periodo.periodo].nombre}</DialogTitle>
+              <DialogTitle>{estiloPeriodo(, esqSel).nombre}</DialogTitle>
               <DialogDescription>
                 Del {fechaLinda(detalle.periodo.fecha_inicio)} al {fechaLinda(detalle.periodo.fecha_fin)}
               </DialogDescription>
             </DialogHeader>
             {!soloLectura && (<>
-            <p className="text-sm text-muted-foreground">Para cambiar sus fechas, elige la herramienta "{PERIODO_ESTILO[detalle.periodo.periodo].nombre}" y pinta el nuevo rango.</p>
+            <p className="text-sm text-muted-foreground">Para cambiar sus fechas, elige la herramienta "{estiloPeriodo(, esqSel).nombre}" y pinta el nuevo rango.</p>
             <DialogFooter>
               <Button variant="destructive" onClick={() => { const n = detalle.periodo.periodo; setDetalle(null); setConfirmPeriodo(n); }} disabled={guardando} className="gap-2">
                 <Eraser className="w-4 h-4" /> Quitar periodo
@@ -724,7 +759,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
       <Dialog open={confirmPeriodo != null} onOpenChange={(o) => { if (!o) setConfirmPeriodo(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Quitar {confirmPeriodo != null ? PERIODO_ESTILO[confirmPeriodo].nombre : ""}</DialogTitle>
+            <DialogTitle>Quitar {confirmPeriodo != null ? estiloPeriodo(, esqSel).nombre : ""}</DialogTitle>
             <DialogDescription className="pt-2 text-foreground">
               Se borran sus fechas del calendario (puedes volver a pintarlo cuando quieras).
             </DialogDescription>
