@@ -57,6 +57,26 @@ const EstadisticasDashboard = () => {
   const grupoSel = hayGrupos ? (gruposVisibles!.find((g) => g.esquema === ambitoParam) || null) : null;
   // Nombre del ámbito cuando no hay grupo elegido: "Institución" o los niveles del coordinador.
   const nombreAmbito = grupoSel ? grupoSel.nombre : (nivelesPermitidos ? nombrarNiveles(nivelesPermitidos) : "Institución");
+  // Niveles del ámbito actual (grupo elegido ∩ niveles del coordinador), para ofrecer
+  // "Todos" + cada nivel por separado en "Nivel de Análisis" (Juan 2026-09-13).
+  const nivelesAmbito: string[] = grupoSel
+    ? grupoSel.niveles
+    : (nivelesPermitidos || (grupos || []).flatMap((g) => g.niveles));
+  // Coordinador de un solo nivel: la primera opción se llama como su nivel y no hay lista de niveles.
+  const etiquetaTodos = grupoSel
+    ? (grupoSel.niveles.length === 1 ? grupoSel.niveles[0] : "Todo el grupo")
+    : nivelesPermitidos
+      ? (nivelesPermitidos.length === 1 ? nivelesPermitidos[0] : "Todos mis niveles")
+      : "Institución";
+  const opcionesNivelAnalisis = [
+    { value: "institucion", label: etiquetaTodos },
+    ...(nivelesAmbito.length > 1 ? nivelesAmbito.map((n) => ({ value: `nivel:${n}`, label: n })) : []),
+    { value: "grado", label: "Por Grado" },
+    { value: "salon", label: "Por Salón" },
+    { value: "estudiante", label: "Por Estudiante" },
+    { value: "asignatura", label: "Por Asignatura" },
+  ];
+  const nivelColegioSel = nivelAnalisis.startsWith("nivel:") ? nivelAnalisis.slice(6) : undefined;
   const elegirGrupo = (g: GrupoNiveles) => {
     setSearchParams((prev) => { const p = new URLSearchParams(prev); p.set("ambito", g.esquema); p.delete("grado"); p.delete("salon"); p.delete("estudiante"); p.delete("asignatura"); return p; });
     setGradoSeleccionado(""); setSalonSeleccionado(""); setEstudianteSeleccionado(""); setAsignaturaSeleccionada("");
@@ -168,7 +188,7 @@ const EstadisticasDashboard = () => {
 
   // Verificar si todos los filtros necesarios están seleccionados
   const filtrosCompletos = () => {
-    if (nivelAnalisis === "institucion") return true;
+    if (nivelAnalisis === "institucion" || nivelAnalisis.startsWith("nivel:")) return true;
     if (nivelAnalisis === "grado") return gradoSeleccionado && gradoSeleccionado !== "";
     if (nivelAnalisis === "salon") return gradoSeleccionado && salonSeleccionado && salonSeleccionado !== "";
     if (nivelAnalisis === "estudiante") return gradoSeleccionado && salonSeleccionado && estudianteSeleccionado;
@@ -184,6 +204,9 @@ const EstadisticasDashboard = () => {
     
     if (nivelAnalisis === "institucion") {
       return `${nombreAmbito} - ${periodoTexto}`;
+    }
+    if (nivelColegioSel) {
+      return `${nivelColegioSel} - ${periodoTexto}`;
     }
     
     if (nivelAnalisis === "grado") {
@@ -290,17 +313,11 @@ const EstadisticasDashboard = () => {
               estudiantes={estudiantesDelSalon}
               cortes={esq.cortes}
               unidad={unidad}
-              nivelesDisponibles={grupoSel || nivelesPermitidos ? [
-                { value: "institucion", label: grupoSel ? "Todo el grupo" : "Mis niveles" },
-                { value: "grado", label: "Por Grado" },
-                { value: "salon", label: "Por Salón" },
-                { value: "estudiante", label: "Por Estudiante" },
-                { value: "asignatura", label: "Por Asignatura" },
-              ] : undefined}
+              nivelesDisponibles={opcionesNivelAnalisis}
             />
 
-            {nivelAnalisis === "institucion" && (
-              <AnalisisInstitucional periodo={periodoNumerico} titulo={getTituloDinamico()} unidad={unidad} nCortes={esq.cortes.length} esquema={esquemaAmbito} />
+            {(nivelAnalisis === "institucion" || nivelColegioSel) && (
+              <AnalisisInstitucional periodo={periodoNumerico} titulo={getTituloDinamico()} unidad={unidad} nCortes={esq.cortes.length} esquema={esquemaAmbito} nivel={nivelColegioSel} />
             )}
             {nivelAnalisis === "grado" && gradoSeleccionado && (
               <AnalisisGrado grado={gradoSeleccionado} periodo={periodoNumerico} titulo={getTituloDinamico()} unidad={unidad} nCortes={esq.cortes.length} />

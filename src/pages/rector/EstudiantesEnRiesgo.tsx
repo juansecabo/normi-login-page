@@ -27,6 +27,7 @@ const EstudiantesEnRiesgo = () => {
   const nivelParam = searchParams.get("nivel");
   const asignaturaParam = searchParams.get("asignatura");
   const esquemaParam = searchParams.get("esquema") || undefined;
+  const nivelColegioParam = searchParams.get("nivel_colegio") || undefined;
 
   const periodo: number | "anual" = periodoParam === "anual" ? "anual" : parseInt(periodoParam || "1");
 
@@ -37,6 +38,7 @@ const EstudiantesEnRiesgo = () => {
     asignaturaParam || undefined,
     undefined,
     esquemaParam,
+    nivelColegioParam,
   );
   const { config } = useColegioConfig();
 
@@ -49,6 +51,7 @@ const EstudiantesEnRiesgo = () => {
     if (salonParam) params.set("salon", salonParam);
     if (asignaturaParam) params.set("asignatura", asignaturaParam);
     if (esquemaParam) params.set("ambito", esquemaParam);
+    if (nivelColegioParam) params.set("nivel_colegio", nivelColegioParam);
     return `/estadisticas?${params.toString()}`;
   };
 
@@ -66,7 +69,7 @@ const EstudiantesEnRiesgo = () => {
 
   const estudiantesEnRiesgo = data?.estudiantes || [];
 
-  let filtroLabel = "Todos los estudiantes";
+  let filtroLabel = nivelColegioParam ? `Nivel ${nivelColegioParam}` : "Todos los estudiantes";
   if (gradoParam && salonParam) {
     filtroLabel = `${gradoParam} - Salón ${salonParam}`;
   } else if (gradoParam) {

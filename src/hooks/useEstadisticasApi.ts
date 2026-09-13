@@ -65,10 +65,10 @@ export function useEstadisticasMeta() {
   return { ...s, grados, salones: s.data?.salones || [], asignaturas: s.data?.asignaturas || [], asignaciones: s.data?.asignaciones_expandidas || [], nivelesPermitidos: (s.data?.niveles_permitidos ?? null) as string[] | null };
 }
 
-export function useEstadisticasInstitucional(periodo: number | "anual", esquema?: string) {
+export function useEstadisticasInstitucional(periodo: number | "anual", esquema?: string, nivel?: string) {
   return useApiCall<ApiInstitucional>(
-    () => apiClient.estadisticas.institucional(periodo, esquema),
-    [periodo, esquema],
+    () => apiClient.estadisticas.institucional(periodo, esquema, nivel),
+    [periodo, esquema, nivel],
   );
 }
 
@@ -127,12 +127,13 @@ export function useEstadisticasRiesgo(
   asignatura?: string,
   umbral?: number,
   esquema?: string,
+  nivel?: string,
 ) {
   const gradoEf = grado && grado !== "all" ? grado : undefined;
   const salonEf = salon && salon !== "all" ? salon : undefined;
   const asigEf = asignatura && asignatura !== "all" ? asignatura : undefined;
   return useApiCall<ApiRiesgo>(
-    () => apiClient.estadisticas.riesgo(periodo, umbral, gradoEf, salonEf, asigEf, esquema),
-    [periodo, gradoEf, salonEf, asigEf, umbral, esquema],
+    () => apiClient.estadisticas.riesgo(periodo, umbral, gradoEf, salonEf, asigEf, esquema, nivel),
+    [periodo, gradoEf, salonEf, asigEf, umbral, esquema, nivel],
   );
 }

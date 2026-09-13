@@ -804,8 +804,8 @@ export const apiClient = {
     meta(): Promise<ApiMeta> {
       return request<ApiMeta>('/api/estadisticas/meta');
     },
-    institucional(periodo: number | 'anual', esquema?: string): Promise<ApiInstitucional> {
-      return request<ApiInstitucional>(`/api/estadisticas/institucional${qs({ periodo, esquema })}`);
+    institucional(periodo: number | 'anual', esquema?: string, nivel?: string): Promise<ApiInstitucional> {
+      return request<ApiInstitucional>(`/api/estadisticas/institucional${qs({ periodo, esquema, nivel })}`);
     },
     grado(grado: string, periodo: number | 'anual'): Promise<ApiGrado> {
       return request<ApiGrado>(`/api/estadisticas/grado${qs({ grado, periodo })}`);
@@ -819,8 +819,8 @@ export const apiClient = {
     asignatura(asignatura: string, periodo: number | 'anual', grado?: string, salon?: string, esquema?: string): Promise<ApiAsignatura> {
       return request<ApiAsignatura>(`/api/estadisticas/asignatura${qs({ asignatura, periodo, grado, salon, esquema })}`);
     },
-    riesgo(periodo: number | 'anual', umbral?: number, grado?: string, salon?: string, asignatura?: string, esquema?: string): Promise<ApiRiesgo> {
-      return request<ApiRiesgo>(`/api/estadisticas/riesgo${qs({ periodo, umbral, grado, salon, asignatura, esquema })}`);
+    riesgo(periodo: number | 'anual', umbral?: number, grado?: string, salon?: string, asignatura?: string, esquema?: string, nivel?: string): Promise<ApiRiesgo> {
+      return request<ApiRiesgo>(`/api/estadisticas/riesgo${qs({ periodo, umbral, grado, salon, asignatura, esquema, nivel })}`);
     },
     consolidadoGrupo(grado: string, salon: string, periodo: number): Promise<ApiConsolidadoGrupo> {
       return request<ApiConsolidadoGrupo>(`/api/consolidado-grupo${qs({ grado, salon, periodo })}`);

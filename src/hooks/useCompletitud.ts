@@ -328,6 +328,8 @@ export const useCompletitud = () => {
     idEstudiante?: string,
     /** Esquema del grupo de niveles elegido en Estadísticas ('periodos' | 'semestres'). */
     esquemaAmbito?: string,
+    /** Nivel del colegio (ej. 'Primaria') cuando el análisis es de un solo nivel. */
+    nivelColegio?: string,
   ): ResultadoCompletitud => {
     const detalles: DetalleIncompleto[] = [];
     const profesoresPendientes = new Set<string>();
@@ -358,6 +360,9 @@ export const useCompletitud = () => {
 
     // Filtrar combinaciones por nivel
     let combinacionesFiltradas = [...combinacionesExpandidas];
+    if (nivelColegio) {
+      combinacionesFiltradas = combinacionesFiltradas.filter((c) => (esqPorGrado.get(c.grado)?.nivel || "") === nivelColegio);
+    }
     // Coordinador con niveles configurados: solo las planillas de sus niveles.
     if (nivelesCoordina) {
       combinacionesFiltradas = combinacionesFiltradas.filter((c) => nivelesCoordina.includes(esqPorGrado.get(c.grado)?.nivel || ""));

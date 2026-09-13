@@ -99,7 +99,7 @@ export const FiltrosEstadisticas = ({
           <Select value={nivelAnalisis} onValueChange={(val) => {
             setNivelAnalisis(val);
             // Reset otros filtros según el nivel
-            if (val === "institucion") {
+            if (val === "institucion" || val.startsWith("nivel:")) {
               setGradoSeleccionado?.("");
               setSalonSeleccionado?.("");
               setAsignaturaSeleccionada?.("");

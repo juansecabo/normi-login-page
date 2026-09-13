@@ -18,12 +18,14 @@ interface AnalisisInstitucionalProps {
   nCortes?: number;
   /** Esquema del grupo elegido al entrar (si el colegio tiene niveles por periodos y por semestres). */
   esquema?: string;
+  /** Nivel del colegio al que se acota el análisis (opción del selector). */
+  nivel?: string;
 }
 
-export const AnalisisInstitucional = ({ periodo, titulo, unidad = "Período", nCortes = 4, esquema }: AnalisisInstitucionalProps) => {
+export const AnalisisInstitucional = ({ periodo, titulo, unidad = "Período", nCortes = 4, esquema, nivel }: AnalisisInstitucionalProps) => {
   const contenidoRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const { data, loading, error } = useEstadisticasInstitucional(periodo, esquema);
+  const { data, loading, error } = useEstadisticasInstitucional(periodo, esquema, nivel);
   const { verificarCompletitud } = useCompletitud();
   const { config } = useColegioConfig();
   const aprobLabel = config.nota_aprobatoria.toFixed(config.decimales);
@@ -41,7 +43,7 @@ export const AnalisisInstitucional = ({ periodo, titulo, unidad = "Período", nC
   const mostrarRiesgo = data.tiene_datos_riesgo;
 
   // Verificar completitud (sigue como estaba — hook separado que aún usa supabase directo)
-  const { completo, detalles, resumen, resumenCompleto } = verificarCompletitud("institucion", periodo, undefined, undefined, undefined, undefined, esquema);
+  const { completo, detalles, resumen, resumenCompleto } = verificarCompletitud("institucion", periodo, undefined, undefined, undefined, undefined, esquema, nivel);
 
   // Evolución hasta el periodo seleccionado
   const periodoHasta = periodo === "anual" ? nCortes : periodo;
@@ -58,9 +60,10 @@ export const AnalisisInstitucional = ({ periodo, titulo, unidad = "Período", nC
 
   const handleVerRiesgo = () => {
     const params = new URLSearchParams();
-    params.set("nivel", "institucion");
+    params.set("nivel", nivel ? `nivel:${nivel}` : "institucion");
     params.set("periodo", String(periodo));
     if (esquema) params.set("esquema", esquema);
+    if (nivel) params.set("nivel_colegio", nivel);
     navigate(`/estudiantes-riesgo?${params.toString()}`);
   };
 
