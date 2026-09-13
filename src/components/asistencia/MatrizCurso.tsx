@@ -16,9 +16,10 @@ interface Props {
   onAbrirCalendario: (est: AsistenciaHistorialEstudiante) => void;
 }
 
-const MES_CORTO = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+// Meses con nombre completo (Juan 2026-09-13: nunca abreviados).
+const MES_NOMBRE = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 // "2026-06-07" -> "7 jun" (sin ambigüedad día/mes).
-const fechaCorta = (f: string) => `${parseInt(f.slice(8), 10)} ${MES_CORTO[parseInt(f.slice(5, 7), 10) - 1]}`;
+const fechaCorta = (f: string) => `${parseInt(f.slice(8), 10)} de ${MES_NOMBRE[parseInt(f.slice(5, 7), 10) - 1]}`;
 
 const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puedeEditar, onAbrirCalendario }: Props) => {
   const { toast } = useToast();
