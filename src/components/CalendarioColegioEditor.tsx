@@ -101,9 +101,10 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
   // Opciones del selector "Fechas de:": "" = Colegio. Editando, un coordinador con niveles
   // solo ve los suyos; en solo lectura, cada quien ve el colegio y sus niveles.
   const nivelesSelector: string[] = (() => {
-    const todos = esquemas.map((e) => e.nivel);
-    if (!soloLectura) return nivelesAdmin ? nivelesAdmin.filter((n) => todos.includes(n) || true) : ["", ...todos];
-    return nivelesVe ? nivelesVe : ["", ...todos];
+    const todos = esquemas.map((e) => e.nivel); // en el orden configurado del colegio
+    const ordenar = (lista: string[]) => [...lista].sort((a, b) => (todos.indexOf(a) === -1 ? 999 : todos.indexOf(a)) - (todos.indexOf(b) === -1 ? 999 : todos.indexOf(b)));
+    if (!soloLectura) return nivelesAdmin ? ordenar(nivelesAdmin) : ["", ...todos];
+    return nivelesVe ? ordenar(nivelesVe) : ["", ...todos];
   })();
   useEffect(() => {
     if (nivelesSelector.length > 0 && !nivelesSelector.includes(nivelSel)) setNivelSel(nivelesSelector[0]);
