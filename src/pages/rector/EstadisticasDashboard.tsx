@@ -38,17 +38,25 @@ const EstadisticasDashboard = () => {
         if (g) g.niveles.push(e.nivel);
         else porKey.set(key, { key, esquema: e.esquema, nombre: "", detalle: `Por ${e.esquema} (${e.cortes.length} cortes)`, esq: e, niveles: [e.nivel] });
       }
-      const lista = [...porKey.values()].map((g) => ({
-        ...g,
-        nombre: g.niveles.length > 1 ? `${g.niveles.slice(0, -1).join(", ")} y ${g.niveles[g.niveles.length - 1]}` : g.niveles[0],
-      }));
-      setGrupos(lista);
+      setGrupos([...porKey.values()]);
       setEsqPorGrado(mapa);
     }).catch(() => { setGrupos([]); });
   }, []);
-  const hayGrupos = (grupos?.length || 0) > 1;
+  // Coordinador con niveles configurados: solo sus niveles (el servidor también filtra).
+  const nivelesPermitidos = meta.nivelesPermitidos;
+  const nombrarNiveles = (n: string[]) => (n.length > 1 ? `${n.slice(0, -1).join(", ")} y ${n[n.length - 1]}` : n[0] || "");
+  const gruposVisibles = useMemo(() => {
+    if (!grupos) return null;
+    return grupos
+      .map((g) => ({ ...g, niveles: nivelesPermitidos ? g.niveles.filter((n) => nivelesPermitidos.includes(n)) : g.niveles }))
+      .filter((g) => g.niveles.length > 0)
+      .map((g) => ({ ...g, nombre: nombrarNiveles(g.niveles) }));
+  }, [grupos, nivelesPermitidos]);
+  const hayGrupos = (gruposVisibles?.length || 0) > 1;
   const ambitoParam = searchParams.get("ambito") || "";
-  const grupoSel = hayGrupos ? (grupos!.find((g) => g.esquema === ambitoParam) || null) : null;
+  const grupoSel = hayGrupos ? (gruposVisibles!.find((g) => g.esquema === ambitoParam) || null) : null;
+  // Nombre del ámbito cuando no hay grupo elegido: "Institución" o los niveles del coordinador.
+  const nombreAmbito = grupoSel ? grupoSel.nombre : (nivelesPermitidos ? nombrarNiveles(nivelesPermitidos) : "Institución");
   const elegirGrupo = (g: GrupoNiveles) => {
     setSearchParams((prev) => { const p = new URLSearchParams(prev); p.set("ambito", g.esquema); p.delete("grado"); p.delete("salon"); p.delete("estudiante"); p.delete("asignatura"); return p; });
     setGradoSeleccionado(""); setSalonSeleccionado(""); setEstudianteSeleccionado(""); setAsignaturaSeleccionada("");
@@ -175,7 +183,7 @@ const EstadisticasDashboard = () => {
       : `${unidad} ${periodoSeleccionado}`;
     
     if (nivelAnalisis === "institucion") {
-      return `${grupoSel ? grupoSel.nombre : "Institución"} - ${periodoTexto}`;
+      return `${nombreAmbito} - ${periodoTexto}`;
     }
     
     if (nivelAnalisis === "grado") {
@@ -241,7 +249,7 @@ const EstadisticasDashboard = () => {
           </BreadcrumbDeslizable>
         </div>
 
-        {loading || grupos === null ? (
+        {loading || gruposVisibles === null ? (
           <div className="flex items-center justify-center h-64">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
             <span className="ml-2 text-muted-foreground">Cargando datos...</span>
@@ -252,7 +260,7 @@ const EstadisticasDashboard = () => {
             <h2 className="text-xl font-bold text-foreground mb-2 text-center">¿Qué quieres analizar?</h2>
             <p className="text-sm text-muted-foreground text-center mb-6">Los niveles por periodos y los niveles por semestres se analizan por separado porque sus cortes no son comparables.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-guia="estadisticas.selector_grupo">
-              {grupos!.map((g) => (
+              {gruposVisibles!.map((g) => (
                 <button key={g.key} onClick={() => elegirGrupo(g)}
                   className="p-6 rounded-lg border-2 border-border bg-background text-center transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/5 flex flex-col items-center gap-2">
                   <span className="text-lg font-semibold text-foreground">{g.nombre}</span>
@@ -282,8 +290,8 @@ const EstadisticasDashboard = () => {
               estudiantes={estudiantesDelSalon}
               cortes={esq.cortes}
               unidad={unidad}
-              nivelesDisponibles={grupoSel ? [
-                { value: "institucion", label: "Todo el grupo" },
+              nivelesDisponibles={grupoSel || nivelesPermitidos ? [
+                { value: "institucion", label: grupoSel ? "Todo el grupo" : "Mis niveles" },
                 { value: "grado", label: "Por Grado" },
                 { value: "salon", label: "Por Salón" },
                 { value: "estudiante", label: "Por Estudiante" },

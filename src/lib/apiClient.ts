@@ -244,6 +244,7 @@ export interface ApiInstitucional {
   unidad?: 'Período' | 'Semestre';
   cortes?: number[];
   niveles_excluidos?: string[];
+  niveles_permitidos?: string[] | null;
   periodo: number | 'anual';
   promedio_institucional: number;
   total_estudiantes: number;
@@ -315,6 +316,7 @@ export interface ApiAsignatura {
   unidad?: 'Período' | 'Semestre';
   cortes?: number[];
   niveles_excluidos?: string[];
+  niveles_permitidos?: string[] | null;
   asignatura: string;
   periodo: number | 'anual';
   grado?: string;
@@ -340,6 +342,7 @@ export interface ApiRiesgo {
   unidad?: 'Período' | 'Semestre';
   cortes?: number[];
   niveles_excluidos?: string[];
+  niveles_permitidos?: string[] | null;
   periodo: number | 'anual';
   umbral: number;
   grado?: string;
@@ -350,6 +353,8 @@ export interface ApiRiesgo {
 }
 
 export interface ApiMeta {
+  /** Coordinador con niveles configurados: solo esos niveles (null = sin restricción). */
+  niveles_permitidos?: string[] | null;
   grados: string[];
   salones: { grado: string; salon: string }[];
   asignaturas: string[];

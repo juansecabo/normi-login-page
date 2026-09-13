@@ -62,7 +62,7 @@ function useApiCall<T>(fetcher: () => Promise<T>, deps: React.DependencyList): A
 export function useEstadisticasMeta() {
   const s = useApiCall<ApiMeta>(() => apiClient.estadisticas.meta(), []);
   const grados = s.data ? ord(s.data.grados, (g) => g) : [];
-  return { ...s, grados, salones: s.data?.salones || [], asignaturas: s.data?.asignaturas || [], asignaciones: s.data?.asignaciones_expandidas || [] };
+  return { ...s, grados, salones: s.data?.salones || [], asignaturas: s.data?.asignaturas || [], asignaciones: s.data?.asignaciones_expandidas || [], nivelesPermitidos: (s.data?.niveles_permitidos ?? null) as string[] | null };
 }
 
 export function useEstadisticasInstitucional(periodo: number | "anual", esquema?: string) {

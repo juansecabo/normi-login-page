@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { anoEscolarActual } from "@/utils/anoEscolar";
 import { mapaEsquemaPorGrado, type EsquemaNivel } from "@/utils/esquema";
+import { useNivelesCoordina } from "@/hooks/useNivelesCoordina";
 
 export interface DetalleIncompleto {
   tipo: "nota_faltante" | "porcentaje_incompleto" | "sin_actividades";
@@ -101,6 +102,7 @@ export const useCompletitud = () => {
   // grado → esquema (periodos/semestres): la completitud nunca mezcla esquemas.
   const [esqPorGrado, setEsqPorGrado] = useState<Map<string, EsquemaNivel>>(new Map());
   useEffect(() => { mapaEsquemaPorGrado().then(setEsqPorGrado).catch(() => {}); }, []);
+  const { nivelesCoordina } = useNivelesCoordina();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -356,6 +358,10 @@ export const useCompletitud = () => {
 
     // Filtrar combinaciones por nivel
     let combinacionesFiltradas = [...combinacionesExpandidas];
+    // Coordinador con niveles configurados: solo las planillas de sus niveles.
+    if (nivelesCoordina) {
+      combinacionesFiltradas = combinacionesFiltradas.filter((c) => nivelesCoordina.includes(esqPorGrado.get(c.grado)?.nivel || ""));
+    }
     // Sin grado elegido (institución / asignatura en todos los grados) solo se revisan los
     // niveles por periodos: los que van por semestres se consultan en su propio grado.
     if (!grado || grado === "all") {
