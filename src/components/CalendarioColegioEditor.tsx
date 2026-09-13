@@ -21,8 +21,9 @@ import { CalendarDays, Eraser, Loader2, Trash2, Pencil } from "lucide-react";
  */
 
 interface Periodo { periodo: number; fecha_inicio: string; fecha_fin: string; ano_escolar?: number; nivel?: string }
-interface DiaNoLectivo { id: number; fecha_inicio: string; fecha_fin: string; motivo: string | null }
-interface Evento { id: number; fecha_inicio: string; fecha_fin: string; nombre: string }
+/** nivel '' o ausente = todo el colegio; con nombre = solo ese nivel (lo puso su coordinador). */
+interface DiaNoLectivo { id: number; fecha_inicio: string; fecha_fin: string; motivo: string | null; nivel?: string }
+interface Evento { id: number; fecha_inicio: string; fecha_fin: string; nombre: string; nivel?: string }
 
 const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 const DIAS_SEMANA = ["L", "M", "M", "J", "V", "S", "D"];
@@ -71,16 +72,59 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
   const [esquemas, setEsquemas] = useState<EsquemaNivel[]>([]);
   const [nivelSel, setNivelSel] = useState<string>("");
   const [todosPeriodos, setTodosPeriodos] = useState<Periodo[]>([]);
-  const nivelesPropios = esquemas.filter((e) => e.esquema !== "periodos" || e.cortes.length !== 4);
-  const esqSel: Esquema = nivelSel ? (esquemas.find((e) => e.nivel === nivelSel)?.esquema || "periodos") : "periodos";
-  const cortes: number[] = nivelSel ? (esquemas.find((e) => e.nivel === nivelSel)?.cortes || [1, 2, 3, 4]) : [1, 2, 3, 4];
+  // Calendario por nivel (Juan 2026-09-13): lo del colegio es la base y lo de un nivel es
+  // la excepción. `nivelesAdmin` = niveles que este usuario puede editar (null = todos:
+  // rector, administrador, secretaria, coordinador sin niveles). `nivelesVe` = niveles que
+  // le competen para ver (estudiante, acudiente, profesor; null = todos).
+  const [nivelesAdmin, setNivelesAdmin] = useState<string[] | null>(null);
+  const [nivelesVe, setNivelesVe] = useState<string[] | null>(null);
+  const [aplicarTodos, setAplicarTodos] = useState(false);
+  const esqSelObj = nivelSel ? esquemas.find((e) => e.nivel === nivelSel) : undefined;
+  const esqSel: Esquema = esqSelObj?.esquema || "periodos";
+  const cortes: number[] = esqSelObj?.cortes || [1, 2, 3, 4];
+  // Un nivel con el esquema general hereda las fechas del colegio corte por corte; uno con
+  // esquema propio (semestres) solo usa las suyas.
+  const heredaGenerales = !!nivelSel && esqSel === "periodos" && cortes.length === 4;
+  const periodosGenerales = todosPeriodos.filter((p) => !p.nivel);
+  /** Filas PROPIAS del nivel elegido (o las generales si es "Colegio"): lo que se guarda. */
   const periodos = todosPeriodos.filter((p) => (p.nivel || "") === nivelSel);
+  /** Fechas EFECTIVAS que se ven: propias del nivel + heredadas del colegio (marcadas). */
+  const periodosVista: Array<Periodo & { heredado?: boolean }> = (() => {
+    if (!nivelSel) return periodosGenerales;
+    if (!heredaGenerales) return periodos;
+    const m = new Map<number, Periodo & { heredado?: boolean }>();
+    for (const g of periodosGenerales) m.set(g.periodo, { ...g, heredado: true });
+    for (const o of periodos) m.set(o.periodo, { ...o, heredado: false });
+    return [...m.values()].sort((a, b) => a.periodo - b.periodo);
+  })();
   const setPeriodos = (nuevos: Periodo[]) => setTodosPeriodos((prev) => [...prev.filter((p) => (p.nivel || "") !== nivelSel), ...nuevos.map((p) => ({ ...p, nivel: nivelSel }))]);
+  // Opciones del selector "Fechas de:": "" = Colegio. Editando, un coordinador con niveles
+  // solo ve los suyos; en solo lectura, cada quien ve el colegio y sus niveles.
+  const nivelesSelector: string[] = (() => {
+    const todos = esquemas.map((e) => e.nivel);
+    if (!soloLectura) return nivelesAdmin ? nivelesAdmin.filter((n) => todos.includes(n) || true) : ["", ...todos];
+    return nivelesVe ? nivelesVe : ["", ...todos];
+  })();
+  useEffect(() => {
+    if (nivelesSelector.length > 0 && !nivelesSelector.includes(nivelSel)) setNivelSel(nivelesSelector[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nivelesSelector.join("|")]);
+  /** Niveles (por periodos) con alguna fecha distinta a la general: excepciones que el rector debe ver. */
+  const nivelesConExcepcion = [...new Set(todosPeriodos.filter((p) => p.nivel).map((p) => p.nivel as string))]
+    .filter((n) => { const e = esquemas.find((x) => x.nivel === n); return !e || (e.esquema === "periodos" && e.cortes.length === 4); });
+  /** ¿Puede este usuario quitar/editar esa fila? (el servidor también lo valida) */
+  const puedeTocar = (nivel?: string | null) => !soloLectura && (nivelesAdmin === null || (!!nivel && nivelesAdmin.includes(nivel)));
+  // Días y eventos que aplican a la vista: en "Colegio" todo (con etiqueta); en un nivel, lo
+  // general + lo de ese nivel.
+  const diasVista = dias.filter((d) => !nivelSel || !d.nivel || d.nivel === nivelSel);
+  const eventosVista = eventos.filter((e) => !nivelSel || !e.nivel || e.nivel === nivelSel);
   const [festivos, setFestivos] = useState<Map<string, string>>(new Map());
 
   const cargar = async () => {
     try {
-      const r = await apiRequest<{ periodos: Periodo[]; dias: DiaNoLectivo[]; eventos?: Evento[]; festivos: Array<{ fecha: string; nombre: string } | string>; ano_escolar: number }>(`/api/institucion/calendario${qCid}`);
+      const r = await apiRequest<{ periodos: Periodo[]; dias: DiaNoLectivo[]; eventos?: Evento[]; festivos: Array<{ fecha: string; nombre: string } | string>; ano_escolar: number; niveles_administra?: string[] | null; niveles_ve?: string[] | null }>(`/api/institucion/calendario${qCid}`);
+      setNivelesAdmin(r.niveles_administra ?? null);
+      setNivelesVe(r.niveles_ve ?? null);
       setAnoEscolar(r.ano_escolar);
       setTodosPeriodos((r.periodos || []).filter((p) => p.ano_escolar === r.ano_escolar));
       esquemasDelColegio().then(setEsquemas).catch(() => setEsquemas([]));
@@ -137,10 +181,13 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
     if (!motivoDialog) return;
     setGuardando(true);
     try {
-      await apiRequest("/api/institucion/calendario/dias", {
-        method: "POST",
-        body: JSON.stringify(withCid({ fecha_inicio: motivoDialog.ini, fecha_fin: motivoDialog.fin, motivo: motivoTexto.trim() })),
-      });
+      const nivelesDestino = aplicarTodos && nivelesAdmin && nivelesAdmin.length > 1 ? nivelesAdmin : [nivelSel];
+      for (const nivel of nivelesDestino) {
+        await apiRequest("/api/institucion/calendario/dias", {
+          method: "POST",
+          body: JSON.stringify(withCid({ fecha_inicio: motivoDialog.ini, fecha_fin: motivoDialog.fin, motivo: motivoTexto.trim(), nivel })),
+        });
+      }
       setMotivoDialog(null); setMotivoTexto("");
       await cargar();
     } catch (e: any) {
@@ -155,10 +202,13 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
     if (!eventoDialog || !eventoNombre.trim()) return;
     setGuardando(true);
     try {
-      await apiRequest("/api/institucion/calendario/eventos", {
-        method: "POST",
-        body: JSON.stringify(withCid({ fecha_inicio: eventoDialog.ini, fecha_fin: eventoDialog.fin, nombre: eventoNombre.trim() })),
-      });
+      const nivelesDestino = aplicarTodos && nivelesAdmin && nivelesAdmin.length > 1 ? nivelesAdmin : [nivelSel];
+      for (const nivel of nivelesDestino) {
+        await apiRequest("/api/institucion/calendario/eventos", {
+          method: "POST",
+          body: JSON.stringify(withCid({ fecha_inicio: eventoDialog.ini, fecha_fin: eventoDialog.fin, nombre: eventoNombre.trim(), nivel })),
+        });
+      }
       setEventoDialog(null); setEventoNombre("");
       await cargar();
     } catch (e: any) {
@@ -256,25 +306,25 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
   const bajarEnDia = (f: string) => {
     if (guardando) return;
     if (herramienta === "quitar") {
-      const dia = dias.find((d) => d.fecha_inicio <= f && f <= d.fecha_fin);
+      const dia = diasVista.find((d) => d.fecha_inicio <= f && f <= d.fecha_fin);
       if (dia) { setConfirmDia(dia); return; }
       const ev = eventos.find((e) => e.fecha_inicio <= f && f <= e.fecha_fin);
       if (ev) { setConfirmEvento(ev); return; }
-      const per = periodos.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin);
+      const per = periodosVista.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin);
       if (per) { setConfirmPeriodo(per.periodo); return; }
       return;
     }
     if (!herramienta) {
       // Modo inspección: mostrar qué hay en ese día (y permitir editarlo).
-      const evs = eventos.filter((e) => e.fecha_inicio <= f && f <= e.fecha_fin);
-      const dia = dias.find((d) => d.fecha_inicio <= f && f <= d.fecha_fin);
+      const evs = eventosVista.filter((e) => e.fecha_inicio <= f && f <= e.fecha_fin);
+      const dia = diasVista.find((d) => d.fecha_inicio <= f && f <= d.fecha_fin);
       if (dia) { setMotivoEdit(dia.motivo || ""); setEditandoDetalle(false); setDetalle({ tipo: "dia", dia, fecha: f, eventos: evs }); return; }
       if (evs.length > 1) { setDetalle({ tipo: "eventos", fecha: f, eventos: evs }); return; }
       const ev = evs[0];
       if (ev) { setEventoEdit(ev.nombre); setEditandoDetalle(false); setDetalle({ tipo: "evento", evento: ev }); return; }
       const nombreFestivo = festivos.get(f);
       if (nombreFestivo) { setDetalle({ tipo: "festivo", fecha: f, nombre: nombreFestivo }); return; }
-      const per = periodos.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin);
+      const per = periodosVista.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin);
       if (per) { setDetalle({ tipo: "periodo", periodo: per }); return; }
       return;
     }
@@ -343,19 +393,19 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
   const claseDia = (f: string, dow: number): { cls: string; title: string } => {
     const base = "cursor-pointer select-none";
     if (enSeleccion(f)) return { cls: `${base} ring-2 ring-primary bg-primary/20`, title: "" };
-    const dia = dias.find((d) => d.fecha_inicio <= f && f <= d.fecha_fin);
+    const dia = diasVista.find((d) => d.fecha_inicio <= f && f <= d.fecha_fin);
     if (dia) {
-      const evsDia = eventos.filter((e) => e.fecha_inicio <= f && f <= e.fecha_fin);
+      const evsDia = eventosVista.filter((e) => e.fecha_inicio <= f && f <= e.fecha_fin);
       const conEventos = evsDia.length > 0 ? ` ring-2 ring-inset ring-indigo-400` : "";
-      const titulo = [dia.motivo || "Día sin clases", ...evsDia.map((e) => e.nombre)].join(" · ");
+      const titulo = [(dia.motivo || "Día sin clases") + (dia.nivel ? ` (solo ${dia.nivel})` : ""), ...evsDia.map((e) => e.nombre + (e.nivel ? ` (solo ${e.nivel})` : ""))].join(" · ");
       return { cls: `${base} bg-red-200 hover:bg-red-300 text-red-900${conEventos}`, title: titulo };
     }
-    const ev = eventos.find((e) => e.fecha_inicio <= f && f <= e.fecha_fin);
-    if (ev) return { cls: `${base} bg-indigo-200 hover:bg-indigo-300 text-indigo-900`, title: ev.nombre };
+    const ev = eventosVista.find((e) => e.fecha_inicio <= f && f <= e.fecha_fin);
+    if (ev) return { cls: `${base} bg-indigo-200 hover:bg-indigo-300 text-indigo-900`, title: ev.nombre + (ev.nivel ? ` (solo ${ev.nivel})` : "") };
     const nombreFestivo = festivos.get(f);
     if (nombreFestivo) return { cls: `${base} bg-fuchsia-300 text-fuchsia-900`, title: `${nombreFestivo} (festivo automático)` };
-    const per = periodos.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin);
-    if (per) return { cls: `${base} ${estiloPeriodo(per.periodo, esqSel).fondo}`, title: estiloPeriodo(per.periodo, esqSel).nombre };
+    const per = periodosVista.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin);
+    if (per) return { cls: `${base} ${estiloPeriodo(per.periodo, esqSel).fondo}${per.heredado ? " opacity-70" : ""}`, title: estiloPeriodo(per.periodo, esqSel).nombre + (per.heredado ? " (fecha general del colegio)" : nivelSel ? ` (propia de ${nivelSel})` : "") };
     if (dow >= 5) return { cls: `${base} text-muted-foreground/50`, title: "" };
     return { cls: `${base} hover:bg-muted`, title: "" };
   };
@@ -385,18 +435,34 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
           {/* ── Herramientas (barra fija al hacer scroll: no hay que subir a
                 marcar/desmarcar mientras se recorren los 12 meses). En solo
                 lectura no hay herramientas. ── */}
-          {nivelesPropios.length > 0 && (
+          {nivelesSelector.length > 1 && (
             <div className="flex flex-wrap items-center gap-2" data-guia="configurar_institucion.cal_nivel">
               <span className="text-sm text-muted-foreground">Fechas de:</span>
-              <button type="button" onClick={() => { setNivelSel(""); setHerramienta(null); }}
-                className={`px-3 py-1 rounded-full border text-sm ${nivelSel === "" ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-accent"}`}>
-                Colegio (periodos)
-              </button>
-              {nivelesPropios.map((e) => (
-                <button key={e.nivel} type="button" onClick={() => { setNivelSel(e.nivel); setHerramienta(null); }}
-                  className={`px-3 py-1 rounded-full border text-sm ${nivelSel === e.nivel ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-accent"}`}>
-                  {e.nivel} ({e.esquema === "semestres" ? "semestres" : `${e.cortes.length} cortes`})
-                </button>
+              {nivelesSelector.map((n) => {
+                const e = esquemas.find((x) => x.nivel === n);
+                const etiqueta = n === "" ? "Colegio (general)" : `${n}${e && e.esquema === "semestres" ? " (semestres)" : ""}`;
+                return (
+                  <button key={n || "__colegio"} type="button" onClick={() => { setNivelSel(n); setHerramienta(null); }}
+                    className={`px-3 py-1 rounded-full border text-sm ${nivelSel === n ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-accent"}`}>
+                    {etiqueta}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {nivelSel && !soloLectura && (
+            <p className="text-xs text-muted-foreground" data-guia="configurar_institucion.cal_nivel_aviso">
+              Lo que marques aquí aplica solo a <b>{nivelSel}</b>: sus estudiantes, acudientes y profesores. Las fechas del colegio se ven atenuadas; si pintas un {esqSel === "semestres" ? "semestre" : "periodo"} distinto, para {nivelSel} rige el tuyo.
+            </p>
+          )}
+          {!nivelSel && nivelesConExcepcion.length > 0 && (
+            <div className="text-xs rounded-lg border border-amber-200 bg-amber-50 text-amber-900 px-3 py-2 space-y-0.5" data-guia="configurar_institucion.cal_excepciones">
+              <p className="font-medium">Niveles con fechas de periodo distintas a las generales:</p>
+              {nivelesConExcepcion.map((n) => (
+                <p key={n}>
+                  <button type="button" className="underline hover:no-underline" onClick={() => setNivelSel(n)}>{n}</button>:{" "}
+                  {todosPeriodos.filter((p) => p.nivel === n).sort((a, b) => a.periodo - b.periodo).map((p) => `Periodo ${p.periodo} del ${fechaLinda(p.fecha_inicio)} al ${fechaLinda(p.fecha_fin)}`).join("; ")}
+                </p>
               ))}
             </div>
           )}
@@ -474,11 +540,11 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
           {/* ── Leyenda (abajo siempre) ── */}
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground pt-1">
             {cortes.map((n) => {
-              const p = periodos.find((x) => x.periodo === n);
+              const p = periodosVista.find((x) => x.periodo === n);
               return (
                 <span key={n} className="inline-flex items-center gap-1.5">
                   <span className={`w-3 h-3 rounded-sm ${estiloPeriodo(n, esqSel).chip}`} />
-                  {estiloPeriodo(n, esqSel).nombre}{p ? `: ${fechaLinda(p.fecha_inicio)} — ${fechaLinda(p.fecha_fin)}` : " (sin configurar)"}
+                  {estiloPeriodo(n, esqSel).nombre}{p ? `: ${fechaLinda(p.fecha_inicio)} — ${fechaLinda(p.fecha_fin)}${p.heredado ? " (general)" : nivelSel ? ` (propia de ${nivelSel})` : ""}` : " (sin configurar)"}
                 </span>
               );
             })}
@@ -490,22 +556,22 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
       </Card>
 
       {/* ── Lista de días sin clases ── */}
-      {dias.length > 0 && (
+      {diasVista.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Días sin clases configurados</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="divide-y rounded-lg border">
-              {dias.map((d) => (
+              {diasVista.map((d) => (
                 <div key={d.id} className={`flex items-center justify-between px-4 py-2 ${d.fecha_fin < hoyISO ? "opacity-50" : ""}`}>
                   <div>
                     <p className="text-sm font-medium">
                       {d.fecha_inicio === d.fecha_fin ? fechaLinda(d.fecha_inicio) : `${fechaLinda(d.fecha_inicio)} — ${fechaLinda(d.fecha_fin)}`}
                     </p>
-                    <p className="text-xs text-muted-foreground">{d.motivo || "Sin motivo"}</p>
+                    <p className="text-xs text-muted-foreground">{d.motivo || "Sin motivo"}{d.nivel ? <span className="ml-2 px-1.5 py-0.5 rounded bg-muted text-[10px]">solo {d.nivel}</span> : null}</p>
                   </div>
-                  {!soloLectura && (
+                  {puedeTocar(d.nivel) && (
                   <button onClick={() => setConfirmDia(d)} className="text-muted-foreground hover:text-destructive cursor-pointer" title="Eliminar">
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -518,22 +584,22 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
       )}
 
       {/* ── Lista de eventos ── */}
-      {eventos.length > 0 && (
+      {eventosVista.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Eventos configurados</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="divide-y rounded-lg border">
-              {eventos.map((ev) => (
+              {eventosVista.map((ev) => (
                 <div key={ev.id} className={`flex items-center justify-between px-4 py-2 ${ev.fecha_fin < hoyISO ? "opacity-50" : ""}`}>
                   <div>
                     <p className="text-sm font-medium">
                       {ev.fecha_inicio === ev.fecha_fin ? fechaLinda(ev.fecha_inicio) : `${fechaLinda(ev.fecha_inicio)} — ${fechaLinda(ev.fecha_fin)}`}
                     </p>
-                    <p className="text-xs text-muted-foreground">{ev.nombre}</p>
+                    <p className="text-xs text-muted-foreground">{ev.nombre}{ev.nivel ? <span className="ml-2 px-1.5 py-0.5 rounded bg-muted text-[10px]">solo {ev.nivel}</span> : null}</p>
                   </div>
-                  {!soloLectura && (
+                  {puedeTocar(ev.nivel) && (
                   <button onClick={() => setConfirmEvento(ev)} className="text-muted-foreground hover:text-destructive cursor-pointer" title="Eliminar">
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -556,6 +622,12 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
                 : `${fechaLinda(motivoDialog.ini)} — ${fechaLinda(motivoDialog.fin)}`)}
             </DialogDescription>
           </DialogHeader>
+          {nivelSel && (
+            <p className="text-xs text-muted-foreground -mt-2">Solo para <b>{nivelSel}</b>.</p>
+          )}
+          {nivelesAdmin && nivelesAdmin.length > 1 && (
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={aplicarTodos} onChange={(e) => setAplicarTodos(e.target.checked)} /> Aplicar a todos mis niveles ({nivelesAdmin.join(", ")})</label>
+          )}
           <div>
             <Textarea data-guia="configurar_institucion.cal_dia_motivo" value={motivoTexto} onChange={(e) => setMotivoTexto(e.target.value)} placeholder="Motivo: semana de receso, jornada pedagógica…" maxLength={80} autoFocus rows={3} className="resize-none" />
           </div>
@@ -579,6 +651,12 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
                 : `${fechaLinda(eventoDialog.ini)} — ${fechaLinda(eventoDialog.fin)}`)}.
             </DialogDescription>
           </DialogHeader>
+          {nivelSel && (
+            <p className="text-xs text-muted-foreground -mt-2">Solo para <b>{nivelSel}</b>.</p>
+          )}
+          {nivelesAdmin && nivelesAdmin.length > 1 && (
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={aplicarTodos} onChange={(e) => setAplicarTodos(e.target.checked)} /> Aplicar a todos mis niveles ({nivelesAdmin.join(", ")})</label>
+          )}
           <div>
             {/* 889 = lo que cabe en la plantilla de WhatsApp del aviso diario fuera de ventana de 24h. */}
             <Textarea data-guia="configurar_institucion.cal_evento_nombre" value={eventoNombre} onChange={(e) => setEventoNombre(e.target.value)} placeholder="Nombre: entrega de boletines, día deportivo, izada de bandera…" maxLength={889} autoFocus rows={4} className="resize-none" />
@@ -702,12 +780,16 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
               </DialogDescription>
             </DialogHeader>
             {!soloLectura && (<>
-            <p className="text-sm text-muted-foreground">Para cambiar sus fechas, elige la herramienta "{estiloPeriodo(detalle.periodo.periodo, esqSel).nombre}" y pinta el nuevo rango.</p>
+            {nivelSel && !periodos.some((p) => p.periodo === detalle.periodo.periodo) ? (
+              <p className="text-sm text-muted-foreground">Esta es la fecha general del colegio. Para que {nivelSel} tenga otra, elige la herramienta "{estiloPeriodo(detalle.periodo.periodo, esqSel).nombre}" y pinta el nuevo rango.</p>
+            ) : (<>
+            <p className="text-sm text-muted-foreground">Para cambiar sus fechas, elige la herramienta "{estiloPeriodo(detalle.periodo.periodo, esqSel).nombre}" y pinta el nuevo rango.{nivelSel && heredaGenerales ? " Al quitarla, vuelve a regir la fecha general del colegio." : ""}</p>
             <DialogFooter>
               <Button variant="destructive" onClick={() => { const n = detalle.periodo.periodo; setDetalle(null); setConfirmPeriodo(n); }} disabled={guardando} className="gap-2">
-                <Eraser className="w-4 h-4" /> Quitar periodo
+                <Eraser className="w-4 h-4" /> {nivelSel && heredaGenerales ? "Quitar fecha propia" : "Quitar periodo"}
               </Button>
             </DialogFooter>
+            </>)}
             </>)}
           </>)}
         </DialogContent>

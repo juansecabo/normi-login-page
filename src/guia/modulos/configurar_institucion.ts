@@ -718,7 +718,8 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     ],
     pasos: [
       ...abrirFicha("calendario", "Abrimos el Calendario."),
-      { narracion: "Si algún nivel se evalúa por semestres, arriba aparece 'Fechas de:'; elige el colegio (periodos) o ese nivel (semestres) antes de pintar.", accion: "click", ancla: "configurar_institucion.cal_nivel", opcional: true },
+      { narracion: "Arriba, en 'Fechas de:', elige a quién aplica lo que vas a marcar: 'Colegio (general)' para toda la institución o un nivel (solo sus estudiantes, acudientes y profesores). Un coordinador solo ve sus niveles. Las fechas del colegio se ven atenuadas dentro de un nivel; si pintas otra, para ese nivel rige la tuya.", accion: "click", ancla: "configurar_institucion.cal_nivel", opcional: true },
+      { narracion: "Si algún nivel tiene fechas de periodo distintas a las generales, el recuadro ámbar te lo muestra; toca el nombre del nivel para ver su calendario.", accion: "click", ancla: "configurar_institucion.cal_excepciones", opcional: true },
       { narracion: "En la barra de herramientas, toca el corte que vas a marcar (Periodo 1 a 4, o Semestre 1 y 2 si el nivel va por semestres).", accion: "click", ancla: "configurar_institucion.cal_herramienta_periodo", campo: "periodo" },
       { narracion: "Haz clic en el día de inicio y, manteniendo presionado, arrastra hasta el día final; suelta para pintar el rango. Se guarda solo.", accion: "click", ancla: "configurar_institucion.cal_dia", campo: "rango_fechas" },
     ],
