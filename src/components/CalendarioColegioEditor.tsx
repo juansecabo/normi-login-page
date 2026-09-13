@@ -31,7 +31,7 @@ const DIAS_SEMANA = ["L", "M", "M", "J", "V", "S", "D"];
 const iso = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 const fechaLinda = (fISO: string) => {
   const [y, m, d] = fISO.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" });
+  return new Date(y, m - 1, d).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" });
 };
 
 type Herramienta = `p${number}` | "sinclases" | "evento" | "quitar";
