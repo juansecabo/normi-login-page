@@ -64,7 +64,7 @@ const EstadisticasDashboard = () => {
     : (nivelesPermitidos || (grupos || []).flatMap((g) => g.niveles));
   // Coordinador de un solo nivel: la primera opción se llama como su nivel y no hay lista de niveles.
   const etiquetaTodos = grupoSel
-    ? (grupoSel.niveles.length === 1 ? grupoSel.niveles[0] : "Todo el grupo")
+    ? (grupoSel.niveles.length === 1 ? grupoSel.niveles[0] : "Todos los niveles")
     : nivelesPermitidos
       ? (nivelesPermitidos.length === 1 ? nivelesPermitidos[0] : "Todos mis niveles")
       : "Institución";
