@@ -25,6 +25,7 @@ const NotasAcudiente = () => {
     (acudidos.length === 1 ? acudidos[0] : null);
   const periodoParam = searchParams.get("periodo");
   const periodoNum = periodoParam && /^[1-6]$/.test(periodoParam) ? Number(periodoParam) : null;
+  const esq = useEsquemaGrado(acudido?.grado);
 
   const volverAEscoger = () => {
     setSearchParams((prev) => { const p = new URLSearchParams(prev); p.delete("acudido"); p.delete("periodo"); return p; });
