@@ -3,7 +3,7 @@
 // cada semestre cierra con su propia definitiva). Ej.: Formación Complementaria
 // va por semestres; Preescolar a Media siguen por periodos.
 //
-// Fuente: /api/institucion/estructura (Niveles_Colegio: esquema, cortes, definitiva;
+// Fuente: /api/institucion/esquemas (Niveles_Colegio: esquema, cortes, definitiva;
 // Grados_Colegio: grado → nivel). Las notas siguen guardando `periodo` (número de
 // corte) y `ano_escolar`; lo que cambia es cuántos cortes hay y cómo se llaman.
 import { useEffect, useState } from "react";
@@ -22,9 +22,10 @@ export interface EsquemaNivel {
 
 export const ESQUEMA_DEFAULT: EsquemaNivel = { nivel: "", esquema: "periodos", cortes: [1, 2, 3, 4], definitivaPorCorte: false };
 
+// Respuesta de /api/institucion/esquemas (todos los roles): niveles con esquema y grado → nivel.
 interface EstructuraResp {
   grados?: Array<{ grado: string; nivel?: string | null }>;
-  niveles?: Array<{ nombre: string; esquema?: string | null; cortes?: number | null; definitiva?: string | null }>;
+  niveles?: Array<{ nivel: string; esquema?: string | null; cortes?: number | null; definitiva?: string | null }>;
 }
 
 let cache: { at: number; esquemas: Map<string, EsquemaNivel>; nivelDeGrado: Map<string, string> } | null = null;
@@ -38,12 +39,12 @@ async function cargar() {
     const esquemas = new Map<string, EsquemaNivel>();
     const nivelDeGrado = new Map<string, string>();
     try {
-      const r = await apiRequest<EstructuraResp>("/api/institucion/estructura");
+      const r = await apiRequest<EstructuraResp>("/api/institucion/esquemas");
       for (const n of r.niveles || []) {
         const esquema: Esquema = n.esquema === "semestres" ? "semestres" : "periodos";
         const nCortes = Number(n.cortes) || (esquema === "semestres" ? 2 : 4);
-        esquemas.set(n.nombre, {
-          nivel: n.nombre,
+        esquemas.set(n.nivel, {
+          nivel: n.nivel,
           esquema,
           cortes: Array.from({ length: nCortes }, (_, i) => i + 1),
           definitivaPorCorte: n.definitiva === "por_corte",
