@@ -324,6 +324,8 @@ export const useCompletitud = () => {
     salon?: string,
     asignatura?: string,
     idEstudiante?: string,
+    /** Esquema del grupo de niveles elegido en Estadísticas ('periodos' | 'semestres'). */
+    esquemaAmbito?: string,
   ): ResultadoCompletitud => {
     const detalles: DetalleIncompleto[] = [];
     const profesoresPendientes = new Set<string>();
@@ -357,7 +359,8 @@ export const useCompletitud = () => {
     // Sin grado elegido (institución / asignatura en todos los grados) solo se revisan los
     // niveles por periodos: los que van por semestres se consultan en su propio grado.
     if (!grado || grado === "all") {
-      combinacionesFiltradas = combinacionesFiltradas.filter((c) => (esqPorGrado.get(c.grado)?.esquema || "periodos") === "periodos");
+      const esqRef = esquemaAmbito === "semestres" ? "semestres" : "periodos";
+      combinacionesFiltradas = combinacionesFiltradas.filter((c) => (esqPorGrado.get(c.grado)?.esquema || "periodos") === esqRef);
     }
 
     if (nivel === "grado" && grado) {

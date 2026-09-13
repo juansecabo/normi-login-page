@@ -26,6 +26,7 @@ const EstudiantesEnRiesgo = () => {
   const salonParam = searchParams.get("salon");
   const nivelParam = searchParams.get("nivel");
   const asignaturaParam = searchParams.get("asignatura");
+  const esquemaParam = searchParams.get("esquema") || undefined;
 
   const periodo: number | "anual" = periodoParam === "anual" ? "anual" : parseInt(periodoParam || "1");
 
@@ -34,6 +35,8 @@ const EstudiantesEnRiesgo = () => {
     gradoParam || undefined,
     salonParam || undefined,
     asignaturaParam || undefined,
+    undefined,
+    esquemaParam,
   );
   const { config } = useColegioConfig();
 
@@ -45,6 +48,7 @@ const EstudiantesEnRiesgo = () => {
     if (gradoParam) params.set("grado", gradoParam);
     if (salonParam) params.set("salon", salonParam);
     if (asignaturaParam) params.set("asignatura", asignaturaParam);
+    if (esquemaParam) params.set("ambito", esquemaParam);
     return `/estadisticas?${params.toString()}`;
   };
 

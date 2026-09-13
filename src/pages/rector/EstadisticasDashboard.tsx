@@ -6,7 +6,7 @@ import HeaderNormi from "@/components/HeaderNormi";
 import { useEstadisticasMeta } from "@/hooks/useEstadisticasApi";
 import { supabase } from "@/integrations/supabase/client";
 import { FiltrosEstadisticas } from "@/components/estadisticas/FiltrosEstadisticas";
-import { useEsquemaGrado, unidadCorte } from "@/utils/esquema";
+import { useEsquemaGrado, unidadCorte, esquemasDelColegio, mapaEsquemaPorGrado, type EsquemaNivel, ESQUEMA_DEFAULT } from "@/utils/esquema";
 import { AnalisisInstitucional } from "@/components/estadisticas/AnalisisInstitucional";
 import { AnalisisGrado } from "@/components/estadisticas/AnalisisGrado";
 import { AnalisisSalon } from "@/components/estadisticas/AnalisisSalon";
@@ -17,8 +17,51 @@ import { Loader2 } from "lucide-react";
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 const EstadisticasDashboard = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { loading, grados, salones, asignaturas, asignaciones } = useEstadisticasMeta();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const meta = useEstadisticasMeta();
+  const loading = meta.loading;
+
+  // ── Grupos de niveles por esquema (Juan 2026-09-13) ──────────────────────
+  // Si el colegio tiene niveles por periodos Y niveles por semestres, al entrar se
+  // elige el grupo (ej. "Preescolar, Primaria, Secundaria y Media" o "Formación
+  // Complementaria") y todo el tablero trabaja dentro de él. Con un solo esquema
+  // no se pregunta nada.
+  interface GrupoNiveles { key: string; esquema: string; nombre: string; detalle: string; esq: EsquemaNivel; niveles: string[] }
+  const [grupos, setGrupos] = useState<GrupoNiveles[] | null>(null);
+  const [esqPorGrado, setEsqPorGrado] = useState<Map<string, EsquemaNivel>>(new Map());
+  useEffect(() => {
+    Promise.all([esquemasDelColegio(), mapaEsquemaPorGrado()]).then(([esqs, mapa]) => {
+      const porKey = new Map<string, GrupoNiveles>();
+      for (const e of esqs) {
+        const key = `${e.esquema}|${e.cortes.length}`;
+        const g = porKey.get(key);
+        if (g) g.niveles.push(e.nivel);
+        else porKey.set(key, { key, esquema: e.esquema, nombre: "", detalle: `Por ${e.esquema} (${e.cortes.length} cortes)`, esq: e, niveles: [e.nivel] });
+      }
+      const lista = [...porKey.values()].map((g) => ({
+        ...g,
+        nombre: g.niveles.length > 1 ? `${g.niveles.slice(0, -1).join(", ")} y ${g.niveles[g.niveles.length - 1]}` : g.niveles[0],
+      }));
+      setGrupos(lista);
+      setEsqPorGrado(mapa);
+    }).catch(() => { setGrupos([]); });
+  }, []);
+  const hayGrupos = (grupos?.length || 0) > 1;
+  const ambitoParam = searchParams.get("ambito") || "";
+  const grupoSel = hayGrupos ? (grupos!.find((g) => g.esquema === ambitoParam) || null) : null;
+  const elegirGrupo = (g: GrupoNiveles) => {
+    setSearchParams((prev) => { const p = new URLSearchParams(prev); p.set("ambito", g.esquema); p.delete("grado"); p.delete("salon"); p.delete("estudiante"); p.delete("asignatura"); return p; });
+    setGradoSeleccionado(""); setSalonSeleccionado(""); setEstudianteSeleccionado(""); setAsignaturaSeleccionada("");
+  };
+  const volverAGrupos = () => {
+    setSearchParams((prev) => { const p = new URLSearchParams(prev); p.delete("ambito"); return p; });
+  };
+  // Dentro de un grupo solo se ofrecen sus grados, salones y asignaturas.
+  const enGrupo = (grado: string) => !grupoSel || (esqPorGrado.get(grado)?.esquema || "periodos") === grupoSel.esquema;
+  const grados = meta.grados.filter(enGrupo);
+  const salones = meta.salones.filter((s) => enGrupo(s.grado));
+  const asignaciones = meta.asignaciones.filter((a) => enGrupo(a.grado));
+  const asignaturas = grupoSel ? [...new Set(asignaciones.map((a) => a.asignatura))].sort() : meta.asignaturas;
 
   // Reemplazo local de getAsignaturasFiltradas — opera sobre el array de asignaciones del hook nuevo
   const normalize = (str: string | null | undefined): string =>
@@ -101,8 +144,11 @@ const EstadisticasDashboard = () => {
   // Esquema del ámbito: el del grado elegido; en "Institución" el general por periodos
   // (los niveles por semestres quedan fuera y el servidor lo informa).
   const gradoAmbito = nivelAnalisis !== "institucion" && gradoSeleccionado && gradoSeleccionado !== "all" ? gradoSeleccionado : null;
-  const esq = useEsquemaGrado(gradoAmbito);
+  const esqGrado = useEsquemaGrado(gradoAmbito);
+  // Sin grado: el esquema del grupo elegido (o el general por periodos).
+  const esq = gradoAmbito ? esqGrado : (grupoSel ? { ...grupoSel.esq, ready: true } : { ...ESQUEMA_DEFAULT, ready: true });
   const unidad = unidadCorte(esq);
+  const esquemaAmbito = grupoSel ? grupoSel.esquema : undefined;
   useEffect(() => {
     if (!esq.ready || periodoSeleccionado === "anual") return;
     if (parseInt(periodoSeleccionado) > esq.cortes.length) setPeriodoSeleccionado(String(esq.cortes.length));
@@ -129,7 +175,7 @@ const EstadisticasDashboard = () => {
       : `${unidad} ${periodoSeleccionado}`;
     
     if (nivelAnalisis === "institucion") {
-      return `Institución - ${periodoTexto}`;
+      return `${grupoSel ? grupoSel.nombre : "Institución"} - ${periodoTexto}`;
     }
     
     if (nivelAnalisis === "grado") {
@@ -183,14 +229,37 @@ const EstadisticasDashboard = () => {
           <BreadcrumbDeslizable>
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">→</span>
-            <span className="text-foreground font-medium">Estadísticas</span>
+            {grupoSel ? (
+              <>
+                <button onClick={volverAGrupos} className="text-primary hover:underline">Estadísticas</button>
+                <span className="text-muted-foreground">→</span>
+                <span className="text-foreground font-medium">{grupoSel.nombre}</span>
+              </>
+            ) : (
+              <span className="text-foreground font-medium">Estadísticas</span>
+            )}
           </BreadcrumbDeslizable>
         </div>
 
-        {loading ? (
+        {loading || grupos === null ? (
           <div className="flex items-center justify-center h-64">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
             <span className="ml-2 text-muted-foreground">Cargando datos...</span>
+          </div>
+        ) : hayGrupos && !grupoSel ? (
+          /* El colegio evalúa con dos esquemas: primero se elige el grupo de niveles. */
+          <div className="bg-card rounded-lg shadow-soft p-6 md:p-8">
+            <h2 className="text-xl font-bold text-foreground mb-2 text-center">¿Qué quieres analizar?</h2>
+            <p className="text-sm text-muted-foreground text-center mb-6">Los niveles por periodos y los niveles por semestres se analizan por separado porque sus cortes no son comparables.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-guia="estadisticas.selector_grupo">
+              {grupos!.map((g) => (
+                <button key={g.key} onClick={() => elegirGrupo(g)}
+                  className="p-6 rounded-lg border-2 border-border bg-background text-center transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/5 flex flex-col items-center gap-2">
+                  <span className="text-lg font-semibold text-foreground">{g.nombre}</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground capitalize">{g.detalle}</span>
+                </button>
+              ))}
+            </div>
           </div>
         ) : (
           <>
@@ -213,10 +282,17 @@ const EstadisticasDashboard = () => {
               estudiantes={estudiantesDelSalon}
               cortes={esq.cortes}
               unidad={unidad}
+              nivelesDisponibles={grupoSel ? [
+                { value: "institucion", label: "Todo el grupo" },
+                { value: "grado", label: "Por Grado" },
+                { value: "salon", label: "Por Salón" },
+                { value: "estudiante", label: "Por Estudiante" },
+                { value: "asignatura", label: "Por Asignatura" },
+              ] : undefined}
             />
 
             {nivelAnalisis === "institucion" && (
-              <AnalisisInstitucional periodo={periodoNumerico} titulo={getTituloDinamico()} unidad={unidad} nCortes={esq.cortes.length} />
+              <AnalisisInstitucional periodo={periodoNumerico} titulo={getTituloDinamico()} unidad={unidad} nCortes={esq.cortes.length} esquema={esquemaAmbito} />
             )}
             {nivelAnalisis === "grado" && gradoSeleccionado && (
               <AnalisisGrado grado={gradoSeleccionado} periodo={periodoNumerico} titulo={getTituloDinamico()} unidad={unidad} nCortes={esq.cortes.length} />
@@ -242,6 +318,7 @@ const EstadisticasDashboard = () => {
                 titulo={getTituloDinamico()}
                 unidad={unidad}
                 nCortes={esq.cortes.length}
+                esquema={esquemaAmbito}
               />
             )}
             {nivelAnalisis === "grado" && !gradoSeleccionado && (

@@ -65,10 +65,10 @@ export function useEstadisticasMeta() {
   return { ...s, grados, salones: s.data?.salones || [], asignaturas: s.data?.asignaturas || [], asignaciones: s.data?.asignaciones_expandidas || [] };
 }
 
-export function useEstadisticasInstitucional(periodo: number | "anual") {
+export function useEstadisticasInstitucional(periodo: number | "anual", esquema?: string) {
   return useApiCall<ApiInstitucional>(
-    () => apiClient.estadisticas.institucional(periodo),
-    [periodo],
+    () => apiClient.estadisticas.institucional(periodo, esquema),
+    [periodo, esquema],
   );
 }
 
@@ -107,15 +107,16 @@ export function useEstadisticasAsignatura(
   periodo: number | "anual",
   grado?: string,
   salon?: string,
+  esquema?: string,
 ) {
   const gradoEf = grado && grado !== "all" ? grado : undefined;
   const salonEf = salon && salon !== "all" ? salon : undefined;
   return useApiCall<ApiAsignatura>(
     () => {
       if (!asignatura) return Promise.reject(new Error("Falta asignatura"));
-      return apiClient.estadisticas.asignatura(asignatura, periodo, gradoEf, salonEf);
+      return apiClient.estadisticas.asignatura(asignatura, periodo, gradoEf, salonEf, esquema);
     },
-    [asignatura, periodo, gradoEf, salonEf],
+    [asignatura, periodo, gradoEf, salonEf, esquema],
   );
 }
 
@@ -125,12 +126,13 @@ export function useEstadisticasRiesgo(
   salon?: string,
   asignatura?: string,
   umbral?: number,
+  esquema?: string,
 ) {
   const gradoEf = grado && grado !== "all" ? grado : undefined;
   const salonEf = salon && salon !== "all" ? salon : undefined;
   const asigEf = asignatura && asignatura !== "all" ? asignatura : undefined;
   return useApiCall<ApiRiesgo>(
-    () => apiClient.estadisticas.riesgo(periodo, umbral, gradoEf, salonEf, asigEf),
-    [periodo, gradoEf, salonEf, asigEf, umbral],
+    () => apiClient.estadisticas.riesgo(periodo, umbral, gradoEf, salonEf, asigEf, esquema),
+    [periodo, gradoEf, salonEf, asigEf, umbral, esquema],
   );
 }

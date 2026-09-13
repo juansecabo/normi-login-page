@@ -16,12 +16,14 @@ interface AnalisisInstitucionalProps {
   titulo?: string;
   unidad?: string;
   nCortes?: number;
+  /** Esquema del grupo elegido al entrar (si el colegio tiene niveles por periodos y por semestres). */
+  esquema?: string;
 }
 
-export const AnalisisInstitucional = ({ periodo, titulo, unidad = "Período", nCortes = 4 }: AnalisisInstitucionalProps) => {
+export const AnalisisInstitucional = ({ periodo, titulo, unidad = "Período", nCortes = 4, esquema }: AnalisisInstitucionalProps) => {
   const contenidoRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const { data, loading, error } = useEstadisticasInstitucional(periodo);
+  const { data, loading, error } = useEstadisticasInstitucional(periodo, esquema);
   const { verificarCompletitud } = useCompletitud();
   const { config } = useColegioConfig();
   const aprobLabel = config.nota_aprobatoria.toFixed(config.decimales);
@@ -39,7 +41,7 @@ export const AnalisisInstitucional = ({ periodo, titulo, unidad = "Período", nC
   const mostrarRiesgo = data.tiene_datos_riesgo;
 
   // Verificar completitud (sigue como estaba — hook separado que aún usa supabase directo)
-  const { completo, detalles, resumen, resumenCompleto } = verificarCompletitud("institucion", periodo);
+  const { completo, detalles, resumen, resumenCompleto } = verificarCompletitud("institucion", periodo, undefined, undefined, undefined, undefined, esquema);
 
   // Evolución hasta el periodo seleccionado
   const periodoHasta = periodo === "anual" ? nCortes : periodo;
@@ -58,6 +60,7 @@ export const AnalisisInstitucional = ({ periodo, titulo, unidad = "Período", nC
     const params = new URLSearchParams();
     params.set("nivel", "institucion");
     params.set("periodo", String(periodo));
+    if (esquema) params.set("esquema", esquema);
     navigate(`/estudiantes-riesgo?${params.toString()}`);
   };
 
@@ -73,7 +76,7 @@ export const AnalisisInstitucional = ({ periodo, titulo, unidad = "Período", nC
 
   return (
     <div className="space-y-6" data-guia="estadisticas.resultado">
-      {data.niveles_excluidos && data.niveles_excluidos.length > 0 && (
+      {!esquema && data.niveles_excluidos && data.niveles_excluidos.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-4 py-3 text-sm" data-guia="estadisticas.aviso_niveles_excluidos">
           {data.niveles_excluidos.join(", ")} va por semestres y no se mezcla con los periodos del resto del colegio. Para verlo, elige uno de sus grados en "Nivel de Análisis".
         </div>
