@@ -9,6 +9,7 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "@/lib/apiClient";
 import { NIVEL_DE_GRADO } from "@/utils/grados";
+import { getSession } from "@/hooks/useSession";
 
 export type Esquema = "periodos" | "semestres";
 export interface EsquemaNivel {
@@ -28,12 +29,19 @@ interface EstructuraResp {
   niveles?: Array<{ nivel: string; esquema?: string | null; cortes?: number | null; definitiva?: string | null }>;
 }
 
-let cache: { at: number; esquemas: Map<string, EsquemaNivel>; nivelDeGrado: Map<string, string> } | null = null;
+// La caché va ligada al colegio de la sesión: al cambiar de perfil/colegio sin recargar la
+// página no se reutiliza el esquema del colegio anterior (bug visto por Juan 2026-09-13).
+let cache: { colegio: string; at: number; esquemas: Map<string, EsquemaNivel>; nivelDeGrado: Map<string, string> } | null = null;
 let enCurso: Promise<typeof cache> | null = null;
 const TTL = 5 * 60 * 1000;
 
+function colegioActual(): string {
+  try { return String(getSession().colegio_id || ""); } catch { return ""; }
+}
+
 async function cargar() {
-  if (cache && Date.now() - cache.at < TTL) return cache;
+  const colegio = colegioActual();
+  if (cache && cache.colegio === colegio && Date.now() - cache.at < TTL) return cache;
   if (enCurso) return enCurso;
   enCurso = (async () => {
     const esquemas = new Map<string, EsquemaNivel>();
@@ -54,7 +62,7 @@ async function cargar() {
     } catch {
       /* sin estructura: todo por periodos */
     }
-    cache = { at: Date.now(), esquemas, nivelDeGrado };
+    cache = { colegio, at: Date.now(), esquemas, nivelDeGrado };
     enCurso = null;
     return cache;
   })();
