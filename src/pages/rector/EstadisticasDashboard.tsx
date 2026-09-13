@@ -256,7 +256,7 @@ const EstadisticasDashboard = () => {
                 <button key={g.key} onClick={() => elegirGrupo(g)}
                   className="p-6 rounded-lg border-2 border-border bg-background text-center transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/5 flex flex-col items-center gap-2">
                   <span className="text-lg font-semibold text-foreground">{g.nombre}</span>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground capitalize">{g.detalle}</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{g.detalle}</span>
                 </button>
               ))}
             </div>

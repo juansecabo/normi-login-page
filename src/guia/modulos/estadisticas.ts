@@ -43,6 +43,13 @@ const abrirTablero = () =>
       ruta: "/estadisticas",
     },
     {
+      narracion: "Si el colegio tiene niveles por periodos y otros por semestres (por ejemplo, Formación Complementaria), primero elige qué grupo de niveles quieres analizar. Se analizan por separado porque un periodo y un semestre no son comparables.",
+      accion: "click" as const,
+      ancla: "estadisticas.selector_grupo",
+      campo: "grupo_niveles",
+      opcional: true,
+    },
+    {
       narracion: "Esperamos a que carguen los datos del colegio.",
       accion: "esperar" as const,
       ancla: "estadisticas.filtros",
