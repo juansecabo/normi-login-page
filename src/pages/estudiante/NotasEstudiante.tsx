@@ -3,18 +3,19 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { getSession, isEstudiante } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import ConsolidadoNotas from "@/components/ConsolidadoNotas";
+import { useEsquemaGrado, etiquetaCorteCorta } from "@/utils/esquema";
 import { supabase } from "@/integrations/supabase/client";
 import { markLastSeen } from "@/utils/notificaciones";
 import { anoEscolarActual } from "@/utils/anoEscolar";
 
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
-const PERIODO_LABEL = ["", "1er Periodo", "2do Periodo", "3er Periodo", "4to Periodo"];
 
 const NotasEstudiante = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const periodoParam = searchParams.get("periodo");
-  const periodoNum = periodoParam && /^[1-4]$/.test(periodoParam) ? Number(periodoParam) : null;
+  const periodoNum = periodoParam && /^[1-6]$/.test(periodoParam) ? Number(periodoParam) : null;
+  const esq = useEsquemaGrado(getSession().grado);
   const limpiarPeriodo = () => {
     setSearchParams((prev) => { const p = new URLSearchParams(prev); p.delete("periodo"); return p; });
   };
@@ -62,7 +63,7 @@ const NotasEstudiante = () => {
               <>
                 <button onClick={limpiarPeriodo} className="text-primary hover:underline">Notas</button>
                 <span className="text-muted-foreground">&rarr;</span>
-                <span className="text-foreground font-medium">{PERIODO_LABEL[periodoNum]}</span>
+                <span className="text-foreground font-medium">{etiquetaCorteCorta(esq, periodoNum)}</span>
               </>
             ) : (
               <span className="text-foreground font-medium">Notas</span>

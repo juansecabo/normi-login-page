@@ -3,13 +3,13 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { getSession, isPadreDeFamilia, AcudidoData } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import ConsolidadoNotas from "@/components/ConsolidadoNotas";
+import { useEsquemaGrado, etiquetaCorteCorta } from "@/utils/esquema";
 import { supabase } from "@/integrations/supabase/client";
 import { markLastSeen, getAllLastSeen, countNewItems } from "@/utils/notificaciones";
 import { anoEscolarActual } from "@/utils/anoEscolar";
 import { User } from "lucide-react";
 
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
-const PERIODO_LABEL = ["", "1er Periodo", "2do Periodo", "3er Periodo", "4to Periodo"];
 
 const NotasAcudiente = () => {
   const navigate = useNavigate();
@@ -24,7 +24,7 @@ const NotasAcudiente = () => {
     acudidos.find((a) => String(a.id) === String(acudidoId)) ||
     (acudidos.length === 1 ? acudidos[0] : null);
   const periodoParam = searchParams.get("periodo");
-  const periodoNum = periodoParam && /^[1-4]$/.test(periodoParam) ? Number(periodoParam) : null;
+  const periodoNum = periodoParam && /^[1-6]$/.test(periodoParam) ? Number(periodoParam) : null;
 
   const volverAEscoger = () => {
     setSearchParams((prev) => { const p = new URLSearchParams(prev); p.delete("acudido"); p.delete("periodo"); return p; });
@@ -122,7 +122,7 @@ const NotasAcudiente = () => {
                   Notas{acudido ? ` de ${acudido.nombre}` : ''}
                 </button>
                 <span className="text-muted-foreground">&rarr;</span>
-                <span className="text-foreground font-medium">{PERIODO_LABEL[periodoNum]}</span>
+                <span className="text-foreground font-medium">{etiquetaCorteCorta(esq, periodoNum)}</span>
               </>
             ) : (
               <span className="text-foreground font-medium">Notas{acudido ? ` de ${acudido.nombre}` : ''}</span>
