@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { anoEscolarActual } from "@/utils/anoEscolar";
+import { mapaEsquemaPorGrado, type EsquemaNivel } from "@/utils/esquema";
 
 export interface DetalleIncompleto {
   tipo: "nota_faltante" | "porcentaje_incompleto" | "sin_actividades";
@@ -97,6 +98,9 @@ export const useCompletitud = () => {
   const [actividades, setActividades] = useState<ActividadRegistrada[]>([]);
   const [notas, setNotas] = useState<NotaRegistrada[]>([]);
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
+  // grado → esquema (periodos/semestres): la completitud nunca mezcla esquemas.
+  const [esqPorGrado, setEsqPorGrado] = useState<Map<string, EsquemaNivel>>(new Map());
+  useEffect(() => { mapaEsquemaPorGrado().then(setEsqPorGrado).catch(() => {}); }, []);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -350,6 +354,11 @@ export const useCompletitud = () => {
 
     // Filtrar combinaciones por nivel
     let combinacionesFiltradas = [...combinacionesExpandidas];
+    // Sin grado elegido (institución / asignatura en todos los grados) solo se revisan los
+    // niveles por periodos: los que van por semestres se consultan en su propio grado.
+    if (!grado || grado === "all") {
+      combinacionesFiltradas = combinacionesFiltradas.filter((c) => (esqPorGrado.get(c.grado)?.esquema || "periodos") === "periodos");
+    }
 
     if (nivel === "grado" && grado) {
       combinacionesFiltradas = combinacionesFiltradas.filter((c) => normalize(c.grado) === normalize(grado));
@@ -428,7 +437,11 @@ export const useCompletitud = () => {
 
       let profPendiente = false;
 
-      for (const per of periodosAVerificar) {
+      const esqCombo = esqPorGrado.get(combo.grado);
+      const periodosCombo = periodo === "anual"
+        ? (esqCombo?.cortes || periodosAVerificar)
+        : periodosAVerificar.filter((p) => !esqCombo || p <= esqCombo.cortes.length);
+      for (const per of periodosCombo) {
         const actKey = `${normalize(combo.asignatura)}|${normalize(combo.grado)}|${normalize(combo.salon)}|${per}`;
         const actsAll = actividadesIndex.get(actKey) || [];
 

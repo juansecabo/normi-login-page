@@ -18,9 +18,11 @@ interface AnalisisAsignaturaProps {
   grado?: string;
   salon?: string;
   titulo?: string;
+  unidad?: string;
+  nCortes?: number;
 }
 
-export const AnalisisAsignatura = ({ asignatura, periodo, grado, salon, titulo }: AnalisisAsignaturaProps) => {
+export const AnalisisAsignatura = ({ asignatura, periodo, grado, salon, titulo, unidad = "Período", nCortes = 4 }: AnalisisAsignaturaProps) => {
   const contenidoRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { data, loading, error } = useEstadisticasAsignatura(asignatura, periodo, grado, salon);
@@ -95,7 +97,7 @@ export const AnalisisAsignatura = ({ asignatura, periodo, grado, salon, titulo }
   // Verificar completitud
   const { completo, detalles, resumen, resumenCompleto } = verificarCompletitud("asignatura", periodo, gradoEfectivo, salonEfectivo, asignatura);
 
-  const periodoTexto = periodo === "anual" ? "Acumulado Anual" : `Período ${periodo}`;
+  const periodoTexto = periodo === "anual" ? "Acumulado Anual" : `${unidad} ${periodo}`;
 
   const handleRiesgoClick = () => {
     const params = new URLSearchParams();
@@ -109,6 +111,11 @@ export const AnalisisAsignatura = ({ asignatura, periodo, grado, salon, titulo }
 
   return (
     <div className="space-y-6" data-guia="estadisticas.resultado">
+      {data.niveles_excluidos && data.niveles_excluidos.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-4 py-3 text-sm" data-guia="estadisticas.aviso_niveles_excluidos">
+          {data.niveles_excluidos.join(", ")} va por semestres y no se mezcla con los periodos del resto del colegio. Para verlo, elige uno de sus grados en "Nivel de Análisis".
+        </div>
+      )}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-2 text-sm text-blue-700">
           <span className="font-medium">ℹ️</span>
@@ -145,7 +152,7 @@ export const AnalisisAsignatura = ({ asignatura, periodo, grado, salon, titulo }
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <TarjetaResumen titulo="Promedio de la Asignatura" valor={data.promedio_asignatura.toFixed(config.decimales)} subtitulo={periodo === "anual" ? "Acumulado anual" : `Período ${periodo}`} icono={BookOpen} color={colorBucket3(data.promedio_asignatura, config)} />
+          <TarjetaResumen titulo="Promedio de la Asignatura" valor={data.promedio_asignatura.toFixed(config.decimales)} subtitulo={periodo === "anual" ? "Acumulado anual" : `${unidad} ${periodo}`} icono={BookOpen} color={colorBucket3(data.promedio_asignatura, config)} />
           <TarjetaResumen titulo="Estudiantes con notas" valor={cantidadEstudiantes} subtitulo="Con calificaciones" icono={Users} color="primary" />
           <TarjetaResumen titulo="Tasa de Aprobación" valor={`${tasaAprobacion}%`} subtitulo={`${estudiantesAprobados} aprobados`} icono={Award} color={tasaAprobacion >= 80 ? "success" : tasaAprobacion >= 60 ? "warning" : "danger"} />
           <TarjetaResumen

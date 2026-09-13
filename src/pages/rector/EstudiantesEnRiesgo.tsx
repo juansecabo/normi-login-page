@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { getSession, isRectorOrCoordinador } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { useEstadisticasRiesgo } from "@/hooks/useEstadisticasApi";
+import { useEsquemaGrado, unidadCorte } from "@/utils/esquema";
 import { useColegioConfig } from "@/hooks/useColegioConfig";
 import { AlertTriangle, ArrowLeft, Loader2 } from "lucide-react";
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
@@ -68,7 +69,8 @@ const EstudiantesEnRiesgo = () => {
     filtroLabel = `Grado ${gradoParam}`;
   }
 
-  const periodoLabel = periodo === "anual" ? "Acumulado Anual" : `Período ${periodo}`;
+  const esq = useEsquemaGrado(gradoParam);
+  const periodoLabel = periodo === "anual" ? "Acumulado Anual" : `${unidadCorte(esq)} ${periodo}`;
 
   const getColorPorPromedio = (promedio: number) => {
     const aprob = config.nota_aprobatoria;

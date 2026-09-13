@@ -239,6 +239,11 @@ export interface ApiEvolucionItem {
 }
 
 export interface ApiInstitucional {
+
+  /** Esquema del ámbito (server): 'Período'|'Semestre', cortes y niveles excluidos por tener otro esquema. */
+  unidad?: 'Período' | 'Semestre';
+  cortes?: number[];
+  niveles_excluidos?: string[];
   periodo: number | 'anual';
   promedio_institucional: number;
   total_estudiantes: number;
@@ -305,6 +310,11 @@ export interface ApiEstudianteStats extends ApiPromedioEstudiante {
 }
 
 export interface ApiAsignatura {
+
+  /** Esquema del ámbito (server): 'Período'|'Semestre', cortes y niveles excluidos por tener otro esquema. */
+  unidad?: 'Período' | 'Semestre';
+  cortes?: number[];
+  niveles_excluidos?: string[];
   asignatura: string;
   periodo: number | 'anual';
   grado?: string;
@@ -325,6 +335,11 @@ export interface ApiAsignatura {
 }
 
 export interface ApiRiesgo {
+
+  /** Esquema del ámbito (server): 'Período'|'Semestre', cortes y niveles excluidos por tener otro esquema. */
+  unidad?: 'Período' | 'Semestre';
+  cortes?: number[];
+  niveles_excluidos?: string[];
   periodo: number | 'anual';
   umbral: number;
   grado?: string;

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { getSession, isEstudiante } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { useEstadisticas } from "@/hooks/useEstadisticas";
+import { useEsquemaGrado, unidadCorte } from "@/utils/esquema";
 import { AnalisisEstudiante } from "@/components/estadisticas/AnalisisEstudiante";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
@@ -13,6 +14,7 @@ const EstadisticasEstudiantePage = () => {
   const navigate = useNavigate();
   const { loading } = useEstadisticas();
   const [periodoSeleccionado, setPeriodoSeleccionado] = useState(String(getPeriodoActual()));
+  const esq = useEsquemaGrado(getSession().grado);
 
   useEffect(() => {
     const session = getSession();
@@ -28,7 +30,7 @@ const EstadisticasEstudiantePage = () => {
     ? ("anual" as const)
     : parseInt(periodoSeleccionado);
 
-  const periodoTexto = periodoSeleccionado === "anual" ? "Acumulado Anual" : `Período ${periodoSeleccionado}`;
+  const periodoTexto = periodoSeleccionado === "anual" ? "Acumulado Anual" : `${unidadCorte(esq)} ${periodoSeleccionado}`;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -62,10 +64,7 @@ const EstadisticasEstudiantePage = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">Período 1</SelectItem>
-                    <SelectItem value="2">Período 2</SelectItem>
-                    <SelectItem value="3">Período 3</SelectItem>
-                    <SelectItem value="4">Período 4</SelectItem>
+                    {esq.cortes.map((n) => <SelectItem key={n} value={String(n)}>{unidadCorte(esq)} {n}</SelectItem>)}
                     <SelectItem value="anual">Acumulado Anual</SelectItem>
                   </SelectContent>
                 </Select>

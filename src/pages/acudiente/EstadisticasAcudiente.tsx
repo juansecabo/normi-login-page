@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { getSession, isPadreDeFamilia, AcudidoData } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { useEstadisticas } from "@/hooks/useEstadisticas";
+import { useEsquemaGrado, unidadCorte } from "@/utils/esquema";
 import { AnalisisEstudiante } from "@/components/estadisticas/AnalisisEstudiante";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, User } from "lucide-react";
@@ -15,6 +16,7 @@ const EstadisticasAcudiente = () => {
   const [acudidos, setAcudidos] = useState<AcudidoData[]>([]);
   const [acudido, setAcudido] = useState<AcudidoData | null>(null);
   const [periodoSeleccionado, setPeriodoSeleccionado] = useState(String(getPeriodoActual()));
+  const esq = useEsquemaGrado(acudido?.grado);
 
   useEffect(() => {
     const session = getSession();
@@ -53,7 +55,7 @@ const EstadisticasAcudiente = () => {
     ? ("anual" as const)
     : parseInt(periodoSeleccionado);
 
-  const periodoTexto = periodoSeleccionado === "anual" ? "Acumulado Anual" : `Período ${periodoSeleccionado}`;
+  const periodoTexto = periodoSeleccionado === "anual" ? "Acumulado Anual" : `${unidadCorte(esq)} ${periodoSeleccionado}`;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -123,10 +125,7 @@ const EstadisticasAcudiente = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="1">Período 1</SelectItem>
-                        <SelectItem value="2">Período 2</SelectItem>
-                        <SelectItem value="3">Período 3</SelectItem>
-                        <SelectItem value="4">Período 4</SelectItem>
+                        {esq.cortes.map((n) => <SelectItem key={n} value={String(n)}>{unidadCorte(esq)} {n}</SelectItem>)}
                         <SelectItem value="anual">Acumulado Anual</SelectItem>
                       </SelectContent>
                     </Select>

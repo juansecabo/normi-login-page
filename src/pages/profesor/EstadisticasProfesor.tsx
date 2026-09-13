@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getSession, isProfesor } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { useEstadisticas, ordenGrados } from "@/hooks/useEstadisticas";
+import { useEsquemaGrado, unidadCorte } from "@/utils/esquema";
 import { AnalisisAsignatura } from "@/components/estadisticas/AnalisisAsignatura";
 import { AnalisisEstudiante } from "@/components/estadisticas/AnalisisEstudiante";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -27,6 +28,7 @@ const EstadisticasProfesor = () => {
   const [asignaturaSeleccionada, setAsignaturaSeleccionada] = useState("");
   const [periodoSeleccionado, setPeriodoSeleccionado] = useState(String(getPeriodoActual()));
   const [gradoSeleccionado, setGradoSeleccionado] = useState("all");
+  const esq = useEsquemaGrado(gradoSeleccionado !== "all" ? gradoSeleccionado : null);
   const [salonSeleccionado, setSalonSeleccionado] = useState("");
   const [estudianteSeleccionado, setEstudianteSeleccionado] = useState("");
 
@@ -143,7 +145,7 @@ const EstadisticasProfesor = () => {
 
   // Título dinámico
   const getTitulo = () => {
-    const periodoTexto = periodoSeleccionado === "anual" ? "Acumulado Anual" : `Período ${periodoSeleccionado}`;
+    const periodoTexto = periodoSeleccionado === "anual" ? "Acumulado Anual" : `${unidadCorte(esq)} ${periodoSeleccionado}`;
     if (estudianteSeleccionado && estudianteSeleccionado !== "all") {
       const est = estudiantesDelSalon.find(e => e.id === estudianteSeleccionado);
       return `${est?.nombre || "Estudiante"} - ${periodoTexto}`;
@@ -209,10 +211,7 @@ const EstadisticasProfesor = () => {
                   <Select value={periodoSeleccionado} onValueChange={setPeriodoSeleccionado}>
                     <SelectTrigger data-guia="estadisticas.prof_filtro_periodo"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1">Período 1</SelectItem>
-                      <SelectItem value="2">Período 2</SelectItem>
-                      <SelectItem value="3">Período 3</SelectItem>
-                      <SelectItem value="4">Período 4</SelectItem>
+                      {esq.cortes.map((n) => <SelectItem key={n} value={String(n)}>{unidadCorte(esq)} {n}</SelectItem>)}
                       <SelectItem value="anual">Acumulado Anual</SelectItem>
                     </SelectContent>
                   </Select>

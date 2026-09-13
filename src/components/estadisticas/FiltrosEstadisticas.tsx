@@ -28,6 +28,9 @@ interface FiltrosEstadisticasProps {
   asignaturas: string[];
   estudiantes?: EstudianteOption[];
   nivelesDisponibles?: NivelOption[];
+  /** Cortes del esquema del grado elegido (4 periodos o 2 semestres). */
+  cortes?: number[];
+  unidad?: string;
 }
 
 export const FiltrosEstadisticas = ({
@@ -47,7 +50,9 @@ export const FiltrosEstadisticas = ({
   salones,
   asignaturas,
   estudiantes = [],
-  nivelesDisponibles
+  nivelesDisponibles,
+  cortes = [1, 2, 3, 4],
+  unidad = "Período",
 }: FiltrosEstadisticasProps) => {
 
   const niveles: NivelOption[] = nivelesDisponibles || [
@@ -82,10 +87,7 @@ export const FiltrosEstadisticas = ({
               <SelectValue placeholder="Seleccionar período" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="1">Período 1</SelectItem>
-              <SelectItem value="2">Período 2</SelectItem>
-              <SelectItem value="3">Período 3</SelectItem>
-              <SelectItem value="4">Período 4</SelectItem>
+              {cortes.map((n) => <SelectItem key={n} value={String(n)}>{unidad} {n}</SelectItem>)}
               <SelectItem value="anual">Acumulado Anual</SelectItem>
             </SelectContent>
           </Select>

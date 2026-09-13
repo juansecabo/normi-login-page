@@ -6,6 +6,7 @@ import HeaderNormi from "@/components/HeaderNormi";
 import { useEstadisticasMeta } from "@/hooks/useEstadisticasApi";
 import { supabase } from "@/integrations/supabase/client";
 import { FiltrosEstadisticas } from "@/components/estadisticas/FiltrosEstadisticas";
+import { useEsquemaGrado, unidadCorte } from "@/utils/esquema";
 import { AnalisisInstitucional } from "@/components/estadisticas/AnalisisInstitucional";
 import { AnalisisGrado } from "@/components/estadisticas/AnalisisGrado";
 import { AnalisisSalon } from "@/components/estadisticas/AnalisisSalon";
@@ -97,7 +98,17 @@ const EstadisticasDashboard = () => {
     fetchEstudiantes();
   }, [gradoSeleccionado, salonSeleccionado]);
 
-  const periodoNumerico = periodoSeleccionado === "anual" 
+  // Esquema del ámbito: el del grado elegido; en "Institución" el general por periodos
+  // (los niveles por semestres quedan fuera y el servidor lo informa).
+  const gradoAmbito = nivelAnalisis !== "institucion" && gradoSeleccionado && gradoSeleccionado !== "all" ? gradoSeleccionado : null;
+  const esq = useEsquemaGrado(gradoAmbito);
+  const unidad = unidadCorte(esq);
+  useEffect(() => {
+    if (!esq.ready || periodoSeleccionado === "anual") return;
+    if (parseInt(periodoSeleccionado) > esq.cortes.length) setPeriodoSeleccionado(String(esq.cortes.length));
+  }, [esq.ready, esq.cortes.length, periodoSeleccionado]);
+
+  const periodoNumerico = periodoSeleccionado === "anual"
     ? "anual" as const
     : parseInt(periodoSeleccionado);
 
@@ -115,7 +126,7 @@ const EstadisticasDashboard = () => {
   const getTituloDinamico = () => {
     const periodoTexto = periodoSeleccionado === "anual" 
       ? "Acumulado Anual" 
-      : `Período ${periodoSeleccionado}`;
+      : `${unidad} ${periodoSeleccionado}`;
     
     if (nivelAnalisis === "institucion") {
       return `Institución - ${periodoTexto}`;
@@ -200,22 +211,26 @@ const EstadisticasDashboard = () => {
               salones={salones}
               asignaturas={asignaturasFiltradas}
               estudiantes={estudiantesDelSalon}
+              cortes={esq.cortes}
+              unidad={unidad}
             />
 
             {nivelAnalisis === "institucion" && (
-              <AnalisisInstitucional periodo={periodoNumerico} titulo={getTituloDinamico()} />
+              <AnalisisInstitucional periodo={periodoNumerico} titulo={getTituloDinamico()} unidad={unidad} nCortes={esq.cortes.length} />
             )}
             {nivelAnalisis === "grado" && gradoSeleccionado && (
-              <AnalisisGrado grado={gradoSeleccionado} periodo={periodoNumerico} titulo={getTituloDinamico()} />
+              <AnalisisGrado grado={gradoSeleccionado} periodo={periodoNumerico} titulo={getTituloDinamico()} unidad={unidad} nCortes={esq.cortes.length} />
             )}
             {nivelAnalisis === "salon" && gradoSeleccionado && salonSeleccionado && (
-              <AnalisisSalon grado={gradoSeleccionado} salon={salonSeleccionado} periodo={periodoNumerico} titulo={getTituloDinamico()} />
+              <AnalisisSalon grado={gradoSeleccionado} salon={salonSeleccionado} periodo={periodoNumerico} titulo={getTituloDinamico()} unidad={unidad} nCortes={esq.cortes.length} />
             )}
             {nivelAnalisis === "estudiante" && estudianteSeleccionado && (
               <AnalisisEstudiante 
                 idEstudiante={estudianteSeleccionado} 
                 periodo={periodoNumerico}
                 titulo={getTituloDinamico()}
+                unidad={unidad}
+                nCortes={esq.cortes.length}
               />
             )}
             {nivelAnalisis === "asignatura" && asignaturaSeleccionada && (
@@ -225,6 +240,8 @@ const EstadisticasDashboard = () => {
                 grado={gradoSeleccionado}
                 salon={salonSeleccionado}
                 titulo={getTituloDinamico()}
+                unidad={unidad}
+                nCortes={esq.cortes.length}
               />
             )}
             {nivelAnalisis === "grado" && !gradoSeleccionado && (

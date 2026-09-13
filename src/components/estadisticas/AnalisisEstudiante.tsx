@@ -7,13 +7,13 @@ import { ListaComparativa } from "./ListaComparativa";
 import BotonDescarga from "./BotonDescarga";
 import { User, TrendingUp, Award, AlertTriangle, Medal, Star, ShieldAlert, ShieldCheck, Loader2 } from "lucide-react";
 
-interface AnalisisEstudianteProps { idEstudiante: string; periodo: number | "anual"; titulo?: string; mostrarPuesto?: boolean; }
+interface AnalisisEstudianteProps { idEstudiante: string; periodo: number | "anual"; titulo?: string; mostrarPuesto?: boolean; unidad?: string; nCortes?: number; }
 
 // Umbral mínimo de porcentaje para evaluar riesgo (matchea historic logic)
 const UMBRAL_PORCENTAJE_MINIMO = 40;
 const UMBRAL_PORCENTAJE_ANUAL = 160;
 
-export const AnalisisEstudiante = ({ idEstudiante, periodo, titulo, mostrarPuesto = true }: AnalisisEstudianteProps) => {
+export const AnalisisEstudiante = ({ idEstudiante, periodo, titulo, mostrarPuesto = true, unidad = "Período", nCortes = 4 }: AnalisisEstudianteProps) => {
   const contenidoRef = useRef<HTMLDivElement>(null);
   const { data, loading, error } = useEstadisticasEstudiante(idEstudiante, periodo);
   const { config } = useColegioConfig();
@@ -45,11 +45,11 @@ export const AnalisisEstudiante = ({ idEstudiante, periodo, titulo, mostrarPuest
   const estaEnRiesgo = tieneDatosSuficientes && estudiante.promedio < config.nota_aprobatoria;
   const aprobLabel = config.nota_aprobatoria.toFixed(config.decimales);
 
-  const periodoHasta = periodo === "anual" ? 4 : periodo;
+  const periodoHasta = periodo === "anual" ? nCortes : periodo;
   const evolucionEstudiante = Object.entries(estudiante.promediosPorPeriodo || {})
-    .map(([p, promedio]) => ({ periodo: `Período ${p}`, promedio }))
-    .filter((e) => parseInt(e.periodo.replace("Período ", "")) <= periodoHasta)
-    .sort((a, b) => parseInt(a.periodo.replace("Período ", "")) - parseInt(b.periodo.replace("Período ", "")));
+    .map(([p, promedio]) => ({ periodo: `${unidad} ${p}`, promedio }))
+    .filter((e) => parseInt(e.periodo.replace(/\D+/g, "")) <= periodoHasta)
+    .sort((a, b) => parseInt(a.periodo.replace(/\D+/g, "")) - parseInt(b.periodo.replace(/\D+/g, "")));
 
   return (
     <div className="space-y-6" data-guia="estadisticas.resultado">
@@ -85,7 +85,7 @@ export const AnalisisEstudiante = ({ idEstudiante, periodo, titulo, mostrarPuest
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <TarjetaResumen titulo="Promedio General" valor={estudiante.promedio.toFixed(config.decimales)} subtitulo={periodo === "anual" ? "Acumulado anual" : `Período ${periodo}`} icono={Award} color={colorBucket3(estudiante.promedio, config)} />
+          <TarjetaResumen titulo="Promedio General" valor={estudiante.promedio.toFixed(config.decimales)} subtitulo={periodo === "anual" ? "Acumulado anual" : `${unidad} ${periodo}`} icono={Award} color={colorBucket3(estudiante.promedio, config)} />
           <TarjetaResumen titulo="vs Salón" valor={`${(estudiante.promedio - estudiante.promedio_salon) >= 0 ? "+" : ""}${(estudiante.promedio - estudiante.promedio_salon).toFixed(config.decimales)}`} subtitulo={`Prom. salón: ${estudiante.promedio_salon.toFixed(config.decimales)}`} icono={TrendingUp} color={(estudiante.promedio - estudiante.promedio_salon) >= 0 ? "success" : "danger"} />
           {tieneSuficientesAsignaturas ? (
             <>

@@ -14,9 +14,11 @@ import { School, Users, Award, AlertTriangle, Loader2 } from "lucide-react";
 interface AnalisisInstitucionalProps {
   periodo: number | "anual";
   titulo?: string;
+  unidad?: string;
+  nCortes?: number;
 }
 
-export const AnalisisInstitucional = ({ periodo, titulo }: AnalisisInstitucionalProps) => {
+export const AnalisisInstitucional = ({ periodo, titulo, unidad = "Período", nCortes = 4 }: AnalisisInstitucionalProps) => {
   const contenidoRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { data, loading, error } = useEstadisticasInstitucional(periodo);
@@ -40,9 +42,9 @@ export const AnalisisInstitucional = ({ periodo, titulo }: AnalisisInstitucional
   const { completo, detalles, resumen, resumenCompleto } = verificarCompletitud("institucion", periodo);
 
   // Evolución hasta el periodo seleccionado
-  const periodoHasta = periodo === "anual" ? 4 : periodo;
+  const periodoHasta = periodo === "anual" ? nCortes : periodo;
   const evolucionPeriodos = data.evolucion.filter((e) => {
-    const n = parseInt(e.periodo.replace("Período ", ""));
+    const n = parseInt(e.periodo.replace(/\D+/g, ""));
     return n <= periodoHasta;
   });
 
@@ -50,7 +52,7 @@ export const AnalisisInstitucional = ({ periodo, titulo }: AnalisisInstitucional
   const todosGradosOrden = [...data.promedios_grados]
     .sort((a, b) => ordenGrados.indexOf(a.grado) - ordenGrados.indexOf(b.grado));
 
-  const periodoTexto = periodo === "anual" ? "Acumulado Anual" : `Período ${periodo}`;
+  const periodoTexto = periodo === "anual" ? "Acumulado Anual" : `${unidad} ${periodo}`;
 
   const handleVerRiesgo = () => {
     const params = new URLSearchParams();
@@ -71,6 +73,11 @@ export const AnalisisInstitucional = ({ periodo, titulo }: AnalisisInstitucional
 
   return (
     <div className="space-y-6" data-guia="estadisticas.resultado">
+      {data.niveles_excluidos && data.niveles_excluidos.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-4 py-3 text-sm" data-guia="estadisticas.aviso_niveles_excluidos">
+          {data.niveles_excluidos.join(", ")} va por semestres y no se mezcla con los periodos del resto del colegio. Para verlo, elige uno de sus grados en "Nivel de Análisis".
+        </div>
+      )}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-2 text-sm text-blue-700">
           <span className="font-medium">ℹ️</span>

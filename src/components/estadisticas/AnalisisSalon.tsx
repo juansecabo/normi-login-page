@@ -17,9 +17,11 @@ interface AnalisisSalonProps {
   salon: string;
   periodo: number | "anual";
   titulo?: string;
+  unidad?: string;
+  nCortes?: number;
 }
 
-export const AnalisisSalon = ({ grado, salon, periodo, titulo }: AnalisisSalonProps) => {
+export const AnalisisSalon = ({ grado, salon, periodo, titulo, unidad = "Período", nCortes = 4 }: AnalisisSalonProps) => {
   const contenidoRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { data, loading, error } = useEstadisticasSalon(grado, salon, periodo);
@@ -47,13 +49,13 @@ export const AnalisisSalon = ({ grado, salon, periodo, titulo }: AnalisisSalonPr
 
   const { completo, detalles, resumen, resumenCompleto } = verificarCompletitud("salon", periodo, grado, salon);
 
-  const periodoHasta = periodo === "anual" ? 4 : periodo;
+  const periodoHasta = periodo === "anual" ? nCortes : periodo;
   const evolucionPeriodos = data.evolucion.filter((e) => {
-    const n = parseInt(e.periodo.replace("Período ", ""));
+    const n = parseInt(e.periodo.replace(/\D+/g, ""));
     return n <= periodoHasta;
   });
 
-  const periodoTexto = periodo === "anual" ? "Acumulado Anual" : `Período ${periodo}`;
+  const periodoTexto = periodo === "anual" ? "Acumulado Anual" : `${unidad} ${periodo}`;
 
   const handleVerRiesgo = () => {
     const params = new URLSearchParams();

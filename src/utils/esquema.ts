@@ -101,6 +101,19 @@ export function etiquetaCorteCorta(esq: EsquemaNivel | Esquema, n: number): stri
   const e = typeof esq === "string" ? esq : esq.esquema;
   return `${ORD_FEM[n] || `${n}º`} ${e === "semestres" ? "Semestre" : "Periodo"}`;
 }
+/** "Período" / "Semestre" (con tilde, como lo escriben las pantallas de estadísticas). */
+export function unidadCorte(esq: EsquemaNivel | Esquema): "Período" | "Semestre" {
+  const e = typeof esq === "string" ? esq : esq.esquema;
+  return e === "semestres" ? "Semestre" : "Período";
+}
+/** grado → esquema, para cálculos que recorren muchas aulas (completitud). */
+export async function mapaEsquemaPorGrado(): Promise<Map<string, EsquemaNivel>> {
+  const c = await cargar();
+  const m = new Map<string, EsquemaNivel>();
+  if (!c) return m;
+  for (const [g, nivel] of c.nivelDeGrado.entries()) m.set(g, c.esquemas.get(nivel) || { ...ESQUEMA_DEFAULT, nivel });
+  return m;
+}
 /** Nombre de la pestaña/columna final: "Definitiva Anual" (periodos) o "Definitiva" (por corte). */
 export function etiquetaDefinitiva(esq: EsquemaNivel): string {
   return esq.definitivaPorCorte ? "Definitiva" : "Definitiva Anual";
