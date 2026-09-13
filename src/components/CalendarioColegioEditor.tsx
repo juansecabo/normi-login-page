@@ -406,7 +406,10 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
     const nombreFestivo = festivos.get(f);
     if (nombreFestivo) return { cls: `${base} bg-fuchsia-300 text-fuchsia-900`, title: `${nombreFestivo} (festivo automático)` };
     const per = periodosVista.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin);
-    if (per) return { cls: `${base} ${estiloPeriodo(per.periodo, esqSel).fondo}${per.heredado ? " opacity-70" : ""}`, title: estiloPeriodo(per.periodo, esqSel).nombre + (per.heredado ? " (fecha general del colegio)" : nivelSel ? ` (propia de ${nivelSel})` : "") };
+    // Editando: las fechas generales heredadas se ven atenuadas y las propias del nivel a
+    // color pleno, para distinguir la excepción. En solo lectura todo va igual (a quien
+    // consulta solo le importa qué fecha le aplica).
+    if (per) return { cls: `${base} ${estiloPeriodo(per.periodo, esqSel).fondo}${per.heredado && !soloLectura ? " opacity-70" : ""}`, title: estiloPeriodo(per.periodo, esqSel).nombre + (soloLectura ? "" : per.heredado ? " (fecha general del colegio)" : nivelSel ? ` (propia de ${nivelSel})` : "") };
     if (dow >= 5) return { cls: `${base} text-muted-foreground/50`, title: "" };
     return { cls: `${base} hover:bg-muted`, title: "" };
   };
@@ -545,7 +548,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
               return (
                 <span key={n} className="inline-flex items-center gap-1.5">
                   <span className={`w-3 h-3 rounded-sm ${estiloPeriodo(n, esqSel).chip}`} />
-                  {estiloPeriodo(n, esqSel).nombre}{p ? `: ${fechaLinda(p.fecha_inicio)} — ${fechaLinda(p.fecha_fin)}${p.heredado ? " (general)" : nivelSel ? ` (propia de ${nivelSel})` : ""}` : " (sin configurar)"}
+                  {estiloPeriodo(n, esqSel).nombre}{p ? `: ${fechaLinda(p.fecha_inicio)} — ${fechaLinda(p.fecha_fin)}${soloLectura ? "" : p.heredado ? " (general)" : nivelSel ? ` (propia de ${nivelSel})` : ""}` : " (sin configurar)"}
                 </span>
               );
             })}
