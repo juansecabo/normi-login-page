@@ -7,6 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { toast as sonnerToast } from "sonner";
 import { getSession } from "@/hooks/useSession";
 import { getPeriodoActual } from "@/utils/periodoActual";
+import { useEsquemaGrado, etiquetaCorteCorta } from "@/utils/esquema";
 import { anoEscolarActual } from "@/utils/anoEscolar";
 import { ACTIVIDADES_PREESCOLAR, esGradoPreescolar } from "@/utils/preescolar";
 import { apiRequest } from "@/lib/apiClient";
@@ -38,17 +39,13 @@ type TextosPreescolar = {
   };
 };
 
-const periodos = [
-  { numero: 1, nombre: "1er Periodo" },
-  { numero: 2, nombre: "2do Periodo" },
-  { numero: 3, nombre: "3er Periodo" },
-  { numero: 4, nombre: "4to Periodo" },
-];
 
 const TablaNotasPreescolar = () => {
   const navigate = useNavigate();
   const [asignaturaSeleccionada, setAsignaturaSeleccionada] = useState("");
   const [gradoSeleccionado, setGradoSeleccionado] = useState("");
+  const esq = useEsquemaGrado(gradoSeleccionado);
+  const periodos = esq.cortes.map((n) => ({ numero: n, nombre: etiquetaCorteCorta(esq, n) }));
   const [salonSeleccionado, setSalonSeleccionado] = useState("");
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
   const [textos, setTextos] = useState<TextosPreescolar>({});
@@ -126,10 +123,10 @@ const TablaNotasPreescolar = () => {
         }
         setEstudiantes(estudiantesData || []);
 
-        // 2) Seedear las 2 actividades fijas en "Nombre de Actividades" para los 4 periodos
+        // 2) Seedear las 2 actividades fijas en "Nombre de Actividades" para todos los cortes
         //    si no existen aún. Upsert idempotente.
         const actividadesSeed = [];
-        for (const p of [1, 2, 3, 4]) {
+        for (const p of esq.cortes) {
           for (const act of ACTIVIDADES_PREESCOLAR) {
             actividadesSeed.push({
               id_profesor: session.id,

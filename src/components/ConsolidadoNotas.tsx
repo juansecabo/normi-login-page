@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useEsquemaGrado, etiquetaCorteOrdinal } from "@/utils/esquema";
+import { useEsquemaGrado, etiquetaCorteOrdinal, etiquetaCorteCorta } from "@/utils/esquema";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getPeriodoActual } from "@/utils/periodoActual";
@@ -660,7 +660,7 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
                 onClick={() => setPeriodo(p.numero)}
                 className={`flex-1 min-w-[110px] px-3 py-2 rounded-md text-sm font-semibold transition-colors ${isActive ? 'bg-primary text-primary-foreground' : 'bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground'}`}
               >
-                {["", "1er Periodo", "2do Periodo", "3er Periodo", "4to Periodo"][p.numero]}
+                {etiquetaCorteCorta(esq, p.numero)}
               </button>
             );
           })}

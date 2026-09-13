@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useEsquemaGrado, etiquetaCorteCorta } from "@/utils/esquema";
 import { supabase } from "@/integrations/supabase/client";
 import { ACTIVIDADES_PREESCOLAR } from "@/utils/preescolar";
 import { anoEscolarActual } from "@/utils/anoEscolar";
@@ -20,12 +21,6 @@ type TextosEstudiante = {
   };
 };
 
-const periodos = [
-  { numero: 1, nombre: "1er Periodo" },
-  { numero: 2, nombre: "2do Periodo" },
-  { numero: 3, nombre: "3er Periodo" },
-  { numero: 4, nombre: "4to Periodo" },
-];
 
 const ConsolidadoNotasPreescolar = ({
   idEstudiante,
@@ -35,6 +30,8 @@ const ConsolidadoNotasPreescolar = ({
   salon,
   ocultarInfoEstudiante = false,
 }: ConsolidadoNotasPreescolarProps) => {
+  const esq = useEsquemaGrado(grado);
+  const periodos = esq.cortes.map((n) => ({ numero: n, nombre: etiquetaCorteCorta(esq, n) }));
   const [textos, setTextos] = useState<TextosEstudiante>({});
   const [loading, setLoading] = useState(true);
 

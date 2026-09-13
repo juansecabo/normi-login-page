@@ -1,5 +1,5 @@
 import { getPeriodoActual } from "@/utils/periodoActual";
-import { useEsquemaGrado, etiquetaCorteCorta } from "@/utils/esquema";
+import { useEsquemaGrado, etiquetaCorteCorta, corteActual } from "@/utils/esquema";
 import { anoEscolarActual } from "@/utils/anoEscolar";
 import { aNumero } from "@/utils/numero";
 import { useEffect, useState, useRef, useCallback, type ReactNode } from "react";
@@ -395,11 +395,11 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   useEffect(() => {
     if (!esq.ready) return;
     if (periodoActivo > N_CORTES || (periodoActivo === 0 && !hayDefAnual)) {
-      const n = periodoActivo === 0 ? 1 : N_CORTES;
+      const n = periodoActivo === 0 ? 1 : corteActual(esq);
       setPeriodoActivo(n);
       if (hayPeriodoElegido) irAPeriodo(n);
     }
-    if (periodoActual > N_CORTES) setPeriodoActual(N_CORTES);
+    if (periodoActual > N_CORTES) setPeriodoActual(corteActual(esq));
   }, [esq.ready, N_CORTES, hayDefAnual, periodoActivo, periodoActual, hayPeriodoElegido]); // eslint-disable-line react-hooks/exhaustive-deps
   const [nombreActividad, setNombreActividad] = useState("");
   const [porcentajeActividad, setPorcentajeActividad] = useState("");

@@ -295,7 +295,7 @@ export const ESTADISTICAS: Capacidad[] = [
     id: "estadisticas.cambiar_periodo",
     titulo: "Cambiar el periodo del análisis",
     descripcion:
-      "Cambiar el periodo (1 a 4) o el Acumulado Anual con el que se calculan las estadísticas que estás viendo.",
+      "Cambiar el periodo (o el semestre, en niveles por semestres) o el Acumulado Anual con el que se calculan las estadísticas que estás viendo.",
     categoria: "Estadísticas",
     roles: [...DIRECTIVOS],
     ruta: "/estadisticas",
@@ -318,7 +318,7 @@ export const ESTADISTICAS: Capacidad[] = [
         ancla: "estadisticas.filtro_periodo",
       },
       {
-        narracion: "Elige el periodo (1, 2, 3, 4) o 'Acumulado Anual'.",
+        narracion: "Elige el periodo o semestre (según el esquema del nivel) o 'Acumulado Anual'.",
         accion: "seleccionar",
         ancla: "estadisticas.filtro_periodo",
         campo: "periodo",

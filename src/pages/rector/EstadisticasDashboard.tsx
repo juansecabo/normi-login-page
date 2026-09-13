@@ -6,7 +6,7 @@ import HeaderNormi from "@/components/HeaderNormi";
 import { useEstadisticasMeta } from "@/hooks/useEstadisticasApi";
 import { supabase } from "@/integrations/supabase/client";
 import { FiltrosEstadisticas } from "@/components/estadisticas/FiltrosEstadisticas";
-import { useEsquemaGrado, unidadCorte, esquemasDelColegio, mapaEsquemaPorGrado, type EsquemaNivel, ESQUEMA_DEFAULT } from "@/utils/esquema";
+import { useEsquemaGrado, unidadCorte, esquemasDelColegio, mapaEsquemaPorGrado, type EsquemaNivel, ESQUEMA_DEFAULT, corteActual } from "@/utils/esquema";
 import { AnalisisInstitucional } from "@/components/estadisticas/AnalisisInstitucional";
 import { AnalisisGrado } from "@/components/estadisticas/AnalisisGrado";
 import { AnalisisSalon } from "@/components/estadisticas/AnalisisSalon";
@@ -180,7 +180,7 @@ const EstadisticasDashboard = () => {
   const esquemaAmbito = grupoSel ? grupoSel.esquema : undefined;
   useEffect(() => {
     if (!esq.ready || periodoSeleccionado === "anual") return;
-    if (parseInt(periodoSeleccionado) > esq.cortes.length) setPeriodoSeleccionado(String(esq.cortes.length));
+    if (parseInt(periodoSeleccionado) > esq.cortes.length) setPeriodoSeleccionado(String(corteActual(esq)));
   }, [esq.ready, esq.cortes.length, periodoSeleccionado]);
 
   const periodoNumerico = periodoSeleccionado === "anual"

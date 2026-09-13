@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useEsquemaGrado } from "@/utils/esquema";
+import { useEsquemaGrado, etiquetaCorteCorta } from "@/utils/esquema";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import ConsolidadoNotas from "@/components/ConsolidadoNotas";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,7 +40,6 @@ type PeriodosActivos = {
   [asignatura: string]: number;
 };
 
-const PERIODO_LABEL = ["", "1er Periodo", "2do Periodo", "3er Periodo", "4to Periodo"];
 
 const EstudianteConsolidado = () => {
   const navigate = useNavigate();
@@ -322,7 +321,7 @@ const EstudianteConsolidado = () => {
                   {estudiante?.apellidos} {estudiante?.nombres}
                 </button>
                 <span className="text-muted-foreground">→</span>
-                <span className="text-foreground font-medium">{PERIODO_LABEL[periodoElegido]}</span>
+                <span className="text-foreground font-medium">{etiquetaCorteCorta(esq, periodoElegido)}</span>
               </>
             ) : (
               <span className="text-foreground font-medium">{estudiante?.apellidos} {estudiante?.nombres}</span>

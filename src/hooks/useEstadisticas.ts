@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { mapaEsquemaPorGrado, type EsquemaNivel } from "@/utils/esquema";
 import { supabase } from "@/integrations/supabase/client";
 import { anoEscolarActual } from "@/utils/anoEscolar";
 import { useColegioConfig, bandaDesempeno } from "@/hooks/useColegioConfig";
@@ -82,6 +83,11 @@ interface AsignacionExpandida {
 }
 
 export const useEstadisticas = () => {
+  // grado → esquema (4 periodos o 2 semestres). Los cálculos anuales recorren los cortes del grado.
+  const [esqPorGrado, setEsqPorGrado] = useState<Map<string, EsquemaNivel>>(new Map());
+  useEffect(() => { mapaEsquemaPorGrado().then(setEsqPorGrado).catch(() => {}); }, []);
+  const cortesDeGrado = (grado?: string | null): number[] => (grado && esqPorGrado.get(grado)?.cortes) || [1, 2, 3, 4];
+  const cortesDeEstudiante = (idEstudiantil: string): number[] => cortesDeGrado(estudiantes.find((x) => x.id === idEstudiantil)?.grado);
   const { config } = useColegioConfig();
   const [loading, setLoading] = useState(true);
   const [notas, setNotas] = useState<NotaCompleta[]>([]);
@@ -326,7 +332,7 @@ export const useEstadisticas = () => {
     let sumaPorcentajesTotal = 0;
     let cantidadActividadesTotal = 0;
 
-    for (let periodo = 1; periodo <= 4; periodo++) {
+    for (const periodo of cortesDeEstudiante(idEstudiantil)) {
       const resultado = calcularPromedioPeriodo(idEstudiantil, periodo);
       if (resultado.promedio !== null) {
         promedios.push(resultado.promedio);
@@ -362,7 +368,7 @@ export const useEstadisticas = () => {
 
     return estudiantesFiltrados.map(est => {
       const promediosPorPeriodo: { [periodo: number]: number } = {};
-      for (let p = 1; p <= 4; p++) {
+      for (const p of cortesDeGrado(est.grado)) {
         const resultado = calcularPromedioPeriodo(est.id, p);
         if (resultado.promedio !== null) promediosPorPeriodo[p] = resultado.promedio;
       }
@@ -564,8 +570,8 @@ export const useEstadisticas = () => {
 
     // Total posible: asignaturas × 100% por período, o asignaturas × 400% anual
     const totalPosible = periodo === "anual"
-      ? cantidadAsignaturas * 400  // 4 períodos × 100% cada uno
-      : cantidadAsignaturas * 100; // 1 período × 100%
+      ? cantidadAsignaturas * 100 * cortesDeGrado(grado).length  // N cortes × 100% cada uno
+      : cantidadAsignaturas * 100; // 1 corte × 100%
     
     // Umbral = 40% del total posible
     return totalPosible * 0.4;
@@ -582,7 +588,7 @@ export const useEstadisticas = () => {
     // Si hay filtro de asignatura, calcular riesgo solo para esa asignatura
     // Para asignatura específica: umbral es 40% de 100% (período) o 40% de 400% (anual) = 40 o 160
     if (asignatura) {
-      const umbralAsignatura = periodo === "anual" ? UMBRAL_PORCENTAJE_ANUAL : UMBRAL_PORCENTAJE_MINIMO;
+      const umbralAsignatura = periodo === "anual" ? UMBRAL_PORCENTAJE_MINIMO * cortesDeGrado(grado).length : UMBRAL_PORCENTAJE_MINIMO;
       const estudiantesConAsignatura = getPromediosEstudiantes(periodo, grado, salon);
       return estudiantesConAsignatura
         .filter(e => {
@@ -634,12 +640,8 @@ export const useEstadisticas = () => {
     grado?: string,
     salon?: string
   ): { periodo: string; promedio: number }[] => {
-    const periodos = [
-      { numero: 1, nombre: "Período 1" },
-      { numero: 2, nombre: "Período 2" },
-      { numero: 3, nombre: "Período 3" },
-      { numero: 4, nombre: "Período 4" }
-    ];
+    const esqG = grado ? esqPorGrado.get(grado) : undefined;
+    const periodos = cortesDeGrado(grado).map((n) => ({ numero: n, nombre: `${esqG?.esquema === "semestres" ? "Semestre" : "Período"} ${n}` }));
 
     return periodos.map(p => {
       let promedio: number;
@@ -690,9 +692,8 @@ export const useEstadisticas = () => {
     if (salon) estudiantesFiltrados = estudiantesFiltrados.filter(e => e.salon === salon);
     if (idEstudiante) estudiantesFiltrados = estudiantesFiltrados.filter(e => e.id === idEstudiante);
 
-    const periodos = periodo === "anual" ? [1, 2, 3, 4] : [periodo];
-
     for (const est of estudiantesFiltrados) {
+      const periodos = periodo === "anual" ? cortesDeGrado(est.grado) : [periodo];
       const nombreCompleto = `${est.apellidos} ${est.nombres}`;
       
       // Obtener las asignaturas del estudiante

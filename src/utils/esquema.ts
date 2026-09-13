@@ -9,6 +9,7 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "@/lib/apiClient";
 import { NIVEL_DE_GRADO } from "@/utils/grados";
+import { getPeriodoActual } from "@/utils/periodoActual";
 import { getSession } from "@/hooks/useSession";
 
 export type Esquema = "periodos" | "semestres";
@@ -128,6 +129,13 @@ export function etiquetaDefinitiva(esq: EsquemaNivel): string {
   return esq.definitivaPorCorte ? "Definitiva" : "Definitiva Anual";
 }
 
+/** Corte "actual" por defecto: por periodos, el periodo del calendario estándar; por
+ *  semestres, el 1 hasta junio y el 2 desde julio (hasta que el colegio fije fechas). */
+export function corteActual(esq: EsquemaNivel | Esquema): number {
+  const e = typeof esq === "string" ? esq : esq.esquema;
+  if (e === "semestres") return new Date().getMonth() < 6 ? 1 : 2;
+  return getPeriodoActual();
+}
 /** Hook: esquema del grado (default hasta que carga). */
 export function useEsquemaGrado(grado: string | null | undefined): EsquemaNivel & { ready: boolean } {
   const [esq, setEsq] = useState<EsquemaNivel>(ESQUEMA_DEFAULT);

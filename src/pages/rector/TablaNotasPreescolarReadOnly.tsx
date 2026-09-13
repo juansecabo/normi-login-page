@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useEsquemaGrado, etiquetaCorteCorta } from "@/utils/esquema";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { isRectorOrCoordinador } from "@/hooks/useSession";
@@ -24,12 +25,6 @@ type TextosPreescolar = {
   };
 };
 
-const periodos = [
-  { numero: 1, nombre: "1er Periodo" },
-  { numero: 2, nombre: "2do Periodo" },
-  { numero: 3, nombre: "3er Periodo" },
-  { numero: 4, nombre: "4to Periodo" },
-];
 
 /**
  * Vista del rector/coordinador: todos los informes descriptivos de preescolar
@@ -40,6 +35,8 @@ const TablaNotasPreescolarReadOnly = () => {
   const navigate = useNavigate();
   const [asignaturaSeleccionada, setAsignaturaSeleccionada] = useState("");
   const [gradoSeleccionado, setGradoSeleccionado] = useState("");
+  const esq = useEsquemaGrado(gradoSeleccionado);
+  const periodos = esq.cortes.map((n) => ({ numero: n, nombre: etiquetaCorteCorta(esq, n) }));
   const [salonSeleccionado, setSalonSeleccionado] = useState("");
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
   const [textos, setTextos] = useState<TextosPreescolar>({});
