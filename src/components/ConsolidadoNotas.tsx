@@ -581,7 +581,7 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
     if (!ocultarDef) {
       filas.push(
         <div key="def" className="flex items-center justify-between gap-3 px-4 py-2.5 border-t-2 border-border bg-primary/5">
-          <span className="font-bold text-foreground">Definitiva del {esq.esquema === "semestres" ? "semestre" : "periodo"}</span>
+          <span className="font-bold text-foreground">Definitiva del periodo</span>
           <span
             className="font-bold tabular-nums text-foreground"
             title={completo ? undefined : 'La nota definitiva se mostrará cuando el profesor cierre el periodo'}
