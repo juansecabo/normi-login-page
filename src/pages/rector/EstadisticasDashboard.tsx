@@ -76,7 +76,6 @@ const EstadisticasDashboard = () => {
     { value: "estudiante", label: "Por Estudiante" },
     { value: "asignatura", label: "Por Asignatura" },
   ];
-  const nivelColegioSel = nivelAnalisis.startsWith("nivel:") ? nivelAnalisis.slice(6) : undefined;
   const elegirGrupo = (g: GrupoNiveles) => {
     setSearchParams((prev) => { const p = new URLSearchParams(prev); p.set("ambito", g.esquema); p.delete("grado"); p.delete("salon"); p.delete("estudiante"); p.delete("asignatura"); return p; });
     setGradoSeleccionado(""); setSalonSeleccionado(""); setEstudianteSeleccionado(""); setAsignaturaSeleccionada("");
@@ -110,6 +109,8 @@ const EstadisticasDashboard = () => {
   
   // Leer filtros desde URL params (para restaurar estado al volver)
   const [nivelAnalisis, setNivelAnalisis] = useState(() => searchParams.get("nivel") || "institucion");
+  // Opción 'nivel:X' del selector = análisis institucional acotado a ese nivel.
+  const nivelColegioSel = nivelAnalisis.startsWith("nivel:") ? nivelAnalisis.slice(6) : undefined;
   const [periodoSeleccionado, setPeriodoSeleccionado] = useState(() => searchParams.get("periodo") || String(getPeriodoActual()));
   const [gradoSeleccionado, setGradoSeleccionado] = useState(() => searchParams.get("grado") || "");
   const [salonSeleccionado, setSalonSeleccionado] = useState(() => searchParams.get("salon") || "");
