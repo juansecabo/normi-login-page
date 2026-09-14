@@ -463,7 +463,7 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
         <SortableContext items={idsTop} strategy={rectSortingStrategy}>
           <div className={gridClassName}>
             {entradas.map((en, idx) => (
-              <SortableCard key={idDe(en)} id={idDe(en)} jiggling={jiggling} index={idx} destinoAgrupar={destinoAgrupar === idDe(en)}>
+              <SortableCard key={idDe(en)} id={idDe(en)} jiggling={jiggling && !abierto} index={idx} destinoAgrupar={destinoAgrupar === idDe(en)}>
                 {en.tipo === "ficha"
                   ? en.item.render
                   : <GrupoCard grupo={en.grupo} items={en.items} onAbrir={() => { if (!jiggling) setGrupoAbierto(en.grupo.id); }} />}
