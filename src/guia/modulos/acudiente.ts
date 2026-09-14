@@ -726,7 +726,7 @@ export const ACUDIENTE: Capacidad[] = [
     id: "acu.dashboard_agrupar_fichas",
     titulo: "Agrupar fichas de tu pantalla de inicio",
     descripcion:
-      "Juntar varias tarjetas del tablero en un grupo con nombre, como los grupos de aplicaciones del celular: desde afuera se ven en miniatura las fichas que tiene y al tocarlo se abre con las fichas grandes. Primero se activa el interruptor 'Agrupar fichas' del tablero; mientras está encendido solo se agrupa (no se reordena) y se apaga solo al salir o recargar.",
+      "Juntar varias tarjetas del tablero en un grupo con nombre, como los grupos de aplicaciones del celular: desde afuera se ven en miniatura las fichas que tiene y al tocarlo se abre con las fichas grandes. Primero se activa el interruptor 'Agrupar fichas' del tablero.",
     categoria: "Varios",
     roles: ["acudiente"],
     ruta: "/dashboard",
@@ -734,8 +734,8 @@ export const ACUDIENTE: Capacidad[] = [
     sinonimos: ["agrupar las fichas", "hacer un grupo de tarjetas", "juntar tarjetas del inicio", "crear una carpeta de fichas", "cambiar el nombre de un grupo de fichas", "sacar una ficha del grupo", "activar agrupar fichas"],
     pasos: [
       { narracion: "Vamos a tu pantalla de inicio.", accion: "navegar", ruta: "/dashboard" },
-      { narracion: "Activa el interruptor 'Agrupar fichas' que está junto al texto de ayuda. Con él encendido arrastrar agrupa y no reordena; se apaga solo al salir del tablero o recargar.", accion: "click", ancla: "dashboard.grupos_interruptor" },
-      { narracion: "Mantén presionada una tarjeta y llévala encima de otra: la de abajo se resalta con 'Suelta para agrupar'. Suelta y se forma el grupo.", accion: "explicar" },
+      { narracion: "Activa el interruptor 'Agrupar fichas' que está junto al texto de ayuda (queda guardado en este dispositivo).", accion: "click", ancla: "dashboard.grupos_interruptor" },
+      { narracion: "Mantén presionada una tarjeta, llévala encima de otra y sostenla medio segundo: la de abajo se resalta con 'Suelta para agrupar'. Suelta y se forma el grupo.", accion: "explicar" },
       { narracion: "Escribe el nombre del grupo y toca 'Guardar'.", accion: "escribir", ancla: "dashboard.grupo_nombre", campo: "nombre_grupo" },
       { narracion: "El grupo queda en el tablero mostrando sus fichas en miniatura. Tócalo para abrirlo: adentro entras a cada ficha o cambias el nombre con el lápiz. Para sacar una ficha, mantenla presionada y arrástrala fuera del grupo; si sacas todas, el grupo desaparece.", accion: "click", ancla: "dashboard.grupo_fichas", opcional: true },
     ],
