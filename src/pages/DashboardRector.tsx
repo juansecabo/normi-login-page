@@ -174,35 +174,35 @@ const DashboardRector = () => {
         <span className="font-semibold text-foreground text-center">Enviar Comunicado</span>
       </button>
     ) },
-    { id: 'comunicados-firma', render: (
+    { id: 'comunicados-firma', badge: pendFirma, render: (
       <button onClick={() => navigate("/comunicados-firma")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-violet-100 transition-all duration-200 hover:shadow-md hover:bg-violet-200">
         <Badge count={pendFirma} />
         <img src={iconEnviarComunicado} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground text-center">Comunicados con firma</span>
       </button>
     ) },
-    { id: 'comunicados-recibidos', render: (
+    { id: 'comunicados-recibidos', badge: badges.comunicados, render: (
       <button onClick={() => navigate("/comunicados-recibidos")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 transition-all duration-200 hover:shadow-md hover:bg-teal-200">
         <Badge count={badges.comunicados} />
         <img src={iconComunicadosRecibidos} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground text-center">Comunicados Recibidos</span>
       </button>
     ) },
-    { id: 'documentos-recibidos', render: (
+    { id: 'documentos-recibidos', badge: badges.documentos, render: (
       <button onClick={() => navigate("/documentos-recibidos")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-amber-100 transition-all duration-200 hover:shadow-md hover:bg-amber-200">
         <Badge count={badges.documentos} />
         <img src={iconDocumentos} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground text-center">Documentos Recibidos</span>
       </button>
     ) },
-    { id: 'permisos-excusas', render: (
+    { id: 'permisos-excusas', badge: badges.retiro + badges.inasistencia + badges.uniforme, render: (
       <button onClick={() => navigate("/permisos-excusas")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-rose-100 transition-all duration-200 hover:shadow-md hover:bg-rose-200">
         <Badge count={badges.retiro + badges.inasistencia + badges.uniforme} />
         <img src={iconPermisos} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground text-center">Permisos y Excusas</span>
       </button>
     ) },
-    { id: 'solicitud-entrevista', render: (
+    { id: 'solicitud-entrevista', badge: badges.entrevista, render: (
       <button onClick={() => navigate("/solicitud-entrevista-staff")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-indigo-100 transition-all duration-200 hover:shadow-md hover:bg-indigo-200">
         <Badge count={badges.entrevista} />
         <img src={iconEntrevista} alt="" className="w-16 h-16 object-contain" />
@@ -259,7 +259,7 @@ const DashboardRector = () => {
         <span className="font-semibold text-foreground text-center">Registros de Comportamiento</span>
       </button>
     ) },
-    { id: 'remitir-orientacion', render: (
+    { id: 'remitir-orientacion', badge: badges.remisiones, render: (
       <button onClick={() => navigate("/orientador/remisiones")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-sky-100 transition-all duration-200 hover:shadow-md hover:bg-sky-200">
         <Badge count={badges.remisiones} />
         <img src={iconOrientacion} alt="" className="w-16 h-16 object-contain" />
