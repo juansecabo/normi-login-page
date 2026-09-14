@@ -334,9 +334,11 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
    *  puntero (p. ej. el grupo recién creado): abría el grupo y cerraba el cuadro del nombre,
    *  dejándolo sin foco y con el nombre "Grupo". Se bloquea ese clic durante 400 ms. */
   const bloquearClickTrasSoltar = () => {
-    const bloquear = (ev: MouseEvent) => { ev.stopPropagation(); ev.preventDefault(); };
+    const bloquear = (ev: Event) => { ev.stopPropagation(); ev.preventDefault(); };
+    // También el mousedown sintético que algunos dispositivos (pantalla táctil) emiten tras soltar: ese sí mueve el foco.
     window.addEventListener("click", bloquear, true);
-    window.setTimeout(() => window.removeEventListener("click", bloquear, true), 400);
+    window.addEventListener("mousedown", bloquear, true);
+    window.setTimeout(() => { window.removeEventListener("click", bloquear, true); window.removeEventListener("mousedown", bloquear, true); }, 400);
   };
 
   const handleDragEnd = (e: DragEndEvent) => {
@@ -461,6 +463,11 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
             <DialogTitle>Nombre del grupo</DialogTitle>
           </DialogHeader>
           <Input ref={inputNombreRef} data-guia="dashboard.grupo_nombre" autoFocus value={nombreTemp} onChange={(e) => setNombreTemp(e.target.value)} placeholder="Ej.: Académico, Comunicación, Mis herramientas" maxLength={30}
+            onBlur={(e) => {
+              // Si algo le quita el foco al cuadro en los primeros 2 s (sin que sea un botón del propio cuadro), se recupera.
+              const dentro = e.relatedTarget instanceof Element && e.currentTarget.closest("[role=dialog]")?.contains(e.relatedTarget);
+              if (!dentro && Date.now() - abiertoNombreEn.current < 2000) requestAnimationFrame(() => inputNombreRef.current?.focus());
+            }}
             onKeyDown={(e) => { if (e.key === "Enter" && nombrando) { renombrar(nombrando, nombreTemp); setNombrando(null); } }} />
           <div className="flex justify-end">
             <Button data-guia="dashboard.grupo_nombre_guardar" onClick={() => { if (nombrando) renombrar(nombrando, nombreTemp); setNombrando(null); }}>Guardar</Button>
