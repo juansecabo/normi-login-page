@@ -42,7 +42,7 @@ const esGrupo = (e: OrdenEntry): e is GrupoFichas => typeof e === "object" && e 
 // colegios todo sigue exactamente igual (reordenar sin agrupar).
 const COLEGIOS_CON_GRUPOS = new Set(["2f96f076-83df-4b84-8bbc-9c1df79a372b"]);
 /** Tiempo que hay que sostener una ficha encima de otra (o de un grupo) para agrupar (ms). */
-const HOLD_AGRUPAR_MS = 500;
+const HOLD_AGRUPAR_MS = 150;
 
 type Entrada =
   | { tipo: "ficha"; item: ReordItem }
@@ -136,9 +136,10 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
   const colegioConGrupos = COLEGIOS_CON_GRUPOS.has(String(getSession().colegio_id || ""));
   // Interruptor por usuario (apagado por defecto): con él apagado el arrastre es EXACTAMENTE el
   // de siempre; los grupos que ya existan se siguen mostrando y usando.
-  const claveModo = `dash_grupos:${getSession().id ?? ''}:${getSession().colegio_id ?? ''}`;
-  const [modoGrupos, setModoGrupos] = useState<boolean>(() => { try { return localStorage.getItem(claveModo) === "1"; } catch { return false; } });
-  const cambiarModo = (v: boolean) => { setModoGrupos(v); try { localStorage.setItem(claveModo, v ? "1" : "0"); } catch { /* ignore */ } };
+  // Juan 2026-09-14: el interruptor NO se guarda; por defecto se reordena y, al recargar o
+  // navegar, vuelve a apagado. Encendido = SOLO agrupar (nada se reordena) para no confundir.
+  const [modoGrupos, setModoGrupos] = useState<boolean>(false);
+  const cambiarModo = (v: boolean) => setModoGrupos(v);
   const gruposHabilitados = colegioConGrupos; // mostrar/abrir grupos existentes
   const agruparActivo = colegioConGrupos && modoGrupos; // gesto de agrupar
   /** Lado por el que el centro de la ficha arrastrada ENTRÓ en cada ficha (modelo Atlassian). */
@@ -293,31 +294,19 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
       return closestCenter({ ...args, droppableContainers: droppableContainers.filter((c) => abierto.grupo.items.includes(c.id as string)) });
     }
     if (!agruparActivo || !collisionRect) return closestCenter(args);
-    if (entradas.find((en) => idDe(en) === activeId)?.tipo !== "ficha") return closestCenter(args);
-    const cx = collisionRect.left + collisionRect.width / 2;
-    const cy = collisionRect.top + collisionRect.height / 2;
-    for (const c of droppableContainers) {
-      const id = c.id as string;
-      if (id === activeId || !idsTop.includes(id)) continue;
-      const r = c.rect.current;
-      if (!r) continue;
-      const dentro = cx >= r.left && cx <= r.left + r.width && cy >= r.top && cy <= r.top + r.height;
-      if (!dentro) { entradaPor.current.delete(id); continue; }
-      let lado = entradaPor.current.get(id);
-      if (!lado) { lado = cx < r.left + r.width / 2 ? "inicio" : "fin"; entradaPor.current.set(id, lado); }
-      const fx = (cx - r.left) / r.width;
-      const enZonaCombinar = lado === "inicio" ? fx < 2 / 3 : fx > 1 / 3;
-      if (enZonaCombinar) {
-        // Zona de combinar: el acomodo que ya había se queda como está (no se deshace ni se
-        // rehace), así el tablero no da tumbos al recorrer una fila.
-        centroSobre.current = id;
-        return ultimoReordenar.current ?? [{ id: active.id }];
+    // Modo agrupar: nada se reordena. El destino es la ficha (o grupo) bajo el CENTRO de la
+    // ficha arrastrada; el "over" se reporta como la propia ficha para que nada se corra.
+    if (entradas.find((en) => idDe(en) === activeId)?.tipo === "ficha") {
+      const cx = collisionRect.left + collisionRect.width / 2;
+      const cy = collisionRect.top + collisionRect.height / 2;
+      for (const c of droppableContainers) {
+        const id = c.id as string;
+        if (id === activeId || !idsTop.includes(id)) continue;
+        const r = c.rect.current;
+        if (r && cx >= r.left && cx <= r.left + r.width && cy >= r.top && cy <= r.top + r.height) { centroSobre.current = id; break; }
       }
-      break; // tercio lejano: reordenar normal
     }
-    const r = closestCenter(args);
-    ultimoReordenar.current = r;
-    return r;
+    return [{ id: active.id }];
   };
 
   // Cada movimiento: si el centro está sobre el tercio central de otra ficha, arranca (o
@@ -390,7 +379,9 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
       return;
     }
 
-    // ── Reordenar (como siempre). Si soltó en la zona de combinar sin sostener, va al lugar de esa ficha. ──
+    // ── Modo agrupar sin destino: no se reordena nada ──
+    if (agruparActivo) return;
+    // ── Reordenar (como siempre) ──
     const overId = sobreSinSostener ?? (over && over.id !== activeId ? (over.id as string) : "");
     if (!overId || activeId === overId) return;
     const desde = idsTop.indexOf(activeId), hasta = idsTop.indexOf(overId);
@@ -422,11 +413,11 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
   return (
     <>
       <p className="text-xs text-muted-foreground mb-6 text-center">
-        Mantén presionada una tarjeta para cambiar su posición.{agruparActivo ? " Sostenla medio segundo encima de otra para agruparlas." : ""}
+        {agruparActivo ? "Arrastra una ficha encima de otra para agruparlas. Con el interruptor encendido no se reordena; apágalo para mover fichas." : "Mantén presionada una tarjeta para cambiar su posición."}
         {colegioConGrupos && (
           <button type="button" data-guia="dashboard.grupos_interruptor" onClick={() => cambiarModo(!modoGrupos)}
             className={`ml-2 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${modoGrupos ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
-            title="Permitir formar grupos de fichas al arrastrar">
+            title="Encendido: arrastrar agrupa (no reordena). Se apaga solo al salir o recargar.">
             <span className={`inline-block w-2 h-2 rounded-full ${modoGrupos ? "bg-primary" : "bg-muted-foreground/40"}`} /> Agrupar fichas: {modoGrupos ? "activado" : "desactivado"}
           </button>
         )}
