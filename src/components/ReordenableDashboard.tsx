@@ -104,8 +104,8 @@ function GrupoCard({ grupo, items, onAbrir }: { grupo: GrupoFichas; items: Reord
       <div className="grid grid-cols-2 gap-1.5 w-full flex-1 min-h-[96px] rounded-xl bg-muted/70 p-2 overflow-hidden">
         {minis.map((it, i) => (
           <div key={it.id} className="relative overflow-hidden rounded-md bg-background/80 pointer-events-none aspect-square">
-            {/* Miniatura: la ficha real escalada; no recibe clics. */}
-            <div className="absolute inset-0 origin-top-left" style={{ transform: "scale(0.36)", width: "278%", height: "278%" }}>
+            {/* Miniatura: la ficha real escalada; no recibe clics. Su burbuja se oculta (la muestra el grupo, sumada). */}
+            <div className="absolute inset-0 origin-top-left [&_.animate-badge-pop]:hidden" style={{ transform: "scale(0.36)", width: "278%", height: "278%" }}>
               {it.render}
             </div>
             {extra > 0 && i === minis.length - 1 && (
