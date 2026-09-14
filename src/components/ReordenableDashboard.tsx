@@ -25,8 +25,6 @@ export interface ReordItem {
   id: string;
   /** Contenido de la tarjeta (su <button> tal cual, con su estilo propio). */
   render: ReactNode;
-  /** Notificaciones pendientes de la ficha (la burbuja roja). El grupo muestra la suma de las suyas. */
-  badge?: number;
 }
 
 /**
@@ -89,18 +87,14 @@ function SortableCard({ id, jiggling, index, destinoAgrupar, children }: { id: s
 function GrupoCard({ grupo, items, onAbrir }: { grupo: GrupoFichas; items: ReordItem[]; onAbrir: () => void }) {
   const minis = items.slice(0, 4);
   const extra = items.length - minis.length;
-  const notificaciones = items.reduce((s, it) => s + (it.badge || 0), 0);
   return (
     <button
       type="button"
       onClick={onAbrir}
       data-guia="dashboard.grupo_fichas"
-      className="relative w-full h-full flex flex-col items-center justify-center gap-2 p-3 rounded-lg bg-card border-2 border-border shadow-soft transition-all duration-200 hover:shadow-md hover:border-primary cursor-pointer"
+      className="w-full h-full flex flex-col items-center justify-center gap-2 p-3 rounded-lg bg-card border-2 border-border shadow-soft transition-all duration-200 hover:shadow-md hover:border-primary cursor-pointer"
       title={grupo.nombre || "Grupo"}
     >
-      {notificaciones > 0 && (
-        <span data-guia="dashboard.grupo_notificaciones" className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 shadow-sm z-10 animate-badge-pop">{notificaciones}</span>
-      )}
       <div className="grid grid-cols-2 gap-1.5 w-full flex-1 min-h-[96px] rounded-xl bg-muted/70 p-2 overflow-hidden">
         {minis.map((it, i) => (
           <div key={it.id} className="relative overflow-hidden rounded-md bg-background/80 pointer-events-none aspect-square">

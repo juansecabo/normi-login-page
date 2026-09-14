@@ -226,21 +226,21 @@ const DashboardAcudiente = () => {
   }, [navigate]);
 
   const items: ReordItem[] = [
-    { id: 'notas', badge: badges.notas, render: (
+    { id: 'notas', render: (
       <button onClick={() => navigate("/acudiente/notas")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-emerald-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-emerald-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-emerald-200">
         <Badge count={badges.notas} />
         <img src={iconNotas} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground">Notas</span>
       </button>
     ) },
-    { id: 'observador', badge: badges.observador, render: (
+    { id: 'observador', render: (
       <button onClick={() => navigate("/observador-estudiantil")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-sky-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-sky-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-sky-200">
         <Badge count={badges.observador} />
         <img src={iconObservador} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground text-center">Observador Estudiantil</span>
       </button>
     ) },
-    { id: 'actividades', badge: badges.actividades, render: (
+    { id: 'actividades', render: (
       <button onClick={() => navigate("/acudiente/actividades")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-green-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-green-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-green-200">
         <Badge count={badges.actividades} />
         <img src={iconActividades} alt="" className="w-16 h-16 object-contain" />
@@ -253,14 +253,14 @@ const DashboardAcudiente = () => {
         <span className="font-semibold text-foreground text-center">Calendario</span>
       </button>
     ) },
-    { id: 'comunicados', badge: badges.comunicados, render: (
+    { id: 'comunicados', render: (
       <button onClick={() => navigate("/acudiente/comunicados")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-lime-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-lime-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-lime-200">
         <Badge count={badges.comunicados} />
         <img src={iconComunicados} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground text-center">Comunicados</span>
       </button>
     ) },
-    { id: 'documentos', badge: badges.documentos, render: (
+    { id: 'documentos', render: (
       <button onClick={() => navigate("/acudiente/documentos")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-cyan-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-cyan-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-cyan-200">
         <Badge count={badges.documentos} />
         <img src={iconDocumentos} alt="" className="w-16 h-16 object-contain" />
@@ -273,7 +273,7 @@ const DashboardAcudiente = () => {
         <span className="font-semibold text-foreground text-center">Permisos y Excusas</span>
       </button>
     ) },
-    { id: 'solicitud-entrevista', badge: badges.entrevistas, render: (
+    { id: 'solicitud-entrevista', render: (
       <button onClick={() => navigate("/solicitud-entrevista")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-indigo-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-indigo-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-indigo-200">
         <Badge count={badges.entrevistas} />
         <img src={iconEntrevista} alt="" className="w-16 h-16 object-contain" />
@@ -292,7 +292,7 @@ const DashboardAcudiente = () => {
         <span className="font-semibold text-foreground text-center">Consultas</span>
       </button>
     ) },
-    { id: 'comunicados-firma', badge: pendFirma, render: (
+    { id: 'comunicados-firma', render: (
       <button onClick={() => navigate("/comunicados-firma")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-violet-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-violet-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-violet-200">
         <Badge count={pendFirma} />
         <img src={iconComunicados} alt="" className="w-16 h-16 object-contain" />
