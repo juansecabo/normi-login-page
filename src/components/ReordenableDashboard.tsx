@@ -146,6 +146,8 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
   const agruparActivo = colegioConGrupos && modoGrupos; // gesto de agrupar
   /** Lado por el que el centro de la ficha arrastrada ENTRÓ en cada ficha (modelo Atlassian). */
   const entradaPor = useRef<Map<string, "inicio" | "fin">>(new Map());
+  /** Último resultado de reordenar: en zona de combinar se CONGELA el acomodo (no se deshace), como react-beautiful-dnd. */
+  const ultimoReordenar = useRef<ReturnType<CollisionDetection> | null>(null);
 
   // Clave de caché local por usuario + colegio + dashboard (no se mezcla entre
   // perfiles ni colegios de la misma persona).
@@ -260,6 +262,7 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
     holdCandidato.current = null;
     centroSobre.current = null;
     entradaPor.current.clear();
+    ultimoReordenar.current = null;
     // Vibración (haptic) al entrar al modo edición — Android (iOS ya vibra solo).
     try { navigator.vibrate?.(15); } catch { /* ignore */ }
   };
@@ -290,10 +293,17 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
       if (!lado) { lado = cx < r.left + r.width / 2 ? "inicio" : "fin"; entradaPor.current.set(id, lado); }
       const fx = (cx - r.left) / r.width;
       const enZonaCombinar = lado === "inicio" ? fx < 2 / 3 : fx > 1 / 3;
-      if (enZonaCombinar) { centroSobre.current = id; return [{ id: active.id }]; }
+      if (enZonaCombinar) {
+        // Zona de combinar: el acomodo que ya había se queda como está (no se deshace ni se
+        // rehace), así el tablero no da tumbos al recorrer una fila.
+        centroSobre.current = id;
+        return ultimoReordenar.current ?? [{ id: active.id }];
+      }
       break; // tercio lejano: reordenar normal
     }
-    return closestCenter(args);
+    const r = closestCenter(args);
+    ultimoReordenar.current = r;
+    return r;
   };
 
   // Cada movimiento: si el centro está sobre el tercio central de otra ficha, arranca (o
@@ -319,6 +329,7 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
     const sobreSinSostener = !destino ? centroSobre.current : null;
     centroSobre.current = null;
     entradaPor.current.clear();
+    ultimoReordenar.current = null;
     setDestinoAgrupar(null);
     const { active, over } = e;
     const activeId = active.id as string;
@@ -366,7 +377,7 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
     }
 
     // ── Reordenar (como siempre). Si soltó en la zona de combinar sin sostener, va al lugar de esa ficha. ──
-    const overId = (over && over.id !== activeId ? (over.id as string) : sobreSinSostener) ?? "";
+    const overId = sobreSinSostener ?? (over && over.id !== activeId ? (over.id as string) : "");
     if (!overId || activeId === overId) return;
     const desde = idsTop.indexOf(activeId), hasta = idsTop.indexOf(overId);
     if (desde === -1 || hasta === -1) return;
