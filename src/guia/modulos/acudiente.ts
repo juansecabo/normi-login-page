@@ -748,7 +748,7 @@ export const ACUDIENTE: Capacidad[] = [
       },
       { narracion: "Escribe el nombre del grupo y toca 'Guardar'.", accion: "escribir", ancla: "dashboard.grupo_nombre", campo: "nombre_grupo" },
       { narracion: "El grupo queda en el tablero mostrando en miniatura sus fichas. Tócalo para abrirlo.", accion: "click", ancla: "dashboard.grupo_fichas", opcional: true },
-      { narracion: "Adentro puedes entrar a cada ficha, cambiar el nombre con el lápiz o sacar una ficha con la equis. Para meter otra ficha, arrástrala desde el tablero y sostenla encima del grupo.", accion: "explicar" },
+      { narracion: "Adentro puedes entrar a cada ficha o cambiar el nombre con el lápiz. Para sacar una ficha, mantenla presionada y arrástrala fuera del grupo. Para meter otra, arrástrala desde el tablero y sostenla encima del grupo.", accion: "explicar" },
     ],
   },
 ];

@@ -18,7 +18,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Pencil, X } from "lucide-react";
+import { Pencil } from "lucide-react";
 
 export interface ReordItem {
   /** Identificador estable de la tarjeta (se guarda en el orden). */
@@ -261,6 +261,7 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
     setDestinoAgrupar(null);
     const overId = e.over?.id as string | undefined;
     const activeId = e.active.id as string;
+    if (abierto && abierto.grupo.items.includes(activeId)) return; // dentro del grupo abierto no se agrupa
     if (!overId || overId === activeId) return;
     const activa = entradas.find((en) => idDe(en) === activeId);
     if (!activa || activa.tipo !== "ficha") return; // los grupos no se meten dentro de otros
@@ -276,8 +277,24 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
     const destino = destinoAgrupar;
     setDestinoAgrupar(null);
     const { active, over } = e;
-    if (!over) return;
     const activeId = active.id as string;
+
+    // ── Dentro del grupo abierto: soltar sobre otra ficha del grupo la reordena; soltar en
+    //    cualquier otro lado (fuera del grupo) la SACA al tablero. ──
+    if (abierto && abierto.grupo.items.includes(activeId)) {
+      const overId = over?.id as string | undefined;
+      if (overId && overId !== activeId && abierto.grupo.items.includes(overId)) {
+        const ids = arrayMove(abierto.grupo.items, abierto.grupo.items.indexOf(activeId), abierto.grupo.items.indexOf(overId));
+        guardar(serializar(entradas.map((en) => (en.tipo === "grupo" && en.grupo.id === abierto.grupo.id
+          ? { ...en, grupo: { ...en.grupo, items: ids }, items: ids.map((id) => byId.get(id)!).filter(Boolean) }
+          : en))));
+      } else if (!overId || !abierto.grupo.items.includes(overId)) {
+        sacarDelGrupo(abierto.grupo.id, activeId);
+      }
+      return;
+    }
+
+    if (!over) return;
     const overId = over.id as string;
     if (activeId === overId) return;
 
@@ -313,6 +330,7 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
 
   // ── Acciones sobre grupos ──
   const grupoDe = (id: string | null) => (id ? (entradas.find((en) => en.tipo === "grupo" && en.grupo.id === id) as Extract<Entrada, { tipo: "grupo" }> | undefined) : undefined);
+  const abierto = grupoDe(grupoAbierto);
   const renombrar = (grupoId: string, nombre: string) => {
     guardar(serializar(entradas.map((en) => (en.tipo === "grupo" && en.grupo.id === grupoId ? { ...en, grupo: { ...en.grupo, nombre: nombre.trim() || "Grupo" } } : en))));
   };
@@ -330,8 +348,6 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
     }
     guardar(serializar(lista));
   };
-
-  const abierto = grupoDe(grupoAbierto);
 
   return (
     <>
@@ -353,7 +369,6 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
             ))}
           </div>
         </SortableContext>
-      </DndContext>
 
       {/* Nombre del grupo recién formado */}
       <Dialog open={!!nombrando} onOpenChange={(o) => { if (!o) { if (nombrando) renombrar(nombrando, nombreTemp); setNombrando(null); } }}>
@@ -389,20 +404,20 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
                 )}
               </DialogTitle>
             </DialogHeader>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5 pt-2 px-2">
-              {abierto.items.map((it) => (
-                <div key={it.id} className="relative normi-card">
-                  {it.render}
-                  <button type="button" data-guia="dashboard.grupo_sacar" title="Sacar del grupo" onClick={(e) => { e.stopPropagation(); sacarDelGrupo(abierto.grupo.id, it.id); }}
-                    className="absolute -top-2 -left-2 z-20 w-7 h-7 rounded-full bg-background border-2 border-border shadow flex items-center justify-center text-muted-foreground hover:text-destructive hover:border-destructive">
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
+            {/* Sostener una ficha y arrastrarla fuera del recuadro la saca del grupo; entre fichas, las reordena. */}
+            <SortableContext items={abierto.grupo.items} strategy={sinDesplazamiento}>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5 pt-2 px-2" data-guia="dashboard.grupo_sacar">
+                {abierto.items.map((it, j) => (
+                  <SortableCard key={it.id} id={it.id} jiggling={jiggling} index={j} destinoAgrupar={false}>
+                    {it.render}
+                  </SortableCard>
+                ))}
+              </div>
+            </SortableContext>
           </>)}
         </DialogContent>
       </Dialog>
+      </DndContext>
     </>
   );
 }
