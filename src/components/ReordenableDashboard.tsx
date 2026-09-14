@@ -44,9 +44,6 @@ const COLEGIOS_CON_GRUPOS = new Set(["2f96f076-83df-4b84-8bbc-9c1df79a372b"]);
 /** Tiempo que hay que sostener una ficha encima de otra (o de un grupo) para agrupar (ms). */
 const HOLD_AGRUPAR_MS = 500;
 
-/** Sin desplazamiento en vivo dentro del grupo abierto (ahí solo se reordena o se saca al soltar). */
-const sinDesplazamiento = () => null;
-
 type Entrada =
   | { tipo: "ficha"; item: ReordItem }
   | { tipo: "grupo"; grupo: GrupoFichas; items: ReordItem[] };
@@ -177,10 +174,18 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
   const holdCandidato = useRef<string | null>(null);
   const holdTimer = useRef<number | null>(null);
   const inputNombreRef = useRef<HTMLInputElement>(null);
+  /** Grilla del grupo abierto y si el centro de la ficha arrastrada quedó FUERA de ella (= sacarla). */
+  const gridGrupoRef = useRef<HTMLDivElement>(null);
+  const fueraDelGrupo = useRef(false);
   const [grupoAbierto, setGrupoAbierto] = useState<string | null>(null);
   const [nombrando, setNombrando] = useState<string | null>(null); // id del grupo recién creado
   const [nombreTemp, setNombreTemp] = useState("");
   const [editandoNombre, setEditandoNombre] = useState(false);
+  useEffect(() => {
+    if (!nombrando) return;
+    const t = window.setTimeout(() => inputNombreRef.current?.focus(), 120);
+    return () => window.clearTimeout(t);
+  }, [nombrando]);
 
   useEffect(() => {
     const session = getSession();
@@ -276,9 +281,18 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
   const colisionTercios: CollisionDetection = (args) => {
     const { active, collisionRect, droppableContainers } = args;
     centroSobre.current = null;
-    if (!agruparActivo || !collisionRect) return closestCenter(args);
     const activeId = active.id as string;
-    if (abierto?.grupo.items.includes(activeId)) return closestCenter(args);
+    if (abierto?.grupo.items.includes(activeId)) {
+      // Dentro del grupo abierto: solo sus fichas son destino (así la arrastrada sí sigue al
+      // puntero) y se anota si el centro salió de la grilla del grupo (= sacarla al soltar).
+      const g = gridGrupoRef.current?.getBoundingClientRect();
+      if (collisionRect && g) {
+        const cx = collisionRect.left + collisionRect.width / 2, cy = collisionRect.top + collisionRect.height / 2;
+        fueraDelGrupo.current = cx < g.left || cx > g.right || cy < g.top || cy > g.bottom;
+      }
+      return closestCenter({ ...args, droppableContainers: droppableContainers.filter((c) => abierto.grupo.items.includes(c.id as string)) });
+    }
+    if (!agruparActivo || !collisionRect) return closestCenter(args);
     if (entradas.find((en) => idDe(en) === activeId)?.tipo !== "ficha") return closestCenter(args);
     const cx = collisionRect.left + collisionRect.width / 2;
     const cy = collisionRect.top + collisionRect.height / 2;
@@ -338,13 +352,13 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
     //    cualquier otro lado (fuera del grupo) la SACA al tablero. ──
     if (abierto && abierto.grupo.items.includes(activeId)) {
       const overId = over?.id as string | undefined;
+      const fuera = fueraDelGrupo.current; fueraDelGrupo.current = false;
+      if (fuera) { sacarDelGrupo(abierto.grupo.id, activeId); return; }
       if (overId && overId !== activeId && abierto.grupo.items.includes(overId)) {
         const ids = arrayMove(abierto.grupo.items, abierto.grupo.items.indexOf(activeId), abierto.grupo.items.indexOf(overId));
         guardar(serializar(entradas.map((en) => (en.tipo === "grupo" && en.grupo.id === abierto.grupo.id
           ? { ...en, grupo: { ...en.grupo, items: ids }, items: ids.map((id) => byId.get(id)!).filter(Boolean) }
           : en))));
-      } else if (!overId || !abierto.grupo.items.includes(overId)) {
-        sacarDelGrupo(abierto.grupo.id, activeId);
       }
       return;
     }
@@ -468,8 +482,8 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
               </DialogTitle>
             </DialogHeader>
             {/* Sostener una ficha y arrastrarla fuera del recuadro la saca del grupo; entre fichas, las reordena. */}
-            <SortableContext items={abierto.grupo.items} strategy={sinDesplazamiento}>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5 pt-2 px-2" data-guia="dashboard.grupo_sacar">
+            <SortableContext items={abierto.grupo.items} strategy={rectSortingStrategy}>
+              <div ref={gridGrupoRef} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5 pt-2 px-2" data-guia="dashboard.grupo_sacar">
                 {abierto.items.map((it, j) => (
                   <SortableCard key={it.id} id={it.id} jiggling={jiggling} index={j} destinoAgrupar={false}>
                     {it.render}
