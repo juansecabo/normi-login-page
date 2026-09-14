@@ -434,7 +434,7 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
 
       <style>{`@keyframes normiJiggle{0%{transform:rotate(-1.4deg)}50%{transform:rotate(1.4deg)}100%{transform:rotate(-1.4deg)}}.normi-jiggle{animation:normiJiggle .22s ease-in-out infinite;transform-origin:center}`}</style>
 
-      <DndContext sensors={sensors} collisionDetection={colisionTercios} onDragStart={handleDragStart} onDragMove={handleDragMove} onDragEnd={handleDragEnd} onDragCancel={() => { setJiggling(false); limpiarHold(); holdCandidato.current = null; centroSobre.current = null; setDestinoAgrupar(null); }}>
+      <DndContext sensors={sensors} autoScroll={!abierto} collisionDetection={colisionTercios} onDragStart={handleDragStart} onDragMove={handleDragMove} onDragEnd={handleDragEnd} onDragCancel={() => { setJiggling(false); limpiarHold(); holdCandidato.current = null; centroSobre.current = null; setDestinoAgrupar(null); }}>
         <SortableContext items={idsTop} strategy={rectSortingStrategy}>
           <div className={gridClassName}>
             {entradas.map((en, idx) => (
@@ -463,7 +463,7 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
 
       {/* Grupo abierto: sus fichas grandes, nombre editable y sacar */}
       <Dialog open={!!abierto} onOpenChange={(o) => { if (!o) { setGrupoAbierto(null); setEditandoNombre(false); } }}>
-        <DialogContent className="max-w-3xl" data-guia="dashboard.grupo_abierto">
+        <DialogContent className="max-w-3xl overflow-visible" data-guia="dashboard.grupo_abierto">
           {abierto && (<>
             <DialogHeader>
               <DialogTitle className="flex items-center justify-center gap-2 text-2xl">
