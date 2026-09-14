@@ -11,7 +11,7 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
-  type DragOverEvent,
+  type DragMoveEvent,
 } from "@dnd-kit/core";
 import { SortableContext, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -43,13 +43,22 @@ const esGrupo = (e: OrdenEntry): e is GrupoFichas => typeof e === "object" && e 
 // colegios todo sigue exactamente igual (reordenar sin agrupar).
 const COLEGIOS_CON_GRUPOS = new Set(["2f96f076-83df-4b84-8bbc-9c1df79a372b"]);
 /** Tiempo que hay que sostener una ficha encima de otra (o de un grupo) para agrupar (ms). */
-const HOLD_AGRUPAR_MS = 600;
+const HOLD_AGRUPAR_MS = 700;
 
-/** Destino = la ficha que está bajo el puntero (si no hay, la más cercana). */
+/** Destino = la ficha que está bajo el puntero (si no hay, la más cercana), nunca la que se arrastra. */
 const colisionBajoPuntero: CollisionDetection = (args) => {
-  const bajo = pointerWithin(args);
-  return bajo.length > 0 ? bajo : closestCenter(args);
+  const otros = { ...args, droppableContainers: args.droppableContainers.filter((c) => c.id !== args.active.id) };
+  const bajo = pointerWithin(otros);
+  return bajo.length > 0 ? bajo : closestCenter(otros);
 };
+/** Zona de la ficha destino bajo el puntero: el CENTRO agrupa (sosteniendo), los bordes mueven. */
+type Zona = "centro" | "antes" | "despues";
+function zonaDe(rect: { left: number; top: number; width: number; height: number }, x: number, y: number): Zona {
+  const fx = (x - rect.left) / rect.width;
+  const fy = (y - rect.top) / rect.height;
+  if (fx > 0.28 && fx < 0.72 && fy > 0.22 && fy < 0.78) return "centro";
+  return fx < 0.5 ? "antes" : "despues";
+}
 /** Sin desplazamiento en vivo: las fichas no se corren mientras arrastras; se acomodan al soltar. */
 const sinDesplazamiento = () => null;
 
@@ -60,7 +69,7 @@ type Entrada =
 /** Una tarjeta arrastrable. El arrastre se activa con long-press (~0.5s); mientras
  *  `jiggling` está activo TODAS vibran menos la que se arrastra. La vibración va en
  *  un div interno para NO chocar con el transform de dnd-kit (que acomoda/mueve). */
-function SortableCard({ id, jiggling, index, destinoAgrupar, children }: { id: string; jiggling: boolean; index: number; destinoAgrupar: boolean; children: ReactNode }) {
+function SortableCard({ id, jiggling, index, destinoAgrupar, insertar, children }: { id: string; jiggling: boolean; index: number; destinoAgrupar: boolean; insertar?: "antes" | "despues" | null; children: ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const vibra = jiggling && !isDragging;
   return (
@@ -82,6 +91,9 @@ function SortableCard({ id, jiggling, index, destinoAgrupar, children }: { id: s
       >
         {children}
       </div>
+      {insertar && (
+        <div className={`pointer-events-none absolute top-1 bottom-1 w-1.5 rounded-full bg-primary z-10 ${insertar === "antes" ? "-left-3" : "-right-3"}`} />
+      )}
       {destinoAgrupar && (
         <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center z-10">
           <span className="rounded-full bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 shadow">Suelta para agrupar</span>
@@ -167,7 +179,10 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
   });
   const [jiggling, setJiggling] = useState(false);
   const [destinoAgrupar, setDestinoAgrupar] = useState<string | null>(null);
+  const [insertar, setInsertar] = useState<{ id: string; lado: "antes" | "despues" } | null>(null);
+  const holdCandidato = useRef<string | null>(null);
   const holdTimer = useRef<number | null>(null);
+  const inputNombreRef = useRef<HTMLInputElement>(null);
   const [grupoAbierto, setGrupoAbierto] = useState<string | null>(null);
   const [nombrando, setNombrando] = useState<string | null>(null); // id del grupo recién creado
   const [nombreTemp, setNombreTemp] = useState("");
@@ -250,32 +265,50 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
   const handleDragStart = () => {
     setJiggling(true);
     setDestinoAgrupar(null);
+    setInsertar(null);
+    holdCandidato.current = null;
     // Vibración (haptic) al entrar al modo edición — Android (iOS ya vibra solo).
     try { navigator.vibrate?.(15); } catch { /* ignore */ }
   };
 
-  // Sostener una FICHA encima de otra ficha o de un grupo → candidato a agrupar.
-  const handleDragOver = (e: DragOverEvent) => {
-    if (!gruposHabilitados) return;
-    limpiarHold();
-    setDestinoAgrupar(null);
+  // Cada movimiento: según la zona de la ficha destino bajo el puntero, o se prepara la
+  // inserción (bordes: barra "antes"/"después") o, sosteniendo en el CENTRO, se agrupa.
+  const handleDragMove = (e: DragMoveEvent) => {
     const overId = e.over?.id as string | undefined;
     const activeId = e.active.id as string;
-    if (abierto && abierto.grupo.items.includes(activeId)) return; // dentro del grupo abierto no se agrupa
-    if (!overId || overId === activeId) return;
+    if (abierto && abierto.grupo.items.includes(activeId)) return; // dentro del grupo abierto: solo reordenar/sacar
+    if (!overId || overId === activeId || !e.over?.rect) { limpiarHold(); holdCandidato.current = null; setDestinoAgrupar(null); setInsertar(null); return; }
+    const act = e.activatorEvent as PointerEvent | MouseEvent | TouchEvent;
+    const base = "clientX" in act ? { x: act.clientX, y: act.clientY } : "touches" in act && act.touches[0] ? { x: act.touches[0].clientX, y: act.touches[0].clientY } : null;
+    if (!base) return;
+    const x = base.x + e.delta.x, y = base.y + e.delta.y;
+    const zona = zonaDe(e.over.rect, x, y);
     const activa = entradas.find((en) => idDe(en) === activeId);
-    if (!activa || activa.tipo !== "ficha") return; // los grupos no se meten dentro de otros
-    holdTimer.current = window.setTimeout(() => {
-      setDestinoAgrupar(overId);
-      try { navigator.vibrate?.(10); } catch { /* ignore */ }
-    }, HOLD_AGRUPAR_MS);
+    const puedeAgrupar = gruposHabilitados && activa?.tipo === "ficha";
+    if (zona === "centro" && puedeAgrupar) {
+      setInsertar(null);
+      if (holdCandidato.current !== overId) {
+        limpiarHold();
+        holdCandidato.current = overId;
+        holdTimer.current = window.setTimeout(() => {
+          setDestinoAgrupar(overId);
+          try { navigator.vibrate?.(10); } catch { /* ignore */ }
+        }, HOLD_AGRUPAR_MS);
+      }
+    } else {
+      limpiarHold(); holdCandidato.current = null; setDestinoAgrupar(null);
+      const lado: "antes" | "despues" = zona === "centro" ? "despues" : zona;
+      setInsertar((prev) => (prev && prev.id === overId && prev.lado === lado ? prev : { id: overId, lado }));
+    }
   };
 
   const handleDragEnd = (e: DragEndEvent) => {
     setJiggling(false); // soltar SIEMPRE apaga la vibración (aunque no se mueva)
-    limpiarHold();
+    limpiarHold(); holdCandidato.current = null;
     const destino = destinoAgrupar;
+    const ins = insertar;
     setDestinoAgrupar(null);
+    setInsertar(null);
     const { active, over } = e;
     const activeId = active.id as string;
 
@@ -324,8 +357,15 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
       return;
     }
 
-    // ── Reordenar ──
-    guardar(serializar(arrayMove(entradas, idsTop.indexOf(activeId), idsTop.indexOf(overId))));
+    // ── Reordenar: la activa se inserta antes o después de la destino según el borde donde se soltó ──
+    const desde = idsTop.indexOf(activeId);
+    const lista = entradas.filter((en) => idDe(en) !== activeId);
+    let hasta = lista.findIndex((en) => idDe(en) === overId);
+    if (hasta === -1 || desde === -1) return;
+    const lado = ins?.id === overId ? ins.lado : (desde < idsTop.indexOf(overId) ? "despues" : "antes");
+    if (lado === "despues") hasta += 1;
+    lista.splice(hasta, 0, entradas[desde]);
+    guardar(serializar(lista));
   };
 
   // ── Acciones sobre grupos ──
@@ -357,11 +397,11 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
 
       <style>{`@keyframes normiJiggle{0%{transform:rotate(-1.4deg)}50%{transform:rotate(1.4deg)}100%{transform:rotate(-1.4deg)}}.normi-jiggle{animation:normiJiggle .22s ease-in-out infinite;transform-origin:center}`}</style>
 
-      <DndContext sensors={sensors} collisionDetection={colisionBajoPuntero} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} onDragCancel={() => { setJiggling(false); limpiarHold(); setDestinoAgrupar(null); }}>
+      <DndContext sensors={sensors} collisionDetection={colisionBajoPuntero} onDragStart={handleDragStart} onDragMove={handleDragMove} onDragEnd={handleDragEnd} onDragCancel={() => { setJiggling(false); limpiarHold(); holdCandidato.current = null; setDestinoAgrupar(null); setInsertar(null); }}>
         <SortableContext items={idsTop} strategy={sinDesplazamiento}>
           <div className={gridClassName}>
             {entradas.map((en, idx) => (
-              <SortableCard key={idDe(en)} id={idDe(en)} jiggling={jiggling} index={idx} destinoAgrupar={destinoAgrupar === idDe(en)}>
+              <SortableCard key={idDe(en)} id={idDe(en)} jiggling={jiggling} index={idx} destinoAgrupar={destinoAgrupar === idDe(en)} insertar={insertar?.id === idDe(en) ? insertar.lado : null}>
                 {en.tipo === "ficha"
                   ? en.item.render
                   : <GrupoCard grupo={en.grupo} items={en.items} onAbrir={() => { if (!jiggling) setGrupoAbierto(en.grupo.id); }} />}
@@ -372,11 +412,11 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
 
       {/* Nombre del grupo recién formado */}
       <Dialog open={!!nombrando} onOpenChange={(o) => { if (!o) { if (nombrando) renombrar(nombrando, nombreTemp); setNombrando(null); } }}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm" onOpenAutoFocus={(e) => { e.preventDefault(); inputNombreRef.current?.focus(); }}>
           <DialogHeader>
             <DialogTitle>Nombre del grupo</DialogTitle>
           </DialogHeader>
-          <Input data-guia="dashboard.grupo_nombre" autoFocus value={nombreTemp} onChange={(e) => setNombreTemp(e.target.value)} placeholder="Ej.: Académico, Comunicación, Mis herramientas" maxLength={30}
+          <Input ref={inputNombreRef} data-guia="dashboard.grupo_nombre" autoFocus value={nombreTemp} onChange={(e) => setNombreTemp(e.target.value)} placeholder="Ej.: Académico, Comunicación, Mis herramientas" maxLength={30}
             onKeyDown={(e) => { if (e.key === "Enter" && nombrando) { renombrar(nombrando, nombreTemp); setNombrando(null); } }} />
           <div className="flex justify-end">
             <Button data-guia="dashboard.grupo_nombre_guardar" onClick={() => { if (nombrando) renombrar(nombrando, nombreTemp); setNombrando(null); }}>Guardar</Button>
