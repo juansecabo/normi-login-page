@@ -4,6 +4,8 @@ import { getSession } from "@/hooks/useSession";
 import {
   DndContext,
   closestCenter,
+  pointerWithin,
+  type CollisionDetection,
   MouseSensor,
   TouchSensor,
   useSensor,
@@ -11,9 +13,9 @@ import {
   type DragEndEvent,
   type DragOverEvent,
 } from "@dnd-kit/core";
-import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { SortableContext, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Pencil, X } from "lucide-react";
@@ -41,7 +43,15 @@ const esGrupo = (e: OrdenEntry): e is GrupoFichas => typeof e === "object" && e 
 // colegios todo sigue exactamente igual (reordenar sin agrupar).
 const COLEGIOS_CON_GRUPOS = new Set(["2f96f076-83df-4b84-8bbc-9c1df79a372b"]);
 /** Tiempo que hay que sostener una ficha encima de otra (o de un grupo) para agrupar (ms). */
-const HOLD_AGRUPAR_MS = 650;
+const HOLD_AGRUPAR_MS = 600;
+
+/** Destino = la ficha que está bajo el puntero (si no hay, la más cercana). */
+const colisionBajoPuntero: CollisionDetection = (args) => {
+  const bajo = pointerWithin(args);
+  return bajo.length > 0 ? bajo : closestCenter(args);
+};
+/** Sin desplazamiento en vivo: las fichas no se corren mientras arrastras; se acomodan al soltar. */
+const sinDesplazamiento = () => null;
 
 type Entrada =
   | { tipo: "ficha"; item: ReordItem }
@@ -331,8 +341,8 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
 
       <style>{`@keyframes normiJiggle{0%{transform:rotate(-1.4deg)}50%{transform:rotate(1.4deg)}100%{transform:rotate(-1.4deg)}}.normi-jiggle{animation:normiJiggle .22s ease-in-out infinite;transform-origin:center}`}</style>
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} onDragCancel={() => { setJiggling(false); limpiarHold(); setDestinoAgrupar(null); }}>
-        <SortableContext items={idsTop} strategy={rectSortingStrategy}>
+      <DndContext sensors={sensors} collisionDetection={colisionBajoPuntero} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} onDragCancel={() => { setJiggling(false); limpiarHold(); setDestinoAgrupar(null); }}>
+        <SortableContext items={idsTop} strategy={sinDesplazamiento}>
           <div className={gridClassName}>
             {entradas.map((en, idx) => (
               <SortableCard key={idDe(en)} id={idDe(en)} jiggling={jiggling} index={idx} destinoAgrupar={destinoAgrupar === idDe(en)}>
@@ -350,7 +360,6 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Nombre del grupo</DialogTitle>
-            <DialogDescription>Ponle un nombre a este grupo de fichas. Podrás cambiarlo después.</DialogDescription>
           </DialogHeader>
           <Input data-guia="dashboard.grupo_nombre" autoFocus value={nombreTemp} onChange={(e) => setNombreTemp(e.target.value)} placeholder="Ej.: Académico, Comunicación, Mis herramientas" maxLength={30}
             onKeyDown={(e) => { if (e.key === "Enter" && nombrando) { renombrar(nombrando, nombreTemp); setNombrando(null); } }} />
@@ -379,7 +388,6 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
                   </>
                 )}
               </DialogTitle>
-              <DialogDescription className="text-center">Toca una ficha para entrar. La equis la saca del grupo; si sacas todas, el grupo desaparece.</DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5 pt-2 px-2">
               {abierto.items.map((it) => (
