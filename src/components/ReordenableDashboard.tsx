@@ -176,6 +176,7 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
   const holdCandidato = useRef<string | null>(null);
   const holdTimer = useRef<number | null>(null);
   const inputNombreRef = useRef<HTMLInputElement>(null);
+  const abiertoNombreEn = useRef(0);
   /** Grilla del grupo abierto y si el centro de la ficha arrastrada quedó FUERA de ella (= sacarla). */
   const gridGrupoRef = useRef<HTMLDivElement>(null);
   const fueraDelGrupo = useRef(false);
@@ -185,8 +186,11 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
   const [editandoNombre, setEditandoNombre] = useState(false);
   useEffect(() => {
     if (!nombrando) return;
-    const t = window.setTimeout(() => inputNombreRef.current?.focus(), 120);
-    return () => window.clearTimeout(t);
+    abiertoNombreEn.current = Date.now();
+    // La librería de arrastre devuelve el foco a la ficha ~unos ms después de soltar: se vuelve al cuadro.
+    const t1 = window.setTimeout(() => inputNombreRef.current?.focus(), 120);
+    const t2 = window.setTimeout(() => inputNombreRef.current?.focus(), 350);
+    return () => { window.clearTimeout(t1); window.clearTimeout(t2); };
   }, [nombrando]);
 
   useEffect(() => {
@@ -452,7 +456,7 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
 
       {/* Nombre del grupo recién formado */}
       <Dialog open={!!nombrando} onOpenChange={(o) => { if (!o) { if (nombrando) renombrar(nombrando, nombreTemp); setNombrando(null); } }}>
-        <DialogContent className="max-w-sm" onOpenAutoFocus={(e) => { e.preventDefault(); inputNombreRef.current?.focus(); }}>
+        <DialogContent className="max-w-sm" onOpenAutoFocus={(e) => { e.preventDefault(); inputNombreRef.current?.focus(); }} onFocusOutside={(e) => e.preventDefault()} onInteractOutside={(e) => { if (Date.now() - abiertoNombreEn.current < 600) e.preventDefault(); }}>
           <DialogHeader>
             <DialogTitle>Nombre del grupo</DialogTitle>
           </DialogHeader>
