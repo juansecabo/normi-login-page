@@ -1087,33 +1087,4 @@ export const VARIOS: Capacidad[] = [
       },
     ],
   },
-  {
-    id: "varios.dashboard_agrupar_fichas",
-    titulo: "Agrupar fichas de tu pantalla de inicio",
-    descripcion:
-      "Juntar varias tarjetas del tablero en un grupo con nombre, como los grupos de aplicaciones del celular: desde afuera se ven en miniatura las fichas que tiene y al tocarlo se abre con las fichas grandes. Se puede renombrar y, si sacas todas las fichas, el grupo desaparece.",
-    categoria: "Varios",
-    roles: [...TODOS_INTERNOS],
-    ruta: "/dashboard",
-    gate: "cailico",
-    sinonimos: [
-      "agrupar las fichas",
-      "hacer un grupo de tarjetas",
-      "juntar tarjetas del inicio",
-      "crear una carpeta de fichas",
-      "cambiar el nombre de un grupo de fichas",
-      "sacar una ficha del grupo",
-    ],
-    pasos: [
-      { narracion: "Vamos a tu pantalla de inicio.", accion: "navegar", ruta: "/dashboard" },
-      {
-        narracion:
-          "Mantén presionada una tarjeta, arrástrala encima de otra y sostenla ahí un momento: la de abajo se resalta con 'Suelta para agrupar'. Suelta y se forma el grupo.",
-        accion: "explicar",
-      },
-      { narracion: "Escribe el nombre del grupo y toca 'Guardar'.", accion: "escribir", ancla: "dashboard.grupo_nombre", campo: "nombre_grupo" },
-      { narracion: "El grupo queda en el tablero mostrando en miniatura sus fichas. Tócalo para abrirlo.", accion: "click", ancla: "dashboard.grupo_fichas", opcional: true },
-      { narracion: "Adentro puedes entrar a cada ficha o cambiar el nombre con el lápiz. Para sacar una ficha, mantenla presionada y arrástrala fuera del grupo. Para meter otra, arrástrala desde el tablero y sostenla encima del grupo.", accion: "explicar" },
-    ],
-  },
 ];
