@@ -17,6 +17,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Pencil } from "lucide-react";
 
 export interface ReordItem {
@@ -412,16 +413,17 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
 
   return (
     <>
-      <p className="text-xs text-muted-foreground mb-6 text-center">
-        {agruparActivo ? "Arrastra una ficha encima de otra para agruparlas. Con el interruptor encendido no se reordena; apágalo para mover fichas." : "Mantén presionada una tarjeta para cambiar su posición."}
-        {colegioConGrupos && (
-          <button type="button" data-guia="dashboard.grupos_interruptor" onClick={() => cambiarModo(!modoGrupos)}
-            className={`ml-2 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${modoGrupos ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
-            title="Encendido: arrastrar agrupa (no reordena). Se apaga solo al salir o recargar.">
-            <span className={`inline-block w-2 h-2 rounded-full ${modoGrupos ? "bg-primary" : "bg-muted-foreground/40"}`} /> Agrupar fichas: {modoGrupos ? "activado" : "desactivado"}
-          </button>
-        )}
-      </p>
+      {colegioConGrupos ? (
+        /* Colegio con grupos: solo el interruptor, sin textos. */
+        <div className="flex items-center justify-center gap-2 mb-6" data-guia="dashboard.grupos_interruptor">
+          <Switch id="agrupar-fichas" checked={modoGrupos} onCheckedChange={cambiarModo} />
+          <label htmlFor="agrupar-fichas" className="text-sm text-foreground cursor-pointer select-none">Agrupar fichas</label>
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground mb-6 text-center">
+          Mantén presionada una tarjeta para cambiar su posición.
+        </p>
+      )}
 
       <style>{`@keyframes normiJiggle{0%{transform:rotate(-1.4deg)}50%{transform:rotate(1.4deg)}100%{transform:rotate(-1.4deg)}}.normi-jiggle{animation:normiJiggle .22s ease-in-out infinite;transform-origin:center}`}</style>
 
