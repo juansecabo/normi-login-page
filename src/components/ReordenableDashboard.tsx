@@ -386,7 +386,7 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
                 <div key={it.id} className="relative normi-card">
                   {it.render}
                   <button type="button" data-guia="dashboard.grupo_sacar" title="Sacar del grupo" onClick={(e) => { e.stopPropagation(); sacarDelGrupo(abierto.grupo.id, it.id); }}
-                    className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-background border-2 border-border shadow flex items-center justify-center text-muted-foreground hover:text-destructive hover:border-destructive">
+                    className="absolute -top-2 -left-2 z-20 w-7 h-7 rounded-full bg-background border-2 border-border shadow flex items-center justify-center text-muted-foreground hover:text-destructive hover:border-destructive">
                     <X className="w-4 h-4" />
                   </button>
                 </div>
