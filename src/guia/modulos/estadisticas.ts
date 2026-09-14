@@ -61,6 +61,12 @@ const abrirTablero = () =>
       campo: "periodo",
       opcional: true,
     },
+    {
+      narracion: "En 'Nivel de Análisis' decides el alcance: toda la institución, un nivel específico (Preescolar, Primaria…), o ir por grado, salón, estudiante o asignatura. Un coordinador solo ve los niveles que coordina: su primera opción es 'Todos mis niveles' o el nombre de su nivel.",
+      accion: "click" as const,
+      ancla: "estadisticas.filtro_nivel",
+      opcional: true,
+    },
   ];
 
 export const ESTADISTICAS: Capacidad[] = [

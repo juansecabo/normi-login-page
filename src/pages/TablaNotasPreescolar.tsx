@@ -7,7 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { toast as sonnerToast } from "sonner";
 import { getSession } from "@/hooks/useSession";
 import { getPeriodoActual } from "@/utils/periodoActual";
-import { useEsquemaGrado, etiquetaCorteCorta } from "@/utils/esquema";
+import { useEsquemaGrado, etiquetaCorteCorta, corteActual } from "@/utils/esquema";
 import { anoEscolarActual } from "@/utils/anoEscolar";
 import { ACTIVIDADES_PREESCOLAR, esGradoPreescolar } from "@/utils/preescolar";
 import { apiRequest } from "@/lib/apiClient";
@@ -46,6 +46,9 @@ const TablaNotasPreescolar = () => {
   const [gradoSeleccionado, setGradoSeleccionado] = useState("");
   const esq = useEsquemaGrado(gradoSeleccionado);
   const periodos = esq.cortes.map((n) => ({ numero: n, nombre: etiquetaCorteCorta(esq, n) }));
+  useEffect(() => {
+    if (esq.ready && periodoActivo > esq.cortes.length) setPeriodoActivo(corteActual(esq));
+  }, [esq.ready, esq.cortes.length]); // eslint-disable-line react-hooks/exhaustive-deps
   const [salonSeleccionado, setSalonSeleccionado] = useState("");
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
   const [textos, setTextos] = useState<TextosPreescolar>({});

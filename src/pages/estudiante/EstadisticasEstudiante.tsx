@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { getSession, isEstudiante } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { useEstadisticas } from "@/hooks/useEstadisticas";
-import { useEsquemaGrado, unidadCorte } from "@/utils/esquema";
+import { useEsquemaGrado, unidadCorte, corteActual } from "@/utils/esquema";
 import { AnalisisEstudiante } from "@/components/estadisticas/AnalisisEstudiante";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
@@ -15,6 +15,11 @@ const EstadisticasEstudiantePage = () => {
   const { loading } = useEstadisticas();
   const [periodoSeleccionado, setPeriodoSeleccionado] = useState(String(getPeriodoActual()));
   const esq = useEsquemaGrado(getSession().grado);
+
+  // Nivel por semestres: el periodo por defecto (fechas estándar) puede no existir → corte actual del esquema.
+  useEffect(() => {
+    if (esq.ready && periodoSeleccionado !== "anual" && Number(periodoSeleccionado) > esq.cortes.length) setPeriodoSeleccionado(String(corteActual(esq)));
+  }, [esq.ready, esq.cortes.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const session = getSession();

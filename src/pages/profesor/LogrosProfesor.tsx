@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { BookOpenCheck, Plus, Pencil, Trash2, Loader2, Sparkles, Check } from "lucide-react";
 import { rankGrado } from "@/utils/grados";
-import { useEsquemaGrado, etiquetaCorteOrdinal } from "@/utils/esquema";
+import { useEsquemaGrado, etiquetaCorteOrdinal, corteActual } from "@/utils/esquema";
 import { getPeriodoActual } from "@/utils/periodoActual";
 
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
@@ -47,6 +47,9 @@ const LogrosProfesor = () => {
   });
   const esq = useEsquemaGrado(grado);
   const PERIODOS = esq.cortes;
+  useEffect(() => {
+    if (esq.ready && periodo > esq.cortes.length) setPeriodo(corteActual(esq));
+  }, [esq.ready, esq.cortes.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [banco, setBanco] = useState<Logro[]>([]);
   const [niveles, setNiveles] = useState<Nivel[]>([]);

@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getSession, isProfesor } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { useEstadisticas, ordenGrados } from "@/hooks/useEstadisticas";
-import { useEsquemaGrado, unidadCorte } from "@/utils/esquema";
+import { useEsquemaGrado, unidadCorte, corteActual } from "@/utils/esquema";
 import { AnalisisAsignatura } from "@/components/estadisticas/AnalisisAsignatura";
 import { AnalisisEstudiante } from "@/components/estadisticas/AnalisisEstudiante";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -29,6 +29,11 @@ const EstadisticasProfesor = () => {
   const [periodoSeleccionado, setPeriodoSeleccionado] = useState(String(getPeriodoActual()));
   const [gradoSeleccionado, setGradoSeleccionado] = useState("all");
   const esq = useEsquemaGrado(gradoSeleccionado !== "all" ? gradoSeleccionado : null);
+
+  // Nivel por semestres: el periodo por defecto (fechas estándar) puede no existir → corte actual del esquema.
+  useEffect(() => {
+    if (esq.ready && periodoSeleccionado !== "anual" && Number(periodoSeleccionado) > esq.cortes.length) setPeriodoSeleccionado(String(corteActual(esq)));
+  }, [esq.ready, esq.cortes.length]); // eslint-disable-line react-hooks/exhaustive-deps
   const [salonSeleccionado, setSalonSeleccionado] = useState("");
   const [estudianteSeleccionado, setEstudianteSeleccionado] = useState("");
 
