@@ -494,7 +494,7 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
       {/* Grupo abierto: sus fichas grandes, nombre editable y sacar */}
       <Dialog open={!!abierto} onOpenChange={(o) => { if (!o) { setGrupoAbierto(null); setEditandoNombre(false); } }}>
         {/* Como la carpeta del celular: esquinas redondeadas también en pantallas chicas, se agranda al abrir y el fondo se difumina. */}
-        <DialogContent className="max-w-3xl overflow-visible rounded-lg duration-300" style={{ "--tw-enter-scale": "0.55", "--tw-exit-scale": "0.55" } as CSSProperties}
+        <DialogContent className="max-w-3xl overflow-visible rounded-lg duration-300" style={{ "--tw-enter-scale": "0.55", "--tw-exit-scale": "0.55", animationDuration: "300ms" } as CSSProperties}
           overlayClassName="bg-black/40 backdrop-blur-md" data-guia="dashboard.grupo_abierto">
           {abierto && (<>
             <DialogHeader>
