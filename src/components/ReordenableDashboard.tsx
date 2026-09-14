@@ -187,9 +187,17 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
   useEffect(() => {
     if (!nombrando) return;
     abiertoNombreEn.current = Date.now();
-    // La librería de arrastre devuelve el foco a la ficha ~unos ms después de soltar: se vuelve al cuadro.
-    const t1 = window.setTimeout(() => inputNombreRef.current?.focus(), 120);
-    const t2 = window.setTimeout(() => inputNombreRef.current?.focus(), 350);
+    // Con mouse real el campo puede quedar "activo" pero sin cursor (el navegador termina la
+    // secuencia de soltar después del focus). Soltar y retomar el foco sí lo arregla; un focus()
+    // sobre un campo que ya figura activo no hace nada.
+    const enfocar = () => {
+      const el = inputNombreRef.current; if (!el) return;
+      if (document.activeElement === el) el.blur();
+      el.focus({ preventScroll: true });
+      try { el.setSelectionRange(el.value.length, el.value.length); } catch { /* ignore */ }
+    };
+    const t1 = window.setTimeout(enfocar, 120);
+    const t2 = window.setTimeout(enfocar, 350);
     return () => { window.clearTimeout(t1); window.clearTimeout(t2); };
   }, [nombrando]);
 
@@ -391,7 +399,9 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
         lista.splice(iActiva, 1);
         guardar(serializar(lista));
         setNombreTemp("");
-        setNombrando(nuevo.id);
+        // Se abre cuando ya terminó la secuencia pointerup/mouseup/click del soltar (con mouse
+        // real, abrirlo dentro de esa secuencia dejaba el campo enfocado pero sin cursor).
+        window.setTimeout(() => setNombrando(nuevo.id), 80);
       }
       return;
     }
