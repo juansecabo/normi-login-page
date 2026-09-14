@@ -326,7 +326,17 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
     }
   };
 
+  /** El clic que el navegador dispara justo después de soltar cae sobre lo que quedó bajo el
+   *  puntero (p. ej. el grupo recién creado): abría el grupo y cerraba el cuadro del nombre,
+   *  dejándolo sin foco y con el nombre "Grupo". Se bloquea ese clic durante 400 ms. */
+  const bloquearClickTrasSoltar = () => {
+    const bloquear = (ev: MouseEvent) => { ev.stopPropagation(); ev.preventDefault(); };
+    window.addEventListener("click", bloquear, true);
+    window.setTimeout(() => window.removeEventListener("click", bloquear, true), 400);
+  };
+
   const handleDragEnd = (e: DragEndEvent) => {
+    bloquearClickTrasSoltar();
     setJiggling(false); // soltar SIEMPRE apaga la vibración (aunque no se mueva)
     limpiarHold(); holdCandidato.current = null;
     const destino = destinoAgrupar && destinoAgrupar === centroSobre.current ? destinoAgrupar : null;
