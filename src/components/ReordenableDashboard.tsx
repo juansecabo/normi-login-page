@@ -474,7 +474,7 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
 
       {/* Nombre del grupo recién formado */}
       <Dialog open={!!nombrando} onOpenChange={(o) => { if (!o) { if (nombrando) renombrar(nombrando, nombreTemp); setNombrando(null); } }}>
-        <DialogContent className="max-w-sm rounded-lg" onOpenAutoFocus={(e) => { e.preventDefault(); inputNombreRef.current?.focus(); }} onFocusOutside={(e) => e.preventDefault()} onInteractOutside={(e) => { if (Date.now() - abiertoNombreEn.current < 600) e.preventDefault(); }}>
+        <DialogContent className="max-w-sm rounded-lg" overlayClassName="bg-black/40 backdrop-blur-md" onOpenAutoFocus={(e) => { e.preventDefault(); inputNombreRef.current?.focus(); }} onFocusOutside={(e) => e.preventDefault()} onInteractOutside={(e) => { if (Date.now() - abiertoNombreEn.current < 600) e.preventDefault(); }}>
           <DialogHeader>
             <DialogTitle>Nombre del grupo</DialogTitle>
           </DialogHeader>
@@ -493,10 +493,9 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
 
       {/* Grupo abierto: sus fichas grandes, nombre editable y sacar */}
       <Dialog open={!!abierto} onOpenChange={(o) => { if (!o) { setGrupoAbierto(null); setEditandoNombre(false); } }}>
-        {/* Como la carpeta del celular: esquinas redondeadas también en pantallas chicas; sin animación de entrada ni salida.
-            Sin difuminado del fondo: el backdrop-filter hacía el arrastre dentro del grupo pesado y a saltos (Juan 2026-09-14). */}
+        {/* Como la carpeta del celular: esquinas redondeadas también en pantallas chicas y fondo difuminado; sin animación de entrada ni salida (Juan 2026-09-14). */}
         <DialogContent className="max-w-3xl overflow-visible rounded-lg data-[state=open]:animate-none data-[state=closed]:animate-none"
-          overlayClassName="data-[state=open]:animate-none data-[state=closed]:animate-none" data-guia="dashboard.grupo_abierto">
+          overlayClassName="bg-black/40 backdrop-blur-md data-[state=open]:animate-none data-[state=closed]:animate-none" data-guia="dashboard.grupo_abierto">
           {abierto && (<>
             <DialogHeader>
               <DialogTitle className="flex items-center justify-center gap-2 text-2xl">
