@@ -10,14 +10,25 @@ const getCookieDomain = (): string | undefined => {
   return undefined;
 };
 
+/**
+ * ¿Corre dentro de la app nativa (Capacitor)? El cascarón nativo inyecta
+ * window.Capacitor con isNativePlatform(). En el navegador es false.
+ */
+const esAppNativa = (): boolean => {
+  try {
+    const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+    return cap?.isNativePlatform?.() === true;
+  } catch { return false; }
+};
+
 const getCookieOptions = () => {
   const domain = getCookieDomain();
   return {
     ...(domain ? { domain } : {}),
-    // Cookie persistente (400 días, tanto en la app como en el navegador): la
-    // sesión NO se cierra al cerrar la app ni el navegador, como en Instagram o
-    // Facebook (decisión de Juan 2026-09-15). El cierre de sesión es manual.
-    expires: 400,
+    // En el NAVEGADOR la cookie de sesión no lleva expires: cerrar el navegador
+    // cierra la sesión (comportamiento deseado en web). En la APP nativa sí lleva
+    // expires, para que el usuario siga dentro al reabrir, como Instagram o Facebook.
+    ...(esAppNativa() ? { expires: 400 } : {}),
     sameSite: 'lax' as const,
     secure: window.location.protocol === 'https:'
   };
@@ -92,7 +103,7 @@ export const useBienvenida = (): string => {
   return bienvenida(genero);
 };
 
-// Cookie de sesión persistente (400 días); su presencia = sesión abierta.
+// Cookie de sesión (sin expires → muere cuando el navegador se cierra)
 const SESSION_COOKIE = 'normi_session_active';
 
 export const saveSession = (
@@ -154,7 +165,7 @@ export const saveSession = (
   if (genero === "M" || genero === "F") localStorage.setItem("genero", genero);
   else localStorage.removeItem("genero");
 
-  // Persistente: la sesión sigue abierta al reabrir la app o el navegador.
+  // Cookie de sesión sin expires → se borra al cerrar el navegador
   Cookies.set(SESSION_COOKIE, '1', cookieOptions);
 
   // Salvaguarda: si NO es Administrador, eliminar cualquier backup de
