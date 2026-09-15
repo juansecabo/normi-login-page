@@ -21,17 +21,17 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: false,
     // Color de la barra de estado y fondo mientras carga (verde de la marca).
-    backgroundColor: "#2D6A4F",
+    backgroundColor: "#ffffff",
   },
   ios: {
     contentInset: "automatic",
-    backgroundColor: "#2D6A4F",
+    backgroundColor: "#ffffff",
   },
   plugins: {
     SplashScreen: {
       launchShowDuration: 1200,
       launchAutoHide: true,
-      backgroundColor: "#2D6A4F",
+      backgroundColor: "#ffffff",
       androidScaleType: "CENTER_CROP",
       showSpinner: false,
     },

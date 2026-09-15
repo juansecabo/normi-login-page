@@ -75,7 +75,7 @@ export const useBienvenida = (): string => {
 
   useEffect(() => {
     if (genero || generoBackfillHecho) return;
-    if (!Cookies.get(SESSION_COOKIE) || !localStorage.getItem("id")) return;
+    if ((!Cookies.get(SESSION_COOKIE) && localStorage.getItem(SESSION_COOKIE) !== "1") || !localStorage.getItem("id")) return;
     generoBackfillHecho = true;
     import("@/lib/apiClient").then(({ apiClient }) =>
       apiClient.auth.me().then(({ user }) => {
@@ -156,6 +156,10 @@ export const saveSession = (
 
   // Persistente: la sesión sigue abierta al reabrir la app o el navegador.
   Cookies.set(SESSION_COOKIE, '1', cookieOptions);
+  // Respaldo en localStorage: en la app nativa (Capacitor) la cookie puede
+  // perderse cuando Android mata el proceso al cerrar la app; localStorage sí
+  // sobrevive. La sesión sigue abierta si existe la cookie O esta marca.
+  try { localStorage.setItem(SESSION_COOKIE, '1'); } catch { /* noop */ }
 
   // Salvaguarda: si NO es Administrador, eliminar cualquier backup de
   // SuperAdmin que pudiera haber quedado en sessionStorage (de una
@@ -170,8 +174,9 @@ export const saveSession = (
 };
 
 export const getSession = (): SessionData => {
-  // Si la cookie de sesión no existe, el navegador se reinició → limpiar todo
-  if (!Cookies.get(SESSION_COOKIE)) {
+  // Sesión abierta si existe la cookie O la marca de localStorage (esta última
+  // sobrevive cuando la app nativa mata el proceso). Si ninguna existe → limpiar.
+  if (!Cookies.get(SESSION_COOKIE) && localStorage.getItem(SESSION_COOKIE) !== "1") {
     localStorage.removeItem("id");
     localStorage.removeItem("nombres");
     localStorage.removeItem("apellidos");
@@ -361,6 +366,7 @@ export const clearSession = () => {
   } catch {}
 
   Cookies.remove(SESSION_COOKIE, cookieOptions);
+  try { localStorage.removeItem(SESSION_COOKIE); } catch { /* noop */ }
 };
 
 export const hasValidSession = (): boolean => {
