@@ -1,0 +1,90 @@
+name: App Android (Notas Normi)
+
+# Compila la app de Android en la nube.
+#  - APK de depuración: se puede instalar directo en un celular para probar.
+#  - AAB de publicación (firmado): el archivo que se sube a Google Play.
+#    Solo se genera si están configurados los secretos de la firma.
+
+on:
+  workflow_dispatch:      # se dispara a mano desde la pestaña Actions
+  push:
+    branches: [main]
+    paths:
+      - "android/**"
+      - "capacitor.config.ts"
+      - ".github/workflows/android.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Construir el frontend
+        run: npm run build
+
+      - name: Sincronizar Capacitor con Android
+        run: npx cap sync android
+
+      - name: APK de depuración
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Publicar el APK de depuración
+        uses: actions/upload-artifact@v4
+        with:
+          name: notas-normi-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      # ── Publicación (AAB firmado) ──────────────────────────────────────────
+      # Requiere los secretos del repositorio: ANDROID_KEYSTORE_BASE64,
+      # ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD.
+      # Sin ellos, este paso se salta y solo queda el APK de depuración.
+      - name: Preparar la firma
+        id: firma
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/normi.keystore
+          echo "hay_firma=si" >> "$GITHUB_OUTPUT"
+
+      - name: AAB de publicación (firmado)
+        if: ${{ steps.firma.outputs.hay_firma == 'si' }}
+        env:
+          KSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          cd android
+          ./gradlew bundleRelease --no-daemon \
+            -Pandroid.injected.signing.store.file=app/normi.keystore \
+            -Pandroid.injected.signing.store.password="$KSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
+
+      - name: Publicar el AAB
+        if: ${{ steps.firma.outputs.hay_firma == 'si' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: notas-normi-release-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
