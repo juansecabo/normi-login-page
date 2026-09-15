@@ -117,11 +117,7 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
   return (
     <>
       <header className="shadow-md">
-        {/* En la app nativa (Android/iOS) el verde sube hasta cubrir la barra de
-            estado: paddingTop = alto de la barra + el espaciado normal. En el
-            navegador env(safe-area-inset-top) es 0, así que no cambia nada. */}
-        <div ref={barRef} className="bg-primary text-primary-foreground pb-2 md:pb-3 px-3 md:px-4"
-          style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)" }}>
+        <div ref={barRef} className="bg-primary text-primary-foreground py-2 md:py-3 px-3 md:px-4">
           <div className="container mx-auto flex items-center justify-between">
             <Link to={finalBackLink} className="flex items-center gap-2 md:gap-3 hover:opacity-80 transition-opacity cursor-pointer">
               {esPlataforma ? (

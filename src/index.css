@@ -104,16 +104,6 @@
     background-repeat: repeat;
     background-size: 260px 260px;
     background-attachment: fixed;
-    /* App nativa: reserva el alto de la barra de navegación de abajo para que
-       el contenido no quede tapado por los botones. En el navegador es 0. */
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  /* Pantallas sin el encabezado verde (p. ej. inicio de sesión): reservan el
-     alto de la barra de estado arriba para no quedar bajo el reloj. Las que
-     tienen encabezado ya lo manejan en el propio encabezado. */
-  body:not(:has(header)) #root {
-    padding-top: env(safe-area-inset-top);
   }
 
   /* Allow the body pattern to show through page-level wrappers while keeping cards/modals opaque */
