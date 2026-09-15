@@ -425,6 +425,11 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
   // ── Acciones sobre grupos ──
   const grupoDe = (id: string | null) => (id ? (entradas.find((en) => en.tipo === "grupo" && en.grupo.id === id) as Extract<Entrada, { tipo: "grupo" }> | undefined) : undefined);
   const abierto = grupoDe(grupoAbierto);
+  // Al cerrar, el diálogo sigue montado un instante con `abierto` ya vacío y se veía una barra en blanco:
+  // se sigue pintando el último grupo mostrado hasta que el diálogo desaparece.
+  const ultimoAbierto = useRef<typeof abierto>(undefined);
+  if (abierto) ultimoAbierto.current = abierto;
+  const mostrar = abierto ?? ultimoAbierto.current;
   const renombrar = (grupoId: string, nombre: string) => {
     guardar(serializar(entradas.map((en) => (en.tipo === "grupo" && en.grupo.id === grupoId ? { ...en, grupo: { ...en.grupo, nombre: nombre.trim() || "Grupo" } } : en))));
   };
@@ -497,17 +502,17 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
             Sin difuminado del fondo: el backdrop-filter hacía el arrastre dentro del grupo pesado y a saltos (Juan 2026-09-14). */}
         <DialogContent className="max-w-3xl overflow-visible rounded-lg data-[state=open]:animate-none data-[state=closed]:animate-none"
           overlayClassName="data-[state=open]:animate-none data-[state=closed]:animate-none" data-guia="dashboard.grupo_abierto">
-          {abierto && (<>
+          {mostrar && (<>
             <DialogHeader>
               <DialogTitle className="flex items-center justify-center gap-2 text-2xl">
                 {editandoNombre ? (
                   <Input autoFocus value={nombreTemp} maxLength={30} onChange={(e) => setNombreTemp(e.target.value)} className="h-9 max-w-xs text-center text-lg"
-                    onBlur={() => { renombrar(abierto.grupo.id, nombreTemp); setEditandoNombre(false); }}
-                    onKeyDown={(e) => { if (e.key === "Enter") { renombrar(abierto.grupo.id, nombreTemp); setEditandoNombre(false); } if (e.key === "Escape") setEditandoNombre(false); }} />
+                    onBlur={() => { renombrar(mostrar.grupo.id, nombreTemp); setEditandoNombre(false); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") { renombrar(mostrar.grupo.id, nombreTemp); setEditandoNombre(false); } if (e.key === "Escape") setEditandoNombre(false); }} />
                 ) : (
                   <>
-                    <span>{abierto.grupo.nombre || "Grupo"}</span>
-                    <button type="button" data-guia="dashboard.grupo_renombrar" title="Editar nombre" className="text-muted-foreground hover:text-primary" onClick={() => { setNombreTemp(abierto.grupo.nombre); setEditandoNombre(true); }}>
+                    <span>{mostrar.grupo.nombre || "Grupo"}</span>
+                    <button type="button" data-guia="dashboard.grupo_renombrar" title="Editar nombre" className="text-muted-foreground hover:text-primary" onClick={() => { setNombreTemp(mostrar.grupo.nombre); setEditandoNombre(true); }}>
                       <Pencil className="w-5 h-5" />
                     </button>
                   </>
@@ -515,9 +520,9 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
               </DialogTitle>
             </DialogHeader>
             {/* Sostener una ficha y arrastrarla fuera del recuadro la saca del grupo; entre fichas, las reordena. */}
-            <SortableContext items={abierto.grupo.items} strategy={rectSortingStrategy}>
+            <SortableContext items={mostrar.grupo.items} strategy={rectSortingStrategy}>
               <div ref={gridGrupoRef} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5 pt-2 px-2" data-guia="dashboard.grupo_sacar">
-                {abierto.items.map((it, j) => (
+                {mostrar.items.map((it, j) => (
                   <SortableCard key={it.id} id={it.id} jiggling={jiggling} index={j} destinoAgrupar={false}>
                     {it.render}
                   </SortableCard>
