@@ -10,10 +10,25 @@ const getCookieDomain = (): string | undefined => {
   return undefined;
 };
 
+/**
+ * ¿Corre dentro de la app nativa (Capacitor)? El cascarón nativo inyecta
+ * window.Capacitor con isNativePlatform(). En el navegador es false.
+ */
+const esAppNativa = (): boolean => {
+  try {
+    const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+    return cap?.isNativePlatform?.() === true;
+  } catch { return false; }
+};
+
 const getCookieOptions = () => {
   const domain = getCookieDomain();
   return {
     ...(domain ? { domain } : {}),
+    // En el NAVEGADOR la cookie de sesión no lleva expires: cerrar el navegador
+    // cierra la sesión (comportamiento deseado en web). En la APP nativa sí lleva
+    // expires, para que el usuario siga dentro al reabrir, como Instagram o Facebook.
+    ...(esAppNativa() ? { expires: 400 } : {}),
     sameSite: 'lax' as const,
     secure: window.location.protocol === 'https:'
   };
