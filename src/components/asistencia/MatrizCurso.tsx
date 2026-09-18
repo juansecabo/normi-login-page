@@ -247,7 +247,7 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr className="bg-muted/50">
-              <th data-guia="asistencia.nombre_estudiante" className="sticky left-0 z-10 bg-muted/50 text-left px-3 py-2 font-semibold w-full min-w-[220px] border-r border-border">Estudiante</th>
+              <th data-guia="asistencia.nombre_estudiante" className="md:sticky md:left-0 z-10 bg-muted/50 text-left px-3 py-2 font-semibold w-full min-w-[200px] border-r border-border">Estudiante</th>
               {fechas.map((f) => <th key={f} className="px-2 py-2 font-medium text-muted-foreground whitespace-nowrap text-center border-l border-border">{fechaCorta(f)}</th>)}
               <th className="px-3 py-2 font-semibold whitespace-nowrap border-l border-border">%</th>
             </tr>
@@ -258,7 +258,7 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
               const r = resumen([...fila.values()].map((estado) => ({ estado })));
               return (
                 <tr key={e.estudiante_id} className="border-t border-border">
-                  <td className="sticky left-0 z-10 bg-card px-3 py-1.5 border-r border-border w-full min-w-[220px]">
+                  <td className="md:sticky md:left-0 z-10 bg-card px-3 py-1.5 border-r border-border w-full min-w-[200px]">
                     <button onClick={() => onAbrirCalendario(e)} className="text-left hover:text-primary hover:underline whitespace-nowrap">
                       {e.apellidos} {e.nombres}
                     </button>
