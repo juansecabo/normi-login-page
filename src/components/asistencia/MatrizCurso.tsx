@@ -231,7 +231,7 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
         <div className="relative">
           <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input data-guia="asistencia.buscar_estudiante" value={filtro} onChange={(e) => setFiltro(e.target.value)} placeholder="Buscar estudiante…"
-            className="pl-8 pr-3 py-1.5 rounded-lg border border-border bg-background text-sm w-52" />
+            className="pl-8 pr-3 py-1.5 rounded-lg border border-border bg-card text-sm w-52" />
         </div>
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground">{estudiantesVisibles.length}/{data.estudiantes.length} · {fechas.length} días</span>
