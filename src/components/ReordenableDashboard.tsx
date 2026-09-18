@@ -41,9 +41,8 @@ export interface GrupoFichas { tipo: "grupo"; id: string; nombre: string; items:
 type OrdenEntry = string | GrupoFichas;
 const esGrupo = (e: OrdenEntry): e is GrupoFichas => typeof e === "object" && e !== null && (e as GrupoFichas).tipo === "grupo";
 
-// Piloto: los grupos solo están activos en el colegio de prueba (Cailico). En los demás
-// colegios todo sigue exactamente igual (reordenar sin agrupar).
-const COLEGIOS_CON_GRUPOS = new Set(["2f96f076-83df-4b84-8bbc-9c1df79a372b"]);
+// Los grupos de fichas están activos en todos los colegios (2026-09-18; antes solo
+// en el piloto Cailico). Con el interruptor apagado el arrastre es el de siempre.
 /** Tiempo que hay que sostener una ficha encima de otra (o de un grupo) para agrupar (ms). */
 const HOLD_AGRUPAR_MS = 150;
 
@@ -126,7 +125,7 @@ function GrupoCard({ grupo, items, onAbrir }: { grupo: GrupoFichas; items: Reord
  * - Mantener presionada una tarjeta (~0.5s, el punto donde el celular da su vibración
  *   nativa) entra al "modo vibrar"; ahí se arrastra y al soltar se guarda — aunque
  *   quede en el mismo lugar. Un toque/clic normal navega.
- * - GRUPOS (colegios en COLEGIOS_CON_GRUPOS): mientras arrastras, sostener una ficha
+ * - GRUPOS (todos los colegios): mientras arrastras, sostener una ficha
  *   ~0.65s encima de otra la resalta ("Suelta para agrupar") y al soltar se forma un grupo
  *   (pide nombre). Sostener encima de un grupo mete la ficha en él. Desde afuera el grupo
  *   muestra en miniatura lo que tiene; un toque lo abre: ahí se navega a cada ficha, se
@@ -140,7 +139,7 @@ export default function ReordenableDashboard({ dashboardKey, items, gridClassNam
   items: ReordItem[];
   gridClassName: string;
 }) {
-  const colegioConGrupos = COLEGIOS_CON_GRUPOS.has(String(getSession().colegio_id || ""));
+  const colegioConGrupos = true; // grupos activos en todos los colegios (2026-09-18)
   // Interruptor por usuario (apagado por defecto): con él apagado el arrastre es EXACTAMENTE el
   // de siempre; los grupos que ya existan se siguen mostrando y usando.
   // Juan 2026-09-14: el interruptor NO se guarda; por defecto se reordena y, al recargar o
