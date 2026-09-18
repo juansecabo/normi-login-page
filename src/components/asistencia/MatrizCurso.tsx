@@ -243,13 +243,13 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
       </div>
 
       {/* Matriz con scroll horizontal + primera columna sticky */}
-      <div data-guia="asistencia.matriz" className="overflow-x-auto border border-border rounded-lg">
+      <div data-guia="asistencia.matriz" className="overflow-x-auto border border-border rounded-lg bg-card">
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr className="bg-muted/50">
               <th data-guia="asistencia.nombre_estudiante" className="sticky left-0 z-10 bg-muted/50 text-left px-3 py-2 font-semibold w-full min-w-[220px] border-r border-border">Estudiante</th>
-              {fechas.map((f) => <th key={f} className="px-2 py-2 font-medium text-muted-foreground whitespace-nowrap">{fechaCorta(f)}</th>)}
-              <th className="px-3 py-2 font-semibold whitespace-nowrap">%</th>
+              {fechas.map((f) => <th key={f} className="px-2 py-2 font-medium text-muted-foreground whitespace-nowrap text-center border-l border-border">{fechaCorta(f)}</th>)}
+              <th className="px-3 py-2 font-semibold whitespace-nowrap border-l border-border">%</th>
             </tr>
           </thead>
           <tbody data-guia="asistencia.celda_matriz">
@@ -266,7 +266,7 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
                   {fechas.map((f) => {
                     const s = fila.get(f);
                     return (
-                      <td key={f} className="px-1 py-1 text-center">
+                      <td key={f} className="px-1 py-1 text-center border-l border-border">
                         <button
                           disabled={!puedeEditar}
                           onClick={(ev) => puedeEditar && abrir(e.estudiante_id, `${e.apellidos} ${e.nombres}`, f, ev.currentTarget)}
@@ -279,7 +279,7 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
                       </td>
                     );
                   })}
-                  <td className="px-3 py-1.5 text-center font-semibold whitespace-nowrap">{r.pct}%</td>
+                  <td className="px-3 py-1.5 text-center font-semibold whitespace-nowrap border-l border-border">{r.pct}%</td>
                 </tr>
               );
             })}
