@@ -38,10 +38,16 @@ const ConsultaAsistencia = () => {
   }, [navigate]);
 
   // ─────────────────────────── INTERNOS ───────────────────────────
+  // La selección (asignatura/grado/salón) se guarda por usuario+colegio para que
+  // al recargar la página NO se pierda y la matriz siga visible (2026-09-18).
+  const LS_SEL = `asistencia_consulta_sel:${getSession().id ?? ""}:${getSession().colegio_id ?? ""}`;
+  const selGuardada: { asignatura?: string; grado?: string; salon?: string } = (() => {
+    try { return JSON.parse(localStorage.getItem(LS_SEL) || "{}"); } catch { return {}; }
+  })();
   const [clases, setClases] = useState<Clase[]>([]);
-  const [asignatura, setAsignatura] = useState("");
-  const [grado, setGrado] = useState("");
-  const [salon, setSalon] = useState("");
+  const [asignatura, setAsignatura] = useState(selGuardada.asignatura || "");
+  const [grado, setGrado] = useState(selGuardada.grado || "");
+  const [salon, setSalon] = useState(selGuardada.salon || "");
   const [modoTiempo, setModoTiempo] = useState<"mes" | "dia" | "rango">("mes");
   const [mes, setMes] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [diaSel, setDiaSel] = useState(hoyBogota());
@@ -52,6 +58,11 @@ const ConsultaAsistencia = () => {
     if (!esInterno) return;
     apiClient.asistencia.clases().then((r) => setClases(r.clases)).catch(() => setClases([]));
   }, [esInterno]);
+
+  // Recordar la última selección (para que sobreviva a un recargar la página).
+  useEffect(() => {
+    try { localStorage.setItem(LS_SEL, JSON.stringify({ asignatura, grado, salon })); } catch { /* storage no disponible */ }
+  }, [LS_SEL, asignatura, grado, salon]);
 
   const asignaturas = useMemo(() => [...new Set(clases.map((c) => c.asignatura))].sort((a, b) => a.localeCompare(b, "es")), [clases]);
   const grados = useMemo(() => [...new Set(clases.filter((c) => c.asignatura === asignatura).map((c) => c.grado))].sort((a, b) => rankGrado(a) - rankGrado(b)), [clases, asignatura]);
