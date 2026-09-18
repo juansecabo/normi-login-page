@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { getSession, isEstudiante, isPadreDeFamilia, isProfesor, isAdmin, type AcudidoData } from "@/hooks/useSession";
 import { supabase } from "@/integrations/supabase/client";
 import { apiClient, type AsistenciaEstado, type AsistenciaRegistro } from "@/lib/apiClient";
@@ -38,14 +38,10 @@ const ConsultaAsistencia = () => {
   }, [navigate]);
 
   // ─────────────────────────── INTERNOS ───────────────────────────
-  // La selección va en la URL (?asignatura=&grado=&salon=): al RECARGAR se
-  // conserva (misma URL), pero al salir y volver a entrar (URL limpia) se
-  // reinicia. NO se usa localStorage a propósito (2026-09-18).
-  const [searchParams, setSearchParams] = useSearchParams();
   const [clases, setClases] = useState<Clase[]>([]);
-  const [asignatura, setAsignatura] = useState(searchParams.get("asignatura") || "");
-  const [grado, setGrado] = useState(searchParams.get("grado") || "");
-  const [salon, setSalon] = useState(searchParams.get("salon") || "");
+  const [asignatura, setAsignatura] = useState("");
+  const [grado, setGrado] = useState("");
+  const [salon, setSalon] = useState("");
   const [modoTiempo, setModoTiempo] = useState<"mes" | "dia" | "rango">("mes");
   const [mes, setMes] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [diaSel, setDiaSel] = useState(hoyBogota());
@@ -56,15 +52,6 @@ const ConsultaAsistencia = () => {
     if (!esInterno) return;
     apiClient.asistencia.clases().then((r) => setClases(r.clases)).catch(() => setClases([]));
   }, [esInterno]);
-
-  // Reflejar la selección en la URL para que sobreviva SOLO a un recargar (F5).
-  useEffect(() => {
-    const p = new URLSearchParams();
-    if (asignatura) p.set("asignatura", asignatura);
-    if (grado) p.set("grado", grado);
-    if (salon) p.set("salon", salon);
-    setSearchParams(p, { replace: true });
-  }, [asignatura, grado, salon, setSearchParams]);
 
   const asignaturas = useMemo(() => [...new Set(clases.map((c) => c.asignatura))].sort((a, b) => a.localeCompare(b, "es")), [clases]);
   const grados = useMemo(() => [...new Set(clases.filter((c) => c.asignatura === asignatura).map((c) => c.grado))].sort((a, b) => rankGrado(a) - rankGrado(b)), [clases, asignatura]);
