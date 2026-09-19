@@ -246,7 +246,7 @@ const AreasColegioEditor = ({ colegioId }: Props) => {
           <p className="text-sm text-muted-foreground">Así se listarán las áreas y asignaturas en el boletín. Arrastra cada fila por el asa para acomodar el orden del colegio.</p>
           {listaOrden.length > 1 && (
             <Button variant="outline" size="sm" onClick={ordenarAlfabetico} className="mt-2 gap-1.5 w-fit">
-              <ArrowDownAZ className="w-3.5 h-3.5" /> Ordenar alfabéticamente
+              <ArrowDownAZ className="w-3.5 h-3.5" /> Ordenar
             </Button>
           )}
         </CardHeader>
