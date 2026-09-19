@@ -23,6 +23,20 @@ import { cargoSegunGenero } from "@/lib/entrevistadores";
 /** Búsqueda flexible: ignora tildes y mayúsculas. */
 const normSearch = (s: string) => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 
+/** Reordena para que, pintado en una grilla row-major de `cols` columnas, cada
+ *  columna se lea alfabéticamente hacia ABAJO (orden por columnas). */
+function columnMajor<T>(arr: T[], cols: number): T[] {
+  if (cols <= 1) return arr;
+  const rows = Math.ceil(arr.length / cols);
+  const out: T[] = [];
+  for (let r = 0; r < rows; r++)
+    for (let c = 0; c < cols; c++) {
+      const idx = c * rows + r;
+      if (idx < arr.length) out.push(arr[idx]);
+    }
+  return out;
+}
+
 /**
  * "Personas del colegio": tarjetas por rol → página del cargo con su lista y
  * pop-up de agregar (autocompletado por cédula; extras: niveles del
@@ -138,10 +152,19 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   const [nvGrados, setNvGrados] = useState<string[]>([]);
   const [nvSalones, setNvSalones] = useState<string[]>([]);
   const [filtroAsig, setFiltroAsig] = useState("");
+  // sm+ (>=640px): asignaturas en 2 columnas, grados en 3; si no, 1 y 2.
+  const [esSm, setEsSm] = useState(() => typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 640px)");
+    const on = () => setEsSm(mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
   const asignaturasVisibles = useMemo(() => {
     const f = normSearch(filtroAsig);
-    return (f ? asignaturasCol.filter((a) => normSearch(a).includes(f)) : asignaturasCol);
-  }, [asignaturasCol, filtroAsig]);
+    const lista = f ? asignaturasCol.filter((a) => normSearch(a).includes(f)) : asignaturasCol;
+    return columnMajor(lista, esSm ? 2 : 1);
+  }, [asignaturasCol, filtroAsig, esSm]);
   const [guardandoCarga, setGuardandoCarga] = useState(false);
   // Asignación en edición: rowId (fila existente en BD) o idx (fila pendiente al crear).
   const [editCarga, setEditCarga] = useState<{ rowId?: number; idx?: number } | null>(null);
@@ -887,12 +910,12 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
                     <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <Input value={filtroAsig} onChange={(e) => setFiltroAsig(e.target.value)} placeholder="Buscar asignatura…" className="h-8 pl-8 text-sm" />
                   </div>
-                  {/* Orden alfabético por COLUMNAS (CSS multicolumna): baja la col 1 y sigue en la col 2. */}
-                  <div className="border rounded-md p-2 mt-1 max-h-32 overflow-y-auto columns-1 sm:columns-2 gap-x-4">
+                  {/* Misma grilla de antes; el orden por columnas se logra reordenando los datos (columnMajor). */}
+                  <div className="border rounded-md p-2 mt-1 max-h-32 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                     {asignaturasVisibles.length === 0 ? (
                       <p className="text-xs text-muted-foreground">Sin coincidencias.</p>
                     ) : asignaturasVisibles.map((a) => (
-                      <label key={a} className="flex items-center gap-2 text-sm cursor-pointer select-none mb-1.5 break-inside-avoid">
+                      <label key={a} className="flex items-center gap-2 text-sm cursor-pointer select-none">
                         <input type="checkbox" checked={nvAsigs.includes(a)} onChange={() => setNvAsigs((p) => p.includes(a) ? p.filter((x) => x !== a) : [...p, a])} className="w-4 h-4 accent-primary cursor-pointer shrink-0" />
                         {a}
                       </label>
@@ -901,10 +924,9 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
                 </div>
                 <div>
                   <Label className="text-xs text-muted-foreground">Grado(s) ({nvGrados.length})</Label>
-                  {/* Orden por COLUMNAS (mantiene el orden de grados). */}
-                  <div className="border rounded-md p-2 mt-1 max-h-32 overflow-y-auto columns-2 sm:columns-3 gap-x-4">
-                    {gradosCol.map((g) => (
-                      <label key={g.grado} className="flex items-center gap-2 text-sm cursor-pointer select-none mb-1.5 break-inside-avoid">
+                  <div className="border rounded-md p-2 mt-1 max-h-32 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                    {columnMajor(gradosCol, esSm ? 3 : 2).map((g) => (
+                      <label key={g.grado} className="flex items-center gap-2 text-sm cursor-pointer select-none">
                         <input type="checkbox" checked={nvGrados.includes(g.grado)} onChange={() => setNvGrados((p) => p.includes(g.grado) ? p.filter((x) => x !== g.grado) : [...p, g.grado])} className="w-4 h-4 accent-primary cursor-pointer shrink-0" />
                         {g.grado}
                       </label>
