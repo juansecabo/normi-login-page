@@ -683,7 +683,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
   {
     id: "configurar_institucion.ordenar_boletin",
     titulo: "Ordenar áreas y asignaturas en el boletín",
-    descripcion: "Subir o bajar áreas y asignaturas sueltas para fijar el orden del boletín.",
+    descripcion: "Arrastrar áreas y asignaturas sueltas para fijar el orden del boletín.",
     categoria: "Configurar Institución",
     roles: [...EDITAN_ESTRUCTURA],
     ruta: RUTA,
@@ -692,11 +692,11 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
       "ordenar el boletín",
       "cambiar el orden de las áreas del boletín",
       "acomodar las asignaturas en el boletín",
-      "subir o bajar áreas en el informe",
+      "arrastrar áreas en el informe",
     ],
     pasos: [
       ...abrirFicha("asignaturas", "Abrimos Asignaturas."),
-      { narracion: "Baja a la sección Orden del boletín. Con las flechas de 'Subir' y Bajar mueve cada área o asignatura a su lugar. Se guarda al instante.", accion: "click", ancla: "configurar_institucion.boletin_flecha" },
+      { narracion: "Baja a la sección Orden del boletín. Arrastra cada fila por el asa (el ícono de puntos a la izquierda) para acomodar el orden. Se guarda al instante.", accion: "click", ancla: "configurar_institucion.boletin_orden" },
     ],
   },
 

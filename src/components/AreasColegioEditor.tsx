@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { apiRequest } from "@/lib/apiClient";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,8 +7,21 @@ import { Input } from "@/components/ui/input";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { Layers, Plus, Pencil, Trash2, Loader2, ArrowUp, ArrowDown, ListOrdered } from "lucide-react";
+import { Layers, Plus, Pencil, Trash2, Loader2, ListOrdered, GripVertical } from "lucide-react";
 import { useGradosColegio } from "@/utils/grados";
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+/** Fila arrastrable por el asa (grip); el asa recibe los listeners. */
+function SortableFila({ id, children }: { id: string; children: (handle: Record<string, unknown>) => ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  return (
+    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1, zIndex: isDragging ? 50 : undefined }} className={isDragging ? "relative" : undefined}>
+      {children({ ...attributes, ...listeners })}
+    </div>
+  );
+}
 
 /**
  * Áreas académicas (para boletines) + orden del boletín.
@@ -142,22 +155,26 @@ const AreasColegioEditor = ({ colegioId }: Props) => {
     });
   }, [areas, asignaturas, asignadasAArea]);
 
-  const [guardandoOrden, setGuardandoOrden] = useState(false);
-  const mover = async (idx: number, delta: -1 | 1) => {
-    const destino = idx + delta;
-    if (destino < 0 || destino >= listaOrden.length) return;
-    const nueva = [...listaOrden];
-    [nueva[idx], nueva[destino]] = [nueva[destino], nueva[idx]];
-    setGuardandoOrden(true);
-    try {
-      await apiRequest("/api/institucion/boletin-orden", {
-        method: "PUT",
-        body: JSON.stringify(withCid({ items: nueva.map((it, i) => ({ tipo: it.tipo, id: it.id, orden: i + 1 })) })),
-      });
-      await cargar();
-    } catch (e: any) {
-      toast({ title: "No se pudo reordenar", description: e?.body?.detail || e?.message, variant: "destructive" });
-    } finally { setGuardandoOrden(false); }
+  // Reordenar arrastrando (dnd-kit). Se pinta al INSTANTE (optimista, actualizando
+  // el orden en areas y asignaturas para que el memo re-ordene) y se guarda en
+  // segundo plano; así no hay rebote al soltar. Se arrastra por el asa.
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  const onDragOrden = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const ids = listaOrden.map((it) => `${it.tipo}-${it.id}`);
+    const nueva = arrayMove(listaOrden, ids.indexOf(String(active.id)), ids.indexOf(String(over.id)));
+    // Optimista: fijar el nuevo orden en las tablas locales que alimentan el memo.
+    const ordenArea = new Map<string, number>();
+    const ordenAsig = new Map<number, number>();
+    nueva.forEach((it, i) => { if (it.tipo === "area") ordenArea.set(String(it.id), i + 1); else ordenAsig.set(Number(it.id), i + 1); });
+    setAreas((prev) => prev.map((a) => ordenArea.has(a.id) ? { ...a, orden: ordenArea.get(a.id)! } : a));
+    setAsignaturas((prev) => prev.map((s) => ordenAsig.has(s.id) ? { ...s, orden_boletin: ordenAsig.get(s.id)! } : s));
+    // Persistir en segundo plano.
+    apiRequest("/api/institucion/boletin-orden", {
+      method: "PUT",
+      body: JSON.stringify(withCid({ items: nueva.map((it, i) => ({ tipo: it.tipo, id: it.id, orden: i + 1 })) })),
+    }).catch((e: any) => { toast({ title: "No se pudo reordenar", description: e?.body?.detail || e?.message, variant: "destructive" }); cargar(); });
   };
 
   const sumaPesos = filas.reduce((acc, f) => acc + (Number(f.peso) || 0), 0);
@@ -223,28 +240,31 @@ const AreasColegioEditor = ({ colegioId }: Props) => {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2"><ListOrdered className="w-4 h-4 text-primary" /> Orden del boletín</CardTitle>
-          <p className="text-sm text-muted-foreground">Así se listarán las áreas y asignaturas en el boletín. Usa las flechas para acomodar el orden del colegio.</p>
+          <p className="text-sm text-muted-foreground">Así se listarán las áreas y asignaturas en el boletín. Arrastra cada fila por el asa para acomodar el orden del colegio.</p>
         </CardHeader>
         <CardContent>
-          <div className="space-y-1.5" data-guia="configurar_institucion.boletin_flecha">
-            {listaOrden.map((it, idx) => (
-              <div key={`${it.tipo}-${it.id}`} className="flex items-center justify-between gap-2 border border-border rounded-md px-3 py-1.5 bg-card">
-                <span className="text-sm text-foreground">
-                  <span className="text-muted-foreground mr-2 tabular-nums">{idx + 1}.</span>
-                  {it.nombre}
-                  {it.tipo === "area" && <span className="ml-2 text-[10px] uppercase font-medium text-primary bg-primary/10 rounded px-1.5 py-0.5">Área</span>}
-                </span>
-                <span className="flex gap-0.5">
-                  <button disabled={guardandoOrden || idx === 0} title="Subir" onClick={() => mover(idx, -1)} className="p-1 rounded hover:bg-muted disabled:opacity-30">
-                    <ArrowUp className="w-4 h-4" />
-                  </button>
-                  <button disabled={guardandoOrden || idx === listaOrden.length - 1} title="Bajar" onClick={() => mover(idx, 1)} className="p-1 rounded hover:bg-muted disabled:opacity-30">
-                    <ArrowDown className="w-4 h-4" />
-                  </button>
-                </span>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragOrden}>
+            <SortableContext items={listaOrden.map((it) => `${it.tipo}-${it.id}`)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-1.5" data-guia="configurar_institucion.boletin_orden">
+                {listaOrden.map((it, idx) => (
+                  <SortableFila key={`${it.tipo}-${it.id}`} id={`${it.tipo}-${it.id}`}>
+                    {(handle) => (
+                      <div className="flex items-center gap-2 border border-border rounded-md px-3 py-1.5 bg-card">
+                        <button {...handle} title="Arrastrar" className="p-1 -ml-1 rounded hover:bg-muted cursor-grab active:cursor-grabbing touch-none text-muted-foreground">
+                          <GripVertical className="w-4 h-4" />
+                        </button>
+                        <span className="text-sm text-foreground flex-1 min-w-0">
+                          <span className="text-muted-foreground mr-2 tabular-nums">{idx + 1}.</span>
+                          {it.nombre}
+                          {it.tipo === "area" && <span className="ml-2 text-[10px] uppercase font-medium text-primary bg-primary/10 rounded px-1.5 py-0.5">Área</span>}
+                        </span>
+                      </div>
+                    )}
+                  </SortableFila>
+                ))}
               </div>
-            ))}
-          </div>
+            </SortableContext>
+          </DndContext>
         </CardContent>
       </Card>
 
