@@ -13,7 +13,8 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, apiClient } from "@/lib/apiClient";
 import { getSession } from "@/hooks/useSession";
-import { rankGrado, NIVEL_DE_GRADO } from "@/utils/grados";
+import { NIVEL_DE_GRADO } from "@/utils/grados";
+import { useEstructuraOrden } from "@/utils/estructuraOrden";
 import PanelControl from "@/pages/rector/PanelControl";
 import PhoneInput from "@/components/PhoneInput";
 import { capitalizarNombre } from "@/utils/texto";
@@ -131,6 +132,8 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   // gestionan los roles con permiso de escritura en el dbProxy (ADMIN_ONLY) y
   // no aplica en el wizard del SuperAdmin (sin colegio en el JWT).
   const puedeCarga = !colegioId && ["Administrador", "Rector", "Coordinador(a)"].includes(cargoSesion);
+  // Orden de grados CONFIGURADO en "Configurar Institución" (no un orden fijo).
+  const { gradoRank } = useEstructuraOrden();
   const [asignaturasCol, setAsignaturasCol] = useState<string[]>([]);
   const [cargas, setCargas] = useState<any[]>([]);                 // filas existentes (edición)
   const [cargasPend, setCargasPend] = useState<{ asignaturas: string[]; grados: string[]; salones: string[] }[]>([]); // al agregar
@@ -208,6 +211,11 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   // Estructura del colegio (grados/salones) para la dirección de grupo del profesor.
   const [gradosCol, setGradosCol] = useState<{ grado: string }[]>([]);
   const [salonesCol, setSalonesCol] = useState<{ grado: string; salon: string }[]>([]);
+  // Grados ordenados por el orden CONFIGURADO del colegio (con respaldo canónico).
+  const gradosOrdenados = useMemo(
+    () => [...gradosCol].sort((a, b) => gradoRank(a.grado) - gradoRank(b.grado)),
+    [gradosCol, gradoRank],
+  );
   useEffect(() => {
     apiRequest<{ grados: any[]; salones: any[] }>(`/api/institucion/estructura${qCid}`)
       .then((r) => {
@@ -218,7 +226,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
         const grados = (r.grados && r.grados.length > 0)
           ? r.grados
           : Array.from(new Set(salones.map((s: any) => String(s.grado)))).map((g) => ({ grado: g }));
-        setGradosCol(grados.sort((a: any, b: any) => rankGrado(a.grado) - rankGrado(b.grado)));
+        setGradosCol(grados);
         setSalonesCol(salones);
       })
       .catch(() => { /* sin estructura aún: el selector sale vacío */ });
@@ -850,7 +858,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
                       <Label className="text-sm">Grado *</Label>
                       <select value={dirGrado} onChange={(e) => { setDirGrado(e.target.value); setDirSalon(""); }} className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                         <option value="">Selecciona…</option>
-                        {gradosCol.map((g) => <option key={g.grado} value={g.grado}>{g.grado}</option>)}
+                        {gradosOrdenados.map((g) => <option key={g.grado} value={g.grado}>{g.grado}</option>)}
                       </select>
                     </div>
                     <div>
@@ -919,8 +927,8 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
                 </div>
                 <div>
                   <Label className="text-xs text-muted-foreground">Grado(s) ({nvGrados.length})</Label>
-                  <div className="border rounded-md p-2 mt-1 max-h-32 overflow-y-auto gap-x-4 gap-y-1.5" style={gridColumnas(gradosCol.length, esSm ? 3 : 2)}>
-                    {gradosCol.map((g) => (
+                  <div className="border rounded-md p-2 mt-1 max-h-32 overflow-y-auto gap-x-4 gap-y-1.5" style={gridColumnas(gradosOrdenados.length, esSm ? 3 : 2)}>
+                    {gradosOrdenados.map((g) => (
                       <label key={g.grado} className="flex items-center gap-2 text-sm cursor-pointer select-none">
                         <input type="checkbox" checked={nvGrados.includes(g.grado)} onChange={() => setNvGrados((p) => p.includes(g.grado) ? p.filter((x) => x !== g.grado) : [...p, g.grado])} className="w-4 h-4 accent-primary cursor-pointer shrink-0" />
                         {g.grado}
