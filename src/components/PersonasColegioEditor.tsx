@@ -885,7 +885,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
                   <Label className="text-xs text-muted-foreground">Asignatura(s) ({nvAsigs.length})</Label>
                   <div className="relative mt-1">
                     <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                    <Input value={filtroAsig} onChange={(e) => setFiltroAsig(e.target.value)} className="h-8 pl-8 text-sm" />
+                    <Input value={filtroAsig} onChange={(e) => setFiltroAsig(e.target.value)} placeholder="Buscar asignatura…" className="h-8 pl-8 text-sm" />
                   </div>
                   {/* Orden alfabético por COLUMNAS (CSS multicolumna): baja la col 1 y sigue en la col 2. */}
                   <div className="border rounded-md p-2 mt-1 max-h-32 overflow-y-auto columns-1 sm:columns-2 gap-x-4">
