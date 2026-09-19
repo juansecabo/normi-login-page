@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useLayoutEffect, useMemo } from "react";
+import { useEffect, useRef, useState, useLayoutEffect, useMemo, type CSSProperties } from "react";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import {
   GraduationCap, Users, ShieldCheck, Briefcase, HeartHandshake, BookOpen,
@@ -22,20 +22,6 @@ import { cargoSegunGenero } from "@/lib/entrevistadores";
 
 /** Búsqueda flexible: ignora tildes y mayúsculas. */
 const normSearch = (s: string) => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
-
-/** Reordena para que, pintado en una grilla row-major de `cols` columnas, cada
- *  columna se lea alfabéticamente hacia ABAJO (orden por columnas). */
-function columnMajor<T>(arr: T[], cols: number): T[] {
-  if (cols <= 1) return arr;
-  const rows = Math.ceil(arr.length / cols);
-  const out: T[] = [];
-  for (let r = 0; r < rows; r++)
-    for (let c = 0; c < cols; c++) {
-      const idx = c * rows + r;
-      if (idx < arr.length) out.push(arr[idx]);
-    }
-  return out;
-}
 
 /**
  * "Personas del colegio": tarjetas por rol → página del cargo con su lista y
@@ -162,9 +148,16 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   }, []);
   const asignaturasVisibles = useMemo(() => {
     const f = normSearch(filtroAsig);
-    const lista = f ? asignaturasCol.filter((a) => normSearch(a).includes(f)) : asignaturasCol;
-    return columnMajor(lista, esSm ? 2 : 1);
-  }, [asignaturasCol, filtroAsig, esSm]);
+    return f ? asignaturasCol.filter((a) => normSearch(a).includes(f)) : asignaturasCol;
+  }, [asignaturasCol, filtroAsig]);
+  // Estilo de grilla con llenado por COLUMNAS (el navegador baja la col 1 y sigue
+  // en la 2). Filas = ceil(n/cols) para que cada columna quede a la misma altura.
+  const gridColumnas = (n: number, cols: number): CSSProperties => ({
+    display: "grid",
+    gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+    gridTemplateRows: `repeat(${Math.max(1, Math.ceil(n / cols))}, auto)`,
+    gridAutoFlow: "column",
+  });
   const [guardandoCarga, setGuardandoCarga] = useState(false);
   // Asignación en edición: rowId (fila existente en BD) o idx (fila pendiente al crear).
   const [editCarga, setEditCarga] = useState<{ rowId?: number; idx?: number } | null>(null);
@@ -910,22 +903,24 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
                     <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <Input value={filtroAsig} onChange={(e) => setFiltroAsig(e.target.value)} placeholder="Buscar asignatura…" className="h-8 pl-8 text-sm" />
                   </div>
-                  {/* Misma grilla de antes; el orden por columnas se logra reordenando los datos (columnMajor). */}
-                  <div className="border rounded-md p-2 mt-1 max-h-32 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                    {asignaturasVisibles.length === 0 ? (
-                      <p className="text-xs text-muted-foreground">Sin coincidencias.</p>
-                    ) : asignaturasVisibles.map((a) => (
-                      <label key={a} className="flex items-center gap-2 text-sm cursor-pointer select-none">
-                        <input type="checkbox" checked={nvAsigs.includes(a)} onChange={() => setNvAsigs((p) => p.includes(a) ? p.filter((x) => x !== a) : [...p, a])} className="w-4 h-4 accent-primary cursor-pointer shrink-0" />
-                        {a}
-                      </label>
-                    ))}
-                  </div>
+                  {/* Misma grilla de antes; el llenado por columnas lo hace el navegador (grid-auto-flow: column). */}
+                  {asignaturasVisibles.length === 0 ? (
+                    <div className="border rounded-md p-2 mt-1"><p className="text-xs text-muted-foreground">Sin coincidencias.</p></div>
+                  ) : (
+                    <div className="border rounded-md p-2 mt-1 max-h-32 overflow-y-auto gap-x-4 gap-y-1.5" style={gridColumnas(asignaturasVisibles.length, esSm ? 2 : 1)}>
+                      {asignaturasVisibles.map((a) => (
+                        <label key={a} className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                          <input type="checkbox" checked={nvAsigs.includes(a)} onChange={() => setNvAsigs((p) => p.includes(a) ? p.filter((x) => x !== a) : [...p, a])} className="w-4 h-4 accent-primary cursor-pointer shrink-0" />
+                          {a}
+                        </label>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label className="text-xs text-muted-foreground">Grado(s) ({nvGrados.length})</Label>
-                  <div className="border rounded-md p-2 mt-1 max-h-32 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-                    {columnMajor(gradosCol, esSm ? 3 : 2).map((g) => (
+                  <div className="border rounded-md p-2 mt-1 max-h-32 overflow-y-auto gap-x-4 gap-y-1.5" style={gridColumnas(gradosCol.length, esSm ? 3 : 2)}>
+                    {gradosCol.map((g) => (
                       <label key={g.grado} className="flex items-center gap-2 text-sm cursor-pointer select-none">
                         <input type="checkbox" checked={nvGrados.includes(g.grado)} onChange={() => setNvGrados((p) => p.includes(g.grado) ? p.filter((x) => x !== g.grado) : [...p, g.grado])} className="w-4 h-4 accent-primary cursor-pointer shrink-0" />
                         {g.grado}
