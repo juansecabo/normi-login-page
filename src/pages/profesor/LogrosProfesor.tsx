@@ -11,7 +11,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { BookOpenCheck, Plus, Pencil, Trash2, Loader2, Sparkles, Check } from "lucide-react";
-import { rankGrado } from "@/utils/grados";
+import { useEstructuraOrden } from "@/utils/estructuraOrden";
 import { useEsquemaGrado, etiquetaCorteOrdinal, corteActual } from "@/utils/esquema";
 import { getPeriodoActual } from "@/utils/periodoActual";
 
@@ -33,6 +33,7 @@ interface Logro {
 const LogrosProfesor = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const orden = useEstructuraOrden();
 
   const [combos, setCombos] = useState<Array<{ asignatura: string; grado: string }>>([]);
   const [salonesPorGA, setSalonesPorGA] = useState<Record<string, string[]>>({});
@@ -75,7 +76,7 @@ const LogrosProfesor = () => {
           }
         }
         const lista = [...set.values()].sort((x, y) =>
-          x.asignatura.localeCompare(y.asignatura, "es") || rankGrado(x.grado) - rankGrado(y.grado));
+          x.asignatura.localeCompare(y.asignatura, "es") || orden.gradoRank(x.grado) - orden.gradoRank(y.grado));
         setCombos(lista);
         // Orden NUMÉRICO de salones (1,2,…,10), no de texto (que pondría 1,10,2,…).
         const ordenSalon = (a: string, b: string) => a.localeCompare(b, "es", { numeric: true });
@@ -91,7 +92,7 @@ const LogrosProfesor = () => {
 
   const asignaturasUnicas = useMemo(() => [...new Set(combos.map((c) => c.asignatura))], [combos]);
   const gradosDeAsig = useMemo(() =>
-    combos.filter((c) => c.asignatura === asignatura).map((c) => c.grado), [combos, asignatura]);
+    combos.filter((c) => c.asignatura === asignatura).map((c) => c.grado).sort((a, b) => orden.gradoRank(a) - orden.gradoRank(b)), [combos, asignatura, orden.gradoRank]);
   const salonesDelGrado = useMemo(
     () => salonesPorGA[`${asignatura}|${grado}`] || [], [salonesPorGA, asignatura, grado]);
 

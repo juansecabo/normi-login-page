@@ -85,7 +85,7 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
       ]);
       setAsignaturas(ap.asignaturas || []);
       setPlan(ap.plan || []);
-      const gs = (est.grados || []).sort((a, b) => rankGrado(a.grado) - rankGrado(b.grado));
+      const gs = (est.grados || []).sort((a, b) => (a.orden ?? 900) - (b.orden ?? 900) || rankGrado(a.grado) - rankGrado(b.grado));
       setGrados(gs);
       setGradoSel((prev) => (prev && gs.some((g) => g.grado === prev) ? prev : gs[0]?.grado || ""));
     } catch (e) {

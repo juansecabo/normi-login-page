@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/apiClient";
 import { getSession } from "@/hooks/useSession";
-import { rankGrado } from "@/utils/grados";
+import { useEstructuraOrden } from "@/utils/estructuraOrden";
 import { Check, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import PhoneInput from "@/components/PhoneInput";
 import { capitalizarNombre } from "@/utils/texto";
@@ -50,6 +50,7 @@ interface Persona { id: string; nombres: string; apellidos: string; genero: stri
 
 const ArmarSalon = () => {
   const { toast } = useToast();
+  const orden = useEstructuraOrden();
   const cargo = getSession().cargo || "";
   const esProfesor = cargo === "Profesor(a)";
   // Datos personales (Usuarios) solo los edita el Administrador (inmutabilidad).
@@ -82,7 +83,7 @@ const ArmarSalon = () => {
   }, []);
 
   const gradosDisponibles = Array.from(new Set(salonesCol.map((s) => String(s.grado))))
-    .sort((a, b) => rankGrado(a) - rankGrado(b));
+    .sort((a, b) => orden.gradoRank(a) - orden.gradoRank(b));
   const salonesDelGrado = salonesCol.filter((s) => String(s.grado) === grado)
     .map((s) => String(s.salon)).sort((a, b) => Number(a) - Number(b));
 

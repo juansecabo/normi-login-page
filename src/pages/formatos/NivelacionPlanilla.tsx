@@ -5,7 +5,7 @@ import { getSession, puedeAccederDashboard, isAdmin, isProfesor } from "@/hooks/
 import { supabase } from "@/integrations/supabase/client";
 import { apiRequest } from "@/lib/apiClient";
 import { useToast } from "@/hooks/use-toast";
-import { rankGrado } from "@/utils/grados";
+import { useEstructuraOrden } from "@/utils/estructuraOrden";
 import SignatureCanvas from "react-signature-canvas";
 import { Save, Download, Plus, X } from "lucide-react";
 
@@ -24,6 +24,7 @@ interface Fila { id: string; nombre: string; nota: string; obs: string; firma: s
 const NivelacionPlanilla = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const orden = useEstructuraOrden();
   const sigDocente = useRef<SignatureCanvas>(null);
   const sigModal = useRef<SignatureCanvas>(null);
   const s = getSession();
@@ -67,8 +68,8 @@ const NivelacionPlanilla = () => {
   const grados = useMemo(() => {
     if (!asignatura) return [];
     const f = asignaciones.filter((a) => ((a["Asignatura(s)"] || []).flat() as string[]).includes(asignatura));
-    return [...new Set(f.flatMap((a) => (a["Grado(s)"] || []).flat() as string[]))].sort((a, b) => rankGrado(a) - rankGrado(b));
-  }, [asignatura, asignaciones]);
+    return [...new Set(f.flatMap((a) => (a["Grado(s)"] || []).flat() as string[]))].sort((a, b) => orden.gradoRank(a) - orden.gradoRank(b));
+  }, [asignatura, asignaciones, orden.gradoRank]);
 
   const salones = useMemo(() => {
     if (!asignatura || !grado) return [];

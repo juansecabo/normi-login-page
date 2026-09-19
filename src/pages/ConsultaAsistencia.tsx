@@ -4,7 +4,7 @@ import { getSession, isEstudiante, isPadreDeFamilia, isProfesor, isAdmin, type A
 import { supabase } from "@/integrations/supabase/client";
 import { apiClient, type AsistenciaEstado, type AsistenciaRegistro } from "@/lib/apiClient";
 import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNormi";
-import { rankGrado } from "@/utils/grados";
+import { useEstructuraOrden } from "@/utils/estructuraOrden";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import MatrizCurso from "@/components/asistencia/MatrizCurso";
 import CalendarioEstudiante from "@/components/asistencia/CalendarioEstudiante";
@@ -28,6 +28,7 @@ const Selector = ({ label, value, onChange, options, disabled, dataGuia }: {
 
 const ConsultaAsistencia = () => {
   const navigate = useNavigate();
+  const orden = useEstructuraOrden();
   const rolEstudiante = isEstudiante();
   const rolAcudiente = isPadreDeFamilia();
   const esInterno = !rolEstudiante && !rolAcudiente;
@@ -67,7 +68,7 @@ const ConsultaAsistencia = () => {
   }, [asignatura, grado, salon, setSearchParams]);
 
   const asignaturas = useMemo(() => [...new Set(clases.map((c) => c.asignatura))].sort((a, b) => a.localeCompare(b, "es")), [clases]);
-  const grados = useMemo(() => [...new Set(clases.filter((c) => c.asignatura === asignatura).map((c) => c.grado))].sort((a, b) => rankGrado(a) - rankGrado(b)), [clases, asignatura]);
+  const grados = useMemo(() => [...new Set(clases.filter((c) => c.asignatura === asignatura).map((c) => c.grado))].sort((a, b) => orden.gradoRank(a) - orden.gradoRank(b)), [clases, asignatura, orden.gradoRank]);
   const salones = useMemo(() => [...new Set(clases.filter((c) => c.asignatura === asignatura && c.grado === grado).map((c) => c.salon))].sort((a, b) => a.localeCompare(b, "es", { numeric: true })), [clases, asignatura, grado]);
 
   const { desde, hasta } =

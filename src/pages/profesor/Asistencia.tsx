@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { apiClient, type AsistenciaRosterItem, type AsistenciaEstado } from "@/lib/apiClient";
 import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNormi";
 import { useToast } from "@/hooks/use-toast";
-import { rankGrado } from "@/utils/grados";
+import { useEstructuraOrden } from "@/utils/estructuraOrden";
 import { Check, X, FileText, ArrowLeft, RotateCcw, Clock } from "lucide-react";
 
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
@@ -37,6 +37,7 @@ const THRESH = 90; // px para confirmar un swipe
 const Asistencia = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const orden = useEstructuraOrden();
 
   const [asignaciones, setAsignaciones] = useState<AsignacionRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,8 +91,8 @@ const Asistencia = () => {
     if (!asignatura) return [];
     const f = asignaciones.filter((a) => ((a["Asignatura(s)"] || []).flat() as string[]).includes(asignatura));
     const todos = f.flatMap((a) => (a["Grado(s)"] || []).flat() as string[]);
-    return [...new Set(todos)].sort((a, b) => rankGrado(a) - rankGrado(b));
-  }, [asignatura, asignaciones]);
+    return [...new Set(todos)].sort((a, b) => orden.gradoRank(a) - orden.gradoRank(b));
+  }, [asignatura, asignaciones, orden.gradoRank]);
 
   const salones = useMemo(() => {
     if (!asignatura || !grado) return [];

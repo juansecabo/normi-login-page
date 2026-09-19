@@ -13,7 +13,8 @@ import FirmaImage from "@/components/FirmaImage";
 import { apiRequest } from "@/lib/apiClient";
 import { joinEntrevistadores, entrevistadoresDeSolicitud, cargoSegunGenero } from "@/lib/entrevistadores";
 import FormatoWhatsAppToolbar, { EditorComunicado, whatsappToHtml, type EditorComunicadoHandle } from "@/components/FormatoWhatsAppToolbar";
-import { useGradosColegio, rankGrado } from "@/utils/grados";
+import { useGradosColegio } from "@/utils/grados";
+import { useEstructuraOrden } from "@/utils/estructuraOrden";
 import { es } from "date-fns/locale";
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 import {
@@ -28,6 +29,7 @@ interface Interno { id: number; nombres: string; apellidos: string; cargo: strin
 const SolicitudEntrevistaStaff = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const orden = useEstructuraOrden();
   const sigCanvas = useRef<SignatureCanvas>(null);
 
   // La vista vive en la URL (?vista=crear|creadas) para que al actualizar (F5)
@@ -146,7 +148,7 @@ const SolicitudEntrevistaStaff = () => {
         // 1º hora de la entrevista, 2º grado, 3º nombre del estudiante.
         const dh = horaEnMin(a.hora_entrevista) - horaEnMin(b.hora_entrevista);
         if (dh !== 0) return dh;
-        const dg = rankGrado(a.estudiante_grado) - rankGrado(b.estudiante_grado);
+        const dg = orden.gradoRank(a.estudiante_grado) - orden.gradoRank(b.estudiante_grado);
         if (dg !== 0) return dg;
         return `${a.estudiante_apellidos || ""} ${a.estudiante_nombre || ""}`
           .localeCompare(`${b.estudiante_apellidos || ""} ${b.estudiante_nombre || ""}`, "es");

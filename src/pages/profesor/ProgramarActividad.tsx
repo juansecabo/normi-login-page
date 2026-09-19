@@ -6,7 +6,8 @@ import { EntregasDeActividad } from "@/components/EntregasActividadModal";
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 import { apiRequest } from "@/lib/apiClient";
 import { getSession, isProfesor, isEstudiante, isPadreDeFamilia } from "@/hooks/useSession";
-import { rankGrado, useGradosColegio } from "@/utils/grados";
+import { useGradosColegio } from "@/utils/grados";
+import { useEstructuraOrden } from "@/utils/estructuraOrden";
 import HeaderNormi from "@/components/HeaderNormi";
 import CharCircle from "@/components/CharCircle";
 import {
@@ -133,6 +134,7 @@ const handleDescargarArchivo = async (url: string) => {
 };
 
 const ProgramarActividad = () => {
+  const orden = useEstructuraOrden();
   const navigate = useNavigate();
 
   // #22: los internos que NO son profesores programan actividades GENERALES
@@ -323,12 +325,12 @@ const ProgramarActividad = () => {
   // ===== Programar tab: cascade grados/salones =====
   useEffect(() => {
     // Modo general: los grados salen de la estructura del colegio (no de asignación).
-    if (modoGeneral) { setGrados([...gradosColegio].sort((a, b) => rankGrado(a) - rankGrado(b))); return; }
+    if (modoGeneral) { setGrados([...gradosColegio].sort((a, b) => orden.gradoRank(a) - orden.gradoRank(b))); return; }
     if (!asignaturaSeleccionada) { setGrados([]); return; }
     const filtradas = asignaciones.filter(a => ((a['Asignatura(s)'] || []).flat() as string[]).includes(asignaturaSeleccionada));
     const todos = filtradas.flatMap(a => a['Grado(s)'] || []).flat() as string[];
-    setGrados([...new Set(todos)].sort((a, b) => rankGrado(a) - rankGrado(b)));
-  }, [asignaturaSeleccionada, asignaciones, modoGeneral, gradosColegio]);
+    setGrados([...new Set(todos)].sort((a, b) => orden.gradoRank(a) - orden.gradoRank(b)));
+  }, [asignaturaSeleccionada, asignaciones, modoGeneral, gradosColegio, orden.gradoRank]);
 
   useEffect(() => {
     // Modo general: salones reales del grado, desde Estudiantes del colegio.
@@ -371,8 +373,8 @@ const ProgramarActividad = () => {
     if (!actAsignatura) { setActGrados([]); return; }
     const filtradas = asignaciones.filter(a => ((a['Asignatura(s)'] || []).flat() as string[]).includes(actAsignatura));
     const todos = filtradas.flatMap(a => a['Grado(s)'] || []).flat() as string[];
-    setActGrados([...new Set(todos)].sort((a, b) => rankGrado(a) - rankGrado(b)));
-  }, [actAsignatura, asignaciones]);
+    setActGrados([...new Set(todos)].sort((a, b) => orden.gradoRank(a) - orden.gradoRank(b)));
+  }, [actAsignatura, asignaciones, orden.gradoRank]);
 
   useEffect(() => {
     if (!actAsignatura || !actGrado) { setActSalones([]); return; }
@@ -1216,7 +1218,7 @@ const ProgramarActividad = () => {
                   {(() => {
                     // Opciones de filtro derivadas de TODAS las actividades del profe.
                     const opcAsig = [...new Set(misActividades.map((a) => a.Asignatura).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es"));
-                    const opcGrado = [...new Set(misActividades.map((a) => a.Grado).filter(Boolean))].sort((a, b) => rankGrado(a) - rankGrado(b));
+                    const opcGrado = [...new Set(misActividades.map((a) => a.Grado).filter(Boolean))].sort((a, b) => orden.gradoRank(a) - orden.gradoRank(b));
                     const opcSalon = [...new Set(misActividades.map((a) => a.Salon).filter(Boolean))].sort((a, b) => Number(a) - Number(b));
                     return (
                       <div className="mb-5">
@@ -1264,7 +1266,7 @@ const ProgramarActividad = () => {
                       const d = new Date(yy, mm - 1, dd);
                       (d < hoy ? diasPasados : diasProximos).push(d);
                     }
-                    const delDia = diaSelCal ? (porFecha[fechaKey(diaSelCal)] || []).slice().sort((a, b) => a.Asignatura.localeCompare(b.Asignatura, 'es') || rankGrado(a.Grado) - rankGrado(b.Grado) || Number(a.Salon) - Number(b.Salon)) : [];
+                    const delDia = diaSelCal ? (porFecha[fechaKey(diaSelCal)] || []).slice().sort((a, b) => a.Asignatura.localeCompare(b.Asignatura, 'es') || orden.gradoRank(a.Grado) - orden.gradoRank(b.Grado) || Number(a.Salon) - Number(b.Salon)) : [];
                     const pasado = diaSelCal ? new Date(diaSelCal.getFullYear(), diaSelCal.getMonth(), diaSelCal.getDate()) < hoy : false;
                     return (
                       <div className="flex flex-col lg:flex-row lg:items-start gap-6">
