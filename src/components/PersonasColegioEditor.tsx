@@ -903,6 +903,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
                     <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <Input value={filtroAsig} onChange={(e) => setFiltroAsig(e.target.value)} placeholder="Buscar asignatura…" className="h-8 pl-8 text-sm" />
                   </div>
+                  {/* Misma grilla de antes; el llenado por columnas lo hace el navegador (grid-auto-flow: column). */}
                   {asignaturasVisibles.length === 0 ? (
                     <div className="border rounded-md p-2 mt-1"><p className="text-xs text-muted-foreground">Sin coincidencias.</p></div>
                   ) : (
