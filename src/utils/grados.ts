@@ -28,16 +28,25 @@ export const NIVEL_DE_GRADO: Record<string, string> = {
 
 /**
  * Grados REALMENTE existentes en el colegio actual, derivados de la tabla
- * Estudiantes (el RLS / proxy filtra por colegio del JWT), ordenados según
- * ORDEN_GRADOS. Así cada colegio ve solo sus grados: el Pestalozziano incluye
- * "Párvulo" y la Normal no.
+ * Estudiantes (el RLS / proxy filtra por colegio del JWT). Se ORDENAN por el
+ * orden configurado en "Jornadas, grados y salones" (Grados_Colegio.orden); si
+ * un grado no tiene orden configurado, cae al orden canónico (rankGrado). Se
+ * incluyen TODOS los grados existentes, también los personalizados que no están
+ * en la lista canónica (ej. semestres del PFC), que antes se excluían.
  */
 export async function gradosDelColegio(): Promise<string[]> {
-  const { data } = await supabase.from("Estudiantes").select("grado");
-  const existentes = new Set(
-    (data as { grado: string | null }[] | null)?.map((r) => r.grado).filter(Boolean) as string[] || []
-  );
-  return (ORDEN_GRADOS as readonly string[]).filter((g) => existentes.has(g));
+  const [{ data: est }, { data: gc }] = await Promise.all([
+    supabase.from("Estudiantes").select("grado"),
+    supabase.from("Grados_Colegio").select("grado, orden"),
+  ]);
+  const existentes = [...new Set(
+    ((est as { grado: string | null }[] | null) || []).map((r) => r.grado).filter(Boolean) as string[]
+  )];
+  const ordenMap = new Map<string, number>();
+  for (const g of ((gc as { grado: string; orden: number | null }[] | null) || [])) {
+    if (g.orden != null) ordenMap.set(g.grado, g.orden);
+  }
+  return existentes.sort((a, b) => (ordenMap.get(a) ?? rankGrado(a)) - (ordenMap.get(b) ?? rankGrado(b)));
 }
 
 /** Hook React: { grados, loading } con los grados del colegio actual. */
