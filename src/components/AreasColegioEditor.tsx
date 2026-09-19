@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { Layers, Plus, Pencil, Trash2, Loader2, ListOrdered, GripVertical } from "lucide-react";
+import { Layers, Plus, Pencil, Trash2, Loader2, ListOrdered, GripVertical, ArrowDownAZ } from "lucide-react";
 import { useGradosColegio } from "@/utils/grados";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
@@ -159,23 +159,26 @@ const AreasColegioEditor = ({ colegioId }: Props) => {
   // el orden en areas y asignaturas para que el memo re-ordene) y se guarda en
   // segundo plano; así no hay rebote al soltar. Se arrastra por el asa.
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
-  const onDragOrden = (e: DragEndEvent) => {
-    const { active, over } = e;
-    if (!over || active.id === over.id) return;
-    const ids = listaOrden.map((it) => `${it.tipo}-${it.id}`);
-    const nueva = arrayMove(listaOrden, ids.indexOf(String(active.id)), ids.indexOf(String(over.id)));
-    // Optimista: fijar el nuevo orden en las tablas locales que alimentan el memo.
+  // Aplica un nuevo orden: optimista (fija orden en las tablas locales que
+  // alimentan el memo) + persistir en segundo plano.
+  const aplicarOrdenBoletin = (nueva: ItemOrden[]) => {
     const ordenArea = new Map<string, number>();
     const ordenAsig = new Map<number, number>();
     nueva.forEach((it, i) => { if (it.tipo === "area") ordenArea.set(String(it.id), i + 1); else ordenAsig.set(Number(it.id), i + 1); });
     setAreas((prev) => prev.map((a) => ordenArea.has(a.id) ? { ...a, orden: ordenArea.get(a.id)! } : a));
     setAsignaturas((prev) => prev.map((s) => ordenAsig.has(s.id) ? { ...s, orden_boletin: ordenAsig.get(s.id)! } : s));
-    // Persistir en segundo plano.
     apiRequest("/api/institucion/boletin-orden", {
       method: "PUT",
       body: JSON.stringify(withCid({ items: nueva.map((it, i) => ({ tipo: it.tipo, id: it.id, orden: i + 1 })) })),
     }).catch((e: any) => { toast({ title: "No se pudo reordenar", description: e?.body?.detail || e?.message, variant: "destructive" }); cargar(); });
   };
+  const onDragOrden = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const ids = listaOrden.map((it) => `${it.tipo}-${it.id}`);
+    aplicarOrdenBoletin(arrayMove(listaOrden, ids.indexOf(String(active.id)), ids.indexOf(String(over.id))));
+  };
+  const ordenarAlfabetico = () => aplicarOrdenBoletin([...listaOrden].sort((a, b) => a.nombre.localeCompare(b.nombre, "es")));
 
   const sumaPesos = filas.reduce((acc, f) => acc + (Number(f.peso) || 0), 0);
 
@@ -241,6 +244,11 @@ const AreasColegioEditor = ({ colegioId }: Props) => {
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2"><ListOrdered className="w-4 h-4 text-primary" /> Orden del boletín</CardTitle>
           <p className="text-sm text-muted-foreground">Así se listarán las áreas y asignaturas en el boletín. Arrastra cada fila por el asa para acomodar el orden del colegio.</p>
+          {listaOrden.length > 1 && (
+            <Button variant="outline" size="sm" onClick={ordenarAlfabetico} className="mt-2 gap-1.5 w-fit">
+              <ArrowDownAZ className="w-3.5 h-3.5" /> Ordenar alfabéticamente
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragOrden}>
