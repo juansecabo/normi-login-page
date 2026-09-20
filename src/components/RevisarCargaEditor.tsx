@@ -23,7 +23,7 @@ interface PreviewPlan {
   sin_catalogo: string[];
   grados_invalidos: string[];
   salones_inexistentes: Array<{ grado: string; salones: string[] }>;
-  inconsistencias: Array<{ grado: string; salones: string[]; detalle: Array<{ asignatura: string; falta_en: string[]; notas?: number }> }>;
+  inconsistencias: Array<{ grado: string; salones: string[]; detalle: Array<{ asignatura: string; falta_en: string[]; notas?: number; profesores?: string[] }> }>;
 }
 interface Asignatura { id: number; nombre: string; activa: boolean; }
 interface Grado { id: number; grado: string; orden: number | null; }
@@ -355,6 +355,12 @@ const RevisarCargaEditor = ({ colegioId }: Props) => {
                                   </span>
                                 </>)}
                               </p>
+                              {d.profesores && d.profesores.length > 0 && (
+                                <p className="text-xs mt-0.5 leading-tight truncate">
+                                  <span className="text-muted-foreground">profe: </span>
+                                  <span className="font-medium text-foreground">{d.profesores.join(", ")}</span>
+                                </p>
+                              )}
                             </div>
                             {presentes.length > 0 && (
                               <Button variant={abierto ? "secondary" : "outline"} size="sm" className="shrink-0"
