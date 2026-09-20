@@ -211,6 +211,21 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
   /** Solo las activas: son las que se ofrecen (checklist y plan por grado). */
   const activas = useMemo(() => asignaturas.filter((a) => a.activa), [asignaturas]);
 
+  /**
+   * Orden del plan por grado: las asignaturas YA escogidas en el grado van de
+   * primeras (en orden alfabético) y las demás debajo (también alfabéticas). Al
+   * deseleccionar una, vuelve a su posición entre las no escogidas.
+   */
+  const activasPlanOrden = useMemo(
+    () => [...activas].sort((a, b) => {
+      const sa = planDelGrado.has(a.id) ? 0 : 1;
+      const sb = planDelGrado.has(b.id) ? 0 : 1;
+      if (sa !== sb) return sa - sb;
+      return a.nombre.localeCompare(b.nombre, "es");
+    }),
+    [activas, planDelGrado],
+  );
+
   /** Índice de las asignaturas escogidas por nombre (case-insensitive). */
   const porNombre = useMemo(
     () => new Map(asignaturas.map((a) => [a.nombre.toLowerCase(), a])),
@@ -333,7 +348,7 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
               />
 
               <div className="divide-y rounded-lg border" data-guia="configurar_institucion.plan_asignatura_check">
-                {activas
+                {activasPlanOrden
                   .filter((a) => {
                     const norm = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
                     return !busquedaPlan.trim() || norm(a.nombre).includes(norm(busquedaPlan.trim()));
