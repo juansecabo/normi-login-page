@@ -120,6 +120,53 @@ function ScrollToTop() {
   return null;
 }
 
+/**
+ * Sincroniza la sesión entre pestañas del mismo navegador. La sesión (JWT en
+ * localStorage) es ÚNICA por navegador, compartida por todas las pestañas. Si en
+ * otra pestaña alguien inicia sesión con OTRO usuario/colegio, esta pestaña queda
+ * "a medias" (perfil viejo en memoria + escudo/token nuevos en el almacén). Aquí
+ * escuchamos el cambio del token y:
+ *   - si la sesión cambió a OTRA identidad (otra cédula/colegio/rol) → recargamos
+ *     limpio para adoptar la nueva sesión (nada de barra mezclada);
+ *   - si se cerró sesión en otra pestaña → mandamos al inicio.
+ * Se ignora la renovación deslizante del token (misma identidad) para no recargar
+ * en cada request. Se hace debounce para colapsar el par "logout + login".
+ */
+function SesionSync() {
+  useEffect(() => {
+    const KEY = "normi_jwt";
+    const identidad = (t: string | null): string | null => {
+      if (!t) return null;
+      try {
+        const p = JSON.parse(atob(t.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+        return `${p.sub || ""}|${p.colegio_id || ""}|${p.rol || ""}`;
+      } catch { return null; }
+    };
+    const miIdentidad = identidad(localStorage.getItem(KEY));
+    let timer: number | undefined;
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== KEY) return;
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        const actual = localStorage.getItem(KEY);
+        if (!actual) {
+          // Cerraron sesión en otra pestaña.
+          if (window.location.pathname !== "/") window.location.replace("/");
+          return;
+        }
+        const idActual = identidad(actual);
+        if (idActual && idActual !== miIdentidad) {
+          // Otra pestaña entró con OTRA sesión → adoptarla recargando limpio.
+          window.location.reload();
+        }
+      }, 450);
+    };
+    window.addEventListener("storage", onStorage);
+    return () => { window.removeEventListener("storage", onStorage); window.clearTimeout(timer); };
+  }, []);
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -128,6 +175,7 @@ const App = () => (
       <BrowserRouter>
         <GuiaProvider>
         <ScrollToTop />
+        <SesionSync />
         <NormiRecordatorioRecuperacion />
         <Routes>
           <Route path="/" element={<Index />} />
