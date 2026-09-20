@@ -49,6 +49,7 @@ const RevisarCargaEditor = ({ colegioId }: Props) => {
   const [corSalon, setCorSalon] = useState("");
   const [corAccion, setCorAccion] = useState<"reemplazar" | "quitar">("reemplazar");
   const [corDestino, setCorDestino] = useState("");
+  const [busqDest, setBusqDest] = useState(""); // buscador de la asignatura destino
   const [corDry, setCorDry] = useState<any>(null);
   const [corLoading, setCorLoading] = useState(false);
 
@@ -108,7 +109,7 @@ const RevisarCargaEditor = ({ colegioId }: Props) => {
     if (abierta === key) { setAbierta(null); return; }
     setAbierta(key);
     setCorGrado(grado); setCorAsig(asignatura); setCorPresentes(presentes);
-    setCorSalon(presentes[0] || ""); setCorAccion("reemplazar"); setCorDestino(""); setCorDry(null);
+    setCorSalon(presentes[0] || ""); setCorAccion("reemplazar"); setCorDestino(""); setBusqDest(""); setCorDry(null);
   };
 
   const runDry = async () => {
@@ -158,6 +159,15 @@ const RevisarCargaEditor = ({ colegioId }: Props) => {
     [preview, gradoRank],
   );
 
+  // Opciones para "Reemplazar por": alfabéticas y filtradas por el buscador
+  // (ignora tildes y mayúsculas). Excluye la asignatura que se está corrigiendo.
+  const destinoFiltradas = useMemo(() => {
+    const norm = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+    const base = asignaturas.filter((a) => a.nombre !== corAsig).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+    const q = norm(busqDest.trim());
+    return q ? base.filter((a) => norm(a.nombre).includes(q)) : base;
+  }, [asignaturas, corAsig, busqDest]);
+
   if (loading) {
     return <div className="flex items-center justify-center py-12 text-muted-foreground"><Loader2 className="w-5 h-5 animate-spin mr-2" /> Cargando…</div>;
   }
@@ -193,13 +203,31 @@ const RevisarCargaEditor = ({ colegioId }: Props) => {
       {corAccion === "reemplazar" && (
         <div>
           <label className="text-xs text-muted-foreground block mb-1">Reemplazar por</label>
-          <select className="w-full max-w-md h-9 rounded-md border bg-background px-2 text-sm"
-            value={corDestino} onChange={(e) => { setCorDestino(e.target.value); setCorDry(null); }}>
-            <option value="">Elige la asignatura…</option>
-            {asignaturas.filter((a) => a.nombre !== corAsig).map((a) => (
-              <option key={a.id} value={a.nombre}>{a.nombre}</option>
+          <input
+            value={busqDest}
+            onChange={(e) => setBusqDest(e.target.value)}
+            placeholder="Escribe para buscar la asignatura…"
+            className="w-full max-w-md h-9 rounded-md border bg-background px-2 text-sm"
+          />
+          <div className="mt-1 max-w-md max-h-48 overflow-auto rounded-md border divide-y">
+            {destinoFiltradas.length === 0 ? (
+              <p className="px-2 py-2 text-xs text-muted-foreground">Sin coincidencias.</p>
+            ) : destinoFiltradas.map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                onClick={() => { setCorDestino(a.nombre); setCorDry(null); }}
+                className={`w-full text-left px-2 py-1.5 text-sm hover:bg-muted ${corDestino === a.nombre ? "bg-primary/10 font-medium" : ""}`}
+              >
+                {a.nombre}
+              </button>
             ))}
-          </select>
+          </div>
+          {corDestino && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Seleccionada: <span className="font-medium text-foreground">{corDestino}</span>
+            </p>
+          )}
         </div>
       )}
 
