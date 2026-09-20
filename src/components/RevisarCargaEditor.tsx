@@ -220,32 +220,44 @@ const RevisarCargaEditor = ({ colegioId }: Props) => {
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Diferencias entre salones</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Una asignatura aparece en unos salones de un grado pero no en otros. Suele ser la misma materia escrita con dos nombres. Corrige cada caso reemplazándola por la correcta (mueve sus notas) o quitándola si está vacía.
+            Una asignatura aparece en unos salones de un grado pero no en otros. Suele ser la misma materia escrita con dos nombres. Reemplázala por la correcta (mueve sus notas) o quítala si está vacía. Fíjate en las notas para saber cuál nombre conservar.
           </p>
         </CardHeader>
         <CardContent>
           {inconsOrdenadas.length === 0 ? (
             <p className="text-sm text-muted-foreground">No hay diferencias entre salones. Todo está parejo.</p>
           ) : (
-            <div className="space-y-4">
-              {inconsOrdenadas.map((inc) => (
-                <div key={inc.grado}>
-                  <p className="text-sm font-semibold text-foreground mb-1">{inc.grado}</p>
-                  <div className="rounded-md border divide-y">
-                    {inc.detalle.map((d) => {
-                      const presentes = inc.salones.filter((s) => !d.falta_en.includes(s));
-                      const key = `${inc.grado}||${d.asignatura}`;
-                      const abierto = abierta === key;
-                      return (
-                        <div key={d.asignatura}>
-                          <div className="flex items-center justify-between gap-3 px-3 py-2">
+            <div className="space-y-5">
+              {inconsOrdenadas.map((inc) => {
+                const abiertaAqui = !!abierta && abierta.startsWith(`${inc.grado}||`);
+                return (
+                  <div key={inc.grado}>
+                    <p className="text-sm font-semibold text-foreground mb-2">{inc.grado}</p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {inc.detalle.map((d) => {
+                        const presentes = inc.salones.filter((s) => !d.falta_en.includes(s));
+                        const key = `${inc.grado}||${d.asignatura}`;
+                        const abierto = abierta === key;
+                        return (
+                          <div key={d.asignatura}
+                            className={`rounded-md border px-3 py-2 flex items-center justify-between gap-2 ${abierto ? "border-primary ring-1 ring-primary/30" : ""}`}>
                             <div className="min-w-0">
-                              <p className="text-sm">{d.asignatura}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {presentes.length > 0 ? `en salón ${presentes.join(", ")}` : ""}
-                                {presentes.length > 0 && d.falta_en.length > 0 ? " · " : ""}
-                                {d.falta_en.length > 0 ? `falta en ${d.falta_en.join(", ")}` : ""}
-                                {d.notas != null ? ` · ${d.notas === 0 ? "sin notas" : `${d.notas} nota${d.notas === 1 ? "" : "s"}`}` : ""}
+                              <p className="text-sm font-medium truncate">{d.asignatura}</p>
+                              <p className="text-xs mt-0.5 leading-tight">
+                                {presentes.length > 0 && (<>
+                                  <span className="text-muted-foreground">salón </span>
+                                  <span className="font-bold text-emerald-600">{presentes.join(", ")}</span>
+                                </>)}
+                                {d.falta_en.length > 0 && (<>
+                                  <span className="text-muted-foreground"> · falta </span>
+                                  <span className="font-bold text-amber-600">{d.falta_en.join(", ")}</span>
+                                </>)}
+                                {d.notas != null && (<>
+                                  <span className="text-muted-foreground"> · </span>
+                                  <span className={`font-bold ${d.notas === 0 ? "text-muted-foreground" : "text-sky-600"}`}>
+                                    {d.notas === 0 ? "sin notas" : `${d.notas} nota${d.notas === 1 ? "" : "s"}`}
+                                  </span>
+                                </>)}
                               </p>
                             </div>
                             {presentes.length > 0 && (
@@ -255,80 +267,82 @@ const RevisarCargaEditor = ({ colegioId }: Props) => {
                               </Button>
                             )}
                           </div>
+                        );
+                      })}
+                    </div>
 
-                          {abierto && (
-                            <div className="px-3 pb-3 pt-1 space-y-3 bg-muted/40">
-                              {corPresentes.length > 1 && (
-                                <div>
-                                  <label className="text-xs text-muted-foreground block mb-1">Salón</label>
-                                  <select className="w-full h-9 rounded-md border bg-background px-2 text-sm"
-                                    value={corSalon} onChange={(e) => { setCorSalon(e.target.value); setCorDry(null); }}>
-                                    {corPresentes.map((s) => <option key={s} value={s}>Salón {s}</option>)}
-                                  </select>
-                                </div>
-                              )}
+                    {/* Editor de corrección a lo ancho, debajo del grado */}
+                    {abiertaAqui && (
+                      <div className="mt-2 rounded-md border border-primary p-3 space-y-3 bg-muted/40">
+                        <p className="text-sm font-medium">Corregir "{corAsig}" en {corGrado}</p>
+                        {corPresentes.length > 1 && (
+                          <div>
+                            <label className="text-xs text-muted-foreground block mb-1">Salón</label>
+                            <select className="w-full max-w-xs h-9 rounded-md border bg-background px-2 text-sm"
+                              value={corSalon} onChange={(e) => { setCorSalon(e.target.value); setCorDry(null); }}>
+                              {corPresentes.map((s) => <option key={s} value={s}>Salón {s}</option>)}
+                            </select>
+                          </div>
+                        )}
 
-                              <div className="flex gap-2">
-                                <button type="button" onClick={() => { setCorAccion("reemplazar"); setCorDry(null); }}
-                                  className={`flex-1 rounded-md border px-3 py-1.5 text-sm ${corAccion === "reemplazar" ? "bg-primary text-primary-foreground border-primary" : "bg-background"}`}>
-                                  Reemplazar por otra
-                                </button>
-                                <button type="button" onClick={() => { setCorAccion("quitar"); setCorDry(null); }}
-                                  className={`flex-1 rounded-md border px-3 py-1.5 text-sm ${corAccion === "quitar" ? "bg-primary text-primary-foreground border-primary" : "bg-background"}`}>
-                                  Quitar del salón
-                                </button>
-                              </div>
+                        <div className="flex gap-2 max-w-md">
+                          <button type="button" onClick={() => { setCorAccion("reemplazar"); setCorDry(null); }}
+                            className={`flex-1 rounded-md border px-3 py-1.5 text-sm ${corAccion === "reemplazar" ? "bg-primary text-primary-foreground border-primary" : "bg-background"}`}>
+                            Reemplazar por otra
+                          </button>
+                          <button type="button" onClick={() => { setCorAccion("quitar"); setCorDry(null); }}
+                            className={`flex-1 rounded-md border px-3 py-1.5 text-sm ${corAccion === "quitar" ? "bg-primary text-primary-foreground border-primary" : "bg-background"}`}>
+                            Quitar del salón
+                          </button>
+                        </div>
 
-                              {corAccion === "reemplazar" && (
-                                <div>
-                                  <label className="text-xs text-muted-foreground block mb-1">Reemplazar por</label>
-                                  <select className="w-full h-9 rounded-md border bg-background px-2 text-sm"
-                                    value={corDestino} onChange={(e) => { setCorDestino(e.target.value); setCorDry(null); }}>
-                                    <option value="">Elige la asignatura…</option>
-                                    {asignaturas.filter((a) => a.nombre !== corAsig).map((a) => (
-                                      <option key={a.id} value={a.nombre}>{a.nombre}</option>
-                                    ))}
-                                  </select>
-                                </div>
-                              )}
+                        {corAccion === "reemplazar" && (
+                          <div>
+                            <label className="text-xs text-muted-foreground block mb-1">Reemplazar por</label>
+                            <select className="w-full max-w-md h-9 rounded-md border bg-background px-2 text-sm"
+                              value={corDestino} onChange={(e) => { setCorDestino(e.target.value); setCorDry(null); }}>
+                              <option value="">Elige la asignatura…</option>
+                              {asignaturas.filter((a) => a.nombre !== corAsig).map((a) => (
+                                <option key={a.id} value={a.nombre}>{a.nombre}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
 
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <Button variant="outline" size="sm" onClick={runDry}
-                                  disabled={corLoading || !corSalon || (corAccion === "reemplazar" && !corDestino)}>
-                                  {corLoading && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />} Ver qué hay detrás
-                                </Button>
-                                {corDry && (
-                                  <Button size="sm" onClick={aplicar} disabled={corLoading || !puedeAplicar}>
-                                    {corLoading && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />} Aplicar
-                                  </Button>
-                                )}
-                              </div>
-
-                              {corDry && (
-                                <div className="text-xs space-y-1">
-                                  {corDry.total_registros === 0 ? (
-                                    <p className="text-muted-foreground">Está vacía en ese salón (sin notas ni actividades).</p>
-                                  ) : (
-                                    <p className="text-muted-foreground">
-                                      Tiene {corDry.total_registros} registro(s): {Object.entries(corDry.conteos as Record<string, number>).map(([t, n]) => `${t} (${n})`).join(", ")}.
-                                    </p>
-                                  )}
-                                  {corAccion === "reemplazar" && corDry.hay_choques && (
-                                    <p className="text-destructive">No se puede: la asignatura destino ya tiene registros que chocarían en ese salón.</p>
-                                  )}
-                                  {corAccion === "quitar" && corDry.tiene_datos && (
-                                    <p className="text-destructive">No se puede quitar: tiene registros. Usa "Reemplazar por otra" para moverlos.</p>
-                                  )}
-                                </div>
-                              )}
-                            </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Button variant="outline" size="sm" onClick={runDry}
+                            disabled={corLoading || !corSalon || (corAccion === "reemplazar" && !corDestino)}>
+                            {corLoading && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />} Ver qué hay detrás
+                          </Button>
+                          {corDry && (
+                            <Button size="sm" onClick={aplicar} disabled={corLoading || !puedeAplicar}>
+                              {corLoading && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />} Aplicar
+                            </Button>
                           )}
                         </div>
-                      );
-                    })}
+
+                        {corDry && (
+                          <div className="text-xs space-y-1">
+                            {corDry.total_registros === 0 ? (
+                              <p className="text-muted-foreground">Está vacía en ese salón (sin notas ni actividades).</p>
+                            ) : (
+                              <p className="text-muted-foreground">
+                                Tiene {corDry.total_registros} registro(s): {Object.entries(corDry.conteos as Record<string, number>).map(([t, n]) => `${t} (${n})`).join(", ")}.
+                              </p>
+                            )}
+                            {corAccion === "reemplazar" && corDry.hay_choques && (
+                              <p className="text-destructive">No se puede: la asignatura destino ya tiene registros que chocarían en ese salón.</p>
+                            )}
+                            {corAccion === "quitar" && corDry.tiene_datos && (
+                              <p className="text-destructive">No se puede quitar: tiene registros. Usa "Reemplazar por otra" para moverlos.</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
