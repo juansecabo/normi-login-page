@@ -124,13 +124,14 @@ function ScrollToTop() {
  * Sincroniza la sesión entre pestañas del mismo navegador. La sesión (JWT en
  * localStorage) es ÚNICA por navegador, compartida por todas las pestañas. Si en
  * otra pestaña alguien inicia sesión con OTRO usuario/colegio, esta pestaña queda
- * "a medias" (perfil viejo en memoria + escudo/token nuevos en el almacén). Aquí
- * escuchamos el cambio del token y:
- *   - si la sesión cambió a OTRA identidad (otra cédula/colegio/rol) → recargamos
- *     limpio para adoptar la nueva sesión (nada de barra mezclada);
- *   - si se cerró sesión en otra pestaña → mandamos al inicio.
- * Se ignora la renovación deslizante del token (misma identidad) para no recargar
- * en cada request. Se hace debounce para colapsar el par "logout + login".
+ * "a medias" (perfil viejo en memoria + escudo/token nuevos en el almacén).
+ *
+ * Vigilamos el cambio del token: cuando aparece una sesión con OTRA identidad
+ * (otra cédula/colegio/rol), esta pestaña se va al tablero de esa nueva sesión
+ * (se sincroniza sola). NO reaccionamos al estado transitorio sin token (mientras
+ * alguien cierra e inicia sesión en otra pestaña) para no botar a esta al login:
+ * esperamos a que la nueva sesión aparezca. Tampoco reaccionamos a la renovación
+ * deslizante del token (misma identidad). Debounce para colapsar "logout + login".
  */
 function SesionSync() {
   useEffect(() => {
@@ -149,17 +150,13 @@ function SesionSync() {
       window.clearTimeout(timer);
       timer = window.setTimeout(() => {
         const actual = localStorage.getItem(KEY);
-        if (!actual) {
-          // Cerraron sesión en otra pestaña.
-          if (window.location.pathname !== "/") window.location.replace("/");
-          return;
-        }
+        if (!actual) return; // estado transitorio (cerrando/iniciando en otra pestaña): esperar
         const idActual = identidad(actual);
         if (idActual && idActual !== miIdentidad) {
-          // Otra pestaña entró con OTRA sesión → adoptarla recargando limpio.
-          window.location.reload();
+          // Otra pestaña entró con OTRA sesión → adoptarla yendo a su tablero.
+          window.location.assign("/dashboard");
         }
-      }, 450);
+      }, 300);
     };
     window.addEventListener("storage", onStorage);
     return () => { window.removeEventListener("storage", onStorage); window.clearTimeout(timer); };

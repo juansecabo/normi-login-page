@@ -68,7 +68,11 @@ async function request<T = unknown>(
   try { body = text ? JSON.parse(text) : null; } catch {}
 
   if (!res.ok) {
-    if (res.status === 401 && !opts?.useTempToken) {
+    // Solo tratamos el 401 como "sesión vencida" si REALMENTE mandamos un token.
+    // Si no había token (p. ej. otra pestaña del navegador cambió/borró la sesión
+    // en medio de un cambio de perfil), es un estado transitorio: fallamos callados
+    // sin botar al login, para no cerrar la sesión de las demás pestañas.
+    if (res.status === 401 && !opts?.useTempToken && token) {
       setToken(null);
       // Sesión vencida en un endpoint autenticado → mandar al inicio con aviso.
       // Excluimos el flujo de /auth/* (login, select-colegio) para no confundir
