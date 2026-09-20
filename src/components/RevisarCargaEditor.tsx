@@ -50,6 +50,7 @@ const RevisarCargaEditor = ({ colegioId }: Props) => {
   const [corAccion, setCorAccion] = useState<"reemplazar" | "quitar">("reemplazar");
   const [corDestino, setCorDestino] = useState("");
   const [busqDest, setBusqDest] = useState(""); // buscador de la asignatura destino
+  const [mostrarLista, setMostrarLista] = useState(false); // lista de destino abierta
   const [corDry, setCorDry] = useState<any>(null);
   const [corLoading, setCorLoading] = useState(false);
 
@@ -109,7 +110,7 @@ const RevisarCargaEditor = ({ colegioId }: Props) => {
     if (abierta === key) { setAbierta(null); return; }
     setAbierta(key);
     setCorGrado(grado); setCorAsig(asignatura); setCorPresentes(presentes);
-    setCorSalon(presentes[0] || ""); setCorAccion("reemplazar"); setCorDestino(""); setBusqDest(""); setCorDry(null);
+    setCorSalon(presentes[0] || ""); setCorAccion("reemplazar"); setCorDestino(""); setBusqDest(""); setMostrarLista(false); setCorDry(null);
   };
 
   const runDry = async () => {
@@ -203,30 +204,40 @@ const RevisarCargaEditor = ({ colegioId }: Props) => {
       {corAccion === "reemplazar" && (
         <div>
           <label className="text-xs text-muted-foreground block mb-1">Reemplazar por</label>
-          <input
-            value={busqDest}
-            onChange={(e) => setBusqDest(e.target.value)}
-            placeholder="Escribe para buscar la asignatura…"
-            className="w-full max-w-md h-9 rounded-md border bg-background px-2 text-sm"
-          />
-          <div className="mt-1 max-w-md max-h-48 overflow-auto rounded-md border divide-y">
-            {destinoFiltradas.length === 0 ? (
-              <p className="px-2 py-2 text-xs text-muted-foreground">Sin coincidencias.</p>
-            ) : destinoFiltradas.map((a) => (
+          <div className="relative max-w-md">
+            <input
+              value={busqDest}
+              onChange={(e) => { setBusqDest(e.target.value); setCorDestino(""); setMostrarLista(true); setCorDry(null); }}
+              onFocus={() => { if (!corDestino) setMostrarLista(true); }}
+              placeholder="Escribe para buscar la asignatura…"
+              className="w-full h-9 rounded-md border bg-background px-2 pr-8 text-sm"
+            />
+            {corDestino && (
               <button
-                key={a.id}
                 type="button"
-                onClick={() => { setCorDestino(a.nombre); setCorDry(null); }}
-                className={`w-full text-left px-2 py-1.5 text-sm hover:bg-muted ${corDestino === a.nombre ? "bg-primary/10 font-medium" : ""}`}
+                title="Quitar la asignatura elegida"
+                onClick={() => { setCorDestino(""); setBusqDest(""); setMostrarLista(true); setCorDry(null); }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
-                {a.nombre}
+                ×
               </button>
-            ))}
+            )}
           </div>
-          {corDestino && (
-            <p className="text-xs text-muted-foreground mt-1">
-              Seleccionada: <span className="font-medium text-foreground">{corDestino}</span>
-            </p>
+          {mostrarLista && (
+            <div className="mt-1 max-w-md max-h-48 overflow-auto rounded-md border divide-y">
+              {destinoFiltradas.length === 0 ? (
+                <p className="px-2 py-2 text-xs text-muted-foreground">Sin coincidencias.</p>
+              ) : destinoFiltradas.map((a) => (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => { setCorDestino(a.nombre); setBusqDest(a.nombre); setMostrarLista(false); setCorDry(null); }}
+                  className="w-full text-left px-2 py-1.5 text-sm hover:bg-muted"
+                >
+                  {a.nombre}
+                </button>
+              ))}
+            </div>
           )}
         </div>
       )}
