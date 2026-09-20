@@ -233,7 +233,7 @@ const RevisarCargaEditor = ({ colegioId }: Props) => {
                 return (
                   <div key={inc.grado}>
                     <p className="text-sm font-semibold text-foreground mb-2">{inc.grado}</p>
-                    <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="space-y-2">
                       {inc.detalle.map((d) => {
                         const presentes = inc.salones.filter((s) => !d.falta_en.includes(s));
                         const key = `${inc.grado}||${d.asignatura}`;
@@ -241,7 +241,7 @@ const RevisarCargaEditor = ({ colegioId }: Props) => {
                         return (
                           <div key={d.asignatura}
                             className={`rounded-md border px-3 py-2 flex items-center justify-between gap-2 ${abierto ? "border-primary ring-1 ring-primary/30" : ""}`}>
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1">
                               <p className="text-sm font-medium truncate">{d.asignatura}</p>
                               <p className="text-xs mt-0.5 leading-tight">
                                 {presentes.length > 0 && (<>
