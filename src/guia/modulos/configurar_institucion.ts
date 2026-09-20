@@ -625,6 +625,27 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
       { narracion: "Revisa la vista previa: qué se va a agregar por grado y los avisos de diferencias entre salones. Luego toca 'Generar plan' para confirmar.", accion: "click", ancla: "configurar_institucion.plan_generar_confirmar" },
     ],
   },
+  {
+    id: "configurar_institucion.corregir_asignatura_salon",
+    titulo: "Corregir una asignatura en un salón (reemplazar o quitar)",
+    descripcion: "Unificar o quitar una asignatura mal puesta en un salón, moviendo sus notas.",
+    categoria: "Configurar Institución",
+    roles: [...EDITAN_ESTRUCTURA],
+    ruta: RUTA,
+    endpoint: "POST /api/institucion/carga/reemplazar-asignatura-salon | quitar-asignatura-salon",
+    sinonimos: [
+      "reemplazar una asignatura por otra en un salón",
+      "unificar asignaturas con nombres distintos",
+      "quitar una asignatura de un salón",
+      "arreglar una materia mal escrita en un salón",
+      "mover las notas de una asignatura a otra",
+    ],
+    pasos: [
+      ...abrirFicha("asignaturas", "Abrimos Asignaturas."),
+      { narracion: "En Plan de estudios por grado, toca 'Generar desde las asignaciones' para ver las diferencias entre salones.", accion: "click", ancla: "configurar_institucion.plan_generar_asignaciones" },
+      { narracion: "En la línea de la asignatura que quieres arreglar, toca 'Corregir'. Elige el salón, y luego 'Reemplazar por otra' (mueve las notas a la asignatura que elijas) o 'Quitar del salón' (solo si está vacía). Toca 'Ver qué hay detrás' para revisar y luego 'Aplicar'." },
+    ],
+  },
 
   // ─────────────────── ÁREAS + ORDEN DEL BOLETÍN ───────────────────
   {

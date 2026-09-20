@@ -233,6 +233,63 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
     finally { setGenerando(false); }
   };
 
+  // ── Corregir una asignatura en un salón (reemplazar por otra / quitar) ──
+  const [corregir, setCorregir] = useState<{ grado: string; asignatura: string; presentes: string[] } | null>(null);
+  const [corSalon, setCorSalon] = useState<string>("");
+  const [corAccion, setCorAccion] = useState<"reemplazar" | "quitar">("reemplazar");
+  const [corDestino, setCorDestino] = useState<string>("");
+  const [corDry, setCorDry] = useState<any>(null);
+  const [corLoading, setCorLoading] = useState(false);
+
+  const abrirCorregir = (grado: string, asignatura: string, presentes: string[]) => {
+    setCorregir({ grado, asignatura, presentes });
+    setCorSalon(presentes[0] || "");
+    setCorAccion("reemplazar");
+    setCorDestino("");
+    setCorDry(null);
+  };
+
+  const runDry = async () => {
+    if (!corregir || !corSalon) return;
+    if (corAccion === "reemplazar" && !corDestino) return;
+    setCorLoading(true); setCorDry(null);
+    try {
+      const url = corAccion === "reemplazar"
+        ? "/api/institucion/carga/reemplazar-asignatura-salon"
+        : "/api/institucion/carga/quitar-asignatura-salon";
+      const body = corAccion === "reemplazar"
+        ? withCid({ grado: corregir.grado, salon: corSalon, asignatura_origen: corregir.asignatura, asignatura_destino: corDestino, dry_run: true })
+        : withCid({ grado: corregir.grado, salon: corSalon, asignatura: corregir.asignatura, dry_run: true });
+      const r = await apiRequest<any>(url, { method: "POST", body: JSON.stringify(body) });
+      setCorDry(r);
+    } catch (e) { err(e, "No se pudo analizar."); }
+    finally { setCorLoading(false); }
+  };
+
+  const ejecutarCorreccion = async () => {
+    if (!corregir || !corSalon) return;
+    setCorLoading(true);
+    try {
+      if (corAccion === "reemplazar") {
+        await apiRequest("/api/institucion/carga/reemplazar-asignatura-salon", {
+          method: "POST",
+          body: JSON.stringify(withCid({ grado: corregir.grado, salon: corSalon, asignatura_origen: corregir.asignatura, asignatura_destino: corDestino, dry_run: false })),
+        });
+        toast({ title: "Cambio aplicado", description: `Se movió "${corregir.asignatura}" a "${corDestino}" en ${corregir.grado} salón ${corSalon}.` });
+      } else {
+        await apiRequest("/api/institucion/carga/quitar-asignatura-salon", {
+          method: "POST",
+          body: JSON.stringify(withCid({ grado: corregir.grado, salon: corSalon, asignatura: corregir.asignatura, dry_run: false })),
+        });
+        toast({ title: "Asignatura quitada", description: `Se quitó "${corregir.asignatura}" de ${corregir.grado} salón ${corSalon}.` });
+      }
+      setCorregir(null); setCorDry(null);
+      await cargar();
+      await abrirPreview(); // refresca las diferencias
+    } catch (e) { err(e, "No se pudo aplicar el cambio."); }
+    finally { setCorLoading(false); }
+  };
+
   const guardarHoras = async (a: Asignatura, valor: string) => {
     const fila = planDelGrado.get(a.id);
     if (!fila) return;
@@ -488,10 +545,24 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
                     {inconsOrdenadas.map((inc) => (
                       <div key={inc.grado} className="text-amber-800">
                         <p className="font-medium">{inc.grado}</p>
-                        <ul className="list-disc pl-5 text-xs space-y-0.5">
-                          {inc.detalle.map((d) => (
-                            <li key={d.asignatura}>{d.asignatura} (falta en: {d.falta_en.join(", ")})</li>
-                          ))}
+                        <ul className="pl-1 text-xs space-y-1">
+                          {inc.detalle.map((d) => {
+                            const presentes = inc.salones.filter((s) => !d.falta_en.includes(s));
+                            return (
+                              <li key={d.asignatura} className="flex items-center justify-between gap-2">
+                                <span>• {d.asignatura} (falta en: {d.falta_en.join(", ")})</span>
+                                {presentes.length > 0 && (
+                                  <button
+                                    type="button"
+                                    className="shrink-0 rounded border border-amber-400 px-2 py-0.5 text-amber-800 hover:bg-amber-100"
+                                    onClick={() => abrirCorregir(inc.grado, d.asignatura, presentes)}
+                                  >
+                                    Corregir
+                                  </button>
+                                )}
+                              </li>
+                            );
+                          })}
                         </ul>
                       </div>
                     ))}
@@ -550,6 +621,112 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
               data-guia="configurar_institucion.plan_generar_confirmar"
             >
               {generando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Generar plan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Pop-up: corregir una asignatura en un salón ── */}
+      <Dialog open={!!corregir} onOpenChange={(o) => { if (!o) { setCorregir(null); setCorDry(null); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Corregir asignatura en un salón</DialogTitle>
+            <DialogDescription>
+              {corregir && <>"{corregir.asignatura}" en {corregir.grado}, salón(es) {corregir.presentes.join(", ")}.</>}
+            </DialogDescription>
+          </DialogHeader>
+
+          {corregir && (
+            <div className="space-y-3 text-sm">
+              {/* Salón (si está en varios) */}
+              {corregir.presentes.length > 1 && (
+                <div>
+                  <label className="text-xs text-muted-foreground">Salón a corregir</label>
+                  <select
+                    className="w-full h-9 rounded-md border bg-background px-2"
+                    value={corSalon}
+                    onChange={(e) => { setCorSalon(e.target.value); setCorDry(null); }}
+                  >
+                    {corregir.presentes.map((s) => <option key={s} value={s}>Salón {s}</option>)}
+                  </select>
+                </div>
+              )}
+
+              {/* Acción */}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setCorAccion("reemplazar"); setCorDry(null); }}
+                  className={`flex-1 rounded-md border px-3 py-1.5 ${corAccion === "reemplazar" ? "bg-primary text-primary-foreground border-primary" : "bg-background"}`}
+                >
+                  Reemplazar por otra
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setCorAccion("quitar"); setCorDry(null); }}
+                  className={`flex-1 rounded-md border px-3 py-1.5 ${corAccion === "quitar" ? "bg-primary text-primary-foreground border-primary" : "bg-background"}`}
+                >
+                  Quitar del salón
+                </button>
+              </div>
+
+              {corAccion === "reemplazar" && (
+                <div>
+                  <label className="text-xs text-muted-foreground">Reemplazar por</label>
+                  <select
+                    className="w-full h-9 rounded-md border bg-background px-2"
+                    value={corDestino}
+                    onChange={(e) => { setCorDestino(e.target.value); setCorDry(null); }}
+                  >
+                    <option value="">Elige la asignatura…</option>
+                    {activas.filter((a) => a.nombre !== corregir.asignatura).map((a) => (
+                      <option key={a.id} value={a.nombre}>{a.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Botón revisar */}
+              <Button variant="outline" size="sm" onClick={runDry} disabled={corLoading || !corSalon || (corAccion === "reemplazar" && !corDestino)} className="gap-1.5">
+                {corLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null} Ver qué hay detrás
+              </Button>
+
+              {/* Resultado del dry-run */}
+              {corDry && (
+                <div className="rounded-lg border p-3 text-xs space-y-1">
+                  {corDry.total_registros === 0 ? (
+                    <p className="text-muted-foreground">Esta asignatura está vacía en ese salón (sin notas ni actividades).</p>
+                  ) : (
+                    <>
+                      <p className="font-medium">Hay {corDry.total_registros} registro(s) detrás:</p>
+                      <ul className="list-disc pl-5">
+                        {Object.entries(corDry.conteos as Record<string, number>).map(([t, n]) => <li key={t}>{t}: {n}</li>)}
+                      </ul>
+                    </>
+                  )}
+                  {corAccion === "reemplazar" && corDry.hay_choques && (
+                    <p className="text-red-600 font-medium">No se puede: la asignatura destino ya tiene registros que chocarían en ese salón. Revísalo primero.</p>
+                  )}
+                  {corAccion === "quitar" && corDry.tiene_datos && (
+                    <p className="text-red-600 font-medium">No se puede quitar: tiene registros. Usa "Reemplazar por otra" para moverlos.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setCorregir(null); setCorDry(null); }} disabled={corLoading}>Cancelar</Button>
+            <Button
+              onClick={ejecutarCorreccion}
+              disabled={
+                corLoading || !corDry ||
+                (corAccion === "reemplazar" && corDry.hay_choques) ||
+                (corAccion === "quitar" && corDry.tiene_datos)
+              }
+              className="gap-2"
+            >
+              {corLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Aplicar
             </Button>
           </DialogFooter>
         </DialogContent>
