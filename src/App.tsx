@@ -150,6 +150,7 @@ function SesionSync() {
       timer = window.setTimeout(() => {
         const actual = localStorage.getItem(KEY);
         if (!actual) {
+          // Cerraron sesión en otra pestaña.
           if (window.location.pathname !== "/") window.location.replace("/");
           return;
         }
