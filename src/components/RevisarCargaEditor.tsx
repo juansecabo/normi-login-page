@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Fragment } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -165,6 +165,76 @@ const RevisarCargaEditor = ({ colegioId }: Props) => {
 
   const puedeAplicar = corDry && !(corAccion === "reemplazar" && corDry.hay_choques) && !(corAccion === "quitar" && corDry.tiene_datos);
 
+  // Editor de corrección (se muestra justo debajo de la ficha abierta).
+  const renderEditor = () => (
+    <div className="rounded-md border border-primary p-3 space-y-3 bg-muted/40">
+      <p className="text-sm font-medium">Corregir "{corAsig}" en {corGrado}</p>
+      {corPresentes.length > 1 && (
+        <div>
+          <label className="text-xs text-muted-foreground block mb-1">Salón</label>
+          <select className="w-full max-w-xs h-9 rounded-md border bg-background px-2 text-sm"
+            value={corSalon} onChange={(e) => { setCorSalon(e.target.value); setCorDry(null); }}>
+            {corPresentes.map((s) => <option key={s} value={s}>Salón {s}</option>)}
+          </select>
+        </div>
+      )}
+
+      <div className="flex gap-2 max-w-md">
+        <button type="button" onClick={() => { setCorAccion("reemplazar"); setCorDry(null); }}
+          className={`flex-1 rounded-md border px-3 py-1.5 text-sm ${corAccion === "reemplazar" ? "bg-primary text-primary-foreground border-primary" : "bg-background"}`}>
+          Reemplazar por otra
+        </button>
+        <button type="button" onClick={() => { setCorAccion("quitar"); setCorDry(null); }}
+          className={`flex-1 rounded-md border px-3 py-1.5 text-sm ${corAccion === "quitar" ? "bg-primary text-primary-foreground border-primary" : "bg-background"}`}>
+          Quitar del salón
+        </button>
+      </div>
+
+      {corAccion === "reemplazar" && (
+        <div>
+          <label className="text-xs text-muted-foreground block mb-1">Reemplazar por</label>
+          <select className="w-full max-w-md h-9 rounded-md border bg-background px-2 text-sm"
+            value={corDestino} onChange={(e) => { setCorDestino(e.target.value); setCorDry(null); }}>
+            <option value="">Elige la asignatura…</option>
+            {asignaturas.filter((a) => a.nombre !== corAsig).map((a) => (
+              <option key={a.id} value={a.nombre}>{a.nombre}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <Button variant="outline" size="sm" onClick={runDry}
+          disabled={corLoading || !corSalon || (corAccion === "reemplazar" && !corDestino)}>
+          {corLoading && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />} Ver qué hay detrás
+        </Button>
+        {corDry && (
+          <Button size="sm" onClick={aplicar} disabled={corLoading || !puedeAplicar}>
+            {corLoading && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />} Aplicar
+          </Button>
+        )}
+      </div>
+
+      {corDry && (
+        <div className="text-xs space-y-1">
+          {corDry.total_registros === 0 ? (
+            <p className="text-muted-foreground">Está vacía en ese salón (sin notas ni actividades).</p>
+          ) : (
+            <p className="text-muted-foreground">
+              Tiene {corDry.total_registros} registro(s): {Object.entries(corDry.conteos as Record<string, number>).map(([t, n]) => `${t} (${n})`).join(", ")}.
+            </p>
+          )}
+          {corAccion === "reemplazar" && corDry.hay_choques && (
+            <p className="text-destructive">No se puede: la asignatura destino ya tiene registros que chocarían en ese salón.</p>
+          )}
+          {corAccion === "quitar" && corDry.tiene_datos && (
+            <p className="text-destructive">No se puede quitar: tiene registros. Usa "Reemplazar por otra" para moverlos.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       {/* Generar plan desde la carga */}
@@ -228,19 +298,17 @@ const RevisarCargaEditor = ({ colegioId }: Props) => {
             <p className="text-sm text-muted-foreground">No hay diferencias entre salones. Todo está parejo.</p>
           ) : (
             <div className="space-y-5">
-              {inconsOrdenadas.map((inc) => {
-                const abiertaAqui = !!abierta && abierta.startsWith(`${inc.grado}||`);
-                return (
-                  <div key={inc.grado}>
-                    <p className="text-sm font-semibold text-foreground mb-2">{inc.grado}</p>
-                    <div className="space-y-2">
-                      {inc.detalle.map((d) => {
-                        const presentes = inc.salones.filter((s) => !d.falta_en.includes(s));
-                        const key = `${inc.grado}||${d.asignatura}`;
-                        const abierto = abierta === key;
-                        return (
-                          <div key={d.asignatura}
-                            className={`rounded-md border px-3 py-2 flex items-center justify-between gap-2 ${abierto ? "border-primary ring-1 ring-primary/30" : ""}`}>
+              {inconsOrdenadas.map((inc) => (
+                <div key={inc.grado}>
+                  <p className="text-sm font-semibold text-foreground mb-2">{inc.grado}</p>
+                  <div className="space-y-2">
+                    {inc.detalle.map((d) => {
+                      const presentes = inc.salones.filter((s) => !d.falta_en.includes(s));
+                      const key = `${inc.grado}||${d.asignatura}`;
+                      const abierto = abierta === key;
+                      return (
+                        <Fragment key={d.asignatura}>
+                          <div className={`rounded-md border px-3 py-2 flex items-center justify-between gap-2 ${abierto ? "border-primary ring-1 ring-primary/30" : ""}`}>
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-medium truncate">{d.asignatura}</p>
                               <p className="text-xs mt-0.5 leading-tight">
@@ -267,82 +335,13 @@ const RevisarCargaEditor = ({ colegioId }: Props) => {
                               </Button>
                             )}
                           </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Editor de corrección a lo ancho, debajo del grado */}
-                    {abiertaAqui && (
-                      <div className="mt-2 rounded-md border border-primary p-3 space-y-3 bg-muted/40">
-                        <p className="text-sm font-medium">Corregir "{corAsig}" en {corGrado}</p>
-                        {corPresentes.length > 1 && (
-                          <div>
-                            <label className="text-xs text-muted-foreground block mb-1">Salón</label>
-                            <select className="w-full max-w-xs h-9 rounded-md border bg-background px-2 text-sm"
-                              value={corSalon} onChange={(e) => { setCorSalon(e.target.value); setCorDry(null); }}>
-                              {corPresentes.map((s) => <option key={s} value={s}>Salón {s}</option>)}
-                            </select>
-                          </div>
-                        )}
-
-                        <div className="flex gap-2 max-w-md">
-                          <button type="button" onClick={() => { setCorAccion("reemplazar"); setCorDry(null); }}
-                            className={`flex-1 rounded-md border px-3 py-1.5 text-sm ${corAccion === "reemplazar" ? "bg-primary text-primary-foreground border-primary" : "bg-background"}`}>
-                            Reemplazar por otra
-                          </button>
-                          <button type="button" onClick={() => { setCorAccion("quitar"); setCorDry(null); }}
-                            className={`flex-1 rounded-md border px-3 py-1.5 text-sm ${corAccion === "quitar" ? "bg-primary text-primary-foreground border-primary" : "bg-background"}`}>
-                            Quitar del salón
-                          </button>
-                        </div>
-
-                        {corAccion === "reemplazar" && (
-                          <div>
-                            <label className="text-xs text-muted-foreground block mb-1">Reemplazar por</label>
-                            <select className="w-full max-w-md h-9 rounded-md border bg-background px-2 text-sm"
-                              value={corDestino} onChange={(e) => { setCorDestino(e.target.value); setCorDry(null); }}>
-                              <option value="">Elige la asignatura…</option>
-                              {asignaturas.filter((a) => a.nombre !== corAsig).map((a) => (
-                                <option key={a.id} value={a.nombre}>{a.nombre}</option>
-                              ))}
-                            </select>
-                          </div>
-                        )}
-
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Button variant="outline" size="sm" onClick={runDry}
-                            disabled={corLoading || !corSalon || (corAccion === "reemplazar" && !corDestino)}>
-                            {corLoading && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />} Ver qué hay detrás
-                          </Button>
-                          {corDry && (
-                            <Button size="sm" onClick={aplicar} disabled={corLoading || !puedeAplicar}>
-                              {corLoading && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />} Aplicar
-                            </Button>
-                          )}
-                        </div>
-
-                        {corDry && (
-                          <div className="text-xs space-y-1">
-                            {corDry.total_registros === 0 ? (
-                              <p className="text-muted-foreground">Está vacía en ese salón (sin notas ni actividades).</p>
-                            ) : (
-                              <p className="text-muted-foreground">
-                                Tiene {corDry.total_registros} registro(s): {Object.entries(corDry.conteos as Record<string, number>).map(([t, n]) => `${t} (${n})`).join(", ")}.
-                              </p>
-                            )}
-                            {corAccion === "reemplazar" && corDry.hay_choques && (
-                              <p className="text-destructive">No se puede: la asignatura destino ya tiene registros que chocarían en ese salón.</p>
-                            )}
-                            {corAccion === "quitar" && corDry.tiene_datos && (
-                              <p className="text-destructive">No se puede quitar: tiene registros. Usa "Reemplazar por otra" para moverlos.</p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
+                          {abierto && renderEditor()}
+                        </Fragment>
+                      );
+                    })}
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           )}
         </CardContent>
