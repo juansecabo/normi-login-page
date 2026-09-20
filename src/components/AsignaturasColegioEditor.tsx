@@ -32,6 +32,7 @@ interface PreviewPlan {
   creadas: number;
   sin_catalogo: string[];
   grados_invalidos: string[];
+  salones_inexistentes: Array<{ grado: string; salones: string[] }>;
   inconsistencias: Array<{ grado: string; salones: string[]; detalle: Array<{ asignatura: string; falta_en: string[] }> }>;
 }
 
@@ -501,6 +502,13 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
                 {preview.sin_catalogo.length > 0 && (
                   <div className="rounded-lg border border-dashed p-3 text-muted-foreground text-xs">
                     Estas asignaturas están en la carga académica pero no en el catálogo activo del colegio, así que se omiten. Agrégalas arriba si quieres incluirlas: <strong>{preview.sin_catalogo.join(", ")}</strong>
+                  </div>
+                )}
+
+                {/* Salones referidos en la carga que no existen en el grado */}
+                {preview.salones_inexistentes.length > 0 && (
+                  <div className="rounded-lg border border-dashed p-3 text-muted-foreground text-xs">
+                    La carga académica referencia salones que no existen en la matrícula de estos grados (se ignoran): {preview.salones_inexistentes.map((x) => `${x.grado} (salón ${x.salones.join(", ")})`).join("; ")}. Conviene corregirlos en la carga de los profesores.
                   </div>
                 )}
 
