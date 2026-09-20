@@ -23,7 +23,7 @@ interface PreviewPlan {
   sin_catalogo: string[];
   grados_invalidos: string[];
   salones_inexistentes: Array<{ grado: string; salones: string[] }>;
-  inconsistencias: Array<{ grado: string; salones: string[]; detalle: Array<{ asignatura: string; falta_en: string[]; notas?: number; profesores?: string[] }> }>;
+  inconsistencias: Array<{ grado: string; salones: string[]; detalle: Array<{ asignatura: string; falta_en: string[]; notas?: number; profesores?: Array<{ nombre: string; salones: string[] }> }> }>;
 }
 interface Asignatura { id: number; nombre: string; activa: boolean; }
 interface Grado { id: number; grado: string; orden: number | null; }
@@ -367,9 +367,17 @@ const RevisarCargaEditor = ({ colegioId }: Props) => {
                                 </>)}
                               </p>
                               {d.profesores && d.profesores.length > 0 && (
-                                <p className="text-xs mt-0.5 leading-tight truncate">
+                                <p className="text-xs mt-0.5 leading-tight">
                                   <span className="text-muted-foreground">Profe: </span>
-                                  <span className="font-medium text-foreground">{d.profesores.join(", ")}</span>
+                                  {d.profesores.map((p, i) => (
+                                    <span key={i}>
+                                      {i > 0 && <span className="text-muted-foreground">, </span>}
+                                      <span className="font-medium text-foreground">{p.nombre}</span>
+                                      {p.salones.length > 0 && (
+                                        <span className="text-muted-foreground"> ({p.salones.length === 1 ? "salón" : "salones"} {p.salones.join(", ")})</span>
+                                      )}
+                                    </span>
+                                  ))}
                                 </p>
                               )}
                             </div>
