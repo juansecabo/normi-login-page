@@ -620,9 +620,8 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
       "sacar el plan de lo que dictan los profesores",
     ],
     pasos: [
-      ...abrirFicha("asignaturas", "Abrimos Asignaturas."),
-      { narracion: "En Plan de estudios por grado, toca 'Generar desde las asignaciones'.", accion: "click", ancla: "configurar_institucion.plan_generar_asignaciones" },
-      { narracion: "Revisa la vista previa: qué se va a agregar por grado y los avisos de diferencias entre salones. Luego toca 'Generar plan' para confirmar.", accion: "click", ancla: "configurar_institucion.plan_generar_confirmar" },
+      ...abrirFicha("carga", "Abrimos Revisar carga académica."),
+      { narracion: "En 'Generar plan de estudios desde la carga' revisa qué se agregaría y toca 'Generar plan'.", accion: "click", ancla: "configurar_institucion.plan_generar_asignaciones" },
     ],
   },
   {
@@ -641,9 +640,8 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
       "mover las notas de una asignatura a otra",
     ],
     pasos: [
-      ...abrirFicha("asignaturas", "Abrimos Asignaturas."),
-      { narracion: "En Plan de estudios por grado, toca 'Generar desde las asignaciones' para ver las diferencias entre salones.", accion: "click", ancla: "configurar_institucion.plan_generar_asignaciones" },
-      { narracion: "En la línea de la asignatura que quieres arreglar, toca 'Corregir'. Elige el salón, y luego 'Reemplazar por otra' (mueve las notas a la asignatura que elijas) o 'Quitar del salón' (solo si está vacía). Toca 'Ver qué hay detrás' para revisar y luego 'Aplicar'." },
+      ...abrirFicha("carga", "Abrimos Revisar carga académica."),
+      { narracion: "En 'Diferencias entre salones', en la línea de la asignatura que quieres arreglar, toca 'Corregir'. Elige el salón, y luego 'Reemplazar por otra' (mueve las notas a la asignatura que elijas) o 'Quitar del salón' (solo si está vacía). Toca 'Ver qué hay detrás' para revisar y luego 'Aplicar'." },
     ],
   },
 
