@@ -150,7 +150,7 @@ function SesionSync() {
       window.clearTimeout(timer);
       timer = window.setTimeout(() => {
         const actual = localStorage.getItem(KEY);
-        if (!actual) return; // estado transitorio (cerrando/iniciando en otra pestaña): esperar
+        if (!actual) return;
         const idActual = identidad(actual);
         if (idActual && idActual !== miIdentidad) {
           // Otra pestaña entró con OTRA sesión → adoptarla yendo a su tablero.
