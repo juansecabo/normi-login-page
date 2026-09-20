@@ -605,6 +605,26 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
       { narracion: "En la fila de la asignatura marcada, escribe las horas semanales (1 a 40) en la casilla 'h/sem'. Se guarda al salir de la casilla.", accion: "escribir", ancla: "configurar_institucion.plan_horas", campo: "intensidad_horaria" },
     ],
   },
+  {
+    id: "configurar_institucion.plan_generar_desde_asignaciones",
+    titulo: "Generar el plan de estudios desde las asignaciones",
+    descripcion: "Armar el plan de estudios automáticamente con lo que dictan los profesores.",
+    categoria: "Configurar Institución",
+    roles: [...EDITAN_ESTRUCTURA],
+    ruta: RUTA,
+    endpoint: "POST /api/institucion/plan-estudios/generar-desde-asignaciones",
+    sinonimos: [
+      "generar el plan de estudios",
+      "armar el plan desde la carga académica",
+      "crear el plan de estudios automáticamente",
+      "sacar el plan de lo que dictan los profesores",
+    ],
+    pasos: [
+      ...abrirFicha("asignaturas", "Abrimos Asignaturas."),
+      { narracion: "En Plan de estudios por grado, toca 'Generar desde las asignaciones'.", accion: "click", ancla: "configurar_institucion.plan_generar_asignaciones" },
+      { narracion: "Revisa la vista previa: qué se va a agregar por grado y los avisos de diferencias entre salones. Luego toca 'Generar plan' para confirmar.", accion: "click", ancla: "configurar_institucion.plan_generar_confirmar" },
+    ],
+  },
 
   // ─────────────────── ÁREAS + ORDEN DEL BOLETÍN ───────────────────
   {

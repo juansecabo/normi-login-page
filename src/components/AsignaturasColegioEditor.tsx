@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { BookOpen, Plus, Trash2, Loader2, ListChecks, Clock, Pencil, Check } from "lucide-react";
+import { BookOpen, Plus, Trash2, Loader2, ListChecks, Clock, Pencil, Check, Wand2, AlertTriangle } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { apiRequest, ApiError } from "@/lib/apiClient";
 import { rankGrado } from "@/utils/grados";
@@ -25,6 +25,15 @@ import { rankGrado } from "@/utils/grados";
 interface Asignatura { id: number; nombre: string; activa: boolean; orden: number | null; }
 interface PlanFila { id: number; grado: string; asignatura_id: number; intensidad_horaria: number | null; }
 interface Grado { id: number; grado: string; orden: number | null; activo: boolean; }
+interface PreviewPlan {
+  dry_run: boolean;
+  resumen: Array<{ grado: string; nuevas: string[]; ya_en_plan: string[] }>;
+  a_crear: number;
+  creadas: number;
+  sin_catalogo: string[];
+  grados_invalidos: string[];
+  inconsistencias: Array<{ grado: string; salones: string[]; detalle: Array<{ asignatura: string; falta_en: string[] }> }>;
+}
 
 /**
  * Lista maestra: unión de las asignaturas reales del Colegio Pestalozziano y la
@@ -190,6 +199,39 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
     } catch (e) { err(e, "No se pudo actualizar el plan."); }
   };
 
+  // ── Generar el plan desde la carga académica (Asignación Profesores) ──
+  const [preview, setPreview] = useState<PreviewPlan | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [generando, setGenerando] = useState(false);
+
+  const abrirPreview = async () => {
+    setGenerando(true);
+    try {
+      const r = await apiRequest<PreviewPlan>("/api/institucion/plan-estudios/generar-desde-asignaciones", {
+        method: "POST",
+        body: JSON.stringify(withCid({ dry_run: true })),
+      });
+      setPreview(r);
+      setPreviewOpen(true);
+    } catch (e) { err(e, "No se pudo analizar la carga académica."); }
+    finally { setGenerando(false); }
+  };
+
+  const confirmarGeneracion = async () => {
+    setGenerando(true);
+    try {
+      const r = await apiRequest<PreviewPlan>("/api/institucion/plan-estudios/generar-desde-asignaciones", {
+        method: "POST",
+        body: JSON.stringify(withCid({ dry_run: false })),
+      });
+      toast({ title: "Plan actualizado", description: `Se agregaron ${r.creadas} asignatura(s) al plan de estudios.` });
+      setPreviewOpen(false);
+      setPreview(null);
+      await cargar();
+    } catch (e) { err(e, "No se pudo generar el plan."); }
+    finally { setGenerando(false); }
+  };
+
   const guardarHoras = async (a: Asignatura, valor: string) => {
     const fila = planDelGrado.get(a.id);
     if (!fila) return;
@@ -300,7 +342,7 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
       <Card className="bg-card">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2"><Clock className="w-4 h-4 text-primary" /> Plan de estudios por grado</CardTitle>
-          <p className="text-sm text-muted-foreground">Marca qué asignaturas se ven en cada grado y su intensidad horaria semanal. Aplica al grado completo (todos sus salones).</p>
+          <p className="text-sm text-muted-foreground">Marca qué asignaturas se ven en cada grado y su intensidad horaria semanal. Aplica al grado completo (todos sus salones). También puedes generarlo automáticamente a partir de lo que los profesores dictan.</p>
         </CardHeader>
         <CardContent className="space-y-4">
           {grados.length === 0 ? (
@@ -313,6 +355,20 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
             </p>
           ) : (
             <>
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={abrirPreview}
+                  disabled={generando}
+                  className="gap-1.5"
+                  data-guia="configurar_institucion.plan_generar_asignaciones"
+                >
+                  {generando && !previewOpen ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                  Generar desde las asignaciones
+                </Button>
+              </div>
+
               <div className="flex flex-wrap gap-1.5" data-guia="configurar_institucion.plan_grado">
                 {grados.map((g) => (
                   <button
@@ -398,6 +454,94 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
             <Button variant="outline" onClick={() => setRenombrando(null)} disabled={guardandoNombre}>Cancelar</Button>
             <Button data-guia="configurar_institucion.asignatura_renombrar_guardar" onClick={renombrarAsignatura} disabled={guardandoNombre || !nuevoNombre.trim() || nuevoNombre.trim() === renombrando?.nombre} className="gap-2">
               {guardandoNombre ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Renombrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Pop-up: generar plan desde las asignaciones (vista previa) ── */}
+      <Dialog open={previewOpen} onOpenChange={(o) => { if (!o) { setPreviewOpen(false); setPreview(null); } }}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Wand2 className="w-4 h-4 text-primary" /> Generar plan desde las asignaciones</DialogTitle>
+            <DialogDescription>
+              Esto toma las parejas grado y asignatura de la carga académica de los profesores y agrega al plan las que falten. No borra nada ni cambia las horas que ya definiste. Revisa antes de confirmar.
+            </DialogDescription>
+          </DialogHeader>
+
+          {preview && (() => {
+            const ordenGrado = (g: string) => { const i = grados.findIndex((x) => x.grado === g); return i < 0 ? 999 : i; };
+            const resumenOrdenado = [...preview.resumen].sort((a, b) => ordenGrado(a.grado) - ordenGrado(b.grado));
+            const inconsOrdenadas = [...preview.inconsistencias].sort((a, b) => ordenGrado(a.grado) - ordenGrado(b.grado));
+            return (
+              <div className="space-y-4 text-sm">
+                {/* Inconsistencias entre salones del mismo grado (revisar primero) */}
+                {inconsOrdenadas.length > 0 && (
+                  <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 space-y-2">
+                    <p className="flex items-center gap-1.5 font-medium text-amber-800">
+                      <AlertTriangle className="w-4 h-4" /> Revisa estas diferencias entre salones
+                    </p>
+                    <p className="text-amber-700 text-xs">
+                      En estos grados una asignatura aparece en unos salones pero no en otros. Puede ser un error de digitación en la carga académica. Si generas ahora, se incluirá en todo el grado.
+                    </p>
+                    {inconsOrdenadas.map((inc) => (
+                      <div key={inc.grado} className="text-amber-800">
+                        <p className="font-medium">{inc.grado}</p>
+                        <ul className="list-disc pl-5 text-xs space-y-0.5">
+                          {inc.detalle.map((d) => (
+                            <li key={d.asignatura}>{d.asignatura} (falta en: {d.falta_en.join(", ")})</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Asignaturas de las asignaciones que no están en el catálogo */}
+                {preview.sin_catalogo.length > 0 && (
+                  <div className="rounded-lg border border-dashed p-3 text-muted-foreground text-xs">
+                    Estas asignaturas están en la carga académica pero no en el catálogo activo del colegio, así que se omiten. Agrégalas arriba si quieres incluirlas: <strong>{preview.sin_catalogo.join(", ")}</strong>
+                  </div>
+                )}
+
+                {/* Grados de las asignaciones que no existen en el colegio */}
+                {preview.grados_invalidos.length > 0 && (
+                  <div className="rounded-lg border border-dashed p-3 text-muted-foreground text-xs">
+                    Estos grados aparecen en la carga académica pero no están configurados en el colegio, así que se omiten: <strong>{preview.grados_invalidos.join(", ")}</strong>
+                  </div>
+                )}
+
+                {/* Qué se va a agregar, por grado */}
+                {preview.a_crear === 0 ? (
+                  <p className="text-muted-foreground border rounded-lg p-3 text-center">
+                    El plan ya cubre todo lo que dictan los profesores. No hay nada nuevo que agregar.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-muted-foreground">Se agregarán <strong>{preview.a_crear}</strong> asignatura(s) al plan:</p>
+                    <div className="divide-y rounded-lg border">
+                      {resumenOrdenado.filter((r) => r.nuevas.length > 0).map((r) => (
+                        <div key={r.grado} className="px-3 py-2">
+                          <p className="font-medium">{r.grado} <span className="text-muted-foreground font-normal">(+{r.nuevas.length})</span></p>
+                          <p className="text-xs text-muted-foreground">{r.nuevas.join(", ")}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setPreviewOpen(false); setPreview(null); }} disabled={generando}>Cancelar</Button>
+            <Button
+              onClick={confirmarGeneracion}
+              disabled={generando || !preview || preview.a_crear === 0}
+              className="gap-2"
+              data-guia="configurar_institucion.plan_generar_confirmar"
+            >
+              {generando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Generar plan
             </Button>
           </DialogFooter>
         </DialogContent>
