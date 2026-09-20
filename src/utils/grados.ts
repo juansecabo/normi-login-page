@@ -31,7 +31,8 @@ export const NIVEL_DE_GRADO: Record<string, string> = {
  * Estudiantes (el RLS / proxy filtra por colegio del JWT). Se ORDENAN por el
  * orden configurado en "Jornadas, grados y salones" (Grados_Colegio.orden); si
  * un grado no tiene orden configurado, cae al orden canónico (rankGrado). Se
- * incluyen TODOS los grados existentes.
+ * incluyen TODOS los grados existentes, también los personalizados que no están
+ * en la lista canónica (ej. semestres del PFC), que antes se excluían.
  */
 export async function gradosDelColegio(): Promise<string[]> {
   const [{ data: est }, { data: gc }] = await Promise.all([
