@@ -341,11 +341,11 @@ const RevisarCargaEditor = ({ colegioId }: Props) => {
                               <p className="text-sm font-medium truncate">{d.asignatura}</p>
                               <p className="text-xs mt-0.5 leading-tight">
                                 {presentes.length > 0 && (<>
-                                  <span className="text-muted-foreground">salón </span>
+                                  <span className="text-muted-foreground">Salón </span>
                                   <span className="font-bold text-emerald-600">{presentes.join(", ")}</span>
                                 </>)}
                                 {d.falta_en.length > 0 && (<>
-                                  <span className="text-muted-foreground"> · falta </span>
+                                  <span className="text-muted-foreground"> · Falta </span>
                                   <span className="font-bold text-amber-600">{d.falta_en.join(", ")}</span>
                                 </>)}
                                 {d.notas != null && (<>
@@ -357,7 +357,7 @@ const RevisarCargaEditor = ({ colegioId }: Props) => {
                               </p>
                               {d.profesores && d.profesores.length > 0 && (
                                 <p className="text-xs mt-0.5 leading-tight truncate">
-                                  <span className="text-muted-foreground">profe: </span>
+                                  <span className="text-muted-foreground">Profe: </span>
                                   <span className="font-medium text-foreground">{d.profesores.join(", ")}</span>
                                 </p>
                               )}
