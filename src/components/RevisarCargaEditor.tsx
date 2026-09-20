@@ -23,7 +23,7 @@ interface PreviewPlan {
   sin_catalogo: string[];
   grados_invalidos: string[];
   salones_inexistentes: Array<{ grado: string; salones: string[] }>;
-  inconsistencias: Array<{ grado: string; salones: string[]; detalle: Array<{ asignatura: string; falta_en: string[] }> }>;
+  inconsistencias: Array<{ grado: string; salones: string[]; detalle: Array<{ asignatura: string; falta_en: string[]; notas?: number }> }>;
 }
 interface Asignatura { id: number; nombre: string; activa: boolean; }
 interface Grado { id: number; grado: string; orden: number | null; }
@@ -245,6 +245,7 @@ const RevisarCargaEditor = ({ colegioId }: Props) => {
                                 {presentes.length > 0 ? `en salón ${presentes.join(", ")}` : ""}
                                 {presentes.length > 0 && d.falta_en.length > 0 ? " · " : ""}
                                 {d.falta_en.length > 0 ? `falta en ${d.falta_en.join(", ")}` : ""}
+                                {d.notas != null ? ` · ${d.notas === 0 ? "sin notas" : `${d.notas} nota${d.notas === 1 ? "" : "s"}`}` : ""}
                               </p>
                             </div>
                             {presentes.length > 0 && (
