@@ -1020,7 +1020,7 @@ const EnviarComunicado = () => {
                         {openNivel && (
                           <div className="border rounded p-2 bg-muted/20 flex flex-col gap-2">
                             {Object.keys(nivelesGrados).map(n => (
-                              <label key={n} className={`flex items-center gap-2 text-sm ${soloAcudientes && adultosNiv.esNivelAdulto(n) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`} title={soloAcudientes && adultosNiv.esNivelAdulto(n) ? "Nivel de estudiantes adultos: no tiene acudientes. Marca Estudiantes para incluirlo." : undefined}>
+                              <label key={n} className={`flex items-center gap-2 text-sm ${soloAcudientes && adultosNiv.esNivelAdulto(n) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`} title={soloAcudientes && adultosNiv.esNivelAdulto(n) ? "Nivel sin acudientes. Marca Estudiantes para incluirlo." : undefined}>
                                 <input
                                   type="checkbox"
                                   checked={!!nivelesMarcados[n]}
@@ -1037,7 +1037,7 @@ const EnviarComunicado = () => {
                                   }}
                                   className="w-4 h-4 accent-primary cursor-pointer"
                                 />
-                                <span>{n}{soloAcudientes && adultosNiv.esNivelAdulto(n) ? " (estudiantes adultos, sin acudientes)" : ""}</span>
+                                <span>{n}{soloAcudientes && adultosNiv.esNivelAdulto(n) ? " (nivel sin acudientes)" : ""}</span>
                               </label>
                             ))}
                           </div>

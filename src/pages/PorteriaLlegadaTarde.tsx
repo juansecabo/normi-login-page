@@ -166,7 +166,7 @@ const PorteriaLlegadaTarde = () => {
             {quienes ? <p>Se notificó {quienes}.</p> : <p>La llegada tarde quedó registrada.</p>}
             {r.adultos_coordinador?.length ? (
               <div>
-                <p>Estudiantes adultos (sin acudientes), se notificó al coordinador del nivel:</p>
+                <p>Niveles sin acudientes, se notificó al coordinador del nivel:</p>
                 <ul className="list-disc pl-5">
                   {r.adultos_coordinador.map((n) => <li key={n}>{n}</li>)}
                 </ul>
@@ -174,7 +174,7 @@ const PorteriaLlegadaTarde = () => {
             ) : null}
             {r.adultos_sin_coordinador?.length ? (
               <div>
-                <p>Estudiantes adultos: el coordinador del nivel no está asignado (la llegada tarde quedó registrada):</p>
+                <p>Niveles sin acudientes: el coordinador del nivel no está asignado (la llegada tarde quedó registrada):</p>
                 <ul className="list-disc pl-5">
                   {r.adultos_sin_coordinador.map((n) => <li key={n}>{n}</li>)}
                 </ul>
@@ -482,7 +482,7 @@ export const PorteriaRegistro = () => {
                             {r.grado} {r.salon} · {horaBonita(r.hora_entrada)}
                             {!dia && r.fecha ? ` · ${fmtFecha(r.fecha)}` : ""}
                             {" · "}{adultosNiv.esGradoAdulto(r.grado)
-                              ? "estudiante adulto, aviso al coordinador"
+                              ? "nivel sin acudientes, aviso al coordinador"
                               : `${r.acudientes_notificados} acudiente${r.acudientes_notificados === 1 ? "" : "s"} notificado${r.acudientes_notificados === 1 ? "" : "s"}`}
                           </p>
                         </div>

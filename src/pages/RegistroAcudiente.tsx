@@ -134,7 +134,7 @@ const RegistroAcudiente = () => {
       }
       // Nivel de estudiantes adultos: no admite acudientes.
       if (match.nivel_adultos) {
-        err("Estudiante adulto", `${match.nombres} ${match.apellidos} pertenece a un nivel de estudiantes adultos, que no tiene acudientes. Si crees que es un error, comunícate con la institución.`);
+        err("Nivel sin acudientes", `${match.nombres} ${match.apellidos} pertenece a un nivel sin acudientes. Si crees que es un error, comunícate con la institución.`);
         return;
       }
       // Ya tiene los 4 cupos de acudidos ocupados en ese colegio.

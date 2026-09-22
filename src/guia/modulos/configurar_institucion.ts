@@ -317,8 +317,8 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
   },
   {
     id: "configurar_institucion.nivel_adultos",
-    titulo: "Marcar un nivel como de estudiantes adultos (sin acudientes)",
-    descripcion: "Para niveles cuyos estudiantes son adultos (por ejemplo Formación Complementaria o una universidad). En ese nivel no hay acudientes: no se pueden registrar, los acudientes que ya estaban vinculados quedan inactivos (no se borran) y los avisos que normalmente van a los acudientes no se envían; la llegada tarde se avisa al coordinador del nivel. Solo el rector puede cambiarlo.",
+    titulo: "Marcar un nivel sin acudientes",
+    descripcion: "Para niveles que no tienen acudientes (por ejemplo Formación Complementaria o una universidad, donde los estudiantes son adultos). En ese nivel: no se pueden registrar, los acudientes que ya estaban vinculados quedan inactivos (no se borran) y los avisos que normalmente van a los acudientes no se envían; la llegada tarde se avisa al coordinador del nivel. Solo el rector puede cambiarlo.",
     categoria: "Configurar Institución",
     roles: ["rector", "admin"],
     ruta: RUTA,
@@ -333,7 +333,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     ],
     pasos: [
       ...abrirFicha("estructura", "Abrimos Jornadas, grados y salones."),
-      { narracion: "Baja al recuadro 'Estudiantes adultos'. Hay una fila por cada nivel del colegio.", accion: "click", ancla: "configurar_institucion.nivel_adultos" },
+      { narracion: "Baja al recuadro 'Niveles sin acudientes'. Hay una fila por cada nivel del colegio.", accion: "click", ancla: "configurar_institucion.nivel_adultos" },
       { narracion: "En la fila del nivel, activa el interruptor.", accion: "click", ancla: "configurar_institucion.nivel_adultos_switch" },
       { narracion: "Lee el aviso y toca 'Confirmar'. Desde ese momento ese nivel queda sin acudientes.", accion: "click", ancla: "configurar_institucion.nivel_adultos_confirmar" },
     ],

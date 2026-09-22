@@ -469,8 +469,8 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
           )}
           {nivelesOrdenados.length > 0 && (
             <div className="rounded-lg border border-border p-3 space-y-2" data-guia="configurar_institucion.nivel_adultos">
-              <p className="text-sm font-medium">Estudiantes adultos</p>
-              <p className="text-xs text-muted-foreground">Márcalo en los niveles cuyos estudiantes son adultos (por ejemplo, Formación Complementaria o una universidad). Ahí no hay acudientes: no se pueden registrar y los avisos que normalmente van a los acudientes no se envían (la llegada tarde se avisa al coordinador del nivel).</p>
+              <p className="text-sm font-medium">Niveles sin acudientes</p>
+              <p className="text-xs text-muted-foreground">Márcalo en los niveles que no tienen acudientes (por ejemplo, Formación Complementaria o una universidad, donde los estudiantes son adultos). Ahí: no se pueden registrar y los avisos que normalmente van a los acudientes no se envían (la llegada tarde se avisa al coordinador del nivel).</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {nivelesOrdenados.map((n) => (
                   <label key={`adu-${n.id}`} className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-1.5 text-sm cursor-pointer">
@@ -680,7 +680,7 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
       <Dialog open={!!confirmAdultos} onOpenChange={(o) => { if (!o) setConfirmAdultos(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{confirmAdultos?.valor ? `¿Marcar ${confirmAdultos?.nombre} como estudiantes adultos?` : `¿Quitar la marca de adultos a ${confirmAdultos?.nombre}?`}</DialogTitle>
+            <DialogTitle>{confirmAdultos?.valor ? `¿Marcar ${confirmAdultos?.nombre} como nivel sin acudientes?` : `¿Quitar la marca de nivel sin acudientes a ${confirmAdultos?.nombre}?`}</DialogTitle>
             <DialogDescription>
               {confirmAdultos?.valor
                 ? "Los estudiantes de este nivel dejarán de tener acudientes: los acudientes que ya estaban vinculados quedan inactivos (no se borran), dejan de ver a esos estudiantes y de recibir sus avisos. No se podrán registrar acudientes nuevos. Si luego quitas la marca, los vínculos vuelven solos."

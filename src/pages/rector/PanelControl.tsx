@@ -1345,7 +1345,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
     if (adultoNuevo) {
       const est = estudiantes.find((e) => e.id === Number(adultoNuevo));
       const nom = est ? `${est.nombres || ""} ${est.apellidos || ""}`.trim() : adultoNuevo;
-      toast({ title: "Estudiante adulto", description: `${nom} pertenece a un nivel de estudiantes adultos, que no tiene acudientes.`, variant: "destructive" });
+      toast({ title: "Nivel sin acudientes", description: `${nom} pertenece a un nivel sin acudientes.`, variant: "destructive" });
       return;
     }
 
@@ -1720,7 +1720,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
         )}
         {esAdultoSlot && (
           <p className="text-xs text-amber-700">
-            Pertenece a un nivel de estudiantes adultos, que no tiene acudientes.
+            Pertenece a un nivel sin acudientes.
           </p>
         )}
       </div>
@@ -2143,7 +2143,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                 <div className="pt-2 border-t">
                   <h3 className="text-sm font-semibold mb-1">Acudientes de este estudiante</h3>
                   {adultosNiv.esGradoAdulto(estGrado || editingEst.grado, editingEst.nivel) ? (
-                    <p className="text-sm text-muted-foreground">Este estudiante pertenece a un nivel de estudiantes adultos, que no tiene acudientes.</p>
+                    <p className="text-sm text-muted-foreground">Este estudiante pertenece a un nivel sin acudientes.</p>
                   ) : (<>
                   <p className="text-xs text-muted-foreground mb-3">
                     Solo lectura. Para crear o editar acudientes usa la pestaña Acudientes.

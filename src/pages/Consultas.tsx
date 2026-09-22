@@ -1046,7 +1046,7 @@ export default function Consultas() {
                       <Label className="font-medium">Nivel(es) (opcional)</Label>
                       <div className="flex flex-wrap gap-3 mt-2">
                         {Object.keys(nivelesGrados).map((n) => (
-                          <label key={n} className={`flex items-center gap-2 text-sm ${soloAcudientes && adultosNiv.esNivelAdulto(n) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`} title={soloAcudientes && adultosNiv.esNivelAdulto(n) ? "Nivel de estudiantes adultos: no tiene acudientes. Marca Estudiantes para incluirlo." : undefined}>
+                          <label key={n} className={`flex items-center gap-2 text-sm ${soloAcudientes && adultosNiv.esNivelAdulto(n) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`} title={soloAcudientes && adultosNiv.esNivelAdulto(n) ? "Nivel sin acudientes. Marca Estudiantes para incluirlo." : undefined}>
                             <input
                               type="checkbox"
                               checked={!!nivelesMarcados[n]}
@@ -1063,7 +1063,7 @@ export default function Consultas() {
                                 });
                               }}
                             />
-                            {n}{soloAcudientes && adultosNiv.esNivelAdulto(n) ? " (estudiantes adultos, sin acudientes)" : ""}
+                            {n}{soloAcudientes && adultosNiv.esNivelAdulto(n) ? " (nivel sin acudientes)" : ""}
                           </label>
                         ))}
                       </div>
@@ -1073,7 +1073,7 @@ export default function Consultas() {
                       <Label className="font-medium">Grados</Label>
                       <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mt-2">
                         {gradosColegio.map((g) => (
-                          <label key={g} className={`flex items-center gap-2 text-sm ${soloAcudientes && adultosNiv.esGradoAdulto(g) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`} title={soloAcudientes && adultosNiv.esGradoAdulto(g) ? "Grado de un nivel de estudiantes adultos: no tiene acudientes." : undefined}>
+                          <label key={g} className={`flex items-center gap-2 text-sm ${soloAcudientes && adultosNiv.esGradoAdulto(g) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`} title={soloAcudientes && adultosNiv.esGradoAdulto(g) ? "Grado de un nivel sin acudientes." : undefined}>
                             <input
                               type="checkbox"
                               checked={!!gradosMarcados[g]}

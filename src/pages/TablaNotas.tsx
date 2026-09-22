@@ -348,8 +348,8 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   // Niveles de estudiantes adultos (Juan 2026-09-22): no hay acudientes, y al
   // estudiante (niño o adulto) no se le notifican notas; las consulta él mismo.
   const avisarNivelAdultosNotas = () => toast({
-    title: "Estudiantes adultos",
-    description: "En este nivel los estudiantes son adultos y no tienen acudientes, así que las notas no se notifican. Cada estudiante las consulta con su propio usuario o preguntándole a Normi.",
+    title: "Nivel sin acudientes",
+    description: "Este nivel no tiene acudientes, así que las notas no se notifican. Cada estudiante las consulta con su propio usuario o preguntándole a Normi.",
   });
   const CORTES = esq.cortes;
   const N_CORTES = CORTES.length;

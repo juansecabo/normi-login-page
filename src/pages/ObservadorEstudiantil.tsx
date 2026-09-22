@@ -281,8 +281,8 @@ const ObservadorEstudiantil = () => {
     // Niveles de estudiantes adultos: no hay acudientes, no se envía aviso (Juan 2026-09-22).
     const nAdultos = lista.filter(e => adultosNiv.esGradoAdulto(e.grado)).length;
     const descMulti = nAdultos === 0 ? "Se notificó a los acudientes."
-      : nAdultos === lista.length ? "Estudiantes adultos (sin acudientes): no se envió aviso."
-      : "Se notificó a los acudientes. Los estudiantes adultos no tienen acudientes, a ellos no se envió aviso.";
+      : nAdultos === lista.length ? "Nivel sin acudientes: no se envió aviso."
+      : "Se notificó a los acudientes. A los estudiantes de niveles sin acudientes no se les envió aviso.";
     toast({ title: `Observación agregada a ${lista.length} estudiante${lista.length === 1 ? "" : "s"}`, description: descMulti, variant: "success" as any });
     salirSeleccion();
   };
@@ -329,7 +329,7 @@ const ObservadorEstudiantil = () => {
     }).catch(e => console.error("notificar observador:", e));
     setGuardando(false);
     setModalOpen(false);
-    toast({ title: "Observación agregada", description: adultosNiv.esGradoAdulto(estSel.grado) ? "Estudiante adulto (sin acudientes): no se envió aviso." : "Se notificó a los acudientes.", variant: "success" as any });
+    toast({ title: "Observación agregada", description: adultosNiv.esGradoAdulto(estSel.grado) ? "Nivel sin acudientes: no se envió aviso." : "Se notificó a los acudientes.", variant: "success" as any });
     await cargarObservaciones(estSel.id);
   };
 

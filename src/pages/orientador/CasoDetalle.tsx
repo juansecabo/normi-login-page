@@ -666,7 +666,7 @@ const CasoDetalle = () => {
         texto,
       });
       toast({ title: "Seguimiento notificado", description: adultosNiv.esGradoAdulto(caso.estudiante_grado)
-        ? "Se envió por WhatsApp al coordinador, rector y director de grupo (estudiante adulto: sin acudientes)."
+        ? "Se envió por WhatsApp al coordinador, rector y director de grupo (nivel sin acudientes)."
         : "Se envió por WhatsApp al acudiente, coordinador, rector y director de grupo." });
       setNotifSeg(null);
     } catch (e: any) {

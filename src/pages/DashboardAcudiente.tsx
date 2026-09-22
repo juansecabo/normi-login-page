@@ -362,7 +362,7 @@ const DashboardAcudiente = () => {
 
           {sinAcudidosActivos && (
             <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 mb-6 text-sm text-amber-900 text-center" data-guia="dashboard_acudiente.aviso_adultos">
-              Tus estudiantes pertenecen a un nivel de estudiantes adultos, que no se gestiona por acudiente. Ellos consultan su información con su propio usuario.
+              Tus estudiantes pertenecen a un nivel sin acudientes. Ellos consultan su información con su propio usuario.
             </div>
           )}
           <ReordenableDashboard

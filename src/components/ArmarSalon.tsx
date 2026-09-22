@@ -388,7 +388,7 @@ const ArmarSalon = () => {
   // Vincular (o crear) un acudiente para el estudiante en edición. Mismo
   // modelo del Panel de Control: Usuarios global + slots acudidoN en Acudientes.
   const agregarAcudiente = async () => {
-    if (adultosNiv.esGradoAdulto(grado)) { toast({ title: "Estudiante adulto", description: "Este grado pertenece a un nivel de estudiantes adultos, que no tiene acudientes.", variant: "destructive" }); return; }
+    if (adultosNiv.esGradoAdulto(grado)) { toast({ title: "Nivel sin acudientes", description: "Este grado pertenece a un nivel sin acudientes.", variant: "destructive" }); return; }
     if (!editando) return;
     const cedAcu = soloDigitos(acuCedula);
     if (!/^\d{3,15}$/.test(cedAcu)) { toast({ title: "Cédula del acudiente inválida", variant: "destructive" }); return; }
@@ -640,7 +640,7 @@ const ArmarSalon = () => {
           {editando && adultosNiv.esGradoAdulto(grado) && (
             <div className="pt-3 border-t">
               <h3 className="text-sm font-semibold mb-1">Acudientes</h3>
-              <p className="text-sm text-muted-foreground">Este grado pertenece a un nivel de estudiantes adultos, que no tiene acudientes.</p>
+              <p className="text-sm text-muted-foreground">Este grado pertenece a un nivel sin acudientes.</p>
             </div>
           )}
           {editando && !adultosNiv.esGradoAdulto(grado) && (

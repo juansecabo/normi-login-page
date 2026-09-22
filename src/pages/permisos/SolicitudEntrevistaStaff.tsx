@@ -587,7 +587,7 @@ const SolicitudEntrevistaStaff = () => {
                 )}
                 {adultosNiv.esGradoAdulto(grado) ? (
                   <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2" data-guia="entrevistas.aviso_adultos">
-                    {grado} pertenece a un nivel de estudiantes adultos: no tienen acudientes, así que no se puede citar a un acudiente.
+                    {grado} pertenece a un nivel sin acudientes, así que no se puede citar a un acudiente.
                   </p>
                 ) : (
                 <select
