@@ -20,14 +20,16 @@ export interface EsquemaNivel {
   cortes: number[];
   /** true = cada corte cierra con su propia definitiva (no hay "Definitiva Anual"). */
   definitivaPorCorte: boolean;
+  /** Nivel de estudiantes adultos (sin acudientes, nunca). Juan 2026-09-22. */
+  adultos: boolean;
 }
 
-export const ESQUEMA_DEFAULT: EsquemaNivel = { nivel: "", esquema: "periodos", cortes: [1, 2, 3, 4], definitivaPorCorte: false };
+export const ESQUEMA_DEFAULT: EsquemaNivel = { nivel: "", esquema: "periodos", cortes: [1, 2, 3, 4], definitivaPorCorte: false, adultos: false };
 
 // Respuesta de /api/institucion/esquemas (todos los roles): niveles con esquema y grado → nivel.
 interface EstructuraResp {
   grados?: Array<{ grado: string; nivel?: string | null }>;
-  niveles?: Array<{ nivel: string; esquema?: string | null; cortes?: number | null; definitiva?: string | null }>;
+  niveles?: Array<{ nivel: string; esquema?: string | null; cortes?: number | null; definitiva?: string | null; adultos?: boolean | null }>;
 }
 
 // La caché va ligada al colegio de la sesión: al cambiar de perfil/colegio sin recargar la
@@ -57,6 +59,7 @@ async function cargar() {
           esquema,
           cortes: Array.from({ length: nCortes }, (_, i) => i + 1),
           definitivaPorCorte: n.definitiva === "por_corte",
+          adultos: n.adultos === true,
         });
       }
       for (const g of r.grados || []) if (g.grado && g.nivel) nivelDeGrado.set(g.grado, g.nivel);
@@ -147,4 +150,39 @@ export function useEsquemaGrado(grado: string | null | undefined): EsquemaNivel 
     return () => { vivo = false; };
   }, [grado]);
   return { ...esq, ready };
+}
+
+// ── Niveles de estudiantes adultos (Juan 2026-09-22) ─────────────────────────
+// En un nivel adulto NO hay acudientes: no se registran, no se les avisa, y los
+// vínculos viejos quedan inactivos. Estas funciones son la fuente única en el front.
+
+/** Nombres de los niveles adultos del colegio. */
+export async function nivelesAdultos(): Promise<Set<string>> {
+  const c = await cargar();
+  return new Set(c ? [...c.esquemas.values()].filter((e) => e.adultos).map((e) => e.nivel) : []);
+}
+/** ¿El grado pertenece a un nivel adulto? (usa el nivel del estudiante si el grado no está mapeado). */
+export async function esGradoAdulto(grado: string | null | undefined, nivelFallback?: string | null): Promise<boolean> {
+  const c = await cargar();
+  if (!c) return false;
+  const nivel = (grado && (c.nivelDeGrado.get(grado) || NIVEL_DE_GRADO[grado])) || nivelFallback || null;
+  return nivel ? c.esquemas.get(nivel)?.adultos === true : false;
+}
+/** Hook para pantallas: saber qué niveles/grados son adultos (vacío hasta que carga). */
+export function useNivelesAdultos(): { ready: boolean; niveles: Set<string>; esNivelAdulto: (nivel?: string | null) => boolean; esGradoAdulto: (grado?: string | null, nivel?: string | null) => boolean } {
+  const [st, setSt] = useState<{ ready: boolean; niveles: Set<string>; nivelDeGrado: Map<string, string> }>({ ready: false, niveles: new Set(), nivelDeGrado: new Map() });
+  useEffect(() => {
+    let vivo = true;
+    cargar().then((c) => {
+      if (!vivo || !c) return;
+      setSt({ ready: true, niveles: new Set([...c.esquemas.values()].filter((e) => e.adultos).map((e) => e.nivel)), nivelDeGrado: c.nivelDeGrado });
+    });
+    return () => { vivo = false; };
+  }, []);
+  const esNivelAdulto = (nivel?: string | null) => !!nivel && st.niveles.has(nivel);
+  const esGrado = (grado?: string | null, nivel?: string | null) => {
+    const n = (grado && (st.nivelDeGrado.get(grado) || NIVEL_DE_GRADO[grado])) || nivel || null;
+    return !!n && st.niveles.has(n);
+  };
+  return { ready: st.ready, niveles: st.niveles, esNivelAdulto, esGradoAdulto: esGrado };
 }

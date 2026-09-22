@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -30,7 +31,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 interface Jornada { id: number; nombre: string; hora_entrada: string | null; hora_salida: string | null; hora_aviso: string | null; orden: number | null; activa: boolean; }
 interface Grado { id: number; grado: string; nivel: string | null; orden: number | null; activo: boolean; }
 interface Salon { id: number; grado: string; salon: string; jornada_id: number | null; activo: boolean; }
-interface Nivel { id: number; nombre: string; orden: number | null; activo: boolean; esquema?: 'periodos' | 'semestres'; cortes?: number; definitiva?: 'anual' | 'por_corte'; }
+interface Nivel { id: number; nombre: string; orden: number | null; activo: boolean; esquema?: 'periodos' | 'semestres'; cortes?: number; definitiva?: 'anual' | 'por_corte'; adultos?: boolean; }
 
 /** Jornadas estándar que se ofrecen de un tap (sin que el usuario las escriba). */
 const JORNADAS_ESTANDAR = ["Matutina", "Vespertina", "Nocturna"];
@@ -261,6 +262,17 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
       await cargar();
     } catch (e: any) { toast({ title: "No se pudo cambiar el esquema", description: (e?.body as any)?.detail || e?.message, variant: "destructive" }); }
   };
+  // Nivel de estudiantes adultos (Juan 2026-09-22): sin acudientes. Al prenderlo, los
+  // vínculos de acudiente de ese nivel quedan INACTIVOS (no se borran); al apagarlo vuelven.
+  const [confirmAdultos, setConfirmAdultos] = useState<{ id: number; nombre: string; valor: boolean } | null>(null);
+  const cambiarAdultos = async (id: number, adultos: boolean) => {
+    try {
+      await apiRequest(`/api/institucion/niveles/${id}`, { method: "PATCH", body: JSON.stringify(withCid({ adultos })) });
+      invalidarEsquemaCache();
+      await cargar();
+    } catch (e: any) { toast({ title: "No se pudo cambiar", description: (e?.body as any)?.detail || e?.message, variant: "destructive" }); }
+    setConfirmAdultos(null);
+  };
   const borrarNivel = async (id: number) => {
     try { await apiRequest(`/api/institucion/niveles/${id}${qCid}`, { method: "DELETE" }); await cargar(); }
     catch (e) { err(e, "No se pudo eliminar el nivel."); }
@@ -451,6 +463,24 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
                       </SelectContent>
                     </Select>
                   </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {nivelesOrdenados.length > 0 && (
+            <div className="rounded-lg border border-border p-3 space-y-2" data-guia="configurar_institucion.nivel_adultos">
+              <p className="text-sm font-medium">Estudiantes adultos</p>
+              <p className="text-xs text-muted-foreground">Márcalo en los niveles cuyos estudiantes son adultos (por ejemplo, Formación Complementaria o una universidad). Ahí no hay acudientes: no se pueden registrar y los avisos que normalmente van a los acudientes no se envían (la llegada tarde se avisa al coordinador del nivel).</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {nivelesOrdenados.map((n) => (
+                  <label key={`adu-${n.id}`} className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-1.5 text-sm cursor-pointer">
+                    <span className="font-medium truncate">{n.nombre}</span>
+                    <Switch
+                      checked={!!n.adultos}
+                      onCheckedChange={(v) => setConfirmAdultos({ id: n.id, nombre: n.nombre, valor: v })}
+                      data-guia="configurar_institucion.nivel_adultos_switch"
+                    />
+                  </label>
                 ))}
               </div>
             </div>
@@ -647,6 +677,22 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
       </Card>
 
       {/* Renombrar NIVEL (se propaga a grados, estudiantes, comunicados…) */}
+      <Dialog open={!!confirmAdultos} onOpenChange={(o) => { if (!o) setConfirmAdultos(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{confirmAdultos?.valor ? `¿Marcar ${confirmAdultos?.nombre} como estudiantes adultos?` : `¿Quitar la marca de adultos a ${confirmAdultos?.nombre}?`}</DialogTitle>
+            <DialogDescription>
+              {confirmAdultos?.valor
+                ? "Los estudiantes de este nivel dejarán de tener acudientes: los acudientes que ya estaban vinculados quedan inactivos (no se borran), dejan de ver a esos estudiantes y de recibir sus avisos. No se podrán registrar acudientes nuevos. Si luego quitas la marca, los vínculos vuelven solos."
+                : "Los acudientes que estaban vinculados a estudiantes de este nivel vuelven a quedar activos y se podrán registrar acudientes de nuevo."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmAdultos(null)}>Cancelar</Button>
+            <Button data-guia="configurar_institucion.nivel_adultos_confirmar" onClick={() => confirmAdultos && cambiarAdultos(confirmAdultos.id, confirmAdultos.valor)}>Confirmar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Dialog open={!!editNivel} onOpenChange={(o) => { if (!o) setEditNivel(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
