@@ -32,8 +32,9 @@ const ProgressBar = ({ paso, total }: { paso: number; total: number }) => {
 /**
  * Auto-registro de acudientes — "Soy acudiente y quiero registrarme" (login).
  * Sucesor del registro viejo de Vercel (que llegaba por link de WhatsApp):
- * ahora es una página propia, multi-tenant (el colegio se deriva de los
- * acudidos) y sobre el modelo Usuarios + Acudientes.
+ * ahora es una página propia, multi-tenant (el colegio se deriva de cada
+ * acudido; se admiten estudiantes de varios colegios, una membresía por
+ * colegio) y sobre el modelo Usuarios + Acudientes.
  *
  * Pasos: 1) datos del acudiente → 2) estudiantes a cargo (validados uno a
  * uno contra el colegio) → 3) resumen y envío.
@@ -85,10 +86,12 @@ const RegistroAcudiente = () => {
   const [acudidos, setAcudidos] = useState<Acudido[]>([]);
   const [cedAcudido, setCedAcudido] = useState("");
   const [validando, setValidando] = useState(false);
+  // El documento existe en más de un colegio: el acudiente elige cuál.
+  const [elegirColegio, setElegirColegio] = useState<Acudido[] | null>(null);
 
   // Paso 3 — envío / éxito
   const [enviando, setEnviando] = useState(false);
-  const [exito, setExito] = useState<{ colegio: string; contrasenaConservada: boolean; agregado?: boolean } | null>(null);
+  const [exito, setExito] = useState<{ colegios: { colegio_nombre: string; agregado_a_existente: boolean }[]; contrasenaConservada: boolean } | null>(null);
 
   const err = (title: string, description?: string) => toast({ title, description, variant: "destructive" });
 
@@ -102,6 +105,33 @@ const RegistroAcudiente = () => {
     if (contrasena.length < 4 || contrasena.length > 50) { err("Contraseña inválida", "Debe tener entre 4 y 50 caracteres."); return; }
     if (contrasena !== confirmar) { err("Las contraseñas no coinciden"); return; }
     setPaso(2);
+  };
+
+  // Reglas por colegio para la coincidencia elegida.
+  const aceptarCoincidencia = (match: Acudido) => {
+    setElegirColegio(null);
+    // Ya es acudiente DE ESTE estudiante → frenar aquí con el motivo real.
+    if (match.ya_es_acudiente_de_este) {
+      err("Ya eres acudiente de este estudiante", `Ya figuras como acudiente de ${match.nombres} ${match.apellidos} en ${match.colegio_nombre}. Inicia sesión con tu cédula para consultar sus notas, o usa "¿Olvidó su contraseña?" si no la recuerdas.`);
+      return;
+    }
+    // Nivel sin acudientes: no admite acudientes.
+    if (match.nivel_adultos) {
+      err("Nivel sin acudientes", `${match.nombres} ${match.apellidos} pertenece a un nivel sin acudientes. Si crees que es un error, comunícate con la institución.`);
+      return;
+    }
+    // Ya tiene los 4 cupos de acudidos ocupados en ese colegio.
+    if (match.acudiente_sin_cupo) {
+      err("Ya tienes 4 estudiantes a cargo", `En ${match.colegio_nombre} ya tienes el máximo de 4 estudiantes a cargo. Comunícate con la institución si necesitas modificarlos.`);
+      return;
+    }
+    // Máximo 4 por colegio en este registro.
+    if (acudidos.filter((a) => a.colegio_id === match.colegio_id).length >= 4) {
+      err("Máximo 4 estudiantes por colegio", `En ${match.colegio_nombre} puedes registrar máximo 4 estudiantes a cargo.`);
+      return;
+    }
+    setAcudidos((prev) => [...prev, match]);
+    setCedAcudido("");
   };
 
   const agregarAcudido = async () => {
@@ -118,32 +148,10 @@ const RegistroAcudiente = () => {
         err("Estudiante no encontrado", `El documento ${ced} no está registrado como estudiante. Verifica el número o comunícate con la institución.`);
         return;
       }
-      // Si los ya agregados fijan un colegio, la coincidencia debe ser de ese.
-      const colegioActual = acudidos[0]?.colegio_id;
-      const match = colegioActual
-        ? r.coincidencias.find((c) => c.colegio_id === colegioActual)
-        : r.coincidencias[0];
-      if (!match) {
-        err("Colegios distintos", "Ese estudiante pertenece a otro colegio. Todos los estudiantes deben ser del mismo colegio.");
-        return;
-      }
-      // Ya es acudiente DE ESTE estudiante → frenar aquí con el motivo real.
-      if (match.ya_es_acudiente_de_este) {
-        err("Ya eres acudiente de este estudiante", `Ya figuras como acudiente de ${match.nombres} ${match.apellidos}. Inicia sesión con tu cédula para consultar sus notas, o usa "¿Olvidó su contraseña?" si no la recuerdas.`);
-        return;
-      }
-      // Nivel de estudiantes adultos: no admite acudientes.
-      if (match.nivel_adultos) {
-        err("Nivel sin acudientes", `${match.nombres} ${match.apellidos} pertenece a un nivel sin acudientes. Si crees que es un error, comunícate con la institución.`);
-        return;
-      }
-      // Ya tiene los 4 cupos de acudidos ocupados en ese colegio.
-      if (match.acudiente_sin_cupo) {
-        err("Ya tienes 4 estudiantes a cargo", `En ${match.colegio_nombre} ya tienes el máximo de 4 estudiantes a cargo. Comunícate con la institución si necesitas modificarlos.`);
-        return;
-      }
-      setAcudidos((prev) => [...prev, match]);
-      setCedAcudido("");
+      // Estudiantes de VARIOS colegios en un mismo registro: cada uno queda en
+      // su colegio. Si el documento aparece en más de un colegio, se pregunta.
+      if (r.coincidencias.length > 1) { setElegirColegio(r.coincidencias); return; }
+      aceptarCoincidencia(r.coincidencias[0]);
     } catch (e: any) {
       err("No se pudo validar", e?.body?.detail || e?.message);
     } finally {
@@ -154,15 +162,18 @@ const RegistroAcudiente = () => {
   const registrar = async () => {
     setEnviando(true);
     try {
-      const r = await apiRequest<{ ok: boolean; colegio_nombre: string; contrasena_conservada: boolean; agregado_a_existente?: boolean }>("/api/registro/acudiente", {
+      const r = await apiRequest<{ ok: boolean; colegio_nombre: string; colegios?: { colegio_nombre: string; agregado_a_existente: boolean }[]; contrasena_conservada: boolean; agregado_a_existente?: boolean }>("/api/registro/acudiente", {
         method: "POST",
         body: JSON.stringify({
           cedula: soloDigitos(cedula), nombres: nombres.trim(), apellidos: apellidos.trim(),
           telefono: soloDigitos(telefono), genero, fecha_de_nacimiento: fechaNac || null, contrasena,
-          acudidos: acudidos.map((a) => a.id),
+          acudidos: acudidos.map((a) => ({ id: a.id, colegio_id: a.colegio_id })),
         }),
       });
-      setExito({ colegio: r.colegio_nombre, contrasenaConservada: r.contrasena_conservada, agregado: !!r.agregado_a_existente });
+      setExito({
+        colegios: r.colegios?.length ? r.colegios : [{ colegio_nombre: r.colegio_nombre, agregado_a_existente: !!r.agregado_a_existente }],
+        contrasenaConservada: r.contrasena_conservada,
+      });
     } catch (e: any) {
       err("No se pudo completar el registro", e?.body?.detail || e?.message);
     } finally {
@@ -187,11 +198,13 @@ const RegistroAcudiente = () => {
           {exito ? (
             <div className="text-center space-y-4 py-4">
               <Check className="w-12 h-12 text-primary mx-auto" />
-              <p className="font-semibold text-lg">{exito.agregado ? "¡Estudiantes agregados!" : "¡Registro completado!"}</p>
+              <p className="font-semibold text-lg">{exito.colegios.every((c) => c.agregado_a_existente) ? "¡Estudiantes agregados!" : "¡Registro completado!"}</p>
               <p className="text-sm text-muted-foreground">
-                {exito.agregado
-                  ? <>Los estudiantes quedaron agregados a tu cuenta de acudiente en <strong>{exito.colegio}</strong>.</>
-                  : <>Quedaste {cargoSegunGenero("registrado(a)", genero || null)} como acudiente en <strong>{exito.colegio}</strong>.</>}{" "}
+                {exito.colegios.length === 1
+                  ? (exito.colegios[0].agregado_a_existente
+                    ? <>Los estudiantes quedaron agregados a tu cuenta de acudiente en <strong>{exito.colegios[0].colegio_nombre}</strong>.</>
+                    : <>Quedaste {cargoSegunGenero("registrado(a)", genero || null)} como acudiente en <strong>{exito.colegios[0].colegio_nombre}</strong>.</>)
+                  : <>Quedaste como acudiente en <strong>{exito.colegios.map((c) => c.colegio_nombre).join(" y ")}</strong>, con una sola cuenta para todos.</>}{" "}
                 {exito.contrasenaConservada
                   ? "Ya tenías una cuenta, así que tu contraseña sigue siendo la de siempre (si no la recuerdas, usa “¿Olvidó su contraseña?”)."
                   : "Ya puedes iniciar sesión con tu cédula y la contraseña que elegiste."}
@@ -269,7 +282,7 @@ const RegistroAcudiente = () => {
             <>
               <div className="text-center mb-4">
                 <h2 className="text-2xl font-bold text-foreground">Estudiantes a cargo</h2>
-                <p className="text-sm text-muted-foreground mt-1">Agrega los estudiantes que tienes a cargo (mínimo 1, máximo 4) con su número de identidad.</p>
+                <p className="text-sm text-muted-foreground mt-1">Agrega los estudiantes que tienes a cargo con su número de identidad. Pueden ser de distintos colegios (máximo 4 por colegio).</p>
               </div>
               {acudidos.map((a) => (
                 <div key={a.id} className="flex items-center justify-between border border-border rounded-lg p-3">
@@ -282,7 +295,19 @@ const RegistroAcudiente = () => {
                   </button>
                 </div>
               ))}
-              {acudidos.length < 4 && (
+              {elegirColegio && (
+                <div className="border border-primary/30 bg-primary/5 rounded-lg p-3 text-sm space-y-2">
+                  <p className="font-medium">Ese documento aparece en más de un colegio. ¿Cuál es?</p>
+                  {elegirColegio.map((c) => (
+                    <button key={c.colegio_id} onClick={() => aceptarCoincidencia(c)} className="w-full text-left border border-border rounded-md p-2 bg-background hover:border-primary">
+                      <span className="font-medium">{c.apellidos} {c.nombres}</span>
+                      <span className="block text-xs text-muted-foreground">{c.grado} {c.salon} · {c.colegio_nombre}</span>
+                    </button>
+                  ))}
+                  <Button variant="outline" size="sm" onClick={() => setElegirColegio(null)}>Cancelar</Button>
+                </div>
+              )}
+              {!elegirColegio && acudidos.length < 16 && (
                 <div className="flex gap-2">
                   <Input value={cedAcudido} onChange={(e) => setCedAcudido(soloDigitos(e.target.value))} inputMode="numeric" placeholder="Documento del estudiante" onKeyDown={(e) => { if (e.key === "Enter") agregarAcudido(); }} />
                   <Button onClick={agregarAcudido} disabled={validando} variant="outline" className="gap-1 shrink-0">
@@ -314,9 +339,16 @@ const RegistroAcudiente = () => {
                   <p><span className="text-muted-foreground">Acudiente:</span> {apellidos} {nombres} (doc. {soloDigitos(cedula)})</p>
                   <p><span className="text-muted-foreground">Celular:</span> +{soloDigitos(telefono)}</p>
                 </>)}
-                <p><span className="text-muted-foreground">Colegio:</span> {acudidos[0]?.colegio_nombre}</p>
-                <p className="text-muted-foreground pt-1">Estudiantes a cargo:</p>
-                {acudidos.map((a) => <p key={a.id}>• {a.apellidos} {a.nombres} — {a.grado} {a.salon}</p>)}
+                {Array.from(new Set(acudidos.map((a) => a.colegio_id))).map((cid) => {
+                  const delColegio = acudidos.filter((a) => a.colegio_id === cid);
+                  return (
+                    <div key={cid} className="pt-1">
+                      <p><span className="text-muted-foreground">Colegio:</span> {delColegio[0]?.colegio_nombre}</p>
+                      <p className="text-muted-foreground">Estudiantes a cargo:</p>
+                      {delColegio.map((a) => <p key={a.id}>• {a.apellidos} {a.nombres}, {a.grado} {a.salon}</p>)}
+                    </div>
+                  );
+                })}
               </div>
               <div className="flex gap-3 pt-2">
                 <Button variant="outline" onClick={() => setPaso(2)} disabled={enviando} className="flex-1 gap-1"><ArrowLeft className="w-4 h-4" /> Atrás</Button>
