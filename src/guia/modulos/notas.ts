@@ -603,7 +603,7 @@ export const NOTAS: Capacidad[] = [
     id: "notas.notificar_definitiva",
     titulo: "Notificar la nota definitiva a un acudiente",
     descripcion:
-      "Enviar por WhatsApp la definitiva del periodo de un estudiante a su acudiente.",
+      "Enviar por WhatsApp la definitiva del periodo de un estudiante a su acudiente. En un nivel de estudiantes adultos no aplica (no hay acudientes).",
     categoria: "Notas",
     roles: [...ESCRIBEN_NOTAS],
     ruta: "/tabla-notas",

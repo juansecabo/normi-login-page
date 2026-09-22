@@ -677,7 +677,7 @@ export const ORIENTACION: Capacidad[] = [
       },
       {
         narracion:
-          "En 'Informar a', marca a quién se le avisa: al estudiante, a los acudientes, o a ambos. Es obligatorio elegir al menos uno.",
+          "En 'Informar a', marca a quién se le avisa: al estudiante, a los acudientes, o a ambos (en un nivel de estudiantes adultos solo aparece el estudiante). Es obligatorio elegir al menos uno.",
         accion: "click",
         ancla: "orientacion.cita_informar_a",
         campo: "asistentes",

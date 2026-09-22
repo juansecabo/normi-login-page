@@ -54,7 +54,7 @@ export const PORTERIA: Capacidad[] = [
     id: "porteria.reportar_tarde",
     titulo: "Reportar llegada tarde y avisar a los acudientes",
     descripcion:
-      "Marcar a los estudiantes que llegaron tarde y enviar el reporte, que notifica por WhatsApp a sus acudientes con la hora de entrada.",
+      "Marcar a los estudiantes que llegaron tarde y enviar el reporte, que notifica por WhatsApp a sus acudientes con la hora de entrada (en un nivel de estudiantes adultos no hay acudientes: se avisa solo al coordinador del nivel).",
     categoria: "Portería",
     roles: [...PORTERIA_ROLES],
     ruta: "/porteria/llegada-tarde",
@@ -114,7 +114,7 @@ export const PORTERIA: Capacidad[] = [
       },
       {
         narracion:
-          "Cuando estén todos, toca 'Enviar reporte'. Se notificará por WhatsApp a los acudientes con la hora de entrada de este momento.",
+          "Cuando estén todos, toca 'Enviar reporte'. Se notificará por WhatsApp a los acudientes con la hora de entrada de este momento (si el estudiante es de un nivel de estudiantes adultos, se avisa solo al coordinador del nivel).",
         accion: "click",
         ancla: "porteria.enviar_reporte",
       },

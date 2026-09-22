@@ -486,7 +486,7 @@ export const COMPORTAMIENTO_OBSERVADOR: Capacidad[] = [
     id: "comportamiento_observador.observador_agregar",
     titulo: "Agregar una observación a un estudiante",
     descripcion:
-      "Escribir una nueva observación en el cuaderno de un estudiante; al guardarla se notifica por WhatsApp a sus acudientes.",
+      "Escribir una nueva observación en el cuaderno de un estudiante; al guardarla se notifica por WhatsApp a sus acudientes (en un nivel de estudiantes adultos no hay acudientes, así que no se envía aviso).",
     categoria: "Comportamiento y Observador",
     roles: [...INTERNOS_OBSERVADOR],
     ruta: "/observador-estudiantil",
@@ -517,7 +517,7 @@ export const COMPORTAMIENTO_OBSERVADOR: Capacidad[] = [
       },
       {
         narracion:
-          "Toca 'Guardar'. Se avisa por WhatsApp a los acudientes del estudiante. Listo.",
+          "Toca 'Guardar'. Se avisa por WhatsApp a los acudientes del estudiante (si es de un nivel de estudiantes adultos, no se envía aviso). Listo.",
         accion: "click",
         ancla: "comportamiento_observador.obs_modal_guardar",
       },
@@ -527,7 +527,7 @@ export const COMPORTAMIENTO_OBSERVADOR: Capacidad[] = [
     id: "comportamiento_observador.observador_agregar_varios",
     titulo: "Agregar la misma observación a varios estudiantes",
     descripcion:
-      "Escribir una observación una sola vez y guardarla para varios estudiantes a la vez (incluso de distintos salones); notifica a los acudientes de cada uno.",
+      "Escribir una observación una sola vez y guardarla para varios estudiantes a la vez (incluso de distintos salones); notifica a los acudientes de cada uno (salvo los de niveles de estudiantes adultos, que no tienen acudientes).",
     categoria: "Comportamiento y Observador",
     roles: [...INTERNOS_OBSERVADOR],
     ruta: "/observador-estudiantil",
