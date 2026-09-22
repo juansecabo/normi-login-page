@@ -189,6 +189,24 @@ async function fetchAllPages<T>(
  * Configurar Institución para Estudiantes/Acudientes. Mismo código, misma data:
  * lo que se haga aquí o allá queda idéntico porque ES el mismo componente.
  */
+/**
+ * Verifica en el servidor si un número de teléfono ya pertenece a otra persona
+ * (el teléfono es único). Devuelve el motivo a mostrar, o null si está libre.
+ * Fail-open: si la verificación falla, devuelve null para no bloquear el
+ * registro (el choque de unicidad sigue como red de seguridad).
+ */
+async function verificarTelefonoDisponible(telefono: string, excluirId: string | number): Promise<string | null> {
+  try {
+    const r = await apiRequest<{ disponible: boolean; motivo?: string }>("/api/institucion/verificar-telefono", {
+      method: "POST",
+      body: JSON.stringify({ telefono, excluir_id: excluirId }),
+    });
+    return r?.disponible ? null : (r?.motivo || "Ese número de teléfono ya está registrado a otra persona.");
+  } catch {
+    return null;
+  }
+}
+
 const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boolean; tabFija?: "estudiantes" | "perfiles"; soloGrupo?: { grado: string; salon: string } } = {}) => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -832,6 +850,17 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
       }
     }
 
+    // Si el número ya pertenece a OTRA persona, avisar el motivo claro antes de
+    // tocar Usuarios (el teléfono es único). Fail-open si la verificación falla.
+    if (tel) {
+      const motivoTel = await verificarTelefonoDisponible(tel, idNorm);
+      if (motivoTel) {
+        setSavingEst(false);
+        toast({ title: "No se puede registrar", description: motivoTel, variant: "destructive" });
+        return;
+      }
+    }
+
     // ── 1) Usuarios (fuente única de nombres/apellidos/teléfono, cross-colegio).
     //       Editar aquí propaga el cambio a todos los colegios de esa persona.
     const { data: existingUserEst } = await supabase
@@ -970,11 +999,23 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
     // después Internos (solo id + cargo). Si falla Usuarios y va primero, no
     // queda un Interno huérfano sin datos. Si Internos falla por id duplicado,
     // borramos el Usuario que acabamos de crear si era nuevo (no había antes).
+    const telInt = intTelefono.trim() || null;
+    // Si el número ya pertenece a OTRA persona, avisar el motivo claro (el
+    // teléfono es único). Fail-open si la verificación falla.
+    if (telInt) {
+      const motivoTel = await verificarTelefonoDisponible(telInt, intId);
+      if (motivoTel) {
+        setSavingInt(false);
+        toast({ title: "No se puede registrar", description: motivoTel, variant: "destructive" });
+        return;
+      }
+    }
+
     const usuariosPayload: Record<string, unknown> = {
       id: intId,
       nombres: intNombres.trim(),
       apellidos: intApellidos.trim(),
-      numero_de_telefono: intTelefono.trim() || null,
+      numero_de_telefono: telInt,
     };
     if (intContrasena) {
       usuariosPayload.contrasena = intContrasena;
@@ -1339,6 +1380,17 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
     const tel = perfTelefono.trim() || null;
     const { data: existingUserAcu } = await supabase
       .from("Usuarios").select("id").eq("id", cedAcu).maybeSingle();
+    // Si vamos a escribir el teléfono y ya pertenece a OTRA persona, avisar el
+    // motivo claro (el teléfono es único). El profesor que no toca un acudiente
+    // ya registrado no lo escribe, así que ahí no se verifica. Fail-open.
+    if (tel && !(existingUserAcu && esProfesor)) {
+      const motivoTel = await verificarTelefonoDisponible(tel, cedAcu);
+      if (motivoTel) {
+        setSavingPerf(false);
+        toast({ title: "No se puede registrar", description: motivoTel, variant: "destructive" });
+        return;
+      }
+    }
     {
       const datosAcu = {
         nombres: perfPadreNombre.trim(),
