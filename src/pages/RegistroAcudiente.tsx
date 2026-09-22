@@ -278,7 +278,7 @@ const RegistroAcudiente = () => {
             <>
               <div className="text-center mb-4">
                 <h2 className="text-2xl font-bold text-foreground">Estudiantes a cargo</h2>
-                <p className="text-sm text-muted-foreground mt-1">Agrega los estudiantes que tienes a cargo con su número de identidad. Pueden ser de distintos colegios (máximo 4 en total).</p>
+                <p className="text-sm text-muted-foreground mt-1">Agrega los estudiantes que tienes a cargo con su número de identidad. Pueden ser de distintos colegios.</p>
               </div>
               {acudidos.map((a) => (
                 <div key={a.id} className="flex items-center justify-between border border-border rounded-lg p-3">
