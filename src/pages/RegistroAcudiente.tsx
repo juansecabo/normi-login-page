@@ -39,7 +39,7 @@ const ProgressBar = ({ paso, total }: { paso: number; total: number }) => {
  * uno contra el colegio) → 3) resumen y envío.
  */
 
-interface Acudido { id: string; nombres: string; apellidos: string; grado: string; salon: string; colegio_id: string; colegio_nombre: string; ya_es_acudiente_de_este?: boolean; acudiente_sin_cupo?: boolean; }
+interface Acudido { id: string; nombres: string; apellidos: string; grado: string; salon: string; colegio_id: string; colegio_nombre: string; ya_es_acudiente_de_este?: boolean; acudiente_sin_cupo?: boolean; nivel_adultos?: boolean; }
 
 const soloDigitos = (v: string) => v.replace(/\D/g, "");
 
@@ -130,6 +130,11 @@ const RegistroAcudiente = () => {
       // Ya es acudiente DE ESTE estudiante → frenar aquí con el motivo real.
       if (match.ya_es_acudiente_de_este) {
         err("Ya eres acudiente de este estudiante", `Ya figuras como acudiente de ${match.nombres} ${match.apellidos}. Inicia sesión con tu cédula para consultar sus notas, o usa "¿Olvidó su contraseña?" si no la recuerdas.`);
+        return;
+      }
+      // Nivel de estudiantes adultos: no admite acudientes.
+      if (match.nivel_adultos) {
+        err("Estudiante adulto", `${match.nombres} ${match.apellidos} pertenece a un nivel de estudiantes adultos, que no tiene acudientes. Si crees que es un error, comunícate con la institución.`);
         return;
       }
       // Ya tiene los 4 cupos de acudidos ocupados en ese colegio.

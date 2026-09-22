@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNivelesAdultos } from "@/utils/esquema";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -58,6 +59,7 @@ const ArmarSalon = () => {
 
   // ── Salón elegido (el director de grupo queda fijado al suyo) ──
   const [salonesCol, setSalonesCol] = useState<{ grado: string; salon: string }[]>([]);
+  const adultosNiv = useNivelesAdultos();
   const [grado, setGrado] = useState("");
   const [salon, setSalon] = useState("");
   const [cargandoEstructura, setCargandoEstructura] = useState(true);
@@ -386,6 +388,7 @@ const ArmarSalon = () => {
   // Vincular (o crear) un acudiente para el estudiante en edición. Mismo
   // modelo del Panel de Control: Usuarios global + slots acudidoN en Acudientes.
   const agregarAcudiente = async () => {
+    if (adultosNiv.esGradoAdulto(grado)) { toast({ title: "Estudiante adulto", description: "Este grado pertenece a un nivel de estudiantes adultos, que no tiene acudientes.", variant: "destructive" }); return; }
     if (!editando) return;
     const cedAcu = soloDigitos(acuCedula);
     if (!/^\d{3,15}$/.test(cedAcu)) { toast({ title: "Cédula del acudiente inválida", variant: "destructive" }); return; }
@@ -633,8 +636,14 @@ const ArmarSalon = () => {
             </p>
           )}
 
-          {/* Acudientes del estudiante (solo en edición) */}
-          {editando && (
+          {/* Acudientes del estudiante (solo en edición). Nivel de estudiantes adultos: sin acudientes. */}
+          {editando && adultosNiv.esGradoAdulto(grado) && (
+            <div className="pt-3 border-t">
+              <h3 className="text-sm font-semibold mb-1">Acudientes</h3>
+              <p className="text-sm text-muted-foreground">Este grado pertenece a un nivel de estudiantes adultos, que no tiene acudientes.</p>
+            </div>
+          )}
+          {editando && !adultosNiv.esGradoAdulto(grado) && (
             <div className="pt-3 border-t">
               <h3 className="text-sm font-semibold mb-1">Acudientes</h3>
               {acudientesEst.length === 0 ? (

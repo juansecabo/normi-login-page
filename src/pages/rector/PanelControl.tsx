@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useRef, useLayoutEffect } from "react";
+import { useNivelesAdultos } from "@/utils/esquema";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -349,6 +350,8 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
   const [filtroFotoPerf, setFiltroFotoPerf] = useState("todos");
   const [showPerfDialog, setShowPerfDialog] = useState(false);
   const [editingPerf, setEditingPerf] = useState<Perfil | null>(null);
+  // Niveles de estudiantes adultos: sus estudiantes no admiten acudientes.
+  const adultosNiv = useNivelesAdultos();
   const [showDeletePerf, setShowDeletePerf] = useState<Perfil | null>(null);
   const [savingPerf, setSavingPerf] = useState(false);
   // Perfil form state
@@ -1329,6 +1332,23 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
       return;
     }
 
+    // Nivel de estudiantes adultos: no se vinculan acudientes nuevos. Los que el
+    // acudiente ya tenía se conservan (quedan inactivos mientras el nivel sea adulto).
+    const previos = editingPerf
+      ? [editingPerf.acudido1_id, editingPerf.acudido2_id, editingPerf.acudido3_id, editingPerf.acudido4_id].filter((v) => v != null).map(String)
+      : [];
+    const adultoNuevo = acudidoIds.find((id) => {
+      if (previos.includes(id)) return false;
+      const est = estudiantes.find((e) => e.id === Number(id));
+      return !!est && adultosNiv.esGradoAdulto(est.grado, est.nivel);
+    });
+    if (adultoNuevo) {
+      const est = estudiantes.find((e) => e.id === Number(adultoNuevo));
+      const nom = est ? `${est.nombres || ""} ${est.apellidos || ""}`.trim() : adultoNuevo;
+      toast({ title: "Estudiante adulto", description: `${nom} pertenece a un nivel de estudiantes adultos, que no tiene acudientes.`, variant: "destructive" });
+      return;
+    }
+
     setSavingPerf(true);
 
     // Límite: un estudiante puede tener máximo 3 acudientes (excluyendo a este mismo).
@@ -1667,6 +1687,8 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
   ) => {
     const idLimpio = soloDigitos(id);
     const noEsEstudiante = idLimpio !== "" && !nombre.trim() && !apellidos.trim();
+    const estSlot = idLimpio ? estudiantes.find((e) => e.id === Number(idLimpio)) : undefined;
+    const esAdultoSlot = !!estSlot && adultosNiv.esGradoAdulto(estSlot.grado, estSlot.nivel);
     return (
       <div key={num} className="border rounded-md p-3 space-y-2">
         <p className="text-sm font-medium">Acudido {num}{num === 1 ? "" : " (opcional)"}</p>
@@ -1694,6 +1716,11 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
         {noEsEstudiante && (
           <p className="text-xs text-destructive">
             Ese id no es un estudiante de este colegio. Créalo primero en la pestaña Estudiantes.
+          </p>
+        )}
+        {esAdultoSlot && (
+          <p className="text-xs text-amber-700">
+            Pertenece a un nivel de estudiantes adultos, que no tiene acudientes.
           </p>
         )}
       </div>
@@ -2115,6 +2142,9 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
               return (
                 <div className="pt-2 border-t">
                   <h3 className="text-sm font-semibold mb-1">Acudientes de este estudiante</h3>
+                  {adultosNiv.esGradoAdulto(estGrado || editingEst.grado, editingEst.nivel) ? (
+                    <p className="text-sm text-muted-foreground">Este estudiante pertenece a un nivel de estudiantes adultos, que no tiene acudientes.</p>
+                  ) : (<>
                   <p className="text-xs text-muted-foreground mb-3">
                     Solo lectura. Para crear o editar acudientes usa la pestaña Acudientes.
                   </p>
@@ -2130,6 +2160,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                       ))}
                     </div>
                   )}
+                  </>)}
                 </div>
               );
             })()}

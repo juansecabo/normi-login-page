@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useRef, useLayoutEffect } from "react";
+import { useNivelesAdultos } from "@/utils/esquema";
 import { useNavigate } from "react-router-dom";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { formatTelefono } from "@/utils/telefono";
@@ -231,9 +232,17 @@ const RegistroNormi = () => {
     () => filtered.filter((e) => estudianteIdsRegistrados.has(e.id)).length,
     [filtered, estudianteIdsRegistrados]
   );
+  // Pestaña Padres: los estudiantes de niveles de estudiantes adultos no tienen
+  // acudientes, así que no cuentan en el porcentaje ni aparecen como "sin acudiente".
+  const adultosNiv = useNivelesAdultos();
+  const filteredPadres = useMemo(
+    () => (adultosNiv.niveles.size === 0 ? filtered : filtered.filter((e) => !adultosNiv.esGradoAdulto(e.grado))),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filtered, adultosNiv.niveles]
+  );
   const padRegistrados = useMemo(
-    () => filtered.filter((e) => padreInfoPorId.has(e.id)).length,
-    [filtered, padreInfoPorId]
+    () => filteredPadres.filter((e) => padreInfoPorId.has(e.id)).length,
+    [filteredPadres, padreInfoPorId]
   );
 
   // Displayed rows per tab (apply estadoFilter on top of filtered)
@@ -246,12 +255,12 @@ const RegistroNormi = () => {
   }, [filtered, estadoFilter, estudianteIdsRegistrados]);
 
   const displayedPadres = useMemo(() => {
-    if (estadoFilter === "todos") return filtered;
-    return filtered.filter((e) => {
+    if (estadoFilter === "todos") return filteredPadres;
+    return filteredPadres.filter((e) => {
       const reg = padreInfoPorId.has(e.id);
       return estadoFilter === "registrados" ? reg : !reg;
     });
-  }, [filtered, estadoFilter, padreInfoPorId]);
+  }, [filteredPadres, estadoFilter, padreInfoPorId]);
 
   const [selectedParents, setSelectedParents] = useState<{ padres: ParentInfo[]; estudiante: string } | null>(null);
 
@@ -463,7 +472,8 @@ const RegistroNormi = () => {
 
   const total = filtered.length;
   const estPct = total > 0 ? Math.round((estRegistrados / total) * 100) : 0;
-  const padPct = total > 0 ? Math.round((padRegistrados / total) * 100) : 0;
+  const totalPad = filteredPadres.length;
+  const padPct = totalPad > 0 ? Math.round((padRegistrados / totalPad) * 100) : 0;
 
   if (loading) {
     return (
@@ -660,10 +670,10 @@ const RegistroNormi = () => {
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-foreground">
                     {estadoFilter === "todos"
-                      ? `${padRegistrados} de ${total} con acudiente registrado (${padPct}%)`
+                      ? `${padRegistrados} de ${totalPad} con acudiente registrado (${padPct}%)`
                       : estadoFilter === "registrados"
-                        ? `Mostrando ${displayedPadres.length} con acudiente registrado de ${total}`
-                        : `Mostrando ${displayedPadres.length} sin acudiente registrado de ${total}`}
+                        ? `Mostrando ${displayedPadres.length} con acudiente registrado de ${totalPad}`
+                        : `Mostrando ${displayedPadres.length} sin acudiente registrado de ${totalPad}`}
                   </span>
                 </div>
                 {estadoFilter === "todos" && <Progress value={padPct} className="h-3" />}
