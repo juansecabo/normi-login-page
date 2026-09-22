@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNivelesAdultos } from "@/utils/esquema";
 import { useNavigate } from "react-router-dom";
 import { getSession, hasValidSession, isAdmin, puedeAccederDashboard } from "@/hooks/useSession";
 import { cargoSegunGenero } from "@/lib/entrevistadores";
@@ -452,6 +453,20 @@ export default function Consultas() {
         .filter((r) => r.nivel && r.grado)) as { nivel: string; grado: string }[]);
     })();
   }, []);
+  // Niveles de estudiantes adultos (Juan 2026-09-22): con SOLO Acudientes marcado
+  // (sin Estudiantes ni Profesores) esos niveles y sus grados quedan deshabilitados.
+  const adultosNiv = useNivelesAdultos();
+  const soloAcudientes = !!perfilesMarcados.Padres && !perfilesMarcados.Estudiantes && !perfilesMarcados.Profesores;
+  useEffect(() => {
+    if (!soloAcudientes || adultosNiv.niveles.size === 0) return;
+    const nivAd = Object.keys(nivelesMarcados).filter((n) => nivelesMarcados[n] && adultosNiv.esNivelAdulto(n));
+    const grAd = Object.keys(gradosMarcados).filter((g) => gradosMarcados[g] && adultosNiv.esGradoAdulto(g));
+    if (nivAd.length === 0 && grAd.length === 0) return;
+    if (nivAd.length) setNivelesMarcados((prev) => { const n = { ...prev }; nivAd.forEach((x) => { delete n[x]; }); return n; });
+    if (grAd.length) setGradosMarcados((prev) => { const n = { ...prev }; grAd.forEach((x) => { delete n[x]; }); return n; });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [soloAcudientes, adultosNiv.niveles, nivelesMarcados, gradosMarcados]);
+
   const nivelesGrados = useMemo(() => {
     const porNivel: Record<string, Set<string>> = {};
     for (const r of estructuraRaw) (porNivel[r.nivel] ||= new Set()).add(r.grado);
@@ -1031,10 +1046,11 @@ export default function Consultas() {
                       <Label className="font-medium">Nivel(es) (opcional)</Label>
                       <div className="flex flex-wrap gap-3 mt-2">
                         {Object.keys(nivelesGrados).map((n) => (
-                          <label key={n} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <label key={n} className={`flex items-center gap-2 text-sm ${soloAcudientes && adultosNiv.esNivelAdulto(n) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`} title={soloAcudientes && adultosNiv.esNivelAdulto(n) ? "Nivel de estudiantes adultos: no tiene acudientes. Marca Estudiantes para incluirlo." : undefined}>
                             <input
                               type="checkbox"
                               checked={!!nivelesMarcados[n]}
+                              disabled={soloAcudientes && adultosNiv.esNivelAdulto(n)}
                               onChange={(e) => {
                                 const checked = e.target.checked;
                                 setNivelesMarcados({ ...nivelesMarcados, [n]: checked });
@@ -1047,7 +1063,7 @@ export default function Consultas() {
                                 });
                               }}
                             />
-                            {n}
+                            {n}{soloAcudientes && adultosNiv.esNivelAdulto(n) ? " (estudiantes adultos, sin acudientes)" : ""}
                           </label>
                         ))}
                       </div>
@@ -1057,10 +1073,11 @@ export default function Consultas() {
                       <Label className="font-medium">Grados</Label>
                       <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mt-2">
                         {gradosColegio.map((g) => (
-                          <label key={g} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <label key={g} className={`flex items-center gap-2 text-sm ${soloAcudientes && adultosNiv.esGradoAdulto(g) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`} title={soloAcudientes && adultosNiv.esGradoAdulto(g) ? "Grado de un nivel de estudiantes adultos: no tiene acudientes." : undefined}>
                             <input
                               type="checkbox"
                               checked={!!gradosMarcados[g]}
+                              disabled={soloAcudientes && adultosNiv.esGradoAdulto(g)}
                               onChange={(e) => setGradosMarcados({ ...gradosMarcados, [g]: e.target.checked })}
                             />
                             {g}

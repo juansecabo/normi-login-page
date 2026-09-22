@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from "react";
+import { useNivelesAdultos } from "@/utils/esquema";
 import { useNavigate } from "react-router-dom";
 import { useEstructuraOrden } from "@/utils/estructuraOrden";
 import { Label } from "@/components/ui/label";
@@ -424,6 +425,23 @@ const EnviarComunicado = () => {
       setMostrarEstudiantes(false);
     }
   };
+
+  // Niveles de estudiantes adultos (Juan 2026-09-22): con SOLO Acudientes marcado
+  // (sin Estudiantes ni Profesores) esos niveles quedan deshabilitados, porque ahí
+  // no hay acudientes. Si ya estaban marcados, se desmarcan solos.
+  const adultosNiv = useNivelesAdultos();
+  const soloAcudientes = !!perfilesMarcados.Padres && !perfilesMarcados.Estudiantes && !perfilesMarcados.Profesores;
+  useEffect(() => {
+    if (!soloAcudientes || adultosNiv.niveles.size === 0) return;
+    const marcadosAdultos = Object.keys(nivelesMarcados).filter((n) => nivelesMarcados[n] && adultosNiv.esNivelAdulto(n));
+    if (marcadosAdultos.length === 0) return;
+    const nuevosNiv = { ...nivelesMarcados };
+    const nuevosGr = { ...gradosMarcados };
+    for (const n of marcadosAdultos) { delete nuevosNiv[n]; (nivelesGrados[n] || []).forEach((g) => { delete nuevosGr[g]; }); }
+    setNivelesMarcados(nuevosNiv);
+    setGradosMarcados(nuevosGr);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [soloAcudientes, adultosNiv.niveles, nivelesMarcados]);
 
   const togglePerfil = (key: PerfilKey) => {
     setPerfilesMarcados(prev => {
@@ -1002,10 +1020,11 @@ const EnviarComunicado = () => {
                         {openNivel && (
                           <div className="border rounded p-2 bg-muted/20 flex flex-col gap-2">
                             {Object.keys(nivelesGrados).map(n => (
-                              <label key={n} className="flex items-center gap-2 cursor-pointer text-sm">
+                              <label key={n} className={`flex items-center gap-2 text-sm ${soloAcudientes && adultosNiv.esNivelAdulto(n) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`} title={soloAcudientes && adultosNiv.esNivelAdulto(n) ? "Nivel de estudiantes adultos: no tiene acudientes. Marca Estudiantes para incluirlo." : undefined}>
                                 <input
                                   type="checkbox"
                                   checked={!!nivelesMarcados[n]}
+                                  disabled={soloAcudientes && adultosNiv.esNivelAdulto(n)}
                                   onChange={() => {
                                     const nuevo = !nivelesMarcados[n];
                                     setNivelesMarcados({ ...nivelesMarcados, [n]: nuevo });
@@ -1018,7 +1037,7 @@ const EnviarComunicado = () => {
                                   }}
                                   className="w-4 h-4 accent-primary cursor-pointer"
                                 />
-                                <span>{n}</span>
+                                <span>{n}{soloAcudientes && adultosNiv.esNivelAdulto(n) ? " (estudiantes adultos, sin acudientes)" : ""}</span>
                               </label>
                             ))}
                           </div>
