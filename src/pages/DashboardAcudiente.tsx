@@ -32,12 +32,18 @@ const Badge = ({ count }: { count: number }) => {
   );
 };
 
+// Fichas que no dependen de los acudidos: son las únicas que quedan cuando todos
+// los estudiantes de la acudiente son de un nivel de estudiantes adultos.
+const FICHAS_SIN_ACUDIDOS = new Set(["calendario-escolar", "comunicados", "documentos", "perfil"]);
+
 const DashboardAcudiente = () => {
   const navigate = useNavigate();
   const saludo = useBienvenida();
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [acudidos, setAcudidos] = useState<AcudidoData[]>([]);
+  // Todos sus estudiantes son de niveles adultos (vínculos inactivos): Juan 2026-09-22.
+  const [sinAcudidosActivos, setSinAcudidosActivos] = useState(false);
   const [badges, setBadges] = useState({ notas: 0, actividades: 0, comunicados: 0, documentos: 0, observador: 0, entrevistas: 0 });
   const pendFirma = usePendientesFirma();
 
@@ -91,6 +97,9 @@ const DashboardAcudiente = () => {
     setNombres(session.nombres || "");
     setApellidos(session.apellidos || "");
     setAcudidos(session.acudidos || []);
+    try {
+      setSinAcudidosActivos((session.acudidos || []).length === 0 && Number(localStorage.getItem("acudidos_adultos") || 0) > 0);
+    } catch { /* ignore */ }
 
     // Si solo tiene un acudido, auto-seleccionar en localStorage para las páginas internas
     if (session.acudidos && session.acudidos.length === 1) {
@@ -351,10 +360,15 @@ const DashboardAcudiente = () => {
             ¿Qué deseas consultar?
           </h3>
 
+          {sinAcudidosActivos && (
+            <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 mb-6 text-sm text-amber-900 text-center" data-guia="dashboard_acudiente.aviso_adultos">
+              Tus estudiantes pertenecen a un nivel de estudiantes adultos, que no se gestiona por acudiente. Ellos consultan su información con su propio usuario.
+            </div>
+          )}
           <ReordenableDashboard
             dashboardKey="acudiente"
             gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6"
-            items={items}
+            items={sinAcudidosActivos ? items.filter((it) => FICHAS_SIN_ACUDIDOS.has(it.id)) : items}
           />
         </div>
 

@@ -163,6 +163,9 @@ const Index = () => {
         (user.acudidos || []) as AcudidoData[], multi, avatar,
         colegio_id, colegio_nombre, colegio_logo_url, colegio_slug, genero,
       );
+      // Acudidos de niveles de estudiantes adultos (vínculo inactivo): el tablero
+      // explica por qué no aparecen si la acudiente se quedó sin estudiantes activos.
+      try { localStorage.setItem("acudidos_adultos", String(Number(user.acudidos_adultos) || 0)); } catch { /* ignore */ }
       navigate(getPostLoginRoute("/dashboard"), { replace: true });
       return;
     }
