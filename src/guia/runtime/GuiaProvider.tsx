@@ -485,6 +485,32 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
               return;
             }
           }
+          // La ficha destino vive en el INICIO (dashboard). Si no está en esta
+          // pantalla y no estamos en el inicio, en vez de mandar al modelo a
+          // adivinar (que responde vago), SEÑALAMOS el Inicio (el breadcrumb
+          // "Inicio" o el escudo de arriba) para volver. Al llegar al dashboard,
+          // el vigilante de ruta re-evalúa este mismo paso y ahí sí encuentra la
+          // ficha. NO armamos avance: del cambio de página se encarga el vigilante.
+          if (window.location.pathname !== "/dashboard" && paso.ruta !== "/dashboard") {
+            const inicio =
+              Array.from(document.querySelectorAll<HTMLElement>("a, button")).find(
+                (el) => esVisible(el) && !el.closest("[data-guia-ui]") && normTxt(textoDe(el)) === "inicio",
+              ) ||
+              Array.from(document.querySelectorAll<HTMLElement>('a[href="/dashboard"]')).find(
+                (el) => esVisible(el) && !el.closest("[data-guia-ui]"),
+              );
+            if (inicio) {
+              setRespuesta(`Primero volvamos al inicio para encontrar ${nombreFichaRuta || "esa opción"}. Toca aquí (Inicio).`);
+              inicio.scrollIntoView({ block: "center", behavior: "smooth" });
+              window.setTimeout(() => {
+                if (!vivo) return;
+                setRect(inicio.getBoundingClientRect());
+                senaladoRef.current = inicio;
+                guiaLog("senalado", { modo: "ir_a_inicio", destino: paso.ruta });
+              }, 150);
+              return;
+            }
+          }
           elegirConCerebro(
             `El usuario debe tocar la opción o tarjeta que lo lleva a: ${nombreFichaRuta || aliasTexto(paso.narracion || "") || paso.ruta}`,
           );
