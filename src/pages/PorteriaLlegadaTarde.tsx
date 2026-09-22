@@ -332,6 +332,7 @@ export default PorteriaLlegadaTarde;
 
 // ════════════════════════ REGISTRO ════════════════════════
 export const PorteriaRegistro = () => {
+  const adultosNiv = useNivelesAdultos();
   const navigate = useNavigate();
   const session = getSession();
 

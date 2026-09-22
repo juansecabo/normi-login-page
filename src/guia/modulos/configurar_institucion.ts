@@ -664,7 +664,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     ],
     pasos: [
       ...abrirFicha("carga", "Abrimos Revisar carga académica."),
-      { narracion: "En 'Diferencias entre salones', en la línea de la asignatura que quieres arreglar, toca 'Corregir'. Elige el salón, y luego 'Reemplazar por otra' (mueve las notas a la asignatura que elijas) o 'Quitar del salón' (solo si está vacía). Toca 'Ver qué hay detrás' para revisar y luego 'Aplicar'." },
+      { narracion: "En 'Diferencias entre salones', en la línea de la asignatura que quieres arreglar, toca 'Corregir'. Elige el salón, y luego 'Reemplazar por otra' (mueve las notas a la asignatura que elijas) o 'Quitar del salón' (solo si está vacía). Toca 'Ver qué hay detrás' para revisar y luego 'Aplicar'.", accion: "explicar" },
     ],
   },
 

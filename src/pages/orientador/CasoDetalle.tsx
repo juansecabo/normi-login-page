@@ -13,8 +13,8 @@ import FirmaImage from "@/components/FirmaImage";
 import { cargoSegunGenero } from "@/lib/entrevistadores";
 import iconCasos from "@/assets/icons/casos.png";
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
-import {
 import { useNivelesAdultos } from "@/utils/esquema";
+import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 

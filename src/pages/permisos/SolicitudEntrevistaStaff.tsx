@@ -17,8 +17,8 @@ import { useGradosColegio } from "@/utils/grados";
 import { useEstructuraOrden } from "@/utils/estructuraOrden";
 import { es } from "date-fns/locale";
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
-import {
 import { useNivelesAdultos } from "@/utils/esquema";
+import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
