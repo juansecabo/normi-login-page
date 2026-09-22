@@ -120,14 +120,10 @@ const RegistroAcudiente = () => {
       err("Nivel sin acudientes", `${match.nombres} ${match.apellidos} pertenece a un nivel sin acudientes. Si crees que es un error, comunícate con la institución.`);
       return;
     }
-    // Ya tiene los 4 cupos de acudidos ocupados en ese colegio.
-    if (match.acudiente_sin_cupo) {
-      err("Ya tienes 4 estudiantes a cargo", `En ${match.colegio_nombre} ya tienes el máximo de 4 estudiantes a cargo. Comunícate con la institución si necesitas modificarlos.`);
-      return;
-    }
-    // Máximo 4 por colegio en este registro.
-    if (acudidos.filter((a) => a.colegio_id === match.colegio_id).length >= 4) {
-      err("Máximo 4 estudiantes por colegio", `En ${match.colegio_nombre} puedes registrar máximo 4 estudiantes a cargo.`);
+    // Tope global: máximo 4 estudiantes a cargo sumando todos los colegios
+    // (los que ya tiene + los agregados en este registro).
+    if (match.acudiente_sin_cupo || acudidos.length >= 4) {
+      err("Máximo 4 estudiantes a cargo", "Una persona puede ser acudiente de máximo 4 estudiantes en total, sumando todos los colegios. Comunícate con la institución si necesitas modificarlos.");
       return;
     }
     setAcudidos((prev) => [...prev, match]);
@@ -142,7 +138,7 @@ const RegistroAcudiente = () => {
     setValidando(true);
     try {
       const r = await apiRequest<{ existe: boolean; coincidencias?: Acudido[] }>("/api/registro/validar-estudiante", {
-        method: "POST", body: JSON.stringify({ cedula: ced, acudiente: soloDigitos(cedula) }),
+        method: "POST", body: JSON.stringify({ cedula: ced, acudiente: soloDigitos(cedula), ya_agregados: acudidos.length }),
       });
       if (!r.existe || !r.coincidencias?.length) {
         err("Estudiante no encontrado", `El documento ${ced} no está registrado como estudiante. Verifica el número o comunícate con la institución.`);
@@ -282,7 +278,7 @@ const RegistroAcudiente = () => {
             <>
               <div className="text-center mb-4">
                 <h2 className="text-2xl font-bold text-foreground">Estudiantes a cargo</h2>
-                <p className="text-sm text-muted-foreground mt-1">Agrega los estudiantes que tienes a cargo con su número de identidad. Pueden ser de distintos colegios (máximo 4 por colegio).</p>
+                <p className="text-sm text-muted-foreground mt-1">Agrega los estudiantes que tienes a cargo con su número de identidad. Pueden ser de distintos colegios (máximo 4 en total).</p>
               </div>
               {acudidos.map((a) => (
                 <div key={a.id} className="flex items-center justify-between border border-border rounded-lg p-3">
@@ -307,7 +303,7 @@ const RegistroAcudiente = () => {
                   <Button variant="outline" size="sm" onClick={() => setElegirColegio(null)}>Cancelar</Button>
                 </div>
               )}
-              {!elegirColegio && acudidos.length < 16 && (
+              {!elegirColegio && acudidos.length < 4 && (
                 <div className="flex gap-2">
                   <Input value={cedAcudido} onChange={(e) => setCedAcudido(soloDigitos(e.target.value))} inputMode="numeric" placeholder="Documento del estudiante" onKeyDown={(e) => { if (e.key === "Enter") agregarAcudido(); }} />
                   <Button onClick={agregarAcudido} disabled={validando} variant="outline" className="gap-1 shrink-0">
