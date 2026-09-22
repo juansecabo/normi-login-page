@@ -77,7 +77,7 @@ function SortableCard({ id, jiggling, index, destinoAgrupar, children }: { id: s
       </div>
       {destinoAgrupar && (
         <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center z-10">
-          <span className="rounded-full bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 shadow">Suelta para agrupar</span>
+          <span className="rounded-full bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 shadow text-center leading-tight">Suelta para agrupar</span>
         </div>
       )}
     </div>
