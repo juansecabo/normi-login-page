@@ -14,6 +14,7 @@ import { cargoSegunGenero } from "@/lib/entrevistadores";
 import iconCasos from "@/assets/icons/casos.png";
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 import {
+import { useNivelesAdultos } from "@/utils/esquema";
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 
@@ -647,6 +648,7 @@ const CasoDetalle = () => {
 
   // Notificar un seguimiento por WhatsApp a acudiente, coordinador (del nivel),
   // rector y director de grupo (#20). El server resuelve los destinatarios.
+  const adultosNiv = useNivelesAdultos();
   const [notifSeg, setNotifSeg] = useState<number | null>(null);
   const [notificandoSeg, setNotificandoSeg] = useState(false);
   const confirmarNotificarSeg = async () => {
@@ -663,7 +665,9 @@ const CasoDetalle = () => {
         salon: caso.estudiante_salon,
         texto,
       });
-      toast({ title: "Seguimiento notificado", description: "Se envió por WhatsApp al acudiente, coordinador, rector y director de grupo." });
+      toast({ title: "Seguimiento notificado", description: adultosNiv.esGradoAdulto(caso.estudiante_grado)
+        ? "Se envió por WhatsApp al coordinador, rector y director de grupo (estudiante adulto: sin acudientes)."
+        : "Se envió por WhatsApp al acudiente, coordinador, rector y director de grupo." });
       setNotifSeg(null);
     } catch (e: any) {
       toast({ title: "Error al notificar", description: e?.message || "Intenta de nuevo.", variant: "destructive" });

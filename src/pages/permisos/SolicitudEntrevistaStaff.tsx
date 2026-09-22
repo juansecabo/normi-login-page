@@ -18,6 +18,7 @@ import { useEstructuraOrden } from "@/utils/estructuraOrden";
 import { es } from "date-fns/locale";
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 import {
+import { useNivelesAdultos } from "@/utils/esquema";
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
@@ -28,6 +29,7 @@ interface Interno { id: number; nombres: string; apellidos: string; cargo: strin
 
 const SolicitudEntrevistaStaff = () => {
   const navigate = useNavigate();
+  const adultosNiv = useNivelesAdultos();
   const { toast } = useToast();
   const orden = useEstructuraOrden();
   const sigCanvas = useRef<SignatureCanvas>(null);
@@ -583,6 +585,11 @@ const SolicitudEntrevistaStaff = () => {
                     ))}
                   </div>
                 )}
+                {adultosNiv.esGradoAdulto(grado) ? (
+                  <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2" data-guia="entrevistas.aviso_adultos">
+                    {grado} pertenece a un nivel de estudiantes adultos: no tienen acudientes, así que no se puede citar a un acudiente.
+                  </p>
+                ) : (
                 <select
                   data-guia="entrevistas.select_estudiante"
                   value=""
@@ -592,6 +599,7 @@ const SolicitudEntrevistaStaff = () => {
                   <option value="">{salon ? "Agregar estudiante…" : "Elige grado y salón primero"}</option>
                   {estudiantes.filter(e => !estudiantesSeleccionados.some(s => s.id === e.id)).map(e => <option key={e.id} value={String(e.id)}>{e.apellidos} {e.nombres}</option>)}
                 </select>
+                )}
                 <p className="text-xs text-muted-foreground">Puedes elegir varios estudiantes. A cada acudiente le llegará su propia citación individual (no ven a los demás).</p>
               </div>
 

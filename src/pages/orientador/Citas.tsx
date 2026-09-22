@@ -12,6 +12,7 @@ import { es } from "date-fns/locale";
 import { fechaKey } from "@/utils/fechaUtils";
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 import {
+import { useNivelesAdultos } from "@/utils/esquema";
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 
@@ -109,6 +110,7 @@ const Citas = () => {
   const [horaM, setHoraM] = useState("");
   const [horaAP, setHoraAP] = useState("");
   const [asistentes, setAsistentes] = useState<string[]>([]);
+  const adultosNiv = useNivelesAdultos();
   const [motivo, setMotivo] = useState("");
   const [guardando, setGuardando] = useState(false);
 
@@ -220,7 +222,8 @@ const Citas = () => {
       const fechaTexto = fecha.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
       const horaTexto = horaSave ? `${horaH}:${horaM} ${horaAP}` : "por definir";
       const incEst = asistentes.includes("estudiante");
-      const incAcu = asistentes.includes("acudientes");
+      // Estudiante de un nivel adulto: no tiene acudientes (Juan 2026-09-22).
+      const incAcu = asistentes.includes("acudientes") && !adultosNiv.esGradoAdulto(estSeleccionado.grado);
       const estLabel = `${estSeleccionado.nombres} ${estSeleccionado.apellidos} (${estSeleccionado.grado} ${estSeleccionado.salon})`;
       const idEst = String(estSeleccionado.id);
       const segmentos: { perfil: string[]; id_destinatarios: string[] }[] = [];
@@ -476,7 +479,7 @@ const Citas = () => {
             <div>
               <label className="text-sm font-medium block mb-2">Informar a: *</label>
               <div data-guia="orientacion.cita_informar_a" className="flex flex-wrap gap-3">
-                {ASISTENTES.map(a => (
+                {ASISTENTES.filter(a => !(a.value === "acudientes" && adultosNiv.esGradoAdulto(estSeleccionado?.grado))).map(a => (
                   <label key={a.value} className="flex items-center gap-2 cursor-pointer select-none" onClick={() => toggleAsistente(a.value)}>
                     <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${asistentes.includes(a.value) ? "bg-primary border-primary" : "border-border"}`}>
                       {asistentes.includes(a.value) && <Check className="w-3.5 h-3.5 text-primary-foreground" />}

@@ -8,6 +8,7 @@ import {
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { apiRequest } from "@/lib/apiClient";
+import { useNivelesAdultos } from "@/utils/esquema";
 import { toast } from "@/hooks/use-toast";
 import { cargoSegunGenero } from "@/lib/entrevistadores";
 import { Search, Plus, Pencil, Trash2, NotebookPen, ChevronDown, Users, Check, X, User } from "lucide-react";
@@ -47,6 +48,7 @@ const paperStyle: React.CSSProperties = {
 
 const ObservadorEstudiantil = () => {
   const navigate = useNavigate();
+  const adultosNiv = useNivelesAdultos();
   const [searchParams, setSearchParams] = useSearchParams();
   const session = getSession();
   const esAcudiente = isPadreDeFamilia();
@@ -276,7 +278,12 @@ const ObservadorEstudiantil = () => {
     setGuardando(false);
     setModalOpen(false);
     setMulti(false);
-    toast({ title: `Observación agregada a ${lista.length} estudiante${lista.length === 1 ? "" : "s"}`, description: "Se notificó a los acudientes.", variant: "success" as any });
+    // Niveles de estudiantes adultos: no hay acudientes, no se envía aviso (Juan 2026-09-22).
+    const nAdultos = lista.filter(e => adultosNiv.esGradoAdulto(e.grado)).length;
+    const descMulti = nAdultos === 0 ? "Se notificó a los acudientes."
+      : nAdultos === lista.length ? "Estudiantes adultos (sin acudientes): no se envió aviso."
+      : "Se notificó a los acudientes. Los estudiantes adultos no tienen acudientes, a ellos no se envió aviso.";
+    toast({ title: `Observación agregada a ${lista.length} estudiante${lista.length === 1 ? "" : "s"}`, description: descMulti, variant: "success" as any });
     salirSeleccion();
   };
 
@@ -322,7 +329,7 @@ const ObservadorEstudiantil = () => {
     }).catch(e => console.error("notificar observador:", e));
     setGuardando(false);
     setModalOpen(false);
-    toast({ title: "Observación agregada", description: "Se notificó a los acudientes.", variant: "success" as any });
+    toast({ title: "Observación agregada", description: adultosNiv.esGradoAdulto(estSel.grado) ? "Estudiante adulto (sin acudientes): no se envió aviso." : "Se notificó a los acudientes.", variant: "success" as any });
     await cargarObservaciones(estSel.id);
   };
 
@@ -640,7 +647,7 @@ const ObservadorEstudiantil = () => {
             className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background min-h-[160px] resize-y"
           />
           {editandoId == null && (
-            <p className="text-xs text-muted-foreground">Al guardar, se enviará una notificación por WhatsApp a los acudientes.</p>
+            <p className="text-xs text-muted-foreground">{estSel && adultosNiv.esGradoAdulto(estSel.grado) ? "Estudiante de un nivel de adultos: no tiene acudientes, no se enviará aviso." : "Al guardar, se enviará una notificación por WhatsApp a los acudientes."}</p>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalOpen(false)} disabled={guardando}>Cancelar</Button>

@@ -345,6 +345,12 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   // Esquema de evaluación del nivel del grado (Juan 2026-09-12): periodos (4 cortes,
   // definitiva anual) o semestres (2 cortes, cada uno con su definitiva).
   const esq = useEsquemaGrado(gradoSeleccionado);
+  // Niveles de estudiantes adultos (Juan 2026-09-22): no hay acudientes, y al
+  // estudiante (niño o adulto) no se le notifican notas; las consulta él mismo.
+  const avisarNivelAdultosNotas = () => toast({
+    title: "Estudiantes adultos",
+    description: "En este nivel los estudiantes son adultos y no tienen acudientes, así que las notas no se notifican. Cada estudiante las consulta con su propio usuario o preguntándole a Normi.",
+  });
   const CORTES = esq.cortes;
   const N_CORTES = CORTES.length;
   const hayDefAnual = !esq.definitivaPorCorte;
@@ -2596,6 +2602,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     nota: number,
     periodo: number
   ) => {
+    if (esq.adultos) { avisarNivelAdultosNotas(); return; }
     const datos = [{
       estudiante: {
         id: estudiante.id,
@@ -2624,6 +2631,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     periodo: number,
     notaFinal: number
   ) => {
+    if (esq.adultos) { avisarNivelAdultosNotas(); return; }
     // "Completo" (REPORTE FINAL): en grupos lo decide el checkbox "Periodo
     // completo"; en plano, la cobertura 100%. Si no, NO se bloquea: va PARCIAL.
     // Cierre = casilla "Periodo completo" en AMBOS modos (plano ya no cierra solo).
@@ -2697,6 +2705,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     estudiante: Estudiante,
     notaFinal: number
   ) => {
+    if (esq.adultos) { avisarNivelAdultosNotas(); return; }
     // Verificar completitud de todos los períodos
     const completitudPeriodos = periodos.map(p => ({
       periodo: p.numero,
@@ -2763,6 +2772,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
 
   // Preparar notificación masiva para una actividad
   const handleNotificarActividad = (actividad: Actividad) => {
+    if (esq.adultos) { avisarNivelAdultosNotas(); return; }
     if (soloLectura) return;
     // Contar estudiantes con y sin nota
     const estudiantesConNota = estudiantes.filter(est => 
@@ -2812,6 +2822,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
 
   // Preparar notificación masiva para período completo
   const handleNotificarPeriodoCompleto = (periodo: number) => {
+    if (esq.adultos) { avisarNivelAdultosNotas(); return; }
     if (soloLectura) return;
     // "Completo" (REPORTE FINAL) en modo grupos lo decide el checkbox "Periodo
     // completo"; en modo plano, que la cobertura llegue al 100%. Si NO está
@@ -2929,6 +2940,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
 
   // Preparar notificación masiva para Definitiva Anual
   const handleNotificarDefinitivaMasiva = () => {
+    if (esq.adultos) { avisarNivelAdultosNotas(); return; }
     // Verificar completitud de todos los períodos (actividades asignadas)
     const completitudPeriodos = periodos.map(p => ({
       periodo: p.numero,

@@ -7,6 +7,7 @@ import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { apiRequest, ApiError } from "@/lib/apiClient";
 import { toast } from "@/hooks/use-toast";
+import { useNivelesAdultos } from "@/utils/esquema";
 import { Search, Check, X, Clock, Send, Trash2, Loader2, RefreshCw, Calendar, ChevronDown, ClipboardList } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -57,6 +58,7 @@ interface ResumenItem {
 // ════════════════════════ REPORTAR ════════════════════════
 const PorteriaLlegadaTarde = () => {
   const navigate = useNavigate();
+  const adultosNiv = useNivelesAdultos();
   const session = getSession();
 
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
@@ -138,13 +140,16 @@ const PorteriaLlegadaTarde = () => {
       const r = await apiRequest<{
         reportados: number; notificados: number; sin_acudiente: string[];
         coordinadores_notificados?: number; directores_notificados?: number; profesores_notificados?: number;
+        adultos_coordinador?: string[]; adultos_sin_coordinador?: string[];
       }>(
         "/api/porteria/reportar-tarde",
         { method: "POST", body: JSON.stringify({ estudiante_ids: lista.map(e => e.id) }) },
       );
       // "Se notificó a N acudientes, al coordinador / a los coordinadores y
       // al director de grupo / a los directores de grupo." (solo lo que aplique)
-      const partes: string[] = [`a ${r.notificados} acudiente${r.notificados === 1 ? "" : "s"}`];
+      // Solo se mencionan acudientes si se notificó a alguno (en niveles de
+      // estudiantes adultos no hay acudientes: se avisa al coordinador del nivel).
+      const partes: string[] = r.notificados > 0 ? [`a ${r.notificados} acudiente${r.notificados === 1 ? "" : "s"}`] : [];
       const nc = r.coordinadores_notificados || 0;
       const nd = r.directores_notificados || 0;
       const np = r.profesores_notificados || 0;
@@ -153,12 +158,28 @@ const PorteriaLlegadaTarde = () => {
       if (np > 0) partes.push(np === 1 ? "al profesor del salón" : "a los profesores del salón");
       const quienes = partes.length > 1
         ? partes.slice(0, -1).join(", ") + " y " + partes[partes.length - 1]
-        : partes[0];
+        : partes[0] || "";
       toast({
         title: `Reporte enviado (${r.reportados} estudiante${r.reportados === 1 ? "" : "s"})`,
         description: (
           <div className="space-y-2">
-            <p>Se notificó {quienes}.</p>
+            {quienes ? <p>Se notificó {quienes}.</p> : <p>La llegada tarde quedó registrada.</p>}
+            {r.adultos_coordinador?.length ? (
+              <div>
+                <p>Estudiantes adultos (sin acudientes), se notificó al coordinador del nivel:</p>
+                <ul className="list-disc pl-5">
+                  {r.adultos_coordinador.map((n) => <li key={n}>{n}</li>)}
+                </ul>
+              </div>
+            ) : null}
+            {r.adultos_sin_coordinador?.length ? (
+              <div>
+                <p>Estudiantes adultos: el coordinador del nivel no está asignado (la llegada tarde quedó registrada):</p>
+                <ul className="list-disc pl-5">
+                  {r.adultos_sin_coordinador.map((n) => <li key={n}>{n}</li>)}
+                </ul>
+              </div>
+            ) : null}
             {r.sin_acudiente?.length ? (
               <div>
                 <p>Sin acudiente registrado:</p>
@@ -459,7 +480,9 @@ export const PorteriaRegistro = () => {
                           <p className="text-xs text-muted-foreground">
                             {r.grado} {r.salon} · {horaBonita(r.hora_entrada)}
                             {!dia && r.fecha ? ` · ${fmtFecha(r.fecha)}` : ""}
-                            {" · "}{r.acudientes_notificados} acudiente{r.acudientes_notificados === 1 ? "" : "s"} notificado{r.acudientes_notificados === 1 ? "" : "s"}
+                            {" · "}{adultosNiv.esGradoAdulto(r.grado)
+                              ? "estudiante adulto, aviso al coordinador"
+                              : `${r.acudientes_notificados} acudiente${r.acudientes_notificados === 1 ? "" : "s"} notificado${r.acudientes_notificados === 1 ? "" : "s"}`}
                           </p>
                         </div>
                         <button onClick={() => setEliminarReg(r)} className="text-muted-foreground hover:text-destructive shrink-0 p-1" title="Corregir / eliminar reporte">
