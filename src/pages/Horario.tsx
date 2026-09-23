@@ -424,6 +424,9 @@ export default function Horario() {
           <div className="max-h-[55vh] overflow-y-auto space-y-1" data-guia="horario.escoger_materia">
             {asignaturasSalon.length === 0 && <p className="text-sm text-muted-foreground">Este salón no tiene materias asignadas en Configurar Institución.</p>}
             {asignaturasSalon.length > 0 && materiasFiltradas.length === 0 && <p className="text-sm text-muted-foreground py-2">Ninguna materia coincide con la búsqueda.</p>}
+            {celda && asignaturasSalon.length > 0 && asignaturasSalon.every((a) => a.profesores.some((p) => (datosSalon?.ocupados?.[`${p.id}|${celda.dia}|${celda.hora}`] || []).length)) && (
+              <p className="text-sm rounded-lg bg-amber-50 border border-amber-200 p-2 text-amber-900">Todos los profesores de este salón tienen clase en otro salón a esta hora. Para llenarla, primero mueve alguna de esas clases o deja esta hora vacía.</p>
+            )}
             {/* Cruces al escoger: si el profesor ya tiene clase en otro salón a esta hora, la materia sale en gris, con el motivo, y no se puede escoger. Las disponibles van primero. */}
             {materiasFiltradas
               .map((a) => ({ a, cruces: celda ? a.profesores.flatMap((p) => (datosSalon?.ocupados?.[`${p.id}|${celda.dia}|${celda.hora}`] || []).map((sal: string) => `${p.nombre}: ocupado en ${sal} a esta hora`)) : [] }))
