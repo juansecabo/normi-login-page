@@ -362,8 +362,8 @@ export default function Horario() {
                   {datosSalon && !cargandoSalon && (
                     <div className="space-y-3">
                       {datosSalon.puedeEditar && !borrador && (
-                        <div className="flex flex-wrap gap-2">
-                          <Button size="sm" onClick={empezarEdicion} data-guia="horario.editar">{datosSalon.clases.length ? "Editar horario" : "Armar horario"}</Button>
+                        <div className="flex flex-wrap justify-end gap-2">
+                          <Button size="sm" variant="outline" onClick={empezarEdicion} data-guia="horario.editar">{datosSalon.clases.length ? "Editar horario" : "Armar horario"}</Button>
                           {datosSalon.nivel && <Button size="sm" variant="outline" onClick={() => setFranjasEdit(Array.from({ length: Math.max(horasDe(datosSalon.clases), datosSalon.franjas.length) }, (_, i) => datosSalon.franjas.find((f: Franja) => f.hora === i + 1) || { hora: i + 1, hora_inicio: "", hora_fin: "" }))} data-guia="horario.franjas"><Clock className="w-4 h-4 mr-1" /> Horas de {datosSalon.nivel}</Button>}
                         </div>
                       )}
@@ -378,7 +378,7 @@ export default function Horario() {
                             </span>
                           </div>
                           <Rejilla clases={borrador} dias={diasDe(borrador)} horas={horasEdit} modo="salon" franjas={datosSalon.franjas} onCelda={(dia, hora) => { setBuscaMateria(""); setCelda({ dia, hora }); }} />
-                          <div className="flex gap-2">
+                          <div className="flex justify-end gap-2">
                             <Button onClick={guardar} disabled={guardando} data-guia="horario.guardar">{guardando ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />} Guardar horario</Button>
                             <Button variant="outline" onClick={() => setBorrador(null)} disabled={guardando}>Cancelar</Button>
                           </div>
