@@ -424,12 +424,21 @@ export default function Horario() {
           <div className="max-h-[55vh] overflow-y-auto space-y-1" data-guia="horario.escoger_materia">
             {asignaturasSalon.length === 0 && <p className="text-sm text-muted-foreground">Este salón no tiene materias asignadas en Configurar Institución.</p>}
             {asignaturasSalon.length > 0 && materiasFiltradas.length === 0 && <p className="text-sm text-muted-foreground py-2">Ninguna materia coincide con la búsqueda.</p>}
-            {materiasFiltradas.map((a) => (
-              <button key={a.asignatura} onClick={() => asignarCelda(a.asignatura)} className={`w-full text-left rounded-lg border p-2 hover:ring-2 hover:ring-primary/40 ${colorDe(a.asignatura)}`}>
-                <div className="font-semibold text-foreground">{a.asignatura}</div>
-                <div className="text-xs text-muted-foreground">{a.profesores.map((p) => p.nombre).join(", ") || "Sin profesor asignado"}</div>
-              </button>
-            ))}
+            {/* Cruces al escoger: si el profesor ya tiene clase en otro salón a esta hora, la materia sale en gris, con el motivo, y no se puede escoger. Las disponibles van primero. */}
+            {materiasFiltradas
+              .map((a) => ({ a, cruces: celda ? a.profesores.flatMap((p) => (datosSalon?.ocupados?.[`${p.id}|${celda.dia}|${celda.hora}`] || []).map((sal: string) => `${p.nombre}: ocupado en ${sal} a esta hora`)) : [] }))
+              .sort((x, y) => Number(x.cruces.length > 0) - Number(y.cruces.length > 0))
+              .map(({ a, cruces: cr }) => cr.length ? (
+                <div key={a.asignatura} className="w-full text-left rounded-lg border border-dashed p-2 bg-muted/50 opacity-70 cursor-not-allowed" aria-disabled="true">
+                  <div className="font-semibold text-muted-foreground">{a.asignatura}</div>
+                  {cr.map((t) => <div key={t} className="text-xs text-destructive">{t}</div>)}
+                </div>
+              ) : (
+                <button key={a.asignatura} onClick={() => asignarCelda(a.asignatura)} className={`w-full text-left rounded-lg border p-2 hover:ring-2 hover:ring-primary/40 ${colorDe(a.asignatura)}`}>
+                  <div className="font-semibold text-foreground">{a.asignatura}</div>
+                  <div className="text-xs text-muted-foreground">{a.profesores.map((p) => p.nombre).join(", ") || "Sin profesor asignado"}</div>
+                </button>
+              ))}
           </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => asignarCelda(null)}><X className="w-4 h-4 mr-1" /> Dejar vacía</Button>
