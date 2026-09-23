@@ -44,6 +44,45 @@ const TIPOS_SALIDA = [
 const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 interface Estudiante { id: number; nombres: string; apellidos: string; grado: string; salon: string }
 
+/** Lista virtualizada con su propio desplazamiento. Vive dentro de la ventana
+ *  emergente: se crea al abrirla, así el virtualizador mide un recuadro real. */
+const ListaEstudiantes = ({ cargando, filtrados, seleccionados, onToggle }: {
+  cargando: boolean; filtrados: Estudiante[]; seleccionados: Record<number, Estudiante>; onToggle: (e: Estudiante) => void;
+}) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const virt = useVirtualizer({ count: filtrados.length, getScrollElement: () => ref.current, estimateSize: () => 68, overscan: 10 });
+  const items = virt.getVirtualItems();
+  return (
+    <div ref={ref} data-guia="retiro_interno.item_estudiante" className="h-[50vh] overflow-y-auto pr-1 rounded-md">
+      {cargando ? (
+        <div className="text-center py-10 text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
+      ) : filtrados.length === 0 ? (
+        <p className="text-center py-10 text-muted-foreground">No hay estudiantes con esos filtros.</p>
+      ) : (
+        <div style={{ height: virt.getTotalSize(), position: "relative" }}>
+          {items.map((vi) => {
+            const e = filtrados[vi.index];
+            const marcado = !!seleccionados[e.id];
+            return (
+              <label key={e.id} style={{ position: "absolute", top: 0, left: 0, right: 0, transform: `translateY(${vi.start}px)` }}
+                className={`flex items-center gap-3 border rounded-lg p-3 cursor-pointer transition-colors ${marcado ? "border-primary bg-primary/5" : "border-border hover:bg-muted/30"}`}>
+                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${marcado ? "bg-primary border-primary" : "border-border"}`}>
+                  {marcado && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
+                </div>
+                <input type="checkbox" className="sr-only" checked={marcado} onChange={() => onToggle(e)} />
+                <div>
+                  <p className="font-semibold text-foreground text-sm">{e.apellidos} {e.nombres}</p>
+                  <p className="text-xs text-muted-foreground">{e.grado} {e.salon}</p>
+                </div>
+              </label>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const RetiroRegistroInterno = () => {
   const navigate = useNavigate();
   const session = getSession();
@@ -110,14 +149,6 @@ const RetiroRegistroInterno = () => {
       return true;
     });
   }, [permitidos, filtroGrado, filtroSalon, busqueda]);
-
-  // Lista virtualizada dentro de un recuadro con su propio desplazamiento: el
-  // formulario queda justo debajo, sin tener que bajar por toda la lista.
-  const listaRef = useRef<HTMLDivElement>(null);
-  const rowVirt = useVirtualizer({ count: filtrados.length, getScrollElement: () => listaRef.current, estimateSize: () => 68, overscan: 10 });
-  const vItems = rowVirt.getVirtualItems();
-  const padTop = vItems.length ? vItems[0].start : 0;
-  const padBottom = vItems.length ? rowVirt.getTotalSize() - vItems[vItems.length - 1].end : 0;
 
   const selArr = Object.values(seleccionados);
   const toggleSel = (e: Estudiante) => setSeleccionados((p) => { const n = { ...p }; if (n[e.id]) delete n[e.id]; else n[e.id] = e; return n; });
@@ -380,34 +411,7 @@ const RetiroRegistroInterno = () => {
               )}
             </div>
 
-            <div ref={listaRef} data-guia="retiro_interno.item_estudiante" className="max-h-[50vh] overflow-y-auto pr-1 rounded-md">
-              {loading || !cargadoNiveles ? (
-                <div className="text-center py-10 text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
-              ) : filtrados.length === 0 ? (
-                <p className="text-center py-10 text-muted-foreground">No hay estudiantes con esos filtros.</p>
-              ) : (
-                <>
-                  {padTop > 0 && <div style={{ height: padTop }} />}
-                  {vItems.map((vi) => {
-                    const e = filtrados[vi.index];
-                    const marcado = !!seleccionados[e.id];
-                    return (
-                      <label key={e.id} className={`w-full flex items-center gap-3 border rounded-lg p-3 mb-2 cursor-pointer transition-colors ${marcado ? "border-primary bg-primary/5" : "border-border hover:bg-muted/30"}`}>
-                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${marcado ? "bg-primary border-primary" : "border-border"}`}>
-                          {marcado && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
-                        </div>
-                        <input type="checkbox" className="sr-only" checked={marcado} onChange={() => toggleSel(e)} />
-                        <div>
-                          <p className="font-semibold text-foreground text-sm">{e.apellidos} {e.nombres}</p>
-                          <p className="text-xs text-muted-foreground">{e.grado} {e.salon}</p>
-                        </div>
-                      </label>
-                    );
-                  })}
-                  {padBottom > 0 && <div style={{ height: padBottom }} />}
-                </>
-              )}
-            </div>
+            <ListaEstudiantes cargando={loading || !cargadoNiveles} filtrados={filtrados} seleccionados={seleccionados} onToggle={toggleSel} />
           </div>
           <DialogFooter className="flex-row items-center justify-between sm:justify-between gap-2">
             <span className="text-sm text-muted-foreground">{selArr.length} seleccionado{selArr.length === 1 ? "" : "s"}{selArr.length > 0 && <> · <button type="button" onClick={() => setSeleccionados({})} className="underline hover:text-destructive">Quitar todos</button></>}</span>
