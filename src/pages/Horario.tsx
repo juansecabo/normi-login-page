@@ -42,6 +42,7 @@ function Rejilla({ clases, dias, horas, modo, onCelda, franjas }: {
   return (
     <div className="overflow-x-auto -mx-2 px-2" data-guia="horario.rejilla">
       <table className="w-full min-w-[640px] table-fixed border-separate border-spacing-1 text-sm">
+        {/* table-fixed + colgroup: todos los días con el mismo ancho, sin importar lo largo de las materias. */}
         <colgroup><col className="w-20" />{dias.map((d) => <col key={d} />)}</colgroup>
         <thead>
           <tr>
