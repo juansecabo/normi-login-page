@@ -17,7 +17,7 @@ import { useNivelesCoordina } from "@/hooks/useNivelesCoordina";
 import { useAulasProfesor } from "@/hooks/useAulasProfesor";
 import { NIVEL_DE_GRADO } from "@/utils/grados";
 import CalendarioFiltroDia, { keyDeDate } from "@/components/CalendarioFiltroDia";
-import { cargoSegunGenero } from "@/lib/entrevistadores";
+import { cargoSegunGenero, cargoConArticulo } from "@/lib/entrevistadores";
 import { fetchNombresPorIds } from "@/lib/nombresUsuarios";
 
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
@@ -307,7 +307,7 @@ const RetiroEstudiantesStaff = () => {
                             <p className="font-semibold text-foreground text-sm">{auth.estudiante_apellidos} {auth.estudiante_nombre}</p>
                             <p className="text-xs text-muted-foreground">Para el {fechaAut}{auth.hora_retiro ? ` · ${fmtHora(auth.hora_retiro.slice(0, 5))}` : ""}</p>
                             <p className="text-xs text-muted-foreground">Creada el {fechaCreacion}</p>
-                            {auth.autorizado_por_nombre && <p className="text-xs text-primary font-medium">Registrado por {auth.autorizado_por_cargo} {auth.autorizado_por_nombre}</p>}
+                            {auth.autorizado_por_nombre && <p className="text-xs text-primary font-medium">Registrado por {cargoConArticulo(auth.autorizado_por_cargo)} {auth.autorizado_por_nombre}</p>}
                           </div>
                           <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${isExpanded ? "rotate-180" : ""}`} />
                         </button>

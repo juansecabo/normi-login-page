@@ -20,7 +20,7 @@ import { usePreservarFirma } from "@/hooks/usePreservarFirma";
 import { useNivelesCoordina } from "@/hooks/useNivelesCoordina";
 import { useNivelDeGrado } from "@/utils/esquema";
 import { useEstructuraOrden } from "@/utils/estructuraOrden";
-import { cargoSegunGenero } from "@/lib/entrevistadores";
+import { cargoSegunGenero, cargoConArticulo } from "@/lib/entrevistadores";
 import { notifyRectorCoord } from "@/lib/notifyStaff";
 
 /**
@@ -177,7 +177,7 @@ const RetiroRegistroInterno = () => {
         const [grado, salon] = k.split("|");
         const lista = ests.map((e) => `${e.nombres} ${e.apellidos} (id ${e.id})`).join(", ");
         const mensaje =
-          `Nuevo permiso de salida registrado por ${cargoFirma} ${nombreFirma}.\n\n` +
+          `Nuevo permiso de salida registrado por ${cargoConArticulo(cargoFirma)} ${nombreFirma}.\n\n` +
           `${ests.length === 1 ? "Estudiante" : "Estudiantes"} de ${grado} ${salon}: ${lista}.\n` +
           `Fecha de retiro: ${format(fecha, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}.\n` +
           `Hora de retiro: ${horaH}:${horaM} ${horaAP}.\n` +

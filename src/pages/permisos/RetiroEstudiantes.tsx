@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatTelefono } from "@/utils/telefono";
 import { getSession, isPadreDeFamilia, AcudidoData } from "@/hooks/useSession";
-import { cargoSegunGenero } from "@/lib/entrevistadores";
+import { cargoSegunGenero, cargoConArticulo } from "@/lib/entrevistadores";
 import { fetchNombresPorIds } from "@/lib/nombresUsuarios";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
@@ -601,7 +601,7 @@ const RetiroEstudiantes = () => {
                         <div>
                           <p className="font-semibold text-foreground">{auth.estudiante_nombre} {auth.estudiante_apellidos}</p>
                           <p className="text-xs text-muted-foreground">Para el {fechaAut}</p>
-                          {auth.autorizado_por_nombre && <p className="text-xs text-primary font-medium">Registrado por {auth.autorizado_por_cargo} {auth.autorizado_por_nombre}</p>}
+                          {auth.autorizado_por_nombre && <p className="text-xs text-primary font-medium">Registrado por {cargoConArticulo(auth.autorizado_por_cargo)} {auth.autorizado_por_nombre}</p>}
                         </div>
                         <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                       </button>

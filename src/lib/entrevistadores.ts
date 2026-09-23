@@ -40,3 +40,10 @@ export const entrevistadoresDeSolicitud = (s: any, prefijo = ""): string =>
       : [{ cargo: s.solicitante_cargo, nombres: s.solicitante_nombre }],
     prefijo,
   );
+
+/** "Coordinadora" → "la coordinadora", "Rector" → "el rector" (para frases como "registrado por la coordinadora X"). */
+export const cargoConArticulo = (cargo?: string | null): string => {
+  const c = String(cargo || "").trim();
+  if (!c) return "";
+  return `${/a$/i.test(c.split(" ")[0]) ? "la" : "el"} ${c.toLowerCase()}`;
+};
