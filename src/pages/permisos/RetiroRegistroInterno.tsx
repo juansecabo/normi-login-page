@@ -91,7 +91,6 @@ const RetiroRegistroInterno = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Coordinador(a): solo los estudiantes de sus niveles.
   const permitidos = useMemo(() => estudiantes.filter((e) => !nivelesCoordina || nivelesCoordina.includes(nivelDe(e.grado))),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [estudiantes, nivelesCoordina, nivelesListos]);
