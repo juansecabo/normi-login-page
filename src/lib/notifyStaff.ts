@@ -71,6 +71,8 @@ interface NotifyOptions {
   perfilesSinAula?: string[];
   /** Enviar en este momento (ISO) y no al crear (retiros: a la hora del retiro). */
   programarEn?: string;
+  /** Excusas: a la hora de entrada del primer día de clase (el servidor decide). */
+  avisoJornada?: boolean;
 }
 
 async function postComunicadoSistema(opts: NotifyOptions): Promise<void> {
@@ -94,6 +96,7 @@ async function postComunicadoSistema(opts: NotifyOptions): Promise<void> {
     mensaje: opts.mensaje,
     segmentos: opts.perfilesSinAula?.length ? [segmento, { perfil: opts.perfilesSinAula }] : [segmento],
     ...(opts.programarEn ? { programar_en: opts.programarEn } : {}),
+    ...(opts.avisoJornada ? { aviso_jornada: true } : {}),
   };
 
   const res = await fetch(`${API_BASE_URL}/api/comunicados/enviar`, {
@@ -120,7 +123,7 @@ export async function notifyRectorCoord(
   origen?: Origen,
   /** Retiros (Juan 2026-09-23): incluirPorteros = también al portero, que controla
    *  la salida; programarEn = que a todos les llegue a la hora del retiro. */
-  extra?: { incluirPorteros?: boolean; programarEn?: string }
+  extra?: { incluirPorteros?: boolean; programarEn?: string; avisoJornada?: boolean }
 ): Promise<void> {
   const destinatariosLabel = aula
     ? `Rector, Coordinadores y profesores de ${aula.grado} ${aula.salon}`
@@ -145,6 +148,7 @@ export async function notifyRectorCoord(
       destinatariosLabel,
       perfilesSinAula: extra?.incluirPorteros ? ["Porteros"] : undefined,
       programarEn: extra?.programarEn,
+      avisoJornada: extra?.avisoJornada,
     });
   } catch (e) {
     console.warn('notifyRectorCoord falló:', e);

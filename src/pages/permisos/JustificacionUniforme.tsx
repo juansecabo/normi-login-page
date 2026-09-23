@@ -137,7 +137,7 @@ const JustificacionUniforme = () => {
         grado: acudidoSeleccionado.grado,
         salon: acudidoSeleccionado.salon,
         horario: { fecha_inicio: String(payload.fecha) },
-      }, "uniforme");
+      }, "uniforme", { avisoJornada: true });
 
       setFecha(undefined); setAcudidoSeleccionado(null); setJustificacion("");
       setFirma(null); sigCanvas.current?.clear();

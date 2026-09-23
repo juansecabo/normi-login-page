@@ -205,7 +205,7 @@ const JustificacionInasistencia = () => {
         grado: acudidoSeleccionado.grado,
         salon: acudidoSeleccionado.salon,
         horario: { fecha_inicio: payload.fecha_inicio, fecha_fin: payload.fecha_fin },
-      }, "inasistencia");
+      }, "inasistencia", { avisoJornada: true });
 
       // Corregir retroactivamente a "excusa" las inasistencias ya registradas en
       // esas fechas (y avisar la corrección). No bloquea el flujo de éxito.
