@@ -60,7 +60,9 @@ export const HORARIO: Capacidad[] = [
     sinonimos: ["horario de un salón", "horario de sexto", "qué clases tiene un curso"],
     pasos: [
       LLEGAR,
-      { narracion: "Escoge el salón en la lista.", accion: "seleccionar", ancla: "horario.selector_salon", campo: "salon" },
+      { narracion: "Escoge el nivel.", accion: "seleccionar", ancla: "horario.selector_nivel", campo: "nivel" },
+      { narracion: "Ahora el grado.", accion: "seleccionar", ancla: "horario.selector_grado", campo: "grado" },
+      { narracion: "Y por último el salón.", accion: "seleccionar", ancla: "horario.selector_salon", campo: "salon" },
       { narracion: "Ahí tienes el horario de ese salón, con el profesor de cada clase.", accion: "explicar", ancla: "horario.rejilla" },
     ],
   },
@@ -92,7 +94,9 @@ export const HORARIO: Capacidad[] = [
     sinonimos: ["armar el horario", "hacer el horario", "cambiar el horario", "editar horario", "cruces de profesores"],
     pasos: [
       LLEGAR,
-      { narracion: "Escoge el salón en la lista.", accion: "seleccionar", ancla: "horario.selector_salon", campo: "salon" },
+      { narracion: "Escoge el nivel.", accion: "seleccionar", ancla: "horario.selector_nivel", campo: "nivel" },
+      { narracion: "Ahora el grado.", accion: "seleccionar", ancla: "horario.selector_grado", campo: "grado" },
+      { narracion: "Y por último el salón.", accion: "seleccionar", ancla: "horario.selector_salon", campo: "salon" },
       { narracion: "Toca 'Armar horario' (o 'Editar horario' si ya tiene uno).", accion: "click", ancla: "horario.editar" },
       { narracion: "Toca cada casilla y escoge la materia (arriba puedes buscarla por nombre o por profesor); con los botones de arriba cambias cuántas horas tiene el día.", accion: "explicar", ancla: "horario.rejilla" },
       { narracion: "Cuando termines, toca 'Guardar horario'. Si hay un cruce de profesores te dirá cuál es para que lo cambies.", accion: "click", ancla: "horario.guardar" },
@@ -110,7 +114,9 @@ export const HORARIO: Capacidad[] = [
     sinonimos: ["horas de clase", "a qué hora empieza cada clase", "timbre", "horario de timbres"],
     pasos: [
       LLEGAR,
-      { narracion: "Escoge un salón del nivel.", accion: "seleccionar", ancla: "horario.selector_salon", campo: "salon" },
+      { narracion: "Escoge el nivel y un grado y salón de ese nivel.", accion: "seleccionar", ancla: "horario.selector_nivel", campo: "nivel" },
+      { narracion: "Ahora el grado.", accion: "seleccionar", ancla: "horario.selector_grado", campo: "grado" },
+      { narracion: "Y por último el salón.", accion: "seleccionar", ancla: "horario.selector_salon", campo: "salon" },
       { narracion: "Toca 'Horas de' seguido del nivel.", accion: "click", ancla: "horario.franjas" },
       { narracion: "Escribe la hora de inicio y fin de cada hora de clase y toca 'Guardar horas'.", accion: "explicar" },
     ],

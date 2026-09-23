@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, Plus, Minus, Clock, Save, X, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { normalizarTexto } from "@/lib/nombresUsuarios";
 import HeaderNormi from "@/components/HeaderNormi";
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
@@ -131,6 +132,8 @@ export default function Horario() {
   const [vista, setVista] = useState<"salon" | "profesor">("salon");
   const [salones, setSalones] = useState<SalonInfo[]>([]);
   const [salonSel, setSalonSel] = useState<string>("");
+  const [nivelSel, setNivelSel] = useState("");
+  const [gradoSel, setGradoSel] = useState("");
   const [datosSalon, setDatosSalon] = useState<any>(null);
   const [cargandoSalon, setCargandoSalon] = useState(false);
   const [profesores, setProfesores] = useState<Profesor[]>([]);
@@ -146,6 +149,10 @@ export default function Horario() {
   const [guardando, setGuardando] = useState(false);
   const [cruces, setCruces] = useState<any[] | null>(null);
   const [franjasEdit, setFranjasEdit] = useState<Franja[] | null>(null);
+  // Lo escogido (vista, nivel, grado, salón, profesor, estudiante) vive también en la
+  // dirección de la página: al actualizar o compartir el enlace se conserva.
+  const [params, setParams] = useSearchParams();
+  const [restaurado, setRestaurado] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -154,16 +161,44 @@ export default function Horario() {
         setMio(r);
         if (r.tipo === "staff" || r.tipo === "profesor") {
           const s = await apiRequest<any>("/api/horario/salones");
-          setSalones(s.salones || []);
+          const lista: SalonInfo[] = s.salones || [];
+          setSalones(lista);
           if (r.tipo === "staff") apiRequest<any>("/api/horario/profesores").then((p) => setProfesores(p.profesores || [])).catch(() => null);
+          // Restaurar la selección desde la dirección.
+          const pv = params.get("vista"), pn = params.get("nivel") || "", pg = params.get("grado") || "", ps = params.get("salon") || "", pp = params.get("profesor") || "";
+          if (r.tipo === "staff" && pv === "profesor") { setVista("profesor"); if (pp) cargarProfesor(pp); }
+          if (pn && lista.some((x) => (x.nivel || "Otros") === pn)) {
+            setNivelSel(pn);
+            if (pg && lista.some((x) => (x.nivel || "Otros") === pn && x.grado === pg)) {
+              setGradoSel(pg);
+              if (ps && lista.some((x) => x.grado === pg && x.salon === ps)) cargarSalon(`${pg}|${ps}`);
+            }
+          }
         }
+        const pe = Number(params.get("estudiante"));
+        if (pe > 0 && pe < (r.estudiantes?.length || 0)) setEstSel(pe);
       } catch (e: any) {
         toast({ title: "No se pudo cargar el horario", description: e?.body?.detail || e?.message, variant: "destructive" });
       }
       setCargando(false);
+      setRestaurado(true);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!restaurado) return;
+    const q = new URLSearchParams();
+    if (vista === "profesor") { q.set("vista", "profesor"); if (profSel) q.set("profesor", profSel); }
+    else {
+      if (nivelSel) q.set("nivel", nivelSel);
+      if (gradoSel) q.set("grado", gradoSel);
+      if (salonSel) q.set("salon", salonSel.split("|")[1] || "");
+    }
+    if (estSel > 0) q.set("estudiante", String(estSel));
+    if (q.toString() !== params.toString()) setParams(q, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restaurado, vista, nivelSel, gradoSel, salonSel, profSel, estSel]);
 
   const cargarSalon = async (clave: string) => {
     setSalonSel(clave); setBorrador(null); setFranjasEdit(null);
@@ -224,6 +259,8 @@ export default function Horario() {
     for (const s of salones) { const k = s.nivel || "Otros"; m.set(k, [...(m.get(k) || []), s]); }
     return [...m];
   }, [salones]);
+  const gradosDelNivel = useMemo(() => [...new Set((salonesPorNivel.find(([n]) => n === nivelSel)?.[1] || []).map((x) => x.grado))], [salonesPorNivel, nivelSel]);
+  const salonesDelGrado = useMemo(() => salones.filter((x) => (x.nivel || "Otros") === nivelSel && x.grado === gradoSel), [salones, nivelSel, gradoSel]);
 
   const asignaturasSalon: { asignatura: string; profesores: Profesor[] }[] = datosSalon?.asignaturas || [];
   // Buscador del diálogo: cada palabra debe aparecer en la materia o en el profesor (sin tildes ni mayúsculas).
@@ -296,16 +333,29 @@ export default function Horario() {
               {(vista === "salon" || mio.tipo === "profesor") && (
                 <section className="space-y-4">
                   {mio.tipo === "profesor" && <h2 className="font-semibold text-foreground pt-2">Horario de un salón</h2>}
-                  <div data-guia="horario.selector_salon">
-                    <label className="text-sm font-medium block mb-1">Salón</label>
-                    <select value={salonSel} onChange={(e) => cargarSalon(e.target.value)} className="flex h-10 w-full max-w-sm rounded-md border border-input bg-background px-3 py-2 text-sm">
-                      <option value="">Escoge un salón…</option>
-                      {salonesPorNivel.map(([nivel, ss]) => (
-                        <optgroup key={nivel} label={nivel}>
-                          {ss.map((s) => <option key={`${s.grado}|${s.salon}`} value={`${s.grado}|${s.salon}`}>{s.grado} {s.salon}{s.clases ? "" : " (sin horario)"}</option>)}
-                        </optgroup>
-                      ))}
-                    </select>
+                  {/* Nivel → grado → salón, filtrándose según lo escogido (como en las demás fichas). */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl">
+                    <div>
+                      <label className="text-sm font-medium block mb-1">Nivel</label>
+                      <Select value={nivelSel} onValueChange={(v) => { setNivelSel(v); setGradoSel(""); cargarSalon(""); }}>
+                        <SelectTrigger data-guia="horario.selector_nivel"><SelectValue placeholder="Escoge el nivel" /></SelectTrigger>
+                        <SelectContent>{salonesPorNivel.map(([n]) => <SelectItem key={n} value={n}>{n}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium block mb-1">Grado</label>
+                      <Select value={gradoSel} onValueChange={(v) => { setGradoSel(v); cargarSalon(""); }} disabled={!nivelSel}>
+                        <SelectTrigger data-guia="horario.selector_grado"><SelectValue placeholder="Escoge el grado" /></SelectTrigger>
+                        <SelectContent>{gradosDelNivel.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium block mb-1">Salón</label>
+                      <Select value={salonSel} onValueChange={(v) => cargarSalon(v)} disabled={!gradoSel}>
+                        <SelectTrigger data-guia="horario.selector_salon"><SelectValue placeholder="Escoge el salón" /></SelectTrigger>
+                        <SelectContent>{salonesDelGrado.map((x) => <SelectItem key={x.salon} value={`${x.grado}|${x.salon}`}>{x.salon}{x.clases ? "" : " (sin horario)"}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
                   {cargandoSalon && <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>}
