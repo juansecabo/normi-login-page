@@ -306,7 +306,7 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
     id: "permisos_excusas.filtrar_dia",
     titulo: "Filtrar por día con el calendario",
     descripcion:
-      "Usar el calendario lateral para ver solo lo que llegó un día (filtra por la fecha en que se creó el registro, no por la fecha del retiro o de la ausencia); los días con registros salen en naranja.",
+      "Usar el calendario lateral para ver qué estudiantes tienen excusa o retiro un día: cada registro sale en los días que cubre (la fecha del retiro, de la ausencia o del uniforme; una excusa de varios días sale en cada día hábil de su rango). La fecha en que se creó sigue en la tarjeta.",
     categoria: "Permisos y Excusas",
     roles: [...ALL_INTERNOS],
     ruta: "/permisos-excusas/retiro-staff",
@@ -317,6 +317,7 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
       "ver las excusas de un día",
       "filtrar por fecha",
       "qué permisos llegaron hoy",
+      "quién tiene excusa hoy",
       "ver todas las fechas",
       "usar el calendario",
     ],
@@ -334,7 +335,7 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
       },
       {
         narracion:
-          "En el calendario de la izquierda toca el día que quieres. Los días en naranja tienen registros (según cuándo llegó cada uno, no la fecha del retiro o de la ausencia). La lista arranca en el día de hoy.",
+          "En el calendario de la izquierda toca el día que quieres. Los días en naranja tienen registros: cada excusa o retiro sale en los días que cubre, no en el día en que se creó. La lista arranca en el día de hoy.",
         accion: "click",
         ancla: "permisos_excusas.calendario_dia",
         campo: "fecha",

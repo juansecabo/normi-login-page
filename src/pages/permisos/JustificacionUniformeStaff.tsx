@@ -8,7 +8,7 @@ import { Shirt, ChevronDown, Search, X } from "lucide-react";
 import { coincideBusqueda } from "@/utils/busqueda";
 import FirmaImage from "@/components/FirmaImage";
 import { markLastSeen } from "@/utils/notificaciones";
-import { fechaKey, fmtDiaHeader, todayKey } from "@/utils/fechaUtils";
+import { fechaKey, fmtDiaHeader, todayKey, diasCubiertos } from "@/utils/fechaUtils";
 import { ImprimirToggle, CardSelector } from "@/components/ImprimirSelector";
 import { descargarExcusasDocx, SeccionExcusa } from "@/utils/printExcusasDocx";
 import { useNivelesCoordina } from "@/hooks/useNivelesCoordina";
@@ -105,8 +105,10 @@ const JustificacionUniformeStaff = () => {
     return true;
   });
   // Calendario lateral: días con registros (naranja) y filtro por día elegido.
-  const diasMarcados = [...new Set(justFiltradas.map(j => fechaKey(j.created_at)))];
-  const listaFinal = diaCal ? justFiltradas.filter(j => fechaKey(j.created_at) === keyDeDate(diaCal)) : justFiltradas;
+  // Cada registro se ubica en los DÍAS QUE CUBRE (no en el día en que se creó); la fecha de creación sigue en la tarjeta.
+  const diasDe = (j: (typeof justFiltradas)[number]) => diasCubiertos(j.fecha);
+  const diasMarcados = [...new Set(justFiltradas.flatMap(diasDe))];
+  const listaFinal = diaCal ? justFiltradas.filter(j => diasDe(j).includes(keyDeDate(diaCal))) : justFiltradas;
 
   const cantidadSeleccionada = Object.keys(seleccion).length;
   const toggleImprimirMode = () => setImprimirMode(v => { if (v) setSeleccion({}); return !v; });
@@ -208,11 +210,12 @@ const JustificacionUniformeStaff = () => {
                     const grupos: { key: string; items: typeof listaFinal }[] = [];
                     const byKey = new Map<string, typeof listaFinal>();
                     for (const j of listaFinal) {
-                      const k = fechaKey(j.created_at);
+                      const k = diaCal ? keyDeDate(diaCal) : diasDe(j)[0];
                       let arr = byKey.get(k);
                       if (!arr) { arr = []; byKey.set(k, arr); grupos.push({ key: k, items: arr }); }
                       arr.push(j);
                     }
+                    grupos.sort((a, b) => b.key.localeCompare(a.key));
                     return grupos.map(({ key, items }) => (
                       <div key={key} className="space-y-3">
                         <h3 className="text-lg font-bold text-blue-700 border-b-2 border-blue-200 pb-2">
