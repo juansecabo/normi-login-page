@@ -16,6 +16,7 @@ import iconRegistroAgente from "@/assets/icons/registro-agente.webp";
 import iconUsoAgente from "@/assets/icons/uso-agente.webp";
 import iconConfigurarInstitucion from "@/assets/icons/configurar-institucion.webp";
 import iconCalendario from "@/assets/icons/calendario.webp";
+import iconHorario from "@/assets/icons/horario.webp";
 import iconConversaciones from "@/assets/icons/conversaciones.webp";
 import iconCasos from "@/assets/icons/casos.png";
 import iconCitas from "@/assets/icons/citas.png";
@@ -292,6 +293,12 @@ const DashboardRector = () => {
       <button onClick={() => navigate("/calendario-escolar")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-indigo-100 transition-all duration-200 hover:shadow-md hover:bg-indigo-200">
         <img src={iconCalendario} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground text-center">Calendario</span>
+      </button>
+    ) },
+    { id: 'horario', render: (
+      <button data-guia="dashboard.ficha_horario" onClick={() => navigate("/horario")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-cyan-100 transition-all duration-200 hover:shadow-md hover:bg-cyan-200">
+        <img src={iconHorario} alt="" className="w-16 h-16 object-contain" />
+        <span className="font-semibold text-foreground text-center">Horario</span>
       </button>
     ) },
     ...(cargo === "Rector" || cargo === "Administrador" || cargo === "Secretaria General" || cargo === "Coordinador(a)" || cargo === "Administrativo(a)" ? [{ id: 'construye-institucion', render: (

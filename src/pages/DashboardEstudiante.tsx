@@ -4,6 +4,7 @@ import { useBienvenida, getSession, isEstudiante } from "@/hooks/useSession";
 import { usePendientesFirma } from "@/hooks/usePendientesFirma";
 import iconNotas from "@/assets/icons/notas.webp";
 import iconCalendario from "@/assets/icons/calendario.webp";
+import iconHorario from "@/assets/icons/horario.webp";
 import iconPerfil from "@/assets/icons/perfil.png";
 import iconActividades from "@/assets/icons/actividades.webp";
 import iconEstadisticas from "@/assets/icons/estadisticas.webp";
@@ -181,6 +182,12 @@ const DashboardEstudiante = () => {
       <button onClick={() => navigate("/calendario-escolar")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-indigo-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-indigo-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-indigo-200">
         <img src={iconCalendario} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground text-center">Calendario</span>
+      </button>
+    ) },
+    { id: 'horario', render: (
+      <button data-guia="dashboard.ficha_horario" onClick={() => navigate("/horario")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-cyan-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-cyan-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-cyan-200">
+        <img src={iconHorario} alt="" className="w-16 h-16 object-contain" />
+        <span className="font-semibold text-foreground text-center">Horario</span>
       </button>
     ) },
     { id: 'comunicados', badge: badges.comunicados, render: (

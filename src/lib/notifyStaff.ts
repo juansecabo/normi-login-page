@@ -29,6 +29,10 @@ function getJwt(): string | null {
 interface Aula {
   grado: string;
   salon: string;
+  /** Opcional: acota los PROFESORES del aula a los que tienen clase con ese
+   *  salón en esas fechas (y desde esa hora). Si el salón no tiene horario
+   *  cargado, el servidor no filtra: les llega a todos como siempre. */
+  horario?: { fecha_inicio: string; fecha_fin?: string; desde?: string };
 }
 
 type Origen = "inasistencia" | "uniforme" | "retiro" | "remision" | "entrevista" | "consulta" | undefined;
@@ -76,6 +80,7 @@ async function postComunicadoSistema(opts: NotifyOptions): Promise<void> {
   if (opts.aula) {
     segmento.grados = [opts.aula.grado];
     segmento.salones = [opts.aula.salon];
+    if (opts.aula.horario) segmento.horario = opts.aula.horario;
   }
 
   const body = {

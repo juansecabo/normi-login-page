@@ -25,6 +25,7 @@ import EstadisticasDashboard from "./pages/rector/EstadisticasDashboard";
 import EstudiantesEnRiesgo from "./pages/rector/EstudiantesEnRiesgo";
 import PanelControl from "./pages/rector/PanelControl";
 import HorariosAvisos from "./pages/rector/HorariosAvisos";
+import Horario from "./pages/Horario";
 import ConstruyeInstitucion from "./pages/rector/ConstruyeInstitucion";
 import CrearInstitucion from "./pages/CrearInstitucion";
 import UsoNormi from "./pages/rector/UsoNormi";
@@ -213,6 +214,7 @@ const App = () => (
           <Route path="/estudiantes-riesgo" element={<EstudiantesEnRiesgo />} />
           <Route path="/panel-control" element={<PanelControl />} />
           <Route path="/horarios-avisos" element={<HorariosAvisos />} />
+          <Route path="/horario" element={<Horario />} />
           <Route path="/uso-normi" element={<UsoNormi />} />
           <Route path="/comunicados-recibidos" element={<ComunicadosRecibidos />} />
           <Route path="/documentos-recibidos" element={<DocumentosRecibidos />} />

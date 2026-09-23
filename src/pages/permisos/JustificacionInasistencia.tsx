@@ -204,6 +204,7 @@ const JustificacionInasistencia = () => {
       notifyRectorCoord(mensaje, "Sistema Normi (Excusas)", {
         grado: acudidoSeleccionado.grado,
         salon: acudidoSeleccionado.salon,
+        horario: { fecha_inicio: payload.fecha_inicio, fecha_fin: payload.fecha_fin },
       }, "inasistencia");
 
       // Corregir retroactivamente a "excusa" las inasistencias ya registradas en

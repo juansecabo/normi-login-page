@@ -239,9 +239,11 @@ const RetiroEstudiantes = () => {
         `Motivo: ${motivo}.\n` +
         `Acudiente: ${nombreAcudiente} (C.C. ${idAcudiente}${telefonoAcudiente ? `, tel. ${telefonoAcudiente}` : ""}).\n` +
         `Pueden revisarla en la plataforma en Permisos y Excusas.`;
+      // Con horario: solo los profesores con clase ese día desde la hora del retiro.
       notifyRectorCoord(mensaje, "Sistema Normi (Retiro)", {
         grado: acudidoSeleccionado.grado,
         salon: acudidoSeleccionado.salon,
+        horario: { fecha_inicio: payload.fecha_autorizacion, desde: horaPayload },
       }, "retiro");
 
       // Reset form

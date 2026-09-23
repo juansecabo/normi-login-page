@@ -136,6 +136,7 @@ const JustificacionUniforme = () => {
       notifyRectorCoord(mensaje, "Sistema Normi (Uniforme)", {
         grado: acudidoSeleccionado.grado,
         salon: acudidoSeleccionado.salon,
+        horario: { fecha_inicio: String(payload.fecha) },
       }, "uniforme");
 
       setFecha(undefined); setAcudidoSeleccionado(null); setJustificacion("");
