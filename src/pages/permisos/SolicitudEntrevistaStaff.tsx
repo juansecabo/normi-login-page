@@ -738,27 +738,27 @@ const SolicitudEntrevistaStaff = () => {
             <h3 className="text-lg font-bold text-foreground mb-4">Solicitudes creadas</h3>
 
             {!loadingHistorial && historial.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-3" data-guia="entrevistas.filtro_tipo">
+              <div className="grid grid-cols-3 gap-1 p-1 mb-3 w-full sm:w-auto sm:inline-grid rounded-lg border border-input bg-muted/40" data-guia="entrevistas.filtro_tipo">
                 {([["todas", "Todas"], ["creadas", "Creadas por mí"], ["entrevistador", session.genero === "F" ? "Soy entrevistadora" : "Soy entrevistador"]] as const).map(([v, l]) => (
                   <button key={v} type="button" onClick={() => { setFTipo(v); setExpandedId(null); }}
-                    className={`px-3 py-1.5 rounded-md border text-sm font-medium cursor-pointer transition-colors ${fTipo === v ? "bg-primary text-primary-foreground border-primary" : "bg-background border-input hover:bg-accent"}`}>
+                    className={`px-2 sm:px-4 py-1.5 rounded-md text-xs sm:text-sm font-medium leading-tight text-center cursor-pointer transition-colors ${fTipo === v ? "bg-primary text-primary-foreground shadow-sm" : "text-foreground [@media(hover:hover)]:hover:bg-background"}`}>
                     {l}
                   </button>
                 ))}
               </div>
             )}
             {!loadingHistorial && historial.length > 0 && (
-              <div className="flex flex-wrap gap-3 mb-4">
+              <div className="grid grid-cols-2 gap-3 mb-4 sm:flex sm:flex-wrap">
                 <input
                   value={fNombre} onChange={(e) => setFNombre(e.target.value)}
                   placeholder="Buscar por nombre del estudiante…"
-                  className="flex-1 min-w-[200px] px-3 py-2 border border-input rounded-md text-sm bg-background"
+                  className="col-span-2 sm:flex-1 min-w-0 sm:min-w-[200px] px-3 py-2 border border-input rounded-md text-sm bg-background"
                 />
-                <select value={fGrado} onChange={(e) => { setFGrado(e.target.value); setFSalon(""); }} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                <select value={fGrado} onChange={(e) => { setFGrado(e.target.value); setFSalon(""); }} className="w-full sm:w-auto min-w-0 px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                   <option value="">Todos los grados</option>
                   {gradosHistorial.map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
-                <select value={fSalon} onChange={(e) => setFSalon(e.target.value)} className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                <select value={fSalon} onChange={(e) => setFSalon(e.target.value)} className="w-full sm:w-auto min-w-0 px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                   <option value="">Todos los salones</option>
                   {salonesHistorial.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
