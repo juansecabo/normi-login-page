@@ -85,7 +85,7 @@ export const HORARIO: Capacidad[] = [
   {
     id: "horario.armar",
     titulo: "Armar o editar el horario de un salón",
-    descripcion: "Poner la materia de cada día y hora de un salón. Si un profesor quedaría en dos salones a la misma hora, no deja guardar y dice dónde está el cruce. El coordinador solo edita los salones de sus niveles.",
+    descripcion: "Poner la materia de cada día y hora de un salón. Al escoger la materia, las que tienen el profesor ocupado en otro salón a esa hora salen en gris con el motivo y no se pueden escoger; además, al guardar se revisan los cruces otra vez. El coordinador solo edita los salones de sus niveles.",
     categoria: "Horario",
     roles: [...EDITORES],
     ruta: "/horario",
