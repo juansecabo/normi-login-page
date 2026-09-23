@@ -235,7 +235,7 @@ export default function Horario() {
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-4 md:p-6 space-y-5">
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2"><Clock className="w-6 h-6 text-primary" /> Horario de clases</h1>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">Horario de clases</h1>
 
           {cargando ? (
             <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>

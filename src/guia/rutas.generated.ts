@@ -26,6 +26,7 @@ export const RUTAS_FICHAS: Record<string, string> = {
   "/estudiante/estadisticas": "Estadísticas",
   "/estudiante/notas": "Notas",
   "/formatos": "Formatos",
+  "/horario": "Horario",
   "/manual-convivencia": "Manual de Convivencia",
   "/normi-examinadora": "Normi Examinadora",
   "/observador-estudiantil": "Observador Estudiantil",
