@@ -752,7 +752,7 @@ const SolicitudEntrevistaStaff = () => {
                 <input
                   value={fNombre} onChange={(e) => setFNombre(e.target.value)}
                   placeholder="Buscar por nombre del estudiante…"
-                  className="col-span-2 sm:flex-1 min-w-0 sm:min-w-[200px] px-3 py-2 border border-input rounded-md text-sm bg-background"
+                  className="col-span-2 order-last sm:order-none sm:flex-1 min-w-0 sm:min-w-[200px] px-3 py-2 border border-input rounded-md text-sm bg-background"
                 />
                 <select value={fGrado} onChange={(e) => { setFGrado(e.target.value); setFSalon(""); }} className="w-full sm:w-auto min-w-0 pl-2 pr-1 sm:px-3 py-2 border border-input rounded-md text-[13px] sm:text-sm bg-background cursor-pointer">
                   <option value="">Todos los grados</option>
