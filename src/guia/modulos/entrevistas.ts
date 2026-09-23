@@ -63,6 +63,8 @@ export const ENTREVISTAS: Capacidad[] = [
       "ver mis entrevistas",
       "el calendario de entrevistas",
       "qué entrevistas tengo",
+      "entrevistas que creé",
+      "entrevistas en las que soy entrevistador",
       "ver las solicitudes de entrevista creadas",
     ],
     pasos: [
@@ -81,6 +83,13 @@ export const ENTREVISTAS: Capacidad[] = [
           "En el calendario, los días con entrevista salen marcados (naranja si la creaste, azul si eres entrevistador, diagonal si el día tiene de ambos; abajo está la leyenda de colores). Toca un día para ver sus entrevistas.",
         accion: "click",
         ancla: "entrevistas.calendario_dia",
+      },
+      {
+        narracion:
+          "Si quieres ver solo unas, arriba toca 'Creadas por mí' o 'Soy entrevistador' (o 'Soy entrevistadora'); 'Todas' las vuelve a mostrar todas.",
+        accion: "click",
+        ancla: "entrevistas.filtro_tipo",
+        opcional: true,
       },
     ],
   },

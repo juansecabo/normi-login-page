@@ -83,6 +83,8 @@ const SolicitudEntrevistaStaff = () => {
   const [fNombre, setFNombre] = useState("");
   const [fGrado, setFGrado] = useState("");
   const [fSalon, setFSalon] = useState("");
+  // Filtro por tipo: todas, solo las que creé o solo en las que soy entrevistador(a).
+  const [fTipo, setFTipo] = useState<"todas" | "creadas" | "entrevistador">("todas");
   const gradosHistorial = useMemo(
     () => gradosColegio.filter(g => historial.some(s => s.estudiante_grado === g)),
     [historial, gradosColegio],
@@ -97,10 +99,12 @@ const SolicitudEntrevistaStaff = () => {
     return historial.filter(s => {
       if (fGrado && s.estudiante_grado !== fGrado) return false;
       if (fSalon && s.estudiante_salon !== fSalon) return false;
+      if (fTipo === "creadas" && !s._creada) return false;
+      if (fTipo === "entrevistador" && !s._entrev) return false;
       if (q && !`${s.estudiante_apellidos || ""} ${s.estudiante_nombre || ""}`.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [historial, fNombre, fGrado, fSalon]);
+  }, [historial, fNombre, fGrado, fSalon, fTipo]);
 
   // Calendario: mapea cada día (fecha_entrevista) a los tipos que tiene ese día.
   // 'entrevistador' manda sobre 'creador'; si el día tiene de ambos → diagonal.
@@ -733,6 +737,16 @@ const SolicitudEntrevistaStaff = () => {
           <div className="bg-card rounded-lg shadow-soft p-6">
             <h3 className="text-lg font-bold text-foreground mb-4">Solicitudes creadas</h3>
 
+            {!loadingHistorial && historial.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3" data-guia="entrevistas.filtro_tipo">
+                {([["todas", "Todas"], ["creadas", "Creadas por mí"], ["entrevistador", session.genero === "F" ? "Soy entrevistadora" : "Soy entrevistador"]] as const).map(([v, l]) => (
+                  <button key={v} type="button" onClick={() => { setFTipo(v); setExpandedId(null); }}
+                    className={`px-3 py-1.5 rounded-md border text-sm font-medium cursor-pointer transition-colors ${fTipo === v ? "bg-primary text-primary-foreground border-primary" : "bg-background border-input hover:bg-accent"}`}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+            )}
             {!loadingHistorial && historial.length > 0 && (
               <div className="flex flex-wrap gap-3 mb-4">
                 <input
