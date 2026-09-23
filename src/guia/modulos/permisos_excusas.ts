@@ -118,7 +118,7 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
     id: "permisos_excusas.registrar_permiso_salida",
     titulo: "Registrar un permiso de salida (personal)",
     descripcion:
-      "El rector, el administrador o el coordinador (solo estudiantes de sus niveles) registran un permiso de salida con el mismo formato que llenan los padres: fecha, hora, cómo sale, motivo, adjuntos y firma. Se pueden escoger varios estudiantes a la vez. Queda en Retiro de Estudiantes, la asistencia de ese día queda con excusa desde esa hora y se avisa al rector, a la coordinación y a los profesores según el horario del salón. Sirve también para niveles sin acudientes.",
+      "El rector, el administrador o el coordinador (solo estudiantes de sus niveles) registran un permiso de salida con el mismo formato que llenan los padres: fecha, hora, cómo sale, motivo, adjuntos y firma. Se pueden escoger varios estudiantes a la vez. Queda en Retiro de Estudiantes, la asistencia de ese día queda con excusa desde esa hora y se avisa por WhatsApp a los acudientes del estudiante (el permiso también les aparece en su historial), al rector, a la coordinación y a los profesores según el horario del salón. Sirve también para niveles sin acudientes (ahí no se avisa a acudientes).",
     categoria: "Permisos y Excusas",
     roles: ["rector", "coordinador", "admin"],
     ruta: "/permisos-excusas/retiro-registrar",

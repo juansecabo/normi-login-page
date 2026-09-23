@@ -124,7 +124,17 @@ const RetiroEstudiantes = () => {
       .select("*")
       .eq("acudiente_id", session.id)
       .order("fecha_autorizacion", { ascending: false });
-    setHistorial(data || []);
+    // También los permisos de salida que el personal (rector/coordinación) registró para sus acudidos.
+    const idsAcudidos = (session.acudidos || []).map((a) => Number(a.id)).filter((n) => !Number.isNaN(n));
+    let delPersonal: any[] = [];
+    if (idsAcudidos.length) {
+      const r = await supabase.from("Autorizaciones_Retiro").select("*")
+        .in("estudiante_id", idsAcudidos).not("autorizado_por_id", "is", null);
+      delPersonal = r.data || [];
+    }
+    const todos = [...(data || []), ...delPersonal.filter((x) => !(data || []).some((d: any) => d.id === x.id))]
+      .sort((a: any, b: any) => String(b.fecha_autorizacion).localeCompare(String(a.fecha_autorizacion)));
+    setHistorial(todos);
     setLoadingHistorial(false);
   };
 
@@ -591,6 +601,7 @@ const RetiroEstudiantes = () => {
                         <div>
                           <p className="font-semibold text-foreground">{auth.estudiante_nombre} {auth.estudiante_apellidos}</p>
                           <p className="text-xs text-muted-foreground">Para el {fechaAut}</p>
+                          {auth.autorizado_por_nombre && <p className="text-xs text-primary font-medium">Registrado por {auth.autorizado_por_cargo} {auth.autorizado_por_nombre}</p>}
                         </div>
                         <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                       </button>
@@ -610,9 +621,15 @@ const RetiroEstudiantes = () => {
                               )}
                             </p>
 
+                            {auth.autorizado_por_nombre ? (
+                              <p>
+                                Yo <span className="text-primary font-medium">{auth.autorizado_por_nombre}</span>, con C.C. No. <span className="text-primary font-medium">{auth.autorizado_por_id}</span>, en calidad de <span className="text-primary font-medium">{auth.autorizado_por_cargo}</span>, autorizo al estudiante <span className="text-primary font-medium">{auth.estudiante_nombre} {auth.estudiante_apellidos}</span> del grado: <span className="text-primary font-medium">{auth.estudiante_grado} {auth.estudiante_salon}</span>, para que salga de la institución:
+                              </p>
+                            ) : (
                             <p>
                               Yo <span className="text-primary font-medium">{[auth.acudiente_nombres, auth.acudiente_apellidos].filter(Boolean).join(" ")}</span> {cargoSegunGenero("identificado(a)", generoAcudiente)} con C.C. No. <span className="text-primary font-medium">{auth.acudiente_id}</span> autorizo a mi acudido(a) <span className="text-primary font-medium">{auth.estudiante_nombre} {auth.estudiante_apellidos}</span> del grado: <span className="text-primary font-medium">{auth.estudiante_grado} {auth.estudiante_salon}</span>, para que salga de la institución:
                             </p>
+                            )}
 
                             <p>
                               <Check className="w-4 h-4 inline text-primary" /> {TIPOS_SALIDA.find(t => t.value === auth.tipo_salida)?.label || auth.tipo_salida}
@@ -659,7 +676,7 @@ const RetiroEstudiantes = () => {
                               <p>Correo electrónico: <span className="text-primary font-medium">{auth.acudiente_correo}</span></p>
                             )}
 
-                            <p>Teléfono: <span className="text-primary font-medium">{formatTelefono(auth.acudiente_telefono)}</span></p>
+                            {!auth.autorizado_por_nombre && <p>Teléfono: <span className="text-primary font-medium">{formatTelefono(auth.acudiente_telefono)}</span></p>}
                           </div>
                         </div>
                       )}

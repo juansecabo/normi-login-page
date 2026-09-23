@@ -429,7 +429,7 @@ const RetiroRegistroInterno = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Registrar el permiso de salida?</AlertDialogTitle>
             <AlertDialogDescription>
-              {selArr.length === 1 ? `Para ${selArr[0].nombres} ${selArr[0].apellidos}.` : `Para ${selArr.length} estudiantes.`} Se avisará al rector, a la coordinación y a los profesores según el horario del salón.
+              {selArr.length === 1 ? `Para ${selArr[0].nombres} ${selArr[0].apellidos}.` : `Para ${selArr.length} estudiantes.`} Se avisará a los acudientes, al rector, a la coordinación y a los profesores según el horario del salón.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
