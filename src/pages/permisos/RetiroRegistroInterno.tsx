@@ -230,7 +230,7 @@ const RetiroRegistroInterno = () => {
     setShowConfirm(false);
   };
 
-  const selectorCls = "px-3 py-2 border border-input rounded-md text-sm bg-card cursor-pointer";
+  const selectorCls = "w-full min-w-0 pl-2 pr-1 sm:px-3 py-2 border border-input rounded-md text-[13px] sm:text-sm bg-card cursor-pointer";
   const lineaCls = "inline px-1 py-1 border-b-2 border-primary/40 text-primary font-medium bg-transparent text-sm cursor-pointer outline-none";
 
   return (
