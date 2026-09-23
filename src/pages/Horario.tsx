@@ -333,6 +333,7 @@ export default function Horario() {
               {(vista === "salon" || mio.tipo === "profesor") && (
                 <section className="space-y-4">
                   {mio.tipo === "profesor" && <h2 className="font-semibold text-foreground pt-2">Horario de un salón</h2>}
+                  {/* Nivel → grado → salón, filtrándose según lo escogido (como en las demás fichas). */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl">
                     <div>
                       <label className="text-sm font-medium block mb-1">Nivel</label>
