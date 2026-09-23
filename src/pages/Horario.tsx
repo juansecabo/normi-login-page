@@ -263,6 +263,7 @@ export default function Horario() {
   const salonesDelGrado = useMemo(() => salones.filter((x) => (x.nivel || "Otros") === nivelSel && x.grado === gradoSel), [salones, nivelSel, gradoSel]);
 
   const asignaturasSalon: { asignatura: string; profesores: Profesor[] }[] = datosSalon?.asignaturas || [];
+  // Buscador del diálogo: cada palabra debe aparecer en la materia o en el profesor (sin tildes ni mayúsculas).
   const materiasFiltradas = (() => {
     const palabras = normalizarTexto(buscaMateria.trim()).split(/\s+/).filter(Boolean);
     if (!palabras.length) return asignaturasSalon;
