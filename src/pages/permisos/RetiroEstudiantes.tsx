@@ -254,7 +254,7 @@ const RetiroEstudiantes = () => {
         grado: acudidoSeleccionado.grado,
         salon: acudidoSeleccionado.salon,
         horario: { fecha_inicio: payload.fecha_autorizacion, desde: horaPayload },
-      }, "retiro");
+      }, "retiro", true);
 
       // Reset form
       setFecha(undefined);

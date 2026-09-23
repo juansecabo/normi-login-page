@@ -115,6 +115,21 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
     ],
   },
   {
+    id: "permisos_excusas.retiro_portero",
+    titulo: "Ver los retiros de estudiantes (portería)",
+    descripcion:
+      "El portero ve los permisos de salida autorizados (por los acudientes o por el personal) desde su propia ficha 'Retiro de Estudiantes' en el inicio, para saber quién puede salir, a qué hora y con quién. También le llega un aviso por WhatsApp cada vez que se registra un retiro.",
+    categoria: "Permisos y Excusas",
+    roles: ["portero"],
+    ruta: "/permisos-excusas/retiro-staff",
+    endpoint: "supabase select Autorizaciones_Retiro (RLS tenant_isolation)",
+    sinonimos: ["ver retiros", "quién puede salir hoy", "permisos de salida", "autorizaciones de retiro"],
+    pasos: [
+      { narracion: "En el inicio, toca la ficha 'Retiro de Estudiantes'.", accion: "click", ancla: "dashboard.ficha_retiro_portero" },
+      { narracion: "La lista arranca en el día de hoy: cada tarjeta muestra el estudiante, su grado y salón y la hora del retiro. Toca una para ver con quién sale y el motivo.", accion: "explicar" },
+    ],
+  },
+  {
     id: "permisos_excusas.registrar_permiso_salida",
     titulo: "Registrar un permiso de salida (personal)",
     descripcion:

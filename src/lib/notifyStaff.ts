@@ -67,6 +67,8 @@ interface NotifyOptions {
   perfiles: string[];             // ej ["Rector","Coordinadores"]
   aula?: Aula;
   destinatariosLabel: string;     // ej "Rector y Coordinadores" o "Rector, Coordinadores y profesores de 7 2"
+  /** Perfiles que van en un segmento APARTE, sin aula (p. ej. Porteros en los retiros). */
+  perfilesSinAula?: string[];
 }
 
 async function postComunicadoSistema(opts: NotifyOptions): Promise<void> {
@@ -88,7 +90,7 @@ async function postComunicadoSistema(opts: NotifyOptions): Promise<void> {
     sistema_tag: opts.remitenteTag,
     destinatarios_label: opts.destinatariosLabel,
     mensaje: opts.mensaje,
-    segmentos: [segmento],
+    segmentos: opts.perfilesSinAula?.length ? [segmento, { perfil: opts.perfilesSinAula }] : [segmento],
   };
 
   const res = await fetch(`${API_BASE_URL}/api/comunicados/enviar`, {
@@ -112,7 +114,9 @@ export async function notifyRectorCoord(
   mensaje: string,
   remitente = "Sistema Normi",
   aula?: Aula,
-  origen?: Origen
+  origen?: Origen,
+  /** Retiros: también al portero (Juan 2026-09-23), que controla la salida. */
+  incluirPorteros = false
 ): Promise<void> {
   const destinatariosLabel = aula
     ? `Rector, Coordinadores y profesores de ${aula.grado} ${aula.salon}`
@@ -135,6 +139,7 @@ export async function notifyRectorCoord(
       perfiles,
       aula,
       destinatariosLabel,
+      perfilesSinAula: incluirPorteros ? ["Porteros"] : undefined,
     });
   } catch (e) {
     console.warn('notifyRectorCoord falló:', e);

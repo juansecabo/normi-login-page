@@ -217,7 +217,7 @@ const RetiroRegistroInterno = () => {
           `Tipo de salida: ${tipoLabel}.${persona}\n` +
           `Motivo: ${motivo}.\n` +
           `Pueden revisarlo en la plataforma en Permisos y Excusas.`;
-        notifyRectorCoord(mensaje, "Sistema Normi (Retiro)", { grado, salon, horario: { fecha_inicio: fechaYmd, desde: hora } }, "retiro");
+        notifyRectorCoord(mensaje, "Sistema Normi (Retiro)", { grado, salon, horario: { fecha_inicio: fechaYmd, desde: hora } }, "retiro", true);
       }
 
       setResultado({ ok: true, texto: `Quedó registrado el permiso de salida de ${selArr.length} estudiante${selArr.length === 1 ? "" : "s"}.` });

@@ -6,6 +6,7 @@ import { useBienvenida, getSession, isAdmin, puedeAccederDashboard, isAdministra
 import { nombreFicha } from "@/lib/aliasColegio";
 import { usePendientesFirma } from "@/hooks/usePendientesFirma";
 import iconNotas from "@/assets/icons/notas.webp";
+import iconRetiro from "@/assets/icons/retiro-estudiantes.webp";
 import iconPerfil from "@/assets/icons/perfil.png";
 import iconEstadisticas from "@/assets/icons/estadisticas.webp";
 import iconEnviarComunicado from "@/assets/icons/enviar-comunicado.webp";
@@ -245,6 +246,16 @@ const DashboardRector = () => {
       </button>
     ) });
   }
+  // Portero: ve los retiros directo (sin el hub de Permisos y Excusas), para controlar la salida.
+  if (cargo === 'Portero') {
+    items.push({ id: 'retiro-estudiantes', badge: badges.retiro, render: (
+      <button data-guia="dashboard.ficha_retiro_portero" onClick={() => navigate("/permisos-excusas/retiro-staff")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-rose-100 transition-all duration-200 hover:shadow-md hover:bg-rose-200">
+        <Badge count={badges.retiro} />
+        <img src={iconRetiro} alt="" className="w-16 h-16 object-contain" />
+        <span className="font-semibold text-foreground text-center">Retiro de Estudiantes</span>
+      </button>
+    ) });
+  }
   if (cargo === 'Coordinador(a)') {
     items.push({ id: 'conversaciones', render: (
       <button onClick={() => window.open("https://chat.notasnormi.com", "_blank")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-blue-100 transition-all duration-200 hover:shadow-md hover:bg-blue-200">
@@ -340,7 +351,7 @@ const DashboardRector = () => {
   );
 
   // El Portero(a) solo ve un conjunto acotado de fichas (en este orden).
-  const FICHAS_PORTERO = ['porteria', 'enviar-comunicado', 'comunicados-recibidos', 'documentos-recibidos', 'consultas', 'calendario-escolar', 'perfil'];
+  const FICHAS_PORTERO = ['porteria', 'retiro-estudiantes', 'enviar-comunicado', 'comunicados-recibidos', 'documentos-recibidos', 'consultas', 'calendario-escolar', 'perfil'];
   const itemsVisibles = cargo === 'Portero'
     ? (FICHAS_PORTERO.map(fid => items.find(i => i.id === fid)).filter(Boolean) as ReordItem[])
     : items;

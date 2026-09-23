@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getSession, isProfesor, puedeAccederDashboard, isAdmin } from "@/hooks/useSession";
+import { getSession, isProfesor, puedeAccederDashboard, isAdmin, isPortero } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
 import { formatTelefono } from "@/utils/telefono";
@@ -216,8 +216,11 @@ const RetiroEstudiantesStaff = () => {
           <BreadcrumbDeslizable>
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
-            <button onClick={() => navigate("/permisos-excusas")} className="text-primary hover:underline">Permisos y Excusas</button>
-            <span className="text-muted-foreground">&rarr;</span>
+            {/* El portero entra directo desde su inicio (no tiene Permisos y Excusas). */}
+            {!isPortero() && <>
+              <button onClick={() => navigate("/permisos-excusas")} className="text-primary hover:underline">Permisos y Excusas</button>
+              <span className="text-muted-foreground">&rarr;</span>
+            </>}
             <span className="text-foreground font-medium">Retiro de Estudiantes</span>
           </BreadcrumbDeslizable>
         </div>
