@@ -29,7 +29,7 @@ const GRADO_ORDEN: Record<string, number> = {
 };
 
 const TIPOS_SALIDA: Record<string, string> = {
-  "motocicleta_vehiculo": "En su motocicleta y/o vehículo particular conduciendo el estudiante",
+  "motocicleta_vehiculo": "Por su cuenta, a pie, en su motocicleta y/o vehículo particular conduciendo el estudiante",
   "transporte": "Con el Sr(a) del transporte",
   "familiar": "Con un familiar",
 };

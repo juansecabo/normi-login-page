@@ -1,6 +1,6 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useWindowVirtualizer } from "@tanstack/react-virtual";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import SignatureCanvas from "react-signature-canvas";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -36,7 +36,7 @@ import { notifyRectorCoord } from "@/lib/notifyStaff";
 
 const ROLES_OK = ["Administrador", "Rector", "Coordinador(a)"];
 const TIPOS_SALIDA = [
-  { value: "motocicleta_vehiculo", label: "En su motocicleta y/o vehículo particular conduciendo el estudiante" },
+  { value: "motocicleta_vehiculo", label: "Por su cuenta, a pie, en su motocicleta y/o vehículo particular conduciendo el estudiante" },
   { value: "transporte", label: "Con el Sr(a) del transporte" },
   { value: "familiar", label: "Con un familiar" },
 ];
@@ -109,19 +109,13 @@ const RetiroRegistroInterno = () => {
     });
   }, [permitidos, filtroGrado, filtroSalon, busqueda]);
 
-  // Lista virtualizada (el colegio puede tener miles de estudiantes).
+  // Lista virtualizada dentro de un recuadro con su propio desplazamiento: el
+  // formulario queda justo debajo, sin tener que bajar por toda la lista.
   const listaRef = useRef<HTMLDivElement>(null);
-  const [listaOffset, setListaOffset] = useState(0);
-  useLayoutEffect(() => {
-    const medir = () => { if (listaRef.current) setListaOffset(listaRef.current.getBoundingClientRect().top + window.scrollY); };
-    medir();
-    window.addEventListener("resize", medir);
-    return () => window.removeEventListener("resize", medir);
-  }, [filtrados.length, loading]);
-  const rowVirt = useWindowVirtualizer({ count: filtrados.length, estimateSize: () => 68, overscan: 10, scrollMargin: listaOffset });
+  const rowVirt = useVirtualizer({ count: filtrados.length, getScrollElement: () => listaRef.current, estimateSize: () => 68, overscan: 10 });
   const vItems = rowVirt.getVirtualItems();
-  const padTop = vItems.length ? vItems[0].start - listaOffset : 0;
-  const padBottom = vItems.length ? rowVirt.getTotalSize() - (vItems[vItems.length - 1].end - listaOffset) : 0;
+  const padTop = vItems.length ? vItems[0].start : 0;
+  const padBottom = vItems.length ? rowVirt.getTotalSize() - vItems[vItems.length - 1].end : 0;
 
   const selArr = Object.values(seleccionados);
   const toggleSel = (e: Estudiante) => setSeleccionados((p) => { const n = { ...p }; if (n[e.id]) delete n[e.id]; else n[e.id] = e; return n; });
@@ -248,7 +242,7 @@ const RetiroRegistroInterno = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div ref={listaRef} data-guia="retiro_interno.item_estudiante" className="lg:col-span-2">
+            <div ref={listaRef} data-guia="retiro_interno.item_estudiante" className="lg:col-span-2 max-h-[420px] overflow-y-auto pr-1 rounded-md">
               {loading || !cargadoNiveles ? (
                 <div className="text-center py-10 text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
               ) : filtrados.length === 0 ? (

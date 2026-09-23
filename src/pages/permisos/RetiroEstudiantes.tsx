@@ -32,7 +32,7 @@ import {
 type Tab = "crear" | "historial";
 
 const TIPOS_SALIDA = [
-  { value: "motocicleta_vehiculo", label: "En su motocicleta y/o vehículo particular conduciendo el estudiante" },
+  { value: "motocicleta_vehiculo", label: "Por su cuenta, a pie, en su motocicleta y/o vehículo particular conduciendo el estudiante" },
   { value: "transporte", label: "Con el Sr(a) del transporte" },
   { value: "familiar", label: "Con un familiar" },
 ];
