@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Plus, Minus, Clock, Save, X } from "lucide-react";
+import { Loader2, Plus, Minus, Clock, Save, X, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { normalizarTexto } from "@/lib/nombresUsuarios";
 import HeaderNormi from "@/components/HeaderNormi";
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 import { Button } from "@/components/ui/button";
@@ -39,7 +41,9 @@ function Rejilla({ clases, dias, horas, modo, onCelda, franjas }: {
   const franja = (h: number) => franjas?.find((f) => f.hora === h);
   return (
     <div className="overflow-x-auto -mx-2 px-2" data-guia="horario.rejilla">
-      <table className="w-full min-w-[640px] border-separate border-spacing-1 text-sm">
+      <table className="w-full min-w-[640px] table-fixed border-separate border-spacing-1 text-sm">
+        {/* table-fixed + colgroup: todos los días con el mismo ancho, sin importar lo largo de las materias. */}
+        <colgroup><col className="w-20" />{dias.map((d) => <col key={d} />)}</colgroup>
         <thead>
           <tr>
             <th className="w-20 text-xs font-medium text-muted-foreground">Hora</th>
@@ -138,6 +142,7 @@ export default function Horario() {
   const [borrador, setBorrador] = useState<Clase[] | null>(null);
   const [horasEdit, setHorasEdit] = useState(6);
   const [celda, setCelda] = useState<{ dia: number; hora: number } | null>(null);
+  const [buscaMateria, setBuscaMateria] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [cruces, setCruces] = useState<any[] | null>(null);
   const [franjasEdit, setFranjasEdit] = useState<Franja[] | null>(null);
@@ -221,6 +226,15 @@ export default function Horario() {
   }, [salones]);
 
   const asignaturasSalon: { asignatura: string; profesores: Profesor[] }[] = datosSalon?.asignaturas || [];
+  // Buscador del diálogo: cada palabra debe aparecer en la materia o en el profesor (sin tildes ni mayúsculas).
+  const materiasFiltradas = (() => {
+    const palabras = normalizarTexto(buscaMateria.trim()).split(/\s+/).filter(Boolean);
+    if (!palabras.length) return asignaturasSalon;
+    return asignaturasSalon.filter((a) => {
+      const t = normalizarTexto(`${a.asignatura} ${a.profesores.map((p) => p.nombre).join(" ")}`);
+      return palabras.every((w) => t.includes(w));
+    });
+  })();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -313,7 +327,7 @@ export default function Horario() {
                               <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => setHorasEdit((h) => Math.min(15, h + 1))}><Plus className="w-3 h-3" /></Button>
                             </span>
                           </div>
-                          <Rejilla clases={borrador} dias={diasDe(borrador)} horas={horasEdit} modo="salon" franjas={datosSalon.franjas} onCelda={(dia, hora) => setCelda({ dia, hora })} />
+                          <Rejilla clases={borrador} dias={diasDe(borrador)} horas={horasEdit} modo="salon" franjas={datosSalon.franjas} onCelda={(dia, hora) => { setBuscaMateria(""); setCelda({ dia, hora }); }} />
                           <div className="flex gap-2">
                             <Button onClick={guardar} disabled={guardando} data-guia="horario.guardar">{guardando ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />} Guardar horario</Button>
                             <Button variant="outline" onClick={() => setBorrador(null)} disabled={guardando}>Cancelar</Button>
@@ -351,9 +365,16 @@ export default function Horario() {
       <Dialog open={!!celda} onOpenChange={(o) => !o && setCelda(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>{celda ? `${DIAS[celda.dia]}, ${celda.hora}.ª hora` : ""}</DialogTitle></DialogHeader>
+          {asignaturasSalon.length > 0 && (
+            <div className="relative" data-guia="horario.buscar_materia">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input value={buscaMateria} onChange={(e) => setBuscaMateria(e.target.value)} placeholder="Buscar materia o profesor" className="pl-9" />
+            </div>
+          )}
           <div className="max-h-[55vh] overflow-y-auto space-y-1" data-guia="horario.escoger_materia">
             {asignaturasSalon.length === 0 && <p className="text-sm text-muted-foreground">Este salón no tiene materias asignadas en Configurar Institución.</p>}
-            {asignaturasSalon.map((a) => (
+            {asignaturasSalon.length > 0 && materiasFiltradas.length === 0 && <p className="text-sm text-muted-foreground py-2">Ninguna materia coincide con la búsqueda.</p>}
+            {materiasFiltradas.map((a) => (
               <button key={a.asignatura} onClick={() => asignarCelda(a.asignatura)} className={`w-full text-left rounded-lg border p-2 hover:ring-2 hover:ring-primary/40 ${colorDe(a.asignatura)}`}>
                 <div className="font-semibold text-foreground">{a.asignatura}</div>
                 <div className="text-xs text-muted-foreground">{a.profesores.map((p) => p.nombre).join(", ") || "Sin profesor asignado"}</div>
