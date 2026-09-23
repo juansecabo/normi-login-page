@@ -754,11 +754,11 @@ const SolicitudEntrevistaStaff = () => {
                   placeholder="Buscar por nombre del estudiante…"
                   className="col-span-2 sm:flex-1 min-w-0 sm:min-w-[200px] px-3 py-2 border border-input rounded-md text-sm bg-background"
                 />
-                <select value={fGrado} onChange={(e) => { setFGrado(e.target.value); setFSalon(""); }} className="w-full sm:w-auto min-w-0 px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                <select value={fGrado} onChange={(e) => { setFGrado(e.target.value); setFSalon(""); }} className="w-full sm:w-auto min-w-0 pl-2 pr-1 sm:px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                   <option value="">Todos los grados</option>
                   {gradosHistorial.map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
-                <select value={fSalon} onChange={(e) => setFSalon(e.target.value)} className="w-full sm:w-auto min-w-0 px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
+                <select value={fSalon} onChange={(e) => setFSalon(e.target.value)} className="w-full sm:w-auto min-w-0 pl-2 pr-1 sm:px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer">
                   <option value="">Todos los salones</option>
                   {salonesHistorial.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
