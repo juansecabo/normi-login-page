@@ -109,7 +109,6 @@ const RetiroRegistroInterno = () => {
     });
   }, [permitidos, filtroGrado, filtroSalon, busqueda]);
 
-  // Lista virtualizada dentro de un recuadro con su propio desplazamiento: el
   // formulario queda justo debajo, sin tener que bajar por toda la lista.
   const listaRef = useRef<HTMLDivElement>(null);
   const rowVirt = useVirtualizer({ count: filtrados.length, getScrollElement: () => listaRef.current, estimateSize: () => 68, overscan: 10 });
