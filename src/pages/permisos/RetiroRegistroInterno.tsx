@@ -217,7 +217,7 @@ const RetiroRegistroInterno = () => {
           `Tipo de salida: ${tipoLabel}.${persona}\n` +
           `Motivo: ${motivo}.\n` +
           `Pueden revisarlo en la plataforma en Permisos y Excusas.`;
-        notifyRectorCoord(mensaje, "Sistema Normi (Retiro)", { grado, salon, horario: { fecha_inicio: fechaYmd, desde: hora } }, "retiro", true);
+        notifyRectorCoord(mensaje, "Sistema Normi (Retiro)", { grado, salon, horario: { fecha_inicio: fechaYmd, desde: hora } }, "retiro", { incluirPorteros: true, programarEn: `${fechaYmd}T${hora}:00-05:00` });
       }
 
       setResultado({ ok: true, texto: `Quedó registrado el permiso de salida de ${selArr.length} estudiante${selArr.length === 1 ? "" : "s"}.` });
@@ -425,7 +425,7 @@ const RetiroRegistroInterno = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Registrar el permiso de salida?</AlertDialogTitle>
             <AlertDialogDescription>
-              {selArr.length === 1 ? `Para ${selArr[0].nombres} ${selArr[0].apellidos}.` : `Para ${selArr.length} estudiantes.`} Se avisará a los acudientes, al rector, a la coordinación y a los profesores según el horario del salón.
+              {selArr.length === 1 ? `Para ${selArr[0].nombres} ${selArr[0].apellidos}.` : `Para ${selArr.length} estudiantes.`} Queda registrado de una vez; el aviso por WhatsApp a los acudientes, al rector, a la coordinación, al portero y a los profesores llega a la hora del retiro.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

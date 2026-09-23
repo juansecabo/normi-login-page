@@ -69,6 +69,8 @@ interface NotifyOptions {
   destinatariosLabel: string;     // ej "Rector y Coordinadores" o "Rector, Coordinadores y profesores de 7 2"
   /** Perfiles que van en un segmento APARTE, sin aula (p. ej. Porteros en los retiros). */
   perfilesSinAula?: string[];
+  /** Enviar en este momento (ISO) y no al crear (retiros: a la hora del retiro). */
+  programarEn?: string;
 }
 
 async function postComunicadoSistema(opts: NotifyOptions): Promise<void> {
@@ -91,6 +93,7 @@ async function postComunicadoSistema(opts: NotifyOptions): Promise<void> {
     destinatarios_label: opts.destinatariosLabel,
     mensaje: opts.mensaje,
     segmentos: opts.perfilesSinAula?.length ? [segmento, { perfil: opts.perfilesSinAula }] : [segmento],
+    ...(opts.programarEn ? { programar_en: opts.programarEn } : {}),
   };
 
   const res = await fetch(`${API_BASE_URL}/api/comunicados/enviar`, {
@@ -115,8 +118,9 @@ export async function notifyRectorCoord(
   remitente = "Sistema Normi",
   aula?: Aula,
   origen?: Origen,
-  /** Retiros: también al portero (Juan 2026-09-23), que controla la salida. */
-  incluirPorteros = false
+  /** Retiros (Juan 2026-09-23): incluirPorteros = también al portero, que controla
+   *  la salida; programarEn = que a todos les llegue a la hora del retiro. */
+  extra?: { incluirPorteros?: boolean; programarEn?: string }
 ): Promise<void> {
   const destinatariosLabel = aula
     ? `Rector, Coordinadores y profesores de ${aula.grado} ${aula.salon}`
@@ -139,7 +143,8 @@ export async function notifyRectorCoord(
       perfiles,
       aula,
       destinatariosLabel,
-      perfilesSinAula: incluirPorteros ? ["Porteros"] : undefined,
+      perfilesSinAula: extra?.incluirPorteros ? ["Porteros"] : undefined,
+      programarEn: extra?.programarEn,
     });
   } catch (e) {
     console.warn('notifyRectorCoord falló:', e);

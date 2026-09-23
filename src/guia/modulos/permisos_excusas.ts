@@ -118,7 +118,7 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
     id: "permisos_excusas.retiro_portero",
     titulo: "Ver los retiros de estudiantes (portería)",
     descripcion:
-      "El portero ve los permisos de salida autorizados (por los acudientes o por el personal) desde su propia ficha 'Retiro de Estudiantes' en el inicio, para saber quién puede salir, a qué hora y con quién. También le llega un aviso por WhatsApp cada vez que se registra un retiro.",
+      "El portero ve los permisos de salida autorizados (por los acudientes o por el personal) desde su propia ficha 'Retiro de Estudiantes' en el inicio, para saber quién puede salir, a qué hora y con quién. También le llega un aviso por WhatsApp de cada retiro, a la hora del retiro.",
     categoria: "Permisos y Excusas",
     roles: ["portero"],
     ruta: "/permisos-excusas/retiro-staff",
@@ -133,7 +133,7 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
     id: "permisos_excusas.registrar_permiso_salida",
     titulo: "Registrar un permiso de salida (personal)",
     descripcion:
-      "El rector, el administrador o el coordinador (solo estudiantes de sus niveles) registran un permiso de salida con el mismo formato que llenan los padres: fecha, hora, cómo sale, motivo, adjuntos y firma. Se pueden escoger varios estudiantes a la vez. Queda en Retiro de Estudiantes, la asistencia de ese día queda con excusa desde esa hora y se avisa por WhatsApp a los acudientes del estudiante (el permiso también les aparece en su historial), al rector, a la coordinación y a los profesores según el horario del salón. Sirve también para niveles sin acudientes (ahí no se avisa a acudientes).",
+      "El rector, el administrador o el coordinador (solo estudiantes de sus niveles) registran un permiso de salida con el mismo formato que llenan los padres: fecha, hora, cómo sale, motivo, adjuntos y firma. Se pueden escoger varios estudiantes a la vez. Queda en Retiro de Estudiantes, la asistencia de ese día queda con excusa desde esa hora y a la hora del retiro llega el aviso por WhatsApp a los acudientes del estudiante (el permiso también les aparece en su historial desde que se registra), al rector, a la coordinación, al portero y a los profesores según el horario del salón. Sirve también para niveles sin acudientes (ahí no se avisa a acudientes).",
     categoria: "Permisos y Excusas",
     roles: ["rector", "coordinador", "admin"],
     ruta: "/permisos-excusas/retiro-registrar",
