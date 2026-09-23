@@ -4,7 +4,8 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import SignatureCanvas from "react-signature-canvas";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { CalendarIcon, Check, Search, X, Paperclip, Camera, Upload, Loader2, DoorOpen } from "lucide-react";
+import { CalendarIcon, Check, Search, X, Paperclip, Camera, Upload, Loader2, DoorOpen, ChevronDown } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import HeaderNormi from "@/components/HeaderNormi";
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 import { Calendar } from "@/components/ui/calendar";
@@ -74,6 +75,7 @@ const RetiroRegistroInterno = () => {
   const [saving, setSaving] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [resultado, setResultado] = useState<{ ok: boolean; texto: string } | null>(null);
+  const [selectorAbierto, setSelectorAbierto] = useState(false);
 
   const cargoFirma = cargoSegunGenero(session.cargo || undefined, session.genero);
   const nombreFirma = [session.nombres, session.apellidos].filter(Boolean).join(" ");
@@ -216,89 +218,9 @@ const RetiroRegistroInterno = () => {
           </BreadcrumbDeslizable>
         </div>
 
-        <div className="bg-card rounded-lg shadow-soft p-6 space-y-4 mb-6">
-          <h2 className="text-xl font-bold text-foreground flex items-center gap-2"><DoorOpen className="w-6 h-6 text-primary" /> Registrar permiso de salida</h2>
-          <p className="text-sm text-muted-foreground -mt-2">1. Escoge el estudiante o los estudiantes que van a salir.</p>
-
-          <div className="grid grid-cols-2 gap-3">
-            <select data-guia="retiro_interno.filtro_grado" value={filtroGrado} onChange={(e) => { setFiltroGrado(e.target.value); setFiltroSalon(""); }} className={selectorCls}>
-              <option value="">Todos los grados</option>
-              {gradosUnicos.map((g) => <option key={g} value={g}>{g}</option>)}
-            </select>
-            <select data-guia="retiro_interno.filtro_salon" value={filtroSalon} onChange={(e) => setFiltroSalon(e.target.value)} className={selectorCls}>
-              <option value="">Todos los salones</option>
-              {salonesUnicos.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input data-guia="retiro_interno.buscar" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar estudiante por nombre..."
-              className="w-full pl-9 pr-9 py-2 border border-input rounded-md text-sm bg-card" />
-            {busqueda && (
-              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setBusqueda("")} title="Limpiar" className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground">
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div ref={listaRef} data-guia="retiro_interno.item_estudiante" className="lg:col-span-2 max-h-[420px] overflow-y-auto pr-1 rounded-md">
-              {loading || !cargadoNiveles ? (
-                <div className="text-center py-10 text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
-              ) : filtrados.length === 0 ? (
-                <p className="text-center py-10 text-muted-foreground">No hay estudiantes con esos filtros.</p>
-              ) : (
-                <>
-                  {padTop > 0 && <div style={{ height: padTop }} />}
-                  {vItems.map((vi) => {
-                    const e = filtrados[vi.index];
-                    const marcado = !!seleccionados[e.id];
-                    return (
-                      <label key={e.id} className={`w-full flex items-center gap-3 border rounded-lg p-3 mb-2 cursor-pointer transition-colors ${marcado ? "border-primary bg-primary/5" : "border-border hover:bg-muted/30"}`}>
-                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${marcado ? "bg-primary border-primary" : "border-border"}`}>
-                          {marcado && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
-                        </div>
-                        <input type="checkbox" className="sr-only" checked={marcado} onChange={() => toggleSel(e)} />
-                        <div>
-                          <p className="font-semibold text-foreground text-sm">{e.apellidos} {e.nombres}</p>
-                          <p className="text-xs text-muted-foreground">{e.grado} {e.salon}</p>
-                        </div>
-                      </label>
-                    );
-                  })}
-                  {padBottom > 0 && <div style={{ height: padBottom }} />}
-                </>
-              )}
-            </div>
-            <aside className="lg:col-span-1">
-              <div className="lg:sticky lg:top-4 border border-border rounded-lg p-3 bg-muted/10">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-semibold">Seleccionados ({selArr.length})</p>
-                  {selArr.length > 0 && <button onClick={() => setSeleccionados({})} className="text-xs text-muted-foreground hover:text-destructive">Quitar todos</button>}
-                </div>
-                {selArr.length === 0 ? (
-                  <p className="text-xs text-muted-foreground py-4 text-center">Marca los estudiantes que van a salir y aparecerán aquí.</p>
-                ) : (
-                  <div className="space-y-1.5 max-h-[45vh] overflow-y-auto">
-                    {selArr.map((e) => (
-                      <div key={e.id} className="flex items-center justify-between gap-2 text-sm bg-background border border-border rounded-md px-2 py-1.5">
-                        <div className="min-w-0">
-                          <p className="truncate font-medium">{e.apellidos} {e.nombres}</p>
-                          <p className="text-[11px] text-muted-foreground">{e.grado} {e.salon}</p>
-                        </div>
-                        <button onClick={() => quitarSel(e.id)} className="text-muted-foreground hover:text-destructive shrink-0"><X className="w-4 h-4" /></button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </aside>
-          </div>
-        </div>
-
         {/* 2. El mismo formato que llenan los padres, firmado por quien autoriza. */}
         <div className="bg-card rounded-lg shadow-soft p-6 space-y-5" data-guia="retiro_interno.formulario">
-          <p className="text-sm text-muted-foreground">2. Llena el permiso y fírmalo.</p>
+          <h2 className="text-xl font-bold text-foreground flex items-center gap-2"><DoorOpen className="w-6 h-6 text-primary" /> Registrar permiso de salida</h2>
           <h3 className="font-bold text-foreground text-center">AUTORIZACIÓN PARA RETIRO DE ESTUDIANTES EN JORNADA ESCOLAR</h3>
 
           <div className="flex flex-wrap items-center gap-2 text-sm text-foreground">
@@ -335,11 +257,25 @@ const RetiroRegistroInterno = () => {
           </div>
 
           <p className="text-sm text-foreground leading-relaxed">
-            Yo <span className="px-1 border-b-2 border-primary/40 text-primary font-medium">{nombreFirma}</span>, {cargoSegunGenero("identificado(a)", session.genero)} con C.C. No. <span className="px-1 border-b-2 border-primary/40 text-primary font-medium">{session.id}</span>, en calidad de <span className="px-1 border-b-2 border-primary/40 text-primary font-medium">{cargoFirma}</span>, autorizo {selArr.length === 0
-              ? <span className="text-muted-foreground">(escoge los estudiantes arriba)</span>
-              : <>{selArr.length === 1 ? "al estudiante" : `a los ${selArr.length} estudiantes seleccionados`} <span className="text-primary font-medium">{selArr.length === 1 ? `${selArr[0].nombres} ${selArr[0].apellidos} (${selArr[0].grado} ${selArr[0].salon})` : ""}</span></>}
+            Yo <span className="px-1 border-b-2 border-primary/40 text-primary font-medium">{nombreFirma}</span>, {cargoSegunGenero("identificado(a)", session.genero)} con C.C. No. <span className="px-1 border-b-2 border-primary/40 text-primary font-medium">{session.id}</span>, en calidad de <span className="px-1 border-b-2 border-primary/40 text-primary font-medium">{cargoFirma}</span>, autorizo a{" "}
+            <button type="button" data-guia="retiro_interno.seleccionar" onClick={() => setSelectorAbierto(true)}
+              className="inline-flex items-center gap-1 px-2 py-0.5 border-b-2 border-primary/40 text-primary font-medium hover:bg-accent rounded cursor-pointer">
+              {selArr.length === 0 ? "Seleccionar estudiantes" : selArr.length === 1 ? `${selArr[0].nombres} ${selArr[0].apellidos} (${selArr[0].grado} ${selArr[0].salon})` : `${selArr.length} estudiantes`}
+              <ChevronDown className="w-3.5 h-3.5" />
+            </button>
             {" "}para que {selArr.length > 1 ? "salgan" : "salga"} de la institución: (Marque una de las siguientes opciones)
           </p>
+
+          {selArr.length > 1 && (
+            <div className="flex flex-wrap gap-1.5 -mt-2">
+              {selArr.map((e) => (
+                <span key={e.id} className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary rounded-full pl-2.5 pr-1 py-1">
+                  {e.apellidos} {e.nombres} · {e.grado} {e.salon}
+                  <button type="button" onClick={() => quitarSel(e.id)} className="hover:text-destructive" title="Quitar"><X className="w-3.5 h-3.5" /></button>
+                </span>
+              ))}
+            </div>
+          )}
 
           <div className="space-y-3 ml-2">
             {TIPOS_SALIDA.map((tipo) => (
@@ -414,9 +350,71 @@ const RetiroRegistroInterno = () => {
           <Button data-guia="retiro_interno.registrar" onClick={() => setShowConfirm(true)} disabled={!completos || saving} className="w-full py-3 text-base font-bold">
             Registrar permiso de salida{selArr.length > 1 ? ` (${selArr.length} estudiantes)` : ""}
           </Button>
-          {!completos && <p className="text-xs text-muted-foreground text-center">Para registrar: escoge al menos un estudiante, la fecha, la hora, cómo sale, el motivo y firma.</p>}
+          {!completos && <p className="text-xs text-muted-foreground text-center">Para registrar: selecciona al menos un estudiante, la fecha, la hora, cómo sale, el motivo y firma.</p>}
         </div>
       </main>
+
+      {/* Selector de estudiantes en ventana emergente (buscar, filtrar y marcar varios). */}
+      <Dialog open={selectorAbierto} onOpenChange={setSelectorAbierto}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader><DialogTitle>Seleccionar estudiantes</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+              <select data-guia="retiro_interno.filtro_grado" value={filtroGrado} onChange={(e) => { setFiltroGrado(e.target.value); setFiltroSalon(""); }} className={selectorCls}>
+                <option value="">Todos los grados</option>
+                {gradosUnicos.map((g) => <option key={g} value={g}>{g}</option>)}
+              </select>
+              <select data-guia="retiro_interno.filtro_salon" value={filtroSalon} onChange={(e) => setFiltroSalon(e.target.value)} className={selectorCls}>
+                <option value="">Todos los salones</option>
+                {salonesUnicos.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input data-guia="retiro_interno.buscar" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar estudiante por nombre..."
+                className="w-full pl-9 pr-9 py-2 border border-input rounded-md text-sm bg-card" />
+              {busqueda && (
+                <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setBusqueda("")} title="Limpiar" className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground">
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            <div ref={listaRef} data-guia="retiro_interno.item_estudiante" className="max-h-[50vh] overflow-y-auto pr-1 rounded-md">
+              {loading || !cargadoNiveles ? (
+                <div className="text-center py-10 text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
+              ) : filtrados.length === 0 ? (
+                <p className="text-center py-10 text-muted-foreground">No hay estudiantes con esos filtros.</p>
+              ) : (
+                <>
+                  {padTop > 0 && <div style={{ height: padTop }} />}
+                  {vItems.map((vi) => {
+                    const e = filtrados[vi.index];
+                    const marcado = !!seleccionados[e.id];
+                    return (
+                      <label key={e.id} className={`w-full flex items-center gap-3 border rounded-lg p-3 mb-2 cursor-pointer transition-colors ${marcado ? "border-primary bg-primary/5" : "border-border hover:bg-muted/30"}`}>
+                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${marcado ? "bg-primary border-primary" : "border-border"}`}>
+                          {marcado && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
+                        </div>
+                        <input type="checkbox" className="sr-only" checked={marcado} onChange={() => toggleSel(e)} />
+                        <div>
+                          <p className="font-semibold text-foreground text-sm">{e.apellidos} {e.nombres}</p>
+                          <p className="text-xs text-muted-foreground">{e.grado} {e.salon}</p>
+                        </div>
+                      </label>
+                    );
+                  })}
+                  {padBottom > 0 && <div style={{ height: padBottom }} />}
+                </>
+              )}
+            </div>
+          </div>
+          <DialogFooter className="flex-row items-center justify-between sm:justify-between gap-2">
+            <span className="text-sm text-muted-foreground">{selArr.length} seleccionado{selArr.length === 1 ? "" : "s"}{selArr.length > 0 && <> · <button type="button" onClick={() => setSeleccionados({})} className="underline hover:text-destructive">Quitar todos</button></>}</span>
+            <Button data-guia="retiro_interno.listo" onClick={() => setSelectorAbierto(false)}>Listo</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={showConfirm} onOpenChange={(o) => !saving && setShowConfirm(o)}>
         <AlertDialogContent>

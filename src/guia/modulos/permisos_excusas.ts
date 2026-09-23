@@ -133,8 +133,11 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
     pasos: [
       ...abrirLista("retiro", "Retiro de Estudiantes"),
       { narracion: "Toca 'Registrar permiso de salida', arriba a la derecha.", accion: "click", ancla: "retiro.registrar_interno" },
+      { narracion: "Llena la fecha y la hora del retiro.", accion: "explicar", ancla: "retiro_interno.formulario" },
+      { narracion: "En el texto de la autorización toca 'Seleccionar estudiantes'.", accion: "click", ancla: "retiro_interno.seleccionar" },
       { narracion: "Marca el estudiante o los estudiantes que van a salir; puedes filtrar por grado y salón o buscar por nombre.", accion: "explicar", ancla: "retiro_interno.item_estudiante" },
-      { narracion: "Abajo llena la fecha, la hora, cómo sale y el motivo.", accion: "explicar", ancla: "retiro_interno.formulario" },
+      { narracion: "Toca 'Listo'.", accion: "click", ancla: "retiro_interno.listo" },
+      { narracion: "Marca cómo sale y escribe el motivo.", accion: "explicar", ancla: "retiro_interno.formulario" },
       { narracion: "Firma en el recuadro.", accion: "explicar", ancla: "retiro_interno.firma" },
       { narracion: "Toca 'Registrar permiso de salida' y confirma.", accion: "click", ancla: "retiro_interno.registrar" },
     ],
