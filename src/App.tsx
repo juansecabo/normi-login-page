@@ -85,6 +85,7 @@ import RemisionesOrientacion from "./pages/orientador/RemisionesOrientacion";
 import PermisosExcusas from "./pages/PermisosExcusas";
 import RetiroEstudiantes from "./pages/permisos/RetiroEstudiantes";
 import RetiroEstudiantesStaff from "./pages/permisos/RetiroEstudiantesStaff";
+import RetiroRegistroInterno from "./pages/permisos/RetiroRegistroInterno";
 import JustificacionInasistencia from "./pages/permisos/JustificacionInasistencia";
 import JustificacionInasistenciaStaff from "./pages/permisos/JustificacionInasistenciaStaff";
 import JustificacionUniforme from "./pages/permisos/JustificacionUniforme";
@@ -290,6 +291,7 @@ const App = () => (
           <Route path="/permisos-excusas" element={<PermisosExcusas />} />
           <Route path="/permisos-excusas/retiro" element={<RetiroEstudiantes />} />
           <Route path="/permisos-excusas/retiro-staff" element={<RetiroEstudiantesStaff />} />
+          <Route path="/permisos-excusas/retiro-registrar" element={<RetiroRegistroInterno />} />
           <Route path="/permisos-excusas/inasistencia" element={<JustificacionInasistencia />} />
           <Route path="/permisos-excusas/inasistencia-staff" element={<JustificacionInasistenciaStaff />} />
           <Route path="/permisos-excusas/uniforme" element={<JustificacionUniforme />} />

@@ -93,7 +93,7 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
     id: "permisos_excusas.consultar_retiro",
     titulo: "Consultar autorizaciones de retiro",
     descripcion:
-      "Abrir la lista de autorizaciones de retiro de estudiantes que enviaron los acudientes. Un retiro con hora también afecta la asistencia: la que se tome ese día a partir de esa hora queda con excusa; la tomada antes no cambia.",
+      "Abrir la lista de autorizaciones de retiro de estudiantes que enviaron los acudientes o que registró el personal. Un retiro con hora también afecta la asistencia: la que se tome ese día a partir de esa hora queda con excusa; la tomada antes no cambia.",
     categoria: "Permisos y Excusas",
     roles: [...ALL_INTERNOS],
     ruta: "/permisos-excusas/retiro-staff",
@@ -112,6 +112,31 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
           "Ya ves la lista. La vista arranca en el día de hoy: cada tarjeta muestra el estudiante, su grado y salón, la fecha del retiro y cuándo se creó. Toca una tarjeta para ver todo el detalle.",
         accion: "explicar",
       },
+    ],
+  },
+  {
+    id: "permisos_excusas.registrar_permiso_salida",
+    titulo: "Registrar un permiso de salida (personal)",
+    descripcion:
+      "El rector, el administrador o el coordinador (solo estudiantes de sus niveles) registran un permiso de salida con el mismo formato que llenan los padres: fecha, hora, cómo sale, motivo, adjuntos y firma. Se pueden escoger varios estudiantes a la vez. Queda en Retiro de Estudiantes, la asistencia de ese día queda con excusa desde esa hora y se avisa al rector, a la coordinación y a los profesores según el horario del salón. Sirve también para niveles sin acudientes.",
+    categoria: "Permisos y Excusas",
+    roles: ["rector", "coordinador", "admin"],
+    ruta: "/permisos-excusas/retiro-registrar",
+    endpoint: "supabase insert Autorizaciones_Retiro (autorizado_por_*)",
+    sinonimos: [
+      "registrar permiso de salida",
+      "dar permiso para salir a un estudiante",
+      "anotar un permiso de salida",
+      "retiro registrado por coordinación",
+      "permiso de salida a varios estudiantes",
+    ],
+    pasos: [
+      ...abrirLista("retiro", "Retiro de Estudiantes"),
+      { narracion: "Toca 'Registrar permiso de salida', arriba a la derecha.", accion: "click", ancla: "retiro.registrar_interno" },
+      { narracion: "Marca el estudiante o los estudiantes que van a salir; puedes filtrar por grado y salón o buscar por nombre.", accion: "explicar", ancla: "retiro_interno.item_estudiante" },
+      { narracion: "Abajo llena la fecha, la hora, cómo sale y el motivo.", accion: "explicar", ancla: "retiro_interno.formulario" },
+      { narracion: "Firma en el recuadro.", accion: "explicar", ancla: "retiro_interno.firma" },
+      { narracion: "Toca 'Registrar permiso de salida' y confirma.", accion: "click", ancla: "retiro_interno.registrar" },
     ],
   },
   {

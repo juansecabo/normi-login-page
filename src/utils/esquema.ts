@@ -186,3 +186,19 @@ export function useNivelesAdultos(): { ready: boolean; niveles: Set<string>; esN
   };
   return { ready: st.ready, niveles: st.niveles, esNivelAdulto, esGradoAdulto: esGrado };
 }
+
+/**
+ * Hook: nivel de un grado según la estructura REAL del colegio (Grados_Colegio),
+ * con la lista fija solo de respaldo. Necesario para grados personalizados (p. ej.
+ * los semestres del PFC), que la lista fija NIVEL_DE_GRADO no conoce.
+ */
+export function useNivelDeGrado(): { ready: boolean; nivelDe: (grado?: string | null) => string } {
+  const [mapa, setMapa] = useState<Map<string, string> | null>(null);
+  useEffect(() => {
+    let vivo = true;
+    cargar().then((c) => { if (vivo) setMapa(c?.nivelDeGrado || new Map()); });
+    return () => { vivo = false; };
+  }, []);
+  const nivelDe = (grado?: string | null) => (grado && (mapa?.get(grado) || NIVEL_DE_GRADO[grado])) || "";
+  return { ready: mapa !== null, nivelDe };
+}

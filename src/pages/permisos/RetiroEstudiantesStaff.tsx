@@ -12,6 +12,7 @@ import { markLastSeen } from "@/utils/notificaciones";
 import { fechaKey, fmtDiaHeader, todayKey, diasCubiertos } from "@/utils/fechaUtils";
 import { ImprimirToggle, CardSelector } from "@/components/ImprimirSelector";
 import { descargarExcusasDocx, SeccionExcusa } from "@/utils/printExcusasDocx";
+import { useNivelDeGrado } from "@/utils/esquema";
 import { useNivelesCoordina } from "@/hooks/useNivelesCoordina";
 import { useAulasProfesor } from "@/hooks/useAulasProfesor";
 import { NIVEL_DE_GRADO } from "@/utils/grados";
@@ -61,6 +62,10 @@ interface Autorizacion {
   firma_url: string | null;
   archivos_url: string[] | null;
   created_at: string;
+  /** Permiso registrado por el personal (no por el acudiente). */
+  autorizado_por_id?: string | null;
+  autorizado_por_nombre?: string | null;
+  autorizado_por_cargo?: string | null;
 }
 
 const RetiroEstudiantesStaff = () => {
@@ -119,9 +124,11 @@ const RetiroEstudiantesStaff = () => {
   // Coordinador(a): solo estudiantes de su(s) nivel(es). Profesor(a) (director
   // o no): solo estudiantes de las aulas donde dicta alguna asignatura.
   const { nivelesCoordina } = useNivelesCoordina();
+  // Nivel del grado según la estructura real del colegio (los grados del PFC no están en la lista fija).
+  const { nivelDe } = useNivelDeGrado();
   const { aulasProfesor } = useAulasProfesor();
   const visibles = autorizaciones.filter(a => {
-    if (nivelesCoordina && !nivelesCoordina.includes(NIVEL_DE_GRADO[a.estudiante_grado] || "")) return false;
+    if (nivelesCoordina && !nivelesCoordina.includes(nivelDe(a.estudiante_grado))) return false;
     if (aulasProfesor && !aulasProfesor.has(`${a.estudiante_grado}|${String(a.estudiante_salon)}`)) return false;
     return true;
   });
@@ -182,8 +189,12 @@ const RetiroEstudiantesStaff = () => {
               { label: "Motivo:", value: auth.motivo },
             ],
             [
-              { label: "Acudiente:", value: `${[auth.acudiente_nombres, auth.acudiente_apellidos].filter(Boolean).join(" ")} — C.C. ${auth.acudiente_id}` },
-              { label: "Teléfono:", value: formatTelefono(auth.acudiente_telefono) },
+              auth.autorizado_por_nombre
+                ? { label: "Autorizado por:", value: `${auth.autorizado_por_cargo || ""} ${auth.autorizado_por_nombre} — C.C. ${auth.autorizado_por_id}`.trim() }
+                : { label: "Acudiente:", value: `${[auth.acudiente_nombres, auth.acudiente_apellidos].filter(Boolean).join(" ")} — C.C. ${auth.acudiente_id}` },
+              auth.autorizado_por_nombre
+                ? { label: "Registrado por:", value: "El personal de la institución" }
+                : { label: "Teléfono:", value: formatTelefono(auth.acudiente_telefono) },
             ],
           ],
           firmaUrl: auth.firma_url,
@@ -212,10 +223,18 @@ const RetiroEstudiantesStaff = () => {
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-6">
-          <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6">
-            <LogOut className="h-5 w-5 text-primary" />
-            Autorizaciones de Retiro
-          </h2>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+              <LogOut className="h-5 w-5 text-primary" />
+              Autorizaciones de Retiro
+            </h2>
+            {["Administrador", "Rector", "Coordinador(a)"].includes(getSession().cargo || "") && (
+              <button data-guia="retiro.registrar_interno" onClick={() => navigate("/permisos-excusas/retiro-registrar")}
+                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 cursor-pointer">
+                Registrar permiso de salida
+              </button>
+            )}
+          </div>
 
           {loading ? (
             <div className="text-center py-8 text-muted-foreground">Cargando...</div>
@@ -288,6 +307,7 @@ const RetiroEstudiantesStaff = () => {
                             <p className="font-semibold text-foreground text-sm">{auth.estudiante_apellidos} {auth.estudiante_nombre}</p>
                             <p className="text-xs text-muted-foreground">Para el {fechaAut}{auth.hora_retiro ? ` · ${fmtHora(auth.hora_retiro.slice(0, 5))}` : ""}</p>
                             <p className="text-xs text-muted-foreground">Creada el {fechaCreacion}</p>
+                            {auth.autorizado_por_nombre && <p className="text-xs text-primary font-medium">Registrado por {auth.autorizado_por_cargo} {auth.autorizado_por_nombre}</p>}
                           </div>
                           <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ${isExpanded ? "rotate-180" : ""}`} />
                         </button>
@@ -295,7 +315,11 @@ const RetiroEstudiantesStaff = () => {
                           <div className="border-t border-border p-4 bg-muted/10 text-sm text-foreground leading-relaxed space-y-3">
                             <p className="font-bold text-center">AUTORIZACIÓN PARA RETIRO DE ESTUDIANTES EN JORNADA ESCOLAR</p>
                             <p><span className="font-medium text-red-600">La autorización es para el día:</span> <span className="text-primary font-medium">{fechaAut}</span>{auth.hora_retiro && <> · <span className="font-medium text-red-600">Hora del retiro:</span> <span className="text-primary font-medium">{fmtHora(auth.hora_retiro.slice(0, 5))}</span></>}</p>
-                            <p>Yo <span className="text-primary font-medium">{[auth.acudiente_nombres, auth.acudiente_apellidos].filter(Boolean).join(" ")}</span> {cargoSegunGenero("identificado(a)", generoAcudientes[String(auth.acudiente_id)])} con C.C. No. <span className="text-primary font-medium">{auth.acudiente_id}</span> autorizo a mi acudido(a) <span className="text-primary font-medium">{auth.estudiante_nombre} {auth.estudiante_apellidos}</span> del grado: <span className="text-primary font-medium">{auth.estudiante_grado} {auth.estudiante_salon}</span>, para que salga de la institución:</p>
+                            {auth.autorizado_por_nombre ? (
+                              <p>Yo <span className="text-primary font-medium">{auth.autorizado_por_nombre}</span>, con C.C. No. <span className="text-primary font-medium">{auth.autorizado_por_id}</span>, en calidad de <span className="text-primary font-medium">{auth.autorizado_por_cargo}</span>, autorizo al estudiante <span className="text-primary font-medium">{auth.estudiante_nombre} {auth.estudiante_apellidos}</span> del grado: <span className="text-primary font-medium">{auth.estudiante_grado} {auth.estudiante_salon}</span>, para que salga de la institución:</p>
+                            ) : (
+                              <p>Yo <span className="text-primary font-medium">{[auth.acudiente_nombres, auth.acudiente_apellidos].filter(Boolean).join(" ")}</span> {cargoSegunGenero("identificado(a)", generoAcudientes[String(auth.acudiente_id)])} con C.C. No. <span className="text-primary font-medium">{auth.acudiente_id}</span> autorizo a mi acudido(a) <span className="text-primary font-medium">{auth.estudiante_nombre} {auth.estudiante_apellidos}</span> del grado: <span className="text-primary font-medium">{auth.estudiante_grado} {auth.estudiante_salon}</span>, para que salga de la institución:</p>
+                            )}
                             <p><Check className="w-4 h-4 inline text-primary" /> {TIPOS_SALIDA[auth.tipo_salida] || auth.tipo_salida}{auth.nombre_persona_autorizada && <span>. Nombre: <span className="text-primary font-medium">{auth.nombre_persona_autorizada}</span></span>}{auth.parentesco && <><br/>Parentesco: <span className="text-primary font-medium">{auth.parentesco}</span></>}</p>
                             <p>Motivo: <span className="text-primary font-medium">{auth.motivo}</span></p>
                             {auth.firma_url && <div><p className="font-medium mb-1">Firma:</p><FirmaImage url={auth.firma_url} /></div>}
@@ -323,7 +347,7 @@ const RetiroEstudiantesStaff = () => {
                             {auth.acudiente_correo && (
                               <p>Correo electrónico: <span className="text-primary font-medium">{auth.acudiente_correo}</span></p>
                             )}
-                            <p>Teléfono: <span className="text-primary font-medium">{formatTelefono(auth.acudiente_telefono)}</span></p>
+                            {!auth.autorizado_por_nombre && <p>Teléfono: <span className="text-primary font-medium">{formatTelefono(auth.acudiente_telefono)}</span></p>}
                           </div>
                         )}
                       </div>

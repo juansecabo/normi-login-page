@@ -11,6 +11,7 @@ import { markLastSeen } from "@/utils/notificaciones";
 import { fechaKey, fmtDiaHeader, todayKey, diasCubiertos } from "@/utils/fechaUtils";
 import { ImprimirToggle, CardSelector } from "@/components/ImprimirSelector";
 import { descargarExcusasDocx, SeccionExcusa } from "@/utils/printExcusasDocx";
+import { useNivelDeGrado } from "@/utils/esquema";
 import { useNivelesCoordina } from "@/hooks/useNivelesCoordina";
 import { useAulasProfesor } from "@/hooks/useAulasProfesor";
 import { NIVEL_DE_GRADO } from "@/utils/grados";
@@ -82,9 +83,11 @@ const JustificacionUniformeStaff = () => {
   // Coordinador(a): solo estudiantes de su(s) nivel(es). Profesor(a) (director
   // o no): solo estudiantes de las aulas donde dicta alguna asignatura.
   const { nivelesCoordina } = useNivelesCoordina();
+  // Nivel del grado según la estructura real del colegio (los grados del PFC no están en la lista fija).
+  const { nivelDe } = useNivelDeGrado();
   const { aulasProfesor } = useAulasProfesor();
   const visibles = justificaciones.filter(j => {
-    if (nivelesCoordina && !nivelesCoordina.includes(NIVEL_DE_GRADO[j.estudiante_grado] || "")) return false;
+    if (nivelesCoordina && !nivelesCoordina.includes(nivelDe(j.estudiante_grado))) return false;
     if (aulasProfesor && !aulasProfesor.has(`${j.estudiante_grado}|${String(j.estudiante_salon)}`)) return false;
     return true;
   });
