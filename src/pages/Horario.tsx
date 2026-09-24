@@ -223,21 +223,29 @@ export function HorarioContenido({ embebido = false }: { embebido?: boolean }) {
   // Solo se pinta la respuesta del ÚLTIMO salón pedido: si llega tarde la de uno
   // anterior (red lenta y cambio de salón), se descarta.
   const pedidoSalon = useRef("");
-  const cargarSalon = async (clave: string) => {
+  // Salones ya vistos: al volver a uno se muestra de una vez y se actualiza por detrás.
+  const vistos = useRef(new Map<string, any>());
+  const cargarSalon = async (clave: string, silencioso = false) => {
     pedidoSalon.current = clave;
-    setSalonSel(clave); setBorrador(null); setFranjasEdit(null);
+    setSalonSel(clave);
+    if (!silencioso) { setBorrador(null); setFranjasEdit(null); }
     if (!clave) { setDatosSalon(null); setCargandoSalon(false); return; }
     const [grado, salon] = clave.split("|");
-    setCargandoSalon(true); setDatosSalon(null);
+    const previo = vistos.current.get(clave);
+    if (!silencioso) {
+      if (previo) { setDatosSalon(previo); setCargandoSalon(false); }
+      else { setCargandoSalon(true); setDatosSalon(null); }
+    }
     try {
       const r = await apiRequest<any>(`/api/horario/salon?grado=${encodeURIComponent(grado)}&salon=${encodeURIComponent(salon)}`);
+      vistos.current.set(clave, r);
       if (pedidoSalon.current !== clave) return;
       setDatosSalon(r);
     } catch (e: any) {
       if (pedidoSalon.current !== clave) return;
-      toast({ title: "No se pudo cargar el salón", description: e?.body?.detail || e?.message, variant: "destructive" });
+      if (!previo && !silencioso) toast({ title: "No se pudo cargar el salón", description: e?.body?.detail || e?.message, variant: "destructive" });
     }
-    setCargandoSalon(false);
+    if (pedidoSalon.current === clave) setCargandoSalon(false);
   };
 
   const pedidoProf = useRef("");
@@ -264,8 +272,15 @@ export function HorarioContenido({ embebido = false }: { embebido?: boolean }) {
     setGuardando(true);
     try {
       const r = await apiRequest<any>("/api/horario/salon", { method: "PUT", body: JSON.stringify({ grado: datosSalon.grado, salon: datosSalon.salon, clases: borrador.filter((c) => c.hora == null || c.hora <= horasEdit).map(({ dia, hora, asignatura, hora_inicio, hora_fin }) => ({ dia, hora, asignatura, hora_inicio, hora_fin })) }) });
+      // Se muestra de una vez lo guardado (sin la rueda de carga) y se refresca por detrás.
+      const guardadas = borrador.filter((c) => c.hora == null || c.hora <= horasEdit).map((c) => {
+        const fr = c.hora != null ? (datosSalon.franjas || []).find((f: Franja) => f.hora === c.hora) : undefined;
+        return { ...c, inicio: c.hora_inicio || fr?.hora_inicio || null, fin: c.hora_fin || fr?.hora_fin || null };
+      });
+      setDatosSalon((prev: any) => (prev ? { ...prev, clases: guardadas } : prev));
+      setBorrador(null);
       if (r.sinAsignacion?.length) setAvisoHorario(`El horario de ${datosSalon.grado} ${datosSalon.salon} quedó guardado, pero estas materias no tienen profesor asignado en ese salón (Configurar Institución): ${r.sinAsignacion.join(", ")}. A nadie le llegarán avisos de esas horas.`);
-      await cargarSalon(salonSel);
+      cargarSalon(salonSel, true);
       setSalones((prev) => prev.map((s) => (`${s.grado}|${s.salon}` === salonSel ? { ...s, clases: r.guardadas } : s)));
     } catch (e: any) {
       if (e?.status === 409 && e?.body?.cruces) setCruces(e.body.cruces);
