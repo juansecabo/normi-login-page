@@ -592,7 +592,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   const usarPanelEmbebido = (rol === "estudiante" || rol === "acudiente") && !colegioId;
 
   const CardRol = ({ Icono, label, sub, onClick }: { Icono: typeof Users; label: string; sub: React.ReactNode; onClick: () => void }) => (
-    <button onClick={onClick} className="flex flex-col items-center text-center sm:items-start sm:text-left bg-card border border-border rounded-lg p-5 shadow-sm hover:border-primary/60 hover:bg-secondary/40 transition-colors">
+    <button onClick={onClick} className="flex flex-col items-center text-center sm:items-start sm:text-left bg-card border border-border rounded-lg p-5 shadow-sm hover:bg-muted transition-colors">
       <div className="mb-3"><Icono className="w-8 h-8 text-primary" /></div>
       <h3 className="font-semibold text-foreground">{label}</h3>
       <p className="text-sm text-muted-foreground mt-0.5">{sub}</p>
