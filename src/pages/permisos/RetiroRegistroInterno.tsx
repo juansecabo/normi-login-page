@@ -118,7 +118,8 @@ const RetiroRegistroInterno = () => {
   const [resultado, setResultado] = useState<{ ok: boolean; texto: string } | null>(null);
   const [selectorAbierto, setSelectorAbierto] = useState(false);
 
-  const cargoFirma = cargoSegunGenero(session.cargo || undefined, session.genero);
+  // "Rector" y "Administrador" no traen "(a)": sin esto una rectora quedaba "el rector".
+  const cargoFirma = cargoSegunGenero(session.cargo === "Rector" ? "Rector(a)" : session.cargo === "Administrador" ? "Administrador(a)" : (session.cargo || undefined), session.genero);
   const nombreFirma = [session.nombres, session.apellidos].filter(Boolean).join(" ");
 
   useEffect(() => {
@@ -126,7 +127,7 @@ const RetiroRegistroInterno = () => {
     if (!ROLES_OK.includes(session.cargo || "")) { navigate("/permisos-excusas/retiro-staff"); return; }
     (async () => {
       try {
-        const { data, error } = await supabase.from("Estudiantes").select("id, grado, salon");
+        const { data, error } = await supabase.from("Estudiantes").select("id, grado, salon").fetchAll();
         if (error) throw error;
         const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
         const todos = sortByApellidosNombres(await enrichWithNombres((data || []) as any));
@@ -432,7 +433,7 @@ const RetiroRegistroInterno = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Registrar el permiso de salida?</AlertDialogTitle>
             <AlertDialogDescription>
-              {selArr.length === 1 ? `Para ${selArr[0].nombres} ${selArr[0].apellidos}.` : `Para ${selArr.length} estudiantes.`} Queda registrado de una vez. El aviso por WhatsApp a los acudientes, al rector, a la coordinación, al portero y a los profesores sale a la hora del retiro (o de una vez si esa hora ya pasó).
+              {selArr.length === 1 ? `Para ${selArr[0].nombres} ${selArr[0].apellidos}.` : `Para ${selArr.length} estudiantes.`} Queda registrado de una vez. El aviso por WhatsApp a los acudientes, al rector, a la coordinación y al portero sale a la hora del retiro, y a cada profesor, a la hora de su clase con el estudiante. Si la hora del retiro ya pasó y la jornada terminó (o empezó el No molestar), no se envía aviso.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

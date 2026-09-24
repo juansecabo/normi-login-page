@@ -77,7 +77,7 @@ function Rejilla({ clases, dias, horas, modo, onCelda, franjas, guia = "horario.
                             <div className="text-[11px] text-muted-foreground leading-tight">
                               {modo === "profesor" ? `${c.grado} ${c.salon}` : (c.profesores || []).map((p) => p.nombre).join(", ")}
                             </div>
-                            {(c.inicio || c.fin) && !fr && <div className="text-[11px] text-muted-foreground">{c.inicio}{c.fin ? `–${c.fin}` : ""}</div>}
+                            {(c.inicio || c.fin) && !fr && <div className="text-[11px] text-muted-foreground">{c.inicio}{c.fin ? ` a ${c.fin}` : ""}</div>}
                           </div>
                         ))}
                         {vacia && onCelda && <span className="text-xs text-muted-foreground">+ Agregar</span>}
@@ -146,6 +146,7 @@ export default function Horario() {
   const [horasEdit, setHorasEdit] = useState(6);
   const [celda, setCelda] = useState<{ dia: number; hora: number } | null>(null);
   const [buscaMateria, setBuscaMateria] = useState("");
+  const [avisoHorario, setAvisoHorario] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [cruces, setCruces] = useState<any[] | null>(null);
   const [franjasEdit, setFranjasEdit] = useState<Franja[] | null>(null);
@@ -220,10 +221,12 @@ export default function Horario() {
     setCargandoSalon(false);
   };
 
+  const pedidoProf = useRef("");
   const cargarProfesor = async (id: string) => {
+    pedidoProf.current = id;
     setProfSel(id); setClasesProf(null);
     if (!id) return;
-    try { const r = await apiRequest<any>(`/api/horario/profesor?id=${encodeURIComponent(id)}`); setClasesProf(r.clases || []); }
+    try { const r = await apiRequest<any>(`/api/horario/profesor?id=${encodeURIComponent(id)}`); if (pedidoProf.current === id) setClasesProf(r.clases || []); }
     catch (e: any) { toast({ title: "No se pudo cargar", description: e?.body?.detail || e?.message, variant: "destructive" }); }
   };
 
@@ -242,7 +245,7 @@ export default function Horario() {
     setGuardando(true);
     try {
       const r = await apiRequest<any>("/api/horario/salon", { method: "PUT", body: JSON.stringify({ grado: datosSalon.grado, salon: datosSalon.salon, clases: borrador.filter((c) => c.hora == null || c.hora <= horasEdit).map(({ dia, hora, asignatura, hora_inicio, hora_fin }) => ({ dia, hora, asignatura, hora_inicio, hora_fin })) }) });
-      toast({ title: "Horario guardado", description: `${r.guardadas} clase(s) de ${datosSalon.grado} ${datosSalon.salon}.${r.sinAsignacion?.length ? ` Sin profesor asignado: ${r.sinAsignacion.join(", ")}.` : ""}` });
+      if (r.sinAsignacion?.length) setAvisoHorario(`El horario de ${datosSalon.grado} ${datosSalon.salon} quedó guardado, pero estas materias no tienen profesor asignado en ese salón (Configurar Institución): ${r.sinAsignacion.join(", ")}. A nadie le llegarán avisos de esas horas.`);
       await cargarSalon(salonSel);
       setSalones((prev) => prev.map((s) => (`${s.grado}|${s.salon}` === salonSel ? { ...s, clases: r.guardadas } : s)));
     } catch (e: any) {
@@ -417,6 +420,14 @@ export default function Horario() {
         </div>
       </main>
 
+      <Dialog open={!!avisoHorario} onOpenChange={(o) => !o && setAvisoHorario(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Horario guardado</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">{avisoHorario}</p>
+          <DialogFooter><Button onClick={() => setAvisoHorario(null)}>Entendido</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Escoger materia para una casilla */}
       <Dialog open={!!celda} onOpenChange={(o) => !o && setCelda(null)}>
         <DialogContent className="max-w-md">
@@ -435,7 +446,7 @@ export default function Horario() {
             )}
             {/* Cruces al escoger: si el profesor ya tiene clase en otro salón a esta hora, la materia sale en gris, con el motivo, y no se puede escoger. Las disponibles van primero. */}
             {materiasFiltradas
-              .map((a) => ({ a, cruces: celda ? a.profesores.flatMap((p) => (datosSalon?.ocupados?.[`${p.id}|${celda.dia}|${celda.hora}`] || []).map((sal: string) => `${p.nombre}: ocupado en ${sal} a esta hora`)) : [] }))
+              .map((a) => ({ a, cruces: celda ? a.profesores.flatMap((p) => [...new Set<string>(datosSalon?.ocupados?.[`${p.id}|${celda.dia}|${celda.hora}`] || [])].map((sal: string) => `${p.nombre}: tiene clase en ${sal} a esta hora`)) : [] }))
               .sort((x, y) => Number(x.cruces.length > 0) - Number(y.cruces.length > 0))
               .map(({ a, cruces: cr }) => cr.length ? (
                 <div key={a.asignatura} className="w-full text-left rounded-lg border border-dashed p-2 bg-muted/50 opacity-70 cursor-not-allowed" aria-disabled="true">

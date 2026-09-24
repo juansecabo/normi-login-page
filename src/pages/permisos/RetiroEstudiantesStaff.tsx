@@ -190,7 +190,7 @@ const RetiroEstudiantesStaff = () => {
             ],
             [
               auth.autorizado_por_nombre
-                ? { label: "Autorizado por:", value: `${auth.autorizado_por_cargo || ""} ${auth.autorizado_por_nombre} — C.C. ${auth.autorizado_por_id}`.trim() }
+                ? { label: "Autorizado por:", value: `${auth.autorizado_por_cargo || ""} ${auth.autorizado_por_nombre}, C.C. ${auth.autorizado_por_id}`.trim() }
                 : { label: "Acudiente:", value: `${[auth.acudiente_nombres, auth.acudiente_apellidos].filter(Boolean).join(" ")} — C.C. ${auth.acudiente_id}` },
               auth.autorizado_por_nombre
                 ? { label: "Registrado por:", value: "El personal de la institución" }

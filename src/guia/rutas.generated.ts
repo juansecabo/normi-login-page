@@ -36,6 +36,7 @@ export const RUTAS_FICHAS: Record<string, string> = {
   "/panel-control": "Panel de Control",
   "/perfil": "Perfil",
   "/permisos-excusas": "Permisos y Excusas",
+  "/permisos-excusas/retiro-staff": "Retiro de Estudiantes",
   "/porteria": "Portería",
   "/profesor/asistencia": "Asistencia",
   "/profesor/comunicados": "Comunicados Recibidos",

@@ -470,7 +470,7 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
               </div>
               <p className="text-xs text-muted-foreground">
                 {noMolestar.activo
-                  ? <>Los avisos automáticos al personal (excusas, retiros, justificaciones de uniforme y demás) no se envían desde las <strong>{hora12(noMolestar.desde)}</strong> hasta el inicio de la jornada del día siguiente (<strong>{(noMolestar.jornadas && noMolestar.jornadas.length ? noMolestar.jornadas.map((j) => `${j.nombre}: ${hora12(j.entrada)}`).join(", ") : hora12(noMolestar.hasta))}</strong>), ni sábados, domingos ni festivos. Cada aviso espera la entrada de la jornada de su estudiante. Quedan guardados y salen apenas se abre ese horario.</>
+                  ? <>Los avisos automáticos al personal (excusas, retiros, justificaciones de uniforme y demás) no se envían desde las <strong>{hora12(noMolestar.desde)}</strong> hasta el inicio de la jornada del día siguiente (<strong>{(noMolestar.jornadas && noMolestar.jornadas.length ? noMolestar.jornadas.map((j) => `${j.nombre}: ${hora12(j.entrada)}`).join(", ") : hora12(noMolestar.hasta))}</strong>), ni sábados, domingos ni festivos. Cada aviso espera la entrada de la jornada de su estudiante y sale apenas se abre ese horario; un retiro cuya hora ya pasó no se envía.</>
                   : <>Desactivado: los avisos automáticos al personal se envían a cualquier hora, cualquier día.</>}
               </p>
             </div>

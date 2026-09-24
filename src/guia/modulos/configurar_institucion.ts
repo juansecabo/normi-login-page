@@ -229,11 +229,11 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
   {
     id: "configurar_institucion.no_molestar",
     titulo: "No molestar: horas sin avisos al personal",
-    descripcion: "Activar o desactivar el No molestar y escoger desde qué hora no se envían avisos automáticos al personal (excusas, retiros, uniforme…) hasta el inicio de la jornada del día siguiente, ni fines de semana. Desactivado, los avisos salen a cualquier hora. Rector, coordinación o administrador.",
+    descripcion: "Activar o desactivar el No molestar y escoger desde qué hora no se envían avisos automáticos al personal (excusas, retiros, uniforme…) hasta el inicio de la jornada del día siguiente, ni fines de semana ni festivos. Desactivado, los avisos salen a cualquier hora. Rector, coordinación o administrador.",
     categoria: "Configurar Institución",
     roles: ["rector", "coordinador", "admin"],
     ruta: RUTA,
-    endpoint: "PUT /api/institucion/no-molestar (esRectorOMas)",
+    endpoint: "PUT /api/institucion/no-molestar (esCoordinadorOMas)",
     sinonimos: ["no molestar", "que no lleguen mensajes de noche", "horario de avisos", "a qué hora dejan de llegar notificaciones"],
     pasos: [
       ...abrirFicha("estructura", "Abrimos Jornadas, grados y salones."),
