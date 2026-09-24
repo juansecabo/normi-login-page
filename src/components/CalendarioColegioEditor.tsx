@@ -21,14 +21,14 @@ import { CalendarDays, ChevronDown, ChevronRight, Eraser, Loader2, Trash2, Penci
  */
 
 interface Periodo { periodo: number; fecha_inicio: string; fecha_fin: string; ano_escolar?: number; nivel?: string }
-/** nivel '' o ausente = todo el colegio; con nombre = solo ese nivel (lo puso su coordinador). */
-interface DiaNoLectivo { id: number; fecha_inicio: string; fecha_fin: string; motivo: string | null; nivel?: string }
+/** Alcance igual que un evento: niveles, grados y aulas vacíos = todo el colegio (`nivel` = columna vieja). */
+interface DiaNoLectivo { id: number; fecha_inicio: string; fecha_fin: string; motivo: string | null; nivel?: string; niveles?: string[]; grados?: string[]; aulas?: string[] }
 /** Alcance (Juan 2026-09-24): niveles, grados y aulas ("Grado|Salon") vacíos = todo el colegio. */
 interface Evento { id: number; fecha_inicio: string; fecha_fin: string; nombre: string; nivel?: string; niveles?: string[]; grados?: string[]; aulas?: string[] }
 interface Alcance { niveles: string[]; grados: string[]; aulas: string[] }
 interface NivelEstructura { nivel: string; grados: Array<{ grado: string; salones: string[] }> }
 const ALCANCE_TODO: Alcance = { niveles: [], grados: [], aulas: [] };
-const alcanceDe = (e: Evento): Alcance => ({ niveles: [...new Set([...(e.niveles || []), ...(e.nivel ? [e.nivel] : [])])], grados: e.grados || [], aulas: e.aulas || [] });
+const alcanceDe = (e: Evento | DiaNoLectivo): Alcance => ({ niveles: [...new Set([...(e.niveles || []), ...(e.nivel ? [e.nivel] : [])])], grados: e.grados || [], aulas: e.aulas || [] });
 /** "Secundaria, Décimo y Undécimo 2" (vacío = todo el colegio). */
 const textoAlcance = (a: Alcance): string => {
   const partes = [...a.niveles, ...a.grados, ...a.aulas.map((x) => x.replace("|", " "))];
@@ -39,7 +39,7 @@ const textoAlcance = (a: Alcance): string => {
  * "Para quién es" un evento: todo el colegio, o los niveles, grados o salones que se marquen.
  * Marcar un nivel incluye todos sus grados; marcar un grado incluye todos sus salones.
  */
-function SelectorAlcance({ estructura, valor, onChange }: { estructura: NivelEstructura[]; valor: Alcance; onChange: (a: Alcance) => void }) {
+function SelectorAlcance({ estructura, valor, onChange, guia = "configurar_institucion.cal_evento_alcance" }: { estructura: NivelEstructura[]; valor: Alcance; onChange: (a: Alcance) => void; guia?: string }) {
   const [escoger, setEscoger] = useState(textoAlcance(valor) !== "");
   const [abiertos, setAbiertos] = useState<Set<string>>(new Set());
   const abrir = (k: string) => setAbiertos((prev) => { const n = new Set(prev); if (n.has(k)) n.delete(k); else n.add(k); return n; });
@@ -48,7 +48,7 @@ function SelectorAlcance({ estructura, valor, onChange }: { estructura: NivelEst
     onChange({ ...valor, [campo]: lista });
   };
   return (
-    <div className="space-y-2" data-guia="configurar_institucion.cal_evento_alcance">
+    <div className="space-y-2" data-guia={guia}>
       <p className="text-sm font-medium">Para quién es</p>
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={() => { setEscoger(false); onChange(ALCANCE_TODO); }}
@@ -242,15 +242,14 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
   // ── Día sin clases: el rango pide motivo en un dialog ──
   const [motivoDialog, setMotivoDialog] = useState<{ ini: string; fin: string } | null>(null);
   const [motivoTexto, setMotivoTexto] = useState("");
-  /** '' = todo el colegio; con nombre = solo ese nivel. */
-  const [diaNivel, setDiaNivel] = useState("");
+  const [diaAlcance, setDiaAlcance] = useState<Alcance>(ALCANCE_TODO);
   const crearDiaSinClases = async () => {
     if (!motivoDialog) return;
     setGuardando(true);
     try {
       await apiRequest("/api/institucion/calendario/dias", {
         method: "POST",
-        body: JSON.stringify(withCid({ fecha_inicio: motivoDialog.ini, fecha_fin: motivoDialog.fin, motivo: motivoTexto.trim(), nivel: diaNivel })),
+        body: JSON.stringify(withCid({ fecha_inicio: motivoDialog.ini, fecha_fin: motivoDialog.fin, motivo: motivoTexto.trim(), ...diaAlcance })),
       });
       setMotivoDialog(null); setMotivoTexto("");
       await cargar();
@@ -341,6 +340,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
   const [motivoEdit, setMotivoEdit] = useState("");
   const [eventoEdit, setEventoEdit] = useState("");
   const [alcanceEdit, setAlcanceEdit] = useState<Alcance>(ALCANCE_TODO);
+  const [alcanceDiaEdit, setAlcanceDiaEdit] = useState<Alcance>(ALCANCE_TODO);
   // El detalle abre mostrando (texto plano). Solo al tocar "Editar" aparece el
   // cuadro de texto: así el clic sobre un día no salta a editar con el cursor
   // metido en el campo.
@@ -369,7 +369,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
     try {
       await apiRequest(`/api/institucion/calendario/dias/${detalle.dia.id}${qCid}`, {
         method: "PATCH",
-        body: JSON.stringify(withCid({ motivo: motivoEdit.trim() })),
+        body: JSON.stringify(withCid({ motivo: motivoEdit.trim(), ...alcanceDiaEdit })),
       });
       setDetalle(null);
       await cargar();
@@ -393,7 +393,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
       // Modo inspección: mostrar qué hay en ese día (y permitir editarlo).
       const evs = esVisible("ev") ? eventosVista.filter((e) => e.fecha_inicio <= f && f <= e.fecha_fin) : [];
       const dia = esVisible("sin") ? diasVista.find((d) => d.fecha_inicio <= f && f <= d.fecha_fin) : undefined;
-      if (dia) { setMotivoEdit(dia.motivo || ""); setEditandoDetalle(false); setDetalle({ tipo: "dia", dia, fecha: f, eventos: evs }); return; }
+      if (dia) { setMotivoEdit(dia.motivo || ""); setAlcanceDiaEdit(alcanceDe(dia)); setEditandoDetalle(false); setDetalle({ tipo: "dia", dia, fecha: f, eventos: evs }); return; }
       if (evs.length > 1) { setDetalle({ tipo: "eventos", fecha: f, eventos: evs }); return; }
       const ev = evs[0];
       if (ev) { setEventoEdit(ev.nombre); setAlcanceEdit(alcanceDe(ev)); setEditandoDetalle(false); setDetalle({ tipo: "evento", evento: ev }); return; }
@@ -419,7 +419,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
       const [ini, fin] = a.ini <= a.fin ? [a.ini, a.fin] : [a.fin, a.ini];
       if (herramienta === "sinclases") {
         setMotivoTexto("");
-        setDiaNivel("");
+        setDiaAlcance(ALCANCE_TODO);
         setMotivoDialog({ ini, fin });
       } else if (herramienta === "evento") {
         setEventoNombre("");
@@ -472,22 +472,33 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
   // SOLO eso (y se pueden sumar varios); tocarlo otra vez lo quita, "Ver todo" limpia.
   const esVisible = (k: string) => ocultos.size === 0 || ocultos.has(k);
   const alternar = (k: string) => setOcultos((prev) => { const n = new Set(prev); if (n.has(k)) n.delete(k); else n.add(k); return n; });
+  /** Franja de fondo del periodo que cubre el día (continua; redondeada donde empieza o termina). */
+  const bandaDia = (f: string, dow: number, dia: number, totalDias: number): string => {
+    const per = periodosVista.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin && esVisible(`p${p.periodo}`));
+    if (!per) return "";
+    const color = estiloPeriodo(per.periodo, esqSel).fondo.split(" ")[0];
+    const izq = f === per.fecha_inicio || dow === 0 || dia === 1 ? " rounded-l-md" : "";
+    const der = f === per.fecha_fin || dow === 6 || dia === totalDias ? " rounded-r-md" : "";
+    return `${color}${izq}${der}`;
+  };
   const claseDia = (f: string, dow: number): { cls: string; title: string } => {
     const base = "cursor-pointer select-none";
+    const perDia = periodosVista.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin && esVisible(`p${p.periodo}`));
+    const enPeriodo = perDia ? ` · ${estiloPeriodo(perDia.periodo, esqSel).nombre}` : "";
     if (enSeleccion(f)) return { cls: `${base} ring-2 ring-primary bg-primary/20`, title: "" };
     const dia = esVisible("sin") ? diasVista.find((d) => d.fecha_inicio <= f && f <= d.fecha_fin) : undefined;
     if (dia) {
       const evsDia = esVisible("ev") ? eventosVista.filter((e) => e.fecha_inicio <= f && f <= e.fecha_fin) : [];
       const conEventos = evsDia.length > 0 ? ` ring-2 ring-inset ring-red-600` : "";
-      const titulo = [(dia.motivo || "Día sin clases") + (dia.nivel ? ` (solo ${dia.nivel})` : ""), ...evsDia.map((e) => e.nombre + (textoAlcance(alcanceDe(e)) ? ` (solo ${textoAlcance(alcanceDe(e))})` : ""))].join(" · ");
-      return { cls: `${base} bg-red-200 hover:bg-red-300 text-red-900${conEventos}`, title: titulo };
+      const titulo = [(dia.motivo || "Día sin clases") + (textoAlcance(alcanceDe(dia)) ? ` (solo ${textoAlcance(alcanceDe(dia))})` : ""), ...evsDia.map((e) => e.nombre + (textoAlcance(alcanceDe(e)) ? ` (solo ${textoAlcance(alcanceDe(e))})` : ""))].join(" · ");
+      return { cls: `${base} bg-red-200 hover:bg-red-300 text-red-900${conEventos}`, title: titulo + enPeriodo };
     }
     const ev = esVisible("ev") ? eventosVista.find((e) => e.fecha_inicio <= f && f <= e.fecha_fin) : undefined;
-    if (ev) return { cls: `${base} bg-red-400 hover:bg-red-500 text-black`, title: ev.nombre + (textoAlcance(alcanceDe(ev)) ? ` (solo ${textoAlcance(alcanceDe(ev))})` : "") };
+    if (ev) return { cls: `${base} bg-red-400 hover:bg-red-500 text-black`, title: ev.nombre + (textoAlcance(alcanceDe(ev)) ? ` (solo ${textoAlcance(alcanceDe(ev))})` : "") + enPeriodo };
     const nombreFestivo = esVisible("fest") ? festivos.get(f) : undefined;
-    if (nombreFestivo) return { cls: `${base} bg-fuchsia-300 text-fuchsia-900`, title: `${nombreFestivo} (festivo automático)` };
-    const per = periodosVista.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin && esVisible(`p${p.periodo}`));
-    if (per) return { cls: `${base} ${estiloPeriodo(per.periodo, esqSel).fondo}`, title: estiloPeriodo(per.periodo, esqSel).nombre };
+    if (nombreFestivo) return { cls: `${base} bg-fuchsia-300 text-fuchsia-900`, title: `${nombreFestivo} (festivo automático)${enPeriodo}` };
+    // Solo periodo: el color lo pone la franja de fondo; el día queda transparente encima.
+    if (perDia) return { cls: `${base} hover:bg-black/10${dow >= 5 ? " text-foreground/60" : ""}`, title: estiloPeriodo(perDia.periodo, esqSel).nombre };
     if (dow >= 5) return { cls: `${base} text-muted-foreground/50`, title: "" };
     return { cls: `${base} hover:bg-muted`, title: "" };
   };
@@ -580,7 +591,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
               return (
                 <div key={mes}>
                   <p className="text-sm font-semibold text-center mb-1">{mes}</p>
-                  <div className="grid grid-cols-7 text-center">
+                  <div className="grid grid-cols-7 gap-y-1 text-center">
                     {DIAS_SEMANA.map((d, i) => <span key={i} className="text-[10px] text-muted-foreground pb-1">{d}</span>)}
                     {Array.from({ length: primerDow }).map((_, i) => <span key={`v${i}`} />)}
                     {Array.from({ length: totalDias }).map((_, i) => {
@@ -588,12 +599,14 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
                       const dow = (new Date(anoEscolar, m, i + 1).getDay() + 6) % 7;
                       const { cls, title } = claseDia(f, dow);
                       return (
-                        <button key={f} type="button" title={title} draggable={false}
-                          onMouseDown={(e) => { e.preventDefault(); bajarEnDia(f); }}
-                          onMouseEnter={() => extenderA(f)}
-                          className={`h-7 w-full text-[11px] rounded-sm flex items-center justify-center ${cls} ${f === hoyISO ? "font-bold underline" : ""}`}>
-                          {i + 1}
-                        </button>
+                        <div key={f} className={`h-7 ${bandaDia(f, dow, i + 1, totalDias)}`}>
+                          <button type="button" title={title} draggable={false}
+                            onMouseDown={(e) => { e.preventDefault(); bajarEnDia(f); }}
+                            onMouseEnter={() => extenderA(f)}
+                            className={`h-7 w-full text-[11px] rounded-md flex items-center justify-center ${cls} ${f === hoyISO ? "font-bold underline" : ""}`}>
+                            {i + 1}
+                          </button>
+                        </div>
                       );
                     })}
                   </div>
@@ -634,7 +647,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
                     <p className="text-sm font-medium">
                       {d.fecha_inicio === d.fecha_fin ? fechaLinda(d.fecha_inicio) : `${fechaLinda(d.fecha_inicio)} — ${fechaLinda(d.fecha_fin)}`}
                     </p>
-                    <p className="text-xs text-muted-foreground">{d.motivo || "Sin motivo"}{d.nivel ? <span className="ml-2 px-1.5 py-0.5 rounded bg-muted text-[10px]">solo {d.nivel}</span> : null}</p>
+                    <p className="text-xs text-muted-foreground">{d.motivo || "Sin motivo"}{textoAlcance(alcanceDe(d)) ? <span className="ml-2 px-1.5 py-0.5 rounded bg-muted text-[10px]">solo {textoAlcance(alcanceDe(d))}</span> : null}</p>
                   </div>
                   {puedeTocar() && (
                   <button onClick={() => setConfirmDia(d)} className="text-muted-foreground hover:text-destructive cursor-pointer" title="Eliminar">
@@ -687,20 +700,10 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
                 : `${fechaLinda(motivoDialog.ini)} — ${fechaLinda(motivoDialog.fin)}`)}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2" data-guia="configurar_institucion.cal_dia_alcance">
-            <p className="text-sm font-medium">Para quién es</p>
-            <div className="flex flex-wrap gap-2">
-              {["", ...estructura.map((n) => n.nivel)].map((n) => (
-                <button key={n || "__todo"} type="button" onClick={() => setDiaNivel(n)}
-                  className={`px-3 py-1 rounded-full border text-sm ${diaNivel === n ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-accent"}`}>
-                  {n || "Todo el colegio"}
-                </button>
-              ))}
-            </div>
-          </div>
           <div>
             <Textarea data-guia="configurar_institucion.cal_dia_motivo" value={motivoTexto} onChange={(e) => setMotivoTexto(e.target.value)} placeholder="Motivo: semana de receso, jornada pedagógica…" maxLength={80} autoFocus rows={3} className="resize-none" />
           </div>
+          <SelectorAlcance estructura={estructura} valor={diaAlcance} onChange={setDiaAlcance} guia="configurar_institucion.cal_dia_alcance" />
           <DialogFooter>
             <Button variant="outline" onClick={() => setMotivoDialog(null)} disabled={guardando}>Cancelar</Button>
             <Button data-guia="configurar_institucion.cal_dia_confirmar" onClick={crearDiaSinClases} disabled={guardando} className="gap-2">
@@ -755,11 +758,13 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
                 {listaEventosDia(detalle.fecha, detalle.eventos)}
               </div>
             )}
-            {soloLectura || !editandoDetalle ? (
+            {soloLectura || !editandoDetalle ? (<>
               <p className="text-sm text-foreground">{detalle.dia.motivo || <span className="text-muted-foreground">Sin motivo</span>}</p>
-            ) : (
+              <p className="text-xs text-muted-foreground">{textoAlcance(alcanceDe(detalle.dia)) ? `Solo para ${textoAlcance(alcanceDe(detalle.dia))}` : "Para todo el colegio"}</p>
+            </>) : (<>
               <Textarea data-guia="configurar_institucion.cal_detalle_texto" value={motivoEdit} onChange={(e) => setMotivoEdit(e.target.value)} placeholder="Motivo: semana de receso, jornada pedagógica…" maxLength={80} rows={3} className="resize-none" />
-            )}
+              <SelectorAlcance estructura={estructura} valor={alcanceDiaEdit} onChange={setAlcanceDiaEdit} guia="configurar_institucion.cal_dia_alcance" />
+            </>)}
             {!soloLectura && !editandoDetalle && (
               <DialogFooter>
                 <Button variant="destructive" onClick={() => { const d = detalle.dia; setDetalle(null); setConfirmDia(d); }} disabled={guardando} className="gap-2">
