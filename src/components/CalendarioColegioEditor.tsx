@@ -706,6 +706,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
                   ? fechaLinda(detalle.dia.fecha_inicio)
                   : `${fechaLinda(detalle.dia.fecha_inicio)} — ${fechaLinda(detalle.dia.fecha_fin)}`}
               </DialogDescription>
+              {lineaPeriodo(detalle.fecha)}
             </DialogHeader>
             {detalle.eventos.length > 0 && (
               <div className="space-y-1.5">
@@ -795,6 +796,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
             <DialogHeader>
               <DialogTitle>{detalle.nombre}</DialogTitle>
               <DialogDescription>{fechaLinda(detalle.fecha)}</DialogDescription>
+              {lineaPeriodo(detalle.fecha)}
             </DialogHeader>
             <p className="text-sm text-muted-foreground">Festivo nacional de Colombia. Se aplica automáticamente en todos los colegios y no se puede editar.</p>
           </>)}
@@ -806,10 +808,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
               </DialogDescription>
             </DialogHeader>
             {!soloLectura && (<>
-            {nivelSel && !periodos.some((p) => p.periodo === detalle.periodo.periodo) ? (
-              <p className="text-sm text-muted-foreground">Esta es la fecha general del colegio. Para que {nivelSel} tenga otra, elige la herramienta "{estiloPeriodo(detalle.periodo.periodo, esqSel).nombre}" y pinta el nuevo rango.</p>
-            ) : (<>
-            <p className="text-sm text-muted-foreground">Para cambiar sus fechas, elige la herramienta "{estiloPeriodo(detalle.periodo.periodo, esqSel).nombre}" y pinta el nuevo rango.{nivelSel && heredaGenerales ? " Al quitarla, vuelve a regir la fecha general del colegio." : ""}</p>
+            {nivelSel && !periodos.some((p) => p.periodo === detalle.periodo.periodo) ? null : (<>
             <DialogFooter>
               <Button variant="destructive" onClick={() => { const n = detalle.periodo.periodo; setDetalle(null); setConfirmPeriodo(n); }} disabled={guardando} className="gap-2">
                 <Eraser className="w-4 h-4" /> {nivelSel && heredaGenerales ? "Quitar fecha propia" : "Quitar periodo"}
