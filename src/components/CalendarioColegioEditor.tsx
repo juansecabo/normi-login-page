@@ -42,7 +42,7 @@ const PALETA: Array<{ fondo: string; chip: string }> = [
   { fondo: "bg-emerald-200 hover:bg-emerald-300", chip: "bg-emerald-200 border-emerald-400" },
   { fondo: "bg-sky-200 hover:bg-sky-300", chip: "bg-sky-200 border-sky-400" },
   { fondo: "bg-amber-200 hover:bg-amber-300", chip: "bg-amber-200 border-amber-400" },
-  { fondo: "bg-violet-200 hover:bg-violet-300", chip: "bg-violet-200 border-violet-400" },
+  { fondo: "bg-orange-300 hover:bg-orange-400", chip: "bg-orange-300 border-orange-400" },
   { fondo: "bg-rose-200 hover:bg-rose-300", chip: "bg-rose-200 border-rose-400" },
   { fondo: "bg-teal-200 hover:bg-teal-300", chip: "bg-teal-200 border-teal-400" },
 ];
@@ -414,12 +414,12 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
     const dia = esVisible("sin") ? diasVista.find((d) => d.fecha_inicio <= f && f <= d.fecha_fin) : undefined;
     if (dia) {
       const evsDia = esVisible("ev") ? eventosVista.filter((e) => e.fecha_inicio <= f && f <= e.fecha_fin) : [];
-      const conEventos = evsDia.length > 0 ? ` ring-2 ring-inset ring-indigo-400` : "";
+      const conEventos = evsDia.length > 0 ? ` ring-2 ring-inset ring-indigo-600` : "";
       const titulo = [(dia.motivo || "Día sin clases") + (dia.nivel ? ` (solo ${dia.nivel})` : ""), ...evsDia.map((e) => e.nombre + (e.nivel ? ` (solo ${e.nivel})` : ""))].join(" · ");
       return { cls: `${base} bg-red-200 hover:bg-red-300 text-red-900${conEventos}`, title: titulo };
     }
     const ev = esVisible("ev") ? eventosVista.find((e) => e.fecha_inicio <= f && f <= e.fecha_fin) : undefined;
-    if (ev) return { cls: `${base} bg-indigo-200 hover:bg-indigo-300 text-indigo-900`, title: ev.nombre + (ev.nivel ? ` (solo ${ev.nivel})` : "") };
+    if (ev) return { cls: `${base} bg-indigo-600 hover:bg-indigo-700 text-white`, title: ev.nombre + (ev.nivel ? ` (solo ${ev.nivel})` : "") };
     const nombreFestivo = esVisible("fest") ? festivos.get(f) : undefined;
     if (nombreFestivo) return { cls: `${base} bg-fuchsia-300 text-fuchsia-900`, title: `${nombreFestivo} (festivo automático)` };
     const per = periodosVista.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin && esVisible(`p${p.periodo}`));
@@ -496,7 +496,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
               </button>
             ))}
             <button data-guia="configurar_institucion.cal_herramienta_evento" onClick={(e) => toggleHerramienta("evento", e)}
-              className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer focus:outline-none bg-indigo-200 border-indigo-400 ${herramienta === "evento" ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
+              className={`px-3 py-1.5 rounded-full border text-sm cursor-pointer focus:outline-none bg-indigo-600 border-indigo-700 text-white ${herramienta === "evento" ? "ring-2 ring-primary font-semibold" : "opacity-80 hover:opacity-100"}`}>
               Evento
             </button>
             <button data-guia="configurar_institucion.cal_herramienta_sinclases" onClick={(e) => toggleHerramienta("sinclases", e)}
@@ -520,7 +520,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
             {[
               ...cortes.map((n) => ({ k: `p${n}`, chip: estiloPeriodo(n, esqSel).chip, nombre: estiloPeriodo(n, esqSel).nombre })),
               { k: "sin", chip: "bg-red-200 border border-red-400", nombre: "Sin clases" },
-              { k: "ev", chip: "bg-indigo-200 border border-indigo-400", nombre: "Eventos" },
+              { k: "ev", chip: "bg-indigo-600 border border-indigo-700", nombre: "Eventos" },
               { k: "fest", chip: "bg-fuchsia-300 border border-fuchsia-400", nombre: "Festivos" },
             ].map(({ k, chip, nombre }) => (
               <button key={k} type="button" onClick={() => alternar(k)} aria-pressed={ocultos.has(k)}
@@ -573,7 +573,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
               );
             })}
             <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-red-200 border border-red-400" /> Sin clases</span>
-            <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-indigo-200 border border-indigo-400" /> Evento</span>
+            <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-indigo-600 border border-indigo-700" /> Evento</span>
             <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-fuchsia-300 border border-fuchsia-400" /> Festivo (automático)</span>
           </div>
         </CardContent>
