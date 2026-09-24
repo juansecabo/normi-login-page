@@ -724,7 +724,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
           <div>
             {/* 889 = lo que cabe en la plantilla de WhatsApp del aviso diario fuera de ventana de 24h. */}
             <Textarea data-guia="configurar_institucion.cal_evento_nombre" value={eventoNombre} onChange={(e) => setEventoNombre(e.target.value)} placeholder="Nombre: entrega de boletines, día deportivo, izada de bandera…" maxLength={889} autoFocus rows={4} className="resize-none" />
-            <p className="text-xs text-muted-foreground text-right">{eventoNombre.length}/889</p>
+            <p className="text-xs text-muted-foreground text-right mt-1.5">{eventoNombre.length}/889</p>
           </div>
           <SelectorAlcance estructura={estructura} valor={eventoAlcance} onChange={setEventoAlcance} />
           <DialogFooter>
@@ -803,7 +803,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
               <p className="text-xs text-muted-foreground">{textoAlcance(alcanceDe(detalle.evento)) ? `Solo para ${textoAlcance(alcanceDe(detalle.evento))}` : "Para todo el colegio"}</p>
             </>) : (<>
               <Textarea data-guia="configurar_institucion.cal_detalle_texto" value={eventoEdit} onChange={(e) => setEventoEdit(e.target.value)} placeholder="Nombre del evento" maxLength={889} rows={4} className="resize-none" />
-              <p className="text-xs text-muted-foreground text-right">{eventoEdit.length}/889</p>
+              <p className="text-xs text-muted-foreground text-right -mt-2">{eventoEdit.length}/889</p>
               <SelectorAlcance estructura={estructura} valor={alcanceEdit} onChange={setAlcanceEdit} />
             </>)}
             {!soloLectura && !editandoDetalle && (
