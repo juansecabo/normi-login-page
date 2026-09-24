@@ -15,6 +15,7 @@ import { Building, Image as ImageIcon, ArrowLeft, BookOpen, CalendarDays, FileTe
 import { useRef } from "react";
 import EscalaColegioEditor from "@/components/EscalaColegioEditor";
 import CalendarioColegioEditor from "@/components/CalendarioColegioEditor";
+import { HorarioContenido } from "@/pages/Horario";
 import AsignaturasColegioEditor from "@/components/AsignaturasColegioEditor";
 import RevisarCargaEditor from "@/components/RevisarCargaEditor";
 import AreasColegioEditor from "@/components/AreasColegioEditor";
@@ -121,8 +122,8 @@ const ConstruyeInstitucion = () => {
   // La vista y el rol elegido (dentro de Personas) viven en la URL para que un
   // F5 no devuelva al menú. PUSH (no replace) → el botón atrás baja un nivel.
   const [searchParams, setSearchParams] = useSearchParams();
-  type VistaCI = 'menu' | 'info' | 'escudo' | 'escala' | 'estructura' | 'asignaturas' | 'carga' | 'calendario' | 'manual' | 'personas' | 'armar-salon' | 'chatwoot' | 'whatsapp';
-  const VISTAS: VistaCI[] = ['menu', 'info', 'escudo', 'escala', 'estructura', 'asignaturas', 'carga', 'calendario', 'manual', 'personas', 'armar-salon', 'chatwoot', 'whatsapp'];
+  type VistaCI = 'menu' | 'info' | 'escudo' | 'escala' | 'estructura' | 'asignaturas' | 'carga' | 'calendario' | 'horario' | 'manual' | 'personas' | 'armar-salon' | 'chatwoot' | 'whatsapp';
+  const VISTAS: VistaCI[] = ['menu', 'info', 'escudo', 'escala', 'estructura', 'asignaturas', 'carga', 'calendario', 'horario', 'manual', 'personas', 'armar-salon', 'chatwoot', 'whatsapp'];
   const vistaUrl = searchParams.get('vista') as VistaCI | null;
   // El profesor (director de grupo) solo tiene Personas y Armar salón — también por URL.
   const vistaValida = (v: VistaCI) => VISTAS.includes(v) && (cargo !== "Profesor(a)" || v === 'personas' || v === 'armar-salon');
@@ -220,7 +221,7 @@ const ConstruyeInstitucion = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <HeaderNormi backLink={backLink} />
-      <main className={`flex-1 container mx-auto p-4 md:p-8 ${vista === "personas" || vista === "armar-salon" ? "" : "max-w-4xl"}`}>
+      <main className={`flex-1 container mx-auto p-4 md:p-8 ${vista === "personas" || vista === "armar-salon" || vista === "horario" ? "" : "max-w-4xl"}`}>
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <BreadcrumbDeslizable>
             <button onClick={() => navigate(backLink)} className="text-primary hover:underline">Inicio</button>
@@ -231,7 +232,7 @@ const ConstruyeInstitucion = () => {
               {vista === "personas" && rolPersonas ? (
                 <button onClick={() => setRolPersonas(null)} className="text-primary hover:underline">Personas</button>
               ) : (
-                <span className="text-foreground font-medium">{({ info: "Información del colegio", escudo: "Escudo", escala: "Escala de calificación", estructura: "Jornadas, grados y salones", asignaturas: "Asignaturas", carga: "Revisar carga académica", calendario: "Calendario", manual: "Manual de Convivencia", personas: "Personas", "armar-salon": "Armar salón", chatwoot: "Bandeja de conversaciones", whatsapp: "Número de WhatsApp" } as Record<string, string>)[vista]}</span>
+                <span className="text-foreground font-medium">{({ info: "Información del colegio", escudo: "Escudo", escala: "Escala de calificación", estructura: "Jornadas, grados y salones", asignaturas: "Asignaturas", carga: "Revisar carga académica", calendario: "Calendario", horario: "Horario de clases", manual: "Manual de Convivencia", personas: "Personas", "armar-salon": "Armar salón", chatwoot: "Bandeja de conversaciones", whatsapp: "Número de WhatsApp" } as Record<string, string>)[vista]}</span>
               )}
               {vista === "personas" && rolPersonas && (<>
                 <span className="text-muted-foreground">&rarr;</span>
@@ -257,6 +258,7 @@ const ConstruyeInstitucion = () => {
               { id: "asignaturas", label: "Asignaturas", desc: "Asignaturas del colegio y plan de estudios por grado", Icon: BookOpen },
               { id: "carga", label: "Revisar carga académica", desc: "Genera el plan desde la carga y corrige diferencias entre salones", Icon: ClipboardList },
               { id: "calendario", label: "Calendario", desc: "Periodos académicos y días sin clases", Icon: CalendarDays },
+              { id: "horario", label: "Horario de clases", desc: "Materias y horas de cada salón", Icon: Clock },
               { id: "manual", label: "Manual de Convivencia", desc: cfgColegio.manual_url ? "PDF cargado" : "Sube el PDF (opcional)", Icon: FileText },
               { id: "personas", label: "Personas", desc: "Administradores, rectores, profesores, estudiantes…", Icon: GraduationCap },
               { id: "armar-salon", label: "Armar salón", desc: "Arma cada salón de forma visual: director(a) y estudiantes", Icon: Users },
@@ -342,6 +344,7 @@ const ConstruyeInstitucion = () => {
             )}
             {vista === "carga" && <RevisarCargaEditor />}
             {vista === "calendario" && <CalendarioColegioEditor />}
+            {vista === "horario" && <HorarioContenido embebido />}
             {vista === "manual" && (
               <div className="bg-card rounded-lg shadow-soft p-6 md:p-8">
                 <ManualColegio manualUrl={cfgColegio.manual_url || null} onChanged={cargar} />

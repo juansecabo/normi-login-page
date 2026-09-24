@@ -122,7 +122,12 @@ function SinHorario({ texto }: { texto: string }) {
   return <div className="rounded-lg border border-dashed border-border bg-muted/30 p-6 text-center text-muted-foreground">{texto}</div>;
 }
 
-export default function Horario() {
+/**
+ * Horario de clases. En el dashboard (ficha "Horario") es solo para ver; se arma y se
+ * cambia en Configurar Institución → Horario de clases (`embebido`), igual que el
+ * calendario (Juan 2026-09-24).
+ */
+export function HorarioContenido({ embebido = false }: { embebido?: boolean }) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [cargando, setCargando] = useState(true);
@@ -166,7 +171,7 @@ export default function Horario() {
           setSalones(lista);
           if (r.tipo === "staff") apiRequest<any>("/api/horario/profesores").then((p) => setProfesores(p.profesores || [])).catch(() => null);
           // Restaurar la selección desde la dirección.
-          const pv = params.get("vista"), pn = params.get("nivel") || "", pg = params.get("grado") || "", ps = params.get("salon") || "", pp = params.get("profesor") || "";
+          const pv = params.get("por") || (embebido ? null : params.get("vista")), pn = params.get("nivel") || "", pg = params.get("grado") || "", ps = params.get("salon") || "", pp = params.get("profesor") || "";
           if (r.tipo === "staff" && pv === "profesor") { setVista("profesor"); if (pp) cargarProfesor(pp); }
           if (pn && lista.some((x) => (x.nivel || "Otros") === pn)) {
             setNivelSel(pn);
@@ -189,8 +194,11 @@ export default function Horario() {
 
   useEffect(() => {
     if (!restaurado) return;
-    const q = new URLSearchParams();
-    if (vista === "profesor") { q.set("vista", "profesor"); if (profSel) q.set("profesor", profSel); }
+    // Se conserva lo demás de la dirección (en Configurar Institución, la ficha abierta).
+    const q = new URLSearchParams(params);
+    for (const k of ["por", "nivel", "grado", "salon", "profesor", "estudiante"]) q.delete(k);
+    if (!embebido) q.delete("vista");
+    if (vista === "profesor") { q.set("por", "profesor"); if (profSel) q.set("profesor", profSel); }
     else {
       if (nivelSel) q.set("nivel", nivelSel);
       if (gradoSel) q.set("grado", gradoSel);
@@ -283,17 +291,7 @@ export default function Horario() {
   })();
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormi />
-      <main className="flex-1 container mx-auto p-4 md:p-8 space-y-6">
-        <div className="bg-card rounded-lg shadow-soft p-4">
-          <BreadcrumbDeslizable>
-            <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
-            <span className="text-muted-foreground">&rarr;</span>
-            <span className="text-foreground font-medium">Horario</span>
-          </BreadcrumbDeslizable>
-        </div>
-
+    <>
         <div className="bg-card rounded-lg shadow-soft p-4 md:p-6 space-y-5">
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2"><Clock className="w-6 h-6 text-primary" /> Horario de clases</h1>
 
@@ -370,7 +368,12 @@ export default function Horario() {
                   {cargandoSalon && <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>}
                   {datosSalon && !cargandoSalon && (
                     <div className="space-y-3">
-                      {datosSalon.puedeEditar && !borrador && (
+                      {!embebido && datosSalon.puedeEditar && (
+                        <p className="text-xs text-muted-foreground text-right">
+                          Para cambiarlo, entra a <button type="button" className="text-primary hover:underline" onClick={() => navigate("/construye-institucion?vista=horario")}>Configurar Institución</button>.
+                        </p>
+                      )}
+                      {embebido && datosSalon.puedeEditar && !borrador && (
                         <div className="flex flex-wrap justify-end gap-2">
                           <Button size="sm" variant="outline" onClick={empezarEdicion} data-guia="horario.editar">{datosSalon.clases.length ? "Editar horario" : "Armar horario"}</Button>
                           {datosSalon.nivel && <Button size="sm" variant="outline" onClick={() => setFranjasEdit(Array.from({ length: Math.max(horasDe(datosSalon.clases), 0, ...datosSalon.franjas.map((f: Franja) => f.hora)) }, (_, i) => datosSalon.franjas.find((f: Franja) => f.hora === i + 1) || { hora: i + 1, hora_inicio: "", hora_fin: "" }))} data-guia="horario.franjas"><Clock className="w-4 h-4 mr-1" /> Horas de {datosSalon.nivel}</Button>}
@@ -418,7 +421,6 @@ export default function Horario() {
             </div>
           )}
         </div>
-      </main>
 
       <Dialog open={!!avisoHorario} onOpenChange={(o) => !o && setAvisoHorario(null)}>
         <DialogContent className="max-w-md">
@@ -504,6 +506,25 @@ export default function Horario() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </>
+  );
+}
+
+export default function Horario() {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <HeaderNormi />
+      <main className="flex-1 container mx-auto p-4 md:p-8 space-y-6">
+        <div className="bg-card rounded-lg shadow-soft p-4">
+          <BreadcrumbDeslizable>
+            <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
+            <span className="text-muted-foreground">&rarr;</span>
+            <span className="text-foreground font-medium">Horario</span>
+          </BreadcrumbDeslizable>
+        </div>
+        <HorarioContenido />
+      </main>
     </div>
   );
 }

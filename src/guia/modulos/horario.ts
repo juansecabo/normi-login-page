@@ -3,9 +3,11 @@
 // Una ficha para todos los roles en todos los colegios:
 //  - Estudiante: su horario. Acudiente: el de cada acudido (botones arriba).
 //  - Profesor: "Mis clases" y, abajo, el horario de cualquier salón (solo ver).
-//  - Rector / admin: arman el horario de cualquier salón. Coordinador: los de
-//    sus niveles (el servidor bloquea los demás). El guardado bloquea cruces de
-//    profesores. "Horas de <nivel>" define las horas de reloj (opcional).
+//  - La ficha del inicio es solo para ver. Se arma y se cambia en Configurar
+//    Institución → Horario de clases (2026-09-24), como el calendario: rector y
+//    admin cualquier salón; coordinador los de sus niveles (el servidor bloquea
+//    los demás). El guardado bloquea cruces de profesores. "Horas de <nivel>"
+//    define las horas de reloj (opcional).
 //  - Secretaría, administrativo, orientador: consultan por salón o por profesor.
 
 import type { Capacidad } from "../tipos";
@@ -15,6 +17,11 @@ const LLEGAR = {
   accion: "click" as const,
   ancla: "dashboard.ficha_horario",
 };
+/** Armar y cambiar el horario vive en Configurar Institución. */
+const LLEGAR_EDITAR = [
+  { narracion: "Entramos a Configurar Institución.", accion: "navegar" as const, ruta: "/construye-institucion" },
+  { narracion: "Toca la ficha 'Horario de clases'.", accion: "click" as const, ancla: "configurar_institucion.ficha_horario" },
+];
 const PERSONAL = ["rector", "coordinador", "admin", "secretaria", "administrativo", "orientador"] as const;
 const EDITORES = ["rector", "coordinador", "admin"] as const;
 
@@ -85,15 +92,15 @@ export const HORARIO: Capacidad[] = [
   {
     id: "horario.armar",
     titulo: "Armar o editar el horario de un salón",
-    descripcion: "Poner la materia de cada día y hora de un salón. Al escoger la materia, las que tienen el profesor ocupado en otro salón a esa hora salen en gris con el motivo y no se pueden escoger; además, al guardar se revisan los cruces otra vez. El coordinador solo edita los salones de sus niveles.",
+    descripcion: "Poner la materia de cada día y hora de un salón. Al escoger la materia, las que tienen el profesor ocupado en otro salón a esa hora salen en gris con el motivo y no se pueden escoger; además, al guardar se revisan los cruces otra vez. El coordinador solo edita los salones de sus niveles. Se hace en Configurar Institución → Horario de clases; la ficha Horario del inicio es solo para ver.",
     categoria: "Horario",
     roles: [...EDITORES],
-    ruta: "/horario",
+    ruta: "/construye-institucion?vista=horario",
     endpoint: "PUT /api/horario/salon",
     requisitos: [{ entidad: "salon", descripcion: "Grado y salón a armar." }],
     sinonimos: ["armar el horario", "hacer el horario", "cambiar el horario", "editar horario", "cruces de profesores"],
     pasos: [
-      LLEGAR,
+      ...LLEGAR_EDITAR,
       { narracion: "Escoge el nivel.", accion: "seleccionar", ancla: "horario.selector_nivel", campo: "nivel" },
       { narracion: "Ahora el grado.", accion: "seleccionar", ancla: "horario.selector_grado", campo: "grado" },
       { narracion: "Y por último el salón.", accion: "seleccionar", ancla: "horario.selector_salon", campo: "salon" },
@@ -105,15 +112,15 @@ export const HORARIO: Capacidad[] = [
   {
     id: "horario.horas_nivel",
     titulo: "Poner las horas de reloj de un nivel",
-    descripcion: "Definir a qué hora empieza y termina cada hora de clase de un nivel (opcional). Aplica a todos sus salones.",
+    descripcion: "Definir a qué hora empieza y termina cada hora de clase de un nivel (opcional). Aplica a todos sus salones. Se hace en Configurar Institución → Horario de clases.",
     categoria: "Horario",
     roles: [...EDITORES],
-    ruta: "/horario",
+    ruta: "/construye-institucion?vista=horario",
     endpoint: "PUT /api/horario/franjas",
     requisitos: [{ entidad: "nivel", descripcion: "Nivel al que se le ponen las horas." }],
     sinonimos: ["horas de clase", "a qué hora empieza cada clase", "timbre", "horario de timbres"],
     pasos: [
-      LLEGAR,
+      ...LLEGAR_EDITAR,
       { narracion: "Escoge el nivel y un grado y salón de ese nivel.", accion: "seleccionar", ancla: "horario.selector_nivel", campo: "nivel" },
       { narracion: "Ahora el grado.", accion: "seleccionar", ancla: "horario.selector_grado", campo: "grado" },
       { narracion: "Y por último el salón.", accion: "seleccionar", ancla: "horario.selector_salon", campo: "salon" },
