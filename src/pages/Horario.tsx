@@ -167,7 +167,10 @@ export function HorarioContenido({ embebido = false }: { embebido?: boolean }) {
         setMio(r);
         if (r.tipo === "staff" || r.tipo === "profesor") {
           const s = await apiRequest<any>("/api/horario/salones");
-          const lista: SalonInfo[] = s.salones || [];
+          // En Configurar Institución el coordinador solo ve los salones de los niveles que puede
+          // configurar (niveles_edita con lista; null = todos, rector y administrador).
+          const edita: string[] | null = Array.isArray(s.niveles_edita) && s.niveles_edita.length ? s.niveles_edita : null;
+          const lista: SalonInfo[] = (s.salones || []).filter((x: SalonInfo) => !embebido || !edita || edita.includes(x.nivel || ""));
           setSalones(lista);
           if (r.tipo === "staff") apiRequest<any>("/api/horario/profesores").then((p) => setProfesores(p.profesores || [])).catch(() => null);
           // Restaurar la selección desde la dirección.
