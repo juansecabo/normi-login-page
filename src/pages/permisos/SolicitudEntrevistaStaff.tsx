@@ -448,8 +448,9 @@ const SolicitudEntrevistaStaff = () => {
     let creadas = 0;
     const fallidas: string[] = [];
     const creadosOk: typeof estudiantesSeleccionados = [];
+    const idsCreados: number[] = [];
     for (const est of estudiantesSeleccionados) {
-      const { error } = await supabase.from("Solicitudes_Entrevista").insert({
+      const { data: insRow, error } = await supabase.from("Solicitudes_Entrevista").insert({
         fecha_solicitud: fmtLocal(hoy),
         fecha_entrevista: fmtLocal(fechaEntrevista),
         hora_entrevista: horaEntrevista,
@@ -466,10 +467,11 @@ const SolicitudEntrevistaStaff = () => {
         creado_por_nombre: [cargoSegunGenero(session.cargo || undefined, session.genero), session.nombres, session.apellidos].filter(Boolean).join(" "),
         firma_url: firmaUrl,
         mensaje: mensajeAdicional.trim() || null,
-      });
+      }).select("id").maybeSingle();
       if (error) { fallidas.push(`${est.apellidos} ${est.nombres}`); continue; }
       creadas++;
       creadosOk.push(est);
+      if ((insRow as any)?.id) idsCreados.push(Number((insRow as any).id));
       // Notificar SOLO a los acudientes de ESTE estudiante → cada padre recibe su
       // propia citación, sin ver a los demás. El remitente lo arma el server.
       const mensaje = `Se le informa que se ha solicitado una entrevista para el acudiente del estudiante ${est.nombres} ${est.apellidos} de ${est.grado} ${est.salon}.\n\nFecha: ${fechaEntrevistaTexto}\nHora: ${horaEntrevista}\nCon: ${entrevistaConNombre}${bloqueMensaje}\n\nPor favor ingrese a notasnormi.com y en el inicio haga click en la ficha "Solicitud de Entrevista", busque el día indicado, haga click sobre la citación y confirme su asistencia.`;
@@ -483,37 +485,12 @@ const SolicitudEntrevistaStaff = () => {
       }).catch(e => console.error("Notificación entrevista error:", e));
     }
 
-    // Aviso inmediato a los OTROS entrevistadores (Juan 2026-09-23): quién los puso y los
-    // datos de la entrevista. A quien la crea no le llega (acaba de hacerlo él mismo).
+    // Aviso inmediato "NUEVA ENTREVISTA" a los OTROS entrevistadores (lo arma el servidor,
+    // remitente Normi). A quien la crea no le llega: acaba de hacerlo él mismo.
     const otros = entrevistadores.filter((e) => String(e.id) !== String(session.id));
-    if (creadosOk.length > 0 && otros.length > 0) {
-      const creador = [cargoSegunGenero(session.cargo || undefined, session.genero), session.nombres, session.apellidos].filter(Boolean).join(" ");
-      const ests = creadosOk.map((e) => `${e.nombres} ${e.apellidos} (${e.grado} ${e.salon})`);
-      const listaEsts = ests.length === 1 ? ests[0] : `${ests.slice(0, -1).join(", ")} y ${ests[ests.length - 1]}`;
-      const cuantas = creadosOk.length === 1 ? "una entrevista" : `${creadosOk.length} entrevistas`;
-      const acudientes = creadosOk.length === 1 ? "el acudiente" : "los acudientes";
-      // Un mensaje por entrevistador: "entrevistador"/"entrevistadora" según su género.
-      for (const e of otros) {
-        const rol = e.genero === "F" ? "entrevistadora" : e.genero === "M" ? "entrevistador" : "entrevistador(a)";
-        const msgEntrev = [
-          `${creador} lo(a) puso como ${rol} en ${cuantas} con ${acudientes} de ${listaEsts}.`,
-          "",
-          `Fecha: ${fechaEntrevistaTexto}`,
-          `Hora: ${horaEntrevista}`,
-          `Con: ${entrevistaConNombre}${bloqueMensaje}`,
-          "",
-          `Puede verla en notasnormi.com, en la ficha "Solicitud de Entrevista".`,
-        ].join("\n").replace("lo(a) puso", e.genero === "F" ? "la puso" : e.genero === "M" ? "lo puso" : "lo(a) puso");
-        apiRequest('/api/comunicados/enviar', {
-          method: 'POST',
-          body: JSON.stringify({
-            destinatarios_label: [cargoSegunGenero(e.cargo, e.genero), e.nombres, e.apellidos].filter(Boolean).join(" "),
-            mensaje: msgEntrev,
-            tipo_notificacion: "entrevistas",
-            segmentos: [{ perfil: ["Profesores", "Coordinadores", "Rector", "Secretaria General", "Administrativos", "Administradores", "Orientadores", "Porteros"], id_destinatarios: [String(e.id)] }],
-          }),
-        }).catch((err) => console.error("Aviso a entrevistador:", err));
-      }
+    if (idsCreados.length > 0 && otros.length > 0) {
+      apiRequest('/api/entrevistas/avisar-entrevistadores', { method: 'POST', body: JSON.stringify({ ids: idsCreados }) })
+        .catch((err) => console.error("Aviso a entrevistadores:", err));
     }
 
     if (creadas === 0) {
