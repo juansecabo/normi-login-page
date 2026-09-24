@@ -899,7 +899,7 @@ const ProgramarActividad = () => {
           {/* Menú de entrada: dos botones grandes (los profes no veían la pestaña). */}
           {vista === "menu" && (
             <div className="bg-card rounded-lg shadow-soft p-8 max-w-3xl mx-auto">
-            <h2 className="text-2xl font-bold text-foreground text-center mb-6">Actividades</h2>
+            <h2 className="text-xl font-bold text-foreground text-center mb-6">Actividades</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <button
                 onClick={() => irA("programar")}
@@ -928,7 +928,7 @@ const ProgramarActividad = () => {
             <div className="bg-card rounded-lg shadow-soft p-6 md:p-8 space-y-5 max-w-3xl mx-auto">
               {/* Título centrado y "Limpiar" a la derecha en la misma fila. */}
               <div className="relative flex items-center justify-center min-h-[2.25rem]">
-                <h2 className="text-lg font-bold text-foreground text-center">Nueva actividad</h2>
+                <h2 className="text-xl font-bold text-foreground text-center">Nueva actividad</h2>
                 {!loadingAsignaciones && (modoGeneral || asignaturas.length > 0) && (
                   <div className="absolute right-0 top-1/2 -translate-y-1/2">
                     <button
@@ -1219,7 +1219,7 @@ const ProgramarActividad = () => {
           {/* ===== Actividades Programadas ===== */}
           {vista === "actividades" && (
             <div className="bg-card rounded-lg shadow-soft p-6 md:p-8 space-y-5">
-              <h2 className="text-lg font-bold text-foreground text-center">Actividades Programadas</h2>
+              <h2 className="text-xl font-bold text-foreground text-center">Actividades Programadas</h2>
               {loadingAsignaciones ? (
                 <div className="text-center text-muted-foreground py-8">Cargando...</div>
               ) : (

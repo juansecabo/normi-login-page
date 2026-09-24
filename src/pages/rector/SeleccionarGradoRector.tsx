@@ -61,7 +61,7 @@ const SeleccionarGradoRector = () => {
 
         {/* Selector de Grado */}
         <div data-guia="notas.selector_grado" className="bg-card rounded-lg shadow-soft p-8 max-w-4xl mx-auto">
-          <h2 className="text-2xl font-bold text-foreground text-center mb-2">Notas</h2>
+          <h2 className="text-xl font-bold text-foreground text-center mb-2">Notas</h2>
           <h3 className="text-lg font-semibold text-muted-foreground mb-6 text-center">
             Selecciona el grado:
           </h3>

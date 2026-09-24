@@ -146,9 +146,9 @@ const ConsultaAsistencia = () => {
             )}
           </BreadcrumbDeslizable>
         </div>
-        <div className="max-w-5xl mx-auto">
-          <div className="bg-card rounded-lg shadow-soft p-6 mb-6">
-            <h2 className="text-2xl font-bold text-foreground text-center">{isProfesor() ? "Registro de asistencia" : "Asistencia"}</h2>
+        <div className="max-w-5xl mx-auto bg-card rounded-lg shadow-soft p-6">
+          <div className="mb-6">
+            <h2 className="text-xl font-bold text-foreground text-center">{isProfesor() ? "Registro de asistencia" : "Asistencia"}</h2>
           </div>
 
           {/* ═══════════ INTERNOS ═══════════ */}
@@ -157,7 +157,7 @@ const ConsultaAsistencia = () => {
               <p className="text-sm text-muted-foreground mb-5 text-center">
                 {puedeEditar ? "Consulta y corrige la asistencia por clase y día." : "Consulta la asistencia por clase y día."}
               </p>
-              <div className="bg-card rounded-lg shadow-soft p-4 md:p-5 mb-5">
+              <div className="rounded-lg border border-border p-4 md:p-5 mb-5">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
                   <Selector label="Asignatura" dataGuia="asistencia.consulta_selector_asignatura" value={asignatura} options={asignaturas} onChange={(v) => { setAsignatura(v); setGrado(""); setSalon(""); }} />
                   <Selector label="Grado" dataGuia="asistencia.consulta_selector_grado" value={grado} options={grados} disabled={!asignatura} onChange={(v) => { setGrado(v); setSalon(""); }} />

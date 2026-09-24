@@ -321,7 +321,7 @@ export function HorarioContenido({ embebido = false }: { embebido?: boolean }) {
         <div className="bg-card rounded-lg shadow-soft p-4 md:p-6 space-y-5">
           {/* Título centrado y, debajo, el botón "Ir a configuración" (Juan 2026-09-24). */}
           <div className="flex flex-col items-center gap-3">
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2"><Clock className="w-6 h-6 text-primary" /> Horario de clases</h1>
+            <h1 className="text-xl font-bold text-foreground flex items-center gap-2"><Clock className="w-6 h-6 text-primary" /> Horario de clases</h1>
             {/* Quien puede editar el horario lo hace en Configurar Institución (Juan 2026-09-24). */}
             {!embebido && mio?.puedeEditar && (
               <Button variant="outline" size="sm" onClick={() => navigate("/construye-institucion?vista=horario")} data-guia="horario.ir_configuracion">Ir a configuración</Button>

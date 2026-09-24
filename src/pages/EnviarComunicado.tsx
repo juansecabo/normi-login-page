@@ -932,7 +932,7 @@ const EnviarComunicado = () => {
 
             <TabsContent value="enviar">
               <div className="mt-4 mb-6 flex flex-col gap-3 md:relative md:block">
-                <h2 className="text-2xl font-bold text-foreground text-center">
+                <h2 className="text-xl font-bold text-foreground text-center">
                   Enviar Comunicado
                 </h2>
                 <button
@@ -1373,7 +1373,7 @@ const EnviarComunicado = () => {
             </TabsContent>
 
             <TabsContent value="masivo">
-              <h2 className="text-2xl font-bold text-foreground mb-6 text-center mt-4">
+              <h2 className="text-xl font-bold text-foreground mb-6 text-center mt-4">
                 Envío Masivo Personalizado
               </h2>
 
@@ -1484,7 +1484,7 @@ const EnviarComunicado = () => {
             </TabsContent>
 
             <TabsContent value="historial">
-              <h2 className="text-2xl font-bold text-foreground mb-6 text-center mt-4">
+              <h2 className="text-xl font-bold text-foreground mb-6 text-center mt-4">
                 Comunicados Enviados
               </h2>
 

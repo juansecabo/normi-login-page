@@ -685,7 +685,7 @@ const ComunicadosFirma = () => {
   const renderEnviar = () => (
     <>
       <div className="mt-4 mb-6 flex flex-col gap-3 md:relative md:block">
-        <h2 className="text-2xl font-bold text-foreground text-center">Comunicado con firma</h2>
+        <h2 className="text-xl font-bold text-foreground text-center">Comunicado con firma</h2>
         <button
           type="button"
           onClick={limpiarFormulario}
@@ -1032,7 +1032,7 @@ const ComunicadosFirma = () => {
   // ── Render Enviados ────────────────────────────────────────────────────
   const renderEnviados = () => (
     <>
-      <h2 className="text-2xl font-bold text-foreground mb-6 text-center mt-4">Comunicados enviados</h2>
+      <h2 className="text-xl font-bold text-foreground mb-6 text-center mt-4">Comunicados enviados</h2>
       {loadingEnviados ? (
         <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground"><Loader2 className="w-5 h-5 animate-spin" /> Cargando...</div>
       ) : enviados.length === 0 ? (
@@ -1071,7 +1071,7 @@ const ComunicadosFirma = () => {
   // ── Render Por firmar ──────────────────────────────────────────────────
   const renderPorFirmar = () => (
     <>
-      <h2 className="text-2xl font-bold text-foreground mb-6 text-center mt-4">Por firmar</h2>
+      <h2 className="text-xl font-bold text-foreground mb-6 text-center mt-4">Por firmar</h2>
       {loadingMios ? (
         <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground"><Loader2 className="w-5 h-5 animate-spin" /> Cargando...</div>
       ) : mios.length === 0 ? (

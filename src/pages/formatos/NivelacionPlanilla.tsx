@@ -210,7 +210,7 @@ const NivelacionPlanilla = () => {
 
         <div className="space-y-4 bg-card rounded-lg shadow-soft p-5">
           <div>
-          <h1 className="text-center text-2xl font-bold text-foreground">Plan de Nivelación por período</h1>
+          <h1 className="text-center text-xl font-bold text-foreground">Plan de Nivelación por período</h1>
         <p className="text-center text-muted-foreground mt-1 text-sm mb-2">Elige asignatura, grado y salón; agrega los estudiantes que necesites, registra la nota, que firmen, y guarda.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-3">

@@ -112,7 +112,7 @@ const EstudiantesEnRiesgo = () => {
                 <AlertTriangle className="w-8 h-8 text-red-600" />
               </div>
               <div>
-                <h1 className="text-xl md:text-2xl font-bold text-foreground">Estudiantes en Riesgo Académico</h1>
+                <h1 className="text-xl font-bold text-foreground">Estudiantes en Riesgo Académico</h1>
                 <p className="text-muted-foreground text-sm">Promedio menor a {aprobLabel}</p>
               </div>
             </div>

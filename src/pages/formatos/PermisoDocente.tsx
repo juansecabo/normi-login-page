@@ -140,7 +140,7 @@ const PermisoDocente = () => {
         </div>
         <div className="space-y-4 bg-card rounded-lg shadow-soft p-5">
           <div>
-          <h1 className="text-center text-2xl font-bold text-foreground">Solicitud de permiso docente</h1>
+          <h1 className="text-center text-xl font-bold text-foreground">Solicitud de permiso docente</h1>
         <p className="text-center text-muted-foreground mt-1 text-sm mb-2">Llénalo, firma con el dedo y guárdalo. También puedes descargar el PDF.</p>
           </div>
           <div className="grid md:grid-cols-2 gap-4">

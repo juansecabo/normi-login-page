@@ -785,7 +785,7 @@ export default function Consultas() {
           </BreadcrumbDeslizable>
         </div>
         <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
             <FileBarChart2 className="h-6 w-6 text-primary" />
             Consultas
           </h1>

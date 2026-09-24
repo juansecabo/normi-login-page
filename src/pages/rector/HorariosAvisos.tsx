@@ -211,7 +211,7 @@ export default function HorariosAvisos() {
           <Button onClick={() => navigate("/dashboard")} variant="outline" size="sm">
             ← Volver
           </Button>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
             <Clock className="h-6 w-6 text-primary" />
             Horarios de avisos académicos
           </h1>

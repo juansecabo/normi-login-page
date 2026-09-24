@@ -270,7 +270,7 @@ const NormiExaminadora = () => {
             className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 h-full w-auto object-contain pointer-events-none"
           />
           <div className="relative z-10">
-            <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground">
+            <h2 className="text-xl font-bold text-foreground">
               Normi Examinadora
             </h2>
             <p className="text-sm md:text-base text-muted-foreground">

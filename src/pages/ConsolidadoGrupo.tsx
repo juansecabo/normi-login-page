@@ -180,9 +180,9 @@ const ConsolidadoGrupo = () => {
           </div>
         ) : periodo == null ? (
           /* ── Selector de periodo ─────────────────────────────── */
-          <div className="max-w-3xl mx-auto" data-guia="estadisticas.grupo_periodo">
-            <div className="bg-card rounded-lg shadow-soft p-6 mb-6">
-            <h2 className="text-2xl font-bold text-foreground mb-1 text-center">Consolidado de mi grupo</h2>
+          <div className="max-w-3xl mx-auto bg-card rounded-lg shadow-soft p-6" data-guia="estadisticas.grupo_periodo">
+            <div className="mb-6">
+            <h2 className="text-xl font-bold text-foreground mb-1 text-center">Consolidado de mi grupo</h2>
             <p className="text-sm text-muted-foreground mb-1 text-center">
               <span className="inline-flex items-center gap-1.5 font-semibold text-primary">
                 <Users className="w-4 h-4" /> {dirGrupo}
@@ -202,7 +202,7 @@ const ConsolidadoGrupo = () => {
           </div>
         ) : (
           /* ── Rejilla del periodo ─────────────────────────────── */
-          <div>
+          <div className="bg-card rounded-lg shadow-soft p-6">
             <h2 className="text-xl font-bold text-foreground mb-4 text-center">
               {etiquetaCorteOrdinal(esq, periodo)} · {dirGrupo}
             </h2>

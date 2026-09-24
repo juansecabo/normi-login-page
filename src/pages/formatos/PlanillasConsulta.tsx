@@ -136,16 +136,16 @@ const PlanillasConsulta = () => {
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-6">
-          <h1 className="text-center text-2xl font-bold text-foreground">Planillas diligenciadas</h1>
+          <h1 className="text-center text-xl font-bold text-foreground">Planillas diligenciadas</h1>
         <p className="text-center text-muted-foreground mt-1 text-sm">
           {isProfesor() ? "Tus planillas de nivelación y apoyo." : "Planillas de nivelación y apoyo diligenciadas por los docentes."}
         </p>
-        </div>
+
 
         {cargando ? (
           <div className="mt-8 flex items-center gap-2 text-muted-foreground"><Loader2 className="w-5 h-5 animate-spin" /> Cargando…</div>
         ) : formatos.length === 0 ? (
-          <div className="mt-8 text-center text-muted-foreground bg-card rounded-lg shadow-soft p-8">
+          <div className="mt-8 text-center text-muted-foreground p-8">
             <FileText className="w-10 h-10 mx-auto mb-2 opacity-50" />
             Aún no hay planillas diligenciadas.
           </div>
@@ -155,7 +155,7 @@ const PlanillasConsulta = () => {
               const d = f.datos || {};
               const nEst = Array.isArray(d.filas) ? d.filas.length : 0;
               return (
-                <div key={f.id} className="bg-card rounded-lg shadow-soft p-4 flex items-start justify-between gap-4">
+                <div key={f.id} className="rounded-lg border border-border p-4 flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">{TIPO_NOMBRE[f.tipo] || f.tipo}</span>
@@ -178,6 +178,7 @@ const PlanillasConsulta = () => {
             })}
           </div>
         )}
+        </div>
       </div>
     </div>
   );

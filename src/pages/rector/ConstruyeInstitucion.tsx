@@ -242,15 +242,13 @@ const ConstruyeInstitucion = () => {
           </BreadcrumbDeslizable>
         </div>
 
-        <div className="bg-card rounded-lg shadow-soft p-6 mb-6">
-          <h2 className="text-xl font-bold text-foreground flex items-center justify-center gap-2">
-            <Building2 className="h-6 w-6 text-primary" /> Configurar Institución
-          </h2>
-        </div>
-
         {loading ? (
           <div className="text-center py-10 text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
         ) : vista === "menu" ? (
+          <div className="bg-card rounded-lg shadow-soft p-6">
+          <h2 className="text-xl font-bold text-foreground flex items-center justify-center gap-2 mb-6">
+            <Building2 className="h-6 w-6 text-primary" /> Configurar Institución
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
               { id: "info", label: "Información del colegio", desc: "Nombre, NIT, ciudad y datos legales", Icon: Building },
@@ -275,6 +273,7 @@ const ConstruyeInstitucion = () => {
                 <div><p className="font-semibold text-foreground">{f.label}</p><p className="text-sm text-muted-foreground">{f.desc}</p></div>
               </button>
             ))}
+          </div>
           </div>
         ) : (
           <div className="space-y-6">

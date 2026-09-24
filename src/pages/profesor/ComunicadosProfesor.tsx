@@ -119,7 +119,7 @@ const ComunicadosProfesor = () => {
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-6 md:p-8 max-w-2xl mx-auto">
-          <h2 className="text-2xl font-bold text-foreground mb-6 text-center">
+          <h2 className="text-xl font-bold text-foreground mb-6 text-center">
             Comunicados Recibidos
           </h2>
           <ListaComunicados comunicados={comunicados} loading={loading} showDocumentLink />

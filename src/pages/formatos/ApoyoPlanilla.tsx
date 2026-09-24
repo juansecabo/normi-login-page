@@ -160,7 +160,7 @@ const ApoyoPlanilla = () => {
         </div>
         <div className="space-y-4 bg-card rounded-lg shadow-soft p-5">
           <div>
-          <h1 className="text-center text-2xl font-bold text-foreground">Plan de Apoyo al Mejoramiento</h1>
+          <h1 className="text-center text-xl font-bold text-foreground">Plan de Apoyo al Mejoramiento</h1>
         <p className="text-center text-muted-foreground mt-1 text-sm mb-2">La definitiva se calcula sola: Taller 40% + Sustentación 60%.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-3">

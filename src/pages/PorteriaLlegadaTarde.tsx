@@ -444,9 +444,8 @@ export const PorteriaRegistro = () => {
           </BreadcrumbDeslizable>
         </div>
 
-        <div className="bg-card rounded-lg shadow-soft p-6 mb-4">
-          <h2 className="text-2xl font-bold text-foreground text-center">Registro de llegada tarde</h2>
-        </div>
+        <div className="bg-card rounded-lg shadow-soft p-6">
+          <h2 className="text-xl font-bold text-foreground text-center mb-4">Registro de llegada tarde</h2>
         <div data-guia="porteria.tabs_registro" className="flex gap-2 mb-4">
           <button onClick={() => setSub("dia")}
             className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${sub === "dia" ? "bg-primary text-primary-foreground" : "bg-card text-foreground hover:bg-muted/50 border border-border"}`}>
@@ -460,7 +459,7 @@ export const PorteriaRegistro = () => {
 
         {/* ── POR DÍA ── */}
         {sub === "dia" && (
-          <div className="bg-card rounded-lg shadow-soft p-6">
+          <div>
             <h3 className="text-lg font-bold text-foreground flex items-center gap-2 mb-4">
               <Calendar className="w-5 h-5 text-primary" />
               {dia ? `Llegadas tarde del ${fmtFecha(keyDeDate(dia))}` : "Todas las llegadas tarde"}
@@ -503,7 +502,7 @@ export const PorteriaRegistro = () => {
 
         {/* ── POR ESTUDIANTE ── */}
         {sub === "estudiante" && (
-          <div className="bg-card rounded-lg shadow-soft p-6">
+          <div>
             <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
               <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
                 <ClipboardList className="w-5 h-5 text-primary" /> Cuántas veces ha llegado tarde cada estudiante
@@ -564,6 +563,7 @@ export const PorteriaRegistro = () => {
             )}
           </div>
         )}
+        </div>
       </main>
 
       <Dialog open={!!eliminarReg} onOpenChange={(o) => { if (!o) setEliminarReg(null); }}>
@@ -609,7 +609,7 @@ export const PorteriaHub = () => {
           </BreadcrumbDeslizable>
         </div>
         <div className="bg-card rounded-lg shadow-soft p-8 max-w-3xl mx-auto">
-        <h2 className="text-2xl font-bold text-foreground text-center mb-6">{nombreFicha("Portería")}</h2>
+        <h2 className="text-xl font-bold text-foreground text-center mb-6">{nombreFicha("Portería")}</h2>
         <div data-guia="porteria.hub" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button onClick={() => navigate("/porteria/llegada-tarde")}
             className="rounded-lg p-8 flex flex-col items-center justify-center gap-3 text-center transition-all hover:shadow-md bg-orange-50 hover:bg-orange-100 border-2 border-orange-200">

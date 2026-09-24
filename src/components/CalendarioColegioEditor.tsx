@@ -515,7 +515,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
         <CardHeader>
           {/* Título centrado; el botón "Ir a configuración" va después de la descripción (Juan 2026-09-24). */}
           <div className="flex flex-col items-center gap-3">
-            <CardTitle className="flex items-center gap-2 text-lg"><CalendarDays className="h-5 w-5 text-primary" /> Calendario {anoEscolar}</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-xl font-bold"><CalendarDays className="h-5 w-5 text-primary" /> Calendario {anoEscolar}</CardTitle>
           </div>
           {soloLectura ? (
             <p className="text-sm text-muted-foreground text-center">

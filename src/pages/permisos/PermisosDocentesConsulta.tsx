@@ -100,23 +100,23 @@ const PermisosDocentesConsulta = () => {
           </BreadcrumbDeslizable>
         </div>
         <div className="bg-card rounded-lg shadow-soft p-6">
-          <h1 className="text-center text-2xl font-bold text-foreground">Permisos docentes</h1>
+          <h1 className="text-center text-xl font-bold text-foreground">Permisos docentes</h1>
         <p className="text-center text-muted-foreground mt-1 text-sm">
           {isProfesor() ? "Tus solicitudes de permiso." : "Solicitudes de permiso de los docentes."}
         </p>
-        </div>
+
 
         {cargando ? (
           <div className="mt-8 flex items-center gap-2 text-muted-foreground"><Loader2 className="w-5 h-5 animate-spin" /> Cargando…</div>
         ) : permisos.length === 0 ? (
-          <div className="mt-8 text-center text-muted-foreground bg-card rounded-lg shadow-soft p-8">
+          <div className="mt-8 text-center text-muted-foreground p-8">
             <FileText className="w-10 h-10 mx-auto mb-2 opacity-50" />
             Aún no hay solicitudes de permiso registradas.
           </div>
         ) : (
           <div className="mt-6 space-y-3" data-guia="permisosconsulta.lista">
             {permisos.map((p) => (
-              <div key={p.id} className="bg-card rounded-lg shadow-soft p-4 flex items-start justify-between gap-4">
+              <div key={p.id} className="rounded-lg border border-border p-4 flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <div className="font-semibold text-foreground">{p.solicitante_nombre}</div>
                   <div className="text-sm text-muted-foreground">
@@ -136,6 +136,7 @@ const PermisosDocentesConsulta = () => {
             ))}
           </div>
         )}
+        </div>
       </div>
     </div>
   );

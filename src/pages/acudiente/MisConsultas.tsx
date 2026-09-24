@@ -147,14 +147,13 @@ export default function MisConsultas() {
           </BreadcrumbDeslizable>
         </div>
         <div className="bg-card rounded-lg shadow-soft p-6 mb-6">
-          <h1 className="text-2xl font-bold text-foreground flex items-center justify-center gap-2 mb-2">
+          <h1 className="text-xl font-bold text-foreground flex items-center justify-center gap-2 mb-2">
             <FileBarChart2 className="h-6 w-6 text-primary" />
             Mis Consultas
           </h1>
           <p className="text-sm text-muted-foreground text-center">
             Aquí puede ver las consultas que le han enviado desde el colegio y responder o editar sus respuestas.
           </p>
-        </div>
 
 
         {loading ? (
@@ -227,6 +226,7 @@ export default function MisConsultas() {
             })}
           </div>
         )}
+        </div>
       </div>
     </div>
   );

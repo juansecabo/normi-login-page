@@ -299,7 +299,7 @@ const Asistencia = () => {
 
         {step === "select" && (
           <div className="bg-card rounded-lg shadow-soft p-6 md:p-8 max-w-xl mx-auto mt-4">
-            <h2 className="text-2xl font-bold text-foreground mb-1 text-center">Tomar asistencia</h2>
+            <h2 className="text-xl font-bold text-foreground mb-1 text-center">Tomar asistencia</h2>
             <p className="text-sm text-muted-foreground mb-6 text-center">Elige la clase y el día. Luego deslizas a la derecha (presente), izquierda (ausente), arriba (entró tarde) o abajo (con excusa).</p>
 
             {loading ? (

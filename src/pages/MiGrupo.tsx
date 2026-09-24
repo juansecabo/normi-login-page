@@ -94,9 +94,9 @@ const MiGrupo = () => {
           </BreadcrumbDeslizable>
         </div>
 
-        <div className="max-w-5xl mx-auto">
-          <div className="bg-card rounded-lg shadow-soft p-6 mb-6">
-            <h2 className="text-2xl font-bold text-foreground mb-1 text-center">Fotos de mi grupo</h2>
+        <div className="max-w-5xl mx-auto bg-card rounded-lg shadow-soft p-6">
+          <div className="mb-6">
+            <h2 className="text-xl font-bold text-foreground mb-1 text-center">Fotos de mi grupo</h2>
             <p className="text-sm text-muted-foreground text-center">
               Toca a cada estudiante para subir o cambiar su foto.
             </p>

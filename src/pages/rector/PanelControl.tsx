@@ -1750,7 +1750,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
 
         <div className="bg-card rounded-lg shadow-soft p-6 md:p-8">
           {!embedded && (
-          <h2 className="text-2xl font-bold text-foreground mb-6 text-center">
+          <h2 className="text-xl font-bold text-foreground mb-6 text-center">
             Panel de Control
           </h2>
           )}

@@ -449,10 +449,11 @@ const AprendeNormi = () => {
           </BreadcrumbDeslizable>
         </div>
 
-        <div className="flex items-center gap-4 bg-card rounded-lg shadow-soft p-6 mb-6">
+        <div className="bg-card rounded-lg shadow-soft p-6">
+        <div className="flex items-center gap-4 mb-6">
           <img src={normiImg} alt="Normi" className="h-24 md:h-28 object-contain drop-shadow" />
           <div>
-            <h2 className="text-2xl font-bold text-foreground">Aprende con Normi</h2>
+            <h2 className="text-xl font-bold text-foreground">Aprende con Normi</h2>
             <p className="text-sm text-muted-foreground">
               Completa las misiones de tu cargo y vuélvete experto en la plataforma.
             </p>
@@ -513,6 +514,7 @@ const AprendeNormi = () => {
               </div>
             ))}
           </div>
+        </div>
         </div>
       </main>
     </div>

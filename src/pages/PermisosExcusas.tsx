@@ -81,7 +81,7 @@ const PermisosExcusas = () => {
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-8 max-w-2xl mx-auto">
-          <h2 className="text-2xl font-bold text-foreground text-center mb-2">
+          <h2 className="text-xl font-bold text-foreground text-center mb-2">
             Permisos y Excusas
           </h2>
           <p className="text-muted-foreground text-center mb-8">
