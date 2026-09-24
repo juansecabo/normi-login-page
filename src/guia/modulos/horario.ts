@@ -22,7 +22,7 @@ const LLEGAR_EDITAR = [
   { narracion: "Entramos a Configurar Institución.", accion: "navegar" as const, ruta: "/construye-institucion" },
   { narracion: "Toca la ficha 'Horario de clases'.", accion: "click" as const, ancla: "configurar_institucion.ficha_horario" },
 ];
-const PERSONAL = ["rector", "coordinador", "admin", "secretaria", "administrativo", "orientador"] as const;
+const PERSONAL = ["rector", "coordinador", "admin", "secretaria", "administrativo", "orientador", "portero"] as const;
 const EDITORES = ["rector", "coordinador", "admin"] as const;
 
 export const HORARIO: Capacidad[] = [
