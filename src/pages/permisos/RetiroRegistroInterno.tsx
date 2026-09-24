@@ -433,7 +433,7 @@ const RetiroRegistroInterno = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Registrar el permiso de salida?</AlertDialogTitle>
             <AlertDialogDescription>
-              {selArr.length === 1 ? `Para ${selArr[0].nombres} ${selArr[0].apellidos}.` : `Para ${selArr.length} estudiantes.`} Queda registrado de una vez. El aviso por WhatsApp a los acudientes, al rector, a la coordinación y al portero sale a la hora del retiro, y a cada profesor, a la hora de su clase con el estudiante. Si la hora del retiro ya pasó y la jornada terminó (o empezó el No molestar), no se envía aviso.
+              {selArr.length === 1 ? `Para ${selArr[0].nombres} ${selArr[0].apellidos}.` : `Para ${selArr.length} estudiantes.`} Quedará registrado y se notificará a los profesores y a portería.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
