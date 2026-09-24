@@ -926,25 +926,29 @@ const ProgramarActividad = () => {
           {/* ===== Programar Actividad ===== */}
           {vista === "programar" && (
             <div className="bg-card rounded-lg shadow-soft p-6 md:p-8 space-y-5 max-w-3xl mx-auto">
-              <h2 className="text-2xl font-bold text-foreground text-center">Nueva actividad</h2>
+              {/* Título centrado y "Limpiar" a la derecha en la misma fila. */}
+              <div className="relative flex items-center justify-center min-h-[2.25rem]">
+                <h2 className="text-lg font-bold text-foreground text-center">Nueva actividad</h2>
+                {!loadingAsignaciones && (modoGeneral || asignaturas.length > 0) && (
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2">
+                    <button
+                        type="button"
+                        data-guia="actividades.btn_limpiar"
+                        onClick={limpiarFormulario}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-input bg-background rounded-md hover:bg-muted transition-colors"
+                        title="Limpiar todos los campos"
+                      >
+                        <RotateCcw className="w-4 h-4" /> Limpiar
+                      </button>
+                  </div>
+                )}
+              </div>
               {loadingAsignaciones ? (
                 <div className="text-center text-muted-foreground py-8">Cargando...</div>
               ) : (!modoGeneral && asignaturas.length === 0) ? (
                 <div className="text-center text-muted-foreground py-8">No tienes asignaturas asignadas</div>
               ) : (
                 <>
-                  <div className="flex justify-end -mt-1">
-                    <button
-                      type="button"
-                      data-guia="actividades.btn_limpiar"
-                      onClick={limpiarFormulario}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-input bg-background rounded-md hover:bg-muted transition-colors"
-                      title="Limpiar todos los campos"
-                    >
-                      <RotateCcw className="w-4 h-4" /> Limpiar
-                    </button>
-                  </div>
-
                   {/* 1. Asignatura — solo profesores; los demás internos programan actividad General */}
                   {!modoGeneral && (
                     <div className="space-y-2">
@@ -1215,7 +1219,7 @@ const ProgramarActividad = () => {
           {/* ===== Actividades Programadas ===== */}
           {vista === "actividades" && (
             <div className="bg-card rounded-lg shadow-soft p-6 md:p-8 space-y-5">
-              <h2 className="text-2xl font-bold text-foreground text-center">Actividades Programadas</h2>
+              <h2 className="text-lg font-bold text-foreground text-center">Actividades Programadas</h2>
               {loadingAsignaciones ? (
                 <div className="text-center text-muted-foreground py-8">Cargando...</div>
               ) : (

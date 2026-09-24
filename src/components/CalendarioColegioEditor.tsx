@@ -513,13 +513,9 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          {/* Título centrado y, debajo, el botón "Ir a configuración" (Juan 2026-09-24). */}
+          {/* Título centrado; el botón "Ir a configuración" va después de la descripción (Juan 2026-09-24). */}
           <div className="flex flex-col items-center gap-3">
             <CardTitle className="flex items-center gap-2 text-lg"><CalendarDays className="h-5 w-5 text-primary" /> Calendario {anoEscolar}</CardTitle>
-            {/* Quien puede editar el calendario lo hace en Configurar Institución (Juan 2026-09-24). */}
-            {soloLectura && puedeEditar && (
-              <Button variant="outline" size="sm" onClick={() => navigate("/construye-institucion?vista=calendario")} data-guia="calendario.ir_configuracion">Ir a configuración</Button>
-            )}
           </div>
           {soloLectura ? (
             <p className="text-sm text-muted-foreground text-center">
@@ -533,6 +529,12 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
             muestra qué es y permite editarlo. Los fines de semana y festivos de Colombia ya se tienen en cuenta solos.
             Los avisos automáticos no se envían los días sin clases, y Normi responde con estas fechas. Los <strong>Eventos</strong> (entrega de boletines, día deportivo…) son días CON clases donde además pasa algo — Normi también los informa.
           </p>
+          )}
+          {soloLectura && puedeEditar && (
+            <div className="flex justify-center">
+              {/* Quien puede editar el calendario lo hace en Configurar Institución (Juan 2026-09-24). */}
+              <Button variant="outline" size="sm" onClick={() => navigate("/construye-institucion?vista=calendario")} data-guia="calendario.ir_configuracion">Ir a configuración</Button>
+            </div>
           )}
         </CardHeader>
         <CardContent className="space-y-4">
