@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/apiClient";
-import { estiloAsignatura, useColoresAsignaturas, type ColorAsignatura } from "@/lib/coloresAsignaturas";
+import { estiloAsignatura, useColoresAsignaturas } from "@/lib/coloresAsignaturas";
 
 /**
  * Ficha Horario (2026-09-23), en todos los colegios. Flexible: un salón puede
@@ -31,7 +31,7 @@ interface SalonInfo { grado: string; salon: string; nivel: string | null; clases
 const DIAS = ["", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 // Color guardado de cada asignatura (Asignaturas.color, ver lib/coloresAsignaturas). Lo
 // actualiza HorarioContenido al cargar; las rejillas se vuelven a pintar con él.
-let coloresActuales: Record<string, ColorAsignatura> = {};
+let coloresActuales: Record<string, string> = {};
 const colorDe = (a: string) => estiloAsignatura(a, coloresActuales).className;
 const estiloDe = (a: string) => estiloAsignatura(a, coloresActuales).style;
 

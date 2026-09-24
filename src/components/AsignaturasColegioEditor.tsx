@@ -7,7 +7,7 @@ import { BookOpen, Plus, Trash2, Loader2, ListChecks, Clock, Pencil, Check } fro
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { apiRequest, ApiError } from "@/lib/apiClient";
 import { rankGrado } from "@/utils/grados";
-import { PALETA_ASIGNATURAS, aclarar, estiloAsignatura, type ColorAsignatura } from "@/lib/coloresAsignaturas";
+import { aclarar, estiloAsignatura, colorAlAzar } from "@/lib/coloresAsignaturas";
 import CirculoColor from "@/components/CirculoColor";
 
 /**
@@ -24,8 +24,8 @@ import CirculoColor from "@/components/CirculoColor";
  * académica ni las vistas existentes.
  */
 
-/** color: índice de la paleta (lo reparte el servidor); comparte_salon: materias con las que coincide en algún salón. */
-interface Asignatura { id: number; nombre: string; activa: boolean; orden: number | null; color?: ColorAsignatura | null; color_manual?: boolean; comparte_salon?: string[] }
+/** color: "#rrggbb" propio (sorteado al azar, único en el colegio); comparte_salon: materias con las que coincide en algún salón. */
+interface Asignatura { id: number; nombre: string; activa: boolean; orden: number | null; color?: string | null; comparte_salon?: string[] }
 interface PlanFila { id: number; grado: string; asignatura_id: number; intensidad_horaria: number | null; }
 interface Grado { id: number; grado: string; orden: number | null; activo: boolean; }
 
@@ -180,28 +180,21 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
 
   // ── Color de la asignatura (el del horario). Automático = el que reparte el sistema. ──
   const [coloreando, setColoreando] = useState<Asignatura | null>(null);
-  /** Lo escogido: un tono de la paleta (número) o un color exacto del círculo ("#rrggbb"). */
-  const [colorSel, setColorSel] = useState<ColorAsignatura | null>(null);
+  const [colorSel, setColorSel] = useState<string | null>(null);
   const [hexTexto, setHexTexto] = useState("");
   const [errorColor, setErrorColor] = useState<string | null>(null);
   const [guardandoColor, setGuardandoColor] = useState(false);
-  const mismoColor = (a: ColorAsignatura | null | undefined, b: ColorAsignatura | null | undefined) => {
-    const h = (c: ColorAsignatura | null | undefined) => (c == null ? null : typeof c === "number" ? PALETA_ASIGNATURAS[c]?.hex : c.toLowerCase());
-    return h(a) != null && h(a) === h(b);
-  };
-  /** Materias del mismo salón que ya usan ese tono de la paleta. */
-  const chocanCon = (a: Asignatura, c: ColorAsignatura | null) => (c == null ? [] : (a.comparte_salon || []).filter((n) => mismoColor(porNombre.get(n.toLowerCase())?.color, c)));
-  /** Otra asignatura que ya tiene ese color exacto (no se deja repetir un código exacto). */
-  const duenaExacta = (a: Asignatura, c: ColorAsignatura | null) => (typeof c === "string" ? asignaturas.find((o) => o.id !== a.id && mismoColor(o.color, c)) : undefined);
-  const abrirColor = (a: Asignatura) => { setColoreando(a); setColorSel(a.color ?? null); setHexTexto(typeof a.color === "string" ? a.color : ""); setErrorColor(null); };
+  /** Otra asignatura que ya tiene ese código exacto (cada asignatura tiene el suyo). */
+  const duenaExacta = (a: Asignatura, c: string | null) => (c ? asignaturas.find((o) => o.id !== a.id && (o.color || "").toLowerCase() === c.toLowerCase()) : undefined);
+  const abrirColor = (a: Asignatura) => { setColoreando(a); setColorSel(a.color ?? null); setHexTexto(a.color || ""); setErrorColor(null); };
   const escogerHex = (hex: string) => { setColorSel(hex.toLowerCase()); setHexTexto(hex.toLowerCase()); setErrorColor(null); };
-  const guardarColor = async (color: ColorAsignatura | null) => {
-    if (!coloreando) return;
+  const guardarColor = async (color: string | null) => {
+    if (!coloreando || !color) return;
     const duena = duenaExacta(coloreando, color);
     if (duena) { setErrorColor(`Ese color exacto ya lo tiene ${duena.nombre}. Escoge otro tono.`); return; }
     setGuardandoColor(true);
     try {
-      await apiRequest(`/api/institucion/asignaturas/${coloreando.id}`, { method: "PATCH", body: JSON.stringify(withCid(typeof color === "string" ? { color_hex: color } : { color })) });
+      await apiRequest(`/api/institucion/asignaturas/${coloreando.id}`, { method: "PATCH", body: JSON.stringify(withCid({ color_hex: color })) });
       setColoreando(null);
       await cargar();
     } catch (e) {
@@ -323,8 +316,8 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
                       type="button"
                       data-guia="configurar_institucion.asignatura_color"
                       onClick={() => abrirColor(a)}
-                      className={`w-4 h-4 rounded-full border border-black/10 shrink-0 hover:ring-2 hover:ring-primary/40 ${typeof a.color === "number" ? PALETA_ASIGNATURAS[a.color]?.muestra || "bg-muted" : typeof a.color === "string" ? "" : "bg-muted"}`}
-                      style={typeof a.color === "string" ? { backgroundColor: aclarar(a.color, 0.3) } : undefined}
+                      className={`w-4 h-4 rounded-full border border-black/10 shrink-0 hover:ring-2 hover:ring-primary/40 ${a.color ? "" : "bg-muted"}`}
+                      style={a.color ? { backgroundColor: aclarar(a.color, 0.3) } : undefined}
                       title="Color en el horario"
                       aria-label={`Color de ${a.nombre}`}
                     />
@@ -450,23 +443,11 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Color de {coloreando?.nombre}</DialogTitle>
-            <DialogDescription>Así se pinta en todos los horarios.</DialogDescription>
+            <DialogDescription>Así se pinta en todos los horarios. Cada asignatura tiene su propio color.</DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-10 gap-2" data-guia="configurar_institucion.asignatura_color_paleta">
-            {PALETA_ASIGNATURAS.map((c, i) => {
-              const usada = coloreando ? chocanCon(coloreando, i) : [];
-              return (
-                <button key={i} type="button" onClick={() => { setColorSel(i); setHexTexto(""); setErrorColor(null); }} title={usada.length ? `Ya lo usa ${usada.join(", ")} en el mismo salón` : undefined}
-                  className={`relative h-8 rounded-md border border-black/10 ${c.muestra} ${colorSel === i ? "ring-2 ring-primary ring-offset-2" : ""}`}>
-                  {usada.length > 0 && <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-foreground/60" />}
-                </button>
-              );
-            })}
-          </div>
           <div className="flex items-center gap-4 pt-1" data-guia="configurar_institucion.asignatura_color_circulo">
-            <CirculoColor valor={typeof colorSel === "string" ? colorSel : null} onChange={escogerHex} tam={150} />
+            <CirculoColor valor={colorSel} onChange={escogerHex} tam={170} />
             <div className="space-y-2 min-w-0 flex-1">
-              <p className="text-sm font-medium">Otro color</p>
               <p className="text-xs text-muted-foreground">Toca o arrastra en el círculo, o escribe el código.</p>
               <Input value={hexTexto} placeholder="#3b82f6" maxLength={7} className="h-8 font-mono text-sm"
                 onChange={(e) => { const v = e.target.value.trim(); setHexTexto(v); if (/^#[0-9a-fA-F]{6}$/.test(v)) escogerHex(v); }} />
@@ -480,15 +461,12 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
           {coloreando && duenaExacta(coloreando, colorSel) && (
             <p className="text-sm text-destructive">Ese color exacto ya lo tiene {duenaExacta(coloreando, colorSel)!.nombre}. Escoge otro tono.</p>
           )}
-          {coloreando && !duenaExacta(coloreando, colorSel) && chocanCon(coloreando, colorSel).length > 0 && (
-            <p className="text-sm text-amber-700">Ojo: {chocanCon(coloreando, colorSel).join(", ")} ya tiene este color y comparten salón.</p>
-          )}
           {errorColor && <p className="text-sm text-destructive">{errorColor}</p>}
           <DialogFooter className="gap-2 sm:justify-between">
-            <Button variant="ghost" onClick={() => guardarColor(null)} disabled={guardandoColor || !coloreando?.color_manual}>Automático</Button>
+            <Button variant="ghost" onClick={() => escogerHex(colorAlAzar(new Set(asignaturas.map((o) => (o.color || "").toLowerCase()).filter(Boolean))))} disabled={guardandoColor}>Otro al azar</Button>
             <div className="flex gap-2 justify-end">
               <Button variant="outline" onClick={() => setColoreando(null)} disabled={guardandoColor}>Cancelar</Button>
-              <Button data-guia="configurar_institucion.asignatura_color_guardar" onClick={() => guardarColor(colorSel)} disabled={guardandoColor || colorSel == null || mismoColor(colorSel, coloreando?.color) || !!(coloreando && duenaExacta(coloreando, colorSel))} className="gap-2">
+              <Button data-guia="configurar_institucion.asignatura_color_guardar" onClick={() => guardarColor(colorSel)} disabled={guardandoColor || !colorSel || colorSel === (coloreando?.color || "").toLowerCase() || !!(coloreando && duenaExacta(coloreando, colorSel))} className="gap-2">
                 {guardandoColor ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Guardar
               </Button>
             </div>
