@@ -461,8 +461,8 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
           {noMolestar && (
             <div className="pt-3 border-t border-border space-y-2" data-guia="configurar_institucion.no_molestar">
               <div className="flex items-center gap-3 flex-wrap">
-                <Switch checked={noMolestar.activo} disabled={!puedeNoMolestar} onCheckedChange={(v) => guardarNoMolestar(v, noMolestar.desde)} />
                 <span className="font-medium">No molestar</span>
+                <Switch checked={noMolestar.activo} disabled={!puedeNoMolestar} onCheckedChange={(v) => guardarNoMolestar(v, noMolestar.desde)} />
                 {noMolestar.activo && puedeNoMolestar && (<>
                   <label className="text-xs text-muted-foreground">a partir de</label>
                   <SelectorHoraNoche dataGuia="configurar_institucion.no_molestar_hora" value={noMolestar.desde} onChange={(v) => guardarNoMolestar(true, v)} />
