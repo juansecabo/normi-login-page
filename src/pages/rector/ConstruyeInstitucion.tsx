@@ -242,7 +242,7 @@ const ConstruyeInstitucion = () => {
           </BreadcrumbDeslizable>
         </div>
 
-        <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-6">
+        <h2 className="text-xl font-bold text-foreground flex items-center justify-center gap-2 mb-6">
           <Building2 className="h-6 w-6 text-primary" /> Configurar Institución
         </h2>
 

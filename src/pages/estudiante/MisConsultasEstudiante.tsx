@@ -140,7 +140,7 @@ export default function MisConsultasEstudiante() {
             <span className="text-foreground font-medium">Mis Consultas</span>
           </BreadcrumbDeslizable>
         </div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2 mb-4">
+        <h1 className="text-2xl font-bold text-foreground flex items-center justify-center gap-2 mb-4">
           <FileBarChart2 className="h-6 w-6 text-primary" />
           Mis Consultas
         </h1>

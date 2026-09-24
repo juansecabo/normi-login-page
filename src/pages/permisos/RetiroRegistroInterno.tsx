@@ -259,7 +259,7 @@ const RetiroRegistroInterno = () => {
 
         {/* 2. El mismo formato que llenan los padres, firmado por quien autoriza. */}
         <div className="bg-card rounded-lg shadow-soft p-6 space-y-5" data-guia="retiro_interno.formulario">
-          <h2 className="text-xl font-bold text-foreground flex items-center gap-2"><DoorOpen className="w-6 h-6 text-primary" /> Registrar permiso de salida</h2>
+          <h2 className="text-xl font-bold text-foreground flex items-center justify-center gap-2"><DoorOpen className="w-6 h-6 text-primary" /> Registrar permiso de salida</h2>
           <h3 className="font-bold text-foreground text-center">AUTORIZACIÓN PARA RETIRO DE ESTUDIANTES EN JORNADA ESCOLAR</h3>
 
           <div className="flex flex-wrap items-center gap-2 text-sm text-foreground">

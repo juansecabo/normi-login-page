@@ -319,7 +319,8 @@ export function HorarioContenido({ embebido = false }: { embebido?: boolean }) {
   return (
     <>
         <div className="bg-card rounded-lg shadow-soft p-4 md:p-6 space-y-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* Título centrado; si va el botón "Ir a configuración" al lado, el título queda a la izquierda. */}
+          <div className={`flex flex-wrap items-center gap-3 ${!embebido && mio?.puedeEditar ? "justify-between" : "justify-center"}`}>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2"><Clock className="w-6 h-6 text-primary" /> Horario de clases</h1>
             {/* Quien puede editar el horario lo hace en Configurar Institución (Juan 2026-09-24). */}
             {!embebido && mio?.puedeEditar && (

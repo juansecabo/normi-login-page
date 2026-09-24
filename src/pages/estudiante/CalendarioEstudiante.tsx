@@ -199,7 +199,7 @@ const CalendarioEstudiante = () => {
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-6">
-          <h2 className="text-xl font-bold text-foreground flex items-center gap-2 mb-4">
+          <h2 className="text-xl font-bold text-foreground flex items-center justify-center gap-2 mb-4">
             <ClipboardList className="h-5 w-5 text-primary" />
             Actividades Asignadas
           </h2>

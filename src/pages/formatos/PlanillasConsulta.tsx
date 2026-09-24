@@ -135,8 +135,8 @@ const PlanillasConsulta = () => {
           </BreadcrumbDeslizable>
         </div>
 
-        <h1 className="text-2xl font-bold text-foreground">Planillas diligenciadas</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
+        <h1 className="text-center text-2xl font-bold text-foreground">Planillas diligenciadas</h1>
+        <p className="text-center text-muted-foreground mt-1 text-sm">
           {isProfesor() ? "Tus planillas de nivelación y apoyo." : "Planillas de nivelación y apoyo diligenciadas por los docentes."}
         </p>
 

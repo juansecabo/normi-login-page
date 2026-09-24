@@ -513,7 +513,8 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* Título centrado; si va el botón "Ir a configuración" al lado, el título queda a la izquierda. */}
+          <div className={`flex flex-wrap items-center gap-3 ${soloLectura && puedeEditar ? "justify-between" : "justify-center"}`}>
             <CardTitle className="flex items-center gap-2 text-lg"><CalendarDays className="h-5 w-5 text-primary" /> Calendario {anoEscolar}</CardTitle>
             {/* Quien puede editar el calendario lo hace en Configurar Institución (Juan 2026-09-24). */}
             {soloLectura && puedeEditar && (
@@ -521,7 +522,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
             )}
           </div>
           {soloLectura ? (
-            <p className="text-sm text-muted-foreground">
+            <p className={`text-sm text-muted-foreground ${puedeEditar ? "" : "text-center"}`}>
               Calendario del año escolar: periodos académicos, días sin clases, <strong>Eventos</strong> (entrega de boletines,
               día deportivo…) y festivos de Colombia. Haz clic sobre un día pintado para ver su detalle.
             </p>

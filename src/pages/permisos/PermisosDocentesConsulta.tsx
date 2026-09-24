@@ -99,8 +99,8 @@ const PermisosDocentesConsulta = () => {
             <span className="text-foreground font-medium">Permisos docentes</span>
           </BreadcrumbDeslizable>
         </div>
-        <h1 className="text-2xl font-bold text-foreground">Permisos docentes</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
+        <h1 className="text-center text-2xl font-bold text-foreground">Permisos docentes</h1>
+        <p className="text-center text-muted-foreground mt-1 text-sm">
           {isProfesor() ? "Tus solicitudes de permiso." : "Solicitudes de permiso de los docentes."}
         </p>
 
