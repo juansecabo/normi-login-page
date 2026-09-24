@@ -850,7 +850,7 @@ export const VARIOS: Capacidad[] = [
         accion: "explicar",
       },
       {
-        narracion: "Si quieres ver solo una cosa (un periodo, los días sin clases, los eventos o los festivos), toca los botones de 'Ver' para ocultar lo demás; 'Ver todo' lo vuelve a mostrar.",
+        narracion: "Si quieres ver solo una cosa (un periodo, los días sin clases, los eventos o los festivos), toca su botón en 'Ver solo' y el calendario muestra solo eso (puedes tocar varios); 'Ver todo' vuelve a mostrar todo.",
         accion: "explicar",
         ancla: "configurar_institucion.cal_filtro",
         opcional: true,

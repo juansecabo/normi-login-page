@@ -404,9 +404,9 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
     </ul>
   );
 
-  // Filtro de lo que se ve (Juan 2026-09-23): cada periodo, días sin clases, eventos y
-  // festivos se pueden ocultar tocando su botón arriba del calendario.
-  const esVisible = (k: string) => !ocultos.has(k);
+  // Filtro "Ver" (Juan 2026-09-23): sin nada escogido se ve todo; al tocar un botón se ve
+  // SOLO eso (y se pueden sumar varios); tocarlo otra vez lo quita, "Ver todo" limpia.
+  const esVisible = (k: string) => ocultos.size === 0 || ocultos.has(k);
   const alternar = (k: string) => setOcultos((prev) => { const n = new Set(prev); if (n.has(k)) n.delete(k); else n.add(k); return n; });
   const claseDia = (f: string, dow: number): { cls: string; title: string } => {
     const base = "cursor-pointer select-none";
@@ -516,15 +516,15 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
 
           {/* ── Qué ver: cada botón muestra u oculta esa capa del calendario (hace de leyenda). ── */}
           <div className="flex flex-wrap items-center gap-2 text-xs border border-border rounded-lg px-3 py-2 bg-muted/40" data-guia="configurar_institucion.cal_filtro">
-            <span className="text-muted-foreground mr-1">Ver:</span>
+            <span className="text-muted-foreground mr-1">Ver solo:</span>
             {[
               ...cortes.map((n) => ({ k: `p${n}`, chip: estiloPeriodo(n, esqSel).chip, nombre: estiloPeriodo(n, esqSel).nombre })),
               { k: "sin", chip: "bg-red-200 border border-red-400", nombre: "Sin clases" },
               { k: "ev", chip: "bg-indigo-200 border border-indigo-400", nombre: "Eventos" },
               { k: "fest", chip: "bg-fuchsia-300 border border-fuchsia-400", nombre: "Festivos" },
             ].map(({ k, chip, nombre }) => (
-              <button key={k} type="button" onClick={() => alternar(k)} aria-pressed={esVisible(k)}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 transition-colors ${esVisible(k) ? "bg-background border-border text-foreground" : "bg-transparent border-dashed border-border text-muted-foreground line-through opacity-60"}`}>
+              <button key={k} type="button" onClick={() => alternar(k)} aria-pressed={ocultos.has(k)}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 transition-colors ${ocultos.has(k) ? "bg-primary/10 border-primary text-foreground ring-1 ring-primary font-semibold" : ocultos.size > 0 ? "bg-background border-border text-muted-foreground opacity-60" : "bg-background border-border text-foreground"}`}>
                 <span className={`w-3 h-3 rounded-sm ${chip}`} /> {nombre}
               </button>
             ))}
