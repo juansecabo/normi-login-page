@@ -600,6 +600,22 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     ],
   },
   {
+    id: "configurar_institucion.color_asignatura",
+    titulo: "Cambiar el color de una asignatura en el horario",
+    descripcion: "Cada asignatura tiene un color con el que se pinta en todos los horarios. El sistema los reparte solo para que no se repitan entre materias del mismo salón; aquí se puede escoger otro. Si el color ya lo usa otra materia del mismo salón, avisa. 'Automático' devuelve el color que reparte el sistema.",
+    categoria: "Configurar Institución",
+    roles: [...EDITAN_ESTRUCTURA],
+    ruta: RUTA,
+    endpoint: "PATCH /api/institucion/asignaturas/:id (color)",
+    sinonimos: ["cambiar el color de una materia", "color de la asignatura en el horario", "dos materias del mismo color", "pintar las materias de otro color"],
+    pasos: [
+      ...abrirFicha("asignaturas", "Abrimos Asignaturas."),
+      { narracion: "Junto a la asignatura, toca el circulito de color.", accion: "click", ancla: "configurar_institucion.asignatura_color" },
+      { narracion: "Escoge el color. Los que tienen un puntico ya los usa otra materia del mismo salón.", accion: "click", ancla: "configurar_institucion.asignatura_color_paleta", campo: "color" },
+      { narracion: "Toca 'Guardar'.", accion: "click", ancla: "configurar_institucion.asignatura_color_guardar" },
+    ],
+  },
+  {
     id: "configurar_institucion.plan_asignar_asignatura_grado",
     titulo: "Poner una asignatura en el plan de un grado",
     descripcion: "Marcar qué asignaturas se ven en un grado (aplica a todos sus salones).",

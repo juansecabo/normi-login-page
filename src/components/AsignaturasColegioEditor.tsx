@@ -7,6 +7,7 @@ import { BookOpen, Plus, Trash2, Loader2, ListChecks, Clock, Pencil, Check } fro
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { apiRequest, ApiError } from "@/lib/apiClient";
 import { rankGrado } from "@/utils/grados";
+import { PALETA_ASIGNATURAS } from "@/lib/coloresAsignaturas";
 
 /**
  * Editor de Asignaturas del colegio + Plan de estudios por grado, compartido por:
@@ -22,7 +23,8 @@ import { rankGrado } from "@/utils/grados";
  * académica ni las vistas existentes.
  */
 
-interface Asignatura { id: number; nombre: string; activa: boolean; orden: number | null; }
+/** color: índice de la paleta (lo reparte el servidor); comparte_salon: materias con las que coincide en algún salón. */
+interface Asignatura { id: number; nombre: string; activa: boolean; orden: number | null; color?: number | null; color_manual?: boolean; comparte_salon?: string[] }
 interface PlanFila { id: number; grado: string; asignatura_id: number; intensidad_horaria: number | null; }
 interface Grado { id: number; grado: string; orden: number | null; activo: boolean; }
 
@@ -169,6 +171,23 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
     finally { setGuardandoNombre(false); }
   };
 
+  // ── Color de la asignatura (el del horario). Automático = el que reparte el sistema. ──
+  const [coloreando, setColoreando] = useState<Asignatura | null>(null);
+  const [colorSel, setColorSel] = useState<number | null>(null);
+  const [guardandoColor, setGuardandoColor] = useState(false);
+  /** Materias del mismo salón que ya usan ese color. */
+  const chocanCon = (a: Asignatura, c: number | null) => (c == null ? [] : (a.comparte_salon || []).filter((n) => porNombre.get(n.toLowerCase())?.color === c));
+  const guardarColor = async (color: number | null) => {
+    if (!coloreando) return;
+    setGuardandoColor(true);
+    try {
+      await apiRequest(`/api/institucion/asignaturas/${coloreando.id}`, { method: "PATCH", body: JSON.stringify(withCid({ color })) });
+      setColoreando(null);
+      await cargar();
+    } catch (e) { err(e, "No se pudo cambiar el color."); }
+    finally { setGuardandoColor(false); }
+  };
+
   // ── Plan de estudios ──
   const planDelGrado = useMemo(
     () => new Map(plan.filter((p) => p.grado === gradoSel).map((p) => [p.asignatura_id, p])),
@@ -276,6 +295,16 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
                     />
                     <span className={`text-sm truncate ${marcada ? "" : "text-muted-foreground"}`}>{nombre}</span>
                   </label>
+                  {a && (
+                    <button
+                      type="button"
+                      data-guia="configurar_institucion.asignatura_color"
+                      onClick={() => { setColoreando(a); setColorSel(a.color ?? null); }}
+                      className={`w-4 h-4 rounded-full border border-black/10 shrink-0 hover:ring-2 hover:ring-primary/40 ${PALETA_ASIGNATURAS[a.color ?? -1]?.muestra || "bg-muted"}`}
+                      title="Color en el horario"
+                      aria-label={`Color de ${a.nombre}`}
+                    />
+                  )}
                   {a && (
                     <button
                       type="button"
@@ -391,6 +420,39 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
           )}
         </CardContent>
       </Card>
+
+      {/* ── Pop-up: color de la asignatura en el horario ── */}
+      <Dialog open={!!coloreando} onOpenChange={(o) => { if (!o) setColoreando(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Color de {coloreando?.nombre}</DialogTitle>
+            <DialogDescription>Así se pinta en todos los horarios.</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-10 gap-2" data-guia="configurar_institucion.asignatura_color_paleta">
+            {PALETA_ASIGNATURAS.map((c, i) => {
+              const usada = coloreando ? chocanCon(coloreando, i) : [];
+              return (
+                <button key={i} type="button" onClick={() => setColorSel(i)} title={usada.length ? `Ya lo usa ${usada.join(", ")} en el mismo salón` : undefined}
+                  className={`relative h-8 rounded-md border border-black/10 ${c.muestra} ${colorSel === i ? "ring-2 ring-primary ring-offset-2" : ""}`}>
+                  {usada.length > 0 && <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-foreground/60" />}
+                </button>
+              );
+            })}
+          </div>
+          {coloreando && chocanCon(coloreando, colorSel).length > 0 && (
+            <p className="text-sm text-amber-700">Ojo: {chocanCon(coloreando, colorSel).join(", ")} ya tiene este color y comparten salón.</p>
+          )}
+          <DialogFooter className="gap-2 sm:justify-between">
+            <Button variant="ghost" onClick={() => guardarColor(null)} disabled={guardandoColor || !coloreando?.color_manual}>Automático</Button>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setColoreando(null)} disabled={guardandoColor}>Cancelar</Button>
+              <Button data-guia="configurar_institucion.asignatura_color_guardar" onClick={() => guardarColor(colorSel)} disabled={guardandoColor || colorSel == null || colorSel === coloreando?.color} className="gap-2">
+                {guardandoColor ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Guardar
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Pop-up: renombrar asignatura (propaga a todo el historial) ── */}
       <Dialog open={!!renombrando} onOpenChange={(o) => { if (!o) setRenombrando(null); }}>

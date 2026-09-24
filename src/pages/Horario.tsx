@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/apiClient";
+import { claseColorAsignatura, useColoresAsignaturas } from "@/lib/coloresAsignaturas";
 
 /**
  * Ficha Horario (2026-09-23), en todos los colegios. Flexible: un salón puede
@@ -28,8 +29,10 @@ interface Franja { hora: number; hora_inicio: string; hora_fin: string }
 interface SalonInfo { grado: string; salon: string; nivel: string | null; clases: number; conHora: number }
 
 const DIAS = ["", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
-const PALETA = ["bg-sky-100 border-sky-200", "bg-emerald-100 border-emerald-200", "bg-amber-100 border-amber-200", "bg-rose-100 border-rose-200", "bg-violet-100 border-violet-200", "bg-lime-100 border-lime-200", "bg-orange-100 border-orange-200", "bg-teal-100 border-teal-200", "bg-fuchsia-100 border-fuchsia-200", "bg-indigo-100 border-indigo-200"];
-const colorDe = (a: string) => { let h = 0; for (const ch of a) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return PALETA[h % PALETA.length]; };
+// Color guardado de cada asignatura (Asignaturas.color, ver lib/coloresAsignaturas). Lo
+// actualiza HorarioContenido al cargar; las rejillas se vuelven a pintar con él.
+let coloresActuales: Record<string, number> = {};
+const colorDe = (a: string) => claseColorAsignatura(a, coloresActuales);
 
 /** Rejilla semanal de solo lectura (o editable si se pasa onCelda). */
 function Rejilla({ clases, dias, horas, modo, onCelda, franjas, guia = "horario.rejilla" }: {
@@ -130,6 +133,7 @@ function SinHorario({ texto }: { texto: string }) {
 export function HorarioContenido({ embebido = false }: { embebido?: boolean }) {
   const navigate = useNavigate();
   const { toast } = useToast();
+  coloresActuales = useColoresAsignaturas();
   const [cargando, setCargando] = useState(true);
   const [mio, setMio] = useState<any>(null);
 
