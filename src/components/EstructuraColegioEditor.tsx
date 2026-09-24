@@ -126,6 +126,8 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
   const [bulkJornada, setBulkJornada] = useState<string>("none");
   const [aplicandoBulk, setAplicandoBulk] = useState(false);
   const [importando, setImportando] = useState(false);
+  // "No molestar" del colegio (horas en que no se mandan avisos automáticos al personal).
+  const [noMolestar, setNoMolestar] = useState<{ activo: boolean; desde: string; hasta: string } | null>(null);
 
   useEffect(() => {
     cargar();
@@ -137,7 +139,16 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
     toast({ title: "Error", description: detail || fallback, variant: "destructive" });
   };
 
+  const guardarNoMolestar = async (activo: boolean, desde: string) => {
+    try {
+      const r = await apiRequest<{ activo: boolean; desde: string; hasta: string }>("/api/institucion/no-molestar", { method: "PUT", body: JSON.stringify(withCid({ activo, desde })) });
+      setNoMolestar(r);
+    } catch (e) { err(e, "No se pudo guardar el No molestar."); }
+  };
+  const hora12 = (h?: string | null) => { const p = de24(h); return p ? `${p.h12}:${String(p.min).padStart(2, "0")} ${p.ampm === "AM" ? "a. m." : "p. m."}` : ""; };
+
   const cargar = async () => {
+    apiRequest<{ activo: boolean; desde: string; hasta: string }>(`/api/institucion/no-molestar${qCid}`).then(setNoMolestar).catch(() => null);
     try {
       const r = await apiRequest<{ jornadas: Jornada[]; grados: Grado[]; salones: Salon[]; niveles: Nivel[] }>(`/api/institucion/estructura${qCid}`);
       setJornadas(r.jornadas || []);
@@ -417,6 +428,27 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
               <Button onClick={crearJornada} disabled={guardando}><Plus className="w-4 h-4 mr-1" /> Agregar</Button>
             </div>
           </details>
+
+          <p className="text-xs text-muted-foreground">Si una jornada no tiene hora de entrada, la <strong>Vespertina</strong> se toma a las 12:00 m. y la <strong>Nocturna</strong> a las 7:00 p. m.</p>
+
+          {/* No molestar: horas en que no se mandan avisos automáticos al personal. */}
+          {noMolestar && (
+            <div className="pt-3 border-t border-border space-y-2" data-guia="configurar_institucion.no_molestar">
+              <div className="flex items-center gap-3 flex-wrap">
+                <Switch checked={noMolestar.activo} onCheckedChange={(v) => guardarNoMolestar(v, noMolestar.desde)} />
+                <span className="font-medium">No molestar</span>
+                {noMolestar.activo && (<>
+                  <label className="text-xs text-muted-foreground">a partir de</label>
+                  <SelectorHora dataGuia="configurar_institucion.no_molestar_hora" value={noMolestar.desde} onChange={(v) => guardarNoMolestar(true, v)} />
+                </>)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {noMolestar.activo
+                  ? <>Los avisos automáticos al personal (excusas, retiros, justificaciones de uniforme y demás) no se envían desde las <strong>{hora12(noMolestar.desde)}</strong> hasta el inicio de la jornada del día siguiente (<strong>{hora12(noMolestar.hasta)}</strong>), ni sábados ni domingos. Quedan guardados y salen apenas se abre ese horario.</>
+                  : <>Desactivado: los avisos automáticos al personal se envían a cualquier hora, cualquier día.</>}
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

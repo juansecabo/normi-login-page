@@ -227,6 +227,21 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     ],
   },
   {
+    id: "configurar_institucion.no_molestar",
+    titulo: "No molestar: horas sin avisos al personal",
+    descripcion: "Activar o desactivar el No molestar y escoger desde qué hora no se envían avisos automáticos al personal (excusas, retiros, uniforme…) hasta el inicio de la jornada del día siguiente, ni fines de semana. Desactivado, los avisos salen a cualquier hora. Solo rector o administrador.",
+    categoria: "Configurar Institución",
+    roles: ["rector", "admin"],
+    ruta: RUTA,
+    endpoint: "PUT /api/institucion/no-molestar (esRectorOMas)",
+    sinonimos: ["no molestar", "que no lleguen mensajes de noche", "horario de avisos", "a qué hora dejan de llegar notificaciones"],
+    pasos: [
+      ...abrirFicha("estructura", "Abrimos Jornadas, grados y salones."),
+      { narracion: "Al final de la tarjeta Jornadas está 'No molestar': con el interruptor lo activas o lo desactivas.", accion: "click", ancla: "configurar_institucion.no_molestar" },
+      { narracion: "Si está activo, escoge desde qué hora no se envían avisos; se guarda solo.", accion: "click", ancla: "configurar_institucion.no_molestar_hora", opcional: true },
+    ],
+  },
+  {
     id: "configurar_institucion.eliminar_jornada",
     titulo: "Eliminar una jornada",
     descripcion: "Quitar una jornada del colegio.",
