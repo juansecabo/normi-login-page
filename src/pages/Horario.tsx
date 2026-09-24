@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/apiClient";
 import { estiloAsignatura, useColoresAsignaturas } from "@/lib/coloresAsignaturas";
-import RejillaHorarioEditable from "@/components/RejillaHorarioEditable";
+import RejillaHorarioEditable, { type CruceMover } from "@/components/RejillaHorarioEditable";
 
 /**
  * Ficha Horario (2026-09-23), en todos los colegios. Flexible: un salón puede
@@ -159,7 +159,7 @@ export function HorarioContenido({ embebido = false }: { embebido?: boolean }) {
   const [celda, setCelda] = useState<{ dia: number; hora: number } | null>(null);
   const [buscaMateria, setBuscaMateria] = useState("");
   const [avisoHorario, setAvisoHorario] = useState<string | null>(null);
-  const [crucesMover, setCrucesMover] = useState<string[] | null>(null);
+  const [crucesMover, setCrucesMover] = useState<CruceMover[] | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [cruces, setCruces] = useState<any[] | null>(null);
   const [franjasEdit, setFranjasEdit] = useState<Franja[] | null>(null);
@@ -403,7 +403,7 @@ export function HorarioContenido({ embebido = false }: { embebido?: boolean }) {
                           <RejillaHorarioEditable guia="horario.rejilla_salon" clases={borrador} dias={diasDe(borrador)} horas={horasEdit} franjas={datosSalon.franjas}
                             onCelda={(dia, hora) => { setBuscaMateria(""); setCelda({ dia, hora }); }}
                             onCambiar={(nuevas) => setBorrador(nuevas as Clase[])}
-                            cruces={(asig, dia, hora) => ((datosSalon.asignaturas || []).find((a: any) => a.asignatura === asig)?.profesores || []).flatMap((p: Profesor) => [...new Set<string>(datosSalon?.ocupados?.[`${p.id}|${dia}|${hora}`] || [])].map((sal) => `${p.nombre} tiene clase en ${sal} a esa hora`))}
+                            cruces={(asig, dia, hora) => ((datosSalon.asignaturas || []).find((a: any) => a.asignatura === asig)?.profesores || []).flatMap((p: Profesor) => [...new Set<string>(datosSalon?.ocupados?.[`${p.id}|${dia}|${hora}`] || [])].map((sal) => `${p.nombre} ya tiene clase en ${sal} a esa hora.`))}
                             onCruce={setCrucesMover} colorDe={colorDe} estiloDe={estiloDe} />
                           <div className="flex justify-end gap-2">
                             <Button onClick={guardar} disabled={guardando} data-guia="horario.guardar">{guardando ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />} Guardar horario</Button>
@@ -440,8 +440,18 @@ export function HorarioContenido({ embebido = false }: { embebido?: boolean }) {
       <Dialog open={!!crucesMover} onOpenChange={(o) => !o && setCrucesMover(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>No se puede mover ahí</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">Quedaría un profesor en dos salones a la misma hora:</p>
-          <ul className="list-disc pl-5 space-y-1 text-sm">{(crucesMover || []).map((m) => <li key={m}>{m}</li>)}</ul>
+          <p className="text-sm text-muted-foreground">Un profesor quedaría en dos salones a la misma hora.</p>
+          <div className="space-y-2">
+            {(crucesMover || []).map((c) => (
+              <div key={`${c.asignatura}|${c.cuando}`} className="rounded-lg border border-border p-3" style={estiloDe(c.asignatura)}>
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="font-semibold text-foreground">{c.asignatura}</span>
+                  <span className="text-xs text-muted-foreground shrink-0">{c.cuando}</span>
+                </div>
+                {c.motivos.map((m) => <p key={m} className="text-sm text-foreground mt-1">{m}</p>)}
+              </div>
+            ))}
+          </div>
           <DialogFooter><Button onClick={() => setCrucesMover(null)}>Entendido</Button></DialogFooter>
         </DialogContent>
       </Dialog>

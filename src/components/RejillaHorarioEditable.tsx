@@ -13,6 +13,8 @@ import {
  */
 export interface ClaseEdit { dia: number; hora: number | null; asignatura: string; hora_inicio?: string | null; hora_fin?: string | null; profesores?: { id: string; nombre: string }[]; inicio?: string | null; fin?: string | null; [k: string]: any }
 type Pos = { dia: number; hora: number };
+/** Un cruce al mover: la materia, dónde quedaría y quién choca (texto ya armado). */
+export interface CruceMover { asignatura: string; cuando: string; motivos: string[] }
 const DIAS = ["", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
 /** Mueve la ficha (todas las clases de esa casilla) de `de` a `a`. null = no se puede. */
@@ -80,7 +82,7 @@ export default function RejillaHorarioEditable({ clases, dias, horas, franjas, o
   onCambiar: (nuevas: ClaseEdit[]) => void;
   /** Motivos de cruce si esa materia quedara en ese día y hora (vacío = sin cruce). */
   cruces: (asignatura: string, dia: number, hora: number) => string[];
-  onCruce: (motivos: string[]) => void;
+  onCruce: (cruces: CruceMover[]) => void;
   colorDe: (a: string) => string; estiloDe: (a: string) => CSSProperties | undefined; guia?: string;
 }) {
   const sensores = useSensors(
@@ -111,14 +113,15 @@ export default function RejillaHorarioEditable({ clases, dias, horas, franjas, o
     const nuevas = moverFicha(clases, origen, a, horas);
     if (!nuevas || nuevas === clases) return;
     // Cruces de profesores: se revisan todas las fichas que cambiaron de día u hora.
-    const motivos: string[] = [];
+    const lista: CruceMover[] = [];
     nuevas.forEach((c, i) => {
       const antes = clases[i];
       if (c.hora != null && (c.dia !== antes.dia || c.hora !== antes.hora)) {
-        for (const m of cruces(c.asignatura, c.dia, c.hora)) motivos.push(`${c.asignatura} el ${DIAS[c.dia].toLowerCase()} a la ${c.hora}.ª hora: ${m}`);
+        const m = [...new Set(cruces(c.asignatura, c.dia, c.hora))];
+        if (m.length) lista.push({ asignatura: c.asignatura, cuando: `${DIAS[c.dia]}, ${c.hora}.ª hora`, motivos: m });
       }
     });
-    if (motivos.length) { onCruce([...new Set(motivos)]); return; }
+    if (lista.length) { onCruce(lista); return; }
     onCambiar(nuevas);
   };
 
