@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/apiClient";
-import { claseColorAsignatura, useColoresAsignaturas } from "@/lib/coloresAsignaturas";
+import { estiloAsignatura, useColoresAsignaturas, type ColorAsignatura } from "@/lib/coloresAsignaturas";
 
 /**
  * Ficha Horario (2026-09-23), en todos los colegios. Flexible: un salón puede
@@ -31,8 +31,9 @@ interface SalonInfo { grado: string; salon: string; nivel: string | null; clases
 const DIAS = ["", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 // Color guardado de cada asignatura (Asignaturas.color, ver lib/coloresAsignaturas). Lo
 // actualiza HorarioContenido al cargar; las rejillas se vuelven a pintar con él.
-let coloresActuales: Record<string, number> = {};
-const colorDe = (a: string) => claseColorAsignatura(a, coloresActuales);
+let coloresActuales: Record<string, ColorAsignatura> = {};
+const colorDe = (a: string) => estiloAsignatura(a, coloresActuales).className;
+const estiloDe = (a: string) => estiloAsignatura(a, coloresActuales).style;
 
 /** Rejilla semanal de solo lectura (o editable si se pasa onCelda). */
 function Rejilla({ clases, dias, horas, modo, onCelda, franjas, guia = "horario.rejilla" }: {
@@ -73,6 +74,7 @@ function Rejilla({ clases, dias, horas, modo, onCelda, franjas, guia = "horario.
                         disabled={!onCelda}
                         onClick={() => onCelda?.(d, h)}
                         className={`w-full min-h-[64px] rounded-lg border p-2 text-left transition ${vacia ? "border-dashed border-border bg-muted/30" : colorDe(cs[0].asignatura)} ${onCelda ? "hover:ring-2 hover:ring-primary/40 cursor-pointer" : "cursor-default"}`}
+                        style={vacia ? undefined : estiloDe(cs[0].asignatura)}
                       >
                         {cs.map((c, k) => (
                           <div key={k}>
@@ -98,7 +100,7 @@ function Rejilla({ clases, dias, horas, modo, onCelda, franjas, guia = "horario.
                 <td key={d} className="align-top">
                   <div className="flex flex-col gap-1">
                     {sinHora(d).map((c, k) => (
-                      <div key={k} className={`rounded-lg border p-2 ${colorDe(c.asignatura)}`}>
+                      <div key={k} className={`rounded-lg border p-2 ${colorDe(c.asignatura)}`} style={estiloDe(c.asignatura)}>
                         <div className="font-semibold text-foreground leading-tight">{c.asignatura}</div>
                         <div className="text-[11px] text-muted-foreground">{modo === "profesor" ? `${c.grado} ${c.salon}` : (c.profesores || []).map((p) => p.nombre).join(", ")}</div>
                       </div>
@@ -463,7 +465,7 @@ export function HorarioContenido({ embebido = false }: { embebido?: boolean }) {
                   {cr.map((t) => <div key={t} className="text-xs text-destructive">{t}</div>)}
                 </div>
               ) : (
-                <button key={a.asignatura} onClick={() => asignarCelda(a.asignatura)} className={`w-full text-left rounded-lg border p-2 hover:ring-2 hover:ring-primary/40 ${colorDe(a.asignatura)}`}>
+                <button key={a.asignatura} onClick={() => asignarCelda(a.asignatura)} className={`w-full text-left rounded-lg border p-2 hover:ring-2 hover:ring-primary/40 ${colorDe(a.asignatura)}`} style={estiloDe(a.asignatura)}>
                   <div className="font-semibold text-foreground">{a.asignatura}</div>
                   <div className="text-xs text-muted-foreground">{a.profesores.map((p) => p.nombre).join(", ") || "Sin profesor asignado"}</div>
                 </button>
