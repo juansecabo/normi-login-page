@@ -497,6 +497,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
     if (ev) return { cls: `${base} bg-red-400 hover:bg-red-500 text-black`, title: ev.nombre + (textoAlcance(alcanceDe(ev)) ? ` (solo ${textoAlcance(alcanceDe(ev))})` : "") + enPeriodo };
     const nombreFestivo = esVisible("fest") ? festivos.get(f) : undefined;
     if (nombreFestivo) return { cls: `${base} bg-fuchsia-300 text-fuchsia-900`, title: `${nombreFestivo} (festivo automático)${enPeriodo}` };
+    // Solo periodo: el color lo pone la franja de fondo; el día queda transparente encima.
     if (perDia) return { cls: `${base} hover:bg-black/10${dow >= 5 ? " text-foreground/60" : ""}`, title: estiloPeriodo(perDia.periodo, esqSel).nombre };
     if (dow >= 5) return { cls: `${base} text-muted-foreground/50`, title: "" };
     return { cls: `${base} hover:bg-muted`, title: "" };
