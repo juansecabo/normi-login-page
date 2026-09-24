@@ -78,11 +78,11 @@ function Rejilla({ clases, dias, horas, modo, onCelda, franjas, guia = "horario.
                       >
                         {cs.map((c, k) => (
                           <div key={k}>
-                            <div className="font-semibold text-foreground leading-tight">{c.asignatura}</div>
-                            <div className="text-[11px] text-muted-foreground leading-tight">
+                            <div className="font-semibold leading-tight">{c.asignatura}</div>
+                            <div className="text-[11px] font-bold leading-tight opacity-90">
                               {modo === "profesor" ? `${c.grado} ${c.salon}` : (c.profesores || []).map((p) => p.nombre).join(", ")}
                             </div>
-                            {(c.inicio || c.fin) && !fr && <div className="text-[11px] text-muted-foreground">{c.inicio}{c.fin ? ` a ${c.fin}` : ""}</div>}
+                            {(c.inicio || c.fin) && !fr && <div className="text-[11px] opacity-80">{c.inicio}{c.fin ? ` a ${c.fin}` : ""}</div>}
                           </div>
                         ))}
                         {vacia && onCelda && <span className="text-xs text-muted-foreground">+ Agregar</span>}
@@ -101,8 +101,8 @@ function Rejilla({ clases, dias, horas, modo, onCelda, franjas, guia = "horario.
                   <div className="flex flex-col gap-1">
                     {sinHora(d).map((c, k) => (
                       <div key={k} className={`rounded-lg border p-2 ${colorDe(c.asignatura)}`} style={estiloDe(c.asignatura)}>
-                        <div className="font-semibold text-foreground leading-tight">{c.asignatura}</div>
-                        <div className="text-[11px] font-bold text-muted-foreground">{modo === "profesor" ? `${c.grado} ${c.salon}` : (c.profesores || []).map((p) => p.nombre).join(", ")}</div>
+                        <div className="font-semibold leading-tight">{c.asignatura}</div>
+                        <div className="text-[11px] font-bold opacity-90">{modo === "profesor" ? `${c.grado} ${c.salon}` : (c.profesores || []).map((p) => p.nombre).join(", ")}</div>
                       </div>
                     ))}
                   </div>
@@ -466,8 +466,8 @@ export function HorarioContenido({ embebido = false }: { embebido?: boolean }) {
                 </div>
               ) : (
                 <button key={a.asignatura} onClick={() => asignarCelda(a.asignatura)} className={`w-full text-left rounded-lg border p-2 hover:ring-2 hover:ring-primary/40 ${colorDe(a.asignatura)}`} style={estiloDe(a.asignatura)}>
-                  <div className="font-semibold text-foreground">{a.asignatura}</div>
-                  <div className="text-xs font-bold text-muted-foreground">{a.profesores.map((p) => p.nombre).join(", ") || "Sin profesor asignado"}</div>
+                  <div className="font-semibold">{a.asignatura}</div>
+                  <div className="text-xs font-bold opacity-90">{a.profesores.map((p) => p.nombre).join(", ") || "Sin profesor asignado"}</div>
                 </button>
               ))}
           </div>
