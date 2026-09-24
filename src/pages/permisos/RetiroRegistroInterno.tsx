@@ -433,7 +433,7 @@ const RetiroRegistroInterno = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Registrar el permiso de salida?</AlertDialogTitle>
             <AlertDialogDescription>
-              {selArr.length === 1 ? `Para ${selArr[0].nombres} ${selArr[0].apellidos}.` : `Para ${selArr.length} estudiantes.`} Quedará registrado y se notificará a los profesores y a portería.
+              {selArr.length === 1 ? `Para ${selArr[0].nombres} ${selArr[0].apellidos}.` : `Para ${selArr.length} estudiantes.`} Quedará registrado y se notificará a acudientes, profesores y portería.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
