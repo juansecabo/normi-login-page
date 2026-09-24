@@ -319,7 +319,13 @@ export function HorarioContenido({ embebido = false }: { embebido?: boolean }) {
   return (
     <>
         <div className="bg-card rounded-lg shadow-soft p-4 md:p-6 space-y-5">
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2"><Clock className="w-6 h-6 text-primary" /> Horario de clases</h1>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2"><Clock className="w-6 h-6 text-primary" /> Horario de clases</h1>
+            {/* Quien puede editar el horario lo hace en Configurar Institución (Juan 2026-09-24). */}
+            {!embebido && mio?.puedeEditar && (
+              <Button variant="outline" size="sm" onClick={() => navigate("/construye-institucion?vista=horario")} data-guia="horario.ir_configuracion">Ir a configuración</Button>
+            )}
+          </div>
 
           {cargando ? (
             <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
@@ -394,11 +400,6 @@ export function HorarioContenido({ embebido = false }: { embebido?: boolean }) {
                   {cargandoSalon && <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>}
                   {datosSalon && !cargandoSalon && (
                     <div className="space-y-3">
-                      {!embebido && datosSalon.puedeEditar && (
-                        <p className="text-xs text-muted-foreground text-right">
-                          Para cambiarlo, entra a <button type="button" className="text-primary hover:underline" onClick={() => navigate("/construye-institucion?vista=horario")}>Configurar Institución</button>.
-                        </p>
-                      )}
                       {embebido && datosSalon.puedeEditar && !borrador && (
                         <div className="flex flex-wrap justify-end gap-2">
                           <Button size="sm" variant="outline" onClick={empezarEdicion} data-guia="horario.editar">{datosSalon.clases.length ? "Editar horario" : "Armar horario"}</Button>

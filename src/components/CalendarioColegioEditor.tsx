@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -161,6 +162,8 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
   const [todosPeriodos, setTodosPeriodos] = useState<Periodo[]>([]);
   const [nivelesVe, setNivelesVe] = useState<string[] | null>(null);
   const [estructura, setEstructura] = useState<NivelEstructura[]>([]);
+  const [puedeEditar, setPuedeEditar] = useState(false);
+  const navigate = useNavigate();
   // Un solo calendario (Juan 2026-09-24): los periodos son iguales para todos los niveles por
   // periodos y los semestres iguales para todos los niveles por semestres. Si el colegio tiene
   // niveles por semestres, un selector cambia entre ver (o editar) periodos y semestres.
@@ -188,6 +191,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
     try {
       const r = await apiRequest<{ periodos: Periodo[]; dias: DiaNoLectivo[]; eventos?: Evento[]; festivos: Array<{ fecha: string; nombre: string } | string>; ano_escolar: number; niveles_ve?: string[] | null; estructura?: NivelEstructura[] }>(`/api/institucion/calendario${qCid}`);
       setNivelesVe(r.niveles_ve ?? null);
+      setPuedeEditar(!!(r as any).puede_editar);
       setEstructura(r.estructura || []);
       setAnoEscolar(r.ano_escolar);
       setTodosPeriodos((r.periodos || []).filter((p) => p.ano_escolar === r.ano_escolar));
@@ -509,7 +513,13 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg"><CalendarDays className="h-5 w-5 text-primary" /> Calendario {anoEscolar}</CardTitle>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <CardTitle className="flex items-center gap-2 text-lg"><CalendarDays className="h-5 w-5 text-primary" /> Calendario {anoEscolar}</CardTitle>
+            {/* Quien puede editar el calendario lo hace en Configurar Institución (Juan 2026-09-24). */}
+            {soloLectura && puedeEditar && (
+              <Button variant="outline" size="sm" onClick={() => navigate("/construye-institucion?vista=calendario")} data-guia="calendario.ir_configuracion">Ir a configuración</Button>
+            )}
+          </div>
           {soloLectura ? (
             <p className="text-sm text-muted-foreground">
               Calendario del año escolar: periodos académicos, días sin clases, <strong>Eventos</strong> (entrega de boletines,
@@ -567,8 +577,13 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
           )}
 
           {/* ── Qué ver: cada botón muestra u oculta esa capa del calendario (hace de leyenda). ── */}
-          <div className="flex flex-wrap items-center gap-2 text-xs border border-border rounded-lg px-3 py-2 bg-muted/40" data-guia="configurar_institucion.cal_filtro">
-            <span className="text-muted-foreground mr-1">Ver solo:</span>
+          {/* Celular: "Ver solo" arriba y 3 botones por fila; pantallas grandes: todo en una línea. */}
+          <div className={`flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 text-xs border border-border rounded-lg px-3 py-2 ${soloLectura ? "sticky top-2 z-30 bg-card/95 backdrop-blur-sm shadow-md" : "bg-muted/40"}`} data-guia="configurar_institucion.cal_filtro">
+            <div className="flex items-center justify-between sm:contents">
+              <span className="text-muted-foreground mr-1">Ver solo:</span>
+              {ocultos.size > 0 && <button type="button" onClick={() => setOcultos(new Set())} className="text-primary underline sm:hidden">Ver todo</button>}
+            </div>
+            <div className="grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:gap-2">
             {[
               ...cortes.map((n) => ({ k: `p${n}`, chip: estiloPeriodo(n, esqSel).chip, nombre: estiloPeriodo(n, esqSel).nombre })),
               { k: "sin", chip: "bg-red-200 border border-red-400", nombre: "Sin clases" },
@@ -576,11 +591,12 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
               { k: "fest", chip: "bg-fuchsia-300 border border-fuchsia-400", nombre: "Festivos" },
             ].map(({ k, chip, nombre }) => (
               <button key={k} type="button" onClick={() => alternar(k)} aria-pressed={ocultos.has(k)}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 transition-colors ${ocultos.has(k) ? "bg-primary/10 border-primary text-foreground ring-1 ring-primary font-semibold" : ocultos.size > 0 ? "bg-background border-border text-muted-foreground opacity-60" : "bg-background border-border text-foreground"}`}>
+                className={`inline-flex items-center justify-center sm:justify-start gap-1.5 rounded-full border px-2 sm:px-2.5 py-1 whitespace-nowrap transition-colors ${ocultos.has(k) ? "bg-primary/10 border-primary text-foreground ring-1 ring-primary font-semibold" : ocultos.size > 0 ? "bg-background border-border text-muted-foreground opacity-60" : "bg-background border-border text-foreground"}`}>
                 <span className={`w-3 h-3 rounded-sm ${chip}`} /> {nombre}
               </button>
             ))}
-            {ocultos.size > 0 && <button type="button" onClick={() => setOcultos(new Set())} className="ml-1 text-primary underline">Ver todo</button>}
+            </div>
+            {ocultos.size > 0 && <button type="button" onClick={() => setOcultos(new Set())} className="ml-1 text-primary underline hidden sm:inline">Ver todo</button>}
           </div>
 
           {/* ── Los 12 meses ── */}
