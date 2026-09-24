@@ -5,8 +5,15 @@ import { apiRequest } from "@/lib/apiClient";
  * Color propio de cada asignatura (Juan 2026-09-24): un código exacto "#rrggbb" sacado al
  * azar del círculo de colores, distinto al de toda otra asignatura del colegio (lo sortea
  * y guarda el servidor; se cambia con el círculo en Configurar Institución → Asignaturas).
- * Se pinta con el color tal cual (Juan 2026-09-24: que no se aclare).
+ * Al pintarlo se aclara para que el texto se siga leyendo.
  */
+
+/** Mezcla un color con blanco (0 = el color, 1 = blanco). */
+export function aclarar(hex: string, cuanto: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => Math.round(v + (255 - v) * cuanto));
+  return `#${c.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+}
 
 /** Tono del círculo (HSV con brillo pleno) → "#rrggbb". */
 export function hsvAHex(h: number, s: number): string {
@@ -30,10 +37,7 @@ const porNombre = (a: string) => { let h = 0; for (const ch of a) h = (h * 31 + 
 export function estiloAsignatura(nombre: string, colores: Record<string, string>): { className: string; style: CSSProperties } {
   const c = colores[nombre];
   const hex = typeof c === "string" && /^#[0-9a-f]{6}$/i.test(c) ? c : porNombre(nombre);
-  // La letra va blanca sobre colores oscuros y casi negra sobre claros, para leerse siempre.
-  const n = parseInt(hex.slice(1), 16);
-  const luz = (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
-  return { className: "", style: { backgroundColor: hex, borderColor: hex, color: luz < 0.6 ? "#ffffff" : "#111827" } };
+  return { className: "", style: { backgroundColor: aclarar(hex, 0.72), borderColor: aclarar(hex, 0.45) } };
 }
 
 /** Mapa nombre → "#rrggbb" del colegio (se pide una vez). */
