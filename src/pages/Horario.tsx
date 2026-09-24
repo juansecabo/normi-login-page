@@ -439,8 +439,8 @@ export function HorarioContenido({ embebido = false }: { embebido?: boolean }) {
 
       <Dialog open={!!crucesMover} onOpenChange={(o) => !o && setCrucesMover(null)}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>No se puede mover ahí</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">Un profesor quedaría en dos salones a la misma hora.</p>
+          <DialogHeader className="sm:text-center"><DialogTitle>No se puede mover ahí</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground text-center">Un profesor quedaría en dos salones a la misma hora.</p>
           <div className="space-y-2">
             {(crucesMover || []).map((c) => (
               <div key={`${c.asignatura}|${c.cuando}`} className="rounded-lg border border-border p-3" style={estiloDe(c.asignatura)}>
