@@ -279,7 +279,7 @@ const RetiroEstudiantesStaff = () => {
                     const grupos: { key: string; items: typeof listaFinal }[] = [];
                     const byKey = new Map<string, typeof listaFinal>();
                     for (const a of listaFinal) {
-                      const k = diaCal ? keyDeDate(diaCal) : diasDe(a)[0];
+                      const k = diaCal ? keyDeDate(diaCal) : (diasDe(a)[0] || fechaKey(a.created_at));
                       let arr = byKey.get(k);
                       if (!arr) { arr = []; byKey.set(k, arr); grupos.push({ key: k, items: arr }); }
                       arr.push(a);

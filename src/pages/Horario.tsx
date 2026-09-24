@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, Plus, Minus, Clock, Save, X, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -32,16 +32,16 @@ const PALETA = ["bg-sky-100 border-sky-200", "bg-emerald-100 border-emerald-200"
 const colorDe = (a: string) => { let h = 0; for (const ch of a) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return PALETA[h % PALETA.length]; };
 
 /** Rejilla semanal de solo lectura (o editable si se pasa onCelda). */
-function Rejilla({ clases, dias, horas, modo, onCelda, franjas }: {
+function Rejilla({ clases, dias, horas, modo, onCelda, franjas, guia = "horario.rejilla" }: {
   clases: Clase[]; dias: number[]; horas: number; modo: "salon" | "profesor";
-  onCelda?: (dia: number, hora: number) => void; franjas?: Franja[];
+  onCelda?: (dia: number, hora: number) => void; franjas?: Franja[]; guia?: string;
 }) {
   const en = (d: number, h: number) => clases.filter((c) => c.dia === d && c.hora === h);
   const sinHora = (d: number) => clases.filter((c) => c.dia === d && c.hora == null);
   const haySinHora = dias.some((d) => sinHora(d).length > 0);
   const franja = (h: number) => franjas?.find((f) => f.hora === h);
   return (
-    <div className="overflow-x-auto -mx-2 px-2" data-guia="horario.rejilla">
+    <div className="overflow-x-auto -mx-2 px-2" data-guia={guia}>
       <table className="w-full min-w-[640px] table-fixed border-separate border-spacing-1 text-sm">
         {/* table-fixed + colgroup: todos los días con el mismo ancho, sin importar lo largo de las materias. */}
         <colgroup><col className="w-20" />{dias.map((d) => <col key={d} />)}</colgroup>
@@ -200,15 +200,21 @@ export default function Horario() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurado, vista, nivelSel, gradoSel, salonSel, profSel, estSel]);
 
+  // Solo se pinta la respuesta del ÚLTIMO salón pedido: si llega tarde la de uno
+  // anterior (red lenta y cambio de salón), se descarta.
+  const pedidoSalon = useRef("");
   const cargarSalon = async (clave: string) => {
+    pedidoSalon.current = clave;
     setSalonSel(clave); setBorrador(null); setFranjasEdit(null);
-    if (!clave) { setDatosSalon(null); return; }
+    if (!clave) { setDatosSalon(null); setCargandoSalon(false); return; }
     const [grado, salon] = clave.split("|");
-    setCargandoSalon(true);
+    setCargandoSalon(true); setDatosSalon(null);
     try {
       const r = await apiRequest<any>(`/api/horario/salon?grado=${encodeURIComponent(grado)}&salon=${encodeURIComponent(salon)}`);
+      if (pedidoSalon.current !== clave) return;
       setDatosSalon(r);
     } catch (e: any) {
+      if (pedidoSalon.current !== clave) return;
       toast({ title: "No se pudo cargar el salón", description: e?.body?.detail || e?.message, variant: "destructive" });
     }
     setCargandoSalon(false);
@@ -364,7 +370,7 @@ export default function Horario() {
                       {datosSalon.puedeEditar && !borrador && (
                         <div className="flex flex-wrap justify-end gap-2">
                           <Button size="sm" variant="outline" onClick={empezarEdicion} data-guia="horario.editar">{datosSalon.clases.length ? "Editar horario" : "Armar horario"}</Button>
-                          {datosSalon.nivel && <Button size="sm" variant="outline" onClick={() => setFranjasEdit(Array.from({ length: Math.max(horasDe(datosSalon.clases), datosSalon.franjas.length) }, (_, i) => datosSalon.franjas.find((f: Franja) => f.hora === i + 1) || { hora: i + 1, hora_inicio: "", hora_fin: "" }))} data-guia="horario.franjas"><Clock className="w-4 h-4 mr-1" /> Horas de {datosSalon.nivel}</Button>}
+                          {datosSalon.nivel && <Button size="sm" variant="outline" onClick={() => setFranjasEdit(Array.from({ length: Math.max(horasDe(datosSalon.clases), 0, ...datosSalon.franjas.map((f: Franja) => f.hora)) }, (_, i) => datosSalon.franjas.find((f: Franja) => f.hora === i + 1) || { hora: i + 1, hora_inicio: "", hora_fin: "" }))} data-guia="horario.franjas"><Clock className="w-4 h-4 mr-1" /> Horas de {datosSalon.nivel}</Button>}
                         </div>
                       )}
                       {borrador ? (
@@ -372,19 +378,19 @@ export default function Horario() {
                           <div className="flex flex-wrap items-center gap-3 rounded-lg bg-muted/40 p-3 text-sm">
                             <span>Toca una casilla para escoger la materia.</span>
                             <span className="flex items-center gap-1">Horas por día:
-                              <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => setHorasEdit((h) => Math.max(1, h - 1))}><Minus className="w-3 h-3" /></Button>
+                              <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => setHorasEdit((h) => Math.max(1, h - 1))} disabled={horasEdit <= Math.max(1, ...(borrador || []).map((c) => c.hora || 0))} title={horasEdit <= Math.max(1, ...(borrador || []).map((c) => c.hora || 0)) ? "Primero deja vacía la última hora" : undefined}><Minus className="w-3 h-3" /></Button>
                               <b className="w-5 text-center">{horasEdit}</b>
                               <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => setHorasEdit((h) => Math.min(15, h + 1))}><Plus className="w-3 h-3" /></Button>
                             </span>
                           </div>
-                          <Rejilla clases={borrador} dias={diasDe(borrador)} horas={horasEdit} modo="salon" franjas={datosSalon.franjas} onCelda={(dia, hora) => { setBuscaMateria(""); setCelda({ dia, hora }); }} />
+                          <Rejilla guia="horario.rejilla_salon" clases={borrador} dias={diasDe(borrador)} horas={horasEdit} modo="salon" franjas={datosSalon.franjas} onCelda={(dia, hora) => { setBuscaMateria(""); setCelda({ dia, hora }); }} />
                           <div className="flex justify-end gap-2">
                             <Button onClick={guardar} disabled={guardando} data-guia="horario.guardar">{guardando ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />} Guardar horario</Button>
                             <Button variant="outline" onClick={() => setBorrador(null)} disabled={guardando}>Cancelar</Button>
                           </div>
                         </div>
                       ) : datosSalon.clases.length ? (
-                        <Rejilla clases={datosSalon.clases} dias={diasDe(datosSalon.clases)} horas={horasDe(datosSalon.clases, 1)} modo="salon" franjas={datosSalon.franjas} />
+                        <Rejilla guia="horario.rejilla_salon" clases={datosSalon.clases} dias={diasDe(datosSalon.clases)} horas={horasDe(datosSalon.clases, 1)} modo="salon" franjas={datosSalon.franjas} />
                       ) : (
                         <SinHorario texto={`${datosSalon.grado} ${datosSalon.salon} todavía no tiene horario cargado.`} />
                       )}
@@ -402,7 +408,7 @@ export default function Horario() {
                       {profesores.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
                     </select>
                   </div>
-                  {clasesProf && (clasesProf.length ? <Rejilla clases={clasesProf} dias={diasDe(clasesProf)} horas={horasDe(clasesProf, 1)} modo="profesor" />
+                  {clasesProf && (clasesProf.length ? <Rejilla guia="horario.rejilla_profesor" clases={clasesProf} dias={diasDe(clasesProf)} horas={horasDe(clasesProf, 1)} modo="profesor" />
                     : <SinHorario texto="Este profesor todavía no tiene clases en el horario cargado." />)}
                 </section>
               )}

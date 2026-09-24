@@ -64,8 +64,9 @@ const ListaEstudiantes = ({ cargando, filtrados, seleccionados, onToggle }: {
             const e = filtrados[vi.index];
             const marcado = !!seleccionados[e.id];
             return (
-              <label key={e.id} style={{ position: "absolute", top: 0, left: 0, right: 0, transform: `translateY(${vi.start}px)` }}
-                className={`flex items-center gap-3 border rounded-lg p-3 cursor-pointer transition-colors ${marcado ? "border-primary bg-primary/5" : "border-border hover:bg-muted/30"}`}>
+              <label key={e.id} ref={virt.measureElement} data-index={vi.index} style={{ position: "absolute", top: 0, left: 0, right: 0, transform: `translateY(${vi.start}px)`, paddingBottom: 8 }}
+                className="block cursor-pointer">
+                <div className={`flex items-center gap-3 border rounded-lg p-3 transition-colors ${marcado ? "border-primary bg-primary/5" : "border-border hover:bg-muted/30"}`}>
                 <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${marcado ? "bg-primary border-primary" : "border-border"}`}>
                   {marcado && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
                 </div>
@@ -73,6 +74,7 @@ const ListaEstudiantes = ({ cargando, filtrados, seleccionados, onToggle }: {
                 <div>
                   <p className="font-semibold text-foreground text-sm">{e.apellidos} {e.nombres}</p>
                   <p className="text-xs text-muted-foreground">{e.grado} {e.salon}</p>
+                </div>
                 </div>
               </label>
             );
@@ -123,10 +125,15 @@ const RetiroRegistroInterno = () => {
     if (!session.id) { navigate("/"); return; }
     if (!ROLES_OK.includes(session.cargo || "")) { navigate("/permisos-excusas/retiro-staff"); return; }
     (async () => {
-      const { data } = await supabase.from("Estudiantes").select("id, grado, salon");
-      const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
-      const todos = sortByApellidosNombres(await enrichWithNombres((data || []) as any));
-      setEstudiantes(todos.map((e: any) => ({ id: Number(e.id), nombres: e.nombres, apellidos: e.apellidos, grado: e.grado, salon: String(e.salon ?? "") })));
+      try {
+        const { data, error } = await supabase.from("Estudiantes").select("id, grado, salon");
+        if (error) throw error;
+        const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
+        const todos = sortByApellidosNombres(await enrichWithNombres((data || []) as any));
+        setEstudiantes(todos.map((e: any) => ({ id: Number(e.id), nombres: e.nombres, apellidos: e.apellidos, grado: e.grado, salon: String(e.salon ?? "") })));
+      } catch (err: any) {
+        setResultado({ ok: false, texto: `No se pudo cargar la lista de estudiantes: ${err?.message || err}. Recarga la página.` });
+      }
       setLoading(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps

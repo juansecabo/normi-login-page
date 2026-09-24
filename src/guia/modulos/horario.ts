@@ -63,7 +63,7 @@ export const HORARIO: Capacidad[] = [
       { narracion: "Escoge el nivel.", accion: "seleccionar", ancla: "horario.selector_nivel", campo: "nivel" },
       { narracion: "Ahora el grado.", accion: "seleccionar", ancla: "horario.selector_grado", campo: "grado" },
       { narracion: "Y por último el salón.", accion: "seleccionar", ancla: "horario.selector_salon", campo: "salon" },
-      { narracion: "Ahí tienes el horario de ese salón, con el profesor de cada clase.", accion: "explicar", ancla: "horario.rejilla" },
+      { narracion: "Ahí tienes el horario de ese salón, con el profesor de cada clase.", accion: "explicar", ancla: "horario.rejilla_salon" },
     ],
   },
   {
@@ -98,7 +98,7 @@ export const HORARIO: Capacidad[] = [
       { narracion: "Ahora el grado.", accion: "seleccionar", ancla: "horario.selector_grado", campo: "grado" },
       { narracion: "Y por último el salón.", accion: "seleccionar", ancla: "horario.selector_salon", campo: "salon" },
       { narracion: "Toca 'Armar horario' (o 'Editar horario' si ya tiene uno).", accion: "click", ancla: "horario.editar" },
-      { narracion: "Toca cada casilla y escoge la materia (arriba puedes buscarla por nombre o por profesor); con los botones de arriba cambias cuántas horas tiene el día.", accion: "explicar", ancla: "horario.rejilla" },
+      { narracion: "Toca cada casilla y escoge la materia (arriba puedes buscarla por nombre o por profesor); con los botones de arriba cambias cuántas horas tiene el día.", accion: "explicar", ancla: "horario.rejilla_salon" },
       { narracion: "Cuando termines, toca 'Guardar horario'. Si hay un cruce de profesores te dirá cuál es para que lo cambies.", accion: "click", ancla: "horario.guardar" },
     ],
   },

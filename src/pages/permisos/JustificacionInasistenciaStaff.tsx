@@ -215,7 +215,7 @@ const JustificacionInasistenciaStaff = () => {
                     const grupos: { key: string; items: typeof listaFinal }[] = [];
                     const byKey = new Map<string, typeof listaFinal>();
                     for (const j of listaFinal) {
-                      const k = diaCal ? keyDeDate(diaCal) : diasDe(j)[0];
+                      const k = diaCal ? keyDeDate(diaCal) : (diasDe(j)[0] || fechaKey(j.created_at));
                       let arr = byKey.get(k);
                       if (!arr) { arr = []; byKey.set(k, arr); grupos.push({ key: k, items: arr }); }
                       arr.push(j);

@@ -45,5 +45,7 @@ export const entrevistadoresDeSolicitud = (s: any, prefijo = ""): string =>
 export const cargoConArticulo = (cargo?: string | null): string => {
   const c = String(cargo || "").trim();
   if (!c) return "";
-  return `${/a$/i.test(c.split(" ")[0]) ? "la" : "el"} ${c.toLowerCase()}`;
+  const primera = c.split(" ")[0];
+  const art = primera.includes("(a)") ? "el/la" : /a$/i.test(primera) ? "la" : "el";
+  return `${art} ${c.toLowerCase()}`;
 };
