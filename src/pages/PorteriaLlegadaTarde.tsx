@@ -605,6 +605,7 @@ export const PorteriaHub = () => {
             <span className="text-foreground font-medium">{nombreFicha("Portería")}</span>
           </BreadcrumbDeslizable>
         </div>
+        <h2 className="text-2xl font-bold text-foreground text-center mb-6">{nombreFicha("Portería")}</h2>
         <div data-guia="porteria.hub" className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button onClick={() => navigate("/porteria/llegada-tarde")}
             className="bg-card rounded-lg shadow-soft p-8 flex flex-col items-center justify-center gap-3 text-center transition-all hover:shadow-md hover:bg-orange-50 border-2 border-transparent hover:border-orange-200">
