@@ -7,7 +7,7 @@ import { BookOpen, Plus, Trash2, Loader2, ListChecks, Clock, Pencil, Check } fro
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { apiRequest, ApiError } from "@/lib/apiClient";
 import { rankGrado } from "@/utils/grados";
-import { aclarar, estiloAsignatura, colorAlAzar } from "@/lib/coloresAsignaturas";
+import { estiloAsignatura, colorAlAzar } from "@/lib/coloresAsignaturas";
 import CirculoColor from "@/components/CirculoColor";
 
 /**
@@ -317,7 +317,7 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
                       data-guia="configurar_institucion.asignatura_color"
                       onClick={() => abrirColor(a)}
                       className={`w-4 h-4 rounded-full border border-black/10 shrink-0 hover:ring-2 hover:ring-primary/40 ${a.color ? "" : "bg-muted"}`}
-                      style={a.color ? { backgroundColor: aclarar(a.color, 0.3) } : undefined}
+                      style={a.color ? { backgroundColor: a.color } : undefined}
                       title="Color en el horario"
                       aria-label={`Color de ${a.nombre}`}
                     />

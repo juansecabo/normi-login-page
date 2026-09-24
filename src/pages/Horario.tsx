@@ -62,7 +62,7 @@ function Rejilla({ clases, dias, horas, modo, onCelda, franjas, guia = "horario.
               <tr key={h}>
                 <td className="text-center align-middle">
                   <div className="font-semibold text-foreground">{h}.ª</div>
-                  {fr && <div className="text-[11px] text-muted-foreground leading-tight">{fr.hora_inicio}<br />{fr.hora_fin}</div>}
+                  {fr && <div className="text-[11px] font-bold text-muted-foreground leading-tight">{fr.hora_inicio}<br />{fr.hora_fin}</div>}
                 </td>
                 {dias.map((d) => {
                   const cs = en(d, h);
@@ -102,7 +102,7 @@ function Rejilla({ clases, dias, horas, modo, onCelda, franjas, guia = "horario.
                     {sinHora(d).map((c, k) => (
                       <div key={k} className={`rounded-lg border p-2 ${colorDe(c.asignatura)}`} style={estiloDe(c.asignatura)}>
                         <div className="font-semibold text-foreground leading-tight">{c.asignatura}</div>
-                        <div className="text-[11px] text-muted-foreground">{modo === "profesor" ? `${c.grado} ${c.salon}` : (c.profesores || []).map((p) => p.nombre).join(", ")}</div>
+                        <div className="text-[11px] font-bold text-muted-foreground">{modo === "profesor" ? `${c.grado} ${c.salon}` : (c.profesores || []).map((p) => p.nombre).join(", ")}</div>
                       </div>
                     ))}
                   </div>
@@ -467,7 +467,7 @@ export function HorarioContenido({ embebido = false }: { embebido?: boolean }) {
               ) : (
                 <button key={a.asignatura} onClick={() => asignarCelda(a.asignatura)} className={`w-full text-left rounded-lg border p-2 hover:ring-2 hover:ring-primary/40 ${colorDe(a.asignatura)}`} style={estiloDe(a.asignatura)}>
                   <div className="font-semibold text-foreground">{a.asignatura}</div>
-                  <div className="text-xs text-muted-foreground">{a.profesores.map((p) => p.nombre).join(", ") || "Sin profesor asignado"}</div>
+                  <div className="text-xs font-bold text-muted-foreground">{a.profesores.map((p) => p.nombre).join(", ") || "Sin profesor asignado"}</div>
                 </button>
               ))}
           </div>

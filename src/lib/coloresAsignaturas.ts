@@ -5,7 +5,7 @@ import { apiRequest } from "@/lib/apiClient";
  * Color propio de cada asignatura (Juan 2026-09-24): un código exacto "#rrggbb" sacado al
  * azar del círculo de colores, distinto al de toda otra asignatura del colegio (lo sortea
  * y guarda el servidor; se cambia con el círculo en Configurar Institución → Asignaturas).
- * Al pintarlo se aclara para que el texto se siga leyendo.
+ * Se pinta con el color tal cual (Juan 2026-09-24: que no se aclare).
  */
 
 /** Mezcla un color con blanco (0 = el color, 1 = blanco). */
@@ -37,7 +37,7 @@ const porNombre = (a: string) => { let h = 0; for (const ch of a) h = (h * 31 + 
 export function estiloAsignatura(nombre: string, colores: Record<string, string>): { className: string; style: CSSProperties } {
   const c = colores[nombre];
   const hex = typeof c === "string" && /^#[0-9a-f]{6}$/i.test(c) ? c : porNombre(nombre);
-  return { className: "", style: { backgroundColor: aclarar(hex, 0.72), borderColor: aclarar(hex, 0.45) } };
+  return { className: "", style: { backgroundColor: hex, borderColor: hex } };
 }
 
 /** Mapa nombre → "#rrggbb" del colegio (se pide una vez). */
