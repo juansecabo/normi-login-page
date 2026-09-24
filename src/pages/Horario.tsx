@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/apiClient";
 import { estiloAsignatura, useColoresAsignaturas } from "@/lib/coloresAsignaturas";
+import RejillaHorarioEditable from "@/components/RejillaHorarioEditable";
 
 /**
  * Ficha Horario (2026-09-23), en todos los colegios. Flexible: un salón puede
@@ -158,6 +159,7 @@ export function HorarioContenido({ embebido = false }: { embebido?: boolean }) {
   const [celda, setCelda] = useState<{ dia: number; hora: number } | null>(null);
   const [buscaMateria, setBuscaMateria] = useState("");
   const [avisoHorario, setAvisoHorario] = useState<string | null>(null);
+  const [crucesMover, setCrucesMover] = useState<string[] | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [cruces, setCruces] = useState<any[] | null>(null);
   const [franjasEdit, setFranjasEdit] = useState<Franja[] | null>(null);
@@ -391,14 +393,18 @@ export function HorarioContenido({ embebido = false }: { embebido?: boolean }) {
                       {borrador ? (
                         <div className="space-y-3">
                           <div className="flex flex-wrap items-center gap-3 rounded-lg bg-muted/40 p-3 text-sm">
-                            <span>Toca una casilla para escoger la materia.</span>
+                            <span>Toca una casilla para escoger la materia, o mantén presionada una ficha para moverla.</span>
                             <span className="flex items-center gap-1">Horas por día:
                               <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => setHorasEdit((h) => Math.max(1, h - 1))} disabled={horasEdit <= Math.max(1, ...(borrador || []).map((c) => c.hora || 0))} title={horasEdit <= Math.max(1, ...(borrador || []).map((c) => c.hora || 0)) ? "Primero deja vacía la última hora" : undefined}><Minus className="w-3 h-3" /></Button>
                               <b className="w-5 text-center">{horasEdit}</b>
                               <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => setHorasEdit((h) => Math.min(15, h + 1))}><Plus className="w-3 h-3" /></Button>
                             </span>
                           </div>
-                          <Rejilla guia="horario.rejilla_salon" clases={borrador} dias={diasDe(borrador)} horas={horasEdit} modo="salon" franjas={datosSalon.franjas} onCelda={(dia, hora) => { setBuscaMateria(""); setCelda({ dia, hora }); }} />
+                          <RejillaHorarioEditable guia="horario.rejilla_salon" clases={borrador} dias={diasDe(borrador)} horas={horasEdit} franjas={datosSalon.franjas}
+                            onCelda={(dia, hora) => { setBuscaMateria(""); setCelda({ dia, hora }); }}
+                            onCambiar={(nuevas) => setBorrador(nuevas as Clase[])}
+                            cruces={(asig, dia, hora) => ((datosSalon.asignaturas || []).find((a: any) => a.asignatura === asig)?.profesores || []).flatMap((p: Profesor) => [...new Set<string>(datosSalon?.ocupados?.[`${p.id}|${dia}|${hora}`] || [])].map((sal) => `${p.nombre} tiene clase en ${sal} a esa hora`))}
+                            onCruce={setCrucesMover} colorDe={colorDe} estiloDe={estiloDe} />
                           <div className="flex justify-end gap-2">
                             <Button onClick={guardar} disabled={guardando} data-guia="horario.guardar">{guardando ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />} Guardar horario</Button>
                             <Button variant="outline" onClick={() => setBorrador(null)} disabled={guardando}>Cancelar</Button>
@@ -430,6 +436,15 @@ export function HorarioContenido({ embebido = false }: { embebido?: boolean }) {
             </div>
           )}
         </div>
+
+      <Dialog open={!!crucesMover} onOpenChange={(o) => !o && setCrucesMover(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>No se puede mover ahí</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">Quedaría un profesor en dos salones a la misma hora:</p>
+          <ul className="list-disc pl-5 space-y-1 text-sm">{(crucesMover || []).map((m) => <li key={m}>{m}</li>)}</ul>
+          <DialogFooter><Button onClick={() => setCrucesMover(null)}>Entendido</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!avisoHorario} onOpenChange={(o) => !o && setAvisoHorario(null)}>
         <DialogContent className="max-w-md">
