@@ -392,7 +392,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
               <p className="text-xs text-muted-foreground">{fechaLinda(ev.fecha_inicio)} — {fechaLinda(ev.fecha_fin)}</p>
             )}
           </div>
-          {!soloLectura && (<>
+          {puedeTocar(ev.nivel) && (<>
             <Button variant="outline" size="sm" className="gap-1" onClick={() => { setEventoEdit(ev.nombre); setEditandoDetalle(true); setDetalle({ tipo: "evento", evento: ev, desde: { fecha, eventos: evs } }); }}>
               <Pencil className="w-3.5 h-3.5" /> Editar
             </Button>
@@ -715,12 +715,12 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
                 {listaEventosDia(detalle.fecha, detalle.eventos)}
               </div>
             )}
-            {soloLectura || !editandoDetalle ? (
+            {!puedeTocar(detalle.dia.nivel) || !editandoDetalle ? (
               <p className="text-sm text-foreground">{detalle.dia.motivo || <span className="text-muted-foreground">Sin motivo</span>}</p>
             ) : (
               <Textarea data-guia="configurar_institucion.cal_detalle_texto" value={motivoEdit} onChange={(e) => setMotivoEdit(e.target.value)} placeholder="Motivo: semana de receso, jornada pedagógica…" maxLength={80} rows={3} className="resize-none" />
             )}
-            {!soloLectura && !editandoDetalle && (
+            {puedeTocar(detalle.dia.nivel) && !editandoDetalle && (
               <DialogFooter>
                 <Button variant="destructive" onClick={() => { const d = detalle.dia; setDetalle(null); setConfirmDia(d); }} disabled={guardando} className="gap-2">
                   <Trash2 className="w-4 h-4" /> Eliminar
@@ -730,7 +730,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
                 </Button>
               </DialogFooter>
             )}
-            {!soloLectura && editandoDetalle && (<>
+            {puedeTocar(detalle.dia.nivel) && editandoDetalle && (<>
             <DialogFooter>
               <Button variant="destructive" onClick={() => { const d = detalle.dia; setDetalle(null); setConfirmDia(d); }} disabled={guardando} className="gap-2">
                 <Trash2 className="w-4 h-4" /> Eliminar
@@ -758,13 +758,13 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
               </DialogDescription>
               {lineaPeriodo(detalle.evento.fecha_inicio)}
             </DialogHeader>
-            {soloLectura || !editandoDetalle ? (
+            {!puedeTocar(detalle.evento.nivel) || !editandoDetalle ? (
               vinetasEvento(detalle.evento.nombre)
             ) : (<>
               <Textarea data-guia="configurar_institucion.cal_detalle_texto" value={eventoEdit} onChange={(e) => setEventoEdit(e.target.value)} placeholder="Nombre del evento" maxLength={889} rows={4} className="resize-none" />
               <p className="text-xs text-muted-foreground text-right">{eventoEdit.length}/889</p>
             </>)}
-            {!soloLectura && !editandoDetalle && (
+            {puedeTocar(detalle.evento.nivel) && !editandoDetalle && (
               <DialogFooter>
                 <Button variant="destructive" onClick={() => { const ev = detalle.evento; setVolverAEventos(detalle.desde ?? null); setDetalle(null); setConfirmEvento(ev); }} disabled={guardando} className="gap-2">
                   <Trash2 className="w-4 h-4" /> Eliminar
@@ -774,7 +774,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
                 </Button>
               </DialogFooter>
             )}
-            {!soloLectura && editandoDetalle && (<>
+            {puedeTocar(detalle.evento.nivel) && editandoDetalle && (<>
             <DialogFooter>
               <Button variant="destructive" onClick={() => { const ev = detalle.evento; setVolverAEventos(detalle.desde ?? null); setDetalle(null); setConfirmEvento(ev); }} disabled={guardando} className="gap-2">
                 <Trash2 className="w-4 h-4" /> Eliminar
