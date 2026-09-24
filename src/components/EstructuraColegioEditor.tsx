@@ -7,6 +7,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { getSession } from "@/hooks/useSession";
 import { Clock, Plus, Trash2, GraduationCap, DoorOpen, Loader2, Layers, Pencil, GripVertical } from "lucide-react";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, horizontalListSortingStrategy, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
@@ -145,7 +146,9 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
       setNoMolestar(r);
     } catch (e) { err(e, "No se pudo guardar el No molestar."); }
   };
-  const hora12 = (h?: string | null) => { const p = de24(h); return p ? `${p.h12}:${String(p.min).padStart(2, "0")} ${p.ampm === "AM" ? "a. m." : "p. m."}` : ""; };
+  const hora12 = (h?: string | null) => { const p = de24(h); if (!p) return ""; if (String(h).slice(0, 5) === "12:00") return "12:00 m."; return `${p.h12}:${String(p.min).padStart(2, "0")} ${p.ampm === "AM" ? "a. m." : "p. m."}`; };
+  // Solo el rector o el administrador cambian el No molestar (el servidor también lo valida).
+  const puedeNoMolestar = !!colegioId || ["Rector", "Administrador", "SuperAdmin"].includes(getSession().cargo || "");
 
   const cargar = async () => {
     apiRequest<{ activo: boolean; desde: string; hasta: string }>(`/api/institucion/no-molestar${qCid}`).then(setNoMolestar).catch(() => null);
@@ -429,15 +432,15 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
             </div>
           </details>
 
-          <p className="text-xs text-muted-foreground">Si una jornada no tiene hora de entrada, la <strong>Vespertina</strong> se toma a las 12:00 m. y la <strong>Nocturna</strong> a las 7:00 p. m.</p>
+          <p className="text-xs text-muted-foreground">Si una jornada no tiene hora de entrada, la <strong>Vespertina</strong> se toma a las 12:00 m., la <strong>Nocturna</strong> a las 7:00 p. m. y cualquier otra a las 6:00 a. m.</p>
 
           {/* No molestar: horas en que no se mandan avisos automáticos al personal. */}
           {noMolestar && (
             <div className="pt-3 border-t border-border space-y-2" data-guia="configurar_institucion.no_molestar">
               <div className="flex items-center gap-3 flex-wrap">
-                <Switch checked={noMolestar.activo} onCheckedChange={(v) => guardarNoMolestar(v, noMolestar.desde)} />
+                <Switch checked={noMolestar.activo} disabled={!puedeNoMolestar} onCheckedChange={(v) => guardarNoMolestar(v, noMolestar.desde)} />
                 <span className="font-medium">No molestar</span>
-                {noMolestar.activo && (<>
+                {noMolestar.activo && puedeNoMolestar && (<>
                   <label className="text-xs text-muted-foreground">a partir de</label>
                   <SelectorHora dataGuia="configurar_institucion.no_molestar_hora" value={noMolestar.desde} onChange={(v) => guardarNoMolestar(true, v)} />
                 </>)}

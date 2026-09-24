@@ -148,6 +148,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
     // Soltar el foco del chip: si no, al desactivarlo queda la línea del outline de foco.
     e?.currentTarget?.blur();
     setArrastre2(null);
+    setOcultos(new Set());   // con filtro puesto, lo que se pinte o se quite no se vería
     setHerramienta((prev) => (prev === h ? null : h));
   };
   const [arrastre, setArrastre] = useState<{ ini: string; fin: string } | null>(null);
@@ -320,11 +321,11 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
   const bajarEnDia = (f: string) => {
     if (guardando) return;
     if (herramienta === "quitar") {
-      const dia = diasVista.find((d) => d.fecha_inicio <= f && f <= d.fecha_fin);
+      const dia = esVisible("sin") ? diasVista.find((d) => d.fecha_inicio <= f && f <= d.fecha_fin) : undefined;
       if (dia) { setConfirmDia(dia); return; }
-      const ev = eventos.find((e) => e.fecha_inicio <= f && f <= e.fecha_fin);
+      const ev = esVisible("ev") ? eventosVista.find((e) => e.fecha_inicio <= f && f <= e.fecha_fin) : undefined;
       if (ev) { setConfirmEvento(ev); return; }
-      const per = periodosVista.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin);
+      const per = periodosVista.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin && esVisible(`p${p.periodo}`));
       if (per) { setConfirmPeriodo(per.periodo); return; }
       return;
     }
@@ -386,7 +387,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
       {evs.map((ev) => (
         <li key={ev.id} className="flex items-center gap-2 p-3">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium break-words">{ev.nombre}</p>
+            <p className="text-sm font-medium break-words whitespace-pre-line">{ev.nombre}</p>
             {ev.fecha_inicio !== ev.fecha_fin && (
               <p className="text-xs text-muted-foreground">{fechaLinda(ev.fecha_inicio)} — {fechaLinda(ev.fecha_fin)}</p>
             )}
@@ -463,7 +464,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
                 const e = esquemas.find((x) => x.nivel === n);
                 const etiqueta = n === "" ? "Colegio (general)" : `${n}${e && e.esquema === "semestres" ? " (semestres)" : ""}`;
                 return (
-                  <button key={n || "__colegio"} type="button" onClick={() => { setNivelSel(n); setHerramienta(null); }}
+                  <button key={n || "__colegio"} type="button" onClick={() => { setNivelSel(n); setHerramienta(null); setOcultos(new Set()); }}
                     className={`px-3 py-1 rounded-full border text-sm ${nivelSel === n ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-accent"}`}>
                     {etiqueta}
                   </button>
@@ -481,7 +482,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
               <p className="font-medium">Niveles con fechas de periodo distintas a las generales:</p>
               {nivelesConExcepcion.map((n) => (
                 <p key={n}>
-                  <button type="button" className="underline hover:no-underline" onClick={() => setNivelSel(n)}>{n}</button>:{" "}
+                  <button type="button" className="underline hover:no-underline" onClick={() => { setNivelSel(n); setOcultos(new Set()); }}>{n}</button>:{" "}
                   {todosPeriodos.filter((p) => p.nivel === n).sort((a, b) => a.periodo - b.periodo).map((p) => `Periodo ${p.periodo} del ${fechaLinda(p.fecha_inicio)} al ${fechaLinda(p.fecha_fin)}`).join("; ")}
                 </p>
               ))}
@@ -573,7 +574,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
               );
             })}
             <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-red-200 border border-red-400" /> Sin clases</span>
-            <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-red-400 border border-red-500" /> Evento</span>
+            <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-red-400 border border-red-500" /> Eventos</span>
             <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-fuchsia-300 border border-fuchsia-400" /> Festivo (automático)</span>
           </div>
         </CardContent>
