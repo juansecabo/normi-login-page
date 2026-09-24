@@ -839,6 +839,8 @@ export const VARIOS: Capacidad[] = [
       "días sin clases",
       "festivos del colegio",
       "eventos del calendario",
+      "ver solo los eventos",
+      "filtrar el calendario",
     ],
     pasos: [
       { narracion: "Abrimos el calendario escolar.", accion: "navegar", ruta: "/calendario-escolar" },
@@ -846,6 +848,12 @@ export const VARIOS: Capacidad[] = [
         narracion:
           "Ahí ves los periodos, los días sin clases, los eventos y los festivos. Es solo de consulta.",
         accion: "explicar",
+      },
+      {
+        narracion: "Si quieres ver solo una cosa (un periodo, los días sin clases, los eventos o los festivos), toca los botones de 'Ver' para ocultar lo demás; 'Ver todo' lo vuelve a mostrar.",
+        accion: "explicar",
+        ancla: "configurar_institucion.cal_filtro",
+        opcional: true,
       },
     ],
   },

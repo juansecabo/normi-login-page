@@ -64,6 +64,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
 
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
+  const [ocultos, setOcultos] = useState<Set<string>>(new Set());
   const [anoEscolar, setAnoEscolar] = useState<number>(new Date().getFullYear());
   const [dias, setDias] = useState<DiaNoLectivo[]>([]);
   const [eventos, setEventos] = useState<Evento[]>([]);
@@ -255,6 +256,18 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
   };
 
   // ── Detalle de un día (sin herramienta): ver/editar lo que hay ahí ──
+  // Al tocar un día se ve también a qué periodo (o semestre) pertenece.
+  const lineaPeriodo = (f: string) => {
+    const per = periodosVista.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin);
+    return per ? <p className="text-xs font-medium text-primary">{estiloPeriodo(per.periodo, esqSel).nombre}: del {fechaLinda(per.fecha_inicio)} al {fechaLinda(per.fecha_fin)}</p> : null;
+  };
+  // Un evento con varias líneas (varias actividades el mismo día) se muestra en viñetas.
+  const vinetasEvento = (nombre: string) => {
+    const lineas = nombre.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+    return lineas.length > 1
+      ? <ul className="list-disc pl-5 space-y-1 text-sm text-foreground break-words">{lineas.map((l, i) => <li key={i}>{l}</li>)}</ul>
+      : <p className="text-sm text-foreground whitespace-pre-wrap break-words">{nombre}</p>;
+  };
   type Detalle =
     /** `eventos`: los que caen ese día (un evento puede existir en un día con o sin clases). */
     | { tipo: "dia"; dia: DiaNoLectivo; fecha: string; eventos: Evento[] }
@@ -317,15 +330,15 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
     }
     if (!herramienta) {
       // Modo inspección: mostrar qué hay en ese día (y permitir editarlo).
-      const evs = eventosVista.filter((e) => e.fecha_inicio <= f && f <= e.fecha_fin);
-      const dia = diasVista.find((d) => d.fecha_inicio <= f && f <= d.fecha_fin);
+      const evs = esVisible("ev") ? eventosVista.filter((e) => e.fecha_inicio <= f && f <= e.fecha_fin) : [];
+      const dia = esVisible("sin") ? diasVista.find((d) => d.fecha_inicio <= f && f <= d.fecha_fin) : undefined;
       if (dia) { setMotivoEdit(dia.motivo || ""); setEditandoDetalle(false); setDetalle({ tipo: "dia", dia, fecha: f, eventos: evs }); return; }
       if (evs.length > 1) { setDetalle({ tipo: "eventos", fecha: f, eventos: evs }); return; }
       const ev = evs[0];
       if (ev) { setEventoEdit(ev.nombre); setEditandoDetalle(false); setDetalle({ tipo: "evento", evento: ev }); return; }
-      const nombreFestivo = festivos.get(f);
+      const nombreFestivo = esVisible("fest") ? festivos.get(f) : undefined;
       if (nombreFestivo) { setDetalle({ tipo: "festivo", fecha: f, nombre: nombreFestivo }); return; }
-      const per = periodosVista.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin);
+      const per = periodosVista.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin && esVisible(`p${p.periodo}`));
       if (per) { setDetalle({ tipo: "periodo", periodo: per }); return; }
       return;
     }
@@ -391,21 +404,25 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
     </ul>
   );
 
+  // Filtro de lo que se ve (Juan 2026-09-23): cada periodo, días sin clases, eventos y
+  // festivos se pueden ocultar tocando su botón arriba del calendario.
+  const esVisible = (k: string) => !ocultos.has(k);
+  const alternar = (k: string) => setOcultos((prev) => { const n = new Set(prev); if (n.has(k)) n.delete(k); else n.add(k); return n; });
   const claseDia = (f: string, dow: number): { cls: string; title: string } => {
     const base = "cursor-pointer select-none";
     if (enSeleccion(f)) return { cls: `${base} ring-2 ring-primary bg-primary/20`, title: "" };
-    const dia = diasVista.find((d) => d.fecha_inicio <= f && f <= d.fecha_fin);
+    const dia = esVisible("sin") ? diasVista.find((d) => d.fecha_inicio <= f && f <= d.fecha_fin) : undefined;
     if (dia) {
-      const evsDia = eventosVista.filter((e) => e.fecha_inicio <= f && f <= e.fecha_fin);
+      const evsDia = esVisible("ev") ? eventosVista.filter((e) => e.fecha_inicio <= f && f <= e.fecha_fin) : [];
       const conEventos = evsDia.length > 0 ? ` ring-2 ring-inset ring-indigo-400` : "";
       const titulo = [(dia.motivo || "Día sin clases") + (dia.nivel ? ` (solo ${dia.nivel})` : ""), ...evsDia.map((e) => e.nombre + (e.nivel ? ` (solo ${e.nivel})` : ""))].join(" · ");
       return { cls: `${base} bg-red-200 hover:bg-red-300 text-red-900${conEventos}`, title: titulo };
     }
-    const ev = eventosVista.find((e) => e.fecha_inicio <= f && f <= e.fecha_fin);
+    const ev = esVisible("ev") ? eventosVista.find((e) => e.fecha_inicio <= f && f <= e.fecha_fin) : undefined;
     if (ev) return { cls: `${base} bg-indigo-200 hover:bg-indigo-300 text-indigo-900`, title: ev.nombre + (ev.nivel ? ` (solo ${ev.nivel})` : "") };
-    const nombreFestivo = festivos.get(f);
+    const nombreFestivo = esVisible("fest") ? festivos.get(f) : undefined;
     if (nombreFestivo) return { cls: `${base} bg-fuchsia-300 text-fuchsia-900`, title: `${nombreFestivo} (festivo automático)` };
-    const per = periodosVista.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin);
+    const per = periodosVista.find((p) => p.fecha_inicio <= f && f <= p.fecha_fin && esVisible(`p${p.periodo}`));
     // Editando: las fechas generales heredadas se ven atenuadas y las propias del nivel a
     // color pleno, para distinguir la excepción. En solo lectura todo va igual (a quien
     // consulta solo le importa qué fecha le aplica).
@@ -497,19 +514,22 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
             <p className="text-sm text-muted-foreground">Haz clic sobre un periodo, un día sin clases o un evento para quitarlo.</p>
           )}
 
-          {/* ── Leyenda arriba (solo lectura: que se vea sin hacer scroll) ── */}
-          {soloLectura && (
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground border border-border rounded-lg px-3 py-2 bg-muted/40">
-            {cortes.map((n) => (
-              <span key={n} className="inline-flex items-center gap-1.5">
-                <span className={`w-3 h-3 rounded-sm ${estiloPeriodo(n, esqSel).chip}`} /> {estiloPeriodo(n, esqSel).nombre}
-              </span>
+          {/* ── Qué ver: cada botón muestra u oculta esa capa del calendario (hace de leyenda). ── */}
+          <div className="flex flex-wrap items-center gap-2 text-xs border border-border rounded-lg px-3 py-2 bg-muted/40" data-guia="configurar_institucion.cal_filtro">
+            <span className="text-muted-foreground mr-1">Ver:</span>
+            {[
+              ...cortes.map((n) => ({ k: `p${n}`, chip: estiloPeriodo(n, esqSel).chip, nombre: estiloPeriodo(n, esqSel).nombre })),
+              { k: "sin", chip: "bg-red-200 border border-red-400", nombre: "Sin clases" },
+              { k: "ev", chip: "bg-indigo-200 border border-indigo-400", nombre: "Eventos" },
+              { k: "fest", chip: "bg-fuchsia-300 border border-fuchsia-400", nombre: "Festivos" },
+            ].map(({ k, chip, nombre }) => (
+              <button key={k} type="button" onClick={() => alternar(k)} aria-pressed={esVisible(k)}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 transition-colors ${esVisible(k) ? "bg-background border-border text-foreground" : "bg-transparent border-dashed border-border text-muted-foreground line-through opacity-60"}`}>
+                <span className={`w-3 h-3 rounded-sm ${chip}`} /> {nombre}
+              </button>
             ))}
-            <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-red-200 border border-red-400" /> Sin clases</span>
-            <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-indigo-200 border border-indigo-400" /> Evento</span>
-            <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-fuchsia-300 border border-fuchsia-400" /> Festivo (automático)</span>
+            {ocultos.size > 0 && <button type="button" onClick={() => setOcultos(new Set())} className="ml-1 text-primary underline">Ver todo</button>}
           </div>
-          )}
 
           {/* ── Los 12 meses ── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-5" data-guia="configurar_institucion.cal_dia">
@@ -734,9 +754,10 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
                   ? fechaLinda(detalle.evento.fecha_inicio)
                   : `${fechaLinda(detalle.evento.fecha_inicio)} — ${fechaLinda(detalle.evento.fecha_fin)}`}
               </DialogDescription>
+              {lineaPeriodo(detalle.evento.fecha_inicio)}
             </DialogHeader>
             {soloLectura || !editandoDetalle ? (
-              <p className="text-sm text-foreground whitespace-pre-wrap break-words">{detalle.evento.nombre}</p>
+              vinetasEvento(detalle.evento.nombre)
             ) : (<>
               <Textarea data-guia="configurar_institucion.cal_detalle_texto" value={eventoEdit} onChange={(e) => setEventoEdit(e.target.value)} placeholder="Nombre del evento" maxLength={889} rows={4} className="resize-none" />
               <p className="text-xs text-muted-foreground text-right">{eventoEdit.length}/889</p>
@@ -766,6 +787,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
             <DialogHeader>
               <DialogTitle>Eventos del día</DialogTitle>
               <DialogDescription>{fechaLinda(detalle.fecha)} · Elige cuál quieres ver.</DialogDescription>
+              {lineaPeriodo(detalle.fecha)}
             </DialogHeader>
             {listaEventosDia(detalle.fecha, detalle.eventos)}
           </>)}
