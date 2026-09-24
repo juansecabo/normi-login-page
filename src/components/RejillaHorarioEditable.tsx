@@ -1,6 +1,6 @@
 import { useRef, useState, type CSSProperties } from "react";
 import {
-  DndContext, DragOverlay, MouseSensor, TouchSensor, pointerWithin, useDraggable, useDroppable, useSensor, useSensors,
+  DndContext, DragOverlay, MeasuringStrategy, MouseSensor, TouchSensor, pointerWithin, useDraggable, useDroppable, useSensor, useSensors,
   type DragEndEvent, type DragOverEvent, type DragStartEvent,
 } from "@dnd-kit/core";
 
@@ -133,7 +133,7 @@ export default function RejillaHorarioEditable({ clases, dias, horas, franjas, o
   })();
 
   return (
-    <DndContext sensors={sensores} collisionDetection={pointerWithin} onDragStart={alEmpezar} onDragOver={alPasar} onDragEnd={alSoltar} onDragCancel={() => { setDe(null); setVista(null); }}>
+    <DndContext sensors={sensores} collisionDetection={pointerWithin} measuring={{ droppable: { strategy: MeasuringStrategy.Always } }} onDragStart={alEmpezar} onDragOver={alPasar} onDragEnd={alSoltar} onDragCancel={() => { setDe(null); setVista(null); }}>
       <div className="overflow-x-auto -mx-2 px-2" data-guia={guia}>
         <table className="w-full min-w-[640px] table-fixed border-separate border-spacing-1 text-sm">
           <colgroup><col className="w-20" />{dias.map((d) => <col key={d} />)}</colgroup>

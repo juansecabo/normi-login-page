@@ -98,7 +98,7 @@ export const HORARIO: Capacidad[] = [
     ruta: "/construye-institucion?vista=horario",
     endpoint: "PUT /api/horario/salon",
     requisitos: [{ entidad: "salon", descripcion: "Grado y salón a armar." }],
-    sinonimos: ["armar el horario", "hacer el horario", "cambiar el horario", "editar horario", "cruces de profesores"],
+    sinonimos: ["armar el horario", "hacer el horario", "cambiar el horario", "editar horario", "cruces de profesores", "mover una materia en el horario", "arrastrar materias del horario"],
     pasos: [
       ...LLEGAR_EDITAR,
       { narracion: "Escoge el nivel.", accion: "seleccionar", ancla: "horario.selector_nivel", campo: "nivel" },
@@ -106,6 +106,7 @@ export const HORARIO: Capacidad[] = [
       { narracion: "Y por último el salón.", accion: "seleccionar", ancla: "horario.selector_salon", campo: "salon" },
       { narracion: "Toca 'Armar horario' (o 'Editar horario' si ya tiene uno).", accion: "click", ancla: "horario.editar" },
       { narracion: "Toca cada casilla y escoge la materia (arriba puedes buscarla por nombre o por profesor); con los botones de arriba cambias cuántas horas tiene el día.", accion: "explicar", ancla: "horario.rejilla_salon" },
+      { narracion: "Para mover una materia, mantén presionada su ficha y arrástrala. En el mismo día las demás se corren; a otro día solo cabe en una casilla vacía. Si un profesor quedaría en dos salones a la misma hora, te avisa y no la mueve.", accion: "explicar", ancla: "horario.rejilla_salon" },
       { narracion: "Cuando termines, toca 'Guardar horario'. Si hay un cruce de profesores te dirá cuál es para que lo cambies.", accion: "click", ancla: "horario.guardar" },
     ],
   },
