@@ -712,7 +712,7 @@ const RetiroEstudiantes = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>✓ Permiso enviado</AlertDialogTitle>
             <AlertDialogDescription>
-              El permiso de salida fue creado y entregado con éxito. El personal del colegio recibirá la notificación.
+              El permiso de salida fue creado y entregado con éxito. Ya queda en la plataforma del colegio.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

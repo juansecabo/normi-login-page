@@ -567,7 +567,7 @@ const JustificacionInasistencia = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>✓ Excusa enviada</AlertDialogTitle>
             <AlertDialogDescription>
-              La excusa por inasistencia fue creada y entregada con éxito. El personal del colegio recibirá la notificación.
+              La excusa por inasistencia fue creada y entregada con éxito. Ya queda en la plataforma del colegio.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
