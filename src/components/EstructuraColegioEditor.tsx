@@ -70,6 +70,28 @@ const de24 = (str?: string | null): { h12: number; min: number; ampm: "AM" | "PM
  * Selector de hora amable: hora (1-12) + minutos (cada 5) + AM/PM.
  * `value`/`onChange` trabajan en formato 24h "HH:MM" (lo que guarda la BD).
  */
+/** Hora de "No molestar": solo p. m., de 7:00 a 11:00 (Juan 2026-09-23). Guarda "HH:MM" 24 h. */
+function SelectorHoraNoche({ value, onChange, dataGuia }: { value?: string | null; onChange: (v: string) => void; dataGuia?: string }) {
+  const [hh, mm] = String(value || "19:00").slice(0, 5).split(":").map(Number);
+  const h12 = Math.min(11, Math.max(7, (hh || 19) - 12));
+  const min = hh >= 23 ? 0 : (mm || 0);
+  const emitir = (nh: number, nm: number) => onChange(`${String(nh + 12).padStart(2, "0")}:${String(nh === 11 ? 0 : nm).padStart(2, "0")}`);
+  return (
+    <div className="flex items-center gap-1" data-guia={dataGuia}>
+      <Select value={String(h12)} onValueChange={(v) => emitir(Number(v), min)}>
+        <SelectTrigger className="w-[68px]"><SelectValue /></SelectTrigger>
+        <SelectContent>{[7, 8, 9, 10, 11].map((n) => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent>
+      </Select>
+      <span className="text-muted-foreground">:</span>
+      <Select value={String(min)} onValueChange={(v) => emitir(h12, Number(v))} disabled={h12 === 11}>
+        <SelectTrigger className="w-[72px]"><SelectValue /></SelectTrigger>
+        <SelectContent>{Array.from({ length: 12 }, (_, i) => i * 5).map((m) => <SelectItem key={m} value={String(m)}>{String(m).padStart(2, "0")}</SelectItem>)}</SelectContent>
+      </Select>
+      <span className="text-sm text-muted-foreground px-1">p. m.</span>
+    </div>
+  );
+}
+
 function SelectorHora({ value, onChange, dataGuia }: { value?: string | null; onChange: (v: string) => void; dataGuia?: string }) {
   const parsed = de24(value);
   const h12 = parsed?.h12 ?? null;
@@ -442,7 +464,7 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
                 <span className="font-medium">No molestar</span>
                 {noMolestar.activo && puedeNoMolestar && (<>
                   <label className="text-xs text-muted-foreground">a partir de</label>
-                  <SelectorHora dataGuia="configurar_institucion.no_molestar_hora" value={noMolestar.desde} onChange={(v) => guardarNoMolestar(true, v)} />
+                  <SelectorHoraNoche dataGuia="configurar_institucion.no_molestar_hora" value={noMolestar.desde} onChange={(v) => guardarNoMolestar(true, v)} />
                 </>)}
               </div>
               <p className="text-xs text-muted-foreground">
