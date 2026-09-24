@@ -898,11 +898,13 @@ const ProgramarActividad = () => {
         <div className="max-w-5xl mx-auto">
           {/* Menú de entrada: dos botones grandes (los profes no veían la pestaña). */}
           {vista === "menu" && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
+            <div className="bg-card rounded-lg shadow-soft p-8 max-w-3xl mx-auto">
+            <h2 className="text-2xl font-bold text-foreground text-center mb-6">Actividades</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <button
                 onClick={() => irA("programar")}
                 data-guia="actividades.menu_nueva"
-                className="bg-card rounded-lg shadow-soft p-8 flex flex-col items-center justify-center gap-3 text-center transition-all hover:shadow-md hover:bg-cyan-50 border-2 border-transparent hover:border-cyan-200"
+                className="rounded-lg p-8 flex flex-col items-center justify-center gap-3 text-center transition-all hover:shadow-md bg-cyan-50 hover:bg-cyan-100 border-2 border-cyan-200"
               >
                 <Pencil className="h-10 w-10 text-cyan-600" />
                 <span className="text-lg font-bold text-foreground">Nueva actividad</span>
@@ -911,12 +913,13 @@ const ProgramarActividad = () => {
               <button
                 onClick={() => irA("actividades")}
                 data-guia="actividades.menu_programadas"
-                className="bg-card rounded-lg shadow-soft p-8 flex flex-col items-center justify-center gap-3 text-center transition-all hover:shadow-md hover:bg-emerald-50 border-2 border-transparent hover:border-emerald-200"
+                className="rounded-lg p-8 flex flex-col items-center justify-center gap-3 text-center transition-all hover:shadow-md bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-200"
               >
                 <Calendar className="h-10 w-10 text-emerald-600" />
                 <span className="text-lg font-bold text-foreground">Actividades Programadas</span>
                 <span className="text-sm text-muted-foreground">Mira el calendario de lo que ya dejaste</span>
               </button>
+            </div>
             </div>
           )}
 

@@ -449,7 +449,7 @@ const AprendeNormi = () => {
           </BreadcrumbDeslizable>
         </div>
 
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-4 bg-card rounded-lg shadow-soft p-6 mb-6">
           <img src={normiImg} alt="Normi" className="h-24 md:h-28 object-contain drop-shadow" />
           <div>
             <h2 className="text-2xl font-bold text-foreground">Aprende con Normi</h2>

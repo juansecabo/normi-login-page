@@ -444,7 +444,9 @@ export const PorteriaRegistro = () => {
           </BreadcrumbDeslizable>
         </div>
 
-        <h2 className="text-2xl font-bold text-foreground text-center mb-4">Registro de llegada tarde</h2>
+        <div className="bg-card rounded-lg shadow-soft p-6 mb-4">
+          <h2 className="text-2xl font-bold text-foreground text-center">Registro de llegada tarde</h2>
+        </div>
         <div data-guia="porteria.tabs_registro" className="flex gap-2 mb-4">
           <button onClick={() => setSub("dia")}
             className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${sub === "dia" ? "bg-primary text-primary-foreground" : "bg-card text-foreground hover:bg-muted/50 border border-border"}`}>
@@ -606,20 +608,22 @@ export const PorteriaHub = () => {
             <span className="text-foreground font-medium">{nombreFicha("Portería")}</span>
           </BreadcrumbDeslizable>
         </div>
+        <div className="bg-card rounded-lg shadow-soft p-8 max-w-3xl mx-auto">
         <h2 className="text-2xl font-bold text-foreground text-center mb-6">{nombreFicha("Portería")}</h2>
-        <div data-guia="porteria.hub" className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div data-guia="porteria.hub" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button onClick={() => navigate("/porteria/llegada-tarde")}
-            className="bg-card rounded-lg shadow-soft p-8 flex flex-col items-center justify-center gap-3 text-center transition-all hover:shadow-md hover:bg-orange-50 border-2 border-transparent hover:border-orange-200">
+            className="rounded-lg p-8 flex flex-col items-center justify-center gap-3 text-center transition-all hover:shadow-md bg-orange-50 hover:bg-orange-100 border-2 border-orange-200">
             <Clock className="h-10 w-10 text-orange-500" />
             <span className="text-lg font-bold text-foreground">Reportar llegada tarde</span>
             <span className="text-sm text-muted-foreground">Avisa a los acudientes de quienes llegaron tarde</span>
           </button>
           <button onClick={() => navigate("/porteria/registro")}
-            className="bg-card rounded-lg shadow-soft p-8 flex flex-col items-center justify-center gap-3 text-center transition-all hover:shadow-md hover:bg-sky-50 border-2 border-transparent hover:border-sky-200">
+            className="rounded-lg p-8 flex flex-col items-center justify-center gap-3 text-center transition-all hover:shadow-md bg-sky-50 hover:bg-sky-100 border-2 border-sky-200">
             <ClipboardList className="h-10 w-10 text-sky-600" />
             <span className="text-lg font-bold text-foreground">Registro de llegada tarde</span>
             <span className="text-sm text-muted-foreground">Consulta el historial de llegadas tarde</span>
           </button>
+        </div>
         </div>
       </main>
     </div>

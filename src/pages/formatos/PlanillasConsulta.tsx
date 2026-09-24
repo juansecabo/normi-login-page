@@ -135,10 +135,12 @@ const PlanillasConsulta = () => {
           </BreadcrumbDeslizable>
         </div>
 
-        <h1 className="text-center text-2xl font-bold text-foreground">Planillas diligenciadas</h1>
+        <div className="bg-card rounded-lg shadow-soft p-6">
+          <h1 className="text-center text-2xl font-bold text-foreground">Planillas diligenciadas</h1>
         <p className="text-center text-muted-foreground mt-1 text-sm">
           {isProfesor() ? "Tus planillas de nivelación y apoyo." : "Planillas de nivelación y apoyo diligenciadas por los docentes."}
         </p>
+        </div>
 
         {cargando ? (
           <div className="mt-8 flex items-center gap-2 text-muted-foreground"><Loader2 className="w-5 h-5 animate-spin" /> Cargando…</div>

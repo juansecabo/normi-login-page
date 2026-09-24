@@ -181,13 +181,15 @@ const ConsolidadoGrupo = () => {
         ) : periodo == null ? (
           /* ── Selector de periodo ─────────────────────────────── */
           <div className="max-w-3xl mx-auto" data-guia="estadisticas.grupo_periodo">
+            <div className="bg-card rounded-lg shadow-soft p-6 mb-6">
             <h2 className="text-2xl font-bold text-foreground mb-1 text-center">Consolidado de mi grupo</h2>
             <p className="text-sm text-muted-foreground mb-1 text-center">
               <span className="inline-flex items-center gap-1.5 font-semibold text-primary">
                 <Users className="w-4 h-4" /> {dirGrupo}
               </span>
             </p>
-            <p className="text-sm text-muted-foreground mb-6 text-center">Elige un periodo para ver las definitivas de tus estudiantes.</p>
+            <p className="text-sm text-muted-foreground text-center">Elige un periodo para ver las definitivas de tus estudiantes.</p>
+            </div>
             <div data-guia="varios.consolidado_periodo" className={`grid grid-cols-2 gap-4 ${PERIODOS.length <= 2 ? "sm:grid-cols-2" : PERIODOS.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-4"}`}>
               {PERIODOS.map((p) => (
                 <button key={p} onClick={() => setPeriodo(p)}

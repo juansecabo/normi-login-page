@@ -140,14 +140,16 @@ export default function MisConsultasEstudiante() {
             <span className="text-foreground font-medium">Mis Consultas</span>
           </BreadcrumbDeslizable>
         </div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center justify-center gap-2 mb-4">
-          <FileBarChart2 className="h-6 w-6 text-primary" />
-          Mis Consultas
-        </h1>
+        <div className="bg-card rounded-lg shadow-soft p-6 mb-6">
+          <h1 className="text-2xl font-bold text-foreground flex items-center justify-center gap-2 mb-2">
+            <FileBarChart2 className="h-6 w-6 text-primary" />
+            Mis Consultas
+          </h1>
+          <p className="text-sm text-muted-foreground text-center">
+            Aquí puedes ver las consultas que te ha enviado el colegio y responder o editar tus respuestas.
+          </p>
+        </div>
 
-        <p className="text-sm text-muted-foreground mb-4">
-          Aquí puedes ver las consultas que te ha enviado el colegio y responder o editar tus respuestas.
-        </p>
 
         {loading ? (
           <div className="text-center py-8 text-muted-foreground">Cargando...</div>

@@ -67,8 +67,10 @@ const Formatos = () => {
             <span className="text-foreground font-medium">Formatos</span>
           </BreadcrumbDeslizable>
         </div>
-        <h1 className="text-center text-2xl font-bold text-foreground">Formatos</h1>
+        <div className="bg-card rounded-lg shadow-soft p-6">
+          <h1 className="text-center text-2xl font-bold text-foreground">Formatos</h1>
         <p className="text-center text-muted-foreground mt-1">Formatos de la institución: se llenan aquí, se firman y se descargan.</p>
+        </div>
 
         <div className="mt-6 space-y-3">
           {formatosGenerales.map(renderCard)}

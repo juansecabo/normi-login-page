@@ -147,7 +147,9 @@ const ConsultaAsistencia = () => {
           </BreadcrumbDeslizable>
         </div>
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-2xl font-bold text-foreground mb-1 text-center">{isProfesor() ? "Registro de asistencia" : "Asistencia"}</h2>
+          <div className="bg-card rounded-lg shadow-soft p-6 mb-6">
+            <h2 className="text-2xl font-bold text-foreground text-center">{isProfesor() ? "Registro de asistencia" : "Asistencia"}</h2>
+          </div>
 
           {/* ═══════════ INTERNOS ═══════════ */}
           {esInterno && (

@@ -158,10 +158,11 @@ const ApoyoPlanilla = () => {
             <span className="text-foreground font-medium">Plan de Apoyo al Mejoramiento</span>
           </BreadcrumbDeslizable>
         </div>
-        <h1 className="text-center text-2xl font-bold text-foreground">Plan de Apoyo al Mejoramiento</h1>
-        <p className="text-center text-muted-foreground mt-1 text-sm">La definitiva se calcula sola: Taller 40% + Sustentación 60%.</p>
-
-        <div className="mt-6 space-y-4 bg-card rounded-lg shadow-soft p-5">
+        <div className="space-y-4 bg-card rounded-lg shadow-soft p-5">
+          <div>
+          <h1 className="text-center text-2xl font-bold text-foreground">Plan de Apoyo al Mejoramiento</h1>
+        <p className="text-center text-muted-foreground mt-1 text-sm mb-2">La definitiva se calcula sola: Taller 40% + Sustentación 60%.</p>
+          </div>
           <div className="grid md:grid-cols-3 gap-3">
             <div><label className="text-sm font-medium">Grado *</label>
               <select value={grado} onChange={(e) => { setGrado(e.target.value); setSalon(""); }} className={inputCls + " cursor-pointer"} data-guia="apoyo.select_grado">

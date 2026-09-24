@@ -29,8 +29,10 @@ const AsistenciaMenu = () => {
           </BreadcrumbDeslizable>
         </div>
         <div className="max-w-xl mx-auto">
-          <h2 className="text-2xl font-bold text-foreground mb-1 text-center">Asistencia</h2>
-          <p className="text-center text-muted-foreground mb-6">¿Qué deseas hacer?</p>
+          <div className="bg-card rounded-lg shadow-soft p-6 mb-6">
+            <h2 className="text-2xl font-bold text-foreground mb-1 text-center">Asistencia</h2>
+            <p className="text-center text-muted-foreground">¿Qué deseas hacer?</p>
+          </div>
 
           <div className="grid gap-4">
             <button

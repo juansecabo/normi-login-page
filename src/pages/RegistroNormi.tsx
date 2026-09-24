@@ -498,11 +498,12 @@ const RegistroNormi = () => {
             <span className="text-foreground font-medium">Registro en Normi</span>
           </BreadcrumbDeslizable>
         </div>
-        <p className="text-sm text-muted-foreground max-w-4xl mx-auto mb-6 text-center">Revisa qué estudiantes y acudientes están registrados o no con Normi.</p>
-
-        <h2 className="text-2xl font-bold text-foreground text-center mb-6">
-          Registro en Normi
-        </h2>
+        <div className="bg-card rounded-lg shadow-soft p-6 mb-6 max-w-4xl mx-auto">
+          <h2 className="text-2xl font-bold text-foreground text-center mb-1">
+            Registro en Normi
+          </h2>
+          <p className="text-sm text-muted-foreground text-center">Revisa qué estudiantes y acudientes están registrados o no con Normi.</p>
+        </div>
 
         {/* Filters */}
         <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 sm:gap-3 mb-6 max-w-4xl mx-auto">

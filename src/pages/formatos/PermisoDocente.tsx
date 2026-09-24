@@ -138,10 +138,11 @@ const PermisoDocente = () => {
             <span className="text-foreground font-medium">Solicitud de permiso docente</span>
           </BreadcrumbDeslizable>
         </div>
-        <h1 className="text-center text-2xl font-bold text-foreground">Solicitud de permiso docente</h1>
-        <p className="text-center text-muted-foreground mt-1 text-sm">Llénalo, firma con el dedo y guárdalo. También puedes descargar el PDF.</p>
-
-        <div className="mt-6 space-y-4 bg-card rounded-lg shadow-soft p-5">
+        <div className="space-y-4 bg-card rounded-lg shadow-soft p-5">
+          <div>
+          <h1 className="text-center text-2xl font-bold text-foreground">Solicitud de permiso docente</h1>
+        <p className="text-center text-muted-foreground mt-1 text-sm mb-2">Llénalo, firma con el dedo y guárdalo. También puedes descargar el PDF.</p>
+          </div>
           <div className="grid md:grid-cols-2 gap-4">
             <div><label className="text-sm font-medium">Fecha de solicitud</label><input type="date" value={fechaSolicitud} onChange={(e) => setFechaSolicitud(e.target.value)} className={inputCls} data-guia="permisodoc.fecha_solicitud" /></div>
             <div><label className="text-sm font-medium">Fecha del permiso *</label><input type="date" value={fechaPermiso} onChange={(e) => setFechaPermiso(e.target.value)} className={inputCls} data-guia="permisodoc.fecha_permiso" /></div>
