@@ -99,19 +99,22 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
   };
 
   // ── Catálogo ──
+  // Marcar y desmarcar cambian la casilla AL INSTANTE (id negativo = aún guardándose); el
+  // servidor guarda por detrás y la lista se recarga sola. Si falla, se recarga y avisa.
   const agregarAsignatura = async (nombres: string[]) => {
-    if (agregando) return;
     setAgregando(true);
+    const temp = nombres.map((nombre, i) => ({ id: -(Date.now() + i), nombre, activa: true, orden: null } as Asignatura));
+    setAsignaturas((prev) => [...prev, ...temp]);
     try {
       await apiRequest("/api/institucion/asignaturas", {
         method: "POST",
         body: JSON.stringify(withCid(nombres.length === 1 ? { nombre: nombres[0] } : { nombres })),
       });
       setNuevaAsig("");
-      await cargar();
     } catch (e) { err(e, "No se pudo agregar la asignatura."); }
-    finally { setAgregando(false); }
+    finally { setAgregando(false); cargar(); }
   };
+  const marcarLocal = (id: number, activa: boolean) => setAsignaturas((prev) => prev.map((x) => (x.id === id ? { ...x, activa } : x)));
 
   /**
    * Desmarcar = quitarla del colegio: si está virgen se ELIMINA; si ya tiene
@@ -119,9 +122,10 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
    * se DESACTIVA (deja de ofrecerse para lo nuevo, historial intacto).
    */
   const quitarAsignatura = async (a: Asignatura) => {
+    marcarLocal(a.id, false);
     try {
       await apiRequest(`/api/institucion/asignaturas/${a.id}${qCid}`, { method: "DELETE" });
-      await cargar();
+      cargar();
     } catch (e) {
       if (e instanceof ApiError && (e.body as any)?.error === "asignatura_en_uso") {
         try {
@@ -133,23 +137,25 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
             title: `${a.nombre} desactivada`,
             description: "Tiene notas u otros registros, así que no se borra: deja de ofrecerse para carga académica nueva y todo su historial queda intacto. Márcala de nuevo para reactivarla.",
           });
-          await cargar();
-        } catch (e2) { err(e2, "No se pudo desactivar la asignatura."); }
+          cargar();
+        } catch (e2) { err(e2, "No se pudo desactivar la asignatura."); cargar(); }
         return;
       }
       err(e, "No se pudo quitar la asignatura.");
+      cargar(); // vuelve a mostrarla marcada
     }
   };
 
   /** Reactivar una asignatura que estaba desactivada. */
   const reactivarAsignatura = async (a: Asignatura) => {
+    marcarLocal(a.id, true);
     try {
       await apiRequest(`/api/institucion/asignaturas/${a.id}`, {
         method: "PATCH",
         body: JSON.stringify(withCid({ activa: true })),
       });
-      await cargar();
     } catch (e) { err(e, "No se pudo reactivar la asignatura."); }
+    finally { cargar(); }
   };
 
   // ── Renombrar (con propagación en el server a Notas, Actividades, carga
@@ -307,7 +313,7 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
                     <input
                       type="checkbox"
                       checked={marcada}
-                      onChange={() => (!a ? agregarAsignatura([nombre]) : a.activa ? quitarAsignatura(a) : reactivarAsignatura(a))}
+                      onChange={() => (!a ? agregarAsignatura([nombre]) : a.id < 0 ? undefined : a.activa ? quitarAsignatura(a) : reactivarAsignatura(a))}
                       className="w-4 h-4 accent-primary shrink-0 cursor-pointer"
                     />
                     <span className={`text-sm truncate ${marcada ? "" : "text-muted-foreground"}`}>{nombre}</span>
