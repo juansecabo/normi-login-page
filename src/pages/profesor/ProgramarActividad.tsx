@@ -926,6 +926,7 @@ const ProgramarActividad = () => {
           {/* ===== Programar Actividad ===== */}
           {vista === "programar" && (
             <div className="bg-card rounded-lg shadow-soft p-6 md:p-8 space-y-5 max-w-3xl mx-auto">
+              <h2 className="text-2xl font-bold text-foreground text-center">Nueva actividad</h2>
               {loadingAsignaciones ? (
                 <div className="text-center text-muted-foreground py-8">Cargando...</div>
               ) : (!modoGeneral && asignaturas.length === 0) ? (
@@ -1214,6 +1215,7 @@ const ProgramarActividad = () => {
           {/* ===== Actividades Programadas ===== */}
           {vista === "actividades" && (
             <div className="bg-card rounded-lg shadow-soft p-6 md:p-8 space-y-5">
+              <h2 className="text-2xl font-bold text-foreground text-center">Actividades Programadas</h2>
               {loadingAsignaciones ? (
                 <div className="text-center text-muted-foreground py-8">Cargando...</div>
               ) : (
