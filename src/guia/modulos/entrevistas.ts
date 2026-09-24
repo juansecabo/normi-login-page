@@ -97,7 +97,7 @@ export const ENTREVISTAS: Capacidad[] = [
     id: "entrevistas.crear",
     titulo: "Crear una solicitud de entrevista",
     descripcion:
-      "Citar al acudiente de un estudiante a una entrevista, con fecha, hora, entrevistadores, mensaje y firma.",
+      "Citar al acudiente de un estudiante a una entrevista, con fecha, hora, entrevistadores, mensaje y firma. Al acudiente le llega la citación y a los demás entrevistadores (no a quien la crea) les llega de una vez un WhatsApp con quién los puso y los datos de la entrevista.",
     categoria: "Entrevistas",
     roles: [...STAFF_ENTREVISTAS],
     ruta: "/solicitud-entrevista-staff",

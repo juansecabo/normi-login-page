@@ -447,6 +447,7 @@ const SolicitudEntrevistaStaff = () => {
     // Una solicitud (fila + citación individual al acudiente) POR estudiante elegido.
     let creadas = 0;
     const fallidas: string[] = [];
+    const creadosOk: typeof estudiantesSeleccionados = [];
     for (const est of estudiantesSeleccionados) {
       const { error } = await supabase.from("Solicitudes_Entrevista").insert({
         fecha_solicitud: fmtLocal(hoy),
@@ -468,6 +469,7 @@ const SolicitudEntrevistaStaff = () => {
       });
       if (error) { fallidas.push(`${est.apellidos} ${est.nombres}`); continue; }
       creadas++;
+      creadosOk.push(est);
       // Notificar SOLO a los acudientes de ESTE estudiante → cada padre recibe su
       // propia citación, sin ver a los demás. El remitente lo arma el server.
       const mensaje = `Se le informa que se ha solicitado una entrevista para el acudiente del estudiante ${est.nombres} ${est.apellidos} de ${est.grado} ${est.salon}.\n\nFecha: ${fechaEntrevistaTexto}\nHora: ${horaEntrevista}\nCon: ${entrevistaConNombre}${bloqueMensaje}\n\nPor favor ingrese a notasnormi.com y en el inicio haga click en la ficha "Solicitud de Entrevista", busque el día indicado, haga click sobre la citación y confirme su asistencia.`;
@@ -481,14 +483,47 @@ const SolicitudEntrevistaStaff = () => {
       }).catch(e => console.error("Notificación entrevista error:", e));
     }
 
+    // Aviso inmediato a los OTROS entrevistadores (Juan 2026-09-23): quién los puso y los
+    // datos de la entrevista. A quien la crea no le llega (acaba de hacerlo él mismo).
+    const otros = entrevistadores.filter((e) => String(e.id) !== String(session.id));
+    if (creadosOk.length > 0 && otros.length > 0) {
+      const creador = [cargoSegunGenero(session.cargo || undefined, session.genero), session.nombres, session.apellidos].filter(Boolean).join(" ");
+      const ests = creadosOk.map((e) => `${e.nombres} ${e.apellidos} (${e.grado} ${e.salon})`);
+      const listaEsts = ests.length === 1 ? ests[0] : `${ests.slice(0, -1).join(", ")} y ${ests[ests.length - 1]}`;
+      const cuantas = creadosOk.length === 1 ? "una entrevista" : `${creadosOk.length} entrevistas`;
+      const acudientes = creadosOk.length === 1 ? "el acudiente" : "los acudientes";
+      // Un mensaje por entrevistador: "entrevistador"/"entrevistadora" según su género.
+      for (const e of otros) {
+        const rol = e.genero === "F" ? "entrevistadora" : e.genero === "M" ? "entrevistador" : "entrevistador(a)";
+        const msgEntrev = [
+          `${creador} lo(a) puso como ${rol} en ${cuantas} con ${acudientes} de ${listaEsts}.`,
+          "",
+          `Fecha: ${fechaEntrevistaTexto}`,
+          `Hora: ${horaEntrevista}`,
+          `Con: ${entrevistaConNombre}${bloqueMensaje}`,
+          "",
+          `Puede verla en notasnormi.com, en la ficha "Solicitud de Entrevista".`,
+        ].join("\n").replace("lo(a) puso", e.genero === "F" ? "la puso" : e.genero === "M" ? "lo puso" : "lo(a) puso");
+        apiRequest('/api/comunicados/enviar', {
+          method: 'POST',
+          body: JSON.stringify({
+            destinatarios_label: [cargoSegunGenero(e.cargo, e.genero), e.nombres, e.apellidos].filter(Boolean).join(" "),
+            mensaje: msgEntrev,
+            tipo_notificacion: "entrevistas",
+            segmentos: [{ perfil: ["Profesores", "Coordinadores", "Rector", "Secretaria General", "Administrativos", "Administradores", "Orientadores", "Porteros"], id_destinatarios: [String(e.id)] }],
+          }),
+        }).catch((err) => console.error("Aviso a entrevistador:", err));
+      }
+    }
+
     if (creadas === 0) {
       toast({ title: "Error", description: "No se pudo crear ninguna solicitud. Intenta de nuevo.", variant: "destructive" });
       setSaving(false); setShowConfirm(false); return;
     }
 
     const resumen = creadas === 1
-      ? "La solicitud de entrevista fue registrada y se notificó al acudiente."
-      : `Se crearon ${creadas} solicitudes y se notificó individualmente a cada acudiente.`;
+      ? `La solicitud de entrevista fue registrada y se notificó al acudiente${otros.length ? " y a los demás entrevistadores" : ""}.`
+      : `Se crearon ${creadas} solicitudes y se notificó individualmente a cada acudiente${otros.length ? " y a los demás entrevistadores" : ""}.`;
     const conFallas = fallidas.length > 0 ? ` No se pudo con: ${fallidas.join(", ")}.` : "";
     toast({ title: "Solicitud creada", description: resumen + conFallas });
     setGrado(""); setSalon(""); setEstudiantesSeleccionados([]); setFechaEntrevista(undefined);
