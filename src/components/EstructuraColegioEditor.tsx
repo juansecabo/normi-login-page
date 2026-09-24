@@ -150,7 +150,7 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
   const [aplicandoBulk, setAplicandoBulk] = useState(false);
   const [importando, setImportando] = useState(false);
   // "No molestar" del colegio (horas en que no se mandan avisos automáticos al personal).
-  const [noMolestar, setNoMolestar] = useState<{ activo: boolean; desde: string; hasta: string } | null>(null);
+  const [noMolestar, setNoMolestar] = useState<{ activo: boolean; desde: string; hasta: string; jornadas?: { id: number; nombre: string; entrada: string }[] } | null>(null);
 
   useEffect(() => {
     cargar();
@@ -164,16 +164,17 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
 
   const guardarNoMolestar = async (activo: boolean, desde: string) => {
     try {
-      const r = await apiRequest<{ activo: boolean; desde: string; hasta: string }>("/api/institucion/no-molestar", { method: "PUT", body: JSON.stringify(withCid({ activo, desde })) });
-      setNoMolestar(r);
+      await apiRequest("/api/institucion/no-molestar", { method: "PUT", body: JSON.stringify(withCid({ activo, desde })) });
+      // Se relee con GET: así el coordinador sigue viendo solo sus jornadas.
+      setNoMolestar(await apiRequest<any>(`/api/institucion/no-molestar${qCid}`));
     } catch (e) { err(e, "No se pudo guardar el No molestar."); }
   };
   const hora12 = (h?: string | null) => { const p = de24(h); if (!p) return ""; if (String(h).slice(0, 5) === "12:00") return "12:00 m."; return `${p.h12}:${String(p.min).padStart(2, "0")} ${p.ampm === "AM" ? "a. m." : "p. m."}`; };
-  // Solo el rector o el administrador cambian el No molestar (el servidor también lo valida).
-  const puedeNoMolestar = !!colegioId || ["Rector", "Administrador", "SuperAdmin"].includes(getSession().cargo || "");
+  // Rector, coordinación o administrador cambian el No molestar (el servidor también lo valida).
+  const puedeNoMolestar = !!colegioId || ["Rector", "Coordinador(a)", "Administrador", "SuperAdmin"].includes(getSession().cargo || "");
 
   const cargar = async () => {
-    apiRequest<{ activo: boolean; desde: string; hasta: string }>(`/api/institucion/no-molestar${qCid}`).then(setNoMolestar).catch(() => null);
+    apiRequest<any>(`/api/institucion/no-molestar${qCid}`).then(setNoMolestar).catch(() => null);
     try {
       const r = await apiRequest<{ jornadas: Jornada[]; grados: Grado[]; salones: Salon[]; niveles: Nivel[] }>(`/api/institucion/estructura${qCid}`);
       setJornadas(r.jornadas || []);
@@ -469,7 +470,7 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
               </div>
               <p className="text-xs text-muted-foreground">
                 {noMolestar.activo
-                  ? <>Los avisos automáticos al personal (excusas, retiros, justificaciones de uniforme y demás) no se envían desde las <strong>{hora12(noMolestar.desde)}</strong> hasta el inicio de la jornada del día siguiente (<strong>{hora12(noMolestar.hasta)}</strong>), ni sábados ni domingos. Quedan guardados y salen apenas se abre ese horario.</>
+                  ? <>Los avisos automáticos al personal (excusas, retiros, justificaciones de uniforme y demás) no se envían desde las <strong>{hora12(noMolestar.desde)}</strong> hasta el inicio de la jornada del día siguiente (<strong>{(noMolestar.jornadas && noMolestar.jornadas.length ? noMolestar.jornadas.map((j) => `${j.nombre}: ${hora12(j.entrada)}`).join(", ") : hora12(noMolestar.hasta))}</strong>), ni sábados, domingos ni festivos. Cada aviso espera la entrada de la jornada de su estudiante. Quedan guardados y salen apenas se abre ese horario.</>
                   : <>Desactivado: los avisos automáticos al personal se envían a cualquier hora, cualquier día.</>}
               </p>
             </div>
