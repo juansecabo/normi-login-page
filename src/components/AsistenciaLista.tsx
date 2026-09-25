@@ -67,7 +67,7 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
           <div>
             <h2 className="text-xl font-bold text-foreground">Tomar asistencia</h2>
             <p className="text-sm text-muted-foreground mt-0.5">
-              <span className="font-semibold text-primary">{grado} {salon}</span> · {asignatura} · <span className="capitalize">{fechaTexto}</span>
+              <span className="font-semibold text-primary">{grado} {salon}</span> · {asignatura} · {fechaTexto.charAt(0).toUpperCase() + fechaTexto.slice(1)}
             </p>
           </div>
           <div className="flex flex-wrap gap-1.5 text-xs font-semibold">
