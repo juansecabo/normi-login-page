@@ -418,7 +418,7 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg"><Clock className="h-5 w-5 text-primary" /> Jornadas</CardTitle>
-          <p className="text-sm text-muted-foreground">Define las jornadas con su hora de entrada y salida. El aviso de actividades se envía automáticamente <strong>5 minutos después de la salida</strong>.</p>
+          <p className="text-sm text-muted-foreground">Define las jornadas con su hora de entrada y salida. El reporte diario de actividades sale <strong>5 minutos después de la salida</strong> de la jornada de cada salón. Sin hora de salida: Matutina 1:00 p. m., Vespertina 7:00 p. m. y Nocturna 11:00 p. m.; una jornada con otro nombre sin salida no recibe reporte.</p>
         </CardHeader>
         <CardContent className="space-y-3">
           {jornadas.map((j) => (
