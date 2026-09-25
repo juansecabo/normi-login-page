@@ -156,9 +156,7 @@ const ObservadorEstudiantil = () => {
     setEstSel(e);
     setObservaciones([]);
     cargarObservaciones(e.id);
-    // Persiste en la URL (al recargar sigue aquí). Si ya estaba (entrada directa con un solo
-    // estudiante o al recargar), no se agrega otra entrada al historial: "atrás" iría a la misma página.
-    if (searchParams.get("est") !== String(e.id)) setSearchParams({ est: String(e.id) });
+    setSearchParams({ est: String(e.id) }); // persiste en la URL: al recargar sigue aquí
     // Acudiente: al entrar, marca leído SOLO ese estudiante → se le quita su badge.
     if (esAcudiente) {
       supabase.from("Observador_Lecturas").upsert(
