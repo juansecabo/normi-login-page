@@ -3,7 +3,7 @@ import { ArrowLeft, CheckCheck, Loader2 } from "lucide-react";
 import type { AsistenciaRosterItem, AsistenciaEstado } from "@/lib/apiClient";
 
 /**
- * Tomar asistencia en LISTA (Juan 2026-09-25, reemplaza el mazo de tarjetas): todos los estudiantes
+ * Tomar asistencia en LISTA (piloto Cailico, Juan 2026-09-25): todos los estudiantes
  * del salón a la vista, cada uno con sus botones Presente / Ausente / Tarde / Excusa.
  * Cada toque se guarda al instante (mismo endpoint que el mazo). Arrastre: se toca un
  * botón y, sin soltar, se desliza sobre las demás filas; cada fila por la que pasa queda
@@ -167,7 +167,6 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
                 {BOTONES.map((b) => (
                   <button
                     key={b.estado}
-                    data-guia={i === 0 && b.estado === "presente" ? "asistencia.boton_presente" : undefined}
                     onPointerDown={(e) => {
                       // Arrastre solo con mouse (en el celular deslizar debe bajar la página).
                       if (e.pointerType !== "mouse" || e.button !== 0) return;
