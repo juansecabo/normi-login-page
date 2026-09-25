@@ -499,10 +499,12 @@ const RegistroNormi = () => {
           </BreadcrumbDeslizable>
         </div>
         <div className="bg-card rounded-lg shadow-soft p-6 mb-6 max-w-4xl mx-auto space-y-6">
+          <div>
           <h2 className="text-xl font-bold text-foreground text-center mb-1">
             Registro en Normi
           </h2>
           <p className="text-sm text-muted-foreground text-center">Revisa qué estudiantes y acudientes están registrados o no con Normi.</p>
+          </div>
 
 
         {/* Filters */}
