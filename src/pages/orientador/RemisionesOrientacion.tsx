@@ -876,8 +876,8 @@ const RemisionesOrientacion = () => {
 
         <div className="bg-card rounded-lg shadow-soft p-6">
           {estVistaId == null && (<>
-          {/* Título centrado y el botón debajo (Juan 2026-09-24). */}
-          <div className="flex flex-col items-center gap-3 mb-6">
+          {/* Título centrado; el botón al lado (a la derecha) en pantalla grande y debajo en celular (Juan 2026-09-24). */}
+          <div className="relative flex flex-col items-center gap-3 mb-6 sm:min-h-[2.5rem] sm:justify-center">
             <h2 className="text-xl font-bold text-foreground flex items-center justify-center gap-2">
               <img src={iconCasos} alt="" className="h-6 w-6 object-contain" />
               Orientación Escolar
@@ -888,7 +888,7 @@ const RemisionesOrientacion = () => {
                 type="button"
                 data-guia="orientacion.boton_nueva_remision"
                 onClick={() => navigate("/remitir-orientacion")}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700"
+                className="sm:absolute sm:right-0 sm:top-1/2 sm:-translate-y-1/2 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700"
               >
                 <Plus className="w-4 h-4" /> Nueva remisión
               </button>
