@@ -455,7 +455,7 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
             </div>
           </details>
 
-          <p className="text-xs text-muted-foreground">Si una jornada no tiene hora de entrada, la <strong>Vespertina</strong> se toma a las 12:00 m., la <strong>Nocturna</strong> a las 7:00 p. m. y cualquier otra a las 6:00 a. m.</p>
+          <p className="text-xs text-muted-foreground">Si una jornada no tiene hora de entrada, la <strong>Matutina</strong> se toma a las 6:00 a. m., la <strong>Vespertina</strong> a las 12:00 m. y la <strong>Nocturna</strong> a las 7:00 p. m. Una jornada con otro nombre no tiene hora por defecto: ponle su hora de entrada.</p>
 
           {/* No molestar: horas en que no se mandan avisos automáticos al personal. */}
           {noMolestar && (
