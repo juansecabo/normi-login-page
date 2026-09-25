@@ -319,12 +319,12 @@ export function HorarioContenido({ embebido = false }: { embebido?: boolean }) {
   return (
     <>
         <div className="bg-card rounded-lg shadow-soft p-4 md:p-6 space-y-5">
-          {/* Título centrado y, debajo, el botón "Ir a configuración" (Juan 2026-09-24). */}
-          <div className="flex flex-col items-center gap-3">
+          {/* Título centrado; "Ir a configuración" al lado (derecha) en pantalla grande y debajo en celular (Juan 2026-09-24). */}
+          <div className="relative flex flex-col items-center gap-3 sm:min-h-[2.5rem] sm:justify-center">
             <h1 className="text-xl font-bold text-foreground flex items-center gap-2"><Clock className="w-6 h-6 text-primary" /> Horario de clases</h1>
             {/* Quien puede editar el horario lo hace en Configurar Institución (Juan 2026-09-24). */}
             {!embebido && mio?.puedeEditar && (
-              <Button variant="outline" size="sm" onClick={() => navigate("/construye-institucion?vista=horario")} data-guia="horario.ir_configuracion">Ir a configuración</Button>
+              <Button variant="outline" size="sm" className="sm:absolute sm:right-0 sm:top-1/2 sm:-translate-y-1/2" onClick={() => navigate("/construye-institucion?vista=horario")} data-guia="horario.ir_configuracion">Ir a configuración</Button>
             )}
           </div>
 
