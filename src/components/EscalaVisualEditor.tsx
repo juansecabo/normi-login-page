@@ -45,7 +45,11 @@ const EscalaVisualEditor = ({ cfg, guardar, alGuardar }: Props) => {
     return (Array.isArray(cfg.rangos_desempeno) ? cfg.rangos_desempeno : [])
       .map((r: any) => ({ label: String(r.label ?? ""), min: Number(r.min), max: Math.min(Number(r.max), max0), color: r.color || COLOR_NUEVO }))
       .filter((b: Banda) => Number.isFinite(b.min) && Number.isFinite(b.max))
-      .sort((a: Banda, b: Banda) => a.min - b.min);
+      .sort((a: Banda, b: Banda) => a.min - b.min)
+      // Rangos contiguos: cada uno termina donde empieza el siguiente. Hay colegios con los
+      // rangos guardados "con hueco" (Básico 7 a 7.9, Alto 8 a 9): se leen como Básico hasta
+      // 7.9 y Alto desde 8, y al guardar quedan sin hueco (una nota 7.95 ya cae en Básico).
+      .map((b: Banda, i: number, arr: Banda[]) => (i < arr.length - 1 ? { ...b, max: arr[i + 1].min } : b));
   });
   const [guardando, setGuardando] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
