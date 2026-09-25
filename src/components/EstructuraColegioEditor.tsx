@@ -455,8 +455,6 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
             </div>
           </details>
 
-          <p className="text-xs text-muted-foreground">Sin hora de entrada: Matutina 6:00 a. m., Vespertina 12:00 m., Nocturna 7:00 p. m.</p>
-
           {/* No molestar: horas en que no se mandan avisos automáticos al personal. */}
           {noMolestar && (
             <div className="pt-3 border-t border-border space-y-2" data-guia="configurar_institucion.no_molestar">
