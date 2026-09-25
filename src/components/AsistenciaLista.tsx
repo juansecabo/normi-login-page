@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { ArrowLeft } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, CheckCheck, Loader2 } from "lucide-react";
 import type { AsistenciaRosterItem, AsistenciaEstado } from "@/lib/apiClient";
 
 /**
@@ -7,7 +7,8 @@ import type { AsistenciaRosterItem, AsistenciaEstado } from "@/lib/apiClient";
  * del salón a la vista, cada uno con sus botones Presente / Ausente / Tarde / Excusa.
  * Cada toque se guarda al instante (mismo endpoint que el mazo). Arrastre: se toca un
  * botón y, sin soltar, se desliza sobre las demás filas; cada fila por la que pasa queda
- * con ese mismo estado (como al arrastrar el periodo en el calendario). Con el dedo o el mouse.
+ * con ese mismo estado (como al arrastrar el periodo en el calendario). Solo con mouse.
+ * "Marcar todos como presentes" marca de una vez a los que faltan por marcar.
  */
 
 const BOTONES: { estado: AsistenciaEstado; label: string; activo: string }[] = [
@@ -36,6 +37,7 @@ interface Props {
 }
 
 const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarcar, onCambiarClase, onTerminar }: Props) => {
+  const [marcandoTodos, setMarcandoTodos] = useState(false);
   const conteo = { presente: 0, ausente: 0, tarde: 0, excusa: 0 };
   for (const r of roster) if (r.estado) conteo[r.estado]++;
   const pendientes = roster.filter((r) => !r.estado);
@@ -104,6 +106,19 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Los que tienen excusa vigente quedan con excusa, no como presentes.
+  const todosPresentes = async () => {
+    setMarcandoTodos(true);
+    try {
+      const lista = [...pendientes];
+      for (let i = 0; i < lista.length; i += 5) {
+        await Promise.all(lista.slice(i, i + 5).map((r) => onMarcar(r, r.tiene_excusa ? "excusa" : "presente")));
+      }
+    } finally {
+      setMarcandoTodos(false);
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto mt-4">
       <div className="flex items-center justify-between mb-3">
@@ -129,6 +144,18 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
         </div>
 
 
+        {pendientes.length > 0 && (
+          <button
+            data-guia="asistencia.todos_presentes"
+            onClick={todosPresentes}
+            disabled={marcandoTodos}
+            className="mb-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 text-sm font-semibold hover:bg-emerald-100 transition disabled:opacity-60"
+          >
+            {marcandoTodos ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCheck className="w-4 h-4" />}
+            Marcar todos como presentes ({pendientes.length})
+          </button>
+        )}
+
         <div className="space-y-1.5" data-guia="asistencia.lista">
           {roster.map((r, i) => (
             <div key={r.estudiante_id} data-fila-asistencia={i} className={`rounded-xl border px-3 py-2 sm:flex sm:items-center sm:gap-3 ${r.estado ? FONDO_FILA[r.estado] : "bg-card border-border"}`}>
@@ -146,14 +173,13 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
                   <button
                     key={b.estado}
                     onPointerDown={(e) => {
-                      if (e.button !== 0) return;
+                      // Arrastre solo con mouse (en el celular deslizar debe bajar la página).
+                      if (e.pointerType !== "mouse" || e.button !== 0) return;
                       e.preventDefault();
-                      // Soltar la captura implícita del touch para que elementFromPoint siga al dedo.
-                      (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
                       empezar(i, b.estado, e.clientY);
                     }}
-                    onClick={(e) => { if (e.detail === 0) onMarcar(r, b.estado); }}
-                    className={`touch-none select-none px-1 py-1.5 rounded-full border text-xs sm:text-sm font-semibold transition ${r.estado === b.estado ? b.activo : "bg-card border-border text-muted-foreground hover:bg-muted"}`}
+                    onClick={(e) => { if ((e.nativeEvent as PointerEvent).pointerType !== "mouse") onMarcar(r, b.estado); }}
+                    className={`select-none px-1 py-1.5 rounded-full border text-xs sm:text-sm font-semibold transition ${r.estado === b.estado ? b.activo : "bg-card border-border text-muted-foreground hover:bg-muted"}`}
                   >
                     {b.label}
                   </button>
