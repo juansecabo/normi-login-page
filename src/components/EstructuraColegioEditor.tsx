@@ -418,7 +418,7 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg"><Clock className="h-5 w-5 text-primary" /> Jornadas</CardTitle>
-          <p className="text-sm text-muted-foreground">Define las jornadas con su hora de entrada y salida. El reporte diario de actividades sale <strong>5 minutos después de la salida</strong> de la jornada de cada salón. Sin hora de salida: Matutina 1:00 p. m., Vespertina 7:00 p. m. y Nocturna 11:00 p. m.; una jornada con otro nombre sin salida no recibe reporte.</p>
+          <p className="text-sm text-muted-foreground">Define las jornadas con su hora de entrada y salida. El reporte de actividades sale 5 minutos después de la salida.</p>
         </CardHeader>
         <CardContent className="space-y-3">
           {jornadas.map((j) => (
@@ -455,7 +455,7 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
             </div>
           </details>
 
-          <p className="text-xs text-muted-foreground">Si una jornada no tiene hora de entrada, la <strong>Matutina</strong> se toma a las 6:00 a. m., la <strong>Vespertina</strong> a las 12:00 m. y la <strong>Nocturna</strong> a las 7:00 p. m. Una jornada con otro nombre no tiene hora por defecto: ponle su hora de entrada.</p>
+          <p className="text-xs text-muted-foreground">Sin hora de entrada: Matutina 6:00 a. m., Vespertina 12:00 m., Nocturna 7:00 p. m.</p>
 
           {/* No molestar: horas en que no se mandan avisos automáticos al personal. */}
           {noMolestar && (
@@ -470,8 +470,8 @@ const EstructuraColegioEditor = ({ colegioId, permitirImportar = false }: Props)
               </div>
               <p className="text-xs text-muted-foreground">
                 {noMolestar.activo
-                  ? <>Los avisos automáticos al personal (excusas, retiros, justificaciones de uniforme y demás) no se envían desde las <strong>{hora12(noMolestar.desde)}</strong> hasta el inicio de la jornada del día siguiente (<strong>{(noMolestar.jornadas && noMolestar.jornadas.length ? noMolestar.jornadas.map((j) => `${j.nombre}: ${hora12(j.entrada)}`).join(", ") : hora12(noMolestar.hasta))}</strong>), ni sábados, domingos ni festivos. Cada aviso espera la entrada de la jornada de su estudiante y sale apenas se abre ese horario; un retiro cuya hora ya pasó no se envía.</>
-                  : <>Desactivado: los avisos automáticos al personal se envían a cualquier hora, cualquier día.</>}
+                  ? <>Los avisos al personal no se envían desde las <strong>{hora12(noMolestar.desde)}</strong> hasta la entrada del día siguiente, ni fines de semana ni festivos.</>
+                  : <>Los avisos al personal se envían a cualquier hora.</>}
               </p>
             </div>
           )}
