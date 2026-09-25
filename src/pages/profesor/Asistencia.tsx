@@ -9,6 +9,9 @@ import { useEstructuraOrden } from "@/utils/estructuraOrden";
 import { Check, X, FileText, ArrowLeft, RotateCcw, Clock } from "lucide-react";
 
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
+import AsistenciaLista from "@/components/AsistenciaLista";
+// Asistencia en lista: piloto en el colegio demo Cailico (Juan 2026-09-25).
+const PILOTO_ASISTENCIA_LISTA = "2f96f076-83df-4b84-8bbc-9c1df79a372b";
 interface AsignacionRow {
   "Asignatura(s)": string[] | string[][];
   "Grado(s)": string[] | string[][];
@@ -189,6 +192,20 @@ const Asistencia = () => {
         toast({ title: "No se guardó", description: `Falló al guardar la marca de ${est.nombres}. Reintenta.`, variant: "destructive" });
       });
   };
+  // Igual que marcarDirecto pero devuelve la promesa (la lista marca "todos presentes" por tandas).
+  const marcarLista = (est: AsistenciaRosterItem, estado: AsistenciaEstado) => {
+    setRoster((prev) => prev.map((x) => (x.estudiante_id === est.estudiante_id ? { ...x, estado } : x)));
+    return apiClient.asistencia
+      .marcar({ asignatura, grado, salon, fecha, estudiante_id: est.estudiante_id, estado })
+      .then((r) => {
+        setRoster((prev) => prev.map((x) => (x.estudiante_id === est.estudiante_id ? { ...x, estado: r.estado } : x)));
+      })
+      .catch(() => {
+        toast({ title: "No se guardó", description: `Falló al guardar la marca de ${est.nombres}. Reintenta.`, variant: "destructive" });
+        setRoster((prev) => prev.map((x) => (x.estudiante_id === est.estudiante_id ? { ...x, estado: est.estado } : x)));
+      });
+  };
+  const esPilotoLista = getSession().colegio_id === PILOTO_ASISTENCIA_LISTA;
   // Búsqueda flexible: ignora mayúsculas Y tildes (ver memoria buscadores_flexibles).
   const norm = (s: string) => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const resultadosBusqueda = busqueda.trim()
@@ -323,7 +340,20 @@ const Asistencia = () => {
           </div>
         )}
 
-        {step === "deck" && (
+        {step === "deck" && esPilotoLista && (
+          <AsistenciaLista
+            roster={roster}
+            asignatura={asignatura}
+            grado={grado}
+            salon={salon}
+            fechaTexto={fechaLarga(fecha)}
+            onMarcar={marcarLista}
+            onCambiarClase={() => setStep("select")}
+            onTerminar={() => navigate("/dashboard")}
+          />
+        )}
+
+        {step === "deck" && !esPilotoLista && (
           <div className="max-w-md mx-auto mt-4">
             {/* Encabezado de la clase */}
             <div className="flex items-center justify-between mb-3">
