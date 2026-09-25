@@ -284,6 +284,7 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
   // ── Quitar (goma): confirmaciones ──
   const [confirmDia, setConfirmDia] = useState<DiaNoLectivo | null>(null);
   const [confirmPeriodo, setConfirmPeriodo] = useState<number | null>(null);
+  const [reemplazo, setReemplazo] = useState<{ nuevo: Periodo; anterior: Periodo } | null>(null);
   const [confirmEvento, setConfirmEvento] = useState<Evento | null>(null);
   // Lista de eventos del día desde la que se pidió eliminar (para volver a ella).
   const [volverAEventos, setVolverAEventos] = useState<{ fecha: string; eventos: Evento[] } | null>(null);
@@ -431,7 +432,12 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
         setEventoDialog({ ini, fin });
       } else if (herramienta && herramienta.startsWith("p")) {
         const n = Number(herramienta.slice(1));
-        guardarPeriodos([...periodos.filter((p) => p.periodo !== n), { periodo: n, fecha_inicio: ini, fecha_fin: fin, ano_escolar: anoEscolar }]);
+        const nuevo = { periodo: n, fecha_inicio: ini, fecha_fin: fin, ano_escolar: anoEscolar };
+        // Si el periodo ya tiene fechas, se pregunta antes de reemplazarlas (Juan 2026-09-24:
+        // un clic en un solo día dejó el Periodo 4 del Pestalozziano en solo ese día).
+        const actual = periodos.find((p) => p.periodo === n);
+        if (actual && (actual.fecha_inicio !== ini || actual.fecha_fin !== fin)) setReemplazo({ nuevo, anterior: actual });
+        else guardarPeriodos([...periodos.filter((p) => p.periodo !== n), nuevo]);
       }
     };
     window.addEventListener("mouseup", alSoltar);
@@ -921,6 +927,29 @@ const CalendarioColegioEditor = ({ colegioId, soloLectura = false }: Props) => {
             <Button variant="outline" onClick={() => setConfirmDia(null)} disabled={guardando}>Cancelar</Button>
             <Button data-guia="configurar_institucion.cal_quitar_confirmar" variant="destructive" onClick={eliminarDia} disabled={guardando} className="gap-2">
               {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmar reemplazar las fechas de un periodo que ya las tiene */}
+      <Dialog open={!!reemplazo} onOpenChange={(o) => { if (!o) setReemplazo(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>¿Cambiar el {reemplazo ? estiloPeriodo(reemplazo.nuevo.periodo, esqSel).nombre : ""}?</DialogTitle>
+            <DialogDescription className="pt-2 text-foreground">
+              {reemplazo && (<>
+                El {estiloPeriodo(reemplazo.nuevo.periodo, esqSel).nombre} ya está del <strong>{fechaLinda(reemplazo.anterior.fecha_inicio)}</strong> al <strong>{fechaLinda(reemplazo.anterior.fecha_fin)}</strong>.
+                {" "}¿Quieres cambiarlo para que quede {reemplazo.nuevo.fecha_inicio === reemplazo.nuevo.fecha_fin
+                  ? <>solo el <strong>{fechaLinda(reemplazo.nuevo.fecha_inicio)}</strong></>
+                  : <>del <strong>{fechaLinda(reemplazo.nuevo.fecha_inicio)}</strong> al <strong>{fechaLinda(reemplazo.nuevo.fecha_fin)}</strong></>}?
+              </>)}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReemplazo(null)} disabled={guardando}>Cancelar</Button>
+            <Button data-guia="configurar_institucion.cal_reemplazar_confirmar" onClick={() => { const r = reemplazo!; setReemplazo(null); guardarPeriodos([...periodos.filter((p) => p.periodo !== r.nuevo.periodo), r.nuevo]); }} disabled={guardando}>
+              Sí, cambiarlo
             </Button>
           </DialogFooter>
         </DialogContent>

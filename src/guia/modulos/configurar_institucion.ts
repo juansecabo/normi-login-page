@@ -814,6 +814,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
       { narracion: "Si algún nivel va por semestres, arriba en 'Ver:' escoge 'Periodos' o 'Semestres' según lo que vas a marcar.", accion: "click", ancla: "configurar_institucion.cal_nivel", opcional: true },
       { narracion: "En la barra de herramientas, toca el corte que vas a marcar (Periodo 1 a 4, o Semestre 1 y 2).", accion: "click", ancla: "configurar_institucion.cal_herramienta_periodo", campo: "periodo" },
       { narracion: "Haz clic en el día de inicio y, manteniendo presionado, arrastra hasta el día final; suelta para pintar el rango. Se guarda solo.", accion: "click", ancla: "configurar_institucion.cal_dia", campo: "rango_fechas" },
+      { narracion: "Si ese periodo ya tenía fechas, te pregunta si quieres cambiarlas: toca 'Sí, cambiarlo' para guardar las nuevas, o 'Cancelar' para dejar las que estaban.", accion: "click", ancla: "configurar_institucion.cal_reemplazar_confirmar", opcional: true },
     ],
   },
   {
