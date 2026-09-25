@@ -121,6 +121,7 @@ const Asistencia = () => {
       const res = await apiClient.asistencia.roster(asignatura, grado, salon, fecha);
       if (!res.roster.length) {
         toast({ title: "Sin estudiantes", description: "Ese salón no tiene estudiantes registrados.", variant: "destructive" });
+        setParams({}, { replace: true });
         return;
       }
       setRoster(res.roster);
@@ -132,6 +133,7 @@ const Asistencia = () => {
       if (getSession().colegio_id === PILOTO_ASISTENCIA_LISTA) setParams({ asignatura, grado, salon, fecha }, { replace: true });
     } catch {
       toast({ title: "Error", description: "No se pudo cargar la lista.", variant: "destructive" });
+      setParams({}, { replace: true }); // sin enlace, vuelve el formulario para elegir la clase
     } finally {
       setCargandoRoster(false);
     }
@@ -231,6 +233,8 @@ const Asistencia = () => {
     }
   };
   const esPilotoLista = getSession().colegio_id === PILOTO_ASISTENCIA_LISTA;
+  // Piloto lista: si el enlace ya trae la clase (p. ej. al actualizar), no se muestra el formulario mientras carga.
+  const abriendoDesdeEnlace = esPilotoLista && step === "select" && !!params.get("asignatura") && !!params.get("grado") && !!params.get("salon");
   // Búsqueda flexible: ignora mayúsculas Y tildes (ver memoria buscadores_flexibles).
   const norm = (s: string) => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const resultadosBusqueda = busqueda.trim()
@@ -339,7 +343,11 @@ const Asistencia = () => {
           </BreadcrumbDeslizable>
         </div>
 
-        {step === "select" && (
+        {abriendoDesdeEnlace && (
+          <div className="bg-card rounded-lg shadow-soft p-6 md:p-8 max-w-xl mx-auto mt-4 text-center text-muted-foreground">Cargando la lista…</div>
+        )}
+
+        {step === "select" && !abriendoDesdeEnlace && (
           <div className="bg-card rounded-lg shadow-soft p-6 md:p-8 max-w-xl mx-auto mt-4">
             <h2 className="text-xl font-bold text-foreground mb-1 text-center">Tomar asistencia</h2>
             <p className="text-sm text-muted-foreground mb-6 text-center">Elige la clase y el día. Luego deslizas a la derecha (presente), izquierda (ausente), arriba (entró tarde) o abajo (con excusa).</p>
