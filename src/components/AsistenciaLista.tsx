@@ -188,7 +188,7 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
           <span className="text-sm text-muted-foreground">
             {pendientes.length ? `Faltan ${pl(pendientes.length, "estudiante", "estudiantes")} por marcar` : "Todos marcados. Se guarda al tocar."}
           </span>
-          <button onClick={onTerminar} className="px-5 py-2 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90">Listo</button>
+          <button onClick={onTerminar} disabled={pendientes.length > 0} className="px-5 py-2 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:opacity-50">Listo</button>
         </div>
       </div>
     </div>
