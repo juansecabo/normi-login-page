@@ -1,7 +1,7 @@
 // Catálogo "Normi te guía" — Módulo ASISTENCIA.
 //
 // Dos flujos de entrada:
-//  1) TOMAR asistencia (pasar lista del día, estilo "swipe"/mazo) — solo Profesor
+//  1) TOMAR asistencia (pasar lista del día en una lista con botones) — solo Profesor
 //     y Administrador (Asistencia.tsx se auto-bloquea con isProfesor()||isAdmin()).
 //     Vive en /profesor/asistencia/tomar, alcanzado desde el menú
 //     /profesor/asistencia. Escribe por POST /api/asistencia/marcar, cuyo guard
@@ -44,7 +44,7 @@ export const ASISTENCIA: Capacidad[] = [
     categoria: "Asistencia",
     roles: [...TOMAN_ASISTENCIA],
     ruta: "/profesor/asistencia/tomar",
-    endpoint: "POST /api/asistencia/marcar (Profesor, Administrador)",
+    endpoint: "POST /api/asistencia/marcar y /marcar-todos (Profesor, Administrador)",
     requisitos: [
       { entidad: "asignatura", descripcion: "Asignatura de la clase." },
       { entidad: "grado", descripcion: "Grado del salón." },
@@ -60,6 +60,8 @@ export const ASISTENCIA: Capacidad[] = [
       "registrar la asistencia del día",
       "llamar a lista",
       "ver quién faltó hoy",
+      "marcar a todos como presentes",
+      "poner a todos presentes menos uno",
     ],
     pasos: [
       {
@@ -103,29 +105,36 @@ export const ASISTENCIA: Capacidad[] = [
         ancla: "asistencia.boton_comenzar",
       },
       {
-        narracion: "Esperamos a que aparezcan las tarjetas de los estudiantes.",
+        narracion: "Esperamos a que aparezca la lista de estudiantes.",
         accion: "esperar",
-        ancla: "asistencia.mazo",
+        ancla: "asistencia.lista",
       },
       {
         narracion:
-          "Para cada estudiante marca su estado con los botones: verde (asistió), rojo (no asistió), reloj (entró tarde) o el de excusa. En celular también puedes deslizar la tarjeta: derecha presente, izquierda ausente, arriba tarde, abajo con excusa.",
+          "Si vinieron casi todos, toca 'Marcar todos como presentes' y luego cambia solo a los que faltaron.",
+        accion: "click",
+        ancla: "asistencia.todos_presentes",
+        opcional: true,
+      },
+      {
+        narracion:
+          "En la fila de cada estudiante toca su estado: Presente, Ausente, Tarde o Excusa. En computador también puedes mantener presionado un botón y arrastrar sobre las filas para marcar a varios con el mismo estado.",
         accion: "click",
         ancla: "asistencia.boton_presente",
         campo: "estado",
       },
       {
         narracion:
-          "Cada marca se guarda sola y la tarjeta avanza a la siguiente. Si un estudiante ya tiene una excusa vigente ese día, o un retiro autorizado cuya hora ya pasó, la marca queda como excusa automáticamente. Cuando termines verás el resumen. Listo.",
+          "Cada marca se guarda sola. Si un estudiante ya tiene una excusa vigente ese día, o un retiro autorizado cuya hora ya pasó, la marca queda como excusa automáticamente. Cuando todos estén marcados se habilita 'Listo'.",
         accion: "explicar",
       },
     ],
   },
   {
-    id: "asistencia.corregir_en_mazo",
-    titulo: "Corregir a un estudiante al terminar de pasar lista",
+    id: "asistencia.corregir_en_lista",
+    titulo: "Corregir la asistencia de un estudiante",
     descripcion:
-      "En el resumen final, buscar a un estudiante puntual (o abrir un total como 'ausentes') y cambiar su marca sin volver a pasar por toda la lista.",
+      "Cambiar la marca de un estudiante puntual (por ejemplo, un ausente que sí vino) sin volver a pasar toda la lista.",
     categoria: "Asistencia",
     roles: [...TOMAN_ASISTENCIA],
     ruta: "/profesor/asistencia/tomar",
@@ -143,20 +152,13 @@ export const ASISTENCIA: Capacidad[] = [
     pasos: [
       {
         narracion:
-          "Esta corrección se hace en el resumen que aparece al terminar de pasar lista. Si no lo ves, primero toma la asistencia de esa clase.",
+          "Abre la clase en 'Tomar asistencia' (misma asignatura, grado, salón y fecha). La lista aparece con las marcas que ya pusiste.",
         accion: "explicar",
       },
       {
-        narracion:
-          "Escribe el nombre o apellido del estudiante en el buscador. También puedes tocar uno de los totales de arriba (el de ausentes o el de llegaron tarde) para ver esa lista.",
-        accion: "escribir",
-        ancla: "asistencia.buscar_corregir",
-        campo: "estudiante",
-      },
-      {
-        narracion: "En la tarjeta del estudiante, toca el estado correcto (presente, ausente, entró tarde o con excusa).",
+        narracion: "En la fila del estudiante, toca el estado correcto (Presente, Ausente, Tarde o Excusa).",
         accion: "click",
-        ancla: "asistencia.corregir_estado_boton",
+        ancla: "asistencia.boton_presente",
         campo: "estado",
       },
       {

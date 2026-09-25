@@ -7,7 +7,7 @@ import { ClipboardCheck, ClipboardList, ChevronRight } from "lucide-react";
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 /**
  * Menú de Asistencia del profesor: al entrar elige entre TOMAR asistencia
- * (swipe del día) o ver el REGISTRO de asistencia (consulta/corrección por
+ * (lista del día) o ver el REGISTRO de asistencia (consulta/corrección por
  * día, mes o rango, reutilizando ConsultaAsistencia que ya soporta al profe).
  */
 const AsistenciaMenu = () => {
@@ -45,7 +45,7 @@ const AsistenciaMenu = () => {
               </div>
               <div className="flex-1">
                 <div className="font-semibold text-foreground">Tomar Asistencia</div>
-                <div className="text-sm text-muted-foreground">Pasa lista del día deslizando las tarjetas (presente, ausente o con excusa).</div>
+                <div className="text-sm text-muted-foreground">Pasa lista del día.</div>
               </div>
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
             </button>
