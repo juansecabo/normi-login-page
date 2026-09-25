@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { getSession, isProfesor, isAdmin } from "@/hooks/useSession";
 import { supabase } from "@/integrations/supabase/client";
 import { apiClient, type AsistenciaRosterItem, type AsistenciaEstado } from "@/lib/apiClient";
@@ -39,6 +39,7 @@ const THRESH = 90; // px para confirmar un swipe
 
 const Asistencia = () => {
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
   const { toast } = useToast();
   const orden = useEstructuraOrden();
 
@@ -108,7 +109,9 @@ const Asistencia = () => {
     return [...new Set(todos)].sort((a, b) => a.localeCompare(b, "es", { numeric: true }));
   }, [asignatura, grado, asignaciones]);
 
-  const iniciar = async () => {
+  const iniciar = (clase?: { asignatura: string; grado: string; salon: string; fecha: string }) =>
+    iniciarClase(clase ?? { asignatura, grado, salon, fecha });
+  const iniciarClase = async ({ asignatura, grado, salon, fecha }: { asignatura: string; grado: string; salon: string; fecha: string }) => {
     if (!asignatura || !grado || !salon) {
       toast({ title: "Faltan datos", description: "Elige asignatura, grado y salón.", variant: "destructive" });
       return;
@@ -125,12 +128,24 @@ const Asistencia = () => {
       const primerPendiente = res.roster.findIndex((r) => !r.estado);
       setIdx(primerPendiente === -1 ? res.roster.length : primerPendiente);
       setStep("deck");
+      // Piloto lista: la clase queda en el enlace, así al actualizar vuelve a la misma lista.
+      if (getSession().colegio_id === PILOTO_ASISTENCIA_LISTA) setParams({ asignatura, grado, salon, fecha }, { replace: true });
     } catch {
       toast({ title: "Error", description: "No se pudo cargar la lista.", variant: "destructive" });
     } finally {
       setCargandoRoster(false);
     }
   };
+
+  // Piloto lista: si el enlace trae la clase (p. ej. al actualizar), se abre directo.
+  useEffect(() => {
+    if (loading || getSession().colegio_id !== PILOTO_ASISTENCIA_LISTA) return;
+    const clase = { asignatura: params.get("asignatura") || "", grado: params.get("grado") || "", salon: params.get("salon") || "", fecha: params.get("fecha") || hoyBogota() };
+    if (!clase.asignatura || !clase.grado || !clase.salon) return;
+    setAsignatura(clase.asignatura); setGrado(clase.grado); setSalon(clase.salon); setFecha(clase.fecha);
+    iniciar(clase);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   const actual = roster[idx];
   const conteo = useMemo(() => {
@@ -331,7 +346,7 @@ const Asistencia = () => {
                   <input data-guia="asistencia.input_fecha" type="date" value={fecha} max={hoyBogota()} onChange={(e) => setFecha(e.target.value)}
                     className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground" />
                 </div>
-                <button data-guia="asistencia.boton_comenzar" onClick={iniciar} disabled={!asignatura || !grado || !salon || cargandoRoster}
+                <button data-guia="asistencia.boton_comenzar" onClick={() => iniciar()} disabled={!asignatura || !grado || !salon || cargandoRoster}
                   className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-semibold disabled:opacity-50 hover:opacity-90 transition">
                   {cargandoRoster ? "Cargando…" : "Comenzar"}
                 </button>
@@ -348,7 +363,7 @@ const Asistencia = () => {
             salon={salon}
             fechaTexto={fechaLarga(fecha)}
             onMarcar={marcarLista}
-            onCambiarClase={() => setStep("select")}
+            onCambiarClase={() => { setStep("select"); setParams({}, { replace: true }); }}
             onTerminar={() => navigate("/dashboard")}
           />
         )}
