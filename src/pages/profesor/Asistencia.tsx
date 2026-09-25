@@ -220,6 +220,16 @@ const Asistencia = () => {
         setRoster((prev) => prev.map((x) => (x.estudiante_id === est.estudiante_id ? { ...x, estado: est.estado } : x)));
       });
   };
+  // "Marcar todos como presentes": una sola petición, el servidor guarda todos o ninguno.
+  const marcarTodosLista = async () => {
+    try {
+      const { marcas } = await apiClient.asistencia.marcarTodos({ asignatura, grado, salon, fecha });
+      const m = new Map(marcas.map((x) => [x.estudiante_id, x.estado]));
+      setRoster((prev) => prev.map((x) => (m.has(x.estudiante_id) ? { ...x, estado: m.get(x.estudiante_id)! } : x)));
+    } catch {
+      toast({ title: "No se guardó", description: "No se pudo marcar a todos como presentes. Reintenta.", variant: "destructive" });
+    }
+  };
   const esPilotoLista = getSession().colegio_id === PILOTO_ASISTENCIA_LISTA;
   // Búsqueda flexible: ignora mayúsculas Y tildes (ver memoria buscadores_flexibles).
   const norm = (s: string) => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -363,6 +373,7 @@ const Asistencia = () => {
             salon={salon}
             fechaTexto={fechaLarga(fecha)}
             onMarcar={marcarLista}
+            onMarcarTodos={marcarTodosLista}
             onCambiarClase={() => { setStep("select"); setParams({}, { replace: true }); }}
             onTerminar={() => navigate("/dashboard")}
           />

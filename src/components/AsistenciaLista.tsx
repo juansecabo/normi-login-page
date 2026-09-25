@@ -8,7 +8,7 @@ import type { AsistenciaRosterItem, AsistenciaEstado } from "@/lib/apiClient";
  * Cada toque se guarda al instante (mismo endpoint que el mazo). Arrastre: se toca un
  * botón y, sin soltar, se desliza sobre las demás filas; cada fila por la que pasa queda
  * con ese mismo estado (como al arrastrar el periodo en el calendario). Solo con mouse.
- * "Marcar todos como presentes" marca de una vez a los que faltan por marcar.
+ * "Marcar todos como presentes" marca de una vez (una sola petición) a los que faltan.
  */
 
 const BOTONES: { estado: AsistenciaEstado; label: string; activo: string }[] = [
@@ -32,11 +32,12 @@ interface Props {
   salon: string;
   fechaTexto: string;
   onMarcar: (est: AsistenciaRosterItem, estado: AsistenciaEstado) => Promise<void> | void;
+  onMarcarTodos: () => Promise<void>;
   onCambiarClase: () => void;
   onTerminar: () => void;
 }
 
-const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarcar, onCambiarClase, onTerminar }: Props) => {
+const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarcar, onMarcarTodos, onCambiarClase, onTerminar }: Props) => {
   const [marcandoTodos, setMarcandoTodos] = useState(false);
   const conteo = { presente: 0, ausente: 0, tarde: 0, excusa: 0 };
   for (const r of roster) if (r.estado) conteo[r.estado]++;
@@ -106,17 +107,10 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Los que tienen excusa vigente quedan con excusa, no como presentes.
+  // El servidor marca a todos los que faltan de una vez (excusa vigente ⇒ 'excusa').
   const todosPresentes = async () => {
     setMarcandoTodos(true);
-    try {
-      const lista = [...pendientes];
-      for (let i = 0; i < lista.length; i += 5) {
-        await Promise.all(lista.slice(i, i + 5).map((r) => onMarcar(r, r.tiene_excusa ? "excusa" : "presente")));
-      }
-    } finally {
-      setMarcandoTodos(false);
-    }
+    try { await onMarcarTodos(); } finally { setMarcandoTodos(false); }
   };
 
   return (

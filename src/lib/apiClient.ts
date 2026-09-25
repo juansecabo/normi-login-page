@@ -790,6 +790,9 @@ export const apiClient = {
     marcar(body: { asignatura: string; grado: string; salon: string; fecha: string; estudiante_id: string; estado: AsistenciaEstado }): Promise<{ ok: true; estado: AsistenciaEstado; auto_excusa: boolean }> {
       return request('/api/asistencia/marcar', { method: 'POST', body: JSON.stringify(body) });
     },
+    marcarTodos(body: { asignatura: string; grado: string; salon: string; fecha: string }): Promise<{ ok: true; marcas: { estudiante_id: string; estado: AsistenciaEstado }[] }> {
+      return request('/api/asistencia/marcar-todos', { method: 'POST', body: JSON.stringify(body) });
+    },
     historial(asignatura: string, grado: string, salon: string, desde: string, hasta: string, estudiante_id?: string): Promise<AsistenciaHistorial> {
       return request(`/api/asistencia/historial${qs({ asignatura, grado, salon, desde, hasta, estudiante_id })}`);
     },
