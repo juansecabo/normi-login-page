@@ -227,7 +227,7 @@ const EscalaVisualEditor = ({ cfg, guardar, alGuardar }: Props) => {
 
       {/* Ventana: editar o agregar un rango */}
       <Dialog open={editando !== null} onOpenChange={(o) => !o && setEditando(null)}>
-        <DialogContent className="max-w-sm rounded-2xl" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>{editando === "nueva" ? "Nuevo rango" : "Editar rango"}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div><Label className="text-sm">Nombre</Label><Input data-guia="configurar_institucion.rango_nombre" value={fNombre} onChange={(e) => setFNombre(e.target.value)} placeholder="Ej: Superior" className="mt-1" /></div>
@@ -258,7 +258,7 @@ const EscalaVisualEditor = ({ cfg, guardar, alGuardar }: Props) => {
 
       {/* Ventana: escala (rango, aprobatoria, decimales) */}
       <Dialog open={escalaAbierta} onOpenChange={setEscalaAbierta}>
-        <DialogContent className="max-w-sm rounded-2xl" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Escala</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-3">
             <div><Label className="text-sm">Nota mínima</Label><Input data-guia="configurar_institucion.escala_min" type="text" inputMode="decimal" value={eMin} onChange={(e) => setEMin(e.target.value)} className="mt-1" /></div>
