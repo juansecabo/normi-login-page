@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getSession, isProfesor, isAdmin } from "@/hooks/useSession";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,12 +6,10 @@ import { apiClient, type AsistenciaRosterItem, type AsistenciaEstado } from "@/l
 import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNormi";
 import { useToast } from "@/hooks/use-toast";
 import { useEstructuraOrden } from "@/utils/estructuraOrden";
-import { Check, X, FileText, ArrowLeft, RotateCcw, Clock } from "lucide-react";
 
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 import AsistenciaLista from "@/components/AsistenciaLista";
 // Asistencia en lista: piloto en el colegio demo Cailico (Juan 2026-09-25).
-const PILOTO_ASISTENCIA_LISTA = "2f96f076-83df-4b84-8bbc-9c1df79a372b";
 interface AsignacionRow {
   "Asignatura(s)": string[] | string[][];
   "Grado(s)": string[] | string[][];
@@ -26,16 +24,6 @@ const fechaLarga = (iso: string): string => {
     return new Date(`${iso}T12:00:00`).toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   } catch { return iso; }
 };
-
-// Colores por estado: verde=asistió, rojo=ausente, amarillo=excusa.
-const ESTADO_UI: Record<AsistenciaEstado, { label: string; color: string; ring: string; text: string }> = {
-  presente: { label: "Presente", color: "bg-emerald-500", ring: "ring-emerald-400", text: "text-emerald-600" },
-  ausente: { label: "Ausente", color: "bg-rose-500", ring: "ring-rose-400", text: "text-rose-600" },
-  excusa: { label: "Con excusa", color: "bg-amber-400", ring: "ring-amber-400", text: "text-amber-600" },
-  tarde: { label: "Entró tarde", color: "bg-orange-500", ring: "ring-orange-400", text: "text-orange-600" },
-};
-
-const THRESH = 90; // px para confirmar un swipe
 
 const Asistencia = () => {
   const navigate = useNavigate();
@@ -55,23 +43,6 @@ const Asistencia = () => {
   const [step, setStep] = useState<"select" | "deck">("select");
   const [cargandoRoster, setCargandoRoster] = useState(false);
   const [roster, setRoster] = useState<AsistenciaRosterItem[]>([]);
-  const [idx, setIdx] = useState(0);
-  const [busqueda, setBusqueda] = useState(""); // corregir un estudiante puntual al final
-  const [filtroEstado, setFiltroEstado] = useState<AsistenciaEstado | null>(null); // ver lista por total (ausentes, etc.)
-
-  // Drag de la tarjeta superior + tarjeta "saliendo" (se va de verdad, no rebota).
-  const startRef = useRef<{ x: number; y: number } | null>(null);
-  const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
-  // Throttle del arrastre: en el celular llegan muchos eventos por frame; si
-  // hacemos setState en cada uno, se satura y la tarjeta se ve "retrasada".
-  // Guardamos el último delta en un ref y solo hacemos setDrag una vez por frame.
-  const pendingRef = useRef<{ x: number; y: number } | null>(null);
-  const rafRef = useRef<number | null>(null);
-  const cardElRef = useRef<HTMLDivElement>(null);
-  const transformFor = (d: { x: number; y: number }) => `translate(${d.x}px, ${d.y}px) rotate(${d.x * 0.04}deg)`;
-  const [leaving, setLeaving] = useState<{ item: AsistenciaRosterItem; dir: AsistenciaEstado; fromX: number; fromY: number } | null>(null);
-  const [leavingGo, setLeavingGo] = useState(false);
-
   useEffect(() => {
     const session = getSession();
     if (!session.id) { navigate("/"); return; }
@@ -125,12 +96,9 @@ const Asistencia = () => {
         return;
       }
       setRoster(res.roster);
-      // Continuar desde el primer estudiante aún SIN categorizar (no desde el inicio).
-      const primerPendiente = res.roster.findIndex((r) => !r.estado);
-      setIdx(primerPendiente === -1 ? res.roster.length : primerPendiente);
       setStep("deck");
-      // Piloto lista: la clase queda en el enlace, así al actualizar vuelve a la misma lista.
-      if (getSession().colegio_id === PILOTO_ASISTENCIA_LISTA) setParams({ asignatura, grado, salon, fecha }, { replace: true });
+      // La clase queda en el enlace, así al actualizar vuelve a la misma lista.
+      setParams({ asignatura, grado, salon, fecha }, { replace: true });
     } catch {
       toast({ title: "Error", description: "No se pudo cargar la lista.", variant: "destructive" });
       setParams({}, { replace: true }); // sin enlace, vuelve el formulario para elegir la clase
@@ -139,9 +107,9 @@ const Asistencia = () => {
     }
   };
 
-  // Piloto lista: si el enlace trae la clase (p. ej. al actualizar), se abre directo.
+  // Si el enlace trae la clase (p. ej. al actualizar), se abre directo.
   useEffect(() => {
-    if (loading || getSession().colegio_id !== PILOTO_ASISTENCIA_LISTA) return;
+    if (loading) return;
     const clase = { asignatura: params.get("asignatura") || "", grado: params.get("grado") || "", salon: params.get("salon") || "", fecha: params.get("fecha") || hoyBogota() };
     if (!clase.asignatura || !clase.grado || !clase.salon) return;
     setAsignatura(clase.asignatura); setGrado(clase.grado); setSalon(clase.salon); setFecha(clase.fecha);
@@ -149,67 +117,7 @@ const Asistencia = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
 
-  const actual = roster[idx];
-  const conteo = useMemo(() => {
-    const c = { presente: 0, ausente: 0, excusa: 0, tarde: 0 };
-    for (const r of roster) if (r.estado) c[r.estado]++;
-    return c;
-  }, [roster]);
-  const marcados = roster.filter((r) => r.estado).length;
-  // Concuerda el sustantivo: singular SOLO si es exactamente 1; plural para 0 o más de 1.
-  const pl = (n: number, singular: string, plural: string) => `${n} ${n === 1 ? singular : plural}`;
-
-  // Intención de swipe en vivo (para overlay de color).
-  const intencion: AsistenciaEstado | null = useMemo(() => {
-    if (!drag) return null;
-    if (drag.y < -THRESH && Math.abs(drag.y) > Math.abs(drag.x)) return "tarde";
-    if (drag.y > THRESH && drag.y > Math.abs(drag.x)) return "excusa";
-    if (drag.x > THRESH) return "presente";
-    if (drag.x < -THRESH) return "ausente";
-    return null;
-  }, [drag]);
-
-  const commit = (estado: AsistenciaEstado, from?: { x: number; y: number } | null) => {
-    if (!actual || leaving) return;
-    const est = actual;
-    // Guardar en el server (optimista). La respuesta puede convertirlo en excusa.
-    apiClient.asistencia
-      .marcar({ asignatura, grado, salon, fecha, estudiante_id: est.estudiante_id, estado })
-      .then((r) => {
-        setRoster((prev) => prev.map((x) => (x.estudiante_id === est.estudiante_id ? { ...x, estado: r.estado } : x)));
-        if (r.auto_excusa) {
-          toast({ title: "Excusa registrada", description: `${est.nombres} ya tenía una excusa vigente — se marcó como excusa.` });
-        }
-      })
-      .catch(() => {
-        toast({ title: "No se guardó", description: `Falló al guardar la marca de ${est.nombres}. Reintenta.`, variant: "destructive" });
-        setRoster((prev) => prev.map((x) => (x.estudiante_id === est.estudiante_id ? { ...x, estado: null } : x)));
-      });
-    // La tarjeta sale como capa independiente y el mazo avanza al instante (la de
-    // abajo queda mostrándose). NO rebota.
-    setRoster((prev) => prev.map((x) => (x.estudiante_id === est.estudiante_id ? { ...x, estado } : x)));
-    const f = from ?? drag;
-    setLeaving({ item: est, dir: estado, fromX: f?.x ?? 0, fromY: f?.y ?? 0 });
-    setIdx((i) => i + 1);
-    setDrag(null);
-    startRef.current = null;
-  };
-
-  // Corrección puntual desde el buscador final: marca a un estudiante sin entrar
-  // al mazo ni mover el índice (para arreglar a uno solo, p.ej. el que llegó tarde).
-  const marcarDirecto = (est: AsistenciaRosterItem, estado: AsistenciaEstado) => {
-    setRoster((prev) => prev.map((x) => (x.estudiante_id === est.estudiante_id ? { ...x, estado } : x)));
-    apiClient.asistencia
-      .marcar({ asignatura, grado, salon, fecha, estudiante_id: est.estudiante_id, estado })
-      .then((r) => {
-        setRoster((prev) => prev.map((x) => (x.estudiante_id === est.estudiante_id ? { ...x, estado: r.estado } : x)));
-        if (r.auto_excusa) toast({ title: "Excusa registrada", description: `${est.nombres} ya tenía una excusa vigente — se marcó como excusa.` });
-      })
-      .catch(() => {
-        toast({ title: "No se guardó", description: `Falló al guardar la marca de ${est.nombres}. Reintenta.`, variant: "destructive" });
-      });
-  };
-  // Igual que marcarDirecto pero devuelve la promesa (la lista marca "todos presentes" por tandas).
+  // Marca a un estudiante (optimista); si falla, vuelve a su marca anterior.
   const marcarLista = (est: AsistenciaRosterItem, estado: AsistenciaEstado) => {
     setRoster((prev) => prev.map((x) => (x.estudiante_id === est.estudiante_id ? { ...x, estado } : x)));
     return apiClient.asistencia
@@ -232,102 +140,8 @@ const Asistencia = () => {
       toast({ title: "No se guardó", description: "No se pudo marcar a todos como presentes. Reintenta.", variant: "destructive" });
     }
   };
-  const esPilotoLista = getSession().colegio_id === PILOTO_ASISTENCIA_LISTA;
-  // Piloto lista: si el enlace ya trae la clase (p. ej. al actualizar), no se muestra el formulario mientras carga.
-  const abriendoDesdeEnlace = esPilotoLista && step === "select" && !!params.get("asignatura") && !!params.get("grado") && !!params.get("salon");
-  // Búsqueda flexible: ignora mayúsculas Y tildes (ver memoria buscadores_flexibles).
-  const norm = (s: string) => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-  const resultadosBusqueda = busqueda.trim()
-    ? roster.filter((r) => norm(`${r.apellidos || ""} ${r.nombres || ""}`).includes(norm(busqueda))).slice(0, 20)
-    : [];
-  // Lista a corregir: por búsqueda, o por total tocado (ausentes, tarde, etc.).
-  const listaCorregir = busqueda.trim()
-    ? resultadosBusqueda
-    : filtroEstado
-      ? roster.filter((r) => r.estado === filtroEstado)
-      : [];
-
-  // Anima la tarjeta saliente fuera de pantalla y luego la quita del DOM.
-  useEffect(() => {
-    if (!leaving) { setLeavingGo(false); return; }
-    const raf = requestAnimationFrame(() => setLeavingGo(true));
-    const t = window.setTimeout(() => setLeaving(null), 260);
-    return () => { cancelAnimationFrame(raf); window.clearTimeout(t); };
-  }, [leaving]);
-
-  const onPointerDown = (e: React.PointerEvent) => {
-    if (leaving) return;
-    startRef.current = { x: e.clientX, y: e.clientY };
-    pendingRef.current = { x: 0, y: 0 };
-    setDrag({ x: 0, y: 0 });
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-  };
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (!startRef.current) return;
-    pendingRef.current = { x: e.clientX - startRef.current.x, y: e.clientY - startRef.current.y };
-    // Mover la tarjeta YA, imperativamente (sigue el dedo 1:1, sin re-render).
-    if (cardElRef.current) cardElRef.current.style.transform = transformFor(pendingRef.current);
-    // Y refrescar el estado UNA vez por frame, solo para el tinte de intención.
-    if (rafRef.current == null) {
-      rafRef.current = requestAnimationFrame(() => {
-        rafRef.current = null;
-        if (startRef.current && pendingRef.current) setDrag(pendingRef.current);
-      });
-    }
-  };
-  const onPointerUp = () => {
-    if (!startRef.current) return;
-    if (rafRef.current != null) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
-    const d = pendingRef.current; // el delta más reciente, sin depender del último render
-    startRef.current = null;
-    pendingRef.current = null;
-    const est = d
-      ? (d.y < -THRESH && Math.abs(d.y) > Math.abs(d.x)) ? "tarde"
-        : d.y > THRESH && d.y > Math.abs(d.x) ? "excusa"
-        : d.x > THRESH ? "presente"
-        : d.x < -THRESH ? "ausente"
-        : null
-      : null;
-    if (est) commit(est as AsistenciaEstado, d);
-    else setDrag(null);
-  };
-
-  // Volver al estudiante anterior para corregir su marca (re-deslizar lo
-  // sobrescribe). Si ya se envió notificación de inasistencia, esa ya salió;
-  // esto deja al menos el REGISTRO correcto.
-  const volverAnterior = () => {
-    if (idx <= 0 || leaving) return;
-    if (rafRef.current != null) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
-    startRef.current = null;
-    pendingRef.current = null;
-    setDrag(null);
-    setIdx((i) => Math.max(0, i - 1));
-  };
-
-  // Estilo de la tarjeta superior: solo arrastre o regreso al centro si NO se
-  // pasó el umbral. (Cuando sí se pasa, la salida la maneja la capa `leaving`.)
-  const cardStyle = (): React.CSSProperties => {
-    // Durante el arrastre activo la posición la manda el ref (último delta) y se
-    // actualiza imperativamente en cada move → la tarjeta sigue el dedo 1:1 sin
-    // depender de los re-renders de React. Sin transición para que no "arrastre".
-    if (startRef.current && pendingRef.current) {
-      return { transform: transformFor(pendingRef.current), transition: "none" };
-    }
-    // Soltó sin pasar el umbral → vuelve al centro suavemente.
-    return { transform: "translate(0,0)", transition: "transform .2s ease-out" };
-  };
-
-  // Estilo de la capa que sale: arranca donde quedó el dedo y vuela fuera.
-  const leavingStyle = (): React.CSSProperties => {
-    if (!leaving) return {};
-    if (!leavingGo) {
-      return { transform: `translate(${leaving.fromX}px, ${leaving.fromY}px) rotate(${leaving.fromX * 0.04}deg)`, transition: "none" };
-    }
-    const x = leaving.dir === "presente" ? 700 : leaving.dir === "ausente" ? -700 : 0;
-    const y = leaving.dir === "excusa" ? 800 : leaving.dir === "tarde" ? -800 : 0;
-    const rot = leaving.dir === "presente" ? 25 : leaving.dir === "ausente" ? -25 : 0;
-    return { transform: `translate(${x}px, ${y}px) rotate(${rot}deg)`, opacity: 0, transition: "transform .26s ease-out, opacity .26s ease-out" };
-  };
+  // Si el enlace ya trae la clase (p. ej. al actualizar), no se muestra el formulario mientras carga.
+  const abriendoDesdeEnlace = step === "select" && !!params.get("asignatura") && !!params.get("grado") && !!params.get("salon");
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -350,7 +164,7 @@ const Asistencia = () => {
         {step === "select" && !abriendoDesdeEnlace && (
           <div className="bg-card rounded-lg shadow-soft p-6 md:p-8 max-w-xl mx-auto mt-4">
             <h2 className="text-xl font-bold text-foreground mb-1 text-center">Tomar asistencia</h2>
-            <p className="text-sm text-muted-foreground mb-6 text-center">Elige la clase y el día. Luego deslizas a la derecha (presente), izquierda (ausente), arriba (entró tarde) o abajo (con excusa).</p>
+            <p className="text-sm text-muted-foreground mb-6 text-center">Elige la clase y el día.</p>
 
             {loading ? (
               <p className="text-center text-muted-foreground">Cargando tus asignaciones…</p>
@@ -373,7 +187,7 @@ const Asistencia = () => {
           </div>
         )}
 
-        {step === "deck" && esPilotoLista && (
+        {step === "deck" && (
           <AsistenciaLista
             roster={roster}
             asignatura={asignatura}
@@ -387,146 +201,6 @@ const Asistencia = () => {
           />
         )}
 
-        {step === "deck" && !esPilotoLista && (
-          <div className="max-w-md mx-auto mt-4">
-            {/* Encabezado de la clase */}
-            <div className="flex items-center justify-between mb-3">
-              <button onClick={() => setStep("select")} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border shadow-sm text-foreground text-sm font-medium hover:bg-muted transition cursor-pointer">
-                <ArrowLeft className="w-4 h-4" /> Cambiar clase
-              </button>
-              <span className="text-xs text-muted-foreground capitalize">{fechaLarga(fecha)}</span>
-            </div>
-            <div className="mb-4">
-              <p className="font-semibold text-foreground text-center mb-2">{asignatura} · {grado} {salon}</p>
-              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                <span>Estudiante {Math.min(idx + 1, roster.length)} de {roster.length}</span>
-                <span>{marcados} marcados</span>
-              </div>
-              <div className="h-2.5 rounded-full bg-muted overflow-hidden">
-                <div className="h-full bg-primary rounded-full transition-all duration-300" style={{ width: `${roster.length ? (marcados / roster.length) * 100 : 0}%` }} />
-              </div>
-            </div>
-
-            {idx >= roster.length ? (
-              // Resumen final
-              <div className="bg-card rounded-2xl shadow-soft p-8 text-center">
-                <p className="text-lg font-bold text-foreground mb-2">¡Asistencia completa!</p>
-                <p className="text-sm text-muted-foreground mb-4">Marcaste {pl(roster.length, "estudiante", "estudiantes")} de {grado} {salon}.</p>
-                {/* Totales: TOCA uno para ver esa lista y corregirlos. Se muestran los 4 siempre. */}
-                <div className="flex flex-wrap justify-center gap-2 text-sm mb-6">
-                  {([
-                    ["presente", conteo.presente, "presente", "presentes"],
-                    ["ausente", conteo.ausente, "ausente", "ausentes"],
-                    ["tarde", conteo.tarde, "llegó tarde", "llegaron tarde"],
-                    ["excusa", conteo.excusa, "con excusa", "con excusas"],
-                  ] as [AsistenciaEstado, number, string, string][]).map(([es, n, sing, plur]) => (
-                    <button
-                      key={es}
-                      onClick={() => { setFiltroEstado(filtroEstado === es ? null : es); setBusqueda(""); }}
-                      className={`px-3 py-1 rounded-full font-semibold bg-muted transition cursor-pointer ${ESTADO_UI[es].text} ${filtroEstado === es ? "ring-2 ring-current" : "hover:opacity-80"}`}
-                    >
-                      {pl(n, sing, plur)}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex flex-wrap gap-3 justify-center">
-                  <button onClick={volverAnterior} className="px-4 py-2 rounded-lg border border-border bg-card text-foreground hover:bg-muted flex items-center gap-1.5">
-                    <RotateCcw className="w-4 h-4" /> Volver al anterior
-                  </button>
-                  <button onClick={() => setIdx(0)} className="px-4 py-2 rounded-lg border border-border bg-card text-foreground hover:bg-muted">Revisar de nuevo</button>
-                  <button onClick={() => navigate("/dashboard")} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90">Terminar</button>
-                </div>
-
-                {/* Corregir un estudiante puntual sin volver a pasar por todos */}
-                <div className="mt-6 border-t border-border pt-4 text-left">
-                  <p className="text-sm font-medium text-foreground mb-2">¿Corregir a un estudiante? (ej. uno que llegó tarde)</p>
-                  <input
-                    data-guia="asistencia.buscar_corregir"
-                    value={busqueda}
-                    onChange={(e) => { setBusqueda(e.target.value); setFiltroEstado(null); }}
-                    placeholder="Buscar por nombre o apellido…"
-                    className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1.5">También puedes tocar un total de arriba (ausentes, llegaron tarde…) para ver esa lista.</p>
-                  {(busqueda.trim() || filtroEstado) && (
-                    listaCorregir.length === 0 ? (
-                      <p className="text-xs text-muted-foreground mt-2">{busqueda.trim() ? "Sin coincidencias." : "Ninguno."}</p>
-                    ) : (
-                      <div data-guia="asistencia.corregir_estado_boton" className="mt-3 space-y-2 max-h-72 overflow-y-auto">
-                        {listaCorregir.map((r) => (
-                          <div key={r.estudiante_id} className="border border-border rounded-lg p-2.5 bg-card">
-                            <p className="text-sm font-medium text-foreground">{r.apellidos} {r.nombres}</p>
-                            <div className="flex flex-wrap gap-1.5 mt-2">
-                              {(["presente", "ausente", "tarde", "excusa"] as AsistenciaEstado[]).map((es) => (
-                                <button
-                                  key={es}
-                                  onClick={() => marcarDirecto(r, es)}
-                                  className={`px-2.5 py-1 rounded-full text-xs font-semibold transition cursor-pointer ${r.estado === es ? `${ESTADO_UI[es].color} text-white` : "bg-muted text-foreground hover:opacity-80"}`}
-                                >
-                                  {ESTADO_UI[es].label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )
-                  )}
-                </div>
-              </div>
-            ) : (
-              <>
-                {/* Mazo: tarjeta siguiente detrás + tarjeta actual arriba */}
-                <div data-guia="asistencia.mazo" className="relative h-[460px] select-none" style={{ touchAction: "none" }}>
-                  {roster[idx + 1] && <CardView item={roster[idx + 1]} behind />}
-                  {actual && (
-                    <div
-                      key={actual.estudiante_id}
-                      ref={cardElRef}
-                      className="absolute inset-0 z-20"
-                      style={cardStyle()}
-                      onPointerDown={onPointerDown}
-                      onPointerMove={onPointerMove}
-                      onPointerUp={onPointerUp}
-                      onPointerCancel={onPointerUp}
-                    >
-                      <CardView item={actual} intencion={intencion} />
-                    </div>
-                  )}
-                  {leaving && (
-                    <div className="absolute inset-0 z-30 pointer-events-none" style={leavingStyle()}>
-                      <CardView item={leaving.item} intencion={leaving.dir} />
-                    </div>
-                  )}
-                </div>
-
-                {/* Botones equivalentes — orden: Regresar · Excusa · Entró tarde · No asistió · Asistió */}
-                <div className="flex items-center justify-center gap-4 mt-6">
-                  <button onClick={volverAnterior} disabled={idx === 0} title="Volver al anterior"
-                    className="w-12 h-12 rounded-full bg-muted text-foreground flex items-center justify-center shadow hover:scale-105 transition disabled:opacity-40 disabled:hover:scale-100">
-                    <RotateCcw className="w-5 h-5" />
-                  </button>
-                  <button onClick={() => commit("excusa")} title="Con excusa"
-                    className="w-14 h-14 rounded-full bg-amber-400 text-white flex items-center justify-center shadow-lg hover:scale-105 transition">
-                    <FileText className="w-6 h-6" />
-                  </button>
-                  <button onClick={() => commit("tarde")} title="Entró tarde"
-                    className="w-14 h-14 rounded-full bg-orange-500 text-white flex items-center justify-center shadow-lg hover:scale-105 transition">
-                    <Clock className="w-6 h-6" />
-                  </button>
-                  <button onClick={() => commit("ausente")} title="No asistió"
-                    className="w-16 h-16 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-lg hover:scale-105 transition">
-                    <X className="w-8 h-8" />
-                  </button>
-                  <button data-guia="asistencia.boton_presente" onClick={() => commit("presente")} title="Asistió"
-                    className="w-16 h-16 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg hover:scale-105 transition">
-                    <Check className="w-8 h-8" />
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
       </main>
     </div>
   );
@@ -546,46 +220,4 @@ const Selector = ({ label, value, onChange, options, placeholder, disabled, data
 );
 
 /** Tarjeta de un estudiante. `intencion` tiñe el overlay según hacia dónde se arrastra. */
-const CardView = ({ item, intencion, behind }: { item: AsistenciaRosterItem; intencion?: AsistenciaEstado | null; behind?: boolean }) => {
-  const iniciales = `${item.nombres?.[0] || ""}${item.apellidos?.[0] || ""}`.toUpperCase();
-  const ringColor = intencion ? ESTADO_UI[intencion].ring : "ring-emerald-300";
-  return (
-    <div className={`absolute inset-0 rounded-3xl overflow-hidden flex flex-col items-center justify-center p-6 shadow-xl border border-emerald-200 bg-emerald-100 ${behind ? "scale-95 opacity-50" : ""}`}>
-      {/* Banner de excusa vigente */}
-      {item.tiene_excusa && (
-        <div className="absolute top-0 inset-x-0 bg-amber-400 text-amber-950 text-center text-sm font-bold py-2 shadow z-10">
-          Con Excusa{item.excusa_motivo ? ` · ${item.excusa_motivo}` : ""}
-        </div>
-      )}
-
-      {/* Foto (la que el estudiante sube en su dashboard) */}
-      {/* Óvalo de carnet (ratio 110/140), igual que el avatar del dashboard. */}
-      <div className={`mt-3 w-40 h-[203px] rounded-[50%] overflow-hidden ring-4 ${ringColor} bg-white flex items-center justify-center shadow-lg`}>
-        {item.avatar_url
-          ? <img src={item.avatar_url} alt="" className="w-full h-full object-cover" draggable={false} />
-          : <span className="text-5xl font-bold text-emerald-600">{iniciales || "?"}</span>}
-      </div>
-
-      <p className="mt-6 px-3 text-2xl font-bold text-emerald-950 text-center leading-tight">{item.apellidos} {item.nombres}</p>
-      <p className="text-sm text-emerald-700/70 mt-1">CC {item.estudiante_id}</p>
-
-      {/* Estado ya marcado */}
-      {item.estado && !intencion && (
-        <span className={`mt-4 px-4 py-1.5 rounded-full text-white text-sm font-semibold shadow ${ESTADO_UI[item.estado].color}`}>
-          {ESTADO_UI[item.estado].label}
-        </span>
-      )}
-
-      {/* Overlay de intención al arrastrar */}
-      {intencion && (
-        <div className={`absolute inset-0 flex items-center justify-center ${ESTADO_UI[intencion].color} bg-opacity-30`}>
-          <span className="px-6 py-3 rounded-xl border-4 border-white text-white text-3xl font-extrabold rotate-[-8deg] uppercase tracking-wider drop-shadow-lg">
-            {ESTADO_UI[intencion].label}
-          </span>
-        </div>
-      )}
-    </div>
-  );
-};
-
 export default Asistencia;
