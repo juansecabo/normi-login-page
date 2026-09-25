@@ -13,10 +13,8 @@ import { supabase } from "@/integrations/supabase/client";
 import EstructuraColegioEditor from "@/components/EstructuraColegioEditor";
 import { Building, Image as ImageIcon, ArrowLeft, BookOpen, CalendarDays, FileText, ExternalLink, Pencil, Trash2, Users, MessageCircle, Phone, ClipboardList } from "lucide-react";
 import { useRef } from "react";
-import EscalaColegioEditor from "@/components/EscalaColegioEditor";
 import EscalaVisualEditor from "@/components/EscalaVisualEditor";
-// Escala en fichas: piloto en el colegio demo Cailico (Juan 2026-09-25).
-const PILOTO_ESCALA_FICHAS = "2f96f076-83df-4b84-8bbc-9c1df79a372b";
+// Escala en fichas en todos los colegios (Juan 2026-09-25; el wizard de Crear Institución sigue con el formulario).
 import CalendarioColegioEditor from "@/components/CalendarioColegioEditor";
 import { HorarioContenido } from "@/pages/Horario";
 import AsignaturasColegioEditor from "@/components/AsignaturasColegioEditor";
@@ -333,19 +331,11 @@ const ConstruyeInstitucion = () => {
             {vista === "estructura" && <EstructuraColegioEditor permitirImportar />}
             {vista === "escala" && (
               <div className="bg-card rounded-lg shadow-soft p-6 md:p-8">
-                {getSession().colegio_id === PILOTO_ESCALA_FICHAS ? (
-                  <EscalaVisualEditor
-                    cfg={cfgColegio}
-                    guardar={async (configuracion) => { await apiClient.colegio.patchConfig(configuracion); }}
-                    alGuardar={() => { cargar(); }}
-                  />
-                ) : (
-                  <EscalaColegioEditor
-                    cfg={cfgColegio}
-                    guardar={async (configuracion) => { await apiClient.colegio.patchConfig(configuracion); }}
-                    alGuardar={() => { cargar(); }}
-                  />
-                )}
+                <EscalaVisualEditor
+                  cfg={cfgColegio}
+                  guardar={async (configuracion) => { await apiClient.colegio.patchConfig(configuracion); }}
+                  alGuardar={() => { cargar(); }}
+                />
               </div>
             )}
             {vista === "asignaturas" && (

@@ -7,7 +7,7 @@ import { GraduationCap, Loader2, Plus, Trash2 } from "lucide-react";
 import { aNumero } from "@/utils/numero";
 
 /**
- * Escala de calificación en fichas (piloto Cailico, Juan 2026-09-25): en vez del
+ * Escala de calificación en fichas (Juan 2026-09-25; todos los colegios): en vez del
  * formulario de filas, se ve la escala como tarjetas (Rango, Aprueba con, barra de
  * colores y una ficha por rango). Al tocar una ficha se edita en una ventana; los
  * rangos vecinos se ajustan solos según los decimales (si un rango queda "hasta 4.5",
@@ -184,7 +184,7 @@ const EscalaVisualEditor = ({ cfg, guardar, alGuardar }: Props) => {
           <div className="text-sm text-muted-foreground">Rango</div>
           <div className="text-3xl sm:text-4xl font-bold text-primary mt-1">{fmt(escMin)} a {fmt(escMax)}</div>
         </button>
-        <button onClick={abrirEscala} data-guia="configurar_institucion.escala_aprobatoria" className="text-left rounded-2xl border border-border bg-card p-4 sm:p-5 hover:bg-muted transition-colors">
+        <button onClick={abrirEscala} data-guia="configurar_institucion.escala_aprobatoria_tarjeta" className="text-left rounded-2xl border border-border bg-card p-4 sm:p-5 hover:bg-muted transition-colors">
           <div className="text-sm text-muted-foreground">Aprueba con</div>
           <div className="text-3xl sm:text-4xl font-bold text-foreground mt-1">{aprob.toFixed(dec)}</div>
         </button>
@@ -230,11 +230,11 @@ const EscalaVisualEditor = ({ cfg, guardar, alGuardar }: Props) => {
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>{editando === "nueva" ? "Nuevo rango" : "Editar rango"}</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <div><Label className="text-sm">Nombre</Label><Input value={fNombre} onChange={(e) => setFNombre(e.target.value)} placeholder="Ej: Superior" className="mt-1" /></div>
+            <div><Label className="text-sm">Nombre</Label><Input data-guia="configurar_institucion.rango_nombre" value={fNombre} onChange={(e) => setFNombre(e.target.value)} placeholder="Ej: Superior" className="mt-1" /></div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-sm">Desde</Label>
-                <Input type="text" inputMode="decimal" value={fDesde} onChange={(e) => setFDesde(e.target.value)} disabled={editando === 0} className="mt-1" />
+                <Input data-guia="configurar_institucion.rango_desde" type="text" inputMode="decimal" value={fDesde} onChange={(e) => setFDesde(e.target.value)} disabled={editando === 0} className="mt-1" />
               </div>
               <div>
                 <Label className="text-sm">Hasta</Label>
@@ -243,7 +243,7 @@ const EscalaVisualEditor = ({ cfg, guardar, alGuardar }: Props) => {
             </div>
             <div className="flex items-center gap-3">
               <Label className="text-sm">Color</Label>
-              <input type="color" value={fColor} onChange={(e) => setFColor(e.target.value)} className="h-9 w-12 rounded border border-border cursor-pointer p-0.5" />
+              <input data-guia="configurar_institucion.rango_color" type="color" value={fColor} onChange={(e) => setFColor(e.target.value)} className="h-9 w-12 rounded border border-border cursor-pointer p-0.5" />
             </div>
             {fError && <p className="text-sm text-destructive">{fError}</p>}
           </div>
@@ -251,7 +251,7 @@ const EscalaVisualEditor = ({ cfg, guardar, alGuardar }: Props) => {
             {typeof editando === "number" ? (
               <Button variant="ghost" onClick={quitarBanda} disabled={guardando} className="text-destructive gap-1"><Trash2 className="w-4 h-4" /> Quitar</Button>
             ) : <span />}
-            <Button onClick={guardarBanda} disabled={guardando}>{guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar"}</Button>
+            <Button data-guia="configurar_institucion.rango_guardar" onClick={guardarBanda} disabled={guardando}>{guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -261,13 +261,13 @@ const EscalaVisualEditor = ({ cfg, guardar, alGuardar }: Props) => {
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Escala</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-3">
-            <div><Label className="text-sm">Nota mínima</Label><Input type="text" inputMode="decimal" value={eMin} onChange={(e) => setEMin(e.target.value)} className="mt-1" /></div>
+            <div><Label className="text-sm">Nota mínima</Label><Input data-guia="configurar_institucion.escala_min" type="text" inputMode="decimal" value={eMin} onChange={(e) => setEMin(e.target.value)} className="mt-1" /></div>
             <div><Label className="text-sm">Nota máxima</Label><Input type="text" inputMode="decimal" value={eMax} onChange={(e) => setEMax(e.target.value)} className="mt-1" /></div>
-            <div><Label className="text-sm">Aprueba con</Label><Input type="text" inputMode="decimal" value={eAprob} onChange={(e) => setEAprob(e.target.value)} className="mt-1" /></div>
-            <div><Label className="text-sm">Decimales</Label><Input type="number" min="0" max="2" step="1" value={eDec} onChange={(e) => setEDec(e.target.value)} className="mt-1" /></div>
+            <div><Label className="text-sm">Aprueba con</Label><Input data-guia="configurar_institucion.escala_aprobatoria" type="text" inputMode="decimal" value={eAprob} onChange={(e) => setEAprob(e.target.value)} className="mt-1" /></div>
+            <div><Label className="text-sm">Decimales</Label><Input data-guia="configurar_institucion.escala_decimales" type="number" min="0" max="2" step="1" value={eDec} onChange={(e) => setEDec(e.target.value)} className="mt-1" /></div>
           </div>
           {fError && <p className="text-sm text-destructive">{fError}</p>}
-          <DialogFooter><Button onClick={guardarEscala} disabled={guardando}>{guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar"}</Button></DialogFooter>
+          <DialogFooter><Button data-guia="configurar_institucion.escala_guardar" onClick={guardarEscala} disabled={guardando}>{guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
