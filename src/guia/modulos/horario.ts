@@ -2,7 +2,7 @@
 //
 // Una ficha para todos los roles en todos los colegios:
 //  - Estudiante: su horario. Acudiente: el de cada acudido (botones arriba).
-//  - Profesor: "Mis clases" y, abajo, el horario de cualquier salón (solo ver).
+//  - Profesor: solo su horario, con filtros de nivel, grado y salón arriba (2026-09-25).
 //  - La ficha del inicio es solo para ver. Se arma y se cambia en Configurar
 //    Institución → Horario de clases (2026-09-24), como el calendario: rector y
 //    admin cualquier salón; coordinador los de sus niveles (el servidor bloquea
@@ -41,6 +41,23 @@ export const HORARIO: Capacidad[] = [
     ],
   },
   {
+    id: "horario.filtrar_mis_clases",
+    titulo: "Ver solo mis clases de un nivel, grado o salón",
+    descripcion: "En su horario, el profesor puede dejar solo las clases de un nivel, un grado o un salón con los filtros de arriba.",
+    categoria: "Horario",
+    roles: ["profesor"],
+    ruta: "/horario",
+    endpoint: "GET /api/horario/mio",
+    sinonimos: ["mis clases de sexto", "mis clases en un salón", "filtrar mi horario", "cuándo tengo clase con un curso"],
+    pasos: [
+      LLEGAR,
+      { narracion: "Escoge el nivel (o déjalo en Todos).", accion: "seleccionar", ancla: "horario.selector_nivel", campo: "nivel" },
+      { narracion: "Si quieres, el grado.", accion: "seleccionar", ancla: "horario.selector_grado", campo: "grado", opcional: true },
+      { narracion: "Y el salón.", accion: "seleccionar", ancla: "horario.selector_salon", campo: "salon", opcional: true },
+      { narracion: "Tu horario queda solo con esas clases.", accion: "explicar", ancla: "horario.rejilla" },
+    ],
+  },
+  {
     id: "horario.ver_acudido",
     titulo: "Ver el horario de mi estudiante",
     descripcion: "Ver el horario de clases de cada estudiante a cargo; si tiene varios, se escoge arriba.",
@@ -60,7 +77,7 @@ export const HORARIO: Capacidad[] = [
     titulo: "Ver el horario de un salón",
     descripcion: "Consultar el horario de clases de cualquier salón del colegio.",
     categoria: "Horario",
-    roles: [...PERSONAL, "profesor"],
+    roles: [...PERSONAL],
     ruta: "/horario",
     endpoint: "GET /api/horario/salon",
     requisitos: [{ entidad: "salon", descripcion: "Grado y salón a consultar." }],

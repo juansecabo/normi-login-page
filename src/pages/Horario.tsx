@@ -44,7 +44,10 @@ function Rejilla({ clases, dias, horas, modo, onCelda, franjas, guia = "horario.
   const en = (d: number, h: number) => clases.filter((c) => c.dia === d && c.hora === h);
   const sinHora = (d: number) => clases.filter((c) => c.dia === d && c.hora == null);
   const haySinHora = dias.some((d) => sinHora(d).length > 0);
-  const franja = (h: number) => franjas?.find((f) => f.hora === h);
+  // Sin horas de nivel (vistas personales), la hora de la fila sale de sus clases cuando
+  // todas coinciden; si alguna difiere, esa la muestra su ficha (Juan 2026-09-25).
+  const derivadas = useMemo(() => franjas || franjasDeClases(clases), [franjas, clases]);
+  const franja = (h: number) => derivadas.find((f) => f.hora === h);
   return (
     <div className="overflow-x-auto -mx-2 px-2" data-guia={guia}>
       <table className="w-full min-w-[640px] table-fixed border-separate border-spacing-1 text-sm">
@@ -83,7 +86,7 @@ function Rejilla({ clases, dias, horas, modo, onCelda, franjas, guia = "horario.
                             <div className="text-[11px] text-muted-foreground leading-tight">
                               {modo === "profesor" ? `${c.grado} ${c.salon}` : (c.profesores || []).map((p) => p.nombre).join(", ")}
                             </div>
-                            {(c.inicio || c.fin) && !fr && <div className="text-[11px] text-muted-foreground">{c.inicio}{c.fin ? ` a ${c.fin}` : ""}</div>}
+                            {(c.inicio || c.fin) && (!fr || c.inicio !== fr.hora_inicio || c.fin !== fr.hora_fin) && <div className="text-[11px] text-muted-foreground">{c.inicio}{c.fin ? ` a ${c.fin}` : ""}</div>}
                           </div>
                         ))}
                         {vacia && onCelda && <span className="text-xs text-muted-foreground">+ Agregar</span>}
@@ -115,6 +118,19 @@ function Rejilla({ clases, dias, horas, modo, onCelda, franjas, guia = "horario.
       </table>
     </div>
   );
+}
+
+/** Hora de reloj de cada fila cuando todas sus clases la tienen igual. */
+function franjasDeClases(clases: Clase[]): Franja[] {
+  const porHora = new Map<number, Clase[]>();
+  for (const c of clases) if (c.hora != null) porHora.set(c.hora, [...(porHora.get(c.hora) || []), c]);
+  const out: Franja[] = [];
+  for (const [hora, cs] of porHora) {
+    if (cs.some((c) => !c.inicio || !c.fin)) continue;
+    if (new Set(cs.map((c) => `${c.inicio}|${c.fin}`)).size !== 1) continue;
+    out.push({ hora, hora_inicio: cs[0].inicio!, hora_fin: cs[0].fin! });
+  }
+  return out;
 }
 
 const diasDe = (clases: Clase[]) => {
@@ -152,6 +168,10 @@ export function HorarioContenido({ embebido = false }: { embebido?: boolean }) {
   const [profSel, setProfSel] = useState("");
   const [clasesProf, setClasesProf] = useState<Clase[] | null>(null);
   const [estSel, setEstSel] = useState(0);
+  // Filtros del profesor sobre sus propias clases ("" = todos).
+  const [fNivel, setFNivel] = useState("");
+  const [fGrado, setFGrado] = useState("");
+  const [fSalon, setFSalon] = useState("");
 
   // Edición
   const [borrador, setBorrador] = useState<Clase[] | null>(null);
@@ -355,13 +375,48 @@ export function HorarioContenido({ embebido = false }: { embebido?: boolean }) {
             </div>
           ) : (
             <div className="space-y-5">
-              {mio.tipo === "profesor" && (
-                <section className="space-y-2">
-                  <h2 className="font-semibold text-foreground">Mis clases</h2>
-                  {mio.clases?.length ? <Rejilla clases={mio.clases} dias={diasDe(mio.clases)} horas={horasDe(mio.clases, 1)} modo="profesor" />
-                    : <SinHorario texto="Todavía no hay clases tuyas en el horario cargado." />}
-                </section>
-              )}
+              {mio.tipo === "profesor" && (() => {
+                const todas: Clase[] = mio.clases || [];
+                if (!todas.length) return <SinHorario texto="Todavía no hay clases tuyas en el horario cargado." />;
+                // Nivel de cada grado y orden de grados como en la estructura del colegio.
+                const nivelDe = new Map(salones.map((x) => [x.grado, x.nivel || "Otros"]));
+                const orden = (g: string) => { const i = salones.findIndex((x) => x.grado === g); return i < 0 ? 999 : i; };
+                const niveles = [...new Set(todas.map((c) => nivelDe.get(c.grado) || "Otros"))];
+                const enNivel = todas.filter((c) => !fNivel || (nivelDe.get(c.grado) || "Otros") === fNivel);
+                const grados = [...new Set(enNivel.map((c) => c.grado))].sort((a, b) => orden(a) - orden(b));
+                const enGrado = enNivel.filter((c) => !fGrado || c.grado === fGrado);
+                const salonesF = [...new Set(enGrado.map((c) => String(c.salon)))].sort((a, b) => a.localeCompare(b, "es", { numeric: true }));
+                const visibles = enGrado.filter((c) => !fSalon || String(c.salon) === fSalon);
+                const TODOS = "__todos";
+                return (
+                  <section className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl">
+                      <div>
+                        <label className="text-sm font-medium block mb-1">Nivel</label>
+                        <Select value={fNivel || TODOS} onValueChange={(v) => { setFNivel(v === TODOS ? "" : v); setFGrado(""); setFSalon(""); }}>
+                          <SelectTrigger data-guia="horario.selector_nivel"><SelectValue /></SelectTrigger>
+                          <SelectContent><SelectItem value={TODOS}>Todos</SelectItem>{niveles.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium block mb-1">Grado</label>
+                        <Select value={fGrado || TODOS} onValueChange={(v) => { setFGrado(v === TODOS ? "" : v); setFSalon(""); }}>
+                          <SelectTrigger data-guia="horario.selector_grado"><SelectValue /></SelectTrigger>
+                          <SelectContent><SelectItem value={TODOS}>Todos</SelectItem>{grados.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium block mb-1">Salón</label>
+                        <Select value={fSalon || TODOS} onValueChange={(v) => setFSalon(v === TODOS ? "" : v)}>
+                          <SelectTrigger data-guia="horario.selector_salon"><SelectValue /></SelectTrigger>
+                          <SelectContent><SelectItem value={TODOS}>Todos</SelectItem>{salonesF.map((x) => <SelectItem key={x} value={x}>{x}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <Rejilla clases={visibles} dias={diasDe(todas)} horas={horasDe(todas, 1)} modo="profesor" franjas={franjasDeClases(todas)} />
+                  </section>
+                );
+              })()}
 
               {mio.tipo === "staff" && (
                 <div className="flex gap-2" data-guia="horario.vista">
@@ -370,9 +425,8 @@ export function HorarioContenido({ embebido = false }: { embebido?: boolean }) {
                 </div>
               )}
 
-              {(vista === "salon" || mio.tipo === "profesor") && (
+              {vista === "salon" && mio.tipo === "staff" && (
                 <section className="space-y-4">
-                  {mio.tipo === "profesor" && <h2 className="font-semibold text-foreground pt-2">Horario de un salón</h2>}
                   {/* Nivel → grado → salón, filtrándose según lo escogido (como en las demás fichas). */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl">
                     <div>
