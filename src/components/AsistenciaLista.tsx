@@ -1,12 +1,13 @@
-import { useState } from "react";
-import { ArrowLeft, CheckCheck, Loader2 } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { ArrowLeft } from "lucide-react";
 import type { AsistenciaRosterItem, AsistenciaEstado } from "@/lib/apiClient";
 
 /**
  * Tomar asistencia en LISTA (piloto Cailico, Juan 2026-09-25): todos los estudiantes
  * del salón a la vista, cada uno con sus botones Presente / Ausente / Tarde / Excusa.
- * Cada toque se guarda al instante (mismo endpoint que el mazo). "Todos presentes"
- * marca de una vez a los que faltan por marcar, para luego cambiar solo al que faltó.
+ * Cada toque se guarda al instante (mismo endpoint que el mazo). Arrastre: se toca un
+ * botón y, sin soltar, se desliza sobre las demás filas; cada fila por la que pasa queda
+ * con ese mismo estado (como al arrastrar el periodo en el calendario). Con el dedo o el mouse.
  */
 
 const BOTONES: { estado: AsistenciaEstado; label: string; activo: string }[] = [
@@ -35,24 +36,73 @@ interface Props {
 }
 
 const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarcar, onCambiarClase, onTerminar }: Props) => {
-  const [marcandoTodos, setMarcandoTodos] = useState(false);
   const conteo = { presente: 0, ausente: 0, tarde: 0, excusa: 0 };
   for (const r of roster) if (r.estado) conteo[r.estado]++;
   const pendientes = roster.filter((r) => !r.estado);
   const pl = (n: number, s: string, p: string) => `${n} ${n === 1 ? s : p}`;
 
-  // Los que tienen excusa vigente quedan con excusa, no como presentes.
-  const todosPresentes = async () => {
-    setMarcandoTodos(true);
-    try {
-      const lista = [...pendientes];
-      for (let i = 0; i < lista.length; i += 5) {
-        await Promise.all(lista.slice(i, i + 5).map((r) => onMarcar(r, r.tiene_excusa ? "excusa" : "presente")));
-      }
-    } finally {
-      setMarcandoTodos(false);
-    }
+  // Arrastre: estado que se está "pintando" y última fila tocada. Refs para que los
+  // listeners globales vean siempre el roster actual.
+  const arrastre = useRef<{ estado: AsistenciaEstado; ultima: number } | null>(null);
+  const rosterRef = useRef(roster);
+  rosterRef.current = roster;
+  const onMarcarRef = useRef(onMarcar);
+  onMarcarRef.current = onMarcar;
+  const punteroY = useRef<number | null>(null);
+
+  const pintar = (idx: number) => {
+    const a = arrastre.current;
+    const r = rosterRef.current[idx];
+    if (!a || !r || r.estado === a.estado) return;
+    onMarcarRef.current(r, a.estado);
   };
+
+  const empezar = (idx: number, estado: AsistenciaEstado, y: number) => {
+    arrastre.current = { estado, ultima: idx };
+    punteroY.current = y;
+    pintar(idx);
+  };
+
+  useEffect(() => {
+    const filaEn = (x: number, y: number): number | null => {
+      const el = document.elementFromPoint(x, y)?.closest("[data-fila-asistencia]");
+      return el ? Number(el.getAttribute("data-fila-asistencia")) : null;
+    };
+    const mover = (e: PointerEvent) => {
+      const a = arrastre.current;
+      if (!a) return;
+      punteroY.current = e.clientY;
+      const idx = filaEn(e.clientX, e.clientY);
+      if (idx === null || idx === a.ultima) return;
+      // Un movimiento rápido puede saltarse filas: se pintan todas las intermedias.
+      const paso = idx > a.ultima ? 1 : -1;
+      for (let i = a.ultima + paso; i !== idx + paso; i += paso) pintar(i);
+      a.ultima = idx;
+    };
+    const soltar = () => { arrastre.current = null; punteroY.current = null; };
+    // Cerca del borde de la pantalla la página baja/sube sola mientras se arrastra.
+    let raf = 0;
+    const autoScroll = () => {
+      const y = punteroY.current;
+      if (arrastre.current && y !== null) {
+        const borde = 70;
+        const v = y < borde ? -(borde - y) / 4 : y > window.innerHeight - borde ? (y - (window.innerHeight - borde)) / 4 : 0;
+        if (v) window.scrollBy(0, v);
+      }
+      raf = requestAnimationFrame(autoScroll);
+    };
+    raf = requestAnimationFrame(autoScroll);
+    window.addEventListener("pointermove", mover);
+    window.addEventListener("pointerup", soltar);
+    window.addEventListener("pointercancel", soltar);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("pointermove", mover);
+      window.removeEventListener("pointerup", soltar);
+      window.removeEventListener("pointercancel", soltar);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="max-w-3xl mx-auto mt-4">
@@ -78,21 +128,10 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
           </div>
         </div>
 
-        {pendientes.length > 0 && (
-          <button
-            data-guia="asistencia.todos_presentes"
-            onClick={todosPresentes}
-            disabled={marcandoTodos}
-            className="mb-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 text-sm font-semibold hover:bg-emerald-100 transition disabled:opacity-60"
-          >
-            {marcandoTodos ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCheck className="w-4 h-4" />}
-            Todos presentes ({pendientes.length})
-          </button>
-        )}
 
         <div className="space-y-1.5" data-guia="asistencia.lista">
           {roster.map((r, i) => (
-            <div key={r.estudiante_id} className={`rounded-xl border px-3 py-2 sm:flex sm:items-center sm:gap-3 ${r.estado ? FONDO_FILA[r.estado] : "bg-card border-border"}`}>
+            <div key={r.estudiante_id} data-fila-asistencia={i} className={`rounded-xl border px-3 py-2 sm:flex sm:items-center sm:gap-3 ${r.estado ? FONDO_FILA[r.estado] : "bg-card border-border"}`}>
               <div className="flex items-center gap-2 min-w-0 sm:flex-1">
                 <span className="w-6 text-right text-sm text-muted-foreground shrink-0">{i + 1}</span>
                 <div className="min-w-0">
@@ -106,8 +145,15 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
                 {BOTONES.map((b) => (
                   <button
                     key={b.estado}
-                    onClick={() => onMarcar(r, b.estado)}
-                    className={`px-1 py-1.5 rounded-full border text-xs sm:text-sm font-semibold transition ${r.estado === b.estado ? b.activo : "bg-card border-border text-muted-foreground hover:bg-muted"}`}
+                    onPointerDown={(e) => {
+                      if (e.button !== 0) return;
+                      e.preventDefault();
+                      // Soltar la captura implícita del touch para que elementFromPoint siga al dedo.
+                      (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+                      empezar(i, b.estado, e.clientY);
+                    }}
+                    onClick={(e) => { if (e.detail === 0) onMarcar(r, b.estado); }}
+                    className={`touch-none select-none px-1 py-1.5 rounded-full border text-xs sm:text-sm font-semibold transition ${r.estado === b.estado ? b.activo : "bg-card border-border text-muted-foreground hover:bg-muted"}`}
                   >
                     {b.label}
                   </button>
