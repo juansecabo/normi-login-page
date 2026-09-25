@@ -128,14 +128,14 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
       </div>
 
       <div className="bg-card rounded-2xl shadow-soft p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+        <div className="flex flex-col items-center text-center gap-3 mb-4">
           <div>
             <h2 className="text-xl font-bold text-foreground">Tomar asistencia</h2>
             <p className="text-sm text-muted-foreground mt-0.5">
               <span className="font-semibold text-primary">{grado} {salon}</span> · {asignatura} · {fechaTexto.charAt(0).toUpperCase() + fechaTexto.slice(1)}
             </p>
           </div>
-          <div className="flex flex-wrap gap-1.5 text-xs font-semibold">
+          <div className="flex flex-wrap justify-center gap-1.5 text-xs font-semibold">
             <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">{pl(conteo.presente, "presente", "presentes")}</span>
             <span className="px-2.5 py-1 rounded-full bg-rose-100 text-rose-700">{pl(conteo.ausente, "ausente", "ausentes")}</span>
             <span className="px-2.5 py-1 rounded-full bg-orange-100 text-orange-700">{pl(conteo.tarde, "tarde", "tarde")}</span>
@@ -143,8 +143,8 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
           </div>
         </div>
 
-
         {pendientes.length > 0 && (
+          <div className="flex justify-center">
           <button
             data-guia="asistencia.todos_presentes"
             onClick={todosPresentes}
@@ -154,6 +154,7 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
             {marcandoTodos ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCheck className="w-4 h-4" />}
             Marcar todos como presentes ({pendientes.length})
           </button>
+          </div>
         )}
 
         <div className="space-y-1.5" data-guia="asistencia.lista">
