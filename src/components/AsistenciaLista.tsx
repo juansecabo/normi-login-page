@@ -157,7 +157,7 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
                 <div className="min-w-0">
                   <div className="text-lg font-medium text-foreground">{r.apellidos} {r.nombres}</div>
                   {r.tiene_excusa && (
-                    <div className="text-sm text-amber-700">Tiene excusa{r.excusa_motivo ? `: ${r.excusa_motivo}` : ""}</div>
+                    <div className="text-sm text-amber-700">Tiene excusa{r.excusa_motivo ? `: ${r.excusa_motivo.charAt(0).toLowerCase()}${r.excusa_motivo.slice(1)}` : ""}</div>
                   )}
                 </div>
               </div>
