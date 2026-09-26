@@ -124,11 +124,15 @@ const Asistencia = () => {
   const [guardando, setGuardando] = useState(false);
   const [errorGuardar, setErrorGuardar] = useState(false);
   const nCambios = Object.keys(cambios).length;
+  // Excusa vigente (o retiro que cubre la clase) ⇒ la fila aparece en Excusa y no se puede
+  // cambiar (Juan 2026-09-26). Se guarda junto con lo demás al tocar Guardar.
   const rosterVista = useMemo(
-    () => roster.map((r) => (cambios[r.estudiante_id] ? { ...r, estado: cambios[r.estudiante_id] } : r)),
+    () => roster.map((r) => (r.tiene_excusa ? { ...r, estado: "excusa" as AsistenciaEstado } : cambios[r.estudiante_id] ? { ...r, estado: cambios[r.estudiante_id] } : r)),
     [roster, cambios],
   );
+  const excusasSinGuardar = roster.filter((r) => r.tiene_excusa && r.estado !== "excusa");
   const marcar = (est: AsistenciaRosterItem, estado: AsistenciaEstado) => {
+    if (est.tiene_excusa) return;
     const guardado = roster.find((r) => r.estudiante_id === est.estudiante_id)?.estado ?? null;
     setCambios((prev) => {
       const n = { ...prev };
@@ -137,11 +141,11 @@ const Asistencia = () => {
       return n;
     });
   };
-  // "Marcar todos como presentes": los que no tienen marca (excusa vigente ⇒ excusa).
+  // "Marcar todos como presentes": los que no tienen marca (los de excusa ya aparecen en Excusa).
   const marcarTodos = () => {
     setCambios((prev) => {
       const n = { ...prev };
-      for (const r of roster) if (!r.estado && !n[r.estudiante_id]) n[r.estudiante_id] = r.tiene_excusa ? "excusa" : "presente";
+      for (const r of roster) if (!r.estado && !r.tiene_excusa && !n[r.estudiante_id]) n[r.estudiante_id] = "presente";
       return n;
     });
   };
@@ -152,7 +156,10 @@ const Asistencia = () => {
     try {
       const { marcas } = await apiClient.asistencia.guardar({
         asignatura, grado, salon, fecha,
-        marcas: Object.entries(cambios).map(([estudiante_id, estado]) => ({ estudiante_id, estado })),
+        marcas: [
+          ...Object.entries(cambios).map(([estudiante_id, estado]) => ({ estudiante_id, estado })),
+          ...excusasSinGuardar.map((r) => ({ estudiante_id: r.estudiante_id, estado: "excusa" as AsistenciaEstado })),
+        ],
       });
       const m = new Map(marcas.map((x) => [x.estudiante_id, x.estado]));
       setRoster((prev) => prev.map((x) => (m.has(x.estudiante_id) ? { ...x, estado: m.get(x.estudiante_id)! } : x)));

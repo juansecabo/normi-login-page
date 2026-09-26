@@ -125,7 +125,7 @@ export const ASISTENCIA: Capacidad[] = [
       },
       {
         narracion:
-          "Toca 'Guardar' (abajo) para guardar las marcas; ahí se avisa a los acudientes. Puedes guardar aunque falten estudiantes. Si un estudiante tiene una excusa vigente ese día, o un retiro autorizado cuya hora ya pasó, queda como excusa automáticamente.",
+          "Toca 'Guardar' (abajo) para guardar las marcas; ahí se avisa a los acudientes. Puedes guardar aunque falten estudiantes. Si un estudiante tiene una excusa vigente, o un retiro autorizado que cubre esa clase, aparece ya en Excusa y no se puede cambiar.",
         accion: "click",
         ancla: "asistencia.guardar",
       },

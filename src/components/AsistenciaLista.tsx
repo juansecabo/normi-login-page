@@ -59,7 +59,7 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
   const pintar = (idx: number) => {
     const a = arrastre.current;
     const r = rosterRef.current[idx];
-    if (!a || !r || r.estado === a.estado) return;
+    if (!a || !r || r.tiene_excusa || r.estado === a.estado) return;
     onMarcarRef.current(r, a.estado);
   };
 
@@ -162,15 +162,16 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
                 {BOTONES.map((b) => (
                   <button
                     key={b.estado}
+                    disabled={r.tiene_excusa && b.estado !== "excusa"}
                     data-guia={i === 0 && b.estado === "presente" ? "asistencia.boton_presente" : undefined}
                     onPointerDown={(e) => {
                       // Arrastre solo con mouse (en el celular deslizar debe bajar la página).
-                      if (e.pointerType !== "mouse" || e.button !== 0) return;
+                      if (e.pointerType !== "mouse" || e.button !== 0 || r.tiene_excusa) return;
                       e.preventDefault();
                       empezar(i, b.estado, e.clientY);
                     }}
                     onClick={(e) => { if ((e.nativeEvent as PointerEvent).pointerType !== "mouse") onMarcar(r, b.estado); }}
-                    className={`select-none px-0 py-2 rounded-full border text-sm sm:text-base font-semibold transition ${r.estado === b.estado ? b.activo : "bg-card border-border text-muted-foreground hover:bg-muted"}`}
+                    className={`select-none px-0 py-2 rounded-full border text-sm sm:text-base font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed ${r.estado === b.estado ? b.activo : "bg-card border-border text-muted-foreground hover:bg-muted"}`}
                   >
                     {b.label}
                   </button>
