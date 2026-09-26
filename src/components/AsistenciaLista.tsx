@@ -55,6 +55,9 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
   const onMarcarRef = useRef(onMarcar);
   onMarcarRef.current = onMarcar;
   const punteroY = useRef<number | null>(null);
+  // Tipo del último toque (mouse/touch/pen), tomado en pointerdown: Safari de iPad reporta el
+  // click de un toque como "mouse", así que el click no sirve para saberlo.
+  const tipoToque = useRef<string | null>(null);
 
   const pintar = (idx: number) => {
     const a = arrastre.current;
@@ -165,12 +168,18 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
                     disabled={r.tiene_excusa && b.estado !== "excusa"}
                     data-guia={i === 0 && b.estado === "presente" ? "asistencia.boton_presente" : undefined}
                     onPointerDown={(e) => {
+                      tipoToque.current = e.pointerType;
                       // Arrastre solo con mouse (en el celular deslizar debe bajar la página).
                       if (e.pointerType !== "mouse" || e.button !== 0 || r.tiene_excusa) return;
                       e.preventDefault();
                       empezar(i, b.estado, e.clientY);
                     }}
-                    onClick={(e) => { if ((e.nativeEvent as PointerEvent).pointerType !== "mouse") onMarcar(r, b.estado); }}
+                    onClick={() => {
+                      // Con mouse ya se marcó al presionar (arrastre); toque, lápiz o teclado marcan aquí.
+                      const tipo = tipoToque.current;
+                      tipoToque.current = null;
+                      if (tipo !== "mouse") onMarcar(r, b.estado);
+                    }}
                     className={`select-none px-0 py-2 rounded-full border text-sm sm:text-base font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed ${r.estado === b.estado ? b.activo : "bg-card border-border text-muted-foreground hover:bg-muted"}`}
                   >
                     {b.label}
