@@ -110,7 +110,7 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
   }, []);
 
   return (
-    <div className="max-w-3xl mx-auto mt-4">
+    <div className="max-w-4xl mx-auto mt-4">
       <div className="flex items-center justify-between mb-3">
         <button onClick={onCambiarClase} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border shadow-sm text-foreground text-sm font-medium hover:bg-muted transition cursor-pointer">
           <ArrowLeft className="w-4 h-4" /> Cambiar clase
