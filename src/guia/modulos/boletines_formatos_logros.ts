@@ -578,7 +578,7 @@ export const BOLETINES_FORMATOS_LOGROS: Capacidad[] = [
     id: "formatos.apoyo_crear",
     titulo: "Diligenciar una planilla de Plan de Apoyo al Mejoramiento",
     descripcion:
-      "Registrar el plan de apoyo: elegir grado y salón (carga los estudiantes), poner la nota anterior, Taller (40%) y Sustentación (60%); la definitiva se calcula sola (máximo la nota aprobatoria y nunca menor que la anterior). Firmar y guardar.",
+      "Registrar el plan de apoyo: elegir grado y salón (carga los estudiantes), poner Taller (40%) y Sustentación (60%); la definitiva se calcula sola. Firmar y guardar.",
     categoria: CATEGORIA,
     roles: [...TODOS_INTERNOS],
     gate: "pestalozziano",
@@ -632,7 +632,7 @@ export const BOLETINES_FORMATOS_LOGROS: Capacidad[] = [
       },
       {
         narracion:
-          "Por cada estudiante, escribe la nota que tenía antes del plan, la del Taller (40%) y la de Sustentación (60%). La Definitiva se calcula sola: nunca pasa de la nota mínima aprobatoria ni baja de la nota anterior.",
+          "Por cada estudiante, escribe la nota del Taller (40%) y la de Sustentación (60%). La Definitiva se calcula sola.",
         accion: "escribir",
         ancla: "apoyo.fila_taller",
         campo: "taller",
