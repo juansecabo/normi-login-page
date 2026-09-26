@@ -44,7 +44,7 @@ export const ASISTENCIA: Capacidad[] = [
     categoria: "Asistencia",
     roles: [...TOMAN_ASISTENCIA],
     ruta: "/profesor/asistencia/tomar",
-    endpoint: "POST /api/asistencia/marcar y /marcar-todos (Profesor, Administrador)",
+    endpoint: "POST /api/asistencia/guardar (Profesor, Administrador)",
     requisitos: [
       { entidad: "asignatura", descripcion: "Asignatura de la clase." },
       { entidad: "grado", descripcion: "Grado del salón." },
@@ -125,8 +125,9 @@ export const ASISTENCIA: Capacidad[] = [
       },
       {
         narracion:
-          "Cada marca se guarda sola. Si un estudiante ya tiene una excusa vigente ese día, o un retiro autorizado cuya hora ya pasó, la marca queda como excusa automáticamente. Cuando todos estén marcados se habilita 'Listo'.",
-        accion: "explicar",
+          "Toca 'Guardar' (abajo) para guardar las marcas; ahí se avisa a los acudientes. Puedes guardar aunque falten estudiantes. Si un estudiante tiene una excusa vigente ese día, o un retiro autorizado cuya hora ya pasó, queda como excusa automáticamente.",
+        accion: "click",
+        ancla: "asistencia.guardar",
       },
     ],
   },
@@ -138,7 +139,7 @@ export const ASISTENCIA: Capacidad[] = [
     categoria: "Asistencia",
     roles: [...TOMAN_ASISTENCIA],
     ruta: "/profesor/asistencia/tomar",
-    endpoint: "POST /api/asistencia/marcar (Profesor, Administrador)",
+    endpoint: "POST /api/asistencia/guardar (Profesor, Administrador)",
     requisitos: [
       { entidad: "estudiante", descripcion: "Estudiante a corregir." },
     ],
@@ -162,8 +163,9 @@ export const ASISTENCIA: Capacidad[] = [
         campo: "estado",
       },
       {
-        narracion: "La corrección se guarda al instante y se notifica al acudiente si cambia una inasistencia ya avisada. Listo.",
-        accion: "explicar",
+        narracion: "Toca 'Guardar'. Si cambia una inasistencia o tardanza ya avisada, se notifica al acudiente. Listo.",
+        accion: "click",
+        ancla: "asistencia.guardar",
       },
     ],
   },

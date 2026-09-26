@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useBlocker, useNavigate, useSearchParams } from "react-router-dom";
 import { getSession, isProfesor, isAdmin } from "@/hooks/useSession";
 import { supabase } from "@/integrations/supabase/client";
 import { apiClient, type AsistenciaRosterItem, type AsistenciaEstado } from "@/lib/apiClient";
@@ -9,7 +9,7 @@ import { useEstructuraOrden } from "@/utils/estructuraOrden";
 
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 import AsistenciaLista from "@/components/AsistenciaLista";
-// Asistencia en lista: piloto en el colegio demo Cailico (Juan 2026-09-25).
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 interface AsignacionRow {
   "Asignatura(s)": string[] | string[][];
   "Grado(s)": string[] | string[][];
@@ -96,6 +96,7 @@ const Asistencia = () => {
         return;
       }
       setRoster(res.roster);
+      setCambios({});
       setStep("deck");
       // La clase queda en el enlace, así al actualizar vuelve a la misma lista.
       setParams({ asignatura, grado, salon, fecha }, { replace: true });
@@ -117,29 +118,73 @@ const Asistencia = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
 
-  // Marca a un estudiante (optimista); si falla, vuelve a su marca anterior.
-  const marcarLista = (est: AsistenciaRosterItem, estado: AsistenciaEstado) => {
-    setRoster((prev) => prev.map((x) => (x.estudiante_id === est.estudiante_id ? { ...x, estado } : x)));
-    return apiClient.asistencia
-      .marcar({ asignatura, grado, salon, fecha, estudiante_id: est.estudiante_id, estado })
-      .then((r) => {
-        setRoster((prev) => prev.map((x) => (x.estudiante_id === est.estudiante_id ? { ...x, estado: r.estado } : x)));
-      })
-      .catch(() => {
-        toast({ title: "No se guardó", description: `Falló al guardar la marca de ${est.nombres}. Reintenta.`, variant: "destructive" });
-        setRoster((prev) => prev.map((x) => (x.estudiante_id === est.estudiante_id ? { ...x, estado: est.estado } : x)));
-      });
+  // Marcas en pantalla SIN guardar (Juan 2026-09-25): se guardan todas con "Guardar" y solo
+  // entonces salen los avisos. `roster` tiene lo guardado; `cambios`, lo que difiere de eso.
+  const [cambios, setCambios] = useState<Record<string, AsistenciaEstado>>({});
+  const [guardando, setGuardando] = useState(false);
+  const [errorGuardar, setErrorGuardar] = useState(false);
+  const nCambios = Object.keys(cambios).length;
+  const rosterVista = useMemo(
+    () => roster.map((r) => (cambios[r.estudiante_id] ? { ...r, estado: cambios[r.estudiante_id] } : r)),
+    [roster, cambios],
+  );
+  const marcar = (est: AsistenciaRosterItem, estado: AsistenciaEstado) => {
+    const guardado = roster.find((r) => r.estudiante_id === est.estudiante_id)?.estado ?? null;
+    setCambios((prev) => {
+      const n = { ...prev };
+      if (estado === guardado) delete n[est.estudiante_id]; // volvió a lo guardado: ya no es cambio
+      else n[est.estudiante_id] = estado;
+      return n;
+    });
   };
-  // "Marcar todos como presentes": una sola petición, el servidor guarda todos o ninguno.
-  const marcarTodosLista = async () => {
+  // "Marcar todos como presentes": los que no tienen marca (excusa vigente ⇒ excusa).
+  const marcarTodos = () => {
+    setCambios((prev) => {
+      const n = { ...prev };
+      for (const r of roster) if (!r.estado && !n[r.estudiante_id]) n[r.estudiante_id] = r.tiene_excusa ? "excusa" : "presente";
+      return n;
+    });
+  };
+  const guardar = async (): Promise<boolean> => {
+    if (!nCambios) return true;
+    setGuardando(true);
+    setErrorGuardar(false);
     try {
-      const { marcas } = await apiClient.asistencia.marcarTodos({ asignatura, grado, salon, fecha });
+      const { marcas } = await apiClient.asistencia.guardar({
+        asignatura, grado, salon, fecha,
+        marcas: Object.entries(cambios).map(([estudiante_id, estado]) => ({ estudiante_id, estado })),
+      });
       const m = new Map(marcas.map((x) => [x.estudiante_id, x.estado]));
       setRoster((prev) => prev.map((x) => (m.has(x.estudiante_id) ? { ...x, estado: m.get(x.estudiante_id)! } : x)));
+      setCambios({});
+      return true;
     } catch {
-      toast({ title: "No se guardó", description: "No se pudo marcar a todos como presentes. Reintenta.", variant: "destructive" });
+      setErrorGuardar(true);
+      return false;
+    } finally {
+      setGuardando(false);
     }
   };
+
+  // Salir con cambios sin guardar ⇒ pop-up. Dentro de la plataforma (menú, migas, atrás)
+  // lo ataja useBlocker; al cerrar/actualizar la pestaña, el aviso propio del navegador.
+  const hayCambios = step === "deck" && nCambios > 0;
+  const blocker = useBlocker(({ currentLocation, nextLocation }) => hayCambios && currentLocation.pathname !== nextLocation.pathname);
+  const [salidaPendiente, setSalidaPendiente] = useState<(() => void) | null>(null);
+  useEffect(() => {
+    if (!hayCambios) return;
+    const alSalir = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", alSalir);
+    return () => window.removeEventListener("beforeunload", alSalir);
+  }, [hayCambios]);
+  const cambiarClase = () => { setCambios({}); setStep("select"); setParams({}, { replace: true }); };
+  const avisoAbierto = blocker.state === "blocked" || !!salidaPendiente;
+  const cerrarAviso = () => { if (blocker.state === "blocked") blocker.reset(); setSalidaPendiente(null); };
+  const salirDelAviso = () => {
+    if (blocker.state === "blocked") blocker.proceed();
+    else if (salidaPendiente) { const f = salidaPendiente; setSalidaPendiente(null); f(); }
+  };
+
   // Si el enlace ya trae la clase (p. ej. al actualizar), no se muestra el formulario mientras carga.
   const abriendoDesdeEnlace = step === "select" && !!params.get("asignatura") && !!params.get("grado") && !!params.get("salon");
 
@@ -189,17 +234,40 @@ const Asistencia = () => {
 
         {step === "deck" && (
           <AsistenciaLista
-            roster={roster}
+            roster={rosterVista}
             asignatura={asignatura}
             grado={grado}
             salon={salon}
             fechaTexto={fechaLarga(fecha)}
-            onMarcar={marcarLista}
-            onMarcarTodos={marcarTodosLista}
-            onCambiarClase={() => { setStep("select"); setParams({}, { replace: true }); }}
-            onTerminar={() => navigate("/dashboard")}
+            onMarcar={marcar}
+            onMarcarTodos={marcarTodos}
+            nCambios={nCambios}
+            guardando={guardando}
+            errorGuardar={errorGuardar}
+            onGuardar={guardar}
+            onCambiarClase={() => (nCambios ? setSalidaPendiente(() => cambiarClase) : cambiarClase())}
           />
         )}
+
+        <Dialog open={avisoAbierto} onOpenChange={(o) => { if (!o) cerrarAviso(); }}>
+          <DialogContent className="max-w-sm rounded-2xl" onOpenAutoFocus={(e) => e.preventDefault()}>
+            <DialogHeader>
+              <DialogTitle>Cambios sin guardar</DialogTitle>
+              <DialogDescription>
+                {nCambios === 1 ? "Tienes 1 cambio sin guardar." : `Tienes ${nCambios} cambios sin guardar.`}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 mt-2">
+              <button onClick={() => { setCambios({}); salirDelAviso(); }} className="px-4 py-2 rounded-lg border border-border font-semibold text-foreground hover:bg-muted">
+                Salir sin guardar
+              </button>
+              <button onClick={async () => { if (await guardar()) salirDelAviso(); else cerrarAviso(); }} disabled={guardando}
+                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 disabled:opacity-60">
+                {guardando ? "Guardando…" : "Guardar y salir"}
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
       </main>
     </div>
@@ -219,5 +287,4 @@ const Selector = ({ label, value, onChange, options, placeholder, disabled, data
   </div>
 );
 
-/** Tarjeta de un estudiante. `intencion` tiñe el overlay según hacia dónde se arrastra. */
 export default Asistencia;

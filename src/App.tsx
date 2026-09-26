@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import Index from "./pages/Index";
 import EntrarDemo from "./pages/EntrarDemo";
@@ -166,13 +166,10 @@ function SesionSync() {
   return null;
 }
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <GuiaProvider>
+// Router de datos (en vez de BrowserRouter) solo para poder usar useBlocker, p. ej. el
+// aviso de "cambios sin guardar" en Tomar asistencia. Todas las rutas siguen en <Routes>.
+const Raiz = () => (
+  <GuiaProvider>
         <ScrollToTop />
         <SesionSync />
         <NormiRecordatorioRecuperacion />
@@ -349,8 +346,16 @@ const App = () => (
 
           <Route path="*" element={<NotFound />} />
         </Routes>
-        </GuiaProvider>
-      </BrowserRouter>
+  </GuiaProvider>
+);
+const router = createBrowserRouter([{ path: "*", element: <Raiz /> }]);
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <RouterProvider router={router} />
     </TooltipProvider>
   </QueryClientProvider>
 );

@@ -1,14 +1,15 @@
-import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, CheckCheck, Loader2 } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { ArrowLeft, CheckCheck } from "lucide-react";
 import type { AsistenciaRosterItem, AsistenciaEstado } from "@/lib/apiClient";
 
 /**
  * Tomar asistencia en LISTA (Juan 2026-09-25, reemplaza el mazo de tarjetas): todos los estudiantes
  * del salón a la vista, cada uno con sus botones Presente / Ausente / Tarde / Excusa.
- * Cada toque se guarda al instante (mismo endpoint que el mazo). Arrastre: se toca un
+ * Las marcas quedan en pantalla y se guardan todas con "Guardar" (fijo abajo, activo solo
+ * si hay cambios sin guardar); ahí salen los avisos. Arrastre: se toca un
  * botón y, sin soltar, se desliza sobre las demás filas; cada fila por la que pasa queda
  * con ese mismo estado (como al arrastrar el periodo en el calendario). Solo con mouse.
- * "Marcar todos como presentes" marca de una vez (una sola petición) a los que faltan.
+ * "Marcar todos como presentes" marca en pantalla a los que faltan.
  */
 
 const BOTONES: { estado: AsistenciaEstado; label: string; activo: string }[] = [
@@ -31,14 +32,16 @@ interface Props {
   grado: string;
   salon: string;
   fechaTexto: string;
-  onMarcar: (est: AsistenciaRosterItem, estado: AsistenciaEstado) => Promise<void> | void;
-  onMarcarTodos: () => Promise<void>;
+  onMarcar: (est: AsistenciaRosterItem, estado: AsistenciaEstado) => void;
+  onMarcarTodos: () => void;
+  nCambios: number;
+  guardando: boolean;
+  errorGuardar: boolean;
+  onGuardar: () => void;
   onCambiarClase: () => void;
-  onTerminar: () => void;
 }
 
-const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarcar, onMarcarTodos, onCambiarClase, onTerminar }: Props) => {
-  const [marcandoTodos, setMarcandoTodos] = useState(false);
+const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarcar, onMarcarTodos, nCambios, guardando, errorGuardar, onGuardar, onCambiarClase }: Props) => {
   const conteo = { presente: 0, ausente: 0, tarde: 0, excusa: 0 };
   for (const r of roster) if (r.estado) conteo[r.estado]++;
   const pendientes = roster.filter((r) => !r.estado);
@@ -104,14 +107,7 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
       window.removeEventListener("pointerup", soltar);
       window.removeEventListener("pointercancel", soltar);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // El servidor marca a todos los que faltan de una vez (excusa vigente ⇒ 'excusa').
-  const todosPresentes = async () => {
-    setMarcandoTodos(true);
-    try { await onMarcarTodos(); } finally { setMarcandoTodos(false); }
-  };
 
   return (
     <div className="max-w-3xl mx-auto mt-4">
@@ -141,11 +137,10 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
           <div className="flex justify-center">
           <button
             data-guia="asistencia.todos_presentes"
-            onClick={todosPresentes}
-            disabled={marcandoTodos}
-            className="mb-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 text-sm font-semibold hover:bg-emerald-100 transition disabled:opacity-60"
+            onClick={onMarcarTodos}
+            className="mb-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 text-base font-semibold hover:bg-emerald-100 transition"
           >
-            {marcandoTodos ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCheck className="w-4 h-4" />}
+            <CheckCheck className="w-5 h-5" />
             Marcar todos como presentes ({pendientes.length})
           </button>
           </div>
@@ -153,17 +148,17 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
 
         <div className="space-y-1.5" data-guia="asistencia.lista">
           {roster.map((r, i) => (
-            <div key={r.estudiante_id} data-fila-asistencia={i} className={`rounded-xl border px-3 py-2 sm:flex sm:items-center sm:gap-3 ${r.estado ? FONDO_FILA[r.estado] : "bg-card border-border"}`}>
+            <div key={r.estudiante_id} data-fila-asistencia={i} className={`rounded-xl border px-3 py-2.5 sm:flex sm:items-center sm:gap-3 ${r.estado ? FONDO_FILA[r.estado] : "bg-card border-border"}`}>
               <div className="flex items-center gap-2 min-w-0 sm:flex-1">
-                <span className="w-6 text-right text-sm text-muted-foreground shrink-0">{i + 1}</span>
+                <span className="w-7 text-right text-base text-muted-foreground shrink-0">{i + 1}</span>
                 <div className="min-w-0">
-                  <div className="font-medium text-foreground">{r.apellidos} {r.nombres}</div>
+                  <div className="text-lg font-medium text-foreground">{r.apellidos} {r.nombres}</div>
                   {r.tiene_excusa && (
-                    <div className="text-xs text-amber-700">Tiene excusa{r.excusa_motivo ? `: ${r.excusa_motivo}` : ""}</div>
+                    <div className="text-sm text-amber-700">Tiene excusa{r.excusa_motivo ? `: ${r.excusa_motivo}` : ""}</div>
                   )}
                 </div>
               </div>
-              <div className="grid grid-cols-4 gap-1.5 mt-2 sm:mt-0 sm:w-[380px] shrink-0">
+              <div className="grid grid-cols-4 gap-1.5 mt-2 sm:mt-0 sm:w-[460px] shrink-0">
                 {BOTONES.map((b) => (
                   <button
                     key={b.estado}
@@ -175,7 +170,7 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
                       empezar(i, b.estado, e.clientY);
                     }}
                     onClick={(e) => { if ((e.nativeEvent as PointerEvent).pointerType !== "mouse") onMarcar(r, b.estado); }}
-                    className={`select-none px-1 py-1.5 rounded-full border text-xs sm:text-sm font-semibold transition ${r.estado === b.estado ? b.activo : "bg-card border-border text-muted-foreground hover:bg-muted"}`}
+                    className={`select-none px-1 py-2 rounded-full border text-sm sm:text-base font-semibold transition ${r.estado === b.estado ? b.activo : "bg-card border-border text-muted-foreground hover:bg-muted"}`}
                   >
                     {b.label}
                   </button>
@@ -185,11 +180,19 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
           ))}
         </div>
 
-        <div className="flex items-center justify-between mt-4 gap-3">
-          <span className="text-sm text-muted-foreground">
-            {pendientes.length ? `Faltan ${pl(pendientes.length, "estudiante", "estudiantes")} por marcar` : "Todos marcados. Se guarda al tocar."}
+        {/* Pie fijo: Guardar siempre visible, activo solo si hay cambios sin guardar. */}
+        <div className="sticky bottom-0 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 mt-4 px-4 sm:px-6 py-3 bg-card/95 backdrop-blur border-t border-border rounded-b-2xl flex items-center justify-between gap-3">
+          <span className={`text-sm ${errorGuardar ? "text-rose-600 font-medium" : "text-muted-foreground"}`}>
+            {errorGuardar
+              ? "No se guardó. Intenta de nuevo."
+              : nCambios
+                ? pl(nCambios, "cambio sin guardar", "cambios sin guardar")
+                : pendientes.length ? `Faltan ${pl(pendientes.length, "estudiante", "estudiantes")} por marcar` : "Todo guardado"}
           </span>
-          <button onClick={onTerminar} disabled={pendientes.length > 0} className="px-5 py-2 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:opacity-50">Listo</button>
+          <button data-guia="asistencia.guardar" onClick={onGuardar} disabled={!nCambios || guardando}
+            className="px-6 py-2.5 rounded-lg bg-primary text-primary-foreground text-base font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">
+            {guardando ? "Guardando…" : "Guardar"}
+          </button>
         </div>
       </div>
     </div>
