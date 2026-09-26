@@ -111,7 +111,7 @@ export const ASISTENCIA: Capacidad[] = [
       },
       {
         narracion:
-          "Si vinieron casi todos, toca 'Marcar todos como presentes' y luego cambia solo a los que faltaron.",
+          "Si vinieron casi todos, toca 'Marcar como presentes' (marca a los que aún no tienen marca) y luego cambia solo a los que faltaron.",
         accion: "click",
         ancla: "asistencia.todos_presentes",
         opcional: true,

@@ -141,7 +141,7 @@ const Asistencia = () => {
       return n;
     });
   };
-  // "Marcar todos como presentes": los que no tienen marca (los de excusa ya aparecen en Excusa).
+  // "Marcar como presentes": los que no tienen marca (los de excusa ya aparecen en Excusa).
   const marcarTodos = () => {
     setCambios((prev) => {
       const n = { ...prev };

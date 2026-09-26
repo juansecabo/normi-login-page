@@ -9,7 +9,7 @@ import type { AsistenciaRosterItem, AsistenciaEstado } from "@/lib/apiClient";
  * si hay cambios sin guardar); ahí salen los avisos. Arrastre: se toca un
  * botón y, sin soltar, se desliza sobre las demás filas; cada fila por la que pasa queda
  * con ese mismo estado (como al arrastrar el periodo en el calendario). Solo con mouse.
- * "Marcar todos como presentes" marca en pantalla a los que faltan.
+ * "Marcar como presentes" marca en pantalla SOLO a los que faltan (no toca las marcas ya puestas).
  */
 
 const BOTONES: { estado: AsistenciaEstado; label: string; activo: string }[] = [
@@ -144,7 +144,7 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
             className="mb-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 text-sm sm:text-base font-semibold hover:bg-emerald-100 transition"
           >
             <CheckCheck className="w-5 h-5" />
-            Marcar todos como presentes ({pendientes.length})
+            Marcar como presentes ({pendientes.length})
           </button>
           </div>
         )}
