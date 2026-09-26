@@ -87,7 +87,7 @@ const PlanillasConsulta = () => {
     D.setFontSize(9); D.setFont("helvetica", "normal");
     D.text(`Docente: ${d.docente || ""}`, M, y); D.text(`Asignatura: ${d.asignatura || ""}`, W / 2, y); y += 5;
     D.text(`Período: ${d.periodo || ""}`, M, y); D.text(`Fecha: ${d.fecha || ""}`, W / 2, y); D.text(`Grado: ${d.grado || ""} ${d.salon || ""}`, W - 55, y); y += 7;
-    const cols: [string, number][] = [["N°", 8], ["Nombre del estudiante", 58], ["Taller 40%", 20], ["Sust. 60%", 20], ["Definitiva", 20], ["Observ.", 30], ["Firma", 10]];
+    const cols: [string, number][] = [["N°", 8], ["Nombre del estudiante", 50], ["Nota ant.", 16], ["Taller 40%", 18], ["Sust. 60%", 18], ["Definitiva", 18], ["Observ.", 28], ["Firma", 10]];
     const rowH = 8;
     const drawHead = () => {
       D.setFont("helvetica", "bold"); D.setFontSize(7.5);
@@ -99,7 +99,7 @@ const PlanillasConsulta = () => {
     (d.filas || []).forEach((f: any, i: number) => {
       if (y > 275) { D.addPage(); y = 16; drawHead(); }
       let x = M; D.rect(M, y, W - 2 * M, rowH);
-      const cells = [String(i + 1), f.nombre, f.taller, f.sustent, f.definitiva ?? "", f.obs, ""];
+      const cells = [String(i + 1), f.nombre, f.anterior ?? "", f.taller, f.sustent, f.definitiva ?? "", f.obs, ""];
       cols.forEach(([, w], ci) => { const txt = D.splitTextToSize(String(cells[ci] ?? ""), w - 2)[0] || ""; D.text(txt, x + 1, y + 5); x += w; if (x < W - M) D.line(x, y, x, y + rowH); });
       y += rowH;
     });

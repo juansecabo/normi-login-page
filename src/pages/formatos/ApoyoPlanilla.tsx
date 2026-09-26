@@ -6,20 +6,25 @@ import { supabase } from "@/integrations/supabase/client";
 import { apiRequest } from "@/lib/apiClient";
 import { useToast } from "@/hooks/use-toast";
 import { useGradosColegio } from "@/utils/grados";
+import { useColegioConfig } from "@/hooks/useColegioConfig";
 import SignatureCanvas from "react-signature-canvas";
 import { Save, Download } from "lucide-react";
 
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
-// Planilla de control — Plan de Apoyo al Mejoramiento (definitiva = Taller 40% + Sustentación 60%).
+// Planilla de control — Plan de Apoyo al Mejoramiento. Nota del plan = Taller 40% + Sustentación 60%;
+// definitiva = la mayor entre la nota anterior y la del plan, SIN pasar de la nota mínima
+// aprobatoria (7 en el Pestalozziano). Pedido de Diana vía Juan (2026-09-26).
 const PESTA_ID = "94c1414b-22d1-40dd-945a-5857b62e5f6c";
 const CAILICO_ID = "2f96f076-83df-4b84-8bbc-9c1df79a372b"; // demo, para revisión
 
-interface Fila { id: string; nombre: string; taller: string; sustent: string; obs: string; }
+interface Fila { id: string; nombre: string; anterior: string; taller: string; sustent: string; obs: string; }
 
-const definitiva = (f: Fila): string => {
-  const t = parseFloat(f.taller), su = parseFloat(f.sustent);
+const num = (v: string) => parseFloat(String(v).replace(",", "."));
+const definitiva = (f: Fila, tope: number): string => {
+  const t = num(f.taller), su = num(f.sustent), ant = num(f.anterior);
   if (isNaN(t) && isNaN(su)) return "";
-  const val = (isNaN(t) ? 0 : t) * 0.4 + (isNaN(su) ? 0 : su) * 0.6;
+  const plan = (isNaN(t) ? 0 : t) * 0.4 + (isNaN(su) ? 0 : su) * 0.6;
+  const val = Math.min(tope, isNaN(ant) ? plan : Math.max(plan, ant)); // nunca baja de la anterior, nunca pasa del tope
   return (Math.round(val * 100) / 100).toString();
 };
 
@@ -29,6 +34,9 @@ const ApoyoPlanilla = () => {
   const sig = useRef<SignatureCanvas>(null);
   const s = getSession();
   const { grados: gradosColegio } = useGradosColegio();
+  const { config: cfg, configCargada } = useColegioConfig();
+  const tope = cfg.nota_aprobatoria;
+  const def = (f: Fila) => (configCargada ? definitiva(f, tope) : "");
 
   const [grado, setGrado] = useState("");
   const [salon, setSalon] = useState("");
@@ -64,7 +72,7 @@ const ApoyoPlanilla = () => {
       const { data } = await supabase.from("Estudiantes").select("id, grado, salon").eq("grado", grado).eq("salon", salon);
       const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
       const ests = sortByApellidosNombres(await enrichWithNombres((data || []) as any)) as any[];
-      setFilas(ests.map((e) => ({ id: String(e.id), nombre: `${e.apellidos} ${e.nombres}`.trim(), taller: "", sustent: "", obs: "" })));
+      setFilas(ests.map((e) => ({ id: String(e.id), nombre: `${e.apellidos} ${e.nombres}`.trim(), anterior: "", taller: "", sustent: "", obs: "" })));
       setCargando(false);
     })();
   }, [grado, salon]);
@@ -75,7 +83,7 @@ const ApoyoPlanilla = () => {
 
   const armarDatos = () => ({
     tipo: "apoyo", docente, asignatura, periodo, fecha, grado, salon,
-    filas: filas.map((f) => ({ ...f, definitiva: definitiva(f) })), firma,
+    filas: filas.map((f) => ({ ...f, definitiva: def(f) })), firma,
   });
 
   const guardar = async (): Promise<boolean> => {
@@ -118,7 +126,7 @@ const ApoyoPlanilla = () => {
     d.setFontSize(9); d.setFont("helvetica", "normal");
     d.text(`Docente: ${docente}`, M, y); d.text(`Asignatura: ${asignatura}`, W / 2, y); y += 5;
     d.text(`Período: ${periodo}`, M, y); d.text(`Fecha: ${fecha}`, W / 2, y); d.text(`Grado: ${grado} ${salon}`, W - 55, y); y += 7;
-    const cols: [string, number][] = [["N°", 8], ["Nombre del estudiante", 58], ["Taller 40%", 20], ["Sust. 60%", 20], ["Definitiva", 20], ["Observ.", 30], ["Firma", 10]];
+    const cols: [string, number][] = [["N°", 8], ["Nombre del estudiante", 50], ["Nota ant.", 16], ["Taller 40%", 18], ["Sust. 60%", 18], ["Definitiva", 18], ["Observ.", 28], ["Firma", 10]];
     const rowH = 8;
     const drawHead = () => {
       d.setFont("helvetica", "bold"); d.setFontSize(7.5);
@@ -130,7 +138,7 @@ const ApoyoPlanilla = () => {
     filas.forEach((f, i) => {
       if (y > 275) { d.addPage(); y = 16; drawHead(); }
       let x = M; d.rect(M, y, W - 2 * M, rowH);
-      const cells = [String(i + 1), f.nombre, f.taller, f.sustent, definitiva(f), f.obs, ""];
+      const cells = [String(i + 1), f.nombre, f.anterior, f.taller, f.sustent, def(f), f.obs, ""];
       cols.forEach(([, w], ci) => { const txt = d.splitTextToSize(String(cells[ci]), w - 2)[0] || ""; d.text(txt, x + 1, y + 5); x += w; if (x < W - M) d.line(x, y, x, y + rowH); });
       y += rowH;
     });
@@ -161,7 +169,7 @@ const ApoyoPlanilla = () => {
         <div className="space-y-4 bg-card rounded-lg shadow-soft p-5">
           <div>
           <h1 className="text-center text-xl font-bold text-foreground">Plan de Apoyo al Mejoramiento</h1>
-        <p className="text-center text-muted-foreground mt-1 text-sm mb-2">La definitiva se calcula sola: Taller 40% + Sustentación 60%.</p>
+        <p className="text-center text-muted-foreground mt-1 text-sm mb-2">Definitiva: Taller 40% + Sustentación 60%, máximo {configCargada ? tope : "la nota aprobatoria"} y nunca menor que la nota anterior.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-3">
             <div><label className="text-sm font-medium">Grado *</label>
@@ -184,7 +192,7 @@ const ApoyoPlanilla = () => {
               <table className="w-full text-sm">
                 <thead className="bg-muted/50"><tr>
                   <th className="p-2 text-left w-8">#</th><th className="p-2 text-left">Estudiante</th>
-                  <th className="p-2 text-left w-24">Taller 40%</th><th className="p-2 text-left w-24">Sust. 60%</th>
+                  <th className="p-2 text-left w-24">Nota anterior</th><th className="p-2 text-left w-24">Taller 40%</th><th className="p-2 text-left w-24">Sust. 60%</th>
                   <th className="p-2 text-left w-24">Definitiva</th><th className="p-2 text-left">Observaciones</th>
                 </tr></thead>
                 <tbody>
@@ -192,9 +200,10 @@ const ApoyoPlanilla = () => {
                     <tr key={f.id} className="border-t border-border">
                       <td className="p-2 text-muted-foreground">{i + 1}</td>
                       <td className="p-2">{f.nombre}</td>
+                      <td className="p-2"><input value={f.anterior} onChange={(e) => setFila(i, "anterior", e.target.value)} className="px-2 py-1 border border-input rounded w-16 bg-background" data-guia="apoyo.fila_anterior" /></td>
                       <td className="p-2"><input value={f.taller} onChange={(e) => setFila(i, "taller", e.target.value)} className="px-2 py-1 border border-input rounded w-16 bg-background" data-guia="apoyo.fila_taller" /></td>
                       <td className="p-2"><input value={f.sustent} onChange={(e) => setFila(i, "sustent", e.target.value)} className="px-2 py-1 border border-input rounded w-16 bg-background" /></td>
-                      <td className="p-2 font-semibold text-primary">{definitiva(f) || "—"}</td>
+                      <td className="p-2 font-semibold text-primary">{def(f) || "—"}</td>
                       <td className="p-2"><input value={f.obs} onChange={(e) => setFila(i, "obs", e.target.value)} className="px-2 py-1 border border-input rounded w-full bg-background" data-guia="apoyo.fila_obs" /></td>
                     </tr>
                   ))}
