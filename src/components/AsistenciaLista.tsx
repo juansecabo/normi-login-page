@@ -138,7 +138,7 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
           <button
             data-guia="asistencia.todos_presentes"
             onClick={onMarcarTodos}
-            className="mb-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 text-base font-semibold hover:bg-emerald-100 transition"
+            className="mb-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 text-sm sm:text-base font-semibold hover:bg-emerald-100 transition"
           >
             <CheckCheck className="w-5 h-5" />
             Marcar todos como presentes ({pendientes.length})
@@ -148,7 +148,7 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
 
         <div className="space-y-1.5" data-guia="asistencia.lista">
           {roster.map((r, i) => (
-            <div key={r.estudiante_id} data-fila-asistencia={i} className={`rounded-xl border px-3 py-2.5 sm:flex sm:items-center sm:gap-3 ${r.estado ? FONDO_FILA[r.estado] : "bg-card border-border"}`}>
+            <div key={r.estudiante_id} data-fila-asistencia={i} className={`rounded-xl border px-2 sm:px-3 py-2.5 sm:flex sm:items-center sm:gap-3 ${r.estado ? FONDO_FILA[r.estado] : "bg-card border-border"}`}>
               <div className="flex items-center gap-2 min-w-0 sm:flex-1">
                 <span className="w-7 text-right text-base text-muted-foreground shrink-0">{i + 1}</span>
                 <div className="min-w-0">
@@ -158,7 +158,7 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
                   )}
                 </div>
               </div>
-              <div className="grid grid-cols-4 gap-1.5 mt-2 sm:mt-0 sm:w-[460px] shrink-0">
+              <div className="grid grid-cols-4 gap-1 sm:gap-1.5 mt-2 sm:mt-0 sm:w-[460px] shrink-0">
                 {BOTONES.map((b) => (
                   <button
                     key={b.estado}
@@ -170,7 +170,7 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
                       empezar(i, b.estado, e.clientY);
                     }}
                     onClick={(e) => { if ((e.nativeEvent as PointerEvent).pointerType !== "mouse") onMarcar(r, b.estado); }}
-                    className={`select-none px-1 py-2 rounded-full border text-sm sm:text-base font-semibold transition ${r.estado === b.estado ? b.activo : "bg-card border-border text-muted-foreground hover:bg-muted"}`}
+                    className={`select-none px-0 py-2 rounded-full border text-sm sm:text-base font-semibold transition ${r.estado === b.estado ? b.activo : "bg-card border-border text-muted-foreground hover:bg-muted"}`}
                   >
                     {b.label}
                   </button>
