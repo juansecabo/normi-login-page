@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import HeaderNormi from "@/components/HeaderNormi";
 import { getSession, puedeAccederDashboard, isAdmin, isProfesor } from "@/hooks/useSession";
 import { apiRequest } from "@/lib/apiClient";
@@ -28,9 +28,13 @@ const PlanillasConsulta = () => {
   const s = getSession();
   const [formatos, setFormatos] = useState<Formato[]>([]);
   const [cargando, setCargando] = useState(true);
+  // Enlace directo desde el aviso de WhatsApp: /formatos/planillas?id=N resalta esa planilla.
+  const [params] = useSearchParams();
+  const idDestacado = Number(params.get("id")) || null;
 
   useEffect(() => {
-    if (!s.id || (!puedeAccederDashboard() && !isAdmin() && !isProfesor())) { navigate("/"); return; }
+    if (!s.id) { navigate(`/?redirect=${encodeURIComponent(`/formatos/planillas${idDestacado ? `?id=${idDestacado}` : ""}`)}`); return; }
+    if (!puedeAccederDashboard() && !isAdmin() && !isProfesor()) { navigate("/"); return; }
     (async () => {
       try {
         const r = await apiRequest<{ formatos: Formato[] }>("/api/formatos?tipo=nivelacion,apoyo");
@@ -42,6 +46,11 @@ const PlanillasConsulta = () => {
       }
     })();
   }, []);
+
+  useEffect(() => {
+    if (cargando || !idDestacado) return;
+    document.getElementById(`planilla-${idDestacado}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [cargando, idDestacado]);
 
   const colegioNombre = (s.colegio_nombre || "Institución Educativa").toUpperCase();
 
@@ -155,7 +164,7 @@ const PlanillasConsulta = () => {
               const d = f.datos || {};
               const nEst = Array.isArray(d.filas) ? d.filas.length : 0;
               return (
-                <div key={f.id} className="rounded-lg border border-border p-4 flex items-start justify-between gap-4">
+                <div key={f.id} id={`planilla-${f.id}`} className={`rounded-lg border p-4 flex items-start justify-between gap-4 ${f.id === idDestacado ? "border-primary ring-2 ring-primary/40 bg-primary/5" : "border-border"}`}>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">{TIPO_NOMBRE[f.tipo] || f.tipo}</span>
