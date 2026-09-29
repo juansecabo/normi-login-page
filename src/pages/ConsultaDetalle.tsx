@@ -567,27 +567,6 @@ export default function ConsultaDetalle() {
     cargar();
   };
 
-  // Devuelve la lista resumida de estudiantes de los que es acudiente este padre,
-  // para mostrar debajo del nombre en la celda como contexto de búsqueda.
-  const kidsDePadre = (padreId: string): string[] => {
-    const p = padres.find((x) => String(x.padre_id) === String(padreId));
-    if (!p) return [];
-    const slots = [1, 2, 3, 4] as const;
-    const out: string[] = [];
-    for (const idx of slots) {
-      const nombre = (p as any)[`acudido${idx}_nombre`];
-      const apellidos = (p as any)[`acudido${idx}_apellidos`];
-      const grado = (p as any)[`acudido${idx}_grado`];
-      const salon = (p as any)[`acudido${idx}_salon`];
-      const id = (p as any)[`acudido${idx}_id`];
-      if (!id) continue;
-      const nombreCompleto = `${nombre || ""} ${apellidos || ""}`.trim();
-      const grupo = grado ? ` (${grado}${salon ? ` ${salon}` : ""})` : "";
-      out.push(`${nombreCompleto}${grupo}`.trim());
-    }
-    return out;
-  };
-
   const GRADOS_ORDEN_MAP: Record<string, number> = {
     Párvulo: 1, Prejardín: 2, Jardín: 3, Transición: 4,
     Primero: 5, Segundo: 6, Tercero: 7, Cuarto: 8, Quinto: 9,
@@ -1485,17 +1464,6 @@ export default function ConsultaDetalle() {
                           {ac ? (
                             <div className="space-y-1">
                               <div className="text-sm font-semibold text-foreground truncate max-w-[180px]" title={ac.acudiente_nombre}>{ac.acudiente_nombre}</div>
-                              {(() => {
-                                const kids = ac.padre_id ? kidsDePadre(ac.padre_id) : [];
-                                if (kids.length <= 1) return null; // si solo tiene 1 acudido (el del row), no agrega valor
-                                const otros = kids.filter((k) => !k.startsWith(est.nombre_completo));
-                                if (otros.length === 0) return null;
-                                return (
-                                  <div className="text-[10px] text-muted-foreground truncate max-w-[200px]" title={otros.join(", ")}>
-                                    Otros acudidos: {otros.join(", ")}
-                                  </div>
-                                );
-                              })()}
                               {ac.opcion ? (
                                 <div className="flex items-center gap-1">
                                   <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold border ${colorOpcion(ac.opcion)}`}>
