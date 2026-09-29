@@ -1372,6 +1372,7 @@ export default function ConsultaDetalle() {
           (consulta.salones_objetivo && consulta.salones_objetivo.length > 0) ||
           (consulta.estudiantes_objetivo && consulta.estudiantes_objetivo.length > 0)) && (
         <>
+        <h2 className="text-lg font-bold text-foreground mb-3">Respuestas de acudientes</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
           <div className="sm:col-span-2 lg:col-span-3 xl:col-span-1">
             <label className="text-sm font-bold text-foreground block mb-1">Buscar estudiante</label>
