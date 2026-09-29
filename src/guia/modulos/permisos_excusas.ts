@@ -209,6 +209,75 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
     ],
   },
   {
+    id: "permisos_excusas.registrar_falta_uniforme",
+    titulo: "Registrar una falta de uniforme",
+    descripcion:
+      "Anotar que uno o varios estudiantes vinieron sin el uniforme que corresponde (no es una excusa: queda el registro para llevar el control). Se avisa por WhatsApp a sus acudientes. Solo rector, coordinación o administrador.",
+    categoria: "Permisos y Excusas",
+    roles: ["rector", "coordinador", "admin"],
+    ruta: "/permisos-excusas/uniforme-falta",
+    endpoint: "POST /api/uniforme/faltas",
+    sinonimos: [
+      "anotar falta de uniforme",
+      "reportar uniforme que no es",
+      "vino sin uniforme",
+      "registrar que no trajo el uniforme",
+      "control de uniforme",
+    ],
+    pasos: [
+      ...abrirLista("uniforme", "Justificación por Uniforme"),
+      {
+        narracion: "Toca 'Registrar falta de uniforme'.",
+        accion: "click",
+        ancla: "uniforme_staff.registrar_falta",
+      },
+      {
+        narracion: "Toca 'Seleccionar estudiantes' y marca a los que tuvieron la falta; puedes filtrar por grado y salón.",
+        accion: "click",
+        ancla: "falta_uniforme.seleccionar",
+      },
+      {
+        narracion: "Elige la fecha y cuál fue la falta. Si es 'Otro', escribe cuál.",
+        accion: "click",
+        ancla: "falta_uniforme.tipo",
+      },
+      {
+        narracion: "Toca 'Registrar falta' y confirma. Sus acudientes reciben el aviso por WhatsApp.",
+        accion: "click",
+        ancla: "falta_uniforme.registrar",
+      },
+    ],
+  },
+  {
+    id: "permisos_excusas.ver_faltas_uniforme",
+    titulo: "Ver las faltas de uniforme",
+    descripcion:
+      "Consultar las faltas de uniforme registradas, agrupadas por estudiante con cuántas lleva cada uno, con buscador y filtros de grado y salón. Solo rector, coordinación o administrador.",
+    categoria: "Permisos y Excusas",
+    roles: ["rector", "coordinador", "admin"],
+    ruta: "/permisos-excusas/uniforme-staff?vista=faltas",
+    endpoint: "GET /api/uniforme/faltas",
+    sinonimos: [
+      "cuántas faltas de uniforme lleva",
+      "estudiantes sin uniforme",
+      "historial de faltas de uniforme",
+      "quién viene sin uniforme",
+    ],
+    pasos: [
+      ...abrirLista("uniforme", "Justificación por Uniforme"),
+      {
+        narracion: "Cambia a la pestaña 'Faltas de uniforme'.",
+        accion: "click",
+        ancla: "uniforme_staff.tab_faltas",
+      },
+      {
+        narracion: "Cada tarjeta es un estudiante con su número de faltas; los que más tienen van primero. Tócala para ver cada falta con su fecha y quién la registró.",
+        accion: "explicar",
+        ancla: "falta_uniforme.lista",
+      },
+    ],
+  },
+  {
     id: "permisos_excusas.ver_detalle",
     titulo: "Ver el detalle completo de un permiso o excusa",
     descripcion:

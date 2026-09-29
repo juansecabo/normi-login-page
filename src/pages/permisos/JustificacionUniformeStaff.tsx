@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { formatTelefono } from "@/utils/telefono";
 import { getSession, isProfesor, puedeAccederDashboard, isAdmin } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
-import { Shirt, ChevronDown, Search, X } from "lucide-react";
+import { Shirt, ChevronDown, Search, X, Plus } from "lucide-react";
 import { coincideBusqueda } from "@/utils/busqueda";
 import FirmaImage from "@/components/FirmaImage";
 import { markLastSeen } from "@/utils/notificaciones";
@@ -16,6 +16,9 @@ import { useNivelesCoordina } from "@/hooks/useNivelesCoordina";
 import { useAulasProfesor } from "@/hooks/useAulasProfesor";
 import { NIVEL_DE_GRADO } from "@/utils/grados";
 import CalendarioFiltroDia, { keyDeDate } from "@/components/CalendarioFiltroDia";
+import FaltasUniformeLista from "@/components/FaltasUniformeLista";
+import { ROLES_FALTA_UNIFORME } from "./FaltaUniformeRegistro";
+import { useEstructuraOrden } from "@/utils/estructuraOrden";
 
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 const GRADO_ORDEN: Record<string, number> = {
@@ -46,6 +49,11 @@ const fmtFecha = (s: string) => new Date(s + "T12:00:00").toLocaleDateString("es
 
 const JustificacionUniformeStaff = () => {
   const navigate = useNavigate();
+  // Faltas de uniforme (Juan 2026-09-29): solo rector, coordinadores y administrador.
+  const puedeFaltas = ROLES_FALTA_UNIFORME.includes(getSession().cargo || "");
+  const [params, setParams] = useSearchParams();
+  const vista = puedeFaltas && params.get("vista") === "faltas" ? "faltas" : "justificaciones";
+  const { gradoRank } = useEstructuraOrden();
   const [justificaciones, setJustificaciones] = useState<Justificacion[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
@@ -174,10 +182,30 @@ const JustificacionUniformeStaff = () => {
 
         <div className="bg-card rounded-lg shadow-soft p-6">
           <h2 className="text-xl font-bold text-foreground flex items-center justify-center gap-2 mb-6">
-            <Shirt className="h-5 w-5 text-primary" /> Justificaciones por Uniforme
+            <Shirt className="h-5 w-5 text-primary" /> {vista === "faltas" ? "Faltas de uniforme" : "Justificaciones por Uniforme"}
           </h2>
 
-          {loading ? <div className="text-center py-8 text-muted-foreground">Cargando...</div> : (
+          {puedeFaltas && (
+            <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
+              <button data-guia="uniforme_staff.tab_justificaciones" onClick={() => setParams({}, { replace: true })}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors cursor-pointer ${vista === "justificaciones" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"}`}>
+                Justificaciones
+              </button>
+              <button data-guia="uniforme_staff.tab_faltas" onClick={() => setParams({ vista: "faltas" }, { replace: true })}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors cursor-pointer ${vista === "faltas" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"}`}>
+                Faltas de uniforme
+              </button>
+              <button data-guia="uniforme_staff.registrar_falta" onClick={() => navigate("/permisos-excusas/uniforme-falta")}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-primary text-primary font-semibold hover:bg-primary/5 transition-colors cursor-pointer">
+                <Plus className="w-4 h-4" /> Registrar falta de uniforme
+              </button>
+            </div>
+          )}
+
+          {vista === "faltas" ? (
+            <FaltasUniformeLista conFiltros gradoRank={gradoRank}
+              filtro={(f) => !nivelesCoordina || nivelesCoordina.includes(nivelDe(f.estudiante_grado))} />
+          ) : loading ? <div className="text-center py-8 text-muted-foreground">Cargando...</div> : (
             <div className="space-y-4">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div className="relative col-span-2 sm:col-span-1">

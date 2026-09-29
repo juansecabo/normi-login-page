@@ -42,11 +42,11 @@ const TIPOS_SALIDA = [
   { value: "familiar", label: "Con un familiar" },
 ];
 const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-interface Estudiante { id: number; nombres: string; apellidos: string; grado: string; salon: string }
+export interface Estudiante { id: number; nombres: string; apellidos: string; grado: string; salon: string }
 
 /** Lista virtualizada con su propio desplazamiento. Vive dentro de la ventana
  *  emergente: se crea al abrirla, así el virtualizador mide un recuadro real. */
-const ListaEstudiantes = ({ cargando, filtrados, seleccionados, onToggle }: {
+export const ListaEstudiantes = ({ cargando, filtrados, seleccionados, onToggle }: {
   cargando: boolean; filtrados: Estudiante[]; seleccionados: Record<number, Estudiante>; onToggle: (e: Estudiante) => void;
 }) => {
   const ref = useRef<HTMLDivElement>(null);

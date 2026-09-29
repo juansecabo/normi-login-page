@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import FaltasUniformeLista from "@/components/FaltasUniformeLista";
 import { useNavigate } from "react-router-dom";
 import { formatTelefono } from "@/utils/telefono";
 import { getSession, isPadreDeFamilia, AcudidoData } from "@/hooks/useSession";
@@ -19,7 +20,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-type Tab = "crear" | "historial";
+type Tab = "crear" | "historial" | "faltas";
 
 const JustificacionUniforme = () => {
   const navigate = useNavigate();
@@ -166,7 +167,17 @@ const JustificacionUniforme = () => {
           <button onClick={() => setTab("historial")} className={`px-4 py-2 rounded-lg font-medium transition-colors cursor-pointer ${tab === "historial" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"}`}>
             Justificaciones creadas
           </button>
+          <button data-guia="uniforme.tab_faltas" onClick={() => setTab("faltas")} className={`px-4 py-2 rounded-lg font-medium transition-colors cursor-pointer ${tab === "faltas" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"}`}>
+            Faltas registradas
+          </button>
         </div>
+
+        {tab === "faltas" && (
+          <div className="bg-card rounded-lg shadow-soft p-6">
+            <h3 className="text-lg font-bold text-foreground mb-4">Faltas de uniforme</h3>
+            <FaltasUniformeLista />
+          </div>
+        )}
 
         {tab === "crear" && (
           <div className="bg-card rounded-lg shadow-soft p-6">

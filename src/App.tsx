@@ -90,6 +90,7 @@ import JustificacionInasistencia from "./pages/permisos/JustificacionInasistenci
 import JustificacionInasistenciaStaff from "./pages/permisos/JustificacionInasistenciaStaff";
 import JustificacionUniforme from "./pages/permisos/JustificacionUniforme";
 import JustificacionUniformeStaff from "./pages/permisos/JustificacionUniformeStaff";
+import FaltaUniformeRegistro from "./pages/permisos/FaltaUniformeRegistro";
 import SolicitudEntrevistaStaff from "./pages/permisos/SolicitudEntrevistaStaff";
 import SolicitudEntrevistaAcudiente from "./pages/permisos/SolicitudEntrevistaAcudiente";
 import Consultas from "./pages/Consultas";
@@ -293,6 +294,7 @@ const Raiz = () => (
           <Route path="/permisos-excusas/inasistencia-staff" element={<JustificacionInasistenciaStaff />} />
           <Route path="/permisos-excusas/uniforme" element={<JustificacionUniforme />} />
           <Route path="/permisos-excusas/uniforme-staff" element={<JustificacionUniformeStaff />} />
+          <Route path="/permisos-excusas/uniforme-falta" element={<FaltaUniformeRegistro />} />
           {/* Solicitud de Entrevista — ficha propia del dashboard. Las rutas
               /permisos-excusas/entrevista* se conservan como alias (links viejos). */}
           <Route path="/solicitud-entrevista" element={<SolicitudEntrevistaAcudiente />} />

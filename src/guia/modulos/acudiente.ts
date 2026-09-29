@@ -460,6 +460,22 @@ export const ACUDIENTE: Capacidad[] = [
     ],
   },
   {
+    id: "acu.ver_faltas_uniforme",
+    titulo: "Ver las faltas de uniforme de tu acudido",
+    descripcion:
+      "Consultar las faltas de uniforme que el colegio le registró a tu acudido, con la fecha, la falta y quién la registró.",
+    categoria: "Permisos y excusas",
+    roles: ["acudiente"],
+    ruta: "/permisos-excusas/uniforme",
+    endpoint: "GET /api/uniforme/faltas",
+    sinonimos: ["faltas de uniforme de mi hijo", "vino sin uniforme", "cuántas faltas de uniforme tiene"],
+    pasos: [
+      { narracion: "Toca la ficha 'Permisos y Excusas' en tu tablero.", accion: "navegar", ruta: "/permisos-excusas" },
+      { narracion: "Elige 'Justificación por Uniforme'.", accion: "navegar", ruta: "/permisos-excusas/uniforme" },
+      { narracion: "Cambia a la pestaña 'Faltas registradas' y toca a tu acudido para ver cada falta.", accion: "click", ancla: "uniforme.tab_faltas" },
+    ],
+  },
+  {
     id: "acu.ver_permisos_creados",
     titulo: "Ver tus permisos y excusas creados",
     descripcion:
