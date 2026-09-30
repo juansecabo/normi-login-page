@@ -345,7 +345,13 @@ const Boletines = () => {
           if (f.logros.length > 0) {
             pdf.setFont("HelveticaCond", "normal").setFontSize(6.2);
             const anchoTexto = W - 2 * MX - 4;
-            const parrafos = f.logros.map((l) => `» ${l}`);
+            // Cada renglón que el profesor escribió es un párrafo propio: justificar un texto
+            // con saltos de línea estiraba los renglones cortos a todo el ancho.
+            const parrafos = f.logros.flatMap((l) => {
+              const partes = l.split(/?
+/).map((t) => t.trim()).filter(Boolean);
+              return partes.map((t, i) => (i === 0 ? `» ${t}` : t));
+            });
             const wrapped = parrafos.map((p) => pdf.splitTextToSize(p, anchoTexto));
             const totalLineas = wrapped.reduce((s, w) => s + w.length, 0);
             const alto = totalLineas * 2.9 + 2;
