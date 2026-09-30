@@ -81,7 +81,7 @@ const EscalaVisualEditor = ({ cfg, guardar, alGuardar }: Props) => {
 
   const abrirBanda = (i: number) => {
     const b = bandas[i];
-    setEditando(i); setFNombre(b.label); setFDesde(fmt(b.min)); setFHasta(fmt(hastaVisible(i))); setFColor(b.color); setFCriterio(b.criterio || ""); setFError(null);
+    setEditando(i); setFNombre(b.label); setFDesde(fmt(b.min)); setFHasta(fmt(hastaVisible(i))); setFColor(b.color); setFCriterio(b.criterio || criterioEstandar(b.label)); setFError(null);
   };
   const abrirNueva = () => {
     setEditando("nueva"); setFNombre(""); setFDesde(""); setFHasta(""); setFColor(COLOR_NUEVO); setFCriterio(""); setFError(null);
@@ -256,7 +256,7 @@ const EscalaVisualEditor = ({ cfg, guardar, alGuardar }: Props) => {
               <Label className="text-sm">Criterio de evaluación (boletín)</Label>
               <textarea data-guia="configurar_institucion.rango_criterio" value={fCriterio} onChange={(e) => setFCriterio(e.target.value)}
                 placeholder={criterioEstandar(fNombre) || "Ej: Alcanza todos los logros propuestos."}
-                className="mt-1 w-full px-3 py-2 border border-input rounded-md text-sm bg-background min-h-[70px] resize-y" />
+                className="mt-1 w-full px-3 py-2 border border-input rounded-md text-sm bg-background min-h-[96px] resize-y" />
             </div>
             {fError && <p className="text-sm text-destructive">{fError}</p>}
           </div>
