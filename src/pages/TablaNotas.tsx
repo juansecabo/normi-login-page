@@ -661,12 +661,15 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
             // "No aplica": la casilla queda sin nota (no se mete null al estado).
             const esNoAplica = (nota as any).no_aplica === true && (valorNota === null || valorNota === undefined);
             if (esNoAplica) naCargados.add(`${id_estudiantil}|${actividadId}`);
+            // Fila sin nota (N/A quitado, o solo comentario): la casilla queda vacía;
+            // nunca se mete null al estado (rompía la celda al mostrar decimales).
+            const sinNota = valorNota === null || valorNota === undefined;
             
             // Agregar nota al estado
-            if (!esNoAplica && !notasFormateadas[id_estudiantil]) {
+            if (!sinNota && !notasFormateadas[id_estudiantil]) {
               notasFormateadas[id_estudiantil] = {};
             }
-            if (!esNoAplica) {
+            if (!sinNota) {
               if (!notasFormateadas[id_estudiantil][periodo]) {
                 notasFormateadas[id_estudiantil][periodo] = {};
               }

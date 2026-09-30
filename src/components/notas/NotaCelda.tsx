@@ -35,7 +35,6 @@ interface NotaCeldaProps {
 }
 
 const NotaCelda = ({
-  nota,
   comentario,
   estaEditando,
   valorEditando,
@@ -54,7 +53,10 @@ const NotaCelda = ({
   noAplica = false,
   onNoAplica,
   onQuitarNoAplica,
-}: NotaCeldaProps) => {
+  nota: notaProp,
+}: NotaCeldaProps & { nota?: number | null }) => {
+  // Defensa: una nota null se trata como casilla vacía (no se le llama toFixed).
+  const nota = notaProp === null ? undefined : notaProp;
   const [showMenu, setShowMenu] = useState(false);
   const localInputRef = useRef<HTMLInputElement | null>(null);
   const [tip, setTip] = useState<{ top: number; left: number; side: "left" | "right" } | null>(null);
