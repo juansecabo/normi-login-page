@@ -582,6 +582,43 @@ export const VARIOS: Capacidad[] = [
       },
     ],
   },
+  {
+    id: "varios.direccion_grupo_comportamiento",
+    titulo: "Escribir el comportamiento y disciplina del boletín",
+    descripcion:
+      "Como director de grupo, escribir por cada estudiante y periodo el texto de comportamiento y disciplina que sale en su boletín, debajo de las asignaturas. Cada línea es una viñeta; se guarda solo al salir del cuadro.",
+    categoria: "Varios",
+    roles: ["profesor"],
+    requiereDirectorGrupo: true,
+    ruta: "/direccion-grupo/comportamiento",
+    endpoint: "GET/PUT /api/boletines/comportamiento (solo el director de grupo)",
+    sinonimos: [
+      "comportamiento y disciplina",
+      "observaciones del boletín",
+      "escribir el comportamiento de mis estudiantes",
+      "disciplina en el boletín",
+    ],
+    pasos: [
+      { narracion: "Vamos a Dirección de grupo.", accion: "navegar", ruta: "/direccion-grupo" },
+      {
+        narracion: "Abre 'Comportamiento y disciplina'.",
+        accion: "click",
+        ancla: "varios.direccion_ficha_comportamiento",
+      },
+      {
+        narracion: "Elige el periodo.",
+        accion: "click",
+        ancla: "comportamiento.periodo",
+        campo: "periodo",
+      },
+      {
+        narracion: "Escribe el texto de cada estudiante en su cuadro. Cada línea sale como una viñeta en el boletín y se guarda sola al pasar al siguiente.",
+        accion: "escribir",
+        ancla: "comportamiento.estudiante",
+        campo: "estudiante",
+      },
+    ],
+  },
 
   // ──────────────────────  NORMI EXAMINADORA  ──────────────────────
   {

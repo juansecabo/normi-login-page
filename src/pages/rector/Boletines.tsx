@@ -40,7 +40,7 @@ interface FilaBol {
   desglose_propio?: boolean;
   logros: string[];
 }
-interface EstBol { id: string; nombres: string; apellidos: string; num_lista: number; filas: FilaBol[] }
+interface EstBol { id: string; nombres: string; apellidos: string; num_lista: number; filas: FilaBol[]; comportamiento?: string[] }
 interface ItemInc {
   asignatura: string; grado: string; salon: string;
   sin_nota: string[];
@@ -51,6 +51,8 @@ interface GrupoInc { profesor: { id: string; nombre: string; genero: string | nu
 
 interface DatosBoletin {
   colegio: { nombre: string; logo_url: string | null; encabezado: string[]; sede: string };
+  /** Título del recuadro bajo las asignaturas (lo llena el director de grupo). */
+  comportamiento_titulo?: string;
   grado: string; salon: string; periodo: number; ano_escolar: number; periodo_peso: number | null;
   escala: { min: number; max: number; decimales: number; aprobatoria: number; rangos: Array<{ label: string; min: number; max: number }> };
   columnas: Array<{ nombre: string; pct: number }> | null;
@@ -373,17 +375,35 @@ const Boletines = () => {
           y += 4;
         }
 
-        // ── OBSERVACIONES: recuadro en blanco para que el profesor/director escriba ──
-        saltoSiHaceFalta(26);
-        y += 4;
-        pdf.setFillColor(240, 240, 240);
-        pdf.rect(MX, y, W - 2 * MX, 5, "FD");
-        pdf.setFillColor(255, 255, 255);
-        pdf.setFont("HelveticaCond", "bold").setFontSize(6.4);
-        pdf.text("OBSERVACIONES", MX + 2, y + 3.4);
-        y += 5;
-        pdf.rect(MX, y, W - 2 * MX, 18); // espacio en blanco para escribir a mano
-        y += 18;
+        // ── COMPORTAMIENTO Y DISCIPLINA / OBSERVACIONES: el texto que escribió el
+        // director de grupo (viñetas », justificado como los logros); si no escribió
+        // nada, queda el recuadro en blanco para escribir a mano.
+        {
+          const comp = est.comportamiento || [];
+          pdf.setFont("HelveticaCond", "normal").setFontSize(6.2);
+          const anchoTexto = W - 2 * MX - 4;
+          const parrafos = comp.map((l) => `» ${l}`);
+          const wrapped = parrafos.map((t) => pdf.splitTextToSize(t, anchoTexto));
+          const altoTexto = comp.length > 0 ? wrapped.reduce((s, w) => s + w.length, 0) * 2.9 + 2 : 18;
+          saltoSiHaceFalta(altoTexto + 9);
+          y += 4;
+          pdf.setFillColor(240, 240, 240);
+          pdf.rect(MX, y, W - 2 * MX, 5, "FD");
+          pdf.setFillColor(255, 255, 255);
+          pdf.setFont("HelveticaCond", "bold").setFontSize(6.4);
+          pdf.text((datos.comportamiento_titulo || "OBSERVACIONES").toUpperCase(), MX + 2, y + 3.4);
+          y += 5;
+          pdf.rect(MX, y, W - 2 * MX, altoTexto);
+          if (comp.length > 0) {
+            pdf.setFont("HelveticaCond", "normal").setFontSize(6.2);
+            let ty = y + 2.8;
+            for (let i = 0; i < parrafos.length; i++) {
+              pdf.text(parrafos[i], MX + 2, ty, { maxWidth: anchoTexto, align: "justify" });
+              ty += wrapped[i].length * 2.9;
+            }
+          }
+          y += altoTexto;
+        }
 
         // ── Pie: leyenda de escala + firma ──
         saltoSiHaceFalta(34);

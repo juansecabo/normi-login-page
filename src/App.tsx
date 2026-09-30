@@ -105,6 +105,7 @@ import PorteriaLlegadaTarde, { PorteriaHub, PorteriaRegistro } from "./pages/Por
 import MiGrupo from "./pages/MiGrupo";
 import ConsolidadoGrupo from "./pages/ConsolidadoGrupo";
 import DireccionGrupo from "./pages/DireccionGrupo";
+import ComportamientoGrupo from "./pages/ComportamientoGrupo";
 import Perfil from "./pages/Perfil";
 import TablaNotasPorRol from "./pages/TablaNotasPorRol";
 
@@ -321,6 +322,7 @@ const Raiz = () => (
           <Route path="/porteria/llegada-tarde" element={<PorteriaLlegadaTarde />} />
           <Route path="/porteria/registro" element={<PorteriaRegistro />} />
           <Route path="/direccion-grupo" element={<DireccionGrupo />} />
+          <Route path="/direccion-grupo/comportamiento" element={<ComportamientoGrupo />} />
           <Route path="/mi-grupo" element={<MiGrupo />} />
           <Route path="/consolidado-grupo" element={<ConsolidadoGrupo />} />
           <Route path="/perfil" element={<Perfil />} />

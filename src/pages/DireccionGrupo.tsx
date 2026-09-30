@@ -1,11 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNormi";
-import { Camera, BarChart3 } from "lucide-react";
+import { Camera, BarChart3, ClipboardList } from "lucide-react";
 
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 /**
  * "Dirección de grupo": menú del director de grupo. Agrupa sus dos herramientas
- * — Fotos de mi grupo (/mi-grupo) y Consolidado de mi grupo (/consolidado-grupo).
+ * — Fotos de mi grupo (/mi-grupo), Consolidado de mi grupo (/consolidado-grupo) y
+ * Comportamiento y disciplina del boletín (/direccion-grupo/comportamiento).
  * La ficha del dashboard solo se muestra a quienes son directores de grupo.
  */
 const DireccionGrupo = () => {
@@ -24,7 +25,7 @@ const DireccionGrupo = () => {
 
         <div className="bg-card rounded-lg shadow-soft p-6 md:p-8">
           <h2 className="text-xl font-bold text-foreground mb-6 text-center">Dirección de grupo</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
             <button
               onClick={() => navigate("/mi-grupo")}
               data-guia="varios.direccion_ficha_fotos"
@@ -42,6 +43,15 @@ const DireccionGrupo = () => {
               <BarChart3 className="w-12 h-12 text-orange-600" />
               <span className="font-semibold text-foreground text-center">Consolidado de mi grupo</span>
               <span className="text-xs text-muted-foreground text-center">Notas de todos tus estudiantes en todas las asignaturas.</span>
+            </button>
+            <button
+              onClick={() => navigate("/direccion-grupo/comportamiento")}
+              data-guia="varios.direccion_ficha_comportamiento"
+              className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg border-2 border-border bg-background transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/5"
+            >
+              <ClipboardList className="w-12 h-12 text-sky-700" />
+              <span className="font-semibold text-foreground text-center">Comportamiento y disciplina</span>
+              <span className="text-xs text-muted-foreground text-center">Lo que sale en el boletín de cada estudiante.</span>
             </button>
           </div>
         </div>
