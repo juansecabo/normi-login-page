@@ -586,7 +586,7 @@ export const VARIOS: Capacidad[] = [
     id: "varios.direccion_grupo_comportamiento",
     titulo: "Escribir el comportamiento y disciplina del boletín",
     descripcion:
-      "Como director de grupo, escribir por cada estudiante y periodo el texto de comportamiento y disciplina que sale en su boletín, debajo de las asignaturas. Cada línea es una viñeta; se guarda solo al salir del cuadro.",
+      "Como director de grupo, escribir por cada estudiante y periodo el texto de comportamiento y disciplina que sale en su boletín, debajo de las asignaturas. Cada línea es una viñeta; se guarda solo mientras escribe.",
     categoria: "Varios",
     roles: ["profesor"],
     requiereDirectorGrupo: true,
@@ -612,7 +612,7 @@ export const VARIOS: Capacidad[] = [
         campo: "periodo",
       },
       {
-        narracion: "Escribe el texto de cada estudiante en su cuadro. Cada línea sale como una viñeta en el boletín y se guarda sola al pasar al siguiente.",
+        narracion: "Escribe el texto de cada estudiante en su cuadro. Cada línea sale como una viñeta en el boletín y se guarda sola mientras escribes.",
         accion: "escribir",
         ancla: "comportamiento.estudiante",
         campo: "estudiante",
