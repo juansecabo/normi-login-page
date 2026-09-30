@@ -136,7 +136,7 @@ const NotaCelda = ({
       ) : (
         <div className="relative flex items-center justify-center h-8">
           <button
-            className="flex-1 h-full hover:bg-muted/50 rounded cursor-pointer transition-colors flex items-center justify-center"
+            className={`flex-1 h-full rounded transition-colors flex items-center justify-center ${noAplica ? "cursor-default" : "hover:bg-muted/50 cursor-pointer"}`}
             onMouseDown={(e) => {
               e.preventDefault();
               if (e.button === 0) {

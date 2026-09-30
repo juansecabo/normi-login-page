@@ -3267,7 +3267,9 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
 
   // Función para enfocar la siguiente celda (abajo)
   const focusCeldaAbajo = useCallback((currentStudentIndex: number, actividadId: string, periodo: number) => {
-    const nextStudentIndex = currentStudentIndex + 1;
+    let nextStudentIndex = currentStudentIndex + 1;
+    // Las casillas "No aplica" no se editan: Enter se las salta.
+    while (nextStudentIndex < estudiantes.length && noAplica.has(`${estudiantes[nextStudentIndex].id}|${actividadId}`)) nextStudentIndex++;
 
     // Si no hay más estudiantes, no hacer nada
     if (nextStudentIndex >= estudiantes.length) return;
@@ -3280,10 +3282,12 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     setCeldaEditando(celda);
     celdaEditandoRef.current = celda;
     setValorEditando(nota !== undefined ? nota.toString() : "");
-  }, [estudiantes, notas]);
+  }, [estudiantes, notas, noAplica]);
 
   // Handlers para edición de notas
   const handleClickCelda = (idEstudiantil: string, actividadId: string, periodo: number, notaActual: number | undefined) => {
+    // Una casilla "No aplica" no recibe nota: primero hay que quitarle el N/A.
+    if (esNA(idEstudiantil, actividadId)) return;
     const celda = { idEstudiantil, actividadId, periodo };
     setCeldaEditando(celda);
     celdaEditandoRef.current = celda;

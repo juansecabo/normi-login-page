@@ -289,7 +289,7 @@ export const NOTAS: Capacidad[] = [
       },
       {
         narracion:
-          "La casilla muestra N/A. Si después le pones una nota, el N/A se quita solo; también puedes quitarlo desde el mismo menú.",
+          "La casilla muestra N/A y no se puede escribir en ella. Si luego necesitas ponerle nota, primero elige 'Quitar No aplica' en el mismo menú.",
         accion: "explicar",
       },
     ],
