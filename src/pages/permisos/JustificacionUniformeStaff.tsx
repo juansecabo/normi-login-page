@@ -186,7 +186,7 @@ const JustificacionUniformeStaff = () => {
           </h2>
 
           {puedeFaltas && (
-            <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center sm:justify-center gap-2 mb-6">
               <button data-guia="uniforme_staff.tab_justificaciones" onClick={() => setParams({}, { replace: true })}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors cursor-pointer ${vista === "justificaciones" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"}`}>
                 Justificaciones
@@ -196,7 +196,7 @@ const JustificacionUniformeStaff = () => {
                 Faltas de uniforme
               </button>
               <button data-guia="uniforme_staff.registrar_falta" onClick={() => navigate("/permisos-excusas/uniforme-falta")}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-primary text-primary font-semibold hover:bg-primary/5 transition-colors cursor-pointer">
+                className="col-span-2 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg border-2 border-primary text-primary font-semibold hover:bg-primary/5 transition-colors cursor-pointer">
                 <Plus className="w-4 h-4" /> Registrar falta de uniforme
               </button>
             </div>

@@ -2190,8 +2190,8 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
             </strong>{" "}
             (id {showDeleteEst?.id})?
           </p>
-          <p className="text-sm text-destructive font-medium">
-            Se eliminarán TODAS las notas de este estudiante.
+          <p className="text-sm text-muted-foreground">
+            Perderá el acceso y saldrá de las listas. Sus notas se conservan en el historial.
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeleteEst(null)}>
