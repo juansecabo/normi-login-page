@@ -36,6 +36,8 @@ interface FilaBol {
   provisional?: boolean;
   /** La definitiva es la de la habilitación. */
   habilitada?: boolean;
+  /** Hay columnas pero esta materia tiene otra estructura: desglose en su propia línea. */
+  desglose_propio?: boolean;
   logros: string[];
 }
 interface EstBol { id: string; nombres: string; apellidos: string; num_lista: number; filas: FilaBol[] }
@@ -312,7 +314,7 @@ const Boletines = () => {
           celdaC(wFA, f.fa != null ? String(f.fa) : "");
           if (cols.length > 0) {
             for (const c of cols) {
-              const g = (f.grupos || []).find((gg) => gg.nombre === c.nombre);
+              const g = f.desglose_propio ? undefined : (f.grupos || []).find((gg) => gg.nombre === c.nombre);
               celdaC(wGrupo, g && g.nota != null ? `${fmt(g.nota)} ${(g.desempeno || "").toUpperCase()}` : "");
             }
           }
@@ -323,7 +325,7 @@ const Boletines = () => {
 
           // Desglose propio cuando NO hay columnas uniformes: grupos + actividades
           // sueltas, cada uno con su % (si no tiene %, va sin paréntesis = equitativo).
-          if (cols.length === 0 && f.grupos && f.grupos.length > 0) {
+          if ((cols.length === 0 || f.desglose_propio) && f.grupos && f.grupos.length > 0) {
             const linea = f.grupos.map((g) => {
               const pctTxt = g.pct != null && g.pct !== "" ? ` (${g.pct}%)` : "";
               return `${g.nombre}${pctTxt}: ${g.nota != null ? fmt(g.nota) : "—"}`;
