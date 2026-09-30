@@ -4896,7 +4896,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                               <MoreVertical className="w-3 h-3" />
                                             </button>
                                           </DropdownMenuTrigger>
-                                          <DropdownMenuContent align="end" className="bg-background z-50">
+                                          <DropdownMenuContent align="end" className="bg-background z-50" onCloseAutoFocus={(e) => e.preventDefault()}>
                                             <DropdownMenuItem data-guia="notas.menu_editar_actividad" onClick={() => handleAbrirModalEditar(actividad)}>
                                               <Pencil className="w-4 h-4 mr-2" />
                                               Editar actividad
@@ -5068,7 +5068,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                           <MoreVertical className="w-3 h-3" />
                                         </button>
                                       </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end" className="bg-background z-50">
+                                      <DropdownMenuContent align="end" className="bg-background z-50" onCloseAutoFocus={(e) => e.preventDefault()}>
                                         <DropdownMenuItem data-guia="notas.menu_editar_actividad" onClick={() => handleAbrirModalEditar(actividad)}>
                                           <Pencil className="w-4 h-4 mr-2" />
                                           Editar actividad
@@ -5161,7 +5161,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                               <MoreVertical className="w-3 h-3" />
                                             </button>
                                           </DropdownMenuTrigger>
-                                          <DropdownMenuContent align="end" className="bg-background z-50">
+                                          <DropdownMenuContent align="end" className="bg-background z-50" onCloseAutoFocus={(e) => e.preventDefault()}>
                                             <DropdownMenuItem data-guia="notas.menu_editar_actividad" onClick={() => handleAbrirModalEditar(actividad)}>
                                               <Pencil className="w-4 h-4 mr-2" /> Editar actividad
                                             </DropdownMenuItem>
@@ -5282,7 +5282,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                           <MoreVertical className="w-3 h-3" />
                                         </button>
                                       </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end" className="bg-background z-50">
+                                      <DropdownMenuContent align="end" className="bg-background z-50" onCloseAutoFocus={(e) => e.preventDefault()}>
                                         <DropdownMenuItem data-guia="notas.menu_editar_actividad" onClick={() => handleAbrirModalEditar(actividad)}>
                                           <Pencil className="w-4 h-4 mr-2" />
                                           Editar actividad
