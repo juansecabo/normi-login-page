@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { GraduationCap, Loader2, Plus, Trash2 } from "lucide-react";
+import { criterioDeRango, criterioEstandar } from "@/lib/criteriosDesempeno";
 import { aNumero } from "@/utils/numero";
 
 /**
@@ -17,7 +18,7 @@ import { aNumero } from "@/utils/numero";
 
 // `key`: identificador estable del rango. Los logros guardan un texto por key; si se
 // pierde al guardar la escala, los logros desaparecen del boletín.
-interface Banda { label: string; min: number; max: number; color: string; key?: string }
+interface Banda { label: string; min: number; max: number; color: string; key?: string; criterio?: string }
 const nuevaKey = () => Math.random().toString(16).slice(2, 10).padEnd(8, "0");
 interface Props {
   cfg: Record<string, any>;
@@ -46,7 +47,7 @@ const EscalaVisualEditor = ({ cfg, guardar, alGuardar }: Props) => {
   const [bandas, setBandas] = useState<Banda[]>(() => {
     const max0 = Number(cfg.escala_max ?? 5);
     return (Array.isArray(cfg.rangos_desempeno) ? cfg.rangos_desempeno : [])
-      .map((r: any) => ({ label: String(r.label ?? ""), min: Number(r.min), max: Math.min(Number(r.max), max0), color: r.color || COLOR_NUEVO, key: r.key ? String(r.key) : undefined }))
+      .map((r: any) => ({ label: String(r.label ?? ""), min: Number(r.min), max: Math.min(Number(r.max), max0), color: r.color || COLOR_NUEVO, key: r.key ? String(r.key) : undefined, criterio: r.criterio ? String(r.criterio) : undefined }))
       .filter((b: Banda) => Number.isFinite(b.min) && Number.isFinite(b.max))
       .sort((a: Banda, b: Banda) => a.min - b.min)
       // Rangos contiguos: cada uno termina donde empieza el siguiente. Hay colegios con los
@@ -73,16 +74,17 @@ const EscalaVisualEditor = ({ cfg, guardar, alGuardar }: Props) => {
   const [fDesde, setFDesde] = useState("");
   const [fHasta, setFHasta] = useState("");
   const [fColor, setFColor] = useState(COLOR_NUEVO);
+  const [fCriterio, setFCriterio] = useState("");
   const [fError, setFError] = useState<string | null>(null);
   const [escalaAbierta, setEscalaAbierta] = useState(false);
   const [eMin, setEMin] = useState(""); const [eMax, setEMax] = useState(""); const [eAprob, setEAprob] = useState(""); const [eDec, setEDec] = useState("");
 
   const abrirBanda = (i: number) => {
     const b = bandas[i];
-    setEditando(i); setFNombre(b.label); setFDesde(fmt(b.min)); setFHasta(fmt(hastaVisible(i))); setFColor(b.color); setFError(null);
+    setEditando(i); setFNombre(b.label); setFDesde(fmt(b.min)); setFHasta(fmt(hastaVisible(i))); setFColor(b.color); setFCriterio(b.criterio || ""); setFError(null);
   };
   const abrirNueva = () => {
-    setEditando("nueva"); setFNombre(""); setFDesde(""); setFHasta(""); setFColor(COLOR_NUEVO); setFError(null);
+    setEditando("nueva"); setFNombre(""); setFDesde(""); setFHasta(""); setFColor(COLOR_NUEVO); setFCriterio(""); setFError(null);
   };
 
   const persistir = async (lista: Banda[], esc = { escMin, escMax, aprob, dec }) => {
@@ -90,6 +92,7 @@ const EscalaVisualEditor = ({ cfg, guardar, alGuardar }: Props) => {
     try {
       const rangos = [...lista].sort((a, b) => b.min - a.min).map((b, idx) => ({
         key: b.key || nuevaKey(), label: b.label, color: b.color, min: b.min,
+        ...(b.criterio && b.criterio.trim() ? { criterio: b.criterio.trim() } : {}),
         // El rango tope incluye la nota máxima (la banda usa nota >= min y nota < max).
         max: idx === 0 ? esc.escMax + 0.0001 : b.max,
       }));
@@ -130,7 +133,7 @@ const EscalaVisualEditor = ({ cfg, guardar, alGuardar }: Props) => {
           if (b.min < hExcl - EPS && b.max > hExcl + EPS) return { ...b, min: hExcl };
           return b;
         });
-      lista.push({ label: nombre, min: d, max: hExcl, color: fColor, key: nuevaKey() });
+      lista.push({ label: nombre, min: d, max: hExcl, color: fColor, key: nuevaKey(), criterio: fCriterio.trim() || undefined });
       lista.sort((a, b) => a.min - b.min);
     } else if (typeof editando === "number") {
       const i = editando;
@@ -140,7 +143,7 @@ const EscalaVisualEditor = ({ cfg, guardar, alGuardar }: Props) => {
       const nh = i === lista.length - 1 ? escMax : hExcl;
       if (ant && nd <= ant.min + EPS) { setFError(`"${ant.label}" empieza en ${fmt(ant.min)}: la nota inicial debe ser mayor.`); return; }
       if (sig && nh >= sig.max - EPS) { setFError(`"${sig.label}" quedaría sin notas: la nota final debe ser menor.`); return; }
-      lista[i] = { label: nombre, min: nd, max: nh, color: fColor, key: lista[i].key };
+      lista[i] = { label: nombre, min: nd, max: nh, color: fColor, key: lista[i].key, criterio: fCriterio.trim() || undefined };
       if (ant) ant.max = nd;      // el anterior termina justo antes
       if (sig) sig.min = nh;      // el siguiente empieza un paso después del "hasta"
     }
@@ -214,6 +217,7 @@ const EscalaVisualEditor = ({ cfg, guardar, alGuardar }: Props) => {
           >
             <div className="font-bold text-lg break-words" style={{ color: oscurecer(b.color) }}>{b.label}</div>
             <div className="font-semibold text-foreground mt-0.5">{fmt(b.min)} a {fmt(hastaVisible(i))}</div>
+            {criterioDeRango(b) && <div className="text-xs text-muted-foreground mt-1 line-clamp-3">{criterioDeRango(b)}</div>}
           </button>
         ))}
       </div>
@@ -247,6 +251,12 @@ const EscalaVisualEditor = ({ cfg, guardar, alGuardar }: Props) => {
             <div className="flex items-center gap-3">
               <Label className="text-sm">Color</Label>
               <input data-guia="configurar_institucion.rango_color" type="color" value={fColor} onChange={(e) => setFColor(e.target.value)} className="h-9 w-12 rounded border border-border cursor-pointer p-0.5" />
+            </div>
+            <div>
+              <Label className="text-sm">Criterio de evaluación (boletín)</Label>
+              <textarea data-guia="configurar_institucion.rango_criterio" value={fCriterio} onChange={(e) => setFCriterio(e.target.value)}
+                placeholder={criterioEstandar(fNombre) || "Ej: Alcanza todos los logros propuestos."}
+                className="mt-1 w-full px-3 py-2 border border-input rounded-md text-sm bg-background min-h-[70px] resize-y" />
             </div>
             {fError && <p className="text-sm text-destructive">{fError}</p>}
           </div>

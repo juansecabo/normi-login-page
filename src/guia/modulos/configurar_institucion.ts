@@ -206,6 +206,27 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
       { narracion: "Toca 'Guardar'.", accion: "click", ancla: "configurar_institucion.rango_guardar" },
     ],
   },
+  {
+    id: "configurar_institucion.criterio_rango",
+    titulo: "Escribir el criterio de evaluación de un nivel (boletín)",
+    descripcion: "Escribir el criterio de evaluación de cada nivel de desempeño (ej. 'Alcanza todos los logros propuestos'), que sale en la tabla de escala al pie del boletín. Si no se escribe, se usa el texto estándar cuando el nombre del nivel es Superior/Excelente, Alto/Sobresaliente, Básico/Aceptable o Bajo/Insuficiente/Deficiente; con otros nombres queda vacío.",
+    categoria: "Configurar Institución",
+    roles: [...CONFIG_COLEGIO],
+    ruta: RUTA,
+    endpoint: "PATCH /api/colegio/config (rangos_desempeno.criterio)",
+    sinonimos: [
+      "criterios de evaluación del boletín",
+      "cambiar el criterio de desempeño",
+      "texto de la escala en el boletín",
+      "escala nacional criterios",
+    ],
+    pasos: [
+      ...abrirFicha("escala", "Abrimos Escala de calificación."),
+      { narracion: "Toca la ficha del nivel (por ejemplo, Superior).", accion: "click", ancla: "configurar_institucion.rango_ficha" },
+      { narracion: "Escribe el texto en 'Criterio de evaluación (boletín)'.", accion: "escribir", ancla: "configurar_institucion.rango_criterio", campo: "criterio" },
+      { narracion: "Toca 'Guardar'. Repite con cada nivel.", accion: "click", ancla: "configurar_institucion.rango_guardar" },
+    ],
+  },
 
   // ─────────────────── ESTRUCTURA: JORNADAS ───────────────────
   {

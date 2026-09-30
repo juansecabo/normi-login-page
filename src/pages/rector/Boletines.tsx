@@ -13,6 +13,7 @@ import { registerBoletinFonts } from "@/lib/boletinFonts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
+import { criterioDeRango } from "@/lib/criteriosDesempeno";
 /**
  * Boletines (Fase 2) — réplica del "INFORME DE DESEMPEÑO" del Pestalozziano
  * (SISNOTAS): encabezado con ESPACIO PARA EL ESCUDO del colegio (variable por
@@ -56,7 +57,7 @@ interface DatosBoletin {
   /** Título del recuadro bajo las asignaturas (lo llena el director de grupo). */
   comportamiento_titulo?: string;
   grado: string; salon: string; periodo: number; ano_escolar: number; periodo_peso: number | null;
-  escala: { min: number; max: number; decimales: number; aprobatoria: number; rangos: Array<{ label: string; min: number; max: number }> };
+  escala: { min: number; max: number; decimales: number; aprobatoria: number; rangos: Array<{ label: string; min: number; max: number; criterio?: string | null }> };
   columnas: Array<{ nombre: string; pct: number }> | null;
   estudiantes: EstBol[];
   director: { nombre: string; genero: string | null } | null;
@@ -65,14 +66,7 @@ interface DatosBoletin {
 const ORDINAL: Record<number, string> = { 1: "Primero", 2: "Segundo", 3: "Tercero", 4: "Cuarto" };
 const GRADO_ORDEN = ["Párvulo", "Prejardín", "Jardín", "Transición", "Primero", "Segundo", "Tercero", "Cuarto", "Quinto", "Sexto", "Séptimo", "Octavo", "Noveno", "Décimo", "Undécimo"];
 
-// Criterios estándar por etiqueta de desempeño (leyenda al pie, como SISNOTAS).
-const CRITERIO_POR_LABEL: Array<{ match: RegExp; texto: string }> = [
-  { match: /superior|excelente/i, texto: "Alcanza todos los logros, conocimientos y competencias propuestas sin actividades complementarias." },
-  { match: /alto|sobresaliente/i, texto: "Alcanza todos los logros, conocimientos y competencias propuestas." },
-  { match: /básico|basico|aceptable/i, texto: "Alcanza todos los logros mínimos propuestos." },
-  { match: /bajo|insuficiente|deficiente/i, texto: "No alcanza todos los logros mínimos propuestos." },
-];
-const criterioDe = (label: string) => CRITERIO_POR_LABEL.find((c) => c.match.test(label))?.texto || "";
+// Criterio de cada nivel (leyenda al pie): el que escribió el colegio o el estándar.
 
 /** Convierte el escudo (webp/lo que sea) a PNG dataURL para jsPDF. */
 async function escudoAPng(url: string): Promise<string | null> {
@@ -439,8 +433,9 @@ const Boletines = () => {
         // línea (+respiro), sin pasarse del ancho útil: ni desborde ni vacío.
         const wEsc = 22, wNac = 30;
         pdf.setFont("HelveticaCond", "normal");
-        const wCriTexto = Math.max(0, ...ordRangos.map((r) => pdf.getTextWidth(criterioDe(r.label))));
-        const wCri = Math.min((W - 2 * MX) - wEsc - wNac, wCriTexto + 3);
+        const wCriTexto = Math.max(0, ...ordRangos.map((r) => pdf.getTextWidth(criterioDeRango(r))));
+        // Hasta el ancho útil que deja la firma; un criterio largo se parte en varias líneas.
+        const wCri = Math.min((W - 2 * MX) - wEsc - wNac - 66, wCriTexto + 3);
         pdf.setFont("HelveticaCond", "bold");
         pdf.rect(MX, y, wEsc, 3.6); pdf.rect(MX + wEsc, y, wNac, 3.6); pdf.rect(MX + wEsc + wNac, y, wCri, 3.6);
         pdf.text("Escala Numérica", MX + 1, y + 2.5);
@@ -450,11 +445,13 @@ const Boletines = () => {
         pdf.setFont("HelveticaCond", "normal");
         for (const r of ordRangos) {
           const maxTx = r.max > datos.escala.max ? datos.escala.max : r.max;
-          pdf.rect(MX, ly, wEsc, 3.4); pdf.rect(MX + wEsc, ly, wNac, 3.4); pdf.rect(MX + wEsc + wNac, ly, wCri, 3.4);
+          const lineasCri: string[] = pdf.splitTextToSize(criterioDeRango(r), wCri - 2);
+          const hFila = Math.max(3.4, lineasCri.length * 2.4 + 1);
+          pdf.rect(MX, ly, wEsc, hFila); pdf.rect(MX + wEsc, ly, wNac, hFila); pdf.rect(MX + wEsc + wNac, ly, wCri, hFila);
           pdf.text(`${r.min.toFixed(1)} a ${maxTx.toFixed(1)}`, MX + 1, ly + 2.4);
           pdf.text(`Desempeño ${r.label}`, MX + wEsc + 1, ly + 2.4);
-          pdf.text(criterioDe(r.label).slice(0, 105), MX + wEsc + wNac + 1, ly + 2.4);
-          ly += 3.4;
+          pdf.text(lineasCri, MX + wEsc + wNac + 1, ly + 2.4);
+          ly += hFila;
         }
         if (datos.director) {
           const anchoFirma = 60;
