@@ -251,6 +251,50 @@ export const NOTAS: Capacidad[] = [
     ],
   },
   {
+    id: "notas.no_aplica",
+    titulo: "Marcar No aplica (actividad que no era para todos)",
+    descripcion:
+      "Marcar como 'No aplica' una actividad para uno o varios estudiantes que no la tenían que presentar. Solo en casillas sin nota. Esa actividad no cuenta en su definitiva (su porcentaje se reparte entre sus otras notas) y su periodo queda completo, no provisional.",
+    categoria: "Notas",
+    roles: [...ESCRIBEN_NOTAS],
+    ruta: "/tabla-notas",
+    endpoint: "POST /api/db (Notas upsert con no_aplica — Profesor, Rector, Admin)",
+    requisitos: [
+      { entidad: "asignatura", descripcion: "Asignatura." },
+      { entidad: "grado", descripcion: "Grado." },
+      { entidad: "salon", descripcion: "Salón." },
+    ],
+    sinonimos: [
+      "no aplica",
+      "actividad que no fue para todos",
+      "estudiante que no tenía que presentar",
+      "cerrar el periodo si no todos tienen esa nota",
+      "exonerar de una actividad",
+      "quitar provisional",
+    ],
+    pasos: [
+      ...abrirTablaDeNotas(),
+      {
+        narracion:
+          "Para varios a la vez: toca los tres puntitos del encabezado de la actividad y elige 'No aplica a los que no tienen nota'. Confirma y quedan todos marcados N/A.",
+        accion: "click",
+        ancla: "notas.boton_menu_actividad",
+      },
+      {
+        narracion:
+          "Para un solo estudiante: pasa el cursor por su casilla vacía, toca los tres puntitos y elige 'No aplica'.",
+        accion: "click",
+        ancla: "notas.menu_celda_vacia",
+        opcional: true,
+      },
+      {
+        narracion:
+          "La casilla muestra N/A. Si después le pones una nota, el N/A se quita solo; también puedes quitarlo desde el mismo menú.",
+        accion: "explicar",
+      },
+    ],
+  },
+  {
     id: "notas.agregar_actividad",
     titulo: "Agregar una actividad o columna de notas",
     descripcion:

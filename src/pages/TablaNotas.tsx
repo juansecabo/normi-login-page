@@ -6,7 +6,7 @@ import { useEffect, useState, useRef, useCallback, type ReactNode } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, MoreVertical, Pencil, Trash2, Send, Calendar, Download, FileSpreadsheet, Loader2 } from "lucide-react";
+import { Plus, MoreVertical, Pencil, Trash2, Send, Calendar, Download, FileSpreadsheet, Loader2, Ban, Undo2 } from "lucide-react";
 import { getSession, isAdmin } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { useGruposNotas, type GrupoNotas } from "@/hooks/useGruposNotas";
@@ -426,6 +426,12 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   const [habContexto, setHabContexto] = useState<{ estId: string; nombre: string; periodo: number; definitivaAnterior: number; existe: boolean } | null>(null);
   const [habNotaInput, setHabNotaInput] = useState("");
   const [habMetodo, setHabMetodo] = useState<HabMetodo>('reemplazo');
+  // "No aplica" (Juan 2026-09-30): casillas sin nota que el profesor marcó como N/A
+  // porque esa actividad no era para ese estudiante. Clave `${idEstudiantil}|${actividadId}`.
+  // No entran al promedio (su % se reparte entre las demás) y cuentan como completas.
+  const [noAplica, setNoAplica] = useState<Set<string>>(new Set());
+  const esNA = (idEst: string | number, actividadId: string) => noAplica.has(`${idEst}|${actividadId}`);
+  const [confirmNA, setConfirmNA] = useState<{ actividad: Actividad; ids: string[]; quitar: boolean } | null>(null);
   // % de la habilitación en modo ponderado (el % de la definitiva anterior es 100 - este).
   const [habPesoHab, setHabPesoHab] = useState<number>(60);
   const [habGuardando, setHabGuardando] = useState(false);
@@ -615,6 +621,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
           const notasFormateadas: NotasEstudiantes = {};
           const comentariosFormateados: ComentariosEstudiantes = {};
           
+          const naCargados = new Set<string>();
           notasData.forEach((nota) => {
             const { id_estudiantil, periodo, nombre_actividad, nota: valorNota, comentario } = nota;
             
@@ -651,15 +658,21 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
             
             // Crear ID único para la actividad basado en periodo y nombre
             const actividadId = `${periodo}-${nombre_actividad}`;
+
+            // "No aplica": la casilla queda sin nota (no se mete null al estado).
+            const esNoAplica = (nota as any).no_aplica === true && (valorNota === null || valorNota === undefined);
+            if (esNoAplica) naCargados.add(`${id_estudiantil}|${actividadId}`);
             
             // Agregar nota al estado
-            if (!notasFormateadas[id_estudiantil]) {
+            if (!esNoAplica && !notasFormateadas[id_estudiantil]) {
               notasFormateadas[id_estudiantil] = {};
             }
-            if (!notasFormateadas[id_estudiantil][periodo]) {
-              notasFormateadas[id_estudiantil][periodo] = {};
+            if (!esNoAplica) {
+              if (!notasFormateadas[id_estudiantil][periodo]) {
+                notasFormateadas[id_estudiantil][periodo] = {};
+              }
+              notasFormateadas[id_estudiantil][periodo][actividadId] = valorNota;
             }
-            notasFormateadas[id_estudiantil][periodo][actividadId] = valorNota;
             
             // Agregar comentario al estado si existe
             if (comentario) {
@@ -675,6 +688,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
           
           setNotas(notasFormateadas);
           setComentarios(comentariosFormateados);
+          setNoAplica(naCargados);
           console.log("Notas cargadas:", notasFormateadas);
           console.log("Comentarios cargados:", comentariosFormateados);
         }
@@ -1838,16 +1852,17 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     const acts = getActividadesPorPeriodo(periodo);
     if (acts.length === 0) return false;
     const notasEst = notas[idEstudiantil]?.[periodo] || {};
+    // N/A cuenta como casilla completa (el 0 solo marca presencia: aquí no se promedia).
     const notasCalc: NotaCalc[] = acts.map((a) => ({
       porcentaje: a.porcentaje,
-      nota: notasEst[a.id] !== undefined ? (notasEst[a.id] as number) : null,
+      nota: notasEst[a.id] !== undefined ? (notasEst[a.id] as number) : (noAplica.has(`${idEstudiantil}|${a.id}`) ? 0 : null),
       grupo_id: a.grupo_id ?? null,
     }));
     const gruposDelPeriodo: GrupoCalc[] = gruposNotas
       .filter((g) => g.periodo === periodo)
       .map((g) => ({ id: g.id, porcentaje: g.porcentaje, parent_id: g.parent_id }));
     return esPeriodoCompleto(notasCalc, gruposDelPeriodo);
-  }, [actividades, gruposNotas, notas]);
+  }, [actividades, gruposNotas, notas, noAplica]);
 
   // Calcular Definitiva Anual (promedio de las notas relativas de los períodos que tienen datos)
   const calcularFinalDefinitiva = useCallback((idEstudiantil: string): number | null => {
@@ -2647,8 +2662,8 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     const actividadesConPorcentaje = actividadesDelPeriodo.filter(a => a.porcentaje !== null && a.porcentaje > 0);
     
     // Verificar si este estudiante tiene todas las notas de actividades con porcentaje
-    const estudianteTieneTodasNotas = actividadesConPorcentaje.every(act => 
-      notas[estudiante.id]?.[periodo]?.[act.id] !== undefined
+    const estudianteTieneTodasNotas = actividadesConPorcentaje.every(act =>
+      notas[estudiante.id]?.[periodo]?.[act.id] !== undefined || esNA(estudiante.id, act.id)
     );
     
     const nombrePeriodo = periodos.find(p => p.numero === periodo)?.nombre;
@@ -3299,6 +3314,14 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
       return;
     }
 
+    if (valorEditando.trim() === "" && esNA(idEstudiantil, actividadId)) {
+      // Casilla N/A que se abrió y se dejó vacía: sigue siendo N/A.
+      setCeldaEditando(null);
+      celdaEditandoRef.current = null;
+      setValorEditando("");
+      return;
+    }
+
     if (valorEditando.trim() === "") {
       // Si está vacío, eliminar la nota de Supabase
       try {
@@ -3443,6 +3466,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
             nota: notaRedondeada,
             comentario: comentarios[idEstudiantil]?.[periodo]?.[actividadId] || null,
             notificado: false,
+            no_aplica: false,
           }, {
             onConflict: 'id_estudiantil,ano_escolar,asignatura,grado,salon,periodo,nombre_actividad'
           });
@@ -3512,6 +3536,81 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     }
   };
 
+  // ── "No aplica" ──
+  // Marca/quita N/A en casillas SIN nota de una actividad. Guarda una fila de Notas con
+  // nota NULL y no_aplica=true (los módulos que no conocen la marca la ven vacía) y
+  // recalcula la definitiva persistida de cada estudiante.
+  const aplicarNoAplica = async (actividad: Actividad, ids: string[], quitar: boolean) => {
+    if (soloLectura || ids.length === 0) return;
+    const periodo = actividad.periodo;
+    if (quitar) {
+      const { error } = await supabase.from('Notas').update({ no_aplica: false })
+        .eq('ano_escolar', anoEscolarActual()).eq('asignatura', asignaturaSeleccionada)
+        .eq('grado', gradoSeleccionado).eq('salon', salonSeleccionado).eq('periodo', periodo)
+        .eq('nombre_actividad', actividad.nombre).in('id_estudiantil', ids);
+      if (error) { toast({ title: "Error", description: "No se pudo quitar el No aplica.", variant: "destructive" }); return; }
+    } else {
+      const filas = ids.map((id) => ({
+        id_estudiantil: id,
+        ano_escolar: anoEscolarActual(),
+        asignatura: asignaturaSeleccionada,
+        grado: gradoSeleccionado,
+        salon: salonSeleccionado,
+        periodo,
+        nombre_actividad: actividad.nombre,
+        porcentaje: actividad.porcentaje,
+        nota: null,
+        comentario: comentarios[id]?.[periodo]?.[actividad.id] || null,
+        no_aplica: true,
+      }));
+      const { error } = await supabase.from('Notas')
+        .upsert(filas, { onConflict: 'id_estudiantil,ano_escolar,asignatura,grado,salon,periodo,nombre_actividad' });
+      if (error) { toast({ title: "Error", description: "No se pudo marcar No aplica.", variant: "destructive" }); return; }
+    }
+    const nuevoNA = new Set(noAplica);
+    for (const id of ids) {
+      if (quitar) nuevoNA.delete(`${id}|${actividad.id}`); else nuevoNA.add(`${id}|${actividad.id}`);
+    }
+    setNoAplica(nuevoNA);
+    // La definitiva numérica no cambia (la casilla sigue sin nota), pero se vuelve a
+    // guardar por si el cálculo persistido estaba desactualizado.
+    for (const id of ids) {
+      await guardarFinalPeriodo(id, periodo, calcularFinalPeriodoConNotas(notas, id, periodo));
+    }
+    toast({
+      title: quitar ? "No aplica quitado" : "Marcado como No aplica",
+      description: `${ids.length} ${ids.length === 1 ? "estudiante" : "estudiantes"} en "${actividad.nombre}".`,
+      variant: "success" as any,
+    });
+  };
+
+  // Estudiantes de la columna sin nota y sin N/A (para "No aplica a los que no tienen nota").
+  const sinNotaEnColumna = (actividad: Actividad) =>
+    estudiantes.filter((e) => notas[e.id]?.[actividad.periodo]?.[actividad.id] === undefined && !esNA(e.id, actividad.id)).map((e) => e.id);
+  const conNAEnColumna = (actividad: Actividad) => estudiantes.filter((e) => esNA(e.id, actividad.id)).map((e) => e.id);
+
+  const itemsNoAplicaColumna = (actividad: Actividad) => {
+    if (soloLectura) return null;
+    const vacios = sinNotaEnColumna(actividad);
+    const conNA = conNAEnColumna(actividad);
+    return (
+      <>
+        {vacios.length > 0 && (
+          <DropdownMenuItem data-guia="notas.menu_no_aplica_columna" onClick={() => setConfirmNA({ actividad, ids: vacios, quitar: false })}>
+            <Ban className="w-4 h-4 mr-2" />
+            No aplica a los que no tienen nota
+          </DropdownMenuItem>
+        )}
+        {conNA.length > 0 && (
+          <DropdownMenuItem onClick={() => setConfirmNA({ actividad, ids: conNA, quitar: true })}>
+            <Undo2 className="w-4 h-4 mr-2" />
+            Quitar No aplica a todos
+          </DropdownMenuItem>
+        )}
+      </>
+    );
+  };
+
   // "Completar hacia abajo" (estilo Excel): copia el valor de una celda a todas
   // las casillas VACÍAS de abajo en esa misma actividad, deteniéndose en la
   // primera que YA tenga nota (esa nota es el tope). Nunca sobreescribe.
@@ -3520,7 +3619,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     const objetivos: string[] = [];
     for (let i = studentIndex + 1; i < estudiantes.length; i++) {
       const est = estudiantes[i];
-      if (notas[est.id]?.[periodo]?.[actividad.id] !== undefined) break; // tope: una nota detiene el llenado
+      if (notas[est.id]?.[periodo]?.[actividad.id] !== undefined || esNA(est.id, actividad.id)) break; // tope: una nota (o un N/A) detiene el llenado
       objetivos.push(est.id);
     }
     if (objetivos.length === 0) {
@@ -3540,6 +3639,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         nota: valor,
         comentario: null,
         notificado: false,
+        no_aplica: false,
       }));
       const { error } = await supabase
         .from('Notas')
@@ -3880,7 +3980,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     let estudiantesAfectados = 0;
     let totalCasillas = 0;
     for (const est of estudiantes) {
-      const faltan = objetivo.filter((a) => notas[est.id]?.[periodo]?.[a.id] === undefined).length;
+      const faltan = objetivo.filter((a) => notas[est.id]?.[periodo]?.[a.id] === undefined && !esNA(est.id, a.id)).length;
       if (faltan > 0) { estudiantesAfectados++; totalCasillas += faltan; }
     }
     return { estudiantesAfectados, totalCasillas };
@@ -4215,7 +4315,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         : actsDelPeriodo;
       if (actsQueAportan.length > 0) {
         const parciales = estudiantes.filter(est => {
-          const valores = actsQueAportan.map(act => notas[est.id]?.[periodo]?.[act.id]);
+          const valores = actsQueAportan.map(act => (esNA(est.id, act.id) ? 0 : notas[est.id]?.[periodo]?.[act.id]));
           const tieneAlguna = valores.some(v => v !== undefined && v !== null);
           const tieneTodas = valores.every(v => v !== undefined && v !== null);
           return tieneAlguna && !tieneTodas;
@@ -4803,6 +4903,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                               <Pencil className="w-4 h-4 mr-2" />
                                               Editar actividad
                                             </DropdownMenuItem>
+                                            {itemsNoAplicaColumna(actividad)}
                                             <DropdownMenuItem
                                               data-guia="notas.menu_eliminar_actividad"
                                           onClick={() => handleConfirmarEliminar(actividad)}
@@ -4974,6 +5075,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                           <Pencil className="w-4 h-4 mr-2" />
                                           Editar actividad
                                         </DropdownMenuItem>
+                                        {itemsNoAplicaColumna(actividad)}
                                         <DropdownMenuItem
                                           data-guia="notas.menu_eliminar_actividad"
                                           onClick={() => handleConfirmarEliminar(actividad)}
@@ -5065,6 +5167,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                             <DropdownMenuItem data-guia="notas.menu_editar_actividad" onClick={() => handleAbrirModalEditar(actividad)}>
                                               <Pencil className="w-4 h-4 mr-2" /> Editar actividad
                                             </DropdownMenuItem>
+                                            {itemsNoAplicaColumna(actividad)}
                                             <DropdownMenuItem
                                               data-guia="notas.menu_eliminar_actividad"
                                           onClick={() => handleConfirmarEliminar(actividad)}
@@ -5186,6 +5289,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                           <Pencil className="w-4 h-4 mr-2" />
                                           Editar actividad
                                         </DropdownMenuItem>
+                                        {itemsNoAplicaColumna(actividad)}
                                         <DropdownMenuItem
                                           data-guia="notas.menu_eliminar_actividad"
                                           onClick={() => handleConfirmarEliminar(actividad)}
@@ -5389,6 +5493,9 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                   )}
                                   onNotificarPadre={nota !== undefined ? () => handleNotificarNotaIndividual(estudiante, actividad, nota, periodoActivo) : undefined}
                                   onCompletarAbajo={nota !== undefined ? () => handleCompletarAbajo(actividad, periodoActivo, studentIndex, nota) : undefined}
+                                  noAplica={esNA(estudiante.id, actividad.id)}
+                                  onNoAplica={nota === undefined ? () => aplicarNoAplica(actividad, [estudiante.id], false) : undefined}
+                                  onQuitarNoAplica={() => aplicarNoAplica(actividad, [estudiante.id], true)}
                                 />
                               );
                             })}
@@ -5813,6 +5920,24 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
       </Dialog>
 
       {/* Modal de confirmación para eliminar */}
+      <AlertDialog open={!!confirmNA} onOpenChange={(o) => { if (!o) setConfirmNA(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{confirmNA?.quitar ? "¿Quitar No aplica?" : "¿Marcar No aplica?"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmNA?.quitar
+                ? `Se quitará el No aplica a ${confirmNA?.ids.length} ${confirmNA?.ids.length === 1 ? "estudiante" : "estudiantes"} en "${confirmNA?.actividad.nombre}". Quedarán sin nota.`
+                : `Se marcarán ${confirmNA?.ids.length} ${confirmNA?.ids.length === 1 ? "estudiante" : "estudiantes"} sin nota como No aplica en "${confirmNA?.actividad.nombre}". Esa actividad no contará en su definitiva.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (confirmNA) aplicarNoAplica(confirmNA.actividad, confirmNA.ids, confirmNA.quitar); setConfirmNA(null); }}>
+              {confirmNA?.quitar ? "Quitar" : "Marcar No aplica"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

@@ -1,6 +1,6 @@
 import { useState, useRef, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
-import { MoreVertical, MessageSquare, Trash2, Send, ChevronsDown } from "lucide-react";
+import { MoreVertical, MessageSquare, Trash2, Send, ChevronsDown, Ban, Undo2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +27,11 @@ interface NotaCeldaProps {
   placeholder?: string;
   soloLectura?: boolean;
   nombreEstudiante?: string;
+  /** "No aplica": la actividad no era para este estudiante (no cuenta en su definitiva). */
+  noAplica?: boolean;
+  /** Solo se pasa si la casilla NO tiene nota. */
+  onNoAplica?: () => void;
+  onQuitarNoAplica?: () => void;
 }
 
 const NotaCelda = ({
@@ -46,6 +51,9 @@ const NotaCelda = ({
   placeholder = "0-5",
   soloLectura = false,
   nombreEstudiante,
+  noAplica = false,
+  onNoAplica,
+  onQuitarNoAplica,
 }: NotaCeldaProps) => {
   const [showMenu, setShowMenu] = useState(false);
   const localInputRef = useRef<HTMLInputElement | null>(null);
@@ -78,7 +86,7 @@ const NotaCelda = ({
     return (
       <td className="border-r border-b border-border p-1 text-center text-sm min-w-[120px] relative">
         <div className="relative flex items-center justify-center h-8">
-          <span>{nota !== undefined ? nota.toFixed(2) : <span className="text-muted-foreground">—</span>}</span>
+          <span>{nota !== undefined ? nota.toFixed(2) : noAplica ? <span className="text-muted-foreground font-medium">N/A</span> : <span className="text-muted-foreground">—</span>}</span>
           {comentario && <ComentarioIndicador comentario={comentario} className="top-0 right-2" />}
         </div>
       </td>
@@ -136,13 +144,38 @@ const NotaCelda = ({
               }
             }}
           >
-            {nota !== undefined ? nota.toFixed(2) : <span className="text-muted-foreground">—</span>}
+            {nota !== undefined ? nota.toFixed(2) : noAplica ? <span className="text-muted-foreground font-medium" title="No aplica: no cuenta en la definitiva">N/A</span> : <span className="text-muted-foreground">—</span>}
           </button>
           
           {/* Indicador de comentario */}
           {comentario && <ComentarioIndicador comentario={comentario} className="top-0 right-6" />}
           
-          {/* Menú de opciones (visible en hover on desktop, always visible on mobile) - Solo si hay nota */}
+          {/* Menú de opciones (visible en hover on desktop, always visible on mobile). Con nota:
+              comentario, completar, notificar. Sin nota: solo No aplica / Quitar No aplica. */}
+          {nota === undefined && (noAplica ? !!onQuitarNoAplica : !!onNoAplica) && (
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button data-guia="notas.menu_celda_vacia" className="p-1 hover:bg-muted rounded transition-colors">
+                    <MoreVertical className="w-3 h-3 text-muted-foreground" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-background z-50">
+                  {noAplica ? (
+                    <DropdownMenuItem onClick={onQuitarNoAplica}>
+                      <Undo2 className="w-4 h-4 mr-2" />
+                      Quitar No aplica
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem data-guia="notas.menu_no_aplica" onClick={onNoAplica}>
+                      <Ban className="w-4 h-4 mr-2" />
+                      No aplica
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
           {nota !== undefined && (
             <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
               <DropdownMenu open={showMenu} onOpenChange={setShowMenu}>

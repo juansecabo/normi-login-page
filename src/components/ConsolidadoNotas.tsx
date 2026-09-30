@@ -87,6 +87,9 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
   const [actividadesPorAsignatura, setActividadesPorAsignatura] = useState<ActividadesPorAsignatura>({});
   const [notas, setNotas] = useState<NotasEstudiante>({});
   const [comentarios, setComentarios] = useState<ComentariosEstudiante>({});
+  // Actividades marcadas "No aplica" para este estudiante (`${asignatura}|${actividadId}`):
+  // no cuentan en su definitiva y sí cuentan como completas.
+  const [noAplica, setNoAplica] = useState<Set<string>>(new Set());
   // Periodo elegido vive en la URL (?periodo=1..4) para que persista al
   // refrescar y se vea en el breadcrumb. Si no hay periodo válido en la URL,
   // se muestra la pantalla "Elige el periodo" antes de las notas.
@@ -282,14 +285,19 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
         if (!notasError && notasData) {
           const notasFormateadas: NotasEstudiante = {};
           const comentariosFormateados: ComentariosEstudiante = {};
+          const naCargados = new Set<string>();
           notasData.forEach((nota) => {
             const { asignatura, periodo, nombre_actividad, nota: valorNota, comentario } = nota;
             if (nombre_actividad === "Definitiva Anual" || nombre_actividad === "Definitiva Periodo") return;
 
             const actividadId = `${periodo}-${nombre_actividad}`;
-            if (!notasFormateadas[asignatura]) notasFormateadas[asignatura] = {};
-            if (!notasFormateadas[asignatura][periodo]) notasFormateadas[asignatura][periodo] = {};
-            notasFormateadas[asignatura][periodo][actividadId] = valorNota;
+            if ((nota as any).no_aplica === true && (valorNota === null || valorNota === undefined)) {
+              naCargados.add(`${asignatura}|${actividadId}`);
+            } else {
+              if (!notasFormateadas[asignatura]) notasFormateadas[asignatura] = {};
+              if (!notasFormateadas[asignatura][periodo]) notasFormateadas[asignatura][periodo] = {};
+              notasFormateadas[asignatura][periodo][actividadId] = valorNota;
+            }
 
             if (comentario && String(comentario).trim()) {
               if (!comentariosFormateados[asignatura]) comentariosFormateados[asignatura] = {};
@@ -299,6 +307,7 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
           });
           setNotas(notasFormateadas);
           setComentarios(comentariosFormateados);
+          setNoAplica(naCargados);
         }
       } catch (error) {
         console.error('Error:', error);
@@ -398,7 +407,7 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
       return gid !== null || (a.porcentaje !== null && a.porcentaje > 0);
     });
     if (cuentan.length === 0) return false;
-    return cuentan.every(a => notas[asignatura]?.[periodo]?.[a.id] !== undefined);
+    return cuentan.every(a => notas[asignatura]?.[periodo]?.[a.id] !== undefined || noAplica.has(`${asignatura}|${a.id}`));
   };
 
   // ¿El periodo está completo PARA ESTE ESTUDIANTE? Dos condiciones:
@@ -473,7 +482,7 @@ const ConsolidadoNotas = ({ idEstudiante, nombreEstudiante, apellidosEstudiante,
             </button>
           )}
         </span>
-        <span className="text-sm font-semibold tabular-nums text-foreground shrink-0">{nota !== undefined ? Number(nota).toFixed(2) : '—'}</span>
+        <span className="text-sm font-semibold tabular-nums text-foreground shrink-0">{nota !== undefined && nota !== null ? Number(nota).toFixed(2) : noAplica.has(`${asignatura}|${act.id}`) ? <span className="text-muted-foreground" title="No aplica: no cuenta en la definitiva">N/A</span> : '—'}</span>
       </>
     );
   };
