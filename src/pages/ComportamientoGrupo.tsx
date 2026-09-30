@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiRequest } from "@/lib/apiClient";
 import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNormi";
@@ -9,7 +9,8 @@ import { coincideBusqueda } from "@/utils/busqueda";
 /**
  * "Comportamiento y disciplina" (Diana, Pestalozziano, 2026-09-30): el director de
  * grupo escribe, por estudiante y periodo, el texto que sale en el boletín bajo las
- * asignaturas. Cada línea es una viñeta. Se guarda solo al salir del cuadro.
+ * asignaturas. Cada línea es una viñeta. Se guarda solo mientras escribe (un momento
+ * después de dejar de teclear) y al salir del cuadro; avisa si se sale con algo sin guardar.
  */
 interface EstComp { id: string; nombre: string; salon: string; texto: string }
 interface Respuesta { grupo: string; periodo: number; cortes: number; esquema: string; estudiantes: EstComp[]; textos: Record<number, Record<string, string>> }
@@ -49,19 +50,60 @@ const ComportamientoGrupo = () => {
   const estado = (periodo != null && estadoP[periodo]) || {};
   const ponEstado = (p: number, id: string, e: Estado) => setEstadoP((s) => ({ ...s, [p]: { ...(s[p] || {}), [id]: e } }));
 
-  const guardar = async (id: string) => {
-    if (periodo == null || (textos[id] || "") === (guardados[id] || "")) return;
-    const p = periodo;
-    const texto = textos[id] || "";
+  // Último texto escrito y último guardado, en refs para que el guardado diferido y el
+  // aviso al salir vean siempre lo más reciente.
+  const escritoRef = useRef<Record<string, string>>({});
+  const guardadoRef = useRef<Record<string, string>>({});
+  const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const enCurso = useRef<Set<string>>(new Set()); // un solo guardado a la vez por cuadro
+  const clave = (p: number, id: string) => `${p}|${id}`;
+
+  useEffect(() => {
+    for (const [p, porEst] of Object.entries(guardadosP)) for (const [id, t] of Object.entries(porEst)) {
+      guardadoRef.current[clave(Number(p), id)] = t;
+      if (escritoRef.current[clave(Number(p), id)] === undefined) escritoRef.current[clave(Number(p), id)] = t;
+    }
+  }, [guardadosP]);
+
+  const guardar = async (p: number, id: string) => {
+    const k = clave(p, id);
+    clearTimeout(timers.current[k]);
+    const texto = escritoRef.current[k] ?? "";
+    if (texto === (guardadoRef.current[k] ?? "")) return;
+    if (enCurso.current.has(k)) return; // al terminar el que va, se revisa si quedó algo nuevo
+    enCurso.current.add(k);
     ponEstado(p, id, "guardando");
     try {
       await apiRequest("/api/boletines/comportamiento", { method: "PUT", body: JSON.stringify({ periodo: p, id_estudiantil: id, texto }) });
+      guardadoRef.current[k] = texto;
       setGuardadosP((g) => ({ ...g, [p]: { ...(g[p] || {}), [id]: texto } }));
-      ponEstado(p, id, "guardado");
+      // Si siguió escribiendo mientras se guardaba, queda pendiente otra vuelta.
+      enCurso.current.delete(k);
+      ponEstado(p, id, (escritoRef.current[k] ?? "") === texto ? "guardado" : "guardando");
+      if ((escritoRef.current[k] ?? "") !== texto) guardar(p, id);
     } catch {
+      enCurso.current.delete(k);
       ponEstado(p, id, "error");
     }
   };
+
+  const escribir = (p: number, id: string, v: string) => {
+    const k = clave(p, id);
+    escritoRef.current[k] = v;
+    setTextosP((t) => ({ ...t, [p]: { ...(t[p] || {}), [id]: v } }));
+    clearTimeout(timers.current[k]);
+    timers.current[k] = setTimeout(() => guardar(p, id), 800);
+  };
+
+  // Aviso del navegador si intenta cerrar o actualizar con algo sin guardar.
+  useEffect(() => {
+    const antes = (e: BeforeUnloadEvent) => {
+      const pendiente = Object.keys(escritoRef.current).some((k) => (escritoRef.current[k] ?? "") !== (guardadoRef.current[k] ?? ""));
+      if (pendiente) { e.preventDefault(); e.returnValue = ""; }
+    };
+    window.addEventListener("beforeunload", antes);
+    return () => window.removeEventListener("beforeunload", antes);
+  }, []);
 
   const unidad = datos?.esquema === "semestres" ? "Semestre" : "Periodo";
   const lista = (datos?.estudiantes || []).filter((e) => coincideBusqueda(busqueda, e.nombre, e.id));
@@ -122,7 +164,7 @@ const ComportamientoGrupo = () => {
                         {estado[e.id] === "error" && <span className="text-destructive">No se guardó</span>}
                       </span>
                     </div>
-                    <textarea value={textos[e.id] || ""} onChange={(ev) => { const p = periodo!; const v = ev.target.value; setTextosP((t) => ({ ...t, [p]: { ...(t[p] || {}), [e.id]: v } })); }} onBlur={() => guardar(e.id)}
+                    <textarea value={textos[e.id] || ""} onChange={(ev) => escribir(periodo!, e.id, ev.target.value)} onBlur={() => guardar(periodo!, e.id)}
                       placeholder="Ej: El estudiante evidencia un comportamiento positivo…"
                       className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background min-h-[70px] resize-y" />
                   </div>
