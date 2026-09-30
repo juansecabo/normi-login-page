@@ -39,6 +39,8 @@ interface FilaBol {
   /** Hay columnas pero esta materia tiene otra estructura: desglose en su propia línea. */
   desglose_propio?: boolean;
   logros: string[];
+  /** Comentario del profesor en la definitiva del periodo. */
+  comentario?: string | null;
 }
 interface EstBol { id: string; nombres: string; apellidos: string; num_lista: number; filas: FilaBol[]; comportamiento?: string[] }
 interface ItemInc {
@@ -359,6 +361,28 @@ const Boletines = () => {
               pdf.text(parrafos[i], MX + 2, ty, { maxWidth: anchoTexto, align: "justify" });
               ty += wrapped[i].length * 2.9;
             }
+            y += alto;
+          }
+
+          // Comentario del profesor en la definitiva, dentro del espacio de la asignatura.
+          if (f.comentario) {
+            const anchoTexto = W - 2 * MX - 4;
+            const etiqueta = "Comentario: ";
+            pdf.setFont("HelveticaCond", "bold").setFontSize(6.2);
+            const wEt = pdf.getTextWidth(etiqueta);
+            pdf.setFont("HelveticaCond", "normal");
+            // Primera línea a continuación de la etiqueta; el resto, a todo el ancho.
+            const primera: string = pdf.splitTextToSize(f.comentario, anchoTexto - wEt)[0] || "";
+            const resto = f.comentario.slice(primera.length).trim();
+            const restoLineas: string[] = resto ? pdf.splitTextToSize(resto, anchoTexto) : [];
+            const alto = (1 + restoLineas.length) * 2.9 + 2;
+            saltoSiHaceFalta(alto);
+            pdf.rect(MX, y, W - 2 * MX, alto);
+            pdf.setFont("HelveticaCond", "bold");
+            pdf.text(etiqueta, MX + 2, y + 2.8);
+            pdf.setFont("HelveticaCond", "normal");
+            pdf.text(primera, MX + 2 + wEt, y + 2.8);
+            if (restoLineas.length) pdf.text(restoLineas, MX + 2, y + 2.8 + 2.9);
             y += alto;
           }
         }
