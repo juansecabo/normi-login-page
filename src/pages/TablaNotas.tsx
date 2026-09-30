@@ -3545,11 +3545,16 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     if (soloLectura || ids.length === 0) return;
     const periodo = actividad.periodo;
     if (quitar) {
-      const { error } = await supabase.from('Notas').update({ no_aplica: false })
-        .eq('ano_escolar', anoEscolarActual()).eq('asignatura', asignaturaSeleccionada)
+      // Sin comentario: se borra la fila (la casilla vuelve a estar vacía, sin fila).
+      // Con comentario: se conserva la fila y solo se quita la marca.
+      const sinComentario = ids.filter((id) => !comentarios[id]?.[periodo]?.[actividad.id]);
+      const conComentario = ids.filter((id) => !!comentarios[id]?.[periodo]?.[actividad.id]);
+      const filtro = (q: any) => q.eq('ano_escolar', anoEscolarActual()).eq('asignatura', asignaturaSeleccionada)
         .eq('grado', gradoSeleccionado).eq('salon', salonSeleccionado).eq('periodo', periodo)
-        .eq('nombre_actividad', actividad.nombre).in('id_estudiantil', ids);
-      if (error) { toast({ title: "Error", description: "No se pudo quitar el No aplica.", variant: "destructive" }); return; }
+        .eq('nombre_actividad', actividad.nombre);
+      const r1 = sinComentario.length ? await filtro(supabase.from('Notas').delete()).in('id_estudiantil', sinComentario).is('nota', null) : { error: null };
+      const r2 = conComentario.length ? await filtro(supabase.from('Notas').update({ no_aplica: false })).in('id_estudiantil', conComentario) : { error: null };
+      if (r1.error || r2.error) { toast({ title: "Error", description: "No se pudo quitar el No aplica.", variant: "destructive" }); return; }
     } else {
       const filas = ids.map((id) => ({
         id_estudiantil: id,
