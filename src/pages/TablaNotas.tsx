@@ -3537,8 +3537,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
 
   // ── "No aplica" ──
   // Marca/quita N/A en casillas SIN nota de una actividad. Guarda una fila de Notas con
-  // nota NULL y no_aplica=true (los módulos que no conocen la marca la ven vacía) y
-  // recalcula la definitiva persistida de cada estudiante.
+  // nota NULL y no_aplica=true (los módulos que no conocen la marca la ven vacía).
   const aplicarNoAplica = async (actividad: Actividad, ids: string[], quitar: boolean) => {
     if (soloLectura || ids.length === 0) return;
     const periodo = actividad.periodo;
@@ -3571,11 +3570,8 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
       if (quitar) nuevoNA.delete(`${id}|${actividad.id}`); else nuevoNA.add(`${id}|${actividad.id}`);
     }
     setNoAplica(nuevoNA);
-    // La definitiva numérica no cambia (la casilla sigue sin nota), pero se vuelve a
-    // guardar por si el cálculo persistido estaba desactualizado.
-    for (const id of ids) {
-      await guardarFinalPeriodo(id, periodo, calcularFinalPeriodoConNotas(notas, id, periodo));
-    }
+    // No se recalcula la definitiva guardada: marcar o quitar N/A no la cambia (la
+    // casilla sigue sin nota). Recalcularla por estudiante demoraba varios segundos.
   };
 
   // Estudiantes de la columna sin nota y sin N/A (para "No aplica a los que no tienen nota").
