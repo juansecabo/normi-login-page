@@ -10,7 +10,7 @@ import { Plus, MoreVertical, Pencil, Trash2, Send, Calendar, Download, FileSprea
 import { getSession, isAdmin } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { useGruposNotas, type GrupoNotas } from "@/hooks/useGruposNotas";
-import { promedioGeneral, esPeriodoCompleto, promedioDeGrupo, type NotaCalc, type GrupoCalc } from "@/lib/gradeCalculator";
+import { promedioGeneral, esPeriodoCompleto, promedioDeGrupo, sinNingunPorcentaje, type NotaCalc, type GrupoCalc } from "@/lib/gradeCalculator";
 import {
   Dialog,
   DialogContent,
@@ -1776,12 +1776,25 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
 
     const notasEstudiante = notasParam[idEstudiantil]?.[periodo] || {};
 
+    // Filtrar grupos del periodo actual (gruposNotas viene del hook y ya está
+    // filtrado por aula+ano_escolar, pero puede contener periodos distintos).
+    const gruposDelPeriodo: GrupoCalc[] = gruposNotas
+      .filter(g => g.periodo === periodo)
+      .map(g => ({ id: g.id, porcentaje: g.porcentaje, parent_id: g.parent_id }));
+
+    // Modo equitativo (el profe no puso NINGÚN %): todas las actividades cuentan
+    // parejo. Antes este filtro las descartaba y la definitiva quedaba vacía.
+    const equitativo = sinNingunPorcentaje(
+      actividadesDelPeriodo.map(a => ({ porcentaje: a.porcentaje, nota: null, grupo_id: a.grupo_id ?? null })),
+      gruposDelPeriodo,
+    );
+
     // Construir lista de NotaCalc con el porcentaje de la actividad y la nota del estudiante.
     // Si la actividad no tiene nota para este estudiante, se omite (no se cuenta como 0).
     // Cuenta una actividad calificada si: pertenece a un grupo (el % lo aporta el
     // grupo, la actividad no necesita % propio) O tiene su propio % > 0 (modo plano).
     const notasCalc: NotaCalc[] = actividadesDelPeriodo
-      .filter(a => notasEstudiante[a.id] !== undefined && ((a.grupo_id ?? null) !== null || (a.porcentaje !== null && a.porcentaje > 0)))
+      .filter(a => notasEstudiante[a.id] !== undefined && (equitativo || (a.grupo_id ?? null) !== null || (a.porcentaje !== null && a.porcentaje > 0)))
       .map(a => ({
         porcentaje: a.porcentaje,
         nota: notasEstudiante[a.id] as number,
@@ -1789,12 +1802,6 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
       }));
 
     if (notasCalc.length === 0) return null;
-
-    // Filtrar grupos del periodo actual (gruposNotas viene del hook y ya está
-    // filtrado por aula+ano_escolar, pero puede contener periodos distintos).
-    const gruposDelPeriodo: GrupoCalc[] = gruposNotas
-      .filter(g => g.periodo === periodo)
-      .map(g => ({ id: g.id, porcentaje: g.porcentaje, parent_id: g.parent_id }));
 
     const res = promedioGeneral(notasCalc, gruposDelPeriodo);
     return res.promedio;

@@ -32,6 +32,10 @@ interface FilaBol {
   grupos: Array<{ nombre: string; pct: number; nota: number | null; desempeno: string | null }> | null;
   val: number | null;
   desempeno: string | null;
+  /** Le faltan notas del periodo: la definitiva aún no es la final. */
+  provisional?: boolean;
+  /** La definitiva es la de la habilitación. */
+  habilitada?: boolean;
   logros: string[];
 }
 interface EstBol { id: string; nombres: string; apellidos: string; num_lista: number; filas: FilaBol[] }
@@ -39,6 +43,7 @@ interface ItemInc {
   asignatura: string; grado: string; salon: string;
   sin_nota: string[];
   actividades_incompletas: Array<{ actividad: string; faltan: string[] }>;
+  sin_calificar?: boolean;
 }
 interface GrupoInc { profesor: { id: string; nombre: string; genero: string | null } | null; items: ItemInc[] }
 
@@ -311,7 +316,8 @@ const Boletines = () => {
               celdaC(wGrupo, g && g.nota != null ? `${fmt(g.nota)} ${(g.desempeno || "").toUpperCase()}` : "");
             }
           }
-          celdaC(wVal, fmt(f.val), true);
+          // H = definitiva de la habilitación; * = provisional (le faltan notas).
+          celdaC(wVal, f.val == null ? "" : `${fmt(f.val)}${f.habilitada ? " H" : ""}${f.provisional ? "*" : ""}`, true);
           celdaC(wDes, (f.desempeno || "").toUpperCase(), true);
           y += rh;
 
@@ -351,6 +357,18 @@ const Boletines = () => {
             }
             y += alto;
           }
+        }
+
+        // Convenciones de la columna de la nota, solo si este boletín las usa.
+        const marcas = [
+          est.filas.some((f) => f.habilitada) ? "H: nota después de la habilitación." : "",
+          est.filas.some((f) => f.provisional) ? "*: nota provisional, faltan notas del periodo." : "",
+        ].filter(Boolean);
+        if (marcas.length > 0) {
+          saltoSiHaceFalta(4);
+          pdf.setFont("HelveticaCond", "normal").setFontSize(5.6);
+          pdf.text(marcas.join("   "), MX, y + 3);
+          y += 4;
         }
 
         // ── OBSERVACIONES: recuadro en blanco para que el profesor/director escriba ──
@@ -536,6 +554,7 @@ const Boletines = () => {
                     {g.items.map((it, i) => (
                       <div key={i} className="text-sm text-foreground bg-muted/40 rounded-md px-2.5 py-1.5">
                         <span className="font-medium">{it.asignatura} — {it.grado} {it.salon}:</span>{" "}
+                        {it.sin_calificar && <span className="text-red-600">sin ninguna nota en este periodo</span>}
                         {it.sin_nota.length > 0 && (
                           <span className="text-red-600">
                             {it.sin_nota.length} estudiante{it.sin_nota.length > 1 ? "s" : ""} sin ninguna nota
