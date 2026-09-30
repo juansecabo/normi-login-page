@@ -191,7 +191,7 @@ const Boletines = () => {
       registerBoletinFonts(pdf); // tipografía condensada idéntica al informe SISNOTAS
       const W = 216, MX = 10;
       const fmt = (n: number | null) => (n == null ? "" : n.toFixed(1));
-      const hoy = new Date().toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" });
+      const hoy = new Date().toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" });
       const escudo = datos.colegio.logo_url ? await escudoAPng(datos.colegio.logo_url) : null;
       const lista = soloEstudiante ? [soloEstudiante] : datos.estudiantes;
 
@@ -289,13 +289,11 @@ const Boletines = () => {
         let y = encabezado(est);
         y = cabeceraTabla(y);
 
-        // conTabla=false para lo que va DESPUÉS de las asignaturas (marcas, comportamiento,
-        // pie): en la hoja nueva no se repite el encabezado de la tabla sin filas debajo.
-        const saltoSiHaceFalta = (alto: number, conTabla = true) => {
+        const saltoSiHaceFalta = (alto: number) => {
           if (y + alto > 340) {
             pdf.addPage();
             y = encabezado(est);
-            if (conTabla) y = cabeceraTabla(y);
+            y = cabeceraTabla(y);
           }
         };
 
@@ -394,7 +392,7 @@ const Boletines = () => {
           est.filas.some((f) => f.habilitada) ? "H: nota después de la habilitación." : "",
         ].filter(Boolean);
         if (marcas.length > 0) {
-          saltoSiHaceFalta(4, false);
+          saltoSiHaceFalta(4);
           pdf.setFont("HelveticaCond", "normal").setFontSize(5.6);
           pdf.text(marcas.join("   "), MX, y + 3);
           y += 4;
@@ -410,7 +408,7 @@ const Boletines = () => {
           const parrafos = comp.map((l) => `» ${l}`);
           const wrapped = parrafos.map((t) => pdf.splitTextToSize(t, anchoTexto));
           const altoTexto = comp.length > 0 ? wrapped.reduce((s, w) => s + w.length, 0) * 2.9 + 2 : 18;
-          saltoSiHaceFalta(altoTexto + 9, false);
+          saltoSiHaceFalta(altoTexto + 9);
           y += 4;
           pdf.setFillColor(240, 240, 240);
           pdf.rect(MX, y, W - 2 * MX, 5, "FD");
@@ -431,7 +429,7 @@ const Boletines = () => {
         }
 
         // ── Pie: leyenda de escala + firma ──
-        saltoSiHaceFalta(34, false);
+        saltoSiHaceFalta(34);
         y += 5;
         pdf.setFontSize(5.6);
         const ordRangos = [...datos.escala.rangos].sort((a, b) => b.min - a.min);
