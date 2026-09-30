@@ -86,7 +86,7 @@ const SeleccionarSalon = () => {
               onClick={() => navigate("/dashboard")}
               className="text-primary hover:underline"
             >
-              Asignaturas
+              Inicio
             </button>
             <span className="text-muted-foreground">→</span>
             <button

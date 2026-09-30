@@ -4513,7 +4513,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               </BreadcrumbDeslizable>
             ) : (
             <div className="flex flex-wrap items-center gap-2 text-sm">
-              <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Asignaturas</button>
+              <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
               <span className="text-muted-foreground">→</span>
               <button onClick={() => navigate("/seleccionar-grado")} className="text-primary hover:underline">{asignaturaSeleccionada}</button>
               <span className="text-muted-foreground">→</span>
