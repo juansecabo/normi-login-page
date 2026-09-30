@@ -12,46 +12,51 @@ import { coincideBusqueda } from "@/utils/busqueda";
  * asignaturas. Cada línea es una viñeta. Se guarda solo al salir del cuadro.
  */
 interface EstComp { id: string; nombre: string; salon: string; texto: string }
-interface Respuesta { grupo: string; periodo: number; cortes: number; esquema: string; estudiantes: EstComp[] }
+interface Respuesta { grupo: string; periodo: number; cortes: number; esquema: string; estudiantes: EstComp[]; textos: Record<number, Record<string, string>> }
 type Estado = "guardando" | "guardado" | "error";
 
 const ComportamientoGrupo = () => {
   const navigate = useNavigate();
   const [datos, setDatos] = useState<Respuesta | null>(null);
   const [periodo, setPeriodo] = useState<number | null>(null);
-  const [textos, setTextos] = useState<Record<string, string>>({});
-  const [guardados, setGuardados] = useState<Record<string, string>>({});
-  const [estado, setEstado] = useState<Record<string, Estado>>({});
+  // Por periodo → por estudiante. Se cargan todos de una vez: cambiar de pestaña no espera.
+  const [textosP, setTextosP] = useState<Record<number, Record<string, string>>>({});
+  const [guardadosP, setGuardadosP] = useState<Record<number, Record<string, string>>>({});
+  const [estadoP, setEstadoP] = useState<Record<number, Record<string, Estado>>>({});
   const [error, setError] = useState("");
   const [busqueda, setBusqueda] = useState("");
 
-  const cargar = useCallback(async (p: number | null) => {
+  const cargar = useCallback(async () => {
     setError("");
     try {
-      const r = await apiRequest<Respuesta>(`/api/boletines/comportamiento${p ? `?periodo=${p}` : ""}`);
+      const r = await apiRequest<Respuesta>("/api/boletines/comportamiento");
       setDatos(r);
       setPeriodo(r.periodo);
-      const t = Object.fromEntries(r.estudiantes.map((e) => [e.id, e.texto]));
-      setTextos(t);
-      setGuardados(t);
-      setEstado({});
+      setTextosP(r.textos || {});
+      setGuardadosP(r.textos || {});
     } catch (e: any) {
       setError(e?.body?.detail || e?.message || "No se pudo cargar tu grupo.");
     }
   }, []);
 
-  useEffect(() => { cargar(null); }, [cargar]);
+  useEffect(() => { cargar(); }, [cargar]);
+
+  const textos = (periodo != null && textosP[periodo]) || {};
+  const guardados = (periodo != null && guardadosP[periodo]) || {};
+  const estado = (periodo != null && estadoP[periodo]) || {};
+  const ponEstado = (p: number, id: string, e: Estado) => setEstadoP((s) => ({ ...s, [p]: { ...(s[p] || {}), [id]: e } }));
 
   const guardar = async (id: string) => {
     if (periodo == null || (textos[id] || "") === (guardados[id] || "")) return;
+    const p = periodo;
     const texto = textos[id] || "";
-    setEstado((s) => ({ ...s, [id]: "guardando" }));
+    ponEstado(p, id, "guardando");
     try {
-      await apiRequest("/api/boletines/comportamiento", { method: "PUT", body: JSON.stringify({ periodo, id_estudiantil: id, texto }) });
-      setGuardados((g) => ({ ...g, [id]: texto }));
-      setEstado((s) => ({ ...s, [id]: "guardado" }));
+      await apiRequest("/api/boletines/comportamiento", { method: "PUT", body: JSON.stringify({ periodo: p, id_estudiantil: id, texto }) });
+      setGuardadosP((g) => ({ ...g, [p]: { ...(g[p] || {}), [id]: texto } }));
+      ponEstado(p, id, "guardado");
     } catch {
-      setEstado((s) => ({ ...s, [id]: "error" }));
+      ponEstado(p, id, "error");
     }
   };
 
@@ -84,7 +89,7 @@ const ComportamientoGrupo = () => {
             <>
               <div className="flex flex-wrap items-center justify-center gap-2 mb-4" data-guia="comportamiento.periodo">
                 {Array.from({ length: datos.cortes }, (_, i) => i + 1).map((p) => (
-                  <button key={p} onClick={() => cargar(p)}
+                  <button key={p} onClick={() => setPeriodo(p)}
                     className={`px-4 py-2 rounded-lg font-medium transition-colors cursor-pointer ${periodo === p ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"}`}>
                     {unidad} {p}
                   </button>
@@ -114,7 +119,7 @@ const ComportamientoGrupo = () => {
                         {estado[e.id] === "error" && <span className="text-destructive">No se guardó</span>}
                       </span>
                     </div>
-                    <textarea value={textos[e.id] || ""} onChange={(ev) => setTextos((t) => ({ ...t, [e.id]: ev.target.value }))} onBlur={() => guardar(e.id)}
+                    <textarea value={textos[e.id] || ""} onChange={(ev) => { const p = periodo!; const v = ev.target.value; setTextosP((t) => ({ ...t, [p]: { ...(t[p] || {}), [e.id]: v } })); }} onBlur={() => guardar(e.id)}
                       placeholder="Ej: El estudiante evidencia un comportamiento positivo…"
                       className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background min-h-[70px] resize-y" />
                   </div>
