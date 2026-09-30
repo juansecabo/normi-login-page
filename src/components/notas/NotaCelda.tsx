@@ -162,7 +162,7 @@ const NotaCelda = ({
                     <MoreVertical className="w-3 h-3 text-muted-foreground" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-background z-50">
+                <DropdownMenuContent align="end" className="bg-background z-50" onCloseAutoFocus={(e) => e.preventDefault()}>
                   {noAplica ? (
                     <DropdownMenuItem onClick={onQuitarNoAplica}>
                       <Undo2 className="w-4 h-4 mr-2" />
@@ -186,7 +186,7 @@ const NotaCelda = ({
                     <MoreVertical className="w-3 h-3 text-muted-foreground" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-background z-50">
+                <DropdownMenuContent align="end" className="bg-background z-50" onCloseAutoFocus={(e) => e.preventDefault()}>
                   <DropdownMenuItem data-guia="notas.menu_agregar_comentario" onClick={onAbrirComentario}>
                     <MessageSquare className="w-4 h-4 mr-2" />
                     {comentario ? "Editar comentario" : "Agregar comentario"}
