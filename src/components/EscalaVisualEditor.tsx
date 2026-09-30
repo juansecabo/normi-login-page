@@ -15,7 +15,10 @@ import { aNumero } from "@/utils/numero";
  * cada rango con min y max (max exclusivo = min del siguiente; el tope lleva +0.0001).
  */
 
-interface Banda { label: string; min: number; max: number; color: string }
+// `key`: identificador estable del rango. Los logros guardan un texto por key; si se
+// pierde al guardar la escala, los logros desaparecen del boletín.
+interface Banda { label: string; min: number; max: number; color: string; key?: string }
+const nuevaKey = () => Math.random().toString(16).slice(2, 10).padEnd(8, "0");
 interface Props {
   cfg: Record<string, any>;
   guardar: (configuracion: Record<string, unknown>) => Promise<void>;
@@ -43,7 +46,7 @@ const EscalaVisualEditor = ({ cfg, guardar, alGuardar }: Props) => {
   const [bandas, setBandas] = useState<Banda[]>(() => {
     const max0 = Number(cfg.escala_max ?? 5);
     return (Array.isArray(cfg.rangos_desempeno) ? cfg.rangos_desempeno : [])
-      .map((r: any) => ({ label: String(r.label ?? ""), min: Number(r.min), max: Math.min(Number(r.max), max0), color: r.color || COLOR_NUEVO }))
+      .map((r: any) => ({ label: String(r.label ?? ""), min: Number(r.min), max: Math.min(Number(r.max), max0), color: r.color || COLOR_NUEVO, key: r.key ? String(r.key) : undefined }))
       .filter((b: Banda) => Number.isFinite(b.min) && Number.isFinite(b.max))
       .sort((a: Banda, b: Banda) => a.min - b.min)
       // Rangos contiguos: cada uno termina donde empieza el siguiente. Hay colegios con los
@@ -86,7 +89,7 @@ const EscalaVisualEditor = ({ cfg, guardar, alGuardar }: Props) => {
     setGuardando(true); setAviso(null);
     try {
       const rangos = [...lista].sort((a, b) => b.min - a.min).map((b, idx) => ({
-        label: b.label, color: b.color, min: b.min,
+        key: b.key || nuevaKey(), label: b.label, color: b.color, min: b.min,
         // El rango tope incluye la nota máxima (la banda usa nota >= min y nota < max).
         max: idx === 0 ? esc.escMax + 0.0001 : b.max,
       }));
@@ -127,7 +130,7 @@ const EscalaVisualEditor = ({ cfg, guardar, alGuardar }: Props) => {
           if (b.min < hExcl - EPS && b.max > hExcl + EPS) return { ...b, min: hExcl };
           return b;
         });
-      lista.push({ label: nombre, min: d, max: hExcl, color: fColor });
+      lista.push({ label: nombre, min: d, max: hExcl, color: fColor, key: nuevaKey() });
       lista.sort((a, b) => a.min - b.min);
     } else if (typeof editando === "number") {
       const i = editando;
@@ -137,7 +140,7 @@ const EscalaVisualEditor = ({ cfg, guardar, alGuardar }: Props) => {
       const nh = i === lista.length - 1 ? escMax : hExcl;
       if (ant && nd <= ant.min + EPS) { setFError(`"${ant.label}" empieza en ${fmt(ant.min)}: la nota inicial debe ser mayor.`); return; }
       if (sig && nh >= sig.max - EPS) { setFError(`"${sig.label}" quedaría sin notas: la nota final debe ser menor.`); return; }
-      lista[i] = { label: nombre, min: nd, max: nh, color: fColor };
+      lista[i] = { label: nombre, min: nd, max: nh, color: fColor, key: lista[i].key };
       if (ant) ant.max = nd;      // el anterior termina justo antes
       if (sig) sig.min = nh;      // el siguiente empieza un paso después del "hasta"
     }
