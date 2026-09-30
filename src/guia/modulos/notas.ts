@@ -276,7 +276,7 @@ export const NOTAS: Capacidad[] = [
       ...abrirTablaDeNotas(),
       {
         narracion:
-          "Para varios a la vez: toca los tres puntitos del encabezado de la actividad y elige 'No aplica a los que no tienen nota'. Confirma y quedan todos marcados N/A.",
+          "Para varios a la vez: toca los tres puntitos del encabezado de la actividad y elige 'No aplica a los que no tienen nota'. Quedan todos marcados N/A de una vez.",
         accion: "click",
         ancla: "notas.boton_menu_actividad",
       },

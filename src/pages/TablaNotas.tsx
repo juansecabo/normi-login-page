@@ -431,7 +431,6 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
   // No entran al promedio (su % se reparte entre las demás) y cuentan como completas.
   const [noAplica, setNoAplica] = useState<Set<string>>(new Set());
   const esNA = (idEst: string | number, actividadId: string) => noAplica.has(`${idEst}|${actividadId}`);
-  const [confirmNA, setConfirmNA] = useState<{ actividad: Actividad; ids: string[]; quitar: boolean } | null>(null);
   // % de la habilitación en modo ponderado (el % de la definitiva anterior es 100 - este).
   const [habPesoHab, setHabPesoHab] = useState<number>(60);
   const [habGuardando, setHabGuardando] = useState(false);
@@ -3577,11 +3576,6 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     for (const id of ids) {
       await guardarFinalPeriodo(id, periodo, calcularFinalPeriodoConNotas(notas, id, periodo));
     }
-    toast({
-      title: quitar ? "No aplica quitado" : "Marcado como No aplica",
-      description: `${ids.length} ${ids.length === 1 ? "estudiante" : "estudiantes"} en "${actividad.nombre}".`,
-      variant: "success" as any,
-    });
   };
 
   // Estudiantes de la columna sin nota y sin N/A (para "No aplica a los que no tienen nota").
@@ -3596,13 +3590,13 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     return (
       <>
         {vacios.length > 0 && (
-          <DropdownMenuItem data-guia="notas.menu_no_aplica_columna" onClick={() => setConfirmNA({ actividad, ids: vacios, quitar: false })}>
+          <DropdownMenuItem data-guia="notas.menu_no_aplica_columna" onClick={() => aplicarNoAplica(actividad, vacios, false)}>
             <Ban className="w-4 h-4 mr-2" />
             No aplica a los que no tienen nota
           </DropdownMenuItem>
         )}
         {conNA.length > 0 && (
-          <DropdownMenuItem onClick={() => setConfirmNA({ actividad, ids: conNA, quitar: true })}>
+          <DropdownMenuItem onClick={() => aplicarNoAplica(actividad, conNA, true)}>
             <Undo2 className="w-4 h-4 mr-2" />
             Quitar No aplica a todos
           </DropdownMenuItem>
@@ -5920,24 +5914,6 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
       </Dialog>
 
       {/* Modal de confirmación para eliminar */}
-      <AlertDialog open={!!confirmNA} onOpenChange={(o) => { if (!o) setConfirmNA(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{confirmNA?.quitar ? "¿Quitar No aplica?" : "¿Marcar No aplica?"}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {confirmNA?.quitar
-                ? `Se quitará el No aplica a ${confirmNA?.ids.length} ${confirmNA?.ids.length === 1 ? "estudiante" : "estudiantes"} en "${confirmNA?.actividad.nombre}". Quedarán sin nota.`
-                : `Se marcarán ${confirmNA?.ids.length} ${confirmNA?.ids.length === 1 ? "estudiante" : "estudiantes"} sin nota como No aplica en "${confirmNA?.actividad.nombre}". Esa actividad no contará en su definitiva.`}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (confirmNA) aplicarNoAplica(confirmNA.actividad, confirmNA.ids, confirmNA.quitar); setConfirmNA(null); }}>
-              {confirmNA?.quitar ? "Quitar" : "Marcar No aplica"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
