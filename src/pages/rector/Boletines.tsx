@@ -322,8 +322,8 @@ const Boletines = () => {
               celdaC(wGrupo, g && g.nota != null ? `${fmt(g.nota)} ${(g.desempeno || "").toUpperCase()}` : "");
             }
           }
-          // H = definitiva de la habilitación; * = provisional (le faltan notas).
-          celdaC(wVal, f.val == null ? "" : `${fmt(f.val)}${f.habilitada ? " H" : ""}${f.provisional ? "*" : ""}`, true);
+          // H = definitiva de la habilitación.
+          celdaC(wVal, f.val == null ? "" : `${fmt(f.val)}${f.habilitada ? " H" : ""}`, true);
           celdaC(wDes, (f.desempeno || "").toUpperCase(), true);
           y += rh;
 
@@ -390,7 +390,6 @@ const Boletines = () => {
         // Convenciones de la columna de la nota, solo si este boletín las usa.
         const marcas = [
           est.filas.some((f) => f.habilitada) ? "H: nota después de la habilitación." : "",
-          est.filas.some((f) => f.provisional) ? "*: nota provisional, faltan notas del periodo." : "",
         ].filter(Boolean);
         if (marcas.length > 0) {
           saltoSiHaceFalta(4);
