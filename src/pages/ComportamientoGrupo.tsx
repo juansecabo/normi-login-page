@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiRequest } from "@/lib/apiClient";
 import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNormi";
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
@@ -17,8 +17,12 @@ type Estado = "guardando" | "guardado" | "error";
 
 const ComportamientoGrupo = () => {
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
   const [datos, setDatos] = useState<Respuesta | null>(null);
-  const [periodo, setPeriodo] = useState<number | null>(null);
+  // El periodo va en la barra de direcciones (?periodo=N): al actualizar se queda en el mismo.
+  const periodoUrl = parseInt(params.get("periodo") || "", 10);
+  const periodo = datos ? (periodoUrl >= 1 && periodoUrl <= datos.cortes ? periodoUrl : datos.periodo) : null;
+  const setPeriodo = (p: number) => setParams({ periodo: String(p) }, { replace: true });
   // Por periodo → por estudiante. Se cargan todos de una vez: cambiar de pestaña no espera.
   const [textosP, setTextosP] = useState<Record<number, Record<string, string>>>({});
   const [guardadosP, setGuardadosP] = useState<Record<number, Record<string, string>>>({});
@@ -31,7 +35,6 @@ const ComportamientoGrupo = () => {
     try {
       const r = await apiRequest<Respuesta>("/api/boletines/comportamiento");
       setDatos(r);
-      setPeriodo(r.periodo);
       setTextosP(r.textos || {});
       setGuardadosP(r.textos || {});
     } catch (e: any) {
