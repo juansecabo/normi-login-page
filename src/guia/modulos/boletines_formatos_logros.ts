@@ -220,6 +220,7 @@ export const BOLETINES_FORMATOS_LOGROS: Capacidad[] = [
     pasos: [
       { narracion: "Toca el aviso 'Ponte al día con tus notas' debajo de la barra verde (o abre la pantalla directamente).", accion: "navegar", ruta: "/boletines/ponte-al-dia" },
       { narracion: "En cada clase, escribe la nota que falta de cada estudiante y presiona Enter, o toca N/A si esa actividad no era para él.", accion: "escribir", ancla: "ponte_al_dia.casilla", campo: "nota", opcional: true },
+      { narracion: "Para poner la misma nota a los de abajo, toca la flecha hacia abajo junto a la nota: se llenan las casillas vacías hasta la primera ya resuelta.", accion: "click", ancla: "ponte_al_dia.completar_abajo", opcional: true },
       { narracion: "Si una actividad no cuenta, elige su grupo y toca 'Mover'.", accion: "click", ancla: "ponte_al_dia.no_cuentan", opcional: true },
       { narracion: "Al final, toca 'Marcar periodo completo' en cada clase.", accion: "click", ancla: "ponte_al_dia.cerrar" },
     ],

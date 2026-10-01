@@ -6,7 +6,7 @@ import { apiRequest } from "@/lib/apiClient";
 import { useColegioConfig } from "@/hooks/useColegioConfig";
 import { limpiarCachePendientes } from "@/components/BannerPendientesBoletines";
 import { Button } from "@/components/ui/button";
-import { Ban, Check, CheckCircle2, ExternalLink, Loader2, MoveRight, PartyPopper, AlertTriangle, Undo2 } from "lucide-react";
+import { ArrowDownToLine, Ban, Check, CheckCircle2, ExternalLink, Loader2, MoveRight, PartyPopper, AlertTriangle, Undo2 } from "lucide-react";
 
 /**
  * "Ponte al día para los boletines" (Juan 2026-10-01): una sola pantalla, por
@@ -90,16 +90,16 @@ const PonteAlDiaBoletines = () => {
     }
   };
 
-  const guardarNota = async (periodo: number, c: Clase, f: Faltante, ests: Est[], noAplica: boolean) => {
+  const guardarNota = async (periodo: number, c: Clase, f: Faltante, ests: Est[], noAplica: boolean, valorDirecto?: string) => {
     const k0 = `${claveC(periodo, c)}|${f.actividad}`;
     const claves = ests.map((e) => `${k0}|${e.id}`);
     let nota: number | null = null;
     let valor = "";
     if (!noAplica) {
-      valor = (valores[claves[0]] || "").replace(",", ".").trim();
+      valor = (valorDirecto ?? valores[claves[0]] ?? "").replace(",", ".").trim();
       const previa = hechas[claves[0]];
       if (!valor) { if (previa) deshacer(periodo, c, f, ests); return; }
-      if (previa?.tipo === "nota" && previa.valor === valor) return;
+      if (valorDirecto == null && previa?.tipo === "nota" && previa.valor === valor) return;
       nota = Number(valor);
       const min = Number(config.escala_min ?? 0), max = Number(config.escala_max ?? 5);
       if (!Number.isFinite(nota) || nota < min || nota > max) { ponerError(claves[0], `Entre ${min} y ${max}`); return; }
@@ -118,6 +118,24 @@ const PonteAlDiaBoletines = () => {
       setHechas((s) => { const n = { ...s }; for (const k of claves) { if (antes[k]) n[k] = antes[k]; else delete n[k]; } return n; });
       ponerError(claves[0], e?.body?.detail || "No se guardó");
     }
+  };
+
+  // "Completar hacia abajo" (como en la tabla de notas): copia la nota a las casillas
+  // vacías de abajo en esa actividad y se detiene en la primera que ya esté resuelta.
+  const abajoDe = (kf: string, f: Faltante, idx: number) => {
+    const out: Est[] = [];
+    for (let i = idx + 1; i < f.estudiantes.length; i++) {
+      if (hechas[`${kf}|${f.estudiantes[i].id}`]) break;
+      out.push(f.estudiantes[i]);
+    }
+    return out;
+  };
+  const completarAbajo = (periodo: number, c: Clase, f: Faltante, idx: number, valor: string) => {
+    const kf = `${claveC(periodo, c)}|${f.actividad}`;
+    const ests = abajoDe(kf, f, idx);
+    if (!ests.length) return;
+    setValores((s) => ({ ...s, ...Object.fromEntries(ests.map((e) => [`${kf}|${e.id}`, valor])) }));
+    guardarNota(periodo, c, f, ests, false, valor);
   };
 
   const mover = async (periodo: number, c: Clase, nc: NoCuenta) => {
@@ -270,9 +288,10 @@ const PonteAlDiaBoletines = () => {
                               )}
                             </div>
                             <div className="divide-y divide-border">
-                              {f.estudiantes.map((e) => {
+                              {f.estudiantes.map((e, idx) => {
                                 const k = `${kf}|${e.id}`;
                                 const h = hechas[k];
+                                const nAbajo = h?.tipo === "nota" ? abajoDe(kf, f, idx).length : 0;
                                 return (
                                   <div key={k} className={`flex items-center gap-2 px-3 py-2 transition-colors ${h ? "bg-green-50" : ""}`}>
                                     <span className="flex-1 text-sm text-foreground truncate">{e.nombre}</span>
@@ -290,6 +309,14 @@ const PonteAlDiaBoletines = () => {
                                         className="w-20 h-8 text-center border border-input rounded-md text-sm bg-background"
                                         data-guia="ponte_al_dia.casilla"
                                       />
+                                    )}
+                                    {nAbajo > 0 && h?.tipo === "nota" && (
+                                      <button onClick={() => completarAbajo(periodo, c, f, idx, h.valor)}
+                                        className="h-8 px-2.5 rounded-md border border-border text-xs text-muted-foreground hover:bg-muted inline-flex items-center gap-1"
+                                        title={`Completar hacia abajo: poner ${h.valor} a ${nAbajo === 1 ? "la casilla vacía de abajo" : `las ${nAbajo} casillas vacías de abajo`}`}
+                                        data-guia="ponte_al_dia.completar_abajo">
+                                        <ArrowDownToLine className="w-3.5 h-3.5" />
+                                      </button>
                                     )}
                                     {h ? (
                                       <button onClick={() => deshacer(periodo, c, f, [e])} disabled={!!ocupado[k]}
