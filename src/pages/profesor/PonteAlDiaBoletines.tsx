@@ -72,19 +72,21 @@ const PonteAlDiaBoletines = () => {
   const deshacer = async (periodo: number, c: Clase, f: Faltante, ests: Est[]) => {
     const k0 = `${claveC(periodo, c)}|${f.actividad}`;
     const claves = ests.map((e) => `${k0}|${e.id}`);
-    ocupar(claves, true);
+    // Al instante en pantalla; si el servidor falla, se devuelve.
+    const antes = Object.fromEntries(claves.filter((k) => hechas[k]).map((k) => [k, hechas[k]]));
+    const valoresAntes = Object.fromEntries(claves.filter((k) => valores[k] != null).map((k) => [k, valores[k]]));
+    setHechas((s) => { const n = { ...s }; claves.forEach((k) => delete n[k]); return n; });
+    setValores((s) => { const n = { ...s }; claves.forEach((k) => delete n[k]); return n; });
     try {
       await apiRequest("/api/boletines/mis-pendientes/nota", {
         method: "POST",
         body: JSON.stringify({ periodo, asignatura: c.asignatura, grado: c.grado, salon: c.salon, actividad: f.actividad, estudiantes: ests.map((e) => e.id), quitar: true }),
       });
-      setHechas((s) => { const n = { ...s }; claves.forEach((k) => delete n[k]); return n; });
-      setValores((s) => { const n = { ...s }; claves.forEach((k) => delete n[k]); return n; });
       limpiarCachePendientes();
     } catch (e: any) {
+      setHechas((s) => ({ ...s, ...antes }));
+      setValores((s) => ({ ...s, ...valoresAntes }));
       ponerError(claves[0], e?.body?.detail || "No se pudo deshacer");
-    } finally {
-      ocupar(claves, false);
     }
   };
 
@@ -102,19 +104,19 @@ const PonteAlDiaBoletines = () => {
       const min = Number(config.escala_min ?? 0), max = Number(config.escala_max ?? 5);
       if (!Number.isFinite(nota) || nota < min || nota > max) { ponerError(claves[0], `Entre ${min} y ${max}`); return; }
     }
-    ocupar(claves, true);
     claves.forEach((k) => ponerError(k));
+    // Al instante en pantalla; si el servidor falla, se devuelve.
+    const antes = Object.fromEntries(claves.map((k) => [k, hechas[k]]));
+    setHechas((s) => ({ ...s, ...Object.fromEntries(claves.map((k) => [k, noAplica ? { tipo: "na" } : { tipo: "nota", valor }])) }));
     try {
       await apiRequest("/api/boletines/mis-pendientes/nota", {
         method: "POST",
         body: JSON.stringify({ periodo, asignatura: c.asignatura, grado: c.grado, salon: c.salon, actividad: f.actividad, estudiantes: ests.map((e) => e.id), nota, no_aplica: noAplica }),
       });
-      setHechas((s) => ({ ...s, ...Object.fromEntries(claves.map((k) => [k, noAplica ? { tipo: "na" } : { tipo: "nota", valor }])) }));
       limpiarCachePendientes();
     } catch (e: any) {
+      setHechas((s) => { const n = { ...s }; for (const k of claves) { if (antes[k]) n[k] = antes[k]; else delete n[k]; } return n; });
       ponerError(claves[0], e?.body?.detail || "No se guardó");
-    } finally {
-      ocupar(claves, false);
     }
   };
 
