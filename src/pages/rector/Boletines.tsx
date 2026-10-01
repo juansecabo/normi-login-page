@@ -662,7 +662,7 @@ const Boletines = () => {
             <p className="text-sm text-foreground">
               {alertaActiva
                 ? <>Alerta <b>activa</b>: los profesores con pendientes del {nombreCorteLargo(periodo).toLowerCase()} ven un aviso para ponerse al día.</>
-                : <>Activa una alerta para que los profesores con pendientes del {nombreCorteLargo(periodo).toLowerCase()} vean un aviso y lo resuelvan en una sola pantalla.</>}
+                : <>Activa una alerta para que los profesores con pendientes del {nombreCorteLargo(periodo).toLowerCase()} vean un aviso y lo resuelvan en una sola pantalla. Al activarla, a cada uno le llega un WhatsApp con el link.</>}
               {inconsistencias && inconsistencias.length > 0 && <span className="text-muted-foreground"> ({inconsistencias.length} profesor{inconsistencias.length > 1 ? "es" : ""} con pendientes)</span>}
             </p>
             <Button size="sm" variant={alertaActiva ? "outline" : "default"} onClick={cambiarAlerta} disabled={cambiandoAlerta} className="gap-1 shrink-0" data-guia="boletines.boton_alerta">

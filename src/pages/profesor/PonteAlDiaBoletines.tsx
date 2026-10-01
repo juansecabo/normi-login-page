@@ -4,7 +4,8 @@ import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNorm
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 import { apiRequest } from "@/lib/apiClient";
 import { useColegioConfig } from "@/hooks/useColegioConfig";
-import { limpiarCachePendientes } from "@/components/BannerPendientesBoletines";
+import { limpiarCachePendientes, RUTA_PONTE_AL_DIA } from "@/components/BannerPendientesBoletines";
+import { getSession } from "@/hooks/useSession";
 import { Button } from "@/components/ui/button";
 import { ArrowDownToLine, Ban, Check, CheckCircle2, ExternalLink, Loader2, MoveRight, PartyPopper, AlertTriangle, Undo2 } from "lucide-react";
 
@@ -51,7 +52,11 @@ const PonteAlDiaBoletines = () => {
       setError(e?.body?.detail || e?.message || "No se pudo cargar lo que te falta.");
     }
   }, []);
-  useEffect(() => { cargar(); }, [cargar]);
+  // Sin sesión (llegó por el link del WhatsApp): login y, al entrar, de vuelta aquí.
+  useEffect(() => {
+    if (!getSession().id) { navigate(`/?redirect=${encodeURIComponent(RUTA_PONTE_AL_DIA)}`, { replace: true }); return; }
+    cargar();
+  }, [cargar, navigate]);
 
   const ocupar = (claves: string[], si: boolean) =>
     setOcupado((s) => { const n = { ...s }; claves.forEach((k) => { if (si) n[k] = true; else delete n[k]; }); return n; });
@@ -215,7 +220,7 @@ const PonteAlDiaBoletines = () => {
           {datos && totalInicial > 0 && (
             <div className="sticky top-0 z-30 bg-card rounded-lg shadow-soft px-5 py-3 border border-border">
               <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                <span className="font-medium text-foreground">{total === 0 ? "¡Todo resuelto!" : `Te ${total === 1 ? "falta 1" : `faltan ${total}`}`}</span>
+                <span className="font-medium text-foreground">{total === 0 ? "¡Todo resuelto!" : `Te ${total === 1 ? "falta 1 pendiente" : `faltan ${total} pendientes`}`}</span>
                 <span>{progreso}%</span>
               </div>
               <div className="h-2.5 rounded-full bg-muted overflow-hidden">

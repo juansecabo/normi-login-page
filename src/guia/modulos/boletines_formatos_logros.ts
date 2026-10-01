@@ -195,7 +195,7 @@ export const BOLETINES_FORMATOS_LOGROS: Capacidad[] = [
     id: "boletines.alerta_profesores",
     titulo: "Activar la alerta para que los profesores se pongan al día",
     descripcion:
-      "Desde Boletines → Inconsistencias del periodo, activar una alerta del periodo: cada profesor con notas faltantes, actividades que no cuentan o el periodo sin marcar como completo ve un aviso llamativo debajo de la barra verde que lo lleva a una pantalla donde resuelve todo. Se desactiva con el mismo botón.",
+      "Desde Boletines → Inconsistencias del periodo, activar una alerta del periodo: cada profesor con notas faltantes, actividades que no cuentan o el periodo sin marcar como completo ve un aviso llamativo debajo de la barra verde que lo lleva a una pantalla donde resuelve todo; además le llega un WhatsApp con el link directo. Se desactiva con el mismo botón.",
     categoria: CATEGORIA,
     roles: [...BOLETINES_ROLES],
     ruta: "/boletines",
