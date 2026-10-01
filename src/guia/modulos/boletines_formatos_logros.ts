@@ -174,6 +174,13 @@ export const BOLETINES_FORMATOS_LOGROS: Capacidad[] = [
         ancla: "boletines.lista_estudiantes",
       },
       {
+        narracion: "Si hace falta, elige el tamaño de papel (Carta, Oficio, Legal o A4); el boletín se arma para ese tamaño sin cortar asignaturas entre hojas.",
+        accion: "seleccionar",
+        ancla: "boletines.selector_papel",
+        campo: "papel",
+        opcional: true,
+      },
+      {
         narracion: "Toca 'Descargar PDF del curso' para generar el archivo con todos los boletines.",
         accion: "click",
         ancla: "boletines.boton_pdf_curso",

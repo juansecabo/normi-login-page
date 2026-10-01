@@ -63,6 +63,15 @@ interface DatosBoletin {
   director: { nombre: string; genero: string | null } | null;
 }
 
+// Tamaños de papel del boletín (mm). Legal = el del informe SISNOTAS de referencia.
+const PAPELES: Record<string, { label: string; w: number; h: number }> = {
+  carta: { label: "Carta (21,6 × 27,9 cm)", w: 215.9, h: 279.4 },
+  oficio: { label: "Oficio (21,6 × 33 cm)", w: 215.9, h: 330.2 },
+  legal: { label: "Legal (21,6 × 35,6 cm)", w: 215.9, h: 355.6 },
+  a4: { label: "A4 (21 × 29,7 cm)", w: 210, h: 297 },
+};
+const PAPEL_KEY = "boletin_papel";
+
 const ORDINAL: Record<number, string> = { 1: "Primero", 2: "Segundo", 3: "Tercero", 4: "Cuarto" };
 const GRADO_ORDEN = ["Párvulo", "Prejardín", "Jardín", "Transición", "Primero", "Segundo", "Tercero", "Cuarto", "Quinto", "Sexto", "Séptimo", "Octavo", "Noveno", "Décimo", "Undécimo"];
 
@@ -100,6 +109,10 @@ const Boletines = () => {
   const [cargando, setCargando] = useState(false);
   const [datos, setDatos] = useState<DatosBoletin | null>(null);
   const [generando, setGenerando] = useState(false);
+  const [papelId, setPapelId] = useState<string>(() => {
+    try { const v = localStorage.getItem(PAPEL_KEY) || ""; return PAPELES[v] ? v : "legal"; } catch { return "legal"; }
+  });
+  const elegirPapel = (v: string) => { setPapelId(v); try { localStorage.setItem(PAPEL_KEY, v); } catch { /* sin almacenamiento */ } };
 
   useEffect(() => {
     const s = getSession();
@@ -180,10 +193,16 @@ const Boletines = () => {
     setGenerando(true);
     try {
       const { default: jsPDF } = await import("jspdf");
-      // Oficio / US Legal (216 × 356 mm), igual que el informe SISNOTAS de referencia.
-      const pdf = new jsPDF("p", "mm", "legal");
+      // Tamaño de papel elegido (por defecto Legal 216 × 356 mm, el del informe SISNOTAS).
+      // TODO el armado sale de W y H: nada de medidas fijas de una sola hoja.
+      const papel = PAPELES[papelId] || PAPELES.legal;
+      const pdf = new jsPDF("p", "mm", [papel.w, papel.h]);
       registerBoletinFonts(pdf); // tipografía condensada idéntica al informe SISNOTAS
-      const W = 216, MX = 10;
+      const W = papel.w, H = papel.h, MX = 10;
+      const LIMITE = H - 16;   // nada se dibuja por debajo de esta línea
+      const PIE_Y = H - 6;     // "Generado con Notas Normi"
+      const ANCHO = W - 2 * MX;
+      const k = ANCHO / 196;   // los anchos del encabezado se diseñaron para 196 mm útiles
       const fmt = (n: number | null) => (n == null ? "" : n.toFixed(1));
       const hoy = new Date().toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" });
       const escudo = datos.colegio.logo_url ? await escudoAPng(datos.colegio.logo_url) : null;
@@ -217,12 +236,13 @@ const Boletines = () => {
         const filaInfo = (celdas: Array<{ label: string; valor: string; w: number }>, yy: number) => {
           let x = MX;
           for (const c of celdas) {
-            pdf.rect(x, yy, c.w, 8);
+            const w = c.w * k;
+            pdf.rect(x, yy, w, 8);
             pdf.setFont("HelveticaCond", "bold").setFontSize(5.6);
             pdf.text(c.label, x + 1, yy + 2.6);
             pdf.setFont("ArialNarrow", "normal").setFontSize(7.5);
-            pdf.text(c.valor, x + 1, yy + 6.4);
-            x += c.w;
+            pdf.text(pdf.splitTextToSize(c.valor, w - 2)[0] || "", x + 1, yy + 6.4);
+            x += w;
           }
         };
         filaInfo([
@@ -245,19 +265,19 @@ const Boletines = () => {
       const cols = datos.columnas || [];
       const wIH = 8, wFA = 8, wVal = 10, wDes = 22;
       const wGrupo = cols.length > 0 ? 22 : 0;
-      const wNombre = W - 2 * MX - wIH - wFA - wVal - wDes - cols.length * wGrupo;
+      const wNombre = ANCHO - wIH - wFA - wVal - wDes - cols.length * wGrupo;
+      const TH = 9; // alto de la cabecera de la tabla
 
       const cabeceraTabla = (y: number): number => {
         // Fila de cabecera con fondo gris (RGB 240 = 0.941), igual al informe SISNOTAS.
         pdf.setFillColor(240, 240, 240);
         pdf.setFont("HelveticaCond", "bold").setFontSize(6.4);
         let x = MX;
-        const th = 9;
         const celda = (w: number, texto: string, sub?: string) => {
           // pdf.text() deja el fill en NEGRO (color del glifo); re-fijamos el gris
           // antes de CADA rect o las celdas siguientes salen negras.
           pdf.setFillColor(240, 240, 240);
-          pdf.rect(x, y, w, th, "FD");
+          pdf.rect(x, y, w, TH, "FD");
           if (sub) {
             pdf.text(texto, x + w / 2, y + 3.6, { align: "center" });
             pdf.text(sub, x + w / 2, y + 6.8, { align: "center" });
@@ -273,36 +293,114 @@ const Boletines = () => {
         celda(wVal, "Val");
         celda(wDes, "Desempeño");
         pdf.setFillColor(255, 255, 255);
-        return y + th;
+        return y + TH;
+      };
+
+      // Alto útil de una hoja nueva (encabezado del estudiante + cabecera de la tabla).
+      const Y_INICIO = 51 + TH;
+      const CAPACIDAD = LIMITE - Y_INICIO;
+      const LINEA = 2.9; // interlineado de logros, comentarios y comportamiento
+
+      // Medidas de los bloques de una asignatura (mismas fuentes con que se dibujan).
+      const lineasDesglose = (f: FilaBol): string[] => {
+        if (!((cols.length === 0 || f.desglose_propio) && f.grupos && f.grupos.length > 0)) return [];
+        const linea = f.grupos.map((g) => {
+          const pctTxt = g.pct != null && (g.pct as unknown) !== "" ? ` (${g.pct}%)` : "";
+          return `${g.nombre}${pctTxt}: ${g.nota != null ? fmt(g.nota) : "—"}`;
+        }).join("   ·   ");
+        pdf.setFont("helvetica", "italic").setFontSize(5.8);
+        return pdf.splitTextToSize(linea, ANCHO - 6);
+      };
+      const parrafosLogros = (f: FilaBol): string[][] => {
+        pdf.setFont("HelveticaCond", "normal").setFontSize(6.2);
+        // Cada renglón que el profesor escribió es un párrafo propio: justificar un texto
+        // con saltos de línea estiraba los renglones cortos a todo el ancho.
+        const parrafos = f.logros.flatMap((l) => {
+          const partes = l.split(/\r?\n/).map((t) => t.trim()).filter(Boolean);
+          return partes.map((t, i) => (i === 0 ? `» ${t}` : t));
+        });
+        return parrafos.map((p) => pdf.splitTextToSize(p, ANCHO - 4));
+      };
+      const comentarioPartes = (f: FilaBol) => {
+        if (!f.comentario) return null;
+        const etiqueta = "Comentario: ";
+        pdf.setFont("HelveticaCond", "bold").setFontSize(6.2);
+        const wEt = pdf.getTextWidth(etiqueta);
+        pdf.setFont("HelveticaCond", "normal");
+        const primera: string = pdf.splitTextToSize(f.comentario, ANCHO - 4 - wEt)[0] || "";
+        const resto = f.comentario.slice(primera.length).trim();
+        const restoLineas: string[] = resto ? pdf.splitTextToSize(resto, ANCHO - 4) : [];
+        return { etiqueta, wEt, primera, restoLineas, alto: (1 + restoLineas.length) * LINEA + 2 };
+      };
+      const altoAsignatura = (f: FilaBol): number => {
+        const d = lineasDesglose(f);
+        const lg = parrafosLogros(f);
+        const cm = comentarioPartes(f);
+        return 5.4
+          + (d.length ? d.length * 3 + 1 : 0)
+          + (lg.length ? lg.reduce((s, w) => s + w.length, 0) * LINEA + 2 : 0)
+          + (cm ? cm.alto : 0);
       };
 
       for (const est of lista) {
         paginaEst = 0;                          // cada estudiante reinicia en Pág. 1
-        if (hojaEmitida) pdf.addPage();
+        if (hojaEmitida) pdf.addPage([papel.w, papel.h], "p");
         hojaEmitida = true;
         let y = encabezado(est);
         y = cabeceraTabla(y);
 
-        // conTabla=false para lo que va DESPUÉS de las asignaturas (marcas, comportamiento,
-        // pie): en la hoja nueva no se repite el encabezado de la tabla sin filas debajo.
+        // REGLA DE CORTE (para cualquier tamaño de papel): un bloque que no cabe en lo
+        // que queda de la hoja pasa entero a la siguiente, con el encabezado del
+        // estudiante. conTabla=false para lo que va DESPUÉS de las asignaturas (marcas,
+        // comportamiento, pie): en la hoja nueva no se repite la cabecera sin filas.
         const saltoSiHaceFalta = (alto: number, conTabla = true) => {
-          if (y + alto > 340) {
-            pdf.addPage();
+          if (y + alto > LIMITE) {
+            pdf.addPage([papel.w, papel.h], "p");
             y = encabezado(est);
             if (conTabla) y = cabeceraTabla(y);
           }
         };
+        // Recuadro de párrafos (logros, comportamiento). Si no cabe entero en lo que
+        // queda, pasa entero a la hoja siguiente; si es más alto que una hoja completa,
+        // se parte ENTRE párrafos (nunca a mitad de uno), cada trozo en su recuadro.
+        const cajaParrafos = (wrapped: string[][], conTabla: boolean) => {
+          const altoDe = (ps: string[][]) => ps.reduce((s, w) => s + w.length, 0) * LINEA + 2;
+          const dibujar = (ps: string[][]) => {
+            const alto = altoDe(ps);
+            pdf.rect(MX, y, ANCHO, alto);
+            pdf.setFont("HelveticaCond", "normal").setFontSize(6.2);
+            let ty = y + 2.8;
+            for (const w of ps) {
+              // justify estira todas las líneas menos la última de cada párrafo.
+              pdf.text(w.join(" "), MX + 2, ty, { maxWidth: ANCHO - 4, align: "justify" });
+              ty += w.length * LINEA;
+            }
+            y += alto;
+          };
+          if (altoDe(wrapped) <= CAPACIDAD) { saltoSiHaceFalta(altoDe(wrapped), conTabla); dibujar(wrapped); return; }
+          let trozo: string[][] = [];
+          for (const w of wrapped) {
+            if (trozo.length && y + altoDe([...trozo, w]) > LIMITE) { dibujar(trozo); trozo = []; saltoSiHaceFalta(LIMITE, conTabla); }
+            trozo.push(w);
+          }
+          if (trozo.length) { saltoSiHaceFalta(altoDe(trozo), conTabla); dibujar(trozo); }
+        };
 
         for (const f of est.filas) {
+          // La asignatura completa (fila + desglose + logros + comentario) va JUNTA: si
+          // no cabe en lo que queda pero sí en una hoja nueva, pasa entera. Así nunca
+          // queda la fila de una materia al final de una hoja y sus logros en la otra.
+          const altoTotal = altoAsignatura(f);
+          if (altoTotal <= CAPACIDAD) saltoSiHaceFalta(altoTotal);
+          else saltoSiHaceFalta(5.4 + 12); // muy larga: al menos la fila con algo debajo
+
           // ── Fila principal ──
-          const esArea = f.tipo === "area";
           const nombreTxt = f.esComponente && f.peso != null ? `${f.nombre} (${f.peso}%)` : f.nombre;
-          saltoSiHaceFalta(6);
           let x = MX;
           const rh = 5.4;
           pdf.setFont(f.esComponente ? "ArialNarrow" : "HelveticaCond", f.esComponente ? "normal" : "bold").setFontSize(6.6);
           pdf.rect(x, y, wNombre, rh);
-          pdf.text((f.esComponente ? nombreTxt : nombreTxt.toUpperCase()).slice(0, 60), x + 1, y + 3.7);
+          pdf.text(pdf.splitTextToSize(f.esComponente ? nombreTxt : nombreTxt.toUpperCase(), wNombre - 2)[0] || "", x + 1, y + 3.7);
           x += wNombre;
           const celdaC = (w: number, texto: string, bold = false) => {
             pdf.rect(x, y, w, rh);
@@ -325,66 +423,31 @@ const Boletines = () => {
 
           // Desglose propio cuando NO hay columnas uniformes: grupos + actividades
           // sueltas, cada uno con su % (si no tiene %, va sin paréntesis = equitativo).
-          if ((cols.length === 0 || f.desglose_propio) && f.grupos && f.grupos.length > 0) {
-            const linea = f.grupos.map((g) => {
-              const pctTxt = g.pct != null && g.pct !== "" ? ` (${g.pct}%)` : "";
-              return `${g.nombre}${pctTxt}: ${g.nota != null ? fmt(g.nota) : "—"}`;
-            }).join("   ·   ");
-            pdf.setFont("helvetica", "italic").setFontSize(5.8);
-            // Se ajusta en varias líneas si hay muchos ítems (ej. 8 actividades).
-            const wrap = pdf.splitTextToSize(linea, W - 2 * MX - 6);
-            const alto = wrap.length * 3 + 1;
+          const wrapDesglose = lineasDesglose(f);
+          if (wrapDesglose.length) {
+            const alto = wrapDesglose.length * 3 + 1;
             saltoSiHaceFalta(alto);
-            pdf.rect(MX, y, W - 2 * MX, alto);
-            pdf.text(wrap, MX + 3, y + 2.7);
+            pdf.setFont("helvetica", "italic").setFontSize(5.8);
+            pdf.rect(MX, y, ANCHO, alto);
+            pdf.text(wrapDesglose, MX + 3, y + 2.7);
             y += alto;
           }
 
           // Logros (viñetas ») — TODOS en UN solo recuadro y con el texto
           // JUSTIFICADO a ambos márgenes (réplica exacta del informe SISNOTAS).
-          if (f.logros.length > 0) {
-            pdf.setFont("HelveticaCond", "normal").setFontSize(6.2);
-            const anchoTexto = W - 2 * MX - 4;
-            // Cada renglón que el profesor escribió es un párrafo propio: justificar un texto
-            // con saltos de línea estiraba los renglones cortos a todo el ancho.
-            const parrafos = f.logros.flatMap((l) => {
-              const partes = l.split(/\r?\n/).map((t) => t.trim()).filter(Boolean);
-              return partes.map((t, i) => (i === 0 ? `» ${t}` : t));
-            });
-            const wrapped = parrafos.map((p) => pdf.splitTextToSize(p, anchoTexto));
-            const totalLineas = wrapped.reduce((s, w) => s + w.length, 0);
-            const alto = totalLineas * 2.9 + 2;
-            saltoSiHaceFalta(alto);
-            pdf.rect(MX, y, W - 2 * MX, alto);
-            let ty = y + 2.8;
-            for (let i = 0; i < parrafos.length; i++) {
-              // justify estira todas las líneas menos la última de cada párrafo.
-              pdf.text(parrafos[i], MX + 2, ty, { maxWidth: anchoTexto, align: "justify" });
-              ty += wrapped[i].length * 2.9;
-            }
-            y += alto;
-          }
+          if (f.logros.length > 0) cajaParrafos(parrafosLogros(f), true);
 
           // Comentario del profesor en la definitiva, dentro del espacio de la asignatura.
-          if (f.comentario) {
-            const anchoTexto = W - 2 * MX - 4;
-            const etiqueta = "Comentario: ";
+          const cm = comentarioPartes(f);
+          if (cm) {
+            saltoSiHaceFalta(cm.alto);
+            pdf.rect(MX, y, ANCHO, cm.alto);
             pdf.setFont("HelveticaCond", "bold").setFontSize(6.2);
-            const wEt = pdf.getTextWidth(etiqueta);
+            pdf.text(cm.etiqueta, MX + 2, y + 2.8);
             pdf.setFont("HelveticaCond", "normal");
-            // Primera línea a continuación de la etiqueta; el resto, a todo el ancho.
-            const primera: string = pdf.splitTextToSize(f.comentario, anchoTexto - wEt)[0] || "";
-            const resto = f.comentario.slice(primera.length).trim();
-            const restoLineas: string[] = resto ? pdf.splitTextToSize(resto, anchoTexto) : [];
-            const alto = (1 + restoLineas.length) * 2.9 + 2;
-            saltoSiHaceFalta(alto);
-            pdf.rect(MX, y, W - 2 * MX, alto);
-            pdf.setFont("HelveticaCond", "bold");
-            pdf.text(etiqueta, MX + 2, y + 2.8);
-            pdf.setFont("HelveticaCond", "normal");
-            pdf.text(primera, MX + 2 + wEt, y + 2.8);
-            if (restoLineas.length) pdf.text(restoLineas, MX + 2, y + 2.8 + 2.9);
-            y += alto;
+            pdf.text(cm.primera, MX + 2 + cm.wEt, y + 2.8);
+            if (cm.restoLineas.length) pdf.text(cm.restoLineas, MX + 2, y + 2.8 + LINEA);
+            y += cm.alto;
           }
         }
 
@@ -401,62 +464,56 @@ const Boletines = () => {
 
         // ── COMPORTAMIENTO Y DISCIPLINA / OBSERVACIONES: el texto que escribió el
         // director de grupo (viñetas », justificado como los logros); si no escribió
-        // nada, queda el recuadro en blanco para escribir a mano.
+        // nada, queda el recuadro en blanco para escribir a mano. El título va siempre
+        // pegado a su recuadro (o al menos a su primer párrafo).
         {
           const comp = est.comportamiento || [];
           pdf.setFont("HelveticaCond", "normal").setFontSize(6.2);
-          const anchoTexto = W - 2 * MX - 4;
-          const parrafos = comp.map((l) => `» ${l}`);
-          const wrapped = parrafos.map((t) => pdf.splitTextToSize(t, anchoTexto));
-          const altoTexto = comp.length > 0 ? wrapped.reduce((s, w) => s + w.length, 0) * 2.9 + 2 : 18;
-          saltoSiHaceFalta(altoTexto + 9, false);
+          const wrapped = comp.map((l) => pdf.splitTextToSize(`» ${l}`, ANCHO - 4));
+          const altoTexto = comp.length > 0 ? wrapped.reduce((s, w) => s + w.length, 0) * LINEA + 2 : 18;
+          const altoMinimo = comp.length > 0 ? wrapped[0].length * LINEA + 2 : 18;
+          // Si todo cabe en una hoja, título y recuadro van juntos; si no, el título con su primer párrafo.
+          saltoSiHaceFalta(altoTexto + 9 <= CAPACIDAD ? altoTexto + 9 : altoMinimo + 9, false);
           y += 4;
           pdf.setFillColor(240, 240, 240);
-          pdf.rect(MX, y, W - 2 * MX, 5, "FD");
+          pdf.rect(MX, y, ANCHO, 5, "FD");
           pdf.setFillColor(255, 255, 255);
           pdf.setFont("HelveticaCond", "bold").setFontSize(6.4);
           pdf.text((datos.comportamiento_titulo || "OBSERVACIONES").toUpperCase(), MX + 2, y + 3.4);
           y += 5;
-          pdf.rect(MX, y, W - 2 * MX, altoTexto);
-          if (comp.length > 0) {
-            pdf.setFont("HelveticaCond", "normal").setFontSize(6.2);
-            let ty = y + 2.8;
-            for (let i = 0; i < parrafos.length; i++) {
-              pdf.text(parrafos[i], MX + 2, ty, { maxWidth: anchoTexto, align: "justify" });
-              ty += wrapped[i].length * 2.9;
-            }
-          }
-          y += altoTexto;
+          if (comp.length > 0) cajaParrafos(wrapped, false);
+          else { pdf.rect(MX, y, ANCHO, 18); y += 18; }
         }
 
-        // ── Pie: leyenda de escala + firma ──
-        saltoSiHaceFalta(34, false);
-        y += 5;
-        pdf.setFontSize(5.6);
+        // ── Pie: leyenda de escala + firma. Se mide con su alto REAL (cantidad de
+        // niveles y criterios largos) y va siempre entero en la misma hoja.
         const ordRangos = [...datos.escala.rangos].sort((a, b) => b.min - a.min);
-        // La columna de criterios se ajusta al criterio más largo en una sola
-        // línea (+respiro), sin pasarse del ancho útil: ni desborde ni vacío.
         const wEsc = 22, wNac = 30;
-        pdf.setFont("HelveticaCond", "normal");
+        pdf.setFont("HelveticaCond", "normal").setFontSize(5.6);
         const wCriTexto = Math.max(0, ...ordRangos.map((r) => pdf.getTextWidth(criterioDeRango(r))));
         // Hasta el ancho útil que deja la firma; un criterio largo se parte en varias líneas.
-        const wCri = Math.min((W - 2 * MX) - wEsc - wNac - 66, wCriTexto + 3);
-        pdf.setFont("HelveticaCond", "bold");
+        const wCri = Math.max(30, Math.min(ANCHO - wEsc - wNac - 66, wCriTexto + 3));
+        const filasEscala = ordRangos.map((r) => {
+          const lineasCri: string[] = pdf.splitTextToSize(criterioDeRango(r), wCri - 2);
+          return { r, lineasCri, h: Math.max(3.4, lineasCri.length * 2.4 + 1) };
+        });
+        const altoPie = 5 + 3.6 + filasEscala.reduce((s, f) => s + f.h, 0) + 3;
+        saltoSiHaceFalta(altoPie, false);
+        y += 5;
+        pdf.setFont("HelveticaCond", "bold").setFontSize(5.6);
         pdf.rect(MX, y, wEsc, 3.6); pdf.rect(MX + wEsc, y, wNac, 3.6); pdf.rect(MX + wEsc + wNac, y, wCri, 3.6);
         pdf.text("Escala Numérica", MX + 1, y + 2.5);
         pdf.text("Escala Nacional", MX + wEsc + 1, y + 2.5);
         pdf.text("Criterios de Evaluación", MX + wEsc + wNac + 1, y + 2.5);
         let ly = y + 3.6;
         pdf.setFont("HelveticaCond", "normal");
-        for (const r of ordRangos) {
+        for (const { r, lineasCri, h } of filasEscala) {
           const maxTx = r.max > datos.escala.max ? datos.escala.max : r.max;
-          const lineasCri: string[] = pdf.splitTextToSize(criterioDeRango(r), wCri - 2);
-          const hFila = Math.max(3.4, lineasCri.length * 2.4 + 1);
-          pdf.rect(MX, ly, wEsc, hFila); pdf.rect(MX + wEsc, ly, wNac, hFila); pdf.rect(MX + wEsc + wNac, ly, wCri, hFila);
+          pdf.rect(MX, ly, wEsc, h); pdf.rect(MX + wEsc, ly, wNac, h); pdf.rect(MX + wEsc + wNac, ly, wCri, h);
           pdf.text(`${r.min.toFixed(1)} a ${maxTx.toFixed(1)}`, MX + 1, ly + 2.4);
           pdf.text(`Desempeño ${r.label}`, MX + wEsc + 1, ly + 2.4);
           pdf.text(lineasCri, MX + wEsc + wNac + 1, ly + 2.4);
-          ly += hFila;
+          ly += h;
         }
         if (datos.director) {
           const anchoFirma = 60;
@@ -475,8 +532,9 @@ const Boletines = () => {
           pdf.setFontSize(6.4);
           pdf.text(cargoSegunGenero("Director(a) de Grupo", datos.director.genero), cx, ly + 1.6, { align: "center" });
         }
+        // Pie de la última hoja de este estudiante.
         pdf.setFont("HelveticaCond", "normal").setFontSize(5.2);
-        pdf.text("Generado con Notas Normi — notasnormi.com", MX, 350);
+        pdf.text("Generado con Notas Normi — notasnormi.com", MX, PIE_Y);
       }
 
       const nombreArchivo = soloEstudiante
@@ -542,10 +600,16 @@ const Boletines = () => {
                     ? `columnas: ${datos.columnas.map((c) => `${c.nombre} ${c.pct}%`).join(" / ")}`
                     : "sin grupos uniformes (cada asignatura imprime su propio desglose)"}
                 </p>
+                <div className="flex items-center gap-2 flex-wrap">
+                <select value={papelId} onChange={(e) => elegirPapel(e.target.value)} title="Tamaño de papel"
+                  className="px-3 py-2 border border-input rounded-md text-sm bg-background cursor-pointer" data-guia="boletines.selector_papel">
+                  {Object.entries(PAPELES).map(([id, p]) => <option key={id} value={id}>{p.label}</option>)}
+                </select>
                 <Button onClick={() => generarPdf()} disabled={generando} className="gap-2" data-guia="boletines.boton_pdf_curso">
                   {generando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                   Descargar PDF del curso
                 </Button>
+                </div>
               </div>
               <div className="border border-border rounded-lg divide-y divide-border max-h-[50vh] overflow-auto" data-guia="boletines.lista_estudiantes">
                 {datos.estudiantes.map((e) => (
