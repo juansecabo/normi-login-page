@@ -348,8 +348,7 @@ const Boletines = () => {
             // Cada renglón que el profesor escribió es un párrafo propio: justificar un texto
             // con saltos de línea estiraba los renglones cortos a todo el ancho.
             const parrafos = f.logros.flatMap((l) => {
-              const partes = l.split(/?
-/).map((t) => t.trim()).filter(Boolean);
+              const partes = l.split(/\r?\n/).map((t) => t.trim()).filter(Boolean);
               return partes.map((t, i) => (i === 0 ? `» ${t}` : t));
             });
             const wrapped = parrafos.map((p) => pdf.splitTextToSize(p, anchoTexto));
