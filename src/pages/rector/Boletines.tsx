@@ -73,6 +73,8 @@ const PAPELES: Record<string, { label: string; w: number; h: number }> = {
 const PAPEL_KEY = "boletin_papel";
 
 const ORDINAL: Record<number, string> = { 1: "Primero", 2: "Segundo", 3: "Tercero", 4: "Cuarto" };
+// Delante de "periodo" va apocopado: "tercer periodo", no "tercero periodo".
+const ORDINAL_AP: Record<number, string> = { 1: "Primer", 2: "Segundo", 3: "Tercer", 4: "Cuarto" };
 const GRADO_ORDEN = ["Párvulo", "Prejardín", "Jardín", "Transición", "Primero", "Segundo", "Tercero", "Cuarto", "Quinto", "Sexto", "Séptimo", "Octavo", "Noveno", "Décimo", "Undécimo"];
 
 // Criterio de cada nivel (leyenda al pie): el que escribió el colegio o el estándar.
@@ -105,7 +107,7 @@ const Boletines = () => {
   const esq = useEsquemaGrado(grado);
   // "Primero" (periodos, como siempre) o "Primer semestre" (niveles por semestres).
   const nombreCorte = (n: number) => (esq.esquema === "semestres" ? etiquetaCorteOrdinal(esq, n) : ORDINAL[n]);
-  const nombreCorteLargo = (n: number) => (esq.esquema === "semestres" ? etiquetaCorteOrdinal(esq, n) : `${ORDINAL[n]} periodo`);
+  const nombreCorteLargo = (n: number) => (esq.esquema === "semestres" ? etiquetaCorteOrdinal(esq, n) : `${ORDINAL_AP[n]} periodo`);
   const [cargando, setCargando] = useState(false);
   const [datos, setDatos] = useState<DatosBoletin | null>(null);
   const [generando, setGenerando] = useState(false);
@@ -733,7 +735,7 @@ const Boletines = () => {
           <p className="text-sm text-muted-foreground">
             {confirmNotif?.profesor && (
               <>{cargoSegunGenero("Profesor(a)", confirmNotif.profesor.genero)} <span className="font-medium text-foreground">{confirmNotif.profesor.nombre}</span> recibirá
-              el detalle de sus {confirmNotif.items.length} planilla{confirmNotif.items.length > 1 ? "s" : ""} pendiente{confirmNotif.items.length > 1 ? "s" : ""} del {ORDINAL[periodo].toLowerCase()} periodo.</>
+              el detalle de sus {confirmNotif.items.length} planilla{confirmNotif.items.length > 1 ? "s" : ""} pendiente{confirmNotif.items.length > 1 ? "s" : ""} del {ORDINAL_AP[periodo].toLowerCase()} periodo.</>
             )}
           </p>
           <DialogFooter>
