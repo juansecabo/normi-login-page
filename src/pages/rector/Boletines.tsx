@@ -658,7 +658,7 @@ const Boletines = () => {
 
           {/* Alerta a profesores: banner de neón en la plataforma de cada profesor con
               pendientes y la pantalla "Ponte al día" para resolverlo todo. */}
-          <div className={`mb-4 rounded-lg border p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${alertaActiva ? "border-fuchsia-300 bg-fuchsia-50" : "border-border bg-muted/30"}`} data-guia="boletines.alerta_profesores">
+          <div className={`mb-4 rounded-lg border p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${alertaActiva ? "border-green-300 bg-green-50" : "border-border bg-muted/30"}`} data-guia="boletines.alerta_profesores">
             <p className="text-sm text-foreground">
               {alertaActiva
                 ? <>Alerta <b>activa</b>: los profesores con pendientes del {nombreCorteLargo(periodo).toLowerCase()} ven un aviso para ponerse al día.</>

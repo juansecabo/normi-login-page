@@ -216,7 +216,7 @@ export const BOLETINES_FORMATOS_LOGROS: Capacidad[] = [
     roles: ["profesor"],
     ruta: "/boletines/ponte-al-dia",
     endpoint: "GET /api/boletines/mis-pendientes",
-    sinonimos: ["ponerme al día", "qué notas me faltan", "notas pendientes para los boletines", "el aviso rosado de los boletines"],
+    sinonimos: ["ponerme al día", "qué notas me faltan", "notas pendientes para los boletines", "el aviso verde de los boletines"],
     pasos: [
       { narracion: "Toca el aviso 'Ponte al día con tus notas' debajo de la barra verde (o abre la pantalla directamente).", accion: "navegar", ruta: "/boletines/ponte-al-dia" },
       { narracion: "En cada clase, escribe la nota que falta de cada estudiante y presiona Enter, o toca N/A si esa actividad no era para él.", accion: "escribir", ancla: "ponte_al_dia.casilla", campo: "nota", opcional: true },
