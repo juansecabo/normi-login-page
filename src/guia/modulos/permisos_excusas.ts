@@ -212,7 +212,7 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
     id: "permisos_excusas.registrar_falta_uniforme",
     titulo: "Registrar una falta de uniforme",
     descripcion:
-      "Anotar que uno o varios estudiantes vinieron sin el uniforme que corresponde (no es una excusa: queda el registro para llevar el control). Se avisa por WhatsApp a sus acudientes. Solo rector, coordinación o administrador.",
+      "Anotar que uno o varios estudiantes vinieron sin el uniforme que corresponde (no es una excusa: queda el registro para llevar el control). Se avisa por WhatsApp a sus acudientes, al coordinador del nivel y a los profesores que tienen clase con ese salón ese día. Solo rector, coordinación o administrador.",
     categoria: "Permisos y Excusas",
     roles: ["rector", "coordinador", "admin"],
     ruta: "/permisos-excusas/uniforme-falta",
@@ -242,7 +242,7 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
         ancla: "falta_uniforme.tipo",
       },
       {
-        narracion: "Toca 'Registrar falta' y confirma. Sus acudientes reciben el aviso por WhatsApp.",
+        narracion: "Toca 'Registrar falta' y confirma. Reciben el aviso por WhatsApp sus acudientes, el coordinador del nivel y los profesores que tienen clase con ese salón ese día.",
         accion: "click",
         ancla: "falta_uniforme.registrar",
       },
