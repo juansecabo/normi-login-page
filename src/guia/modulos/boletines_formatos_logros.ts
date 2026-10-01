@@ -192,6 +192,39 @@ export const BOLETINES_FORMATOS_LOGROS: Capacidad[] = [
     ],
   },
   {
+    id: "boletines.alerta_profesores",
+    titulo: "Activar la alerta para que los profesores se pongan al día",
+    descripcion:
+      "Desde Boletines → Inconsistencias del periodo, activar una alerta del periodo: cada profesor con notas faltantes, actividades que no cuentan o el periodo sin marcar como completo ve un aviso llamativo debajo de la barra verde que lo lleva a una pantalla donde resuelve todo. Se desactiva con el mismo botón.",
+    categoria: CATEGORIA,
+    roles: [...BOLETINES_ROLES],
+    ruta: "/boletines",
+    endpoint: "PUT /api/boletines/alerta",
+    sinonimos: ["alerta a los profesores", "avisar a los profesores que completen notas", "banner para los profesores", "que se pongan al día con las notas"],
+    pasos: [
+      { narracion: "Vamos a Boletines.", accion: "navegar", ruta: "/boletines" },
+      { narracion: "Elige el periodo.", accion: "seleccionar", ancla: "boletines.selector_periodo", campo: "periodo" },
+      { narracion: "En Inconsistencias del periodo, toca 'Activar alerta a profesores'. Los profesores con pendientes verán el aviso al entrar.", accion: "click", ancla: "boletines.boton_alerta" },
+    ],
+  },
+  {
+    id: "boletines.ponte_al_dia",
+    titulo: "Ponerme al día con las notas para los boletines",
+    descripcion:
+      "Cuando hay una alerta de boletines activa, resolver en una sola pantalla todo lo que falta en mis clases: poner las notas que faltan (o N/A si la actividad no era para ese estudiante), mover a un grupo las actividades que no cuentan, abrir la planilla de una clase sin notas y marcar el periodo como completo. Todo queda en la tabla de notas.",
+    categoria: CATEGORIA,
+    roles: ["profesor"],
+    ruta: "/boletines/ponte-al-dia",
+    endpoint: "GET /api/boletines/mis-pendientes",
+    sinonimos: ["ponerme al día", "qué notas me faltan", "notas pendientes para los boletines", "el aviso rosado de los boletines"],
+    pasos: [
+      { narracion: "Toca el aviso 'Ponte al día con tus notas' debajo de la barra verde (o abre la pantalla directamente).", accion: "navegar", ruta: "/boletines/ponte-al-dia" },
+      { narracion: "En cada clase, escribe la nota que falta de cada estudiante y presiona Enter, o toca N/A si esa actividad no era para él.", accion: "escribir", ancla: "ponte_al_dia.casilla", campo: "nota", opcional: true },
+      { narracion: "Si una actividad no cuenta, elige su grupo y toca 'Mover'.", accion: "click", ancla: "ponte_al_dia.no_cuentan", opcional: true },
+      { narracion: "Al final, toca 'Marcar periodo completo' en cada clase.", accion: "click", ancla: "ponte_al_dia.cerrar" },
+    ],
+  },
+  {
     id: "boletines.descargar_estudiante",
     titulo: "Descargar el boletín individual de un estudiante",
     descripcion:

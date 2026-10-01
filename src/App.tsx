@@ -33,6 +33,7 @@ import AprendeNormi from "./pages/AprendeNormi";
 import CalendarioEscolar from "./pages/CalendarioEscolar";
 import LogrosProfesor from "./pages/profesor/LogrosProfesor";
 import Boletines from "./pages/rector/Boletines";
+import PonteAlDiaBoletines from "./pages/profesor/PonteAlDiaBoletines";
 import Formatos from "./pages/rector/Formatos";
 import PermisoDocente from "./pages/formatos/PermisoDocente";
 import PermisosDocentesConsulta from "./pages/permisos/PermisosDocentesConsulta";
@@ -205,6 +206,7 @@ const Raiz = () => (
           <Route path="/estudiante-consolidado" element={<EstudianteConsolidado />} />
           <Route path="/estadisticas" element={<EstadisticasDashboard />} />
           <Route path="/boletines" element={<Boletines />} />
+          <Route path="/boletines/ponte-al-dia" element={<PonteAlDiaBoletines />} />
           <Route path="/formatos" element={<Formatos />} />
           <Route path="/formatos/permiso-docente" element={<PermisoDocente />} />
           <Route path="/formatos/permisos-docentes" element={<PermisosDocentesConsulta />} />

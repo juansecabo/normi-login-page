@@ -9,6 +9,7 @@ import EscudoColegio from "@/components/EscudoColegio";
 import CambiarContrasenaModal from "@/components/CambiarContrasenaModal";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import UpdateBanner from "@/components/UpdateBanner";
+import BannerPendientesBoletines from "@/components/BannerPendientesBoletines";
 import { apiClient } from "@/lib/apiClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -204,6 +205,7 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
           </div>
         </div>
         <UpdateBanner />
+        <BannerPendientesBoletines />
       </header>
       <CambiarContrasenaModal
         open={showCambiarContrasena}

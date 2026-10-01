@@ -109,6 +109,24 @@ const Boletines = () => {
   const [cargando, setCargando] = useState(false);
   const [datos, setDatos] = useState<DatosBoletin | null>(null);
   const [generando, setGenerando] = useState(false);
+  // Alerta a profesores (banner de neón + pantalla "Ponte al día") para este periodo.
+  const [alertaActiva, setAlertaActiva] = useState(false);
+  const [cambiandoAlerta, setCambiandoAlerta] = useState(false);
+  useEffect(() => {
+    apiRequest<{ activa: boolean }>(`/api/boletines/alerta?periodo=${periodo}`)
+      .then((r) => setAlertaActiva(!!r.activa)).catch(() => setAlertaActiva(false));
+  }, [periodo]);
+  const cambiarAlerta = async () => {
+    setCambiandoAlerta(true);
+    try {
+      const r = await apiRequest<{ activa: boolean }>("/api/boletines/alerta", { method: "PUT", body: JSON.stringify({ periodo, activa: !alertaActiva }) });
+      setAlertaActiva(!!r.activa);
+    } catch {
+      toast({ title: "No se pudo cambiar la alerta", variant: "destructive" });
+    } finally {
+      setCambiandoAlerta(false);
+    }
+  };
   const [papelId, setPapelId] = useState<string>(() => {
     try { const v = localStorage.getItem(PAPEL_KEY) || ""; return PAPELES[v] ? v : "legal"; } catch { return "legal"; }
   });
@@ -637,6 +655,21 @@ const Boletines = () => {
             Planillas incompletas de TODO el colegio en el {nombreCorteLargo(periodo).toLowerCase()}, agrupadas por profesor.
             El botón le envía a cada uno el detalle por WhatsApp.
           </p>
+
+          {/* Alerta a profesores: banner de neón en la plataforma de cada profesor con
+              pendientes y la pantalla "Ponte al día" para resolverlo todo. */}
+          <div className={`mb-4 rounded-lg border p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${alertaActiva ? "border-fuchsia-300 bg-fuchsia-50" : "border-border bg-muted/30"}`} data-guia="boletines.alerta_profesores">
+            <p className="text-sm text-foreground">
+              {alertaActiva
+                ? <>Alerta <b>activa</b>: los profesores con pendientes del {nombreCorteLargo(periodo).toLowerCase()} ven un aviso para ponerse al día.</>
+                : <>Activa una alerta para que los profesores con pendientes del {nombreCorteLargo(periodo).toLowerCase()} vean un aviso y lo resuelvan en una sola pantalla.</>}
+              {inconsistencias && inconsistencias.length > 0 && <span className="text-muted-foreground"> ({inconsistencias.length} profesor{inconsistencias.length > 1 ? "es" : ""} con pendientes)</span>}
+            </p>
+            <Button size="sm" variant={alertaActiva ? "outline" : "default"} onClick={cambiarAlerta} disabled={cambiandoAlerta} className="gap-1 shrink-0" data-guia="boletines.boton_alerta">
+              {cambiandoAlerta ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertTriangle className="w-4 h-4" />}
+              {alertaActiva ? "Desactivar alerta" : "Activar alerta a profesores"}
+            </Button>
+          </div>
 
           {inconsistencias === null ? (
             <div className="text-center py-6 text-muted-foreground"><Loader2 className="w-5 h-5 animate-spin inline" /></div>
