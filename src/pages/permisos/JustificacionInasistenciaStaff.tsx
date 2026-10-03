@@ -227,7 +227,7 @@ const JustificacionInasistenciaStaff = () => {
             <div className="flex justify-center mb-6">
               <button data-guia="inasistencia_staff.reportar_dia" onClick={() => navigate("/permisos-excusas/inasistencia-dia")}
                 className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg border-2 border-primary text-primary font-semibold hover:bg-primary/5 transition-colors cursor-pointer">
-                <Plus className="w-4 h-4" /> Reportar inasistencia del día
+                <Plus className="w-4 h-4" /> Reportar inasistencia
               </button>
             </div>
           )}
