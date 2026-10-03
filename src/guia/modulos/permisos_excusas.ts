@@ -205,7 +205,7 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
     ],
     pasos: [
       ...abrirLista("inasistencia", "Justificación por Inasistencia"),
-      { narracion: "Toca 'Reportar inasistencia del día'.", accion: "click", ancla: "inasistencia_staff.reportar_dia" },
+      { narracion: "Toca 'Reportar inasistencia'.", accion: "click", ancla: "inasistencia_staff.reportar_dia" },
       { narracion: "Toca 'Seleccionar estudiantes' y marca a los que no vinieron hoy.", accion: "click", ancla: "inasistencia_dia.seleccionar", campo: "estudiante" },
       {
         narracion: "Toca 'Reportar inasistencia'. Se avisa una sola vez a los acudientes y los profesores los verán ausentes en sus clases de hoy (lo pueden cambiar si el estudiante llega). El reporte aparece en el registro de Justificación por Inasistencia; con la papelera se elimina y se avisa al acudiente que quedó anulado.",
