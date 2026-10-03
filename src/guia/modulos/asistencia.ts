@@ -581,7 +581,6 @@ export const ASISTENCIA: Capacidad[] = [
       "Coordinación o rectoría reportan que un estudiante no vino hoy al colegio: al acudiente le llega un solo aviso y en cada clase del día aparece ausente para el profesor. También se puede eliminar el reporte.",
     categoria: "Asistencia",
     roles: ["rector", "coordinador"],
-    gate: "normal",
     ruta: "/asistencia/inasistencia-dia",
     endpoint: "POST/GET/DELETE /api/asistencia/dia (Rector, Coordinador(a); config inasistencia_dia)",
     requisitos: [
