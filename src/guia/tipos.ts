@@ -20,11 +20,12 @@ export type RolGuia =
   | "acudiente";
 
 // Features que solo existen en ciertos colegios (gate por colegio_id).
-export type GateColegio = "todos" | "cailico" | "pestalozziano";
+export type GateColegio = "todos" | "cailico" | "pestalozziano" | "normal";
 
 export const COLEGIO_IDS: Record<Exclude<GateColegio, "todos">, string> = {
   cailico: "2f96f076-83df-4b84-8bbc-9c1df79a372b",
   pestalozziano: "94c1414b-22d1-40dd-945a-5857b62e5f6c",
+  normal: "d8804f01-298f-4a70-a12c-5f516c8c11a8",
 };
 
 export type AccionPaso =

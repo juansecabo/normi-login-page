@@ -385,6 +385,8 @@ export interface AsistenciaRosterItem {
   estado: AsistenciaEstado | null;
   tiene_excusa: boolean;
   excusa_motivo: string | null;
+  /** Inasistencia del día reportada por coordinación o rectoría (solo colegios con la función). */
+  inasistencia_dia?: string | null;
 }
 
 export interface AsistenciaHistorialEstudiante {

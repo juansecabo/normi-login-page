@@ -92,6 +92,7 @@ import JustificacionInasistenciaStaff from "./pages/permisos/JustificacionInasis
 import JustificacionUniforme from "./pages/permisos/JustificacionUniforme";
 import JustificacionUniformeStaff from "./pages/permisos/JustificacionUniformeStaff";
 import FaltaUniformeRegistro from "./pages/permisos/FaltaUniformeRegistro";
+import InasistenciaDia from "./pages/InasistenciaDia";
 import SolicitudEntrevistaStaff from "./pages/permisos/SolicitudEntrevistaStaff";
 import SolicitudEntrevistaAcudiente from "./pages/permisos/SolicitudEntrevistaAcudiente";
 import Consultas from "./pages/Consultas";
@@ -268,6 +269,7 @@ const Raiz = () => (
           <Route path="/profesor/asistencia" element={<AsistenciaMenu />} />
           <Route path="/profesor/asistencia/tomar" element={<Asistencia />} />
           <Route path="/asistencia" element={<ConsultaAsistencia />} />
+          <Route path="/asistencia/inasistencia-dia" element={<InasistenciaDia />} />
           <Route path="/profesor/comunicados" element={<ComunicadosProfesor />} />
           <Route path="/profesor/documentos" element={<DocumentosProfesor />} />
           <Route path="/registro-normi" element={<RegistroNormi />} />

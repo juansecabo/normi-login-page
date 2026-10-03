@@ -96,7 +96,11 @@ const Asistencia = () => {
         return;
       }
       setRoster(res.roster);
-      setCambios({});
+      // Inasistencia del día reportada por coordinación/rectoría ⇒ llega precargado Ausente
+      // (sin guardar); el profesor puede cambiarlo.
+      const pre: Record<string, AsistenciaEstado> = {};
+      for (const r of res.roster) if (r.inasistencia_dia && !r.estado && !r.tiene_excusa) pre[r.estudiante_id] = "ausente";
+      setCambios(pre);
       setStep("deck");
       // La clase queda en el enlace, así al actualizar vuelve a la misma lista.
       setParams({ asignatura, grado, salon, fecha }, { replace: true });
