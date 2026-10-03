@@ -132,12 +132,12 @@ const InasistenciaDiaRegistro = () => {
             <span className="text-muted-foreground">&rarr;</span>
             <button onClick={() => navigate("/permisos-excusas/inasistencia-staff")} className="text-primary hover:underline">Justificación por Inasistencia</button>
             <span className="text-muted-foreground">&rarr;</span>
-            <span className="text-foreground font-medium">Reportar inasistencia</span>
+            <span className="text-foreground font-medium">Reportar inasistencia del día</span>
           </BreadcrumbDeslizable>
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-6 space-y-5 max-w-3xl mx-auto" data-guia="inasistencia_dia.formulario">
-          <h2 className="text-xl font-bold text-foreground flex items-center justify-center gap-2"><UserX className="w-6 h-6 text-primary" /> Reportar inasistencia</h2>
+          <h2 className="text-xl font-bold text-foreground flex items-center justify-center gap-2"><UserX className="w-6 h-6 text-primary" /> Reportar inasistencia del día</h2>
 
           <div className="space-y-1">
             <label className="text-sm font-medium text-foreground">{selArr.length > 1 ? "Estudiantes que no vinieron hoy" : "Estudiante que no vino hoy"}</label>
