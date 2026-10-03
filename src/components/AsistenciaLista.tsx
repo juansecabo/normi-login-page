@@ -159,9 +159,6 @@ const AsistenciaLista = ({ roster, asignatura, grado, salon, fechaTexto, onMarca
                   {r.tiene_excusa && (
                     <div className="text-sm text-amber-700">Tiene excusa{r.excusa_motivo ? `: ${r.excusa_motivo.charAt(0).toLowerCase()}${r.excusa_motivo.slice(1)}` : ""}</div>
                   )}
-                  {!r.tiene_excusa && r.inasistencia_dia && (
-                    <div className="text-sm text-red-700">Marcado ausente por {r.inasistencia_dia}</div>
-                  )}
                 </div>
               </div>
               <div className="grid grid-cols-4 gap-1 sm:gap-1.5 mt-2 sm:mt-0 sm:w-[460px] shrink-0">
