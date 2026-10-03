@@ -46,6 +46,7 @@ const Perfil = () => {
   const [apellidos, setApellidos] = useState("");
   const [telefono, setTelefono] = useState("");
   const [fechaNacimiento, setFechaNacimiento] = useState("");
+  const [correoDatos, setCorreoDatos] = useState("");
   const [guardandoDatos, setGuardandoDatos] = useState(false);
 
   // Cambiar contraseña (dentro de Cambiar datos)
@@ -105,6 +106,7 @@ const Perfil = () => {
         setApellidos(d.apellidos || "");
         setTelefono(d.numero_de_telefono || "");
         setFechaNacimiento(d.fecha_de_nacimiento || "");
+        setCorreoDatos(d.correo || "");
         setCargandoDatos(false);
       })
       .catch(() => setCargandoDatos(false));
@@ -128,13 +130,20 @@ const Perfil = () => {
   const guardarDatos = async () => {
     setGuardandoDatos(true);
     try {
-      const body: Record<string, unknown> = { telefono };
+      if (correoDatos.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correoDatos.trim())) {
+        toast({ title: "Correo inválido", description: "Revisa el correo electrónico o déjalo en blanco.", variant: "destructive" });
+        setGuardandoDatos(false);
+        return;
+      }
+      const body: Record<string, unknown> = { telefono, correo: correoDatos.trim() || null };
       if (!esEstudiante) {
         body.nombres = nombres;
         body.apellidos = apellidos;
         body.fecha_de_nacimiento = fechaNacimiento || null;
       }
       await apiClient.perfil.actualizarDatos(body);
+      // La sección de recuperación lee el mismo correo: que lo vuelva a cargar.
+      setVerificada(false);
       // Actualizar nombres de la sesión local para que el header refleje el cambio
       if (!esEstudiante) {
         try {
@@ -329,6 +338,11 @@ const Perfil = () => {
                   <div data-guia="varios.perfil_input_telefono">
                     <label className="text-sm font-medium block mb-1">Número de celular</label>
                     <PhoneInput value={telefono} onChange={setTelefono} placeholder="Ej: 3001234567" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium block mb-1">Correo electrónico <span className="text-muted-foreground font-normal">(opcional)</span></label>
+                    <input type="email" value={correoDatos} onChange={(e) => setCorreoDatos(e.target.value)} placeholder="tucorreo@ejemplo.com" className={inputCls} data-guia="varios.perfil_input_correo" />
+                    <p className="text-xs text-muted-foreground mt-1">Si olvidas tu contraseña, te la enviamos a este correo.</p>
                   </div>
                   {!esEstudiante && (
                     <div>

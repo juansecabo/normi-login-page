@@ -614,7 +614,7 @@ export const ACUDIENTE: Capacidad[] = [
     id: "acu.cambiar_datos",
     titulo: "Corregir tus datos personales",
     descripcion:
-      "Actualizar tu nombre, apellidos, celular y fecha de nacimiento. El cambio aplica en todos tus perfiles y colegios.",
+      "Actualizar tu nombre, apellidos, celular, correo electrónico y fecha de nacimiento. El cambio aplica en todos tus perfiles y colegios. El correo es el mismo al que te llega la contraseña si la olvidas.",
     categoria: "Perfil",
     roles: ["acudiente"],
     ruta: "/perfil",
@@ -624,7 +624,7 @@ export const ACUDIENTE: Capacidad[] = [
       { narracion: "Toca la ficha 'Perfil' en tu tablero.", accion: "navegar", ruta: "/perfil" },
       { narracion: "Abre 'Cambiar datos'.", accion: "click" },
       {
-        narracion: "Ajusta tus nombres, celular o fecha de nacimiento y confirma con 'Guardar datos'.",
+        narracion: "Ajusta tus nombres, celular, correo o fecha de nacimiento y confirma con 'Guardar datos'.",
         accion: "escribir",
         campo: "telefono",
       },

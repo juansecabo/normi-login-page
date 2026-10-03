@@ -56,6 +56,7 @@ const RegistroAcudiente = () => {
   const [telefono, setTelefono] = useState("");
   const [genero, setGenero] = useState("");
   const [fechaNac, setFechaNac] = useState("");
+  const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [confirmar, setConfirmar] = useState("");
   const [verContrasena, setVerContrasena] = useState(false);
@@ -102,6 +103,7 @@ const RegistroAcudiente = () => {
     if (soloDigitos(telefono).length < 10) { err("Teléfono inválido", "Escribe tu número de celular (es donde recibirás los comunicados del colegio)."); return; }
     if (genero !== "M" && genero !== "F") { err("Falta el género"); return; }
     // La fecha de nacimiento es OPCIONAL.
+    if (correo.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo.trim())) { err("Correo inválido", "Revisa el correo electrónico o déjalo en blanco."); return; }
     if (contrasena.length < 4 || contrasena.length > 50) { err("Contraseña inválida", "Debe tener entre 4 y 50 caracteres."); return; }
     if (contrasena !== confirmar) { err("Las contraseñas no coinciden"); return; }
     setPaso(2);
@@ -162,7 +164,7 @@ const RegistroAcudiente = () => {
         method: "POST",
         body: JSON.stringify({
           cedula: soloDigitos(cedula), nombres: nombres.trim(), apellidos: apellidos.trim(),
-          telefono: soloDigitos(telefono), genero, fecha_de_nacimiento: fechaNac || null, contrasena,
+          telefono: soloDigitos(telefono), genero, fecha_de_nacimiento: fechaNac || null, correo: correo.trim() || null, contrasena,
           acudidos: acudidos.map((a) => ({ id: a.id, colegio_id: a.colegio_id })),
         }),
       });
@@ -228,8 +230,8 @@ const RegistroAcudiente = () => {
                 </div>
               ) : (<>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div><Label className="text-sm">Apellidos *</Label><Input value={apellidos} onChange={(e) => setApellidos(capitalizarNombre(e.target.value))} className="mt-1" /></div>
                 <div><Label className="text-sm">Nombres *</Label><Input value={nombres} onChange={(e) => setNombres(capitalizarNombre(e.target.value))} className="mt-1" /></div>
+                <div><Label className="text-sm">Apellidos *</Label><Input value={apellidos} onChange={(e) => setApellidos(capitalizarNombre(e.target.value))} className="mt-1" /></div>
               </div>
               <div>
                 <Label className="text-sm">Celular (WhatsApp) *</Label>
@@ -247,6 +249,11 @@ const RegistroAcudiente = () => {
               <div>
                 <Label className="text-sm">Fecha de nacimiento <span className="text-muted-foreground font-normal">(opcional)</span></Label>
                 <Input type="date" value={fechaNac} onChange={(e) => setFechaNac(e.target.value)} min="1920-01-01" max={new Date().toISOString().slice(0, 10)} className="mt-1" />
+              </div>
+              <div>
+                <Label className="text-sm">Correo electrónico <span className="text-muted-foreground font-normal">(opcional)</span></Label>
+                <Input type="email" value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder="tucorreo@ejemplo.com" autoComplete="email" className="mt-1" data-guia="registro.correo" />
+                <p className="text-xs text-muted-foreground mt-1">Si olvidas tu contraseña, te la enviamos a este correo.</p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
