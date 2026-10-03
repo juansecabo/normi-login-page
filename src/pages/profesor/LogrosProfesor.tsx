@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { BookOpenCheck, Plus, Pencil, Trash2, Loader2, Sparkles, Check } from "lucide-react";
 import { useEstructuraOrden } from "@/utils/estructuraOrden";
+import { cargoSegunGenero } from "@/lib/entrevistadores";
 import { useEsquemaGrado, etiquetaCorteOrdinal, corteActual } from "@/utils/esquema";
 import { getPeriodoActual } from "@/utils/periodoActual";
 
@@ -27,6 +28,8 @@ interface Nivel { key: string; label: string; min: number; max: number; }
 interface Logro {
   id: string; id_profesor: number; asignatura: string; grado: string; orden: number;
   redacciones: Record<string, string>; salones: string[];
+  creador?: { nombre: string; genero: string | null; cargo: string | null } | null;
+  puede_eliminar?: boolean;
 }
 
 
@@ -191,6 +194,17 @@ const LogrosProfesor = () => {
   };
 
   const [borrando, setBorrando] = useState<Logro | null>(null);
+  // Logro de otra persona: no se puede borrar; se explica quién lo creó.
+  const [ajeno, setAjeno] = useState<Logro | null>(null);
+  const textoAjeno = (l: Logro) => {
+    const c = l.creador;
+    if (!c?.nombre) return "Este logro lo creó otra persona; solo ella o coordinación pueden eliminarlo.";
+    const art = c.genero === "F" ? "la" : c.genero === "M" ? "el" : "";
+    const cargo = c.cargo && art ? cargoSegunGenero(c.cargo, c.genero).toLowerCase() : "";
+    const quien = art && cargo ? `${art} ${cargo} ${c.nombre}` : c.nombre;
+    const pron = c.genero === "F" ? "ella" : c.genero === "M" ? "él" : "esa persona";
+    return `Este logro lo creó ${quien}; solo ${pron} o coordinación pueden eliminarlo.`;
+  };
   const borrar = async () => {
     if (!borrando) return;
     try {
@@ -287,7 +301,7 @@ const LogrosProfesor = () => {
 
                         <div className="flex gap-1 shrink-0">
                           <button title="Editar" onClick={() => abrirEditar(l)} className="p-1.5 rounded hover:bg-muted" data-guia="logros.boton_editar"><Pencil className="w-4 h-4 text-muted-foreground" /></button>
-                          <button title="Eliminar del banco" onClick={() => setBorrando(l)} className="p-1.5 rounded hover:bg-muted" data-guia="logros.boton_eliminar"><Trash2 className="w-4 h-4 text-destructive" /></button>
+                          <button title="Eliminar del banco" onClick={() => (l.puede_eliminar === false ? setAjeno(l) : setBorrando(l))} className="p-1.5 rounded hover:bg-muted" data-guia="logros.boton_eliminar"><Trash2 className="w-4 h-4 text-destructive" /></button>
                         </div>
                       </div>
                     );
@@ -331,6 +345,17 @@ const LogrosProfesor = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogAbierto(false)} disabled={guardando}>Cancelar</Button>
             <Button onClick={guardar} disabled={guardando} className="gap-2" data-guia="logros.dialog_guardar">{guardando && <Loader2 className="w-4 h-4 animate-spin" />} Guardar en el banco</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Logro de otra persona: no se puede eliminar ── */}
+      <Dialog open={!!ajeno} onOpenChange={(o) => !o && setAjeno(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>No puedes eliminar este logro</DialogTitle></DialogHeader>
+          <p className="text-sm text-foreground">{ajeno && textoAjeno(ajeno)}</p>
+          <DialogFooter>
+            <Button onClick={() => setAjeno(null)}>Entendido</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -958,7 +958,7 @@ export const BOLETINES_FORMATOS_LOGROS: Capacidad[] = [
     id: "logros.eliminar",
     titulo: "Eliminar un logro del banco",
     descripcion:
-      "Borrar un logro del banco (se quita también de todos los salones donde estaba asignado).",
+      "Borrar un logro del banco (se quita también de todos los salones donde estaba asignado). Solo lo puede borrar quien lo creó o coordinación; si lo creó otro docente, la plataforma dice quién fue.",
     categoria: CATEGORIA,
     roles: ["profesor"],
     ruta: "/profesor/logros",
