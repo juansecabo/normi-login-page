@@ -5,9 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { apiClient, type AsistenciaEstado, type AsistenciaRegistro } from "@/lib/apiClient";
 import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNormi";
 import { useEstructuraOrden } from "@/utils/estructuraOrden";
-import { ChevronLeft, ChevronRight, CalendarDays, UserX } from "lucide-react";
-import { useColegioConfig } from "@/hooks/useColegioConfig";
-import { ROLES_INASISTENCIA_DIA } from "@/pages/InasistenciaDia";
+import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import MatrizCurso from "@/components/asistencia/MatrizCurso";
 import CalendarioEstudiante from "@/components/asistencia/CalendarioEstudiante";
 import { resumen, rangoMes, MESES, hoyBogota } from "@/components/asistencia/estados";
@@ -35,9 +33,6 @@ const ConsultaAsistencia = () => {
   const rolAcudiente = isPadreDeFamilia();
   const esInterno = !rolEstudiante && !rolAcudiente;
   const puedeEditar = isProfesor() || isAdmin(); // el backend valida que el profe solo edite sus clases
-  // Inasistencia del día: coordinación/rectoría, solo colegios con la función (por ahora la Normal).
-  const { config } = useColegioConfig();
-  const puedeInasistenciaDia = config.inasistencia_dia === true && ROLES_INASISTENCIA_DIA.includes(getSession().cargo || "");
 
   useEffect(() => {
     if (!getSession().id) navigate("/");
@@ -162,14 +157,6 @@ const ConsultaAsistencia = () => {
               <p className="text-sm text-muted-foreground mb-5 text-center">
                 {puedeEditar ? "Consulta y corrige la asistencia por clase y día." : "Consulta la asistencia por clase y día."}
               </p>
-              {puedeInasistenciaDia && (
-                <div className="flex justify-center mb-5">
-                  <button data-guia="asistencia.inasistencia_dia" onClick={() => navigate("/asistencia/inasistencia-dia")}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-red-300 bg-red-50 text-red-700 text-sm font-semibold hover:bg-red-100 transition">
-                    <UserX className="w-4 h-4" /> Inasistencia del día
-                  </button>
-                </div>
-              )}
               <div className="rounded-lg border border-border p-4 md:p-5 mb-5">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
                   <Selector label="Asignatura" dataGuia="asistencia.consulta_selector_asignatura" value={asignatura} options={asignaturas} onChange={(v) => { setAsignatura(v); setGrado(""); setSalon(""); }} />

@@ -92,7 +92,7 @@ import JustificacionInasistenciaStaff from "./pages/permisos/JustificacionInasis
 import JustificacionUniforme from "./pages/permisos/JustificacionUniforme";
 import JustificacionUniformeStaff from "./pages/permisos/JustificacionUniformeStaff";
 import FaltaUniformeRegistro from "./pages/permisos/FaltaUniformeRegistro";
-import InasistenciaDia from "./pages/InasistenciaDia";
+import InasistenciaDiaRegistro from "./pages/permisos/InasistenciaDiaRegistro";
 import SolicitudEntrevistaStaff from "./pages/permisos/SolicitudEntrevistaStaff";
 import SolicitudEntrevistaAcudiente from "./pages/permisos/SolicitudEntrevistaAcudiente";
 import Consultas from "./pages/Consultas";
@@ -269,7 +269,6 @@ const Raiz = () => (
           <Route path="/profesor/asistencia" element={<AsistenciaMenu />} />
           <Route path="/profesor/asistencia/tomar" element={<Asistencia />} />
           <Route path="/asistencia" element={<ConsultaAsistencia />} />
-          <Route path="/asistencia/inasistencia-dia" element={<InasistenciaDia />} />
           <Route path="/profesor/comunicados" element={<ComunicadosProfesor />} />
           <Route path="/profesor/documentos" element={<DocumentosProfesor />} />
           <Route path="/registro-normi" element={<RegistroNormi />} />
@@ -297,6 +296,7 @@ const Raiz = () => (
           <Route path="/permisos-excusas/retiro-registrar" element={<RetiroRegistroInterno />} />
           <Route path="/permisos-excusas/inasistencia" element={<JustificacionInasistencia />} />
           <Route path="/permisos-excusas/inasistencia-staff" element={<JustificacionInasistenciaStaff />} />
+          <Route path="/permisos-excusas/inasistencia-dia" element={<InasistenciaDiaRegistro />} />
           <Route path="/permisos-excusas/uniforme" element={<JustificacionUniforme />} />
           <Route path="/permisos-excusas/uniforme-staff" element={<JustificacionUniformeStaff />} />
           <Route path="/permisos-excusas/uniforme-falta" element={<FaltaUniformeRegistro />} />

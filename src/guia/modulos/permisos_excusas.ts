@@ -184,6 +184,37 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
     ],
   },
   {
+    id: "permisos_excusas.inasistencia_dia",
+    titulo: "Reportar la inasistencia del día de un estudiante",
+    descripcion:
+      "Coordinación o rectoría reportan que un estudiante no vino hoy al colegio: al acudiente le llega un solo aviso y en cada clase del día aparece ausente para el profesor. El reporte queda en el registro de Justificación por Inasistencia, donde también se puede eliminar.",
+    categoria: "Permisos y Excusas",
+    roles: ["rector", "coordinador"],
+    ruta: "/permisos-excusas/inasistencia-dia",
+    endpoint: "POST/GET/DELETE /api/asistencia/dia (Rector, Coordinador(a); config inasistencia_dia)",
+    requisitos: [
+      { entidad: "estudiante", descripcion: "Uno o varios estudiantes que no vinieron hoy (solo el día de hoy)." },
+    ],
+    sinonimos: [
+      "reportar inasistencia",
+      "estudiante no vino hoy",
+      "reportar que un estudiante faltó",
+      "inasistencia del día",
+      "quitar inasistencia del día",
+      "eliminar la inasistencia de un estudiante",
+    ],
+    pasos: [
+      ...abrirLista("inasistencia", "Justificación por Inasistencia"),
+      { narracion: "Toca 'Reportar inasistencia del día'.", accion: "click", ancla: "inasistencia_staff.reportar_dia" },
+      { narracion: "Toca 'Seleccionar estudiantes' y marca a los que no vinieron hoy.", accion: "click", ancla: "inasistencia_dia.seleccionar", campo: "estudiante" },
+      {
+        narracion: "Toca 'Reportar inasistencia'. Se avisa una sola vez a los acudientes y los profesores los verán ausentes en sus clases de hoy (lo pueden cambiar si el estudiante llega). El reporte aparece en el registro de Justificación por Inasistencia; con la papelera se elimina y se avisa al acudiente que quedó anulado.",
+        accion: "click",
+        ancla: "inasistencia_dia.reportar",
+      },
+    ],
+  },
+  {
     id: "permisos_excusas.consultar_uniforme",
     titulo: "Consultar justificaciones por uniforme",
     descripcion:

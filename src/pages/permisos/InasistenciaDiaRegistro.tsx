@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, X, Loader2, UserX, ChevronDown, Trash2 } from "lucide-react";
+import { Search, X, Loader2, UserX, ChevronDown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNormi";
+import HeaderNormi from "@/components/HeaderNormi";
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,24 +15,24 @@ import { apiRequest } from "@/lib/apiClient";
 import { useNivelesCoordina } from "@/hooks/useNivelesCoordina";
 import { useNivelDeGrado } from "@/utils/esquema";
 import { useEstructuraOrden } from "@/utils/estructuraOrden";
-import { ListaEstudiantes, type Estudiante } from "./permisos/RetiroRegistroInterno";
+import { ListaEstudiantes, type Estudiante } from "./RetiroRegistroInterno";
 
 /**
  * Inasistencia del día (Juan 2026-10-03, por ahora solo la Normal): coordinación o
  * rectoría reportan que un estudiante no vino hoy. Al acudiente le llega un solo aviso;
  * en cada clase del día el estudiante aparece Ausente "por coordinación/rectoría" y el
- * profesor lo puede cambiar. Aquí mismo se elimina el reporte.
+ * profesor lo puede cambiar. El registro (y Eliminar) vive en Justificación por Inasistencia.
  */
 export const ROLES_INASISTENCIA_DIA = ["Rector", "Coordinador(a)"];
 const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 
-type Reporte = {
+export type ReporteInasistenciaDia = {
   id: number; estudiante_id: number; estudiante_nombre: string; estudiante_apellidos: string;
-  estudiante_grado: string; estudiante_salon: string; reportado_por_nombre: string; reportado_por_cargo: string;
-  marcado_presente_en: string[];
+  estudiante_grado: string; estudiante_salon: string; fecha: string; created_at: string;
+  reportado_por_nombre: string; reportado_por_cargo: string; marcado_presente_en: string[];
 };
 
-const InasistenciaDia = () => {
+const InasistenciaDiaRegistro = () => {
   const navigate = useNavigate();
   const session = getSession();
   const { nivelesCoordina, cargadoNiveles } = useNivelesCoordina();
@@ -47,25 +47,23 @@ const InasistenciaDia = () => {
   const [busqueda, setBusqueda] = useState("");
   const [selectorAbierto, setSelectorAbierto] = useState(false);
 
-  const [reportes, setReportes] = useState<Reporte[]>([]);
-  const [cargandoReportes, setCargandoReportes] = useState(true);
+  // Los ya reportados hoy no salen en el selector.
+  const [reportes, setReportes] = useState<ReporteInasistenciaDia[]>([]);
   const [saving, setSaving] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [eliminando, setEliminando] = useState<Reporte | null>(null);
-  const [borrando, setBorrando] = useState(false);
   const [resultado, setResultado] = useState<{ ok: boolean; texto: string } | null>(null);
 
   const cargarReportes = async () => {
     try {
-      const r = await apiRequest<{ reportes: Reporte[] }>("/api/asistencia/dia");
+      const hoy = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(new Date());
+      const r = await apiRequest<{ reportes: ReporteInasistenciaDia[] }>(`/api/asistencia/dia?fecha=${hoy}`);
       setReportes(r.reportes);
-    } catch { /* la lista queda vacía; el reporte sigue funcionando */ }
-    setCargandoReportes(false);
+    } catch { /* sin la lista, el servidor igual ignora los repetidos */ }
   };
 
   useEffect(() => {
     if (!session.id) { navigate("/"); return; }
-    if (!ROLES_INASISTENCIA_DIA.includes(session.cargo || "")) { navigate("/asistencia"); return; }
+    if (!ROLES_INASISTENCIA_DIA.includes(session.cargo || "")) { navigate("/permisos-excusas/inasistencia-staff"); return; }
     cargarReportes();
     (async () => {
       try {
@@ -120,20 +118,6 @@ const InasistenciaDia = () => {
     setShowConfirm(false);
   };
 
-  const eliminar = async () => {
-    if (!eliminando) return;
-    setBorrando(true);
-    try {
-      await apiRequest(`/api/asistencia/dia/${eliminando.id}`, { method: "DELETE" });
-      setReportes((p) => p.filter((r) => r.id !== eliminando.id));
-      setEliminando(null);
-    } catch (err: any) {
-      setEliminando(null);
-      setResultado({ ok: false, texto: `No se pudo eliminar: ${err?.body?.detail || err?.message || err}` });
-    }
-    setBorrando(false);
-  };
-
   const selectorCls = "w-full min-w-0 pl-2 pr-1 sm:px-3 py-2 border border-input rounded-md text-[13px] sm:text-sm bg-card cursor-pointer";
 
   return (
@@ -142,16 +126,18 @@ const InasistenciaDia = () => {
       <main className="flex-1 container mx-auto p-4 md:p-8 pb-24 lg:pb-8">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <BreadcrumbDeslizable>
-            <button onClick={() => navigate(computeBackLinkFromSession())} className="text-primary hover:underline">Inicio</button>
+            <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
             <span className="text-muted-foreground">&rarr;</span>
-            <button onClick={() => navigate("/asistencia")} className="text-primary hover:underline">Asistencia</button>
+            <button onClick={() => navigate("/permisos-excusas")} className="text-primary hover:underline">Permisos y Excusas</button>
             <span className="text-muted-foreground">&rarr;</span>
-            <span className="text-foreground font-medium">Inasistencia del día</span>
+            <button onClick={() => navigate("/permisos-excusas/inasistencia-staff")} className="text-primary hover:underline">Justificación por Inasistencia</button>
+            <span className="text-muted-foreground">&rarr;</span>
+            <span className="text-foreground font-medium">Reportar inasistencia del día</span>
           </BreadcrumbDeslizable>
         </div>
 
         <div className="bg-card rounded-lg shadow-soft p-6 space-y-5 max-w-3xl mx-auto" data-guia="inasistencia_dia.formulario">
-          <h2 className="text-xl font-bold text-foreground flex items-center justify-center gap-2"><UserX className="w-6 h-6 text-primary" /> Inasistencia del día</h2>
+          <h2 className="text-xl font-bold text-foreground flex items-center justify-center gap-2"><UserX className="w-6 h-6 text-primary" /> Reportar inasistencia del día</h2>
 
           <div className="space-y-1">
             <label className="text-sm font-medium text-foreground">{selArr.length > 1 ? "Estudiantes que no vinieron hoy" : "Estudiante que no vino hoy"}</label>
@@ -179,30 +165,6 @@ const InasistenciaDia = () => {
           </Button>
         </div>
 
-        <div className="bg-card rounded-lg shadow-soft p-6 mt-6 max-w-3xl mx-auto" data-guia="inasistencia_dia.lista">
-          <h3 className="text-lg font-bold text-foreground mb-3">Reportados hoy{reportes.length ? ` (${reportes.length})` : ""}</h3>
-          {cargandoReportes ? (
-            <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
-          ) : reportes.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Hoy no se ha reportado ninguna inasistencia.</p>
-          ) : (
-            <div className="space-y-2">
-              {reportes.map((r) => (
-                <div key={r.id} className="flex items-center gap-3 rounded-lg border border-border px-3 py-2.5">
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium text-foreground">{r.estudiante_apellidos} {r.estudiante_nombre} <span className="text-muted-foreground font-normal">· {r.estudiante_grado} {r.estudiante_salon}</span></div>
-                    <div className="text-xs text-muted-foreground">Reportado por {r.reportado_por_cargo} {r.reportado_por_nombre}</div>
-                    {r.marcado_presente_en.length > 0 && (
-                      <div className="text-xs text-amber-700 mt-0.5">Marcado presente en: {r.marcado_presente_en.join(", ")}</div>
-                    )}
-                  </div>
-                  <button onClick={() => setEliminando(r)} data-guia="inasistencia_dia.eliminar" title="Eliminar"
-                    className="p-2 rounded hover:bg-muted text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </main>
 
       <Dialog open={selectorAbierto} onOpenChange={setSelectorAbierto}>
@@ -255,23 +217,6 @@ const InasistenciaDia = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={!!eliminando} onOpenChange={(o) => !borrando && !o && setEliminando(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar la inasistencia?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {eliminando && `${eliminando.estudiante_nombre} ${eliminando.estudiante_apellidos}`} ya no aparecerá ausente en las clases de hoy y se avisará a sus acudientes que la inasistencia fue anulada.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={borrando}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.preventDefault(); eliminar(); }} disabled={borrando}>
-              {borrando ? <Loader2 className="w-4 h-4 animate-spin" /> : "Eliminar"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       <AlertDialog open={!!resultado} onOpenChange={(o) => !o && setResultado(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -279,7 +224,8 @@ const InasistenciaDia = () => {
             <AlertDialogDescription>{resultado?.texto}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setResultado(null)}>Entendido</AlertDialogAction>
+            {resultado?.ok && <AlertDialogCancel onClick={() => navigate("/permisos-excusas/inasistencia-staff")}>Ver registro</AlertDialogCancel>}
+            <AlertDialogAction onClick={() => setResultado(null)}>{resultado?.ok ? "Reportar otro" : "Entendido"}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -287,4 +233,4 @@ const InasistenciaDia = () => {
   );
 };
 
-export default InasistenciaDia;
+export default InasistenciaDiaRegistro;
