@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   BookUp, BookDown, Library, AlarmClock, Tags, ShieldCheck, SlidersHorizontal, BookMarked,
-  Hash, Loader2, AlertTriangle, type LucideIcon,
+  Search, X, Loader2, type LucideIcon,
 } from "lucide-react";
 import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNormi";
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
@@ -17,7 +17,9 @@ import PazYSalvo from "@/components/biblioteca/PazYSalvo";
 import ConfigBiblioteca from "@/components/biblioteca/ConfigBiblioteca";
 import MisPrestamos from "@/components/biblioteca/MisPrestamos";
 import PortadaLibro from "@/components/biblioteca/PortadaLibro";
-import { puedeGestionar, puedeConsultar, ESTADOS, fechaLarga, errorDe } from "@/components/biblioteca/comun";
+import ObraDetalle from "@/components/biblioteca/ObraDetalle";
+import iconBiblioteca from "@/assets/icons/biblioteca.webp";
+import { puedeGestionar, puedeConsultar, ESTADOS, fechaLarga, fechaCorta, autoresBonitos, type ObraResumen } from "@/components/biblioteca/comun";
 
 /**
  * Ficha Biblioteca (Juan 2026-10-04): portada con cifras, código rápido y secciones.
@@ -28,6 +30,7 @@ import { puedeGestionar, puedeConsultar, ESTADOS, fechaLarga, errorDe } from "@/
  * regreso: las migas bastan (Juan 2026-10-04).
  */
 interface Seccion { k: string; titulo: string; desc: string; Icono: LucideIcon; color: string; badge?: number }
+let resumenCache: Resumen | null = null;
 interface Resumen { titulos: number; copias: number; prestados?: number; vencidos?: number; perdidos?: number; etiquetas_pendientes?: number }
 
 const Biblioteca = () => {
@@ -37,11 +40,12 @@ const Biblioteca = () => {
   const gestiona = puedeGestionar();
   const consulta = puedeConsultar();
   const acudiente = session.cargo === "Acudiente";
-  const [resumen, setResumen] = useState<Resumen | null>(null);
+  // Cifras en memoria: al volver a la portada salen al instante (y se refrescan detrás).
+  const [resumen, setResumen] = useState<Resumen | null>(resumenCache);
 
   useEffect(() => { if (!session.id) navigate("/"); }, [navigate, session.id]);
   const seccion = params.get("seccion");
-  useEffect(() => { if (!seccion) apiRequest<Resumen>("/api/biblioteca/resumen").then(setResumen).catch(() => null); }, [seccion]);
+  useEffect(() => { if (!seccion) apiRequest<Resumen>("/api/biblioteca/resumen").then((r) => { resumenCache = r; setResumen(r); }).catch(() => null); }, [seccion]);
 
   const ir = (k: string | null, extra: Record<string, string> = {}) => setParams(k ? { seccion: k, ...extra } : {}, { replace: false });
 
@@ -52,7 +56,7 @@ const Biblioteca = () => {
     ] : []),
     { k: "catalogo", titulo: "Catálogo", desc: gestiona ? "Buscar y agregar libros" : "Buscar libros", Icono: Library, color: "from-teal-500 to-teal-700" },
     ...(consulta ? [{ k: "prestamos", titulo: "Préstamos", desc: resumen?.vencidos ? `${resumen.vencidos} vencidos` : "En préstamo e historial", Icono: AlarmClock, color: "from-amber-500 to-orange-500", badge: (resumen?.vencidos || 0) + (resumen?.perdidos || 0) }] : []),
-    ...(gestiona ? [{ k: "etiquetas", titulo: "Etiquetas", desc: resumen?.etiquetas_pendientes ? `${resumen.etiquetas_pendientes} por imprimir` : "Imprimir números y lomos", Icono: Tags, color: "from-violet-500 to-purple-600", badge: resumen?.etiquetas_pendientes || 0 }] : []),
+    ...(gestiona ? [{ k: "etiquetas", titulo: "Etiquetas", desc: resumen?.etiquetas_pendientes ? `${resumen.etiquetas_pendientes} ${resumen.etiquetas_pendientes === 1 ? "etiqueta" : "etiquetas"} sin imprimir` : "Todas impresas", Icono: Tags, color: "from-violet-500 to-purple-600" }] : []),
     ...(consulta ? [
       { k: "paz", titulo: "Paz y salvo", desc: "Quién debe libros por salón", Icono: ShieldCheck, color: "from-green-600 to-emerald-700" },
       { k: "reglas", titulo: "Reglas", desc: "Libros y días de préstamo", Icono: SlidersHorizontal, color: "from-slate-500 to-slate-700" },
@@ -81,46 +85,49 @@ const Biblioteca = () => {
 
         {!actual ? (
           <div className="max-w-5xl mx-auto space-y-6">
-            {/* Portada */}
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-teal-600 via-emerald-600 to-green-700 text-white p-6 md:p-8 shadow-lg">
-              <Library className="absolute -right-8 -bottom-10 w-64 h-64 text-white/10 pointer-events-none" strokeWidth={1.2} />
-              <div className="relative">
-                <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Biblioteca</h1>
-                <p className="text-white/85 mt-1">{gestiona ? "Catálogo, préstamos y etiquetas del colegio." : "Busca un libro y mira si está disponible."}</p>
-                {resumen && (
-                  <div className="flex flex-wrap gap-3 mt-5">
-                    <Cifra n={resumen.titulos} t={resumen.titulos === 1 ? "título" : "títulos"} />
-                    <Cifra n={resumen.copias} t={resumen.copias === 1 ? "copia" : "copias"} />
-                    {resumen.prestados !== undefined && <Cifra n={resumen.prestados} t="prestados" />}
-                    {!!resumen.vencidos && <Cifra n={resumen.vencidos} t="vencidos" alerta />}
-                  </div>
+            {/* Encabezado como las demás fichas: nombre + cifras (espacio reservado mientras cargan). */}
+            <div className="bg-card rounded-lg shadow-soft p-6">
+              <h2 className="text-xl font-bold text-foreground flex items-center justify-center gap-2">
+                <img src={iconBiblioteca} alt="" className="w-8 h-8 object-contain" /> Biblioteca
+              </h2>
+              <div className="flex flex-wrap justify-center gap-3 mt-4 min-h-[44px]" data-guia="biblioteca.cifras">
+                {resumen ? (<>
+                  <Cifra n={resumen.titulos} t={resumen.titulos === 1 ? "título" : "títulos"} />
+                  {resumen.prestados !== undefined && <Cifra n={resumen.prestados} t={resumen.prestados === 1 ? "prestado" : "prestados"} />}
+                  {!!resumen.vencidos && <Cifra n={resumen.vencidos} t={resumen.vencidos === 1 ? "vencido" : "vencidos"} alerta />}
+                </>) : (
+                  [0, 1, 2].slice(0, consulta ? 2 : 1).map((i) => <div key={i} className="h-11 w-32 rounded-lg bg-muted animate-pulse" />)
                 )}
-                {gestiona && <CodigoRapido onIr={ir} />}
               </div>
             </div>
 
+            {/* Barra aparte: buscador por título, autor o número. */}
+            <Buscador gestiona={gestiona} onIr={ir} />
+
             {/* Secciones */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" data-guia="biblioteca.secciones">
-              {secciones.map((s) => (
-                <button key={s.k} data-guia={`biblioteca.tab_${s.k}`} onClick={() => ir(s.k)}
-                  className="group relative text-left rounded-2xl bg-card border border-border p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all">
-                  {!!s.badge && <span className="absolute top-3 right-3 min-w-[22px] h-[22px] px-1.5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center">{s.badge > 99 ? "99+" : s.badge}</span>}
-                  <span className={`w-12 h-12 rounded-xl bg-gradient-to-br ${s.color} text-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform`}>
-                    <s.Icono className="w-6 h-6" />
-                  </span>
-                  <p className="mt-4 font-semibold text-foreground">{s.titulo}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{s.desc}</p>
-                </button>
-              ))}
+            <div className="bg-card rounded-lg shadow-soft p-4 md:p-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" data-guia="biblioteca.secciones">
+                {secciones.map((s) => (
+                  <button key={s.k} data-guia={`biblioteca.tab_${s.k}`} onClick={() => ir(s.k)}
+                    className="group relative text-left rounded-2xl bg-card border border-border p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all">
+                    {!!s.badge && <span className="absolute top-3 right-3 min-w-[22px] h-[22px] px-1.5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center">{s.badge > 99 ? "99+" : s.badge}</span>}
+                    <span className={`w-12 h-12 rounded-xl bg-gradient-to-br ${s.color} text-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform`}>
+                      <s.Icono className="w-6 h-6" />
+                    </span>
+                    <p className="mt-4 font-semibold text-foreground">{s.titulo}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{s.desc}</p>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         ) : (
           <div className="max-w-5xl mx-auto">
-            <div className="flex items-center gap-3 mb-5">
-              <span className={`w-10 h-10 rounded-xl bg-gradient-to-br ${actual.color} text-white flex items-center justify-center shadow`}><actual.Icono className="w-5 h-5" /></span>
-              <h2 className="text-2xl font-bold text-foreground">{actual.titulo}</h2>
-            </div>
-            <div className="bg-card rounded-2xl shadow-soft border border-border p-4 md:p-6">
+            <div className="bg-card rounded-lg shadow-soft p-4 md:p-6">
+              <h2 className="text-xl font-bold text-foreground flex items-center justify-center gap-2 mb-6">
+                <span className={`w-8 h-8 rounded-lg bg-gradient-to-br ${actual.color} text-white flex items-center justify-center`}><actual.Icono className="w-4 h-4" /></span>
+                {actual.titulo}
+              </h2>
               {actual.k === "prestar" && <Prestar codigoInicial={params.get("codigo")} />}
               {actual.k === "devolver" && <Devolver codigoInicial={params.get("codigo")} />}
               {actual.k === "catalogo" && <Catalogo gestiona={gestiona} qInicial={params.get("q") || ""} />}
@@ -138,52 +145,90 @@ const Biblioteca = () => {
 };
 
 const Cifra = ({ n, t, alerta }: { n: number; t: string; alerta?: boolean }) => (
-  <div className={`rounded-xl px-4 py-2 backdrop-blur ${alerta ? "bg-red-500/90" : "bg-white/15"}`}>
-    <span className="text-2xl font-bold">{n.toLocaleString("es-CO")}</span>
-    <span className="ml-1.5 text-sm text-white/90">{t}</span>
+  <div className={`rounded-lg px-4 py-2 ${alerta ? "bg-red-50 text-red-700" : "bg-muted text-foreground"}`}>
+    <span className="text-xl font-bold">{n.toLocaleString("es-CO")}</span>
+    <span className={`ml-1.5 text-sm ${alerta ? "text-red-700" : "text-muted-foreground"}`}>{t}</span>
   </div>
 );
 
-/** Número rápido: se escribe el número de la etiqueta y se ve el libro con lo que se puede hacer. */
-const CodigoRapido = ({ onIr }: { onIr: (k: string, extra?: Record<string, string>) => void }) => {
+/**
+ * Buscador de la portada (para todos): por título, autor, materia, ISBN o número del libro, sin
+ * importar tildes ni mayúsculas, con resultados mientras se escribe. Si se escribe el número de
+ * un libro, quien gestiona ve además su estado y puede prestarlo o recibirlo de una vez.
+ */
+const Buscador = ({ gestiona, onIr }: { gestiona: boolean; onIr: (k: string, extra?: Record<string, string>) => void }) => {
   const [v, setV] = useState("");
   const [cargando, setCargando] = useState(false);
-  const [res, setRes] = useState<{ ejemplar: any; prestamo: any } | null>(null);
-  const [error, setError] = useState("");
-  const buscar = async () => {
-    if (!v.trim()) return;
-    setCargando(true); setError(""); setRes(null);
-    try { setRes(await apiRequest(`/api/biblioteca/ejemplar/${encodeURIComponent(v.trim())}`)); }
-    catch (err) { setError(errorDe(err)); }
-    setCargando(false);
-  };
-  const e = res?.ejemplar;
+  const [obras, setObras] = useState<ObraResumen[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [ej, setEj] = useState<{ ejemplar: any; prestamo: any } | null>(null);
+  const [abierta, setAbierta] = useState<number | null>(null);
+  const req = useRef(0);
+
+  useEffect(() => {
+    const q = v.trim();
+    if (!q) { setObras(null); setEj(null); return; }
+    const id = ++req.current;
+    const t = setTimeout(async () => {
+      setCargando(true);
+      const numero = /^\d{1,7}$/.test(q);
+      const [cat, e] = await Promise.all([
+        apiRequest<{ obras: ObraResumen[]; total: number }>(`/api/biblioteca/catalogo?q=${encodeURIComponent(q)}`).catch(() => ({ obras: [], total: 0 })),
+        gestiona && numero ? apiRequest<{ ejemplar: any; prestamo: any }>(`/api/biblioteca/ejemplar/${q}`).catch(() => null) : Promise.resolve(null),
+      ]);
+      if (id !== req.current) return;
+      setObras(cat.obras.slice(0, 6)); setTotal(cat.total); setEj(e); setCargando(false);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [v, gestiona]);
+
+  const e = ej?.ejemplar;
   return (
-    <div className="mt-6 max-w-xl" data-guia="biblioteca.codigo_rapido">
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-teal-700" />
-          <input value={v} onChange={(ev) => setV(ev.target.value.toUpperCase())} onKeyDown={(ev) => { if (ev.key === "Enter") buscar(); }}
-            placeholder="Número del libro" autoComplete="off" inputMode="numeric"
-            className="w-full pl-10 pr-3 py-3 rounded-xl bg-white text-foreground font-mono tracking-wider placeholder:font-sans placeholder:tracking-normal placeholder:text-muted-foreground focus:outline-none focus:ring-4 focus:ring-white/40" />
-        </div>
-        <Button onClick={buscar} disabled={cargando || !v.trim()} className="h-auto px-5 rounded-xl bg-white text-teal-700 hover:bg-white/90 font-semibold">
-          {cargando ? <Loader2 className="w-4 h-4 animate-spin" /> : "Buscar"}
-        </Button>
+    <div className="bg-card rounded-lg shadow-soft p-4" data-guia="biblioteca.buscador">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+        <input value={v} onChange={(ev) => setV(ev.target.value)} autoComplete="off"
+          placeholder="Buscar por título, autor o número del libro"
+          className="w-full pl-10 pr-10 py-3 border-2 border-input rounded-lg bg-background text-foreground focus:border-primary focus:outline-none" />
+        {cargando ? <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+          : v && <button onClick={() => setV("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" title="Borrar"><X className="w-4 h-4" /></button>}
       </div>
-      {error && <p className="mt-2 flex items-center gap-2 text-sm bg-white/15 rounded-lg px-3 py-2"><AlertTriangle className="w-4 h-4" /> {error}</p>}
+
       {e && (
-        <div className="mt-3 rounded-2xl bg-white text-foreground p-3 flex gap-3 items-center shadow-lg">
+        <div className="mt-3 rounded-lg border-2 border-primary/30 bg-primary/5 p-3 flex gap-3 items-center">
           <PortadaLibro url={e.Biblioteca_Obras?.portada_url} titulo={e.Biblioteca_Obras?.titulo || ""} genero={null} className="w-12 h-16 rounded-lg shrink-0" mini />
           <div className="min-w-0 flex-1">
             <p className="font-semibold truncate">{e.Biblioteca_Obras?.titulo}</p>
-            <p className="text-xs text-muted-foreground"><span className="font-semibold">N.° {e.codigo}</span> · <span className={`px-1.5 py-0.5 rounded ${ESTADOS[e.estado]?.cls || ""}`}>{ESTADOS[e.estado]?.label}</span></p>
-            {res?.prestamo && <p className="text-xs text-muted-foreground mt-0.5">Lo tiene {res.prestamo.usuario_nombre} · vence {fechaLarga(res.prestamo.fecha_vencimiento)}</p>}
+            <p className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">Libro N.° {e.codigo}</span> · <span className={`px-1.5 py-0.5 rounded ${ESTADOS[e.estado]?.cls || ""}`}>{ESTADOS[e.estado]?.label}</span></p>
+            {ej?.prestamo && <p className="text-xs text-muted-foreground mt-0.5">Lo tiene {ej.prestamo.usuario_nombre} · vence {fechaLarga(ej.prestamo.fecha_vencimiento)}</p>}
           </div>
           {e.estado === "disponible" && e.tipo_prestamo !== "sala" && <Button size="sm" className="rounded-lg" onClick={() => onIr("prestar", { codigo: e.codigo })}>Prestar</Button>}
-          {e.estado === "prestado" && res?.prestamo && !res.prestamo.perdido && <Button size="sm" className="rounded-lg" onClick={() => onIr("devolver", { codigo: e.codigo })}>Recibir</Button>}
+          {e.estado === "prestado" && ej?.prestamo && !ej.prestamo.perdido && <Button size="sm" className="rounded-lg" onClick={() => onIr("devolver", { codigo: e.codigo })}>Recibir</Button>}
         </div>
       )}
+
+      {obras && (
+        obras.length === 0 && !e ? <p className="mt-3 text-sm text-muted-foreground text-center">No se encontraron libros.</p> : obras.length > 0 && (
+          <div className="mt-3 divide-y divide-border rounded-lg border border-border overflow-hidden">
+            {obras.map((o) => (
+              <button key={o.id} onClick={() => setAbierta(o.id)} className="w-full text-left flex items-center gap-3 p-2.5 hover:bg-muted/50">
+                <PortadaLibro url={o.portada_url} titulo={o.titulo} genero={o.genero} className="w-9 h-12 rounded shrink-0" mini />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-foreground truncate">{o.titulo}</p>
+                  {o.autores && <p className="text-xs text-muted-foreground truncate">{autoresBonitos(o.autores)}</p>}
+                </div>
+                <span className={`text-xs font-medium shrink-0 ${o.disponibles > 0 ? "text-emerald-700" : o.sala ? "text-sky-700" : "text-amber-700"}`}>
+                  {o.disponibles > 0 ? `${o.disponibles} ${o.disponibles === 1 ? "disponible" : "disponibles"}` : o.sala ? "Solo en sala" : o.proxima ? `Vuelve ${fechaCorta(o.proxima)}` : "No disponible"}
+                </span>
+              </button>
+            ))}
+            {total > obras.length && (
+              <button onClick={() => onIr("catalogo", { q: v.trim() })} className="w-full p-2.5 text-sm text-primary font-medium hover:bg-muted/50">Ver los {total} resultados</button>
+            )}
+          </div>
+        )
+      )}
+      <ObraDetalle obraId={abierta} onCerrar={() => setAbierta(null)} onEditar={() => { setAbierta(null); onIr("catalogo", { q: v.trim() }); }} onCambio={() => null} />
     </div>
   );
 };
