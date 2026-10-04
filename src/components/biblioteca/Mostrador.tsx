@@ -5,8 +5,8 @@ import { apiRequest } from "@/lib/apiClient";
 import { fechaLarga, hoyYmd, errorDe } from "./comun";
 
 /**
- * Prestar y devolver por CÓDIGO (Juan 2026-10-04): cada libro tiene un código corto
- * (BIB-0001) escrito en su etiqueta; se teclea aquí. Sin cámara ni lectores.
+ * Prestar y devolver por el NÚMERO del libro (Juan 2026-10-04): cada libro tiene su número
+ * (1, 2, 3…) escrito en la etiqueta; se teclea aquí. Sin cámara ni lectores.
  */
 interface LectorBusqueda { id: string; nombre: string; cargo: string | null; grado: string | null; salon: string | null }
 interface Situacion {
@@ -16,7 +16,7 @@ interface Situacion {
 interface Lector { id: string; nombre: string; tipo: string; cargo?: string | null; grado?: string | null; salon?: string | null }
 interface EnCarrito { codigo: string; titulo: string; autores: string | null; portada: string | null }
 
-/** Campo del código del libro: se escribe y Enter (o el botón). */
+/** Campo del número del libro: se escribe y Enter (o el botón). */
 export const CampoCodigo = ({ onCodigo, ocupado, autoFocus, guia, grande, boton = "Agregar" }: { onCodigo: (c: string) => void; ocupado?: boolean; autoFocus?: boolean; guia?: string; grande?: boolean; boton?: string }) => {
   const [v, setV] = useState("");
   const ref = useRef<HTMLInputElement>(null);
@@ -26,9 +26,9 @@ export const CampoCodigo = ({ onCodigo, ocupado, autoFocus, guia, grande, boton 
     <div className="flex gap-2">
       <div className="relative flex-1">
         <Hash className={`absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground ${grande ? "w-5 h-5" : "w-4 h-4"}`} />
-        <input ref={ref} data-guia={guia} value={v} onChange={(e) => setV(e.target.value.toUpperCase())} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); enviar(); } }}
-          placeholder="BIB-0001" disabled={ocupado} autoComplete="off"
-          className={`w-full border-2 border-input rounded-xl bg-background font-mono tracking-wider focus:border-primary focus:outline-none transition ${grande ? "pl-11 pr-4 py-3.5 text-xl" : "pl-9 pr-3 py-2.5 text-base"}`} />
+        <input ref={ref} data-guia={guia} value={v} onChange={(e) => setV(e.target.value.replace(/\D/g, ""))} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); enviar(); } }}
+          placeholder="Número del libro" disabled={ocupado} autoComplete="off" inputMode="numeric"
+          className={`w-full border-2 border-input rounded-xl bg-background font-semibold tracking-wide focus:border-primary focus:outline-none transition ${grande ? "pl-11 pr-4 py-3.5 text-xl" : "pl-9 pr-3 py-2.5 text-base"}`} />
       </div>
       <Button type="button" onClick={enviar} disabled={ocupado || !v.trim()} className={grande ? "h-auto px-6 rounded-xl text-base" : "rounded-xl"}>
         {ocupado ? <Loader2 className="w-4 h-4 animate-spin" /> : boton}
@@ -89,8 +89,8 @@ export const Prestar = ({ codigoInicial }: { codigoInicial?: string | null }) =>
       const e = r.ejemplar;
       const titulo = e.Biblioteca_Obras?.titulo || "Libro";
       if (carrito.some((c) => c.codigo === e.codigo)) return;
-      if (e.tipo_prestamo === "sala") { setError(`«${titulo}» (${e.codigo}) es solo para consulta en sala.`); return; }
-      if (e.estado !== "disponible") { setError(`«${titulo}» (${e.codigo}) no está disponible${r.prestamo ? `: lo tiene ${r.prestamo.usuario_nombre}` : ""}.`); return; }
+      if (e.tipo_prestamo === "sala") { setError(`«${titulo}» (n.° ${e.codigo}) es solo para consulta en sala.`); return; }
+      if (e.estado !== "disponible") { setError(`«${titulo}» (n.° ${e.codigo}) no está disponible${r.prestamo ? `: lo tiene ${r.prestamo.usuario_nombre}` : ""}.`); return; }
       setCarrito((p) => [...p, { codigo: e.codigo, titulo, autores: e.Biblioteca_Obras?.autores || null, portada: e.Biblioteca_Obras?.portada_url || null }]);
     } catch (err) { setError(errorDe(err)); }
   }
@@ -162,7 +162,7 @@ export const Prestar = ({ codigoInicial }: { codigoInicial?: string | null }) =>
                   <p className="text-muted-foreground">Ya tiene:</p>
                   {sit.abiertos.map((p) => (
                     <p key={p.id} className={p.perdido || p.fecha_vencimiento < hoy ? "text-rose-700" : "text-foreground"}>
-                      <span className="font-mono text-xs">{p.Biblioteca_Ejemplares?.codigo}</span> {p.Biblioteca_Obras?.titulo} — {p.perdido ? "perdido" : `${p.fecha_vencimiento < hoy ? "venció" : "vence"} ${fechaLarga(p.fecha_vencimiento)}`}
+                      <span className="text-xs font-semibold">N.° {p.Biblioteca_Ejemplares?.codigo}</span> {p.Biblioteca_Obras?.titulo} — {p.perdido ? "perdido" : `${p.fecha_vencimiento < hoy ? "venció" : "vence"} ${fechaLarga(p.fecha_vencimiento)}`}
                     </p>
                   ))}
                 </div>
@@ -178,7 +178,7 @@ export const Prestar = ({ codigoInicial }: { codigoInicial?: string | null }) =>
           <div className="space-y-3">
             <CampoCodigo onCodigo={agregarLibro} ocupado={ocupado} autoFocus={!!lector} guia="biblioteca.codigo_prestar" />
             {carrito.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">Escribe el código que está en la etiqueta del libro.</p>
+              <p className="text-sm text-muted-foreground text-center py-4">Escribe el número que está en la etiqueta del libro.</p>
             ) : (
               <div className="space-y-2">
                 {carrito.map((c) => (
@@ -188,7 +188,7 @@ export const Prestar = ({ codigoInicial }: { codigoInicial?: string | null }) =>
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-foreground truncate">{c.titulo}</p>
-                      <p className="text-xs font-mono text-muted-foreground">{c.codigo}</p>
+                      <p className="text-xs text-muted-foreground">N.° {c.codigo}</p>
                     </div>
                     <button onClick={() => setCarrito((p) => p.filter((x) => x.codigo !== c.codigo))} title="Quitar" className="p-1 rounded hover:bg-muted"><X className="w-4 h-4 text-muted-foreground" /></button>
                   </div>
@@ -233,7 +233,7 @@ export const Devolver = ({ codigoInicial }: { codigoInicial?: string | null }) =
   return (
     <div className="space-y-5 max-w-2xl mx-auto">
       <div className="rounded-2xl border-2 border-primary/30 bg-card p-6 shadow-sm space-y-3">
-        <p className="font-semibold text-foreground text-lg text-center">Código del libro que devuelven</p>
+        <p className="font-semibold text-foreground text-lg text-center">Número del libro que devuelven</p>
         <CampoCodigo onCodigo={devolver} ocupado={ocupado} autoFocus guia="biblioteca.codigo_devolver" grande boton="Devolver" />
       </div>
       {hechas.map((h, i) => (

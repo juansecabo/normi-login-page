@@ -6,8 +6,8 @@ import { GENEROS, NIVELES, errorDe } from "./comun";
 
 /**
  * Etiquetas en PDF tamaño carta:
- *  - Código: 30 por hoja (formato Avery 5160, 2⅝" × 1"): el código del libro en grande
- *    (BIB-0001), la signatura y el título. Ese código es el que se escribe para prestar,
+ *  - Número: 30 por hoja (formato Avery 5160, 2⅝" × 1"): el número del libro en grande
+ *    (1, 2, 3…), la signatura y el título. Ese número es el que se escribe para prestar,
  *    devolver o buscar (sin lectores ni cámara, Juan 2026-10-04).
  *  - Tejuelo: 80 por hoja (Avery 5167, 1¾" × ½"): signatura para el lomo, con el color del
  *    género (literatura) y la cinta del nivel lector, como propone el MEN.
@@ -55,8 +55,8 @@ const Etiquetas = () => {
         const o = e.Biblioteca_Obras;
         if (tipo === "codigo") {
           doc.setTextColor(0);
-          doc.setFont("courier", "bold"); doc.setFontSize(22);
-          doc.text(e.codigo, x + f.w / 2, y + 0.42, { align: "center" });
+          doc.setFont("helvetica", "bold"); doc.setFontSize(26);
+          doc.text(`N.° ${e.codigo}`, x + f.w / 2, y + 0.42, { align: "center" });
           doc.setFont("helvetica", "bold"); doc.setFontSize(8);
           doc.text(e.signatura || "", x + f.w / 2, y + 0.62, { align: "center" });
           doc.setFont("helvetica", "normal"); doc.setFontSize(7);
@@ -74,11 +74,11 @@ const Etiquetas = () => {
           const partes = (e.signatura || "").split("/").map((s) => s.trim()).filter(Boolean);
           doc.text(partes.join("  "), x + f.w / 2, y + 0.33, { align: "center" });
           doc.setFont("helvetica", "normal"); doc.setFontSize(6);
-          doc.text(e.codigo, x + f.w - 0.06, y + f.h - 0.05, { align: "right" });
+          doc.text(`N.° ${e.codigo}`, x + f.w - 0.06, y + f.h - 0.05, { align: "right" });
         }
         pos++;
       }
-      doc.save(`Etiquetas ${tipo === "codigo" ? "código" : "tejuelo"} biblioteca.pdf`);
+      doc.save(`Etiquetas ${tipo === "codigo" ? "número" : "tejuelo"} biblioteca.pdf`);
       setImpresos(ejemplares.map((e) => e.id));
       setMsg({ ok: true, texto: `Se generaron ${ejemplares.length} ${ejemplares.length === 1 ? "etiqueta" : "etiquetas"}. Imprímelas en papel adhesivo tamaño carta, sin ajustar a la página.` });
     } catch (err) { setMsg({ ok: false, texto: errorDe(err, "No se pudieron generar las etiquetas.") }); }
@@ -99,7 +99,7 @@ const Etiquetas = () => {
       <div className="space-y-2">
         <p className="text-sm font-medium text-foreground">Tipo de etiqueta</p>
         <div className="flex gap-2">
-          <button onClick={() => setTipo("codigo")} className={opc(tipo === "codigo")}>Código del libro<br /><span className="text-xs font-normal">30 por hoja</span></button>
+          <button onClick={() => setTipo("codigo")} className={opc(tipo === "codigo")}>Número del libro<br /><span className="text-xs font-normal">30 por hoja</span></button>
           <button onClick={() => setTipo("tejuelo")} className={opc(tipo === "tejuelo")}>Tejuelo (lomo)<br /><span className="text-xs font-normal">80 por hoja</span></button>
         </div>
       </div>
@@ -107,12 +107,12 @@ const Etiquetas = () => {
         <p className="text-sm font-medium text-foreground">¿Cuáles libros?</p>
         <div className="flex gap-2">
           <button onClick={() => setLote("pendientes")} className={opc(lote === "pendientes")}>Las que faltan por imprimir</button>
-          <button onClick={() => setLote("rango")} className={opc(lote === "rango")}>Por códigos</button>
+          <button onClick={() => setLote("rango")} className={opc(lote === "rango")}>Por números</button>
         </div>
         {lote === "rango" && (
           <div className="flex items-center gap-2 text-sm">
-            De BIB-<input value={desde} onChange={(e) => setDesde(e.target.value.replace(/\D/g, ""))} className={`${inp} w-24`} inputMode="numeric" />
-            a BIB-<input value={hasta} onChange={(e) => setHasta(e.target.value.replace(/\D/g, ""))} className={`${inp} w-24`} inputMode="numeric" />
+            Del n.° <input value={desde} onChange={(e) => setDesde(e.target.value.replace(/\D/g, ""))} className={`${inp} w-24`} inputMode="numeric" />
+            al n.° <input value={hasta} onChange={(e) => setHasta(e.target.value.replace(/\D/g, ""))} className={`${inp} w-24`} inputMode="numeric" />
           </div>
         )}
       </div>

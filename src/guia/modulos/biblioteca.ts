@@ -1,6 +1,6 @@
 // Catálogo "Normi te guía" — Módulo BIBLIOTECA (ficha Biblioteca, 2026-10-04).
 //
-// Una ficha para todos los perfiles (/biblioteca, secciones por ?seccion=; todo por CÓDIGO del libro BIB-0001, sin cámara ni lector):
+// Una ficha para todos los perfiles (/biblioteca, secciones por ?seccion=; todo por el NÚMERO del libro (1, 2, 3…), sin cámara ni lector):
 //  - Todos: Catálogo (búsqueda y disponibilidad) y Mis préstamos (el acudiente: los de sus hijos).
 //  - Bibliotecario(a) y Administrador: Prestar, Devolver, Préstamos
 //    (vencidos, renovar, perdido/repuesto), Etiquetas (PDF), Paz y salvo, Reglas.
@@ -19,7 +19,7 @@ export const BIBLIOTECA: Capacidad[] = [
   {
     id: "biblioteca.buscar_libro",
     titulo: "Buscar un libro en la biblioteca y ver si está disponible",
-    descripcion: "Buscar en el catálogo por título, autor, materia, ISBN o código del libro y ver cuántas copias hay disponibles o cuándo vuelve el libro.",
+    descripcion: "Buscar en el catálogo por título, autor, materia, ISBN o número del libro y ver cuántas copias hay disponibles o cuándo vuelve el libro.",
     categoria: "Biblioteca",
     roles: [...TODOS],
     ruta: "/biblioteca?seccion=catalogo",
@@ -28,7 +28,7 @@ export const BIBLIOTECA: Capacidad[] = [
     pasos: [
       LLEGAR,
       tab("catalogo", "Catálogo"),
-      { narracion: "Escribe el título, el autor, la materia o el código del libro.", accion: "escribir", ancla: "biblioteca.buscar", campo: "busqueda" },
+      { narracion: "Escribe el título, el autor, la materia o el número del libro.", accion: "escribir", ancla: "biblioteca.buscar", campo: "busqueda" },
       { narracion: "Cada libro dice si está disponible o cuándo vuelve. Tócalo para ver el detalle.", accion: "explicar", ancla: "biblioteca.catalogo" },
     ],
   },
@@ -50,7 +50,7 @@ export const BIBLIOTECA: Capacidad[] = [
   {
     id: "biblioteca.agregar_libro",
     titulo: "Agregar libros al catálogo de la biblioteca",
-    descripcion: "Catalogar un libro: con el ISBN se llenan solos los datos (si existen), se eligen género y nivel, y cada copia recibe su código (BIB-0001) para la etiqueta.",
+    descripcion: "Catalogar un libro: con el ISBN se llenan solos los datos (si existen), se eligen género y nivel, y cada copia recibe su número (1, 2, 3…) para la etiqueta.",
     categoria: "Biblioteca",
     roles: [...GESTIONAN],
     ruta: "/biblioteca?seccion=catalogo",
@@ -62,14 +62,14 @@ export const BIBLIOTECA: Capacidad[] = [
       { narracion: "Toca 'Agregar libro'.", accion: "click", ancla: "biblioteca.agregar_libro" },
       { narracion: "Escribe el ISBN y toca la lupa: si el libro existe en internet, los datos se llenan solos.", accion: "escribir", ancla: "biblioteca.form_isbn", campo: "isbn", opcional: true },
       { narracion: "Revisa el título y elige el género: con él se arma la signatura del lomo.", accion: "seleccionar", ancla: "biblioteca.form_genero", campo: "genero" },
-      { narracion: "Indica cuántas copias tienes; cada una recibe su código.", accion: "escribir", ancla: "biblioteca.form_cantidad", campo: "cantidad" },
+      { narracion: "Indica cuántas copias tienes; cada una recibe su número.", accion: "escribir", ancla: "biblioteca.form_cantidad", campo: "cantidad" },
       { narracion: "Toca 'Guardar'.", accion: "click", ancla: "biblioteca.form_guardar" },
     ],
   },
   {
     id: "biblioteca.prestar",
     titulo: "Prestar un libro",
-    descripcion: "Buscar a la persona, escribir el código del libro (el de su etiqueta) y prestarlo. Si tiene libros vencidos o perdidos, o está suspendida, no deja prestar.",
+    descripcion: "Buscar a la persona, escribir el número del libro (el de su etiqueta) y prestarlo. Si tiene libros vencidos o perdidos, o está suspendida, no deja prestar.",
     categoria: "Biblioteca",
     roles: [...GESTIONAN],
     ruta: "/biblioteca?seccion=prestar",
@@ -80,14 +80,14 @@ export const BIBLIOTECA: Capacidad[] = [
       LLEGAR,
       tab("prestar", "Prestar"),
       { narracion: "Escribe el nombre o documento de quien pide el libro y elígelo.", accion: "escribir", ancla: "biblioteca.buscar_lector", campo: "persona" },
-      { narracion: "Escribe el código del libro (está en su etiqueta, ej. BIB-0001) y da Enter.", accion: "escribir", ancla: "biblioteca.codigo_prestar", campo: "libro" },
+      { narracion: "Escribe el número del libro (está en su etiqueta) y da Enter.", accion: "escribir", ancla: "biblioteca.codigo_prestar", campo: "libro" },
       { narracion: "Toca 'Prestar'. Te muestra la fecha de devolución.", accion: "click", ancla: "biblioteca.boton_prestar" },
     ],
   },
   {
     id: "biblioteca.devolver",
     titulo: "Recibir la devolución de un libro",
-    descripcion: "Escribir el código del libro que devuelven. Si llegó tarde, avisa los días de retraso y la suspensión.",
+    descripcion: "Escribir el número del libro que devuelven. Si llegó tarde, avisa los días de retraso y la suspensión.",
     categoria: "Biblioteca",
     roles: [...GESTIONAN],
     ruta: "/biblioteca?seccion=devolver",
@@ -96,7 +96,7 @@ export const BIBLIOTECA: Capacidad[] = [
     pasos: [
       LLEGAR,
       tab("devolver", "Devolver"),
-      { narracion: "Escribe el código del libro y da Enter. Puedes seguir con otro.", accion: "escribir", ancla: "biblioteca.codigo_devolver", campo: "libro" },
+      { narracion: "Escribe el número del libro y da Enter. Puedes seguir con otro.", accion: "escribir", ancla: "biblioteca.codigo_devolver", campo: "libro" },
     ],
   },
   {
@@ -117,12 +117,12 @@ export const BIBLIOTECA: Capacidad[] = [
   {
     id: "biblioteca.etiquetas",
     titulo: "Imprimir las etiquetas de los libros",
-    descripcion: "PDF tamaño carta con el código de cada libro (BIB-0001, 30 por hoja) o el tejuelo del lomo con el color del género y del nivel (80 por hoja).",
+    descripcion: "PDF tamaño carta con el número de cada libro (30 por hoja) o el tejuelo del lomo con el color del género y del nivel (80 por hoja).",
     categoria: "Biblioteca",
     roles: [...GESTIONAN],
     ruta: "/biblioteca?seccion=etiquetas",
     endpoint: "GET /api/biblioteca/etiquetas",
-    sinonimos: ["etiquetar libros", "imprimir códigos de los libros", "tejuelos", "etiquetas del lomo", "rotular libros"],
+    sinonimos: ["etiquetar libros", "imprimir los números de los libros", "tejuelos", "etiquetas del lomo", "rotular libros"],
     pasos: [
       LLEGAR,
       tab("etiquetas", "Etiquetas"),

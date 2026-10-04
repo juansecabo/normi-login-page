@@ -81,7 +81,7 @@ const ObraDetalle = ({ obraId, onCerrar, onEditar, onCambio }: {
                 <div key={e.id} className="py-2 flex flex-wrap items-center gap-2 text-sm">
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ESTADOS[e.estado]?.cls || ""}`}>{ESTADOS[e.estado]?.label || e.estado}</span>
                   {e.tipo_prestamo === "sala" && <span className="px-2 py-0.5 rounded-full text-xs bg-sky-100 text-sky-700">Solo en sala</span>}
-                  {gestiona && e.codigo && <span className="font-mono text-xs font-semibold bg-muted px-2 py-0.5 rounded">{e.codigo}</span>}
+                  {gestiona && e.codigo && <span className="text-xs font-semibold bg-muted px-2 py-0.5 rounded">N.° {e.codigo}</span>}
                   {e.signatura && <span className="font-mono text-xs text-muted-foreground">{e.signatura}</span>}
                   {e.vence && e.estado === "prestado" && <span className="text-muted-foreground">{e.mio ? "Lo tienes tú · " : ""}vuelve el {fechaLarga(e.vence)}</span>}
                   {gestiona && e.prestamo && <span className="text-foreground">· {e.prestamo.usuario_nombre}{e.prestamo.usuario_grado ? ` (${e.prestamo.usuario_grado} ${e.prestamo.usuario_salon})` : ""}</span>}
@@ -98,7 +98,7 @@ const ObraDetalle = ({ obraId, onCerrar, onEditar, onCambio }: {
             </div>
             {baja && (
               <div className="mt-2 rounded-md bg-rose-50 border border-rose-200 p-3 space-y-2">
-                <p className="text-sm text-foreground">Dar de baja la copia {baja.ej.codigo}. No se borra: queda en el registro.</p>
+                <p className="text-sm text-foreground">Dar de baja la copia n.° {baja.ej.codigo}. No se borra: queda en el registro.</p>
                 <select value={baja.motivo} onChange={(e) => setBaja({ ...baja, motivo: e.target.value })} className={inp}>
                   <option value="">Motivo…</option>
                   {["Deteriorado (mutilado, hojas sueltas)", "Hongos o humedad", "Desactualizado", "Duplicado sin uso", "Pirata o fotocopia", "Otro"].map((m) => <option key={m} value={m}>{m}</option>)}

@@ -45,7 +45,7 @@ const Catalogo = ({ gestiona, qInicial = "" }: { gestiona: boolean; qInicial?: s
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input data-guia="biblioteca.buscar" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Título, autor, materia o código del libro…"
+          <input data-guia="biblioteca.buscar" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Título, autor, materia o número del libro…"
             className="w-full pl-9 pr-8 py-2.5 border-2 border-input rounded-xl text-sm bg-background focus:border-primary focus:outline-none" />
           {q && <button onClick={() => setQ("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" title="Borrar"><X className="w-4 h-4" /></button>}
         </div>
