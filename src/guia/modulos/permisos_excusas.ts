@@ -193,7 +193,8 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
     ruta: "/permisos-excusas/inasistencia-dia",
     endpoint: "POST/GET/DELETE /api/asistencia/dia (Rector, Coordinador(a); config inasistencia_dia)",
     requisitos: [
-      { entidad: "estudiante", descripcion: "Uno o varios estudiantes que no vinieron hoy (solo el día de hoy)." },
+      { entidad: "estudiante", descripcion: "Uno o varios estudiantes que no vinieron." },
+      { entidad: "fecha", descripcion: "Día de la inasistencia: hoy por defecto; puede ser un día anterior, nunca uno futuro." },
     ],
     sinonimos: [
       "reportar inasistencia",
@@ -206,9 +207,10 @@ export const PERMISOS_EXCUSAS: Capacidad[] = [
     pasos: [
       ...abrirLista("inasistencia", "Justificación por Inasistencia"),
       { narracion: "Toca 'Reportar inasistencia'.", accion: "click", ancla: "inasistencia_staff.reportar_dia" },
-      { narracion: "Toca 'Seleccionar estudiantes' y marca a los que no vinieron hoy.", accion: "click", ancla: "inasistencia_dia.seleccionar", campo: "estudiante" },
+      { narracion: "Toca 'Seleccionar estudiantes' y marca a los que no vinieron.", accion: "click", ancla: "inasistencia_dia.seleccionar", campo: "estudiante" },
+      { narracion: "Revisa la fecha: viene en hoy; si la inasistencia fue otro día, cámbiala.", accion: "seleccionar", ancla: "inasistencia_dia.fecha", campo: "fecha", opcional: true },
       {
-        narracion: "Toca 'Reportar inasistencia'. Se avisa una sola vez a los acudientes y los profesores los verán ausentes en sus clases de hoy (lo pueden cambiar si el estudiante llega). El reporte queda en la pestaña 'Inasistencias reportadas' de Justificación por Inasistencia; ahí, con la papelera, se elimina y se avisa al acudiente que quedó anulado.",
+        narracion: "Toca 'Reportar inasistencia'. Se avisa una sola vez a los acudientes y los profesores los verán ausentes en sus clases de ese día (lo pueden cambiar si el estudiante llega; lo que ya marcaron no cambia). El reporte queda en la pestaña 'Inasistencias reportadas' de Justificación por Inasistencia; ahí, con la papelera, se elimina y se avisa al acudiente que quedó anulado.",
         accion: "click",
         ancla: "inasistencia_dia.reportar",
       },

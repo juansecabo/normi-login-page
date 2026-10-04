@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, X, Loader2, UserX, ChevronDown } from "lucide-react";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { Search, X, Loader2, UserX, ChevronDown, CalendarIcon } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import HeaderNormi from "@/components/HeaderNormi";
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
@@ -19,7 +23,7 @@ import { ListaEstudiantes, type Estudiante } from "./RetiroRegistroInterno";
 
 /**
  * Inasistencia del día (Juan 2026-10-03, por ahora solo la Normal): coordinación o
- * rectoría reportan que un estudiante no vino hoy. Al acudiente le llega un solo aviso;
+ * rectoría reportan que un estudiante no vino (hoy por defecto, o un día anterior). Al acudiente le llega un solo aviso;
  * en cada clase del día el estudiante aparece Ausente "por coordinación/rectoría" y el
  * profesor lo puede cambiar. El registro (y Eliminar) vive en Justificación por Inasistencia.
  */
@@ -47,7 +51,12 @@ const InasistenciaDiaRegistro = () => {
   const [busqueda, setBusqueda] = useState("");
   const [selectorAbierto, setSelectorAbierto] = useState(false);
 
-  // Los ya reportados hoy no salen en el selector.
+  const [fecha, setFecha] = useState<Date>(new Date());
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const fechaYmd = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, "0")}-${String(fecha.getDate()).padStart(2, "0")}`;
+  const esHoy = fechaYmd === new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(new Date());
+  const fechaTexto = esHoy ? "hoy" : `el ${format(fecha, "EEEE d 'de' MMMM", { locale: es })}`;
+  // Los ya reportados ese día no salen en el selector.
   const [reportes, setReportes] = useState<ReporteInasistenciaDia[]>([]);
   const [saving, setSaving] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -55,8 +64,7 @@ const InasistenciaDiaRegistro = () => {
 
   const cargarReportes = async () => {
     try {
-      const hoy = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(new Date());
-      const r = await apiRequest<{ reportes: ReporteInasistenciaDia[] }>(`/api/asistencia/dia?fecha=${hoy}`);
+      const r = await apiRequest<{ reportes: ReporteInasistenciaDia[] }>(`/api/asistencia/dia?fecha=${fechaYmd}`);
       setReportes(r.reportes);
     } catch { /* sin la lista, el servidor igual ignora los repetidos */ }
   };
@@ -64,7 +72,6 @@ const InasistenciaDiaRegistro = () => {
   useEffect(() => {
     if (!session.id) { navigate("/"); return; }
     if (!ROLES_INASISTENCIA_DIA.includes(session.cargo || "")) { navigate("/permisos-excusas/inasistencia-staff"); return; }
-    cargarReportes();
     (async () => {
       try {
         const { data, error } = await supabase.from("Estudiantes").select("id, grado, salon").fetchAll();
@@ -80,7 +87,10 @@ const InasistenciaDiaRegistro = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Coordinador(a): solo los estudiantes de sus niveles. Los ya reportados hoy no salen.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setReportes([]); cargarReportes(); }, [fechaYmd]);
+
+  // Coordinador(a): solo los estudiantes de sus niveles. Los ya reportados ese día no salen.
   const yaReportados = useMemo(() => new Set(reportes.map((r) => r.estudiante_id)), [reportes]);
   const permitidos = useMemo(() => estudiantes.filter((e) => !yaReportados.has(e.id) && (!nivelesCoordina || nivelesCoordina.includes(nivelDe(e.grado)))),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -107,8 +117,8 @@ const InasistenciaDiaRegistro = () => {
     if (!selArr.length) return;
     setSaving(true);
     try {
-      await apiRequest("/api/asistencia/dia", { method: "POST", body: JSON.stringify({ estudiantes: selArr.map((e) => String(e.id)) }) });
-      setResultado({ ok: true, texto: `Quedó reportada la inasistencia de hoy de ${selArr.length} estudiante${selArr.length === 1 ? "" : "s"} y se avisó a sus acudientes.` });
+      await apiRequest("/api/asistencia/dia", { method: "POST", body: JSON.stringify({ fecha: fechaYmd, estudiantes: selArr.map((e) => String(e.id)) }) });
+      setResultado({ ok: true, texto: `Quedó reportada la inasistencia ${esHoy ? "de hoy" : `del ${format(fecha, "EEEE d 'de' MMMM", { locale: es })}`} de ${selArr.length} estudiante${selArr.length === 1 ? "" : "s"} y se avisó a sus acudientes.` });
       setSeleccionados({});
       await cargarReportes();
     } catch (err: any) {
@@ -140,7 +150,7 @@ const InasistenciaDiaRegistro = () => {
           <h2 className="text-xl font-bold text-foreground flex items-center justify-center gap-2"><UserX className="w-6 h-6 text-primary" /> Reportar inasistencia</h2>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium text-foreground">{selArr.length > 1 ? "Estudiantes que no vinieron hoy" : "Estudiante que no vino hoy"}</label>
+            <label className="text-sm font-medium text-foreground">{selArr.length > 1 ? "Estudiantes que no vinieron" : "Estudiante que no vino"}</label>
             <button type="button" data-guia="inasistencia_dia.seleccionar" onClick={() => setSelectorAbierto(true)}
               className="w-full flex items-center justify-between px-3 py-2 border border-input rounded-md text-sm bg-background hover:bg-accent cursor-pointer">
               <span className={selArr.length ? "text-foreground" : "text-muted-foreground"}>
@@ -158,6 +168,22 @@ const InasistenciaDiaRegistro = () => {
                 ))}
               </div>
             )}
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-foreground">Fecha</label>
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger asChild>
+                <button data-guia="inasistencia_dia.fecha" className="w-full flex items-center justify-between px-3 py-2 border border-input rounded-md text-sm bg-background hover:bg-accent cursor-pointer">
+                  {format(fecha, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}
+                  <CalendarIcon className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={fecha} onSelect={(d) => { if (d) { setFecha(d); setSeleccionados({}); } setCalendarOpen(false); }}
+                  disabled={(d) => d > new Date()} locale={es} />
+              </PopoverContent>
+            </Popover>
           </div>
 
           <Button data-guia="inasistencia_dia.reportar" onClick={() => setShowConfirm(true)} disabled={!selArr.length || saving} className="w-full py-3 text-base font-bold">
@@ -203,9 +229,9 @@ const InasistenciaDiaRegistro = () => {
       <AlertDialog open={showConfirm} onOpenChange={(o) => !saving && setShowConfirm(o)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Reportar la inasistencia de hoy?</AlertDialogTitle>
+            <AlertDialogTitle>¿Reportar la inasistencia {esHoy ? "de hoy" : `del ${format(fecha, "EEEE d 'de' MMMM", { locale: es })}`}?</AlertDialogTitle>
             <AlertDialogDescription>
-              {selArr.length === 1 ? `Para ${selArr[0].nombres} ${selArr[0].apellidos}.` : `Para ${selArr.length} estudiantes.`} Se avisará a sus acudientes por WhatsApp y los profesores los verán como ausentes en sus clases de hoy.
+              {selArr.length === 1 ? `Para ${selArr[0].nombres} ${selArr[0].apellidos}.` : `Para ${selArr.length} estudiantes.`} Se avisará a sus acudientes por WhatsApp y los profesores los verán como ausentes en sus clases {fechaTexto === "hoy" ? "de hoy" : "de ese día"} (lo que ya marcaron no cambia).
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
