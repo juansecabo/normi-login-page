@@ -18,7 +18,6 @@ import ConfigBiblioteca from "@/components/biblioteca/ConfigBiblioteca";
 import MisPrestamos from "@/components/biblioteca/MisPrestamos";
 import PortadaLibro from "@/components/biblioteca/PortadaLibro";
 import ObraDetalle from "@/components/biblioteca/ObraDetalle";
-import iconBiblioteca from "@/assets/icons/biblioteca.webp";
 import { puedeGestionar, puedeConsultar, ESTADOS, fechaLarga, fechaCorta, autoresBonitos, type ObraResumen } from "@/components/biblioteca/comun";
 
 /**
@@ -87,9 +86,7 @@ const Biblioteca = () => {
           <div className="max-w-5xl mx-auto space-y-6">
             {/* Encabezado como las demás fichas: nombre + cifras (espacio reservado mientras cargan). */}
             <div className="bg-card rounded-lg shadow-soft p-6">
-              <h2 className="text-xl font-bold text-foreground flex items-center justify-center gap-2">
-                <img src={iconBiblioteca} alt="" className="w-8 h-8 object-contain" /> Biblioteca
-              </h2>
+              <h2 className="text-xl font-bold text-foreground text-center">Biblioteca</h2>
               <div className="flex flex-wrap justify-center gap-3 mt-4 min-h-[44px]" data-guia="biblioteca.cifras">
                 {resumen ? (<>
                   <Cifra n={resumen.titulos} t={resumen.titulos === 1 ? "título" : "títulos"} />
@@ -124,10 +121,7 @@ const Biblioteca = () => {
         ) : (
           <div className="max-w-5xl mx-auto">
             <div className="bg-card rounded-lg shadow-soft p-4 md:p-6">
-              <h2 className="text-xl font-bold text-foreground flex items-center justify-center gap-2 mb-6">
-                <span className={`w-8 h-8 rounded-lg bg-gradient-to-br ${actual.color} text-white flex items-center justify-center`}><actual.Icono className="w-4 h-4" /></span>
-                {actual.titulo}
-              </h2>
+              <h2 className="text-xl font-bold text-foreground text-center mb-6">{actual.titulo}</h2>
               {actual.k === "prestar" && <Prestar codigoInicial={params.get("codigo")} />}
               {actual.k === "devolver" && <Devolver codigoInicial={params.get("codigo")} />}
               {actual.k === "catalogo" && <Catalogo gestiona={gestiona} qInicial={params.get("q") || ""} />}
