@@ -1,58 +1,53 @@
 import { useEffect, useRef, useState } from "react";
-import { Search, X, Loader2, ScanLine, BookUp, BookDown, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Search, X, Loader2, AlertTriangle, CheckCircle2, BookOpen, UserRound, Hash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/apiClient";
-import Escaner from "./Escaner";
 import { fechaLarga, hoyYmd, errorDe } from "./comun";
 
 /**
- * Mostrador de la biblioteca: prestar y devolver. El lector de códigos USB/Bluetooth escribe
- * el código en el campo y da Enter solo; también se puede escanear con la cámara o escribir
- * el número de inventario a mano.
+ * Prestar y devolver por CÓDIGO (Juan 2026-10-04): cada libro tiene un código corto
+ * (BIB-0001) escrito en su etiqueta; se teclea aquí. Sin cámara ni lectores.
  */
 interface LectorBusqueda { id: string; nombre: string; cargo: string | null; grado: string | null; salon: string | null }
 interface Situacion {
-  abiertos: { id: number; fecha_vencimiento: string; perdido: boolean; Biblioteca_Obras: { titulo: string } | null; Biblioteca_Ejemplares: { numero_inventario: number } | null }[];
-  vencidos: number; reposiciones: number; suspendido_hasta: string | null; puede_prestar: boolean; motivo_bloqueo: string | null;
-  politica: { max: number; dias: number };
+  abiertos: { id: number; fecha_vencimiento: string; perdido: boolean; Biblioteca_Obras: { titulo: string } | null; Biblioteca_Ejemplares: { codigo: string } | null }[];
+  puede_prestar: boolean; motivo_bloqueo: string | null; politica: { max: number; dias: number };
 }
 interface Lector { id: string; nombre: string; tipo: string; cargo?: string | null; grado?: string | null; salon?: string | null }
-interface EnCarrito { codigo: string; numero: number; titulo: string }
+interface EnCarrito { codigo: string; titulo: string; autores: string | null; portada: string | null }
 
-const Mostrador = () => {
-  const [modo, setModo] = useState<"prestar" | "devolver">("prestar");
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-2 max-w-md mx-auto">
-        <button data-guia="biblioteca.modo_prestar" onClick={() => setModo("prestar")} className={`flex items-center justify-center gap-2 py-2.5 rounded-lg font-semibold transition ${modo === "prestar" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"}`}><BookUp className="w-4 h-4" /> Prestar</button>
-        <button data-guia="biblioteca.modo_devolver" onClick={() => setModo("devolver")} className={`flex items-center justify-center gap-2 py-2.5 rounded-lg font-semibold transition ${modo === "devolver" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"}`}><BookDown className="w-4 h-4" /> Devolver</button>
-      </div>
-      {modo === "prestar" ? <Prestar /> : <Devolver />}
-    </div>
-  );
-};
-
-/** Campo para el código del libro: Enter (lo manda el lector USB) o la cámara. */
-const CampoCodigo = ({ onCodigo, ocupado, autoFocus, guia }: { onCodigo: (c: string) => void; ocupado: boolean; autoFocus?: boolean; guia: string }) => {
+/** Campo del código del libro: se escribe y Enter (o el botón). */
+export const CampoCodigo = ({ onCodigo, ocupado, autoFocus, guia, grande, boton = "Agregar" }: { onCodigo: (c: string) => void; ocupado?: boolean; autoFocus?: boolean; guia?: string; grande?: boolean; boton?: string }) => {
   const [v, setV] = useState("");
-  const [cam, setCam] = useState(false);
   const ref = useRef<HTMLInputElement>(null);
   useEffect(() => { if (autoFocus) ref.current?.focus(); }, [autoFocus]);
-  const enviar = (c: string) => { const t = c.trim(); if (t) onCodigo(t); setV(""); setTimeout(() => ref.current?.focus(), 30); };
+  const enviar = () => { const t = v.trim(); if (!t) return; onCodigo(t); setV(""); setTimeout(() => ref.current?.focus(), 30); };
   return (
     <div className="flex gap-2">
       <div className="relative flex-1">
-        <ScanLine className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <input ref={ref} data-guia={guia} value={v} onChange={(e) => setV(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); enviar(v); } }}
-          placeholder="Escanea el código del libro o escribe su número" className="w-full pl-9 pr-3 py-2.5 border border-input rounded-md text-sm bg-background" disabled={ocupado} />
+        <Hash className={`absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground ${grande ? "w-5 h-5" : "w-4 h-4"}`} />
+        <input ref={ref} data-guia={guia} value={v} onChange={(e) => setV(e.target.value.toUpperCase())} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); enviar(); } }}
+          placeholder="BIB-0001" disabled={ocupado} autoComplete="off"
+          className={`w-full border-2 border-input rounded-xl bg-background font-mono tracking-wider focus:border-primary focus:outline-none transition ${grande ? "pl-11 pr-4 py-3.5 text-xl" : "pl-9 pr-3 py-2.5 text-base"}`} />
       </div>
-      <Button type="button" variant="outline" onClick={() => setCam(true)} title="Escanear con la cámara"><ScanLine className="w-4 h-4 mr-1" /> Cámara</Button>
-      <Escaner abierto={cam} onCerrar={() => setCam(false)} onCodigo={enviar} />
+      <Button type="button" onClick={enviar} disabled={ocupado || !v.trim()} className={grande ? "h-auto px-6 rounded-xl text-base" : "rounded-xl"}>
+        {ocupado ? <Loader2 className="w-4 h-4 animate-spin" /> : boton}
+      </Button>
     </div>
   );
 };
 
-const Prestar = () => {
+const Paso = ({ n, titulo, activo, children }: { n: number; titulo: string; activo: boolean; children: React.ReactNode }) => (
+  <div className={`rounded-2xl border-2 p-5 transition ${activo ? "border-primary/30 bg-card shadow-sm" : "border-border bg-muted/30 opacity-60"}`}>
+    <div className="flex items-center gap-3 mb-4">
+      <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${activo ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{n}</span>
+      <h3 className="font-semibold text-foreground text-lg">{titulo}</h3>
+    </div>
+    {children}
+  </div>
+);
+
+export const Prestar = ({ codigoInicial }: { codigoInicial?: string | null }) => {
   const [busca, setBusca] = useState("");
   const [resultados, setResultados] = useState<LectorBusqueda[]>([]);
   const [buscando, setBuscando] = useState(false);
@@ -60,7 +55,11 @@ const Prestar = () => {
   const [sit, setSit] = useState<Situacion | null>(null);
   const [carrito, setCarrito] = useState<EnCarrito[]>([]);
   const [ocupado, setOcupado] = useState(false);
-  const [msg, setMsg] = useState<{ ok: boolean; texto: string } | null>(null);
+  const [error, setError] = useState("");
+  const [hecho, setHecho] = useState<{ nombre: string; libros: string[]; fecha: string } | null>(null);
+  const [vence, setVence] = useState<string | null>(null);
+
+  useEffect(() => { if (codigoInicial) agregarLibro(codigoInicial); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [codigoInicial]);
 
   useEffect(() => {
     if (lector || busca.trim().length < 2) { setResultados([]); return; }
@@ -74,40 +73,36 @@ const Prestar = () => {
   }, [busca, lector]);
 
   const elegir = async (id: string) => {
-    setOcupado(true); setMsg(null); setCarrito([]);
+    setOcupado(true); setError(""); setHecho(null);
     try {
       const r = await apiRequest<{ lector: Lector; situacion: Situacion }>(`/api/biblioteca/lectores/${id}`);
       setLector(r.lector); setSit(r.situacion); setResultados([]);
-    } catch (err) { setMsg({ ok: false, texto: errorDe(err) }); }
+      apiRequest<{ fecha: string }>(`/api/biblioteca/vencimiento?tipo=${r.lector.tipo}`).then((v) => setVence(v.fecha)).catch(() => setVence(null));
+    } catch (err) { setError(errorDe(err)); }
     setOcupado(false);
   };
-  const limpiar = () => { setLector(null); setSit(null); setCarrito([]); setBusca(""); setMsg(null); };
 
-  const agregarLibro = async (codigo: string) => {
-    setMsg(null);
+  async function agregarLibro(codigo: string) {
+    setError(""); setHecho(null);
     try {
       const r = await apiRequest<{ ejemplar: any; prestamo: any }>(`/api/biblioteca/ejemplar/${encodeURIComponent(codigo)}`);
       const e = r.ejemplar;
       const titulo = e.Biblioteca_Obras?.titulo || "Libro";
-      if (carrito.some((c) => c.numero === e.numero_inventario)) return;
-      if (e.tipo_prestamo === "sala") { setMsg({ ok: false, texto: `«${titulo}» (n.° ${e.numero_inventario}) es solo para consulta en sala.` }); return; }
-      if (e.estado !== "disponible") {
-        const quien = r.prestamo ? ` Lo tiene ${r.prestamo.usuario_nombre}.` : "";
-        setMsg({ ok: false, texto: `«${titulo}» (n.° ${e.numero_inventario}) no está disponible.${quien}` }); return;
-      }
-      setCarrito((p) => [...p, { codigo, numero: e.numero_inventario, titulo }]);
-    } catch (err) { setMsg({ ok: false, texto: errorDe(err) }); }
-  };
+      if (carrito.some((c) => c.codigo === e.codigo)) return;
+      if (e.tipo_prestamo === "sala") { setError(`«${titulo}» (${e.codigo}) es solo para consulta en sala.`); return; }
+      if (e.estado !== "disponible") { setError(`«${titulo}» (${e.codigo}) no está disponible${r.prestamo ? `: lo tiene ${r.prestamo.usuario_nombre}` : ""}.`); return; }
+      setCarrito((p) => [...p, { codigo: e.codigo, titulo, autores: e.Biblioteca_Obras?.autores || null, portada: e.Biblioteca_Obras?.portada_url || null }]);
+    } catch (err) { setError(errorDe(err)); }
+  }
 
   const prestar = async () => {
     if (!lector || !carrito.length) return;
-    setOcupado(true); setMsg(null);
+    setOcupado(true); setError("");
     try {
       const r = await apiRequest<{ fecha_vencimiento: string }>("/api/biblioteca/prestamos", { method: "POST", body: JSON.stringify({ usuario_id: lector.id, codigos: carrito.map((c) => c.codigo) }) });
-      setMsg({ ok: true, texto: `Listo. ${carrito.length === 1 ? "Debe devolverlo" : "Debe devolverlos"} el ${fechaLarga(r.fecha_vencimiento)}.` });
-      setCarrito([]);
-      const s = await apiRequest<{ situacion: Situacion }>(`/api/biblioteca/lectores/${lector.id}`); setSit(s.situacion);
-    } catch (err) { setMsg({ ok: false, texto: errorDe(err) }); }
+      setHecho({ nombre: lector.nombre, libros: carrito.map((c) => c.titulo), fecha: r.fecha_vencimiento });
+      setCarrito([]); setLector(null); setSit(null); setBusca("");
+    } catch (err) { setError(errorDe(err)); }
     setOcupado(false);
   };
 
@@ -116,82 +111,113 @@ const Prestar = () => {
   const cupo = sit ? sit.politica.max - enCurso : 0;
 
   return (
-    <div className="space-y-4 max-w-2xl mx-auto">
-      {!lector ? (
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">¿Quién pide el libro?</label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input data-guia="biblioteca.buscar_lector" autoFocus value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Nombre o documento del estudiante o del profesor"
-              className="w-full pl-9 pr-3 py-2.5 border border-input rounded-md text-sm bg-background" />
+    <div className="space-y-5">
+      {hecho && (
+        <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-5 flex gap-4 items-start">
+          <CheckCircle2 className="w-8 h-8 text-emerald-600 shrink-0" />
+          <div>
+            <p className="font-semibold text-emerald-900 text-lg">Préstamo registrado</p>
+            <p className="text-emerald-800">{hecho.nombre} se lleva {hecho.libros.map((t) => `«${t}»`).join(", ")}.</p>
+            <p className="text-emerald-800">Debe devolver{hecho.libros.length > 1 ? "los" : "lo"} el <strong>{fechaLarga(hecho.fecha)}</strong>.</p>
           </div>
-          {buscando && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
-          {resultados.length > 0 && (
-            <div className="border border-border rounded-lg divide-y divide-border bg-card">
-              {resultados.map((l) => (
-                <button key={l.id} onClick={() => elegir(l.id)} className="w-full text-left px-3 py-2 hover:bg-muted text-sm">
-                  <span className="font-medium text-foreground">{l.nombre}</span>
-                  <span className="text-muted-foreground"> · {l.cargo || `${l.grado} ${l.salon}`}</span>
-                </button>
-              ))}
-            </div>
-          )}
-          {!buscando && busca.trim().length >= 2 && !resultados.length && <p className="text-sm text-muted-foreground">No se encontró a nadie con ese nombre o documento.</p>}
         </div>
-      ) : (
-        <div className="rounded-lg border border-border p-4 space-y-3 bg-card">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="font-semibold text-foreground">{lector.nombre}</p>
-              <p className="text-sm text-muted-foreground">{lector.cargo || `${lector.grado} ${lector.salon}`} · puede llevar {sit?.politica.max} {sit?.politica.max === 1 ? "libro" : "libros"} por {sit?.politica.dias} días</p>
-            </div>
-            <button onClick={limpiar} className="text-sm text-primary hover:underline shrink-0">Cambiar</button>
-          </div>
-          {sit && sit.abiertos.length > 0 && (
-            <div className="text-sm space-y-1">
-              <p className="font-medium text-foreground">Tiene prestados:</p>
-              {sit.abiertos.map((p) => (
-                <p key={p.id} className={p.perdido || p.fecha_vencimiento < hoy ? "text-rose-700" : "text-muted-foreground"}>
-                  · {p.Biblioteca_Obras?.titulo} (n.° {p.Biblioteca_Ejemplares?.numero_inventario}) — {p.perdido ? "perdido, sin reponer" : `${p.fecha_vencimiento < hoy ? "venció" : "vence"} el ${fechaLarga(p.fecha_vencimiento)}`}
-                </p>
-              ))}
-            </div>
-          )}
-          {sit && !sit.puede_prestar ? (
-            <p className="flex items-start gap-2 text-sm text-rose-700 bg-rose-50 rounded-md p-2"><AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" /> {sit.motivo_bloqueo}</p>
-          ) : (
-            <>
-              <CampoCodigo onCodigo={agregarLibro} ocupado={ocupado} autoFocus guia="biblioteca.codigo_prestar" />
-              {carrito.length > 0 && (
-                <div className="space-y-1">
-                  {carrito.map((c) => (
-                    <div key={c.numero} className="flex items-center justify-between text-sm bg-muted/50 rounded px-3 py-1.5">
-                      <span>«{c.titulo}» <span className="text-muted-foreground">n.° {c.numero}</span></span>
-                      <button onClick={() => setCarrito((p) => p.filter((x) => x.numero !== c.numero))} title="Quitar"><X className="w-4 h-4 text-muted-foreground hover:text-destructive" /></button>
-                    </div>
+      )}
+      <div className="grid lg:grid-cols-2 gap-5">
+        <Paso n={1} titulo="¿Quién lo pide?" activo>
+          {!lector ? (
+            <div className="space-y-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input data-guia="biblioteca.buscar_lector" autoFocus={!codigoInicial} value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Nombre o documento"
+                  className="w-full pl-9 pr-3 py-2.5 border-2 border-input rounded-xl text-sm bg-background focus:border-primary focus:outline-none" />
+              </div>
+              {buscando && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+              {resultados.length > 0 && (
+                <div className="rounded-xl border border-border divide-y divide-border overflow-hidden">
+                  {resultados.map((l) => (
+                    <button key={l.id} onClick={() => elegir(l.id)} className="w-full text-left px-3 py-2.5 hover:bg-primary/5 flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0"><UserRound className="w-4 h-4" /></span>
+                      <span className="min-w-0">
+                        <span className="block font-medium text-foreground text-sm truncate">{l.nombre}</span>
+                        <span className="block text-xs text-muted-foreground">{l.cargo || `${l.grado} ${l.salon}`}</span>
+                      </span>
+                    </button>
                   ))}
                 </div>
               )}
-              {carrito.length > cupo && <p className="text-sm text-rose-700">Solo puede llevar {Math.max(0, cupo)} más.</p>}
-              <Button data-guia="biblioteca.boton_prestar" className="w-full" disabled={!carrito.length || ocupado || carrito.length > cupo} onClick={prestar}>
-                {ocupado ? <Loader2 className="w-4 h-4 animate-spin" /> : `Prestar${carrito.length ? ` (${carrito.length})` : ""}`}
-              </Button>
-            </>
+              {!buscando && busca.trim().length >= 2 && !resultados.length && <p className="text-sm text-muted-foreground">No se encontró a nadie.</p>}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 rounded-xl bg-primary/5 p-3">
+                <span className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 font-semibold">{lector.nombre.charAt(0)}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-foreground truncate">{lector.nombre}</p>
+                  <p className="text-xs text-muted-foreground">{lector.cargo || `${lector.grado} ${lector.salon}`} · hasta {sit?.politica.max} {sit?.politica.max === 1 ? "libro" : "libros"} por {sit?.politica.dias} días</p>
+                </div>
+                <button onClick={() => { setLector(null); setSit(null); setBusca(""); }} className="text-xs text-primary hover:underline shrink-0">Cambiar</button>
+              </div>
+              {sit && sit.abiertos.length > 0 && (
+                <div className="text-sm space-y-1">
+                  <p className="text-muted-foreground">Ya tiene:</p>
+                  {sit.abiertos.map((p) => (
+                    <p key={p.id} className={p.perdido || p.fecha_vencimiento < hoy ? "text-rose-700" : "text-foreground"}>
+                      <span className="font-mono text-xs">{p.Biblioteca_Ejemplares?.codigo}</span> {p.Biblioteca_Obras?.titulo} — {p.perdido ? "perdido" : `${p.fecha_vencimiento < hoy ? "venció" : "vence"} ${fechaLarga(p.fecha_vencimiento)}`}
+                    </p>
+                  ))}
+                </div>
+              )}
+              {sit && !sit.puede_prestar && (
+                <p className="flex items-start gap-2 text-sm text-rose-700 bg-rose-50 rounded-xl p-3"><AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" /> {sit.motivo_bloqueo}</p>
+              )}
+            </div>
           )}
-        </div>
-      )}
-      {msg && (
-        <p className={`flex items-start gap-2 text-sm rounded-md p-2 ${msg.ok ? "text-emerald-800 bg-emerald-50" : "text-rose-700 bg-rose-50"}`}>
-          {msg.ok ? <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" /> : <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />} {msg.texto}
+        </Paso>
+
+        <Paso n={2} titulo="¿Qué libros?" activo={!lector || !!sit?.puede_prestar}>
+          <div className="space-y-3">
+            <CampoCodigo onCodigo={agregarLibro} ocupado={ocupado} autoFocus={!!lector} guia="biblioteca.codigo_prestar" />
+            {carrito.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">Escribe el código que está en la etiqueta del libro.</p>
+            ) : (
+              <div className="space-y-2">
+                {carrito.map((c) => (
+                  <div key={c.codigo} className="flex items-center gap-3 rounded-xl border border-border p-2.5">
+                    <div className="w-9 h-12 rounded bg-muted overflow-hidden flex items-center justify-center shrink-0">
+                      {c.portada ? <img src={c.portada} alt="" className="w-full h-full object-cover" /> : <BookOpen className="w-4 h-4 text-muted-foreground" />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground truncate">{c.titulo}</p>
+                      <p className="text-xs font-mono text-muted-foreground">{c.codigo}</p>
+                    </div>
+                    <button onClick={() => setCarrito((p) => p.filter((x) => x.codigo !== c.codigo))} title="Quitar" className="p-1 rounded hover:bg-muted"><X className="w-4 h-4 text-muted-foreground" /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Paso>
+      </div>
+
+      {error && <p className="flex items-start gap-2 text-sm text-rose-700 bg-rose-50 rounded-xl p-3"><AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" /> {error}</p>}
+      {lector && sit?.puede_prestar && carrito.length > cupo && <p className="text-sm text-rose-700">Solo puede llevar {Math.max(0, cupo)} más.</p>}
+
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl bg-muted/50 p-4">
+        <p className="text-sm text-muted-foreground">
+          {lector && vence ? <>Devolución: <strong className="text-foreground">{fechaLarga(vence)}</strong></> : "Elige a la persona y agrega los libros."}
         </p>
-      )}
+        <Button data-guia="biblioteca.boton_prestar" size="lg" className="w-full sm:w-auto rounded-xl px-8"
+          disabled={!lector || !sit?.puede_prestar || !carrito.length || ocupado || carrito.length > cupo} onClick={prestar}>
+          {ocupado ? <Loader2 className="w-4 h-4 animate-spin" /> : `Prestar${carrito.length ? ` ${carrito.length} ${carrito.length === 1 ? "libro" : "libros"}` : ""}`}
+        </Button>
+      </div>
     </div>
   );
 };
 
-const Devolver = () => {
+export const Devolver = ({ codigoInicial }: { codigoInicial?: string | null }) => {
   const [ocupado, setOcupado] = useState(false);
-  const [hechas, setHechas] = useState<{ ok: boolean; texto: string; extra?: string }[]>([]);
+  const [hechas, setHechas] = useState<{ ok: boolean; titulo: string; texto: string; extra?: string }[]>([]);
   const devolver = async (codigo: string) => {
     setOcupado(true);
     try {
@@ -199,22 +225,27 @@ const Devolver = () => {
       const extra = r.dias_atraso > 0
         ? `Llegó con ${r.dias_atraso} ${r.dias_atraso === 1 ? "día" : "días"} de retraso${r.suspendido_dias ? `: no podrá pedir libros durante ${r.suspendido_dias} ${r.suspendido_dias === 1 ? "día" : "días"}` : ""}.`
         : undefined;
-      setHechas((p) => [{ ok: true, texto: `«${r.titulo}» devuelto por ${r.lector}.`, extra }, ...p].slice(0, 20));
-    } catch (err) { setHechas((p) => [{ ok: false, texto: errorDe(err) }, ...p].slice(0, 20)); }
+      setHechas((p) => [{ ok: true, titulo: r.titulo, texto: `Devuelto por ${r.lector}`, extra }, ...p].slice(0, 20));
+    } catch (err) { setHechas((p) => [{ ok: false, titulo: codigo, texto: errorDe(err) }, ...p].slice(0, 20)); }
     setOcupado(false);
   };
+  useEffect(() => { if (codigoInicial) devolver(codigoInicial); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [codigoInicial]);
   return (
-    <div className="space-y-3 max-w-2xl mx-auto">
-      <CampoCodigo onCodigo={devolver} ocupado={ocupado} autoFocus guia="biblioteca.codigo_devolver" />
-      {ocupado && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+    <div className="space-y-5 max-w-2xl mx-auto">
+      <div className="rounded-2xl border-2 border-primary/30 bg-card p-6 shadow-sm space-y-3">
+        <p className="font-semibold text-foreground text-lg text-center">Código del libro que devuelven</p>
+        <CampoCodigo onCodigo={devolver} ocupado={ocupado} autoFocus guia="biblioteca.codigo_devolver" grande boton="Devolver" />
+      </div>
       {hechas.map((h, i) => (
-        <div key={i} className={`text-sm rounded-md p-2 ${h.ok ? "bg-emerald-50 text-emerald-800" : "bg-rose-50 text-rose-700"}`}>
-          <p className="flex items-start gap-2">{h.ok ? <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" /> : <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />} {h.texto}</p>
-          {h.extra && <p className="ml-6 text-amber-800">{h.extra}</p>}
+        <div key={i} className={`rounded-xl p-4 flex gap-3 items-start border ${h.ok ? "bg-emerald-50 border-emerald-200" : "bg-rose-50 border-rose-200"}`}>
+          {h.ok ? <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" /> : <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />}
+          <div className="text-sm">
+            {h.ok && <p className="font-semibold text-emerald-900">«{h.titulo}»</p>}
+            <p className={h.ok ? "text-emerald-800" : "text-rose-700"}>{h.texto}</p>
+            {h.extra && <p className="text-amber-800 mt-1">{h.extra}</p>}
+          </div>
         </div>
       ))}
     </div>
   );
 };
-
-export default Mostrador;

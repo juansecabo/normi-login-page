@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/apiClient";
 import ObraDetalle from "./ObraDetalle";
 import ObraForm from "./ObraForm";
+import PortadaLibro from "./PortadaLibro";
 import { GENEROS, NIVELES, autoresBonitos, fechaCorta, errorDe, type ObraResumen } from "./comun";
 
 /** Catálogo con búsqueda y disponibilidad (todos los perfiles). Quien gestiona agrega y edita libros. */
-const Catalogo = ({ gestiona }: { gestiona: boolean }) => {
-  const [q, setQ] = useState("");
+const Catalogo = ({ gestiona, qInicial = "" }: { gestiona: boolean; qInicial?: string }) => {
+  const [q, setQ] = useState(qInicial);
   const [genero, setGenero] = useState("");
   const [nivel, setNivel] = useState("");
   const [soloDisponibles, setSoloDisponibles] = useState(false);
@@ -44,12 +45,12 @@ const Catalogo = ({ gestiona }: { gestiona: boolean }) => {
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input data-guia="biblioteca.buscar" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por título, autor, materia o ISBN…"
-            className="w-full pl-9 pr-8 py-2 border border-input rounded-md text-sm bg-background" />
+          <input data-guia="biblioteca.buscar" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Título, autor, materia o código del libro…"
+            className="w-full pl-9 pr-8 py-2.5 border-2 border-input rounded-xl text-sm bg-background focus:border-primary focus:outline-none" />
           {q && <button onClick={() => setQ("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" title="Borrar"><X className="w-4 h-4" /></button>}
         </div>
         {gestiona && (
-          <Button data-guia="biblioteca.agregar_libro" onClick={() => setForm({ obra: null })}><Plus className="w-4 h-4 mr-1" /> Agregar libro</Button>
+          <Button data-guia="biblioteca.agregar_libro" className="rounded-xl" onClick={() => setForm({ obra: null })}><Plus className="w-4 h-4 mr-1" /> Agregar libro</Button>
         )}
       </div>
       <div className="flex flex-wrap items-center gap-2">
@@ -76,23 +77,22 @@ const Catalogo = ({ gestiona }: { gestiona: boolean }) => {
         <p className="text-center text-muted-foreground py-10">{q || genero || nivel ? "No se encontraron libros." : gestiona ? "El catálogo está vacío. Empieza con «Agregar libro»." : "La biblioteca todavía no tiene libros en el catálogo."}</p>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" data-guia="biblioteca.catalogo">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" data-guia="biblioteca.catalogo">
         {obras.map((o) => {
           const disp = o.disponibles > 0;
+          const estado = disp ? { t: `${o.disponibles} ${o.disponibles === 1 ? "disponible" : "disponibles"}`, c: "bg-emerald-500" }
+            : o.sala ? { t: "Solo en sala", c: "bg-sky-500" }
+            : o.proxima ? { t: `Vuelve ${fechaCorta(o.proxima)}`, c: "bg-amber-500" }
+            : { t: o.total ? "No disponible" : "Sin copias", c: "bg-slate-400" };
           return (
-            <button key={o.id} onClick={() => setAbierta(o.id)} className={`text-left flex gap-3 p-3 rounded-lg border bg-card hover:shadow-md transition ${o.activa ? "border-border" : "border-dashed border-amber-300 opacity-70"}`}>
-              <div className="w-14 h-20 shrink-0 rounded bg-muted overflow-hidden flex items-center justify-center">
-                {o.portada_url ? <img src={o.portada_url} alt="" className="w-full h-full object-cover" loading="lazy" /> : <span className="text-2xl">📕</span>}
+            <button key={o.id} onClick={() => setAbierta(o.id)} className={`group text-left flex flex-col rounded-2xl overflow-hidden bg-card border shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all ${o.activa ? "border-border" : "border-dashed border-amber-400 opacity-70"}`}>
+              <div className="relative aspect-[3/4] bg-muted overflow-hidden">
+                <PortadaLibro url={o.portada_url} titulo={o.titulo} genero={o.genero} className="w-full h-full group-hover:scale-105 transition-transform duration-300" />
+                <span className={`absolute top-2 left-2 text-[11px] font-semibold text-white px-2 py-0.5 rounded-full shadow ${estado.c}`}>{estado.t}</span>
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold text-sm text-foreground line-clamp-2">{o.titulo}</p>
+              <div className="p-3 space-y-0.5">
+                <p className="font-semibold text-sm text-foreground line-clamp-2 leading-snug">{o.titulo}</p>
                 {o.autores && <p className="text-xs text-muted-foreground truncate">{autoresBonitos(o.autores)}</p>}
-                <p className={`mt-1 text-xs font-medium ${disp ? "text-emerald-700" : o.sala ? "text-sky-700" : "text-amber-700"}`}>
-                  {disp ? `${o.disponibles} ${o.disponibles === 1 ? "disponible" : "disponibles"}`
-                    : o.sala ? "Solo para consulta en sala"
-                    : o.proxima ? `Prestado · vuelve ${fechaCorta(o.proxima)}`
-                    : o.total ? "No disponible" : "Sin copias"}
-                </p>
               </div>
             </button>
           );

@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, ScanLine, Search, ImagePlus, X } from "lucide-react";
+import { Loader2, Search, ImagePlus, X } from "lucide-react";
 import { apiRequest } from "@/lib/apiClient";
 import { subirArchivo } from "@/lib/storage";
-import Escaner from "./Escaner";
 import { GENEROS, NIVELES, PROCEDENCIAS, errorDe } from "./comun";
 
 /**
@@ -29,7 +28,6 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
   const [tipoPrestamo, setTipoPrestamo] = useState("normal");
   const [buscando, setBuscando] = useState(false);
   const [aviso, setAviso] = useState<{ ok: boolean; texto: string; obraId?: number } | null>(null);
-  const [escaner, setEscaner] = useState(false);
   const [subiendo, setSubiendo] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
@@ -44,9 +42,8 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
 
   const set = (k: string, v: string) => setD((p) => ({ ...p, [k]: v }));
 
-  const buscarIsbn = async (isbnIn?: string) => {
-    const isbn = (isbnIn ?? d.isbn).replace(/[^0-9Xx]/g, "");
-    if (isbnIn) set("isbn", isbn);
+  const buscarIsbn = async () => {
+    const isbn = d.isbn.replace(/[^0-9Xx]/g, "");
     if (isbn.length !== 10 && isbn.length !== 13) { setAviso({ ok: false, texto: "El ISBN debe tener 10 o 13 dígitos." }); return; }
     setBuscando(true); setAviso(null);
     try {
@@ -105,7 +102,6 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
               <Button type="button" variant="outline" onClick={() => buscarIsbn()} disabled={buscando} title="Buscar datos">
                 {buscando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
               </Button>
-              <Button type="button" variant="outline" onClick={() => setEscaner(true)} title="Escanear con la cámara"><ScanLine className="w-4 h-4" /></Button>
             </div>
             {aviso && <p className={`text-xs ${aviso.ok ? "text-emerald-700" : "text-amber-700"}`}>{aviso.texto}</p>}
           </div>
@@ -195,7 +191,6 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
           <Button variant="outline" onClick={onCerrar} disabled={guardando}>Cancelar</Button>
           <Button data-guia="biblioteca.form_guardar" onClick={guardar} disabled={guardando || subiendo}>{guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar"}</Button>
         </DialogFooter>
-        <Escaner abierto={escaner} onCerrar={() => setEscaner(false)} onCodigo={(c) => buscarIsbn(c)} titulo="Escanear ISBN" />
       </DialogContent>
     </Dialog>
   );
