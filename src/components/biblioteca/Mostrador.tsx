@@ -38,7 +38,7 @@ export const CampoCodigo = ({ onCodigo, ocupado, autoFocus, guia, grande, boton 
 };
 
 const Paso = ({ n, titulo, activo, children }: { n: number; titulo: string; activo: boolean; children: React.ReactNode }) => (
-  <div className={`rounded-2xl border-2 p-5 transition ${activo ? "border-primary/30 bg-card shadow-sm" : "border-border bg-muted/30 opacity-60"}`}>
+  <div className={`rounded-2xl border-2 p-5 transition ${activo ? "border-primary/30 bg-card" : "border-border bg-muted/30 opacity-60"}`}>
     <div className="flex items-center gap-3 mb-4">
       <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${activo ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{n}</span>
       <h3 className="font-semibold text-foreground text-lg">{titulo}</h3>
@@ -232,7 +232,7 @@ export const Devolver = ({ codigoInicial }: { codigoInicial?: string | null }) =
   useEffect(() => { if (codigoInicial) devolver(codigoInicial); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [codigoInicial]);
   return (
     <div className="space-y-5 max-w-2xl mx-auto">
-      <div className="rounded-2xl border-2 border-primary/30 bg-card p-6 shadow-sm space-y-3">
+      <div className="rounded-2xl border-2 border-primary/30 bg-card p-6 space-y-3">
         <p className="font-semibold text-foreground text-lg text-center">Número del libro que devuelven</p>
         <CampoCodigo onCodigo={devolver} ocupado={ocupado} autoFocus guia="biblioteca.codigo_devolver" grande boton="Devolver" />
       </div>

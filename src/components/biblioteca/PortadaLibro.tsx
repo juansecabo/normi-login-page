@@ -8,8 +8,8 @@ const PortadaLibro = ({ url, titulo, genero, className = "", mini = false }: { u
   return url
     ? <img src={url} alt="" className={`object-cover ${className}`} loading="lazy" />
     : (
-      <div className={`flex items-end p-3 ${className}`} style={{ background: `linear-gradient(160deg, ${color}, ${color}cc 55%, #1f2937)` }}>
-        {!mini && <span className="text-white font-bold text-sm leading-tight line-clamp-4 drop-shadow">{titulo}</span>}
+      <div className={`flex items-end p-3 ${className}`} style={{ background: color }}>
+        {!mini && <span className="text-white font-bold text-sm leading-tight line-clamp-4">{titulo}</span>}
       </div>
     );
 };

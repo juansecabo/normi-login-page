@@ -58,7 +58,7 @@ const ObraDetalle = ({ obraId, onCerrar, onEditar, onCambio }: {
         {cargando && !obra ? <div className="py-12 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div> : obra && (<>
           <DialogHeader><DialogTitle className="pr-6">{obra.titulo}</DialogTitle></DialogHeader>
           <div className="flex gap-4">
-            <PortadaLibro url={obra.portada_url} titulo={obra.titulo} genero={obra.genero} className="w-28 h-40 shrink-0 rounded-xl shadow-md" />
+            <PortadaLibro url={obra.portada_url} titulo={obra.titulo} genero={obra.genero} className="w-28 h-40 shrink-0 rounded-xl" />
             <div className="text-sm space-y-1 min-w-0">
               {obra.subtitulo && <p className="text-muted-foreground">{obra.subtitulo}</p>}
               {obra.autores && <p><span className="text-muted-foreground">Autor:</span> {autoresBonitos(obra.autores)}</p>}

@@ -51,18 +51,18 @@ const Biblioteca = () => {
   // Orden lógico de la vida de un libro (Juan 2026-10-04): registrarlo, etiquetarlo, prestarlo,
   // recibirlo, seguir los préstamos y, al final del año, el paz y salvo.
   const secciones: Seccion[] = [
-    { k: "catalogo", titulo: "Catálogo", desc: gestiona ? "Registrar y buscar libros" : "Buscar libros", Icono: Library, color: "from-teal-500 to-teal-700" },
+    { k: "catalogo", titulo: "Catálogo", desc: gestiona ? "Registrar y buscar libros" : "Buscar libros", Icono: Library, color: "bg-teal-600" },
     ...(gestiona ? [
-      { k: "etiquetas", titulo: "Etiquetas", desc: resumen?.etiquetas_pendientes ? `${resumen.etiquetas_pendientes} ${resumen.etiquetas_pendientes === 1 ? "etiqueta" : "etiquetas"} sin imprimir` : "Todas impresas", Icono: Tags, color: "from-violet-500 to-purple-600" },
-      { k: "prestar", titulo: "Prestar", desc: "Registrar la salida de un libro", Icono: BookUp, color: "from-emerald-500 to-emerald-600" },
-      { k: "devolver", titulo: "Devolver", desc: "Recibir un libro", Icono: BookDown, color: "from-sky-500 to-sky-600" },
+      { k: "etiquetas", titulo: "Etiquetas", desc: resumen?.etiquetas_pendientes ? `${resumen.etiquetas_pendientes} ${resumen.etiquetas_pendientes === 1 ? "etiqueta" : "etiquetas"} sin imprimir` : "Todas impresas", Icono: Tags, color: "bg-violet-500" },
+      { k: "prestar", titulo: "Prestar", desc: "Registrar la salida de un libro", Icono: BookUp, color: "bg-emerald-500" },
+      { k: "devolver", titulo: "Devolver", desc: "Recibir un libro", Icono: BookDown, color: "bg-sky-500" },
     ] : []),
-    ...(consulta ? [{ k: "prestamos", titulo: "Préstamos", desc: resumen?.vencidos ? `${resumen.vencidos} vencidos` : "Quién tiene cada libro", Icono: AlarmClock, color: "from-amber-500 to-orange-500", badge: (resumen?.vencidos || 0) + (resumen?.perdidos || 0) }] : []),
+    ...(consulta ? [{ k: "prestamos", titulo: "Préstamos", desc: resumen?.vencidos ? `${resumen.vencidos} vencidos` : "Quién tiene cada libro", Icono: AlarmClock, color: "bg-orange-500", badge: (resumen?.vencidos || 0) + (resumen?.perdidos || 0) }] : []),
     ...(consulta ? [
-      { k: "paz", titulo: "Paz y salvo", desc: "Quién debe libros por salón", Icono: ShieldCheck, color: "from-green-600 to-emerald-700" },
-      { k: "reglas", titulo: "Reglas", desc: "Libros y días de préstamo", Icono: SlidersHorizontal, color: "from-slate-500 to-slate-700" },
+      { k: "paz", titulo: "Paz y salvo", desc: "Quién debe libros por salón", Icono: ShieldCheck, color: "bg-green-600" },
+      { k: "reglas", titulo: "Reglas", desc: "Libros y días de préstamo", Icono: SlidersHorizontal, color: "bg-slate-500" },
     ] : []),
-    { k: "mis", titulo: acudiente ? "Préstamos de mis hijos" : "Mis préstamos", desc: acudiente ? "Libros que tienen tus hijos" : "Libros que tienes", Icono: BookMarked, color: "from-rose-500 to-pink-600" },
+    { k: "mis", titulo: acudiente ? "Préstamos de mis hijos" : "Mis préstamos", desc: acudiente ? "Libros que tienen tus hijos" : "Libros que tienes", Icono: BookMarked, color: "bg-rose-500" },
   ];
   const actual = secciones.find((s) => s.k === seccion) || null;
 
@@ -108,9 +108,9 @@ const Biblioteca = () => {
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" data-guia="biblioteca.secciones">
                 {secciones.map((s) => (
                   <button key={s.k} data-guia={`biblioteca.tab_${s.k}`} onClick={() => ir(s.k)}
-                    className="group relative text-left rounded-2xl bg-card border border-border p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all">
+                    className="relative text-left rounded-xl bg-card border border-border p-5 hover:bg-muted/50 hover:border-primary/40 transition-colors">
                     {!!s.badge && <span className="absolute top-3 right-3 min-w-[22px] h-[22px] px-1.5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center">{s.badge > 99 ? "99+" : s.badge}</span>}
-                    <span className={`w-12 h-12 rounded-xl bg-gradient-to-br ${s.color} text-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform`}>
+                    <span className={`w-12 h-12 rounded-xl ${s.color} text-white flex items-center justify-center`}>
                       <s.Icono className="w-6 h-6" />
                     </span>
                     <p className="mt-4 font-semibold text-foreground">{s.titulo}</p>

@@ -85,10 +85,10 @@ const Catalogo = ({ gestiona, qInicial = "" }: { gestiona: boolean; qInicial?: s
             : o.proxima ? { t: `Vuelve ${fechaCorta(o.proxima)}`, c: "bg-amber-500" }
             : { t: o.total ? "No disponible" : "Sin copias", c: "bg-slate-400" };
           return (
-            <button key={o.id} onClick={() => setAbierta(o.id)} className={`group text-left flex flex-col rounded-2xl overflow-hidden bg-card border shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all ${o.activa ? "border-border" : "border-dashed border-amber-400 opacity-70"}`}>
+            <button key={o.id} onClick={() => setAbierta(o.id)} className={`group text-left flex flex-col rounded-xl overflow-hidden bg-card border hover:border-primary/40 transition-colors ${o.activa ? "border-border" : "border-dashed border-amber-400 opacity-70"}`}>
               <div className="relative aspect-[3/4] bg-muted overflow-hidden">
-                <PortadaLibro url={o.portada_url} titulo={o.titulo} genero={o.genero} className="w-full h-full group-hover:scale-105 transition-transform duration-300" />
-                <span className={`absolute top-2 left-2 text-[11px] font-semibold text-white px-2 py-0.5 rounded-full shadow ${estado.c}`}>{estado.t}</span>
+                <PortadaLibro url={o.portada_url} titulo={o.titulo} genero={o.genero} className="w-full h-full" />
+                <span className={`absolute top-2 left-2 text-[11px] font-semibold text-white px-2 py-0.5 rounded-full ${estado.c}`}>{estado.t}</span>
               </div>
               <div className="p-3 space-y-0.5">
                 <p className="font-semibold text-sm text-foreground line-clamp-2 leading-snug">{o.titulo}</p>
