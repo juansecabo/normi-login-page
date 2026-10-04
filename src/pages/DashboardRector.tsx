@@ -47,6 +47,7 @@ const perfilesDelCargo = (cargo: string | undefined): string[] => {
     case 'Secretaria General': return ['Secretaria General'];
     case 'Orientador(a) Escolar': return ['Orientador(a) Escolar', 'Orientadores'];
     case 'Portero': return ['Portero', 'Porteros'];
+    case 'Bibliotecario(a)': return ['Bibliotecario(a)', 'Bibliotecarios'];
     default: return [];
   }
 };
@@ -306,6 +307,12 @@ const DashboardRector = () => {
         <span className="font-semibold text-foreground text-center">Calendario</span>
       </button>
     ) },
+    { id: 'biblioteca', render: (
+      <button data-guia="dashboard.ficha_biblioteca" onClick={() => navigate("/biblioteca")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 transition-all duration-200 hover:shadow-md hover:bg-teal-200">
+        <span className="text-5xl leading-none">📚</span>
+        <span className="font-semibold text-foreground text-center">Biblioteca</span>
+      </button>
+    ) },
     { id: 'horario', render: (
       <button data-guia="dashboard.ficha_horario" onClick={() => navigate("/horario")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-cyan-100 transition-all duration-200 hover:shadow-md hover:bg-cyan-200">
         <img src={iconHorario} alt="" className="w-16 h-16 object-contain" />
@@ -351,9 +358,12 @@ const DashboardRector = () => {
   );
 
   // El Portero(a) solo ve un conjunto acotado de fichas (en este orden).
-  const FICHAS_PORTERO = ['porteria', 'retiro-estudiantes', 'enviar-comunicado', 'comunicados-recibidos', 'documentos-recibidos', 'consultas', 'calendario-escolar', 'horario', 'perfil'];
-  const itemsVisibles = cargo === 'Portero'
-    ? (FICHAS_PORTERO.map(fid => items.find(i => i.id === fid)).filter(Boolean) as ReordItem[])
+  const FICHAS_PORTERO = ['porteria', 'retiro-estudiantes', 'enviar-comunicado', 'comunicados-recibidos', 'documentos-recibidos', 'consultas', 'calendario-escolar', 'biblioteca', 'horario', 'perfil'];
+  // El Bibliotecario(a) también ve un conjunto acotado (Juan 2026-10-04).
+  const FICHAS_BIBLIOTECARIO = ['biblioteca', 'enviar-comunicado', 'comunicados-recibidos', 'documentos-recibidos', 'consultas', 'calendario-escolar', 'horario', 'perfil'];
+  const fichasAcotadas = cargo === 'Portero' ? FICHAS_PORTERO : cargo === 'Bibliotecario(a)' ? FICHAS_BIBLIOTECARIO : null;
+  const itemsVisibles = fichasAcotadas
+    ? (fichasAcotadas.map(fid => items.find(i => i.id === fid)).filter(Boolean) as ReordItem[])
     : items;
 
   return (

@@ -28,6 +28,8 @@ const perfilesDelCargo = (cargo: string | undefined): string[] => {
     // El orientador tiene perfil propio; en la DB aparece como 'Orientador(a) Escolar'
     // (envío individual) y 'Orientadores' (envío masivo a internos). Incluir ambos.
     case 'Orientador(a) Escolar': return ['Orientador(a) Escolar', 'Orientadores'];
+    case 'Portero': return ['Portero', 'Porteros'];
+    case 'Bibliotecario(a)': return ['Bibliotecario(a)', 'Bibliotecarios'];
     default: return [];
   }
 };

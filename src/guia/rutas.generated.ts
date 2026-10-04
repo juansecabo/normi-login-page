@@ -9,6 +9,7 @@ export const RUTAS_FICHAS: Record<string, string> = {
   "/acudiente/notas": "Notas",
   "/aprende-normi": "Aprende con Normi",
   "/asistencia": "Asistencia",
+  "/biblioteca": "Biblioteca",
   "/boletines": "Boletines",
   "/calendario-escolar": "Calendario",
   "/comunicados-firma": "Comunicados con firma",

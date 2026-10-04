@@ -97,7 +97,7 @@ const CARGOS_PREFIX = [
   "Profesor(a)", "Profesora", "Profesor", "Rector", "Rectora", "Coordinador(a)", "Coordinadora", "Coordinador", "Administrador", "Administradora",
   "Administrativa", "Orientadora Escolar", "Orientador Escolar", "Portera",
   "Administrativo(a)", "Secretaria General", "Orientador(a) Escolar",
-  "Portero", "Servicios Generales",
+  "Portero", "Servicios Generales", "Bibliotecario(a)", "Bibliotecaria", "Bibliotecario",
 ];
 // "Profesora:" / "Profesor:" según el cargo guardado en autor_nombre; neutro solo si no se sabe.
 const labelDocente = (n: string): string => {

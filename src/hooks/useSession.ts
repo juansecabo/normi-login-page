@@ -409,7 +409,8 @@ export const puedeAccederDashboard = (): boolean => {
     || cargo === 'Administrativo(a)'
     || cargo === 'Secretaria General'
     || cargo === 'Orientador(a) Escolar'
-    || cargo === 'Portero';
+    || cargo === 'Portero'
+    || cargo === 'Bibliotecario(a)';
 };
 
 export const isPortero = (): boolean => {

@@ -14,6 +14,7 @@ export type RolGuia =
   | "administrativo"
   | "orientador"
   | "portero"
+  | "bibliotecario"
   | "admin"
   // Comunidad (desde 2026-08-26): la guía también acompaña a las familias.
   | "estudiante"

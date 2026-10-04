@@ -95,7 +95,7 @@ async function request<T = unknown>(
 export type AuthRol =
   | 'SuperAdmin'
   | 'Administrador' | 'Rector' | 'Coordinador(a)' | 'Administrativo(a)'
-  | 'Secretaria General' | 'Orientador(a) Escolar' | 'Profesor(a)'
+  | 'Secretaria General' | 'Orientador(a) Escolar' | 'Profesor(a)' | 'Portero' | 'Bibliotecario(a)'
   | 'Estudiante' | 'Acudiente';
 
 export interface ColegioPlataforma {

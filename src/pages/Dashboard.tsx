@@ -299,6 +299,12 @@ const Dashboard = () => {
         <span className="font-semibold text-foreground text-center">Calendario</span>
       </button>
     ) },
+    { id: 'biblioteca', render: (
+      <button data-guia="dashboard.ficha_biblioteca" onClick={() => navigate("/biblioteca")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 transition-all duration-200 hover:shadow-md hover:bg-teal-200">
+        <span className="text-5xl leading-none">📚</span>
+        <span className="font-semibold text-foreground text-center">Biblioteca</span>
+      </button>
+    ) },
     { id: 'horario', render: (
       <button data-guia="dashboard.ficha_horario" onClick={() => navigate("/horario")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-cyan-100 transition-all duration-200 hover:shadow-md hover:bg-cyan-200">
         <img src={iconHorario} alt="" className="w-16 h-16 object-contain" />

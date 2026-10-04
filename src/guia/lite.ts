@@ -19,6 +19,7 @@ const CARGO_A_ROL: Record<string, RolGuia> = {
   "Orientador(a) Escolar": "orientador",
   Portero: "portero",
   Celador: "portero",
+  "Bibliotecario(a)": "bibliotecario",
   Administrador: "admin",
   SuperAdmin: "admin",
   Estudiante: "estudiante",

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useLayoutEffect, useMemo, type CSSProperti
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import {
   GraduationCap, Users, ShieldCheck, Briefcase, HeartHandshake, BookOpen,
-  Backpack, UsersRound, Plus, Check, Loader2, Search, ClipboardList, Pencil, Trash2, X, DoorOpen,
+  Backpack, UsersRound, Plus, Check, Loader2, Search, ClipboardList, Pencil, Trash2, X, DoorOpen, Library,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -45,6 +45,7 @@ const ROLES_STAFF: { cargo: string; label: string; Icono: typeof Users }[] = [
   { cargo: "Orientador(a) Escolar", label: "Orientación escolar", Icono: HeartHandshake },
   { cargo: "Profesor(a)", label: "Profesores", Icono: BookOpen },
   { cargo: "Portero", label: "Porteros", Icono: DoorOpen },
+  { cargo: "Bibliotecario(a)", label: "Biblioteca", Icono: Library },
 ];
 const NIVELES_COORDINA = ["Preescolar", "Primaria", "Secundaria", "Media"];
 

@@ -31,6 +31,7 @@ import CrearInstitucion from "./pages/CrearInstitucion";
 import UsoNormi from "./pages/rector/UsoNormi";
 import AprendeNormi from "./pages/AprendeNormi";
 import CalendarioEscolar from "./pages/CalendarioEscolar";
+import Biblioteca from "./pages/Biblioteca";
 import LogrosProfesor from "./pages/profesor/LogrosProfesor";
 import Boletines from "./pages/rector/Boletines";
 import PonteAlDiaBoletines from "./pages/profesor/PonteAlDiaBoletines";
@@ -257,6 +258,7 @@ const Raiz = () => (
           <Route path="/crear-institucion/:id" element={<CrearInstitucion />} />
           <Route path="/aprende-normi" element={<AprendeNormi />} />
           <Route path="/calendario-escolar" element={<CalendarioEscolar />} />
+          <Route path="/biblioteca" element={<Biblioteca />} />
           <Route path="/profesor/logros" element={<LogrosProfesor />} />
 
           {/* Rutas para Admin */}

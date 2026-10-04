@@ -237,7 +237,7 @@ const ConstruyeInstitucion = () => {
               )}
               {vista === "personas" && rolPersonas && (<>
                 <span className="text-muted-foreground">&rarr;</span>
-                <span className="text-foreground font-medium">{({ "Administrador": "Administrador(a)", "Rector": "Rector(a)", "Coordinador(a)": "Coordinadores", "Administrativo(a)": "Administrativos", "Orientador(a) Escolar": "Orientación escolar", "Profesor(a)": "Profesores", estudiante: "Estudiantes", acudiente: "Acudientes" } as Record<string, string>)[rolPersonas] || rolPersonas}</span>
+                <span className="text-foreground font-medium">{({ "Administrador": "Administrador(a)", "Rector": "Rector(a)", "Coordinador(a)": "Coordinadores", "Administrativo(a)": "Administrativos", "Orientador(a) Escolar": "Orientación escolar", "Profesor(a)": "Profesores", "Bibliotecario(a)": "Biblioteca", estudiante: "Estudiantes", acudiente: "Acudientes" } as Record<string, string>)[rolPersonas] || rolPersonas}</span>
               </>)}
             </>)}
           </BreadcrumbDeslizable>

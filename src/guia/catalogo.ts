@@ -25,6 +25,7 @@ import { OTROS } from "./modulos/otros";
 import { ESTUDIANTE } from "./modulos/estudiante";
 import { ACUDIENTE } from "./modulos/acudiente";
 import { HORARIO } from "./modulos/horario";
+import { BIBLIOTECA } from "./modulos/biblioteca";
 
 export const CATALOGO: Capacidad[] = [
   ...NOTAS,
@@ -46,6 +47,7 @@ export const CATALOGO: Capacidad[] = [
   ...ESTUDIANTE,
   ...ACUDIENTE,
   ...HORARIO,
+  ...BIBLIOTECA,
 ];
 
 export * from "./tipos";

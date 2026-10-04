@@ -36,7 +36,7 @@ const SALONES = ["1", "2", "3", "4", "5", "6"];
 
 const CARGOS = [
   "Profesor(a)", "Rector", "Coordinador(a)", "Administrativo(a)",
-  "Secretaria General", "Orientador(a) Escolar", "Portero",
+  "Secretaria General", "Orientador(a) Escolar", "Portero", "Bibliotecario(a)",
   "Servicios Generales", "Administrador",
 ];
 

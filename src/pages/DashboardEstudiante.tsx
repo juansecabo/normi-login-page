@@ -184,6 +184,12 @@ const DashboardEstudiante = () => {
         <span className="font-semibold text-foreground text-center">Calendario</span>
       </button>
     ) },
+    { id: 'biblioteca', render: (
+      <button data-guia="dashboard.ficha_biblioteca" onClick={() => navigate("/biblioteca")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-teal-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-teal-200">
+        <span className="text-5xl leading-none">📚</span>
+        <span className="font-semibold text-foreground text-center">Biblioteca</span>
+      </button>
+    ) },
     { id: 'horario', render: (
       <button data-guia="dashboard.ficha_horario" onClick={() => navigate("/horario")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-cyan-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-cyan-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-cyan-200">
         <img src={iconHorario} alt="" className="w-16 h-16 object-contain" />
