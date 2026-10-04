@@ -115,17 +115,17 @@ export const BIBLIOTECA: Capacidad[] = [
   {
     id: "biblioteca.etiquetas",
     titulo: "Imprimir las etiquetas de los libros",
-    descripcion: "PDF tamaño carta con el número de cada libro (30 por hoja) o el tejuelo del lomo con el color del género y del nivel (80 por hoja).",
+    descripcion: "Imprimir las etiquetas del número tal al número tal: cada una lleva el número del libro en grande y su título, para pegarla en el libro.",
     categoria: "Biblioteca",
     roles: [...GESTIONAN],
     ruta: "/biblioteca?seccion=etiquetas",
     endpoint: "GET /api/biblioteca/etiquetas",
-    sinonimos: ["etiquetar libros", "imprimir los números de los libros", "tejuelos", "etiquetas del lomo", "rotular libros"],
+    sinonimos: ["etiquetar libros", "imprimir etiquetas", "imprimir los números de los libros", "etiquetas del 1 al 50", "rotular libros"],
     pasos: [
       LLEGAR,
       tab("etiquetas", "Etiquetas"),
-      { narracion: "Elige el tipo de etiqueta y cuáles libros; si la hoja ya está usada, indica en qué etiqueta empezar.", accion: "explicar", ancla: "biblioteca.etiquetas" },
-      { narracion: "Toca 'Generar PDF' e imprímelo en papel adhesivo sin ajustar a la página.", accion: "click", ancla: "biblioteca.generar_etiquetas" },
+      { narracion: "Escribe desde qué número y hasta qué número quieres las etiquetas (ya vienen llenos con las que faltan).", accion: "escribir", ancla: "biblioteca.etiquetas_desde", campo: "desde" },
+      { narracion: "Toca 'Imprimir etiquetas', imprime el PDF en papel adhesivo tamaño carta y pega cada etiqueta en su libro.", accion: "click", ancla: "biblioteca.generar_etiquetas" },
     ],
   },
   {

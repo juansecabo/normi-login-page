@@ -1,132 +1,95 @@
-import { useState } from "react";
-import { Loader2, Printer, CheckCheck } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Loader2, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/apiClient";
-import { GENEROS, NIVELES, errorDe } from "./comun";
+import { errorDe } from "./comun";
 
 /**
- * Etiquetas en PDF tamaño carta:
- *  - Número: 30 por hoja (formato Avery 5160, 2⅝" × 1"): el número del libro en grande
- *    (1, 2, 3…), la signatura y el título. Ese número es el que se escribe para prestar,
- *    devolver o buscar (sin lectores ni cámara, Juan 2026-10-04).
- *  - Tejuelo: 80 por hoja (Avery 5167, 1¾" × ½"): signatura para el lomo, con el color del
- *    género (literatura) y la cinta del nivel lector, como propone el MEN.
- * Se puede empezar en otra posición para aprovechar hojas ya usadas.
+ * Etiquetas (Juan 2026-10-04: "etiquetas de tal número a tal número", sin opciones raras).
+ * Una sola clase de etiqueta: el número del libro en grande y su título. Se imprimen en hoja
+ * carta (caben 30 por hoja: 3 columnas × 10 filas, papel adhesivo tipo Avery 5160) y quedan
+ * marcadas como impresas solas.
  */
-interface EjEtiqueta {
-  id: number; numero_inventario: number; codigo: string; signatura: string | null; etiqueta_impresa: boolean;
-  Biblioteca_Obras: { titulo: string; autores: string | null; genero: string | null; nivel_lector: string | null } | null;
-}
-const FORMATOS = {
-  codigo: { cols: 3, filas: 10, w: 2.625, h: 1, x0: 0.1875, y0: 0.5, gx: 0.125, gy: 0 },
-  tejuelo: { cols: 4, filas: 20, w: 1.75, h: 0.5, x0: 0.3, y0: 0.5, gx: 0.3, gy: 0 },
-};
-const hexRgb = (h: string) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)] as [number, number, number];
+interface EjEtiqueta { id: number; numero_inventario: number; codigo: string; Biblioteca_Obras: { titulo: string } | null }
+interface Rango { primero: number | null; ultimo: number | null; pendientes: number; pendientes_desde: number | null; pendientes_hasta: number | null }
+const F = { cols: 3, filas: 10, w: 2.625, h: 1, x0: 0.1875, y0: 0.5, gx: 0.125 };
+const POR_HOJA = F.cols * F.filas;
 
 const Etiquetas = () => {
-  const [lote, setLote] = useState<"pendientes" | "rango">("pendientes");
+  const [rango, setRango] = useState<Rango | null>(null);
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
-  const [tipo, setTipo] = useState<"codigo" | "tejuelo">("codigo");
-  const [inicio, setInicio] = useState("1");
   const [ocupado, setOcupado] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; texto: string } | null>(null);
-  const [impresos, setImpresos] = useState<number[]>([]);
 
-  const generar = async () => {
-    setOcupado(true); setMsg(null); setImpresos([]);
+  const cargarRango = async (rellenar: boolean) => {
+    const r = await apiRequest<Rango>("/api/biblioteca/etiquetas/rango").catch(() => null);
+    if (!r) return;
+    setRango(r);
+    if (rellenar) {
+      setDesde(String(r.pendientes_desde ?? r.primero ?? ""));
+      setHasta(String(r.pendientes_hasta ?? r.ultimo ?? ""));
+    }
+  };
+  useEffect(() => { cargarRango(true); }, []);
+
+  const d = Number(desde), h = Number(hasta);
+  const valido = d > 0 && h >= d;
+  const cuantas = valido ? h - d + 1 : 0;
+
+  const imprimir = async () => {
+    if (!valido) return;
+    setOcupado(true); setMsg(null);
     try {
-      const params = new URLSearchParams();
-      if (lote === "pendientes") params.set("pendientes", "1");
-      else { if (desde) params.set("desde", desde); if (hasta) params.set("hasta", hasta); }
-      const { ejemplares } = await apiRequest<{ ejemplares: EjEtiqueta[] }>(`/api/biblioteca/etiquetas?${params}`);
-      if (!ejemplares.length) { setMsg({ ok: false, texto: lote === "pendientes" ? "No hay etiquetas pendientes por imprimir." : "No hay libros en ese rango." }); setOcupado(false); return; }
-
+      const { ejemplares } = await apiRequest<{ ejemplares: EjEtiqueta[] }>(`/api/biblioteca/etiquetas?desde=${d}&hasta=${h}`);
+      if (!ejemplares.length) { setMsg({ ok: false, texto: `No hay libros del N.° ${d} al N.° ${h}.` }); setOcupado(false); return; }
       const { jsPDF } = await import("jspdf");
       const doc = new jsPDF({ unit: "in", format: "letter" });
-      const f = FORMATOS[tipo];
-      const porHoja = f.cols * f.filas;
-      let pos = Math.min(porHoja, Math.max(1, Number(inicio) || 1)) - 1;
-
-      for (const e of ejemplares) {
-        if (pos >= porHoja) { doc.addPage(); pos = 0; }
-        const col = pos % f.cols, fila = Math.floor(pos / f.cols);
-        const x = f.x0 + col * (f.w + f.gx), y = f.y0 + fila * (f.h + f.gy);
-        const o = e.Biblioteca_Obras;
-        if (tipo === "codigo") {
-          doc.setTextColor(0);
-          doc.setFont("helvetica", "bold"); doc.setFontSize(26);
-          doc.text(`N.° ${e.codigo}`, x + f.w / 2, y + 0.42, { align: "center" });
-          doc.setFont("helvetica", "bold"); doc.setFontSize(8);
-          doc.text(e.signatura || "", x + f.w / 2, y + 0.62, { align: "center" });
-          doc.setFont("helvetica", "normal"); doc.setFontSize(7);
-          const titulo = doc.splitTextToSize(o?.titulo || "", f.w - 0.24)[0] || "";
-          doc.text(titulo, x + f.w / 2, y + 0.8, { align: "center" });
-        } else {
-          const g = GENEROS.find((x) => x.value === o?.genero);
-          const n = NIVELES.find((x) => x.value === o?.nivel_lector);
-          // Fondo del color del género (literatura) y cinta superior del nivel lector.
-          const fondo = g && g.letra ? g.color : "#ffffff";
-          doc.setFillColor(...hexRgb(fondo)); doc.rect(x, y, f.w, f.h, "F");
-          if (n) { doc.setFillColor(...hexRgb(n.color)); doc.rect(x, y, f.w, 0.08, "F"); }
-          doc.setDrawColor(180); doc.rect(x, y, f.w, f.h, "S");
-          doc.setTextColor(0); doc.setFont("helvetica", "bold"); doc.setFontSize(12);
-          const partes = (e.signatura || "").split("/").map((s) => s.trim()).filter(Boolean);
-          doc.text(partes.join("  "), x + f.w / 2, y + 0.33, { align: "center" });
-          doc.setFont("helvetica", "normal"); doc.setFontSize(6);
-          doc.text(`N.° ${e.codigo}`, x + f.w - 0.06, y + f.h - 0.05, { align: "right" });
-        }
-        pos++;
-      }
-      doc.save(`Etiquetas ${tipo === "codigo" ? "número" : "tejuelo"} biblioteca.pdf`);
-      setImpresos(ejemplares.map((e) => e.id));
-      setMsg({ ok: true, texto: `Se generaron ${ejemplares.length} ${ejemplares.length === 1 ? "etiqueta" : "etiquetas"}. Imprímelas en papel adhesivo tamaño carta, sin ajustar a la página.` });
+      ejemplares.forEach((e, i) => {
+        if (i > 0 && i % POR_HOJA === 0) doc.addPage();
+        const pos = i % POR_HOJA;
+        const x = F.x0 + (pos % F.cols) * (F.w + F.gx), y = F.y0 + Math.floor(pos / F.cols) * F.h;
+        doc.setTextColor(0);
+        doc.setFont("helvetica", "bold"); doc.setFontSize(30);
+        doc.text(`N.° ${e.codigo}`, x + F.w / 2, y + 0.48, { align: "center" });
+        doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+        const lineas = doc.splitTextToSize(e.Biblioteca_Obras?.titulo || "", F.w - 0.3).slice(0, 2);
+        doc.text(lineas, x + F.w / 2, y + 0.7, { align: "center" });
+      });
+      doc.save(`Etiquetas biblioteca ${d} a ${h}.pdf`);
+      await apiRequest("/api/biblioteca/etiquetas/impresas", { method: "POST", body: JSON.stringify({ ids: ejemplares.map((e) => e.id) }) }).catch(() => null);
+      const hojas = Math.ceil(ejemplares.length / POR_HOJA);
+      setMsg({ ok: true, texto: `Listo: ${ejemplares.length} ${ejemplares.length === 1 ? "etiqueta" : "etiquetas"} en ${hojas} ${hojas === 1 ? "hoja" : "hojas"}. Imprímelas en papel adhesivo tamaño carta y pega cada una en su libro.` });
+      cargarRango(false);
     } catch (err) { setMsg({ ok: false, texto: errorDe(err, "No se pudieron generar las etiquetas.") }); }
     setOcupado(false);
   };
 
-  const marcar = async () => {
-    setOcupado(true);
-    try { await apiRequest("/api/biblioteca/etiquetas/impresas", { method: "POST", body: JSON.stringify({ ids: impresos }) }); setMsg({ ok: true, texto: "Quedaron marcadas como impresas." }); setImpresos([]); }
-    catch (err) { setMsg({ ok: false, texto: errorDe(err) }); }
-    setOcupado(false);
-  };
+  const inp = "w-28 px-3 py-3 border-2 border-input rounded-lg text-2xl font-bold text-center bg-background focus:border-primary focus:outline-none";
+  if (rango && rango.ultimo == null) return <p className="text-center text-muted-foreground py-8">Todavía no hay libros en el catálogo.</p>;
 
-  const inp = "px-3 py-2 border border-input rounded-md text-sm bg-background";
-  const opc = (activo: boolean) => `flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition ${activo ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:bg-muted"}`;
   return (
-    <div className="space-y-5 max-w-xl mx-auto" data-guia="biblioteca.etiquetas">
-      <div className="space-y-2">
-        <p className="text-sm font-medium text-foreground">Tipo de etiqueta</p>
-        <div className="flex gap-2">
-          <button onClick={() => setTipo("codigo")} className={opc(tipo === "codigo")}>Número del libro<br /><span className="text-xs font-normal">30 por hoja</span></button>
-          <button onClick={() => setTipo("tejuelo")} className={opc(tipo === "tejuelo")}>Tejuelo (lomo)<br /><span className="text-xs font-normal">80 por hoja</span></button>
-        </div>
+    <div className="space-y-6 max-w-xl mx-auto text-center" data-guia="biblioteca.etiquetas">
+      <div className="flex flex-wrap items-center justify-center gap-3 text-lg text-foreground">
+        <span>Imprimir etiquetas del N.°</span>
+        <input value={desde} onChange={(e) => setDesde(e.target.value.replace(/\D/g, ""))} className={inp} inputMode="numeric" data-guia="biblioteca.etiquetas_desde" />
+        <span>al N.°</span>
+        <input value={hasta} onChange={(e) => setHasta(e.target.value.replace(/\D/g, ""))} className={inp} inputMode="numeric" data-guia="biblioteca.etiquetas_hasta" />
       </div>
-      <div className="space-y-2">
-        <p className="text-sm font-medium text-foreground">¿Cuáles libros?</p>
-        <div className="flex gap-2">
-          <button onClick={() => setLote("pendientes")} className={opc(lote === "pendientes")}>Las que faltan por imprimir</button>
-          <button onClick={() => setLote("rango")} className={opc(lote === "rango")}>Por números</button>
-        </div>
-        {lote === "rango" && (
-          <div className="flex items-center gap-2 text-sm">
-            Del n.° <input value={desde} onChange={(e) => setDesde(e.target.value.replace(/\D/g, ""))} className={`${inp} w-24`} inputMode="numeric" />
-            al n.° <input value={hasta} onChange={(e) => setHasta(e.target.value.replace(/\D/g, ""))} className={`${inp} w-24`} inputMode="numeric" />
-          </div>
-        )}
-      </div>
-      <div className="flex items-center gap-2 text-sm">
-        Empezar en la etiqueta n.° <input value={inicio} onChange={(e) => setInicio(e.target.value.replace(/\D/g, ""))} className={`${inp} w-20`} inputMode="numeric" />
-        <span className="text-muted-foreground">(si la hoja ya está usada)</span>
-      </div>
-      <Button data-guia="biblioteca.generar_etiquetas" className="w-full" onClick={generar} disabled={ocupado}>
-        {ocupado ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Printer className="w-4 h-4 mr-1" /> Generar PDF</>}
-      </Button>
-      {msg && <p className={`text-sm rounded-md p-2 ${msg.ok ? "bg-emerald-50 text-emerald-800" : "bg-rose-50 text-rose-700"}`}>{msg.texto}</p>}
-      {impresos.length > 0 && (
-        <Button variant="outline" className="w-full" onClick={marcar} disabled={ocupado}><CheckCheck className="w-4 h-4 mr-1" /> Ya las imprimí: marcarlas como impresas</Button>
+
+      {rango && (
+        <p className="text-sm text-muted-foreground">
+          {rango.pendientes
+            ? <>Faltan por imprimir {rango.pendientes === 1 ? "la etiqueta" : "las etiquetas"} del N.° {rango.pendientes_desde} al N.° {rango.pendientes_hasta}.</>
+            : <>Todas las etiquetas ya están impresas. Los libros van del N.° {rango.primero} al N.° {rango.ultimo}.</>}
+        </p>
       )}
+
+      <Button data-guia="biblioteca.generar_etiquetas" size="lg" className="w-full rounded-lg text-base" onClick={imprimir} disabled={ocupado || !valido}>
+        {ocupado ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Printer className="w-5 h-5 mr-2" /> Imprimir {cuantas ? `${cuantas} ${cuantas === 1 ? "etiqueta" : "etiquetas"}` : "etiquetas"}</>}
+      </Button>
+      {!valido && desde && hasta && <p className="text-sm text-rose-700">El segundo número debe ser mayor o igual al primero.</p>}
+      {msg && <p className={`text-sm rounded-lg p-3 ${msg.ok ? "bg-emerald-50 text-emerald-800" : "bg-rose-50 text-rose-700"}`}>{msg.texto}</p>}
     </div>
   );
 };
