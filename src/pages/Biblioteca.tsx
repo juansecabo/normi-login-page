@@ -177,7 +177,9 @@ const Buscador = ({ gestiona, onIr }: { gestiona: boolean; onIr: (k: string, ext
         gestiona && numero ? apiRequest<{ ejemplar: any; prestamo: any }>(`/api/biblioteca/ejemplar/${q}`).catch(() => null) : Promise.resolve(null),
       ]);
       if (id !== req.current) return;
-      setObras(cat.obras.slice(0, 6)); setTotal(cat.total); setEj(e); setCargando(false);
+      // El libro del número ya sale arriba con sus acciones: no se repite en la lista.
+      const obraDelNumero = e?.ejemplar?.obra_id;
+      setObras(cat.obras.filter((o) => o.id !== obraDelNumero).slice(0, 6)); setTotal(cat.total - (obraDelNumero ? 1 : 0)); setEj(e); setCargando(false);
     }, 300);
     return () => clearTimeout(t);
   }, [v, gestiona]);
@@ -196,7 +198,7 @@ const Buscador = ({ gestiona, onIr }: { gestiona: boolean; onIr: (k: string, ext
 
       {e && (
         <div className="mt-3 rounded-lg border-2 border-primary/30 bg-primary/5 p-3 flex gap-3 items-center">
-          <PortadaLibro url={e.Biblioteca_Obras?.portada_url} titulo={e.Biblioteca_Obras?.titulo || ""} genero={null} className="w-12 h-16 rounded-lg shrink-0" mini />
+          <PortadaLibro url={e.Biblioteca_Obras?.portada_url} titulo={e.Biblioteca_Obras?.titulo || ""} genero={e.Biblioteca_Obras?.genero || null} className="w-12 h-16 rounded-lg shrink-0" mini />
           <div className="min-w-0 flex-1">
             <p className="font-semibold truncate">{e.Biblioteca_Obras?.titulo}</p>
             <p className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">Libro N.° {e.codigo}</span> · <span className={`px-1.5 py-0.5 rounded ${ESTADOS[e.estado]?.cls || ""}`}>{ESTADOS[e.estado]?.label}</span></p>
