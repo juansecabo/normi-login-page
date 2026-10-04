@@ -82,7 +82,7 @@ const Biblioteca = () => {
           <div className="max-w-5xl mx-auto space-y-6">
             {/* Portada */}
             <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-teal-600 via-emerald-600 to-green-700 text-white p-6 md:p-8 shadow-lg">
-              <div className="absolute -right-10 -top-10 text-[180px] leading-none opacity-10 select-none">📚</div>
+              <Library className="absolute -right-8 -bottom-10 w-64 h-64 text-white/10 pointer-events-none" strokeWidth={1.2} />
               <div className="relative">
                 <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Biblioteca</h1>
                 <p className="text-white/85 mt-1">{gestiona ? "Catálogo, préstamos y etiquetas del colegio." : "Busca un libro y mira si está disponible."}</p>
