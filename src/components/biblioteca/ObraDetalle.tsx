@@ -13,7 +13,7 @@ import { ESTADOS, PROCEDENCIAS, autoresBonitos, generoLabel, nivelLabel, fechaLa
  */
 interface Ejemplar {
   id: number; numero_inventario: number; signatura: string | null; estado: string; tipo_prestamo: string; vence: string | null; mio?: boolean;
-  codigo?: string; procedencia?: string | null; valor?: number | null; motivo_baja?: string | null;
+  codigo?: string; procedencia?: string | null; motivo_baja?: string | null;
   prestamo?: { usuario_nombre: string; usuario_grado: string | null; usuario_salon: string | null; fecha_vencimiento: string; perdido: boolean } | null;
 }
 
@@ -25,7 +25,7 @@ const ObraDetalle = ({ obraId, onCerrar, onEditar, onCambio }: {
   const [gestiona, setGestiona] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
-  const [agregar, setAgregar] = useState<{ cantidad: string; procedencia: string; valor: string; tipo: string } | null>(null);
+  const [agregar, setAgregar] = useState<{ cantidad: string; procedencia: string; tipo: string } | null>(null);
   const [baja, setBaja] = useState<{ ej: Ejemplar; motivo: string } | null>(null);
   const [ocupado, setOcupado] = useState(false);
 
@@ -109,12 +109,11 @@ const ObraDetalle = ({ obraId, onCerrar, onEditar, onCambio }: {
             )}
             {gestiona && agregar && (
               <div className="mt-2 rounded-md bg-muted/40 border border-border p-3 space-y-2">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   <input value={agregar.cantidad} onChange={(e) => setAgregar({ ...agregar, cantidad: e.target.value.replace(/\D/g, "").slice(0, 3) })} placeholder="Cantidad" className={inp} inputMode="numeric" />
                   <select value={agregar.procedencia} onChange={(e) => setAgregar({ ...agregar, procedencia: e.target.value })} className={inp}>
                     {PROCEDENCIAS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
                   </select>
-                  <input value={agregar.valor} onChange={(e) => setAgregar({ ...agregar, valor: e.target.value.replace(/\D/g, "") })} placeholder="Valor c/u" className={inp} inputMode="numeric" />
                   <select value={agregar.tipo} onChange={(e) => setAgregar({ ...agregar, tipo: e.target.value })} className={inp}>
                     <option value="normal">Se presta</option>
                     <option value="sala">Solo en sala</option>
@@ -123,7 +122,7 @@ const ObraDetalle = ({ obraId, onCerrar, onEditar, onCambio }: {
                 <div className="flex gap-2 justify-end">
                   <Button size="sm" variant="outline" onClick={() => setAgregar(null)}>Cancelar</Button>
                   <Button size="sm" disabled={ocupado || !Number(agregar.cantidad)} onClick={() => accion(async () => {
-                    await apiRequest(`/api/biblioteca/obras/${obra.id}/ejemplares`, { method: "POST", body: JSON.stringify({ cantidad: Number(agregar.cantidad), procedencia: agregar.procedencia, valor: agregar.valor, tipo_prestamo: agregar.tipo }) });
+                    await apiRequest(`/api/biblioteca/obras/${obra.id}/ejemplares`, { method: "POST", body: JSON.stringify({ cantidad: Number(agregar.cantidad), procedencia: agregar.procedencia, tipo_prestamo: agregar.tipo }) });
                     setAgregar(null);
                   })}>Agregar</Button>
                 </div>
@@ -134,7 +133,7 @@ const ObraDetalle = ({ obraId, onCerrar, onEditar, onCambio }: {
           {gestiona && (
             <DialogFooter className="flex-row flex-wrap gap-2 sm:justify-start">
               <Button variant="outline" size="sm" onClick={() => onEditar(obra)}><Pencil className="w-4 h-4 mr-1" /> Editar</Button>
-              <Button variant="outline" size="sm" onClick={() => setAgregar({ cantidad: "1", procedencia: "compra", valor: "", tipo: "normal" })}><Plus className="w-4 h-4 mr-1" /> Agregar copias</Button>
+              <Button variant="outline" size="sm" onClick={() => setAgregar({ cantidad: "1", procedencia: "compra", tipo: "normal" })}><Plus className="w-4 h-4 mr-1" /> Agregar copias</Button>
               <Button variant="outline" size="sm" disabled={ocupado} onClick={() => accion(() => apiRequest(`/api/biblioteca/obras/${obra.id}`, { method: "PATCH", body: JSON.stringify({ activa: !obra.activa }) }))}>
                 {obra.activa ? <><EyeOff className="w-4 h-4 mr-1" /> Ocultar del catálogo</> : <><Eye className="w-4 h-4 mr-1" /> Mostrar en el catálogo</>}
               </Button>

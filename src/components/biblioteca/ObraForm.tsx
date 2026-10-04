@@ -24,7 +24,6 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
   const [d, setD] = useState<Datos>(VACIO);
   const [cantidad, setCantidad] = useState("1");
   const [procedencia, setProcedencia] = useState("compra");
-  const [valor, setValor] = useState("");
   const [tipoPrestamo, setTipoPrestamo] = useState("normal");
   const [buscando, setBuscando] = useState(false);
   const [aviso, setAviso] = useState<{ ok: boolean; texto: string; obraId?: number } | null>(null);
@@ -36,7 +35,7 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
     if (!abierto) return;
     const base = { ...VACIO };
     if (obra) for (const k of Object.keys(VACIO)) base[k] = obra[k] == null ? "" : String(obra[k]);
-    setD(base); setCantidad("1"); setProcedencia("compra"); setValor(""); setTipoPrestamo("normal");
+    setD(base); setCantidad("1"); setProcedencia("compra"); setTipoPrestamo("normal");
     setAviso(null); setError("");
   }, [abierto, obra]);
 
@@ -76,7 +75,7 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
     setGuardando(true); setError("");
     try {
       const body: Record<string, unknown> = { ...d };
-      if (!editando) Object.assign(body, { cantidad: Number(cantidad) || 0, procedencia, valor, tipo_prestamo: tipoPrestamo });
+      if (!editando) Object.assign(body, { cantidad: Number(cantidad) || 0, procedencia, tipo_prestamo: tipoPrestamo });
       const r = editando
         ? await apiRequest<{ obra: { id: number } }>(`/api/biblioteca/obras/${obra!.id}`, { method: "PATCH", body: JSON.stringify(body) })
         : await apiRequest<{ obra: { id: number } }>("/api/biblioteca/obras", { method: "POST", body: JSON.stringify(body) });
@@ -166,7 +165,7 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
           {!editando && (
             <div className="rounded-lg border border-border p-3 space-y-3 bg-muted/30">
               <p className="text-sm font-semibold text-foreground">Ejemplares (copias)</p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div className="space-y-1"><label className={lbl}>Cantidad</label><input data-guia="biblioteca.form_cantidad" value={cantidad} onChange={(e) => setCantidad(e.target.value.replace(/\D/g, "").slice(0, 3))} className={inp} inputMode="numeric" /></div>
                 <div className="space-y-1">
                   <label className={lbl}>Procedencia</label>
@@ -174,7 +173,6 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
                     {PROCEDENCIAS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
                   </select>
                 </div>
-                <div className="space-y-1"><label className={lbl}>Valor c/u</label><input value={valor} onChange={(e) => setValor(e.target.value.replace(/\D/g, ""))} placeholder="$" className={inp} inputMode="numeric" /></div>
                 <div className="space-y-1">
                   <label className={lbl}>Préstamo</label>
                   <select value={tipoPrestamo} onChange={(e) => setTipoPrestamo(e.target.value)} className={inp}>

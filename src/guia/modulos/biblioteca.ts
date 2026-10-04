@@ -146,12 +146,12 @@ export const BIBLIOTECA: Capacidad[] = [
   {
     id: "biblioteca.reglas",
     titulo: "Cambiar las reglas de préstamo de la biblioteca",
-    descripcion: "Cuántos libros y por cuántos días puede llevar cada tipo de persona, cuántas renovaciones, y si al devolver tarde queda suspendido. No hay multas en dinero.",
+    descripcion: "Cuántos libros y por cuántos días puede llevar cada tipo de persona, cuántas renovaciones, y si al devolver tarde queda suspendido.",
     categoria: "Biblioteca",
     roles: ["bibliotecario", "admin", "rector"],
     ruta: "/biblioteca?seccion=reglas",
     endpoint: "PUT /api/biblioteca/config",
-    sinonimos: ["reglas de préstamo", "cuántos libros puede llevar", "días de préstamo", "suspensión por retraso", "multas de biblioteca"],
+    sinonimos: ["reglas de préstamo", "cuántos libros puede llevar", "días de préstamo", "suspensión por retraso"],
     pasos: [
       LLEGAR,
       tab("reglas", "Reglas"),

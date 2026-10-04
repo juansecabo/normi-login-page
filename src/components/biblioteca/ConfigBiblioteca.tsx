@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/apiClient";
 import { errorDe } from "./comun";
 
-/** Reglas de préstamo: cuántos libros y por cuántos días según quién los pide; renovaciones y suspensión. Sin multas en dinero. */
+/** Reglas de préstamo: cuántos libros y por cuántos días según quién los pide; renovaciones y suspensión. */
 type Pol = { max: number; dias: number };
 interface Config { politicas: { estudiante: Pol; docente: Pol; personal: Pol }; renovaciones_max: number; suspension_por_atraso: boolean }
 const FILAS: { k: keyof Config["politicas"]; label: string }[] = [
@@ -47,7 +47,7 @@ const ConfigBiblioteca = ({ editable }: { editable: boolean }) => {
       </div>
       <label className="flex items-start gap-2 text-sm cursor-pointer">
         <input type="checkbox" className="mt-1" checked={cfg.suspension_por_atraso} disabled={!editable} onChange={(e) => setCfg({ ...cfg, suspension_por_atraso: e.target.checked })} />
-        <span>Si devuelve tarde, no puede pedir libros durante tantos días como días de retraso. <span className="text-muted-foreground">Con libros vencidos o perdidos sin reponer nunca se presta. No hay multas en dinero.</span></span>
+        <span>Si devuelve tarde, no puede pedir libros durante tantos días como días de retraso. <span className="text-muted-foreground">Con libros vencidos o perdidos sin reponer nunca se presta.</span></span>
       </label>
       {editable && <Button className="w-full" onClick={guardar} disabled={guardando}>{guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar"}</Button>}
       {msg && <p className={`text-sm ${msg.ok ? "text-emerald-700" : "text-destructive"}`}>{msg.texto}</p>}
