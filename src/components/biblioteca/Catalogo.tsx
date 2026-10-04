@@ -13,7 +13,6 @@ const Catalogo = ({ gestiona, qInicial = "" }: { gestiona: boolean; qInicial?: s
   const [genero, setGenero] = useState("");
   const [nivel, setNivel] = useState("");
   const [soloDisponibles, setSoloDisponibles] = useState(false);
-  const [ocultos, setOcultos] = useState(false);
   const [obras, setObras] = useState<ObraResumen[]>([]);
   const [total, setTotal] = useState(0);
   const [cargando, setCargando] = useState(true);
@@ -27,14 +26,15 @@ const Catalogo = ({ gestiona, qInicial = "" }: { gestiona: boolean; qInicial?: s
     setCargando(true); setError("");
     const params = new URLSearchParams({ q, genero, nivel, offset: String(offset) });
     if (soloDisponibles) params.set("disponibles", "1");
-    if (ocultos) params.set("inactivas", "1");
+    // Quien gestiona ve también los ocultos (marcados) para poder volver a mostrarlos.
+    if (gestiona) params.set("inactivas", "1");
     try {
       const r = await apiRequest<{ obras: ObraResumen[]; total: number }>(`/api/biblioteca/catalogo?${params}`);
       if (id !== reqId.current) return;
       setObras((p) => (offset ? [...p, ...r.obras] : r.obras)); setTotal(r.total);
     } catch (err) { if (id === reqId.current) setError(errorDe(err)); }
     if (id === reqId.current) setCargando(false);
-  }, [q, genero, nivel, soloDisponibles, ocultos]);
+  }, [q, genero, nivel, soloDisponibles, gestiona]);
 
   useEffect(() => { const t = setTimeout(() => cargar(0), 300); return () => clearTimeout(t); }, [cargar]);
 
@@ -45,7 +45,7 @@ const Catalogo = ({ gestiona, qInicial = "" }: { gestiona: boolean; qInicial?: s
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input data-guia="biblioteca.buscar" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Título, autor, materia o número del libro…"
+          <input data-guia="biblioteca.buscar" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por título, autor o número del libro"
             className="w-full pl-9 pr-8 py-2.5 border-2 border-input rounded-xl text-sm bg-background focus:border-primary focus:outline-none" />
           {q && <button onClick={() => setQ("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" title="Borrar"><X className="w-4 h-4" /></button>}
         </div>
@@ -53,6 +53,8 @@ const Catalogo = ({ gestiona, qInicial = "" }: { gestiona: boolean; qInicial?: s
           <Button data-guia="biblioteca.agregar_libro" className="rounded-xl" onClick={() => setForm({ obra: null })}><Plus className="w-4 h-4 mr-1" /> Agregar libro</Button>
         )}
       </div>
+      {/* Filtros solo para quien busca libros; la bibliotecaria solo usa el buscador (Juan 2026-10-04). */}
+      {!gestiona && (
       <div className="flex flex-wrap items-center gap-2">
         <select value={genero} onChange={(e) => setGenero(e.target.value)} className={sel}>
           <option value="">Todos los géneros</option>
@@ -65,12 +67,8 @@ const Catalogo = ({ gestiona, qInicial = "" }: { gestiona: boolean; qInicial?: s
         <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
           <input type="checkbox" checked={soloDisponibles} onChange={(e) => setSoloDisponibles(e.target.checked)} /> Solo disponibles
         </label>
-        {gestiona && (
-          <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
-            <input type="checkbox" checked={ocultos} onChange={(e) => setOcultos(e.target.checked)} /> Incluir ocultos
-          </label>
-        )}
       </div>
+      )}
 
       {error && <p className="text-sm text-destructive">{error}</p>}
       {!cargando && !obras.length && !error && (

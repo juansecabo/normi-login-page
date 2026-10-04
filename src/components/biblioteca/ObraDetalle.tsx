@@ -82,14 +82,12 @@ const ObraDetalle = ({ obraId, onCerrar, onEditar, onCambio }: {
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ESTADOS[e.estado]?.cls || ""}`}>{ESTADOS[e.estado]?.label || e.estado}</span>
                   {e.tipo_prestamo === "sala" && <span className="px-2 py-0.5 rounded-full text-xs bg-sky-100 text-sky-700">Solo en sala</span>}
                   {gestiona && e.codigo && <span className="text-xs font-semibold bg-muted px-2 py-0.5 rounded">N.° {e.codigo}</span>}
-                  {e.signatura && <span className="font-mono text-xs text-muted-foreground">{e.signatura}</span>}
                   {e.vence && e.estado === "prestado" && <span className="text-muted-foreground">{e.mio ? "Lo tienes tú · " : ""}vuelve el {fechaLarga(e.vence)}</span>}
                   {gestiona && e.prestamo && <span className="text-foreground">· {e.prestamo.usuario_nombre}{e.prestamo.usuario_grado ? ` (${e.prestamo.usuario_grado} ${e.prestamo.usuario_salon})` : ""}</span>}
                   {gestiona && e.estado === "baja" && e.motivo_baja && <span className="text-muted-foreground">· {e.motivo_baja}</span>}
                   {gestiona && (
                     <span className="ml-auto flex gap-1">
-                      {e.estado === "disponible" && <button disabled={ocupado} onClick={() => cambiarEstado(e, "reparacion")} className="text-xs px-2 py-1 rounded border border-border hover:bg-muted">Reparación</button>}
-                      {e.estado === "reparacion" && <button disabled={ocupado} onClick={() => cambiarEstado(e, "disponible")} className="text-xs px-2 py-1 rounded border border-border hover:bg-muted">Disponible</button>}
+                      {e.estado === "reparacion" && <button disabled={ocupado} onClick={() => cambiarEstado(e, "disponible")} className="text-xs px-2 py-1 rounded border border-border hover:bg-muted">Volver a disponible</button>}
                       {(e.estado === "disponible" || e.estado === "reparacion") && <button disabled={ocupado} onClick={() => setBaja({ ej: e, motivo: "" })} className="text-xs px-2 py-1 rounded border border-border hover:bg-muted text-rose-700">Dar de baja</button>}
                     </span>
                   )}
