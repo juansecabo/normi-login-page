@@ -5,7 +5,7 @@ import { apiRequest } from "@/lib/apiClient";
 import ObraDetalle from "./ObraDetalle";
 import ObraForm from "./ObraForm";
 import PortadaLibro from "./PortadaLibro";
-import { GENEROS, NIVELES, autoresBonitos, fechaCorta, errorDe, type ObraResumen } from "./comun";
+import { GENEROS, NIVELES, autoresBonitos, generoLabel, fechaCorta, errorDe, type ObraResumen } from "./comun";
 
 /** Catálogo con búsqueda y disponibilidad (todos los perfiles). Quien gestiona agrega y edita libros. */
 const Catalogo = ({ gestiona, qInicial = "" }: { gestiona: boolean; qInicial?: string }) => {
@@ -77,27 +77,27 @@ const Catalogo = ({ gestiona, qInicial = "" }: { gestiona: boolean; qInicial?: s
         <p className="text-center text-muted-foreground py-10">{q || genero || nivel ? "No se encontraron libros." : gestiona ? "El catálogo está vacío. Empieza con «Agregar libro»." : "La biblioteca todavía no tiene libros en el catálogo."}</p>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" data-guia="biblioteca.catalogo">
-        {obras.map((o) => {
-          const disp = o.disponibles > 0;
-          const estado = disp ? { t: `${o.disponibles} ${o.disponibles === 1 ? "disponible" : "disponibles"}`, c: "bg-emerald-500" }
-            : o.sala ? { t: "Solo en sala", c: "bg-sky-500" }
-            : o.proxima ? { t: `Vuelve ${fechaCorta(o.proxima)}`, c: "bg-amber-500" }
-            : { t: o.total ? "No disponible" : "Sin copias", c: "bg-slate-400" };
-          return (
-            <button key={o.id} onClick={() => setAbierta(o.id)} className={`group text-left flex flex-col rounded-xl overflow-hidden bg-card border hover:border-primary/40 transition-colors ${o.activa ? "border-border" : "border-dashed border-amber-400 opacity-70"}`}>
-              <div className="relative aspect-[3/4] bg-muted overflow-hidden">
-                <PortadaLibro url={o.portada_url} titulo={o.titulo} genero={o.genero} className="w-full h-full" />
-                <span className={`absolute top-2 left-2 text-[11px] font-semibold text-white px-2 py-0.5 rounded-full ${estado.c}`}>{estado.t}</span>
-              </div>
-              <div className="p-3 space-y-0.5">
-                <p className="font-semibold text-sm text-foreground line-clamp-2 leading-snug">{o.titulo}</p>
-                {o.autores && <p className="text-xs text-muted-foreground truncate">{autoresBonitos(o.autores)}</p>}
-              </div>
-            </button>
-          );
-        })}
-      </div>
+      {/* Lista (Juan 2026-10-04: en lista, no tarjetas grandes). */}
+      {obras.length > 0 && (
+        <div className="rounded-lg border border-border divide-y divide-border overflow-hidden" data-guia="biblioteca.catalogo">
+          {obras.map((o) => {
+            const estado = o.disponibles > 0 ? { t: `${o.disponibles} ${o.disponibles === 1 ? "disponible" : "disponibles"}`, c: "bg-emerald-100 text-emerald-700" }
+              : o.sala ? { t: "Solo en sala", c: "bg-sky-100 text-sky-700" }
+              : o.proxima ? { t: `Vuelve ${fechaCorta(o.proxima)}`, c: "bg-amber-100 text-amber-700" }
+              : { t: o.total ? "No disponible" : "Sin copias", c: "bg-slate-100 text-slate-600" };
+            return (
+              <button key={o.id} onClick={() => setAbierta(o.id)} className={`w-full text-left flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 transition-colors ${o.activa ? "" : "opacity-60"}`}>
+                <PortadaLibro url={o.portada_url} titulo={o.titulo} genero={o.genero} className="w-10 h-14 rounded shrink-0" mini />
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-sm text-foreground truncate">{o.titulo}{!o.activa && <span className="text-amber-700 font-normal"> · oculto</span>}</p>
+                  <p className="text-xs text-muted-foreground truncate">{[autoresBonitos(o.autores), generoLabel(o.genero)].filter(Boolean).join(" · ")}</p>
+                </div>
+                <span className={`text-xs font-medium px-2 py-1 rounded-full shrink-0 ${estado.c}`}>{estado.t}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
       {cargando && <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>}
       {!cargando && obras.length < total && (
         <div className="flex justify-center"><Button variant="outline" onClick={() => cargar(obras.length)}>Ver más ({total - obras.length})</Button></div>
