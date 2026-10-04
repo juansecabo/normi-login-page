@@ -5,6 +5,7 @@ import { cargoSegunGenero } from "@/lib/entrevistadores";
 import { useBienvenida, getSession, isAdmin, puedeAccederDashboard, isAdministrativo } from "@/hooks/useSession";
 import { nombreFicha } from "@/lib/aliasColegio";
 import { usePendientesFirma } from "@/hooks/usePendientesFirma";
+import iconBiblioteca from "@/assets/icons/biblioteca.webp";
 import iconNotas from "@/assets/icons/notas.webp";
 import iconRetiro from "@/assets/icons/retiro-estudiantes.webp";
 import iconPerfil from "@/assets/icons/perfil.png";
@@ -309,7 +310,7 @@ const DashboardRector = () => {
     ) },
     { id: 'biblioteca', render: (
       <button data-guia="dashboard.ficha_biblioteca" onClick={() => navigate("/biblioteca")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 transition-all duration-200 hover:shadow-md hover:bg-teal-200">
-        <span className="text-5xl leading-none">📚</span>
+        <img src={iconBiblioteca} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground text-center">Biblioteca</span>
       </button>
     ) },

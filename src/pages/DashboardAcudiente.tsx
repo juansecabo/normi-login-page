@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useBienvenida, getSession, isPadreDeFamilia, AcudidoData } from "@/hooks/useSession";
 import { usePendientesFirma } from "@/hooks/usePendientesFirma";
+import iconBiblioteca from "@/assets/icons/biblioteca.webp";
 import iconNotas from "@/assets/icons/notas.webp";
 import iconCalendario from "@/assets/icons/calendario.webp";
 import iconHorario from "@/assets/icons/horario.webp";
@@ -265,7 +266,7 @@ const DashboardAcudiente = () => {
     ) },
     { id: 'biblioteca', render: (
       <button data-guia="dashboard.ficha_biblioteca" onClick={() => navigate("/biblioteca")} className="relative w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-teal-200 transition-all duration-200 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:scale-[1.03] hover:bg-teal-200">
-        <span className="text-5xl leading-none">📚</span>
+        <img src={iconBiblioteca} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground text-center">Biblioteca</span>
       </button>
     ) },

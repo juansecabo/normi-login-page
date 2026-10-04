@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import normiExaminadoraImg from "@/assets/normi-examinadora.webp";
+import iconBiblioteca from "@/assets/icons/biblioteca.webp";
 import iconActividades from "@/assets/icons/actividades.webp";
 import iconPerfil from "@/assets/icons/perfil.png";
 import iconEnviarComunicado from "@/assets/icons/enviar-comunicado.webp";
@@ -301,7 +302,7 @@ const Dashboard = () => {
     ) },
     { id: 'biblioteca', render: (
       <button data-guia="dashboard.ficha_biblioteca" onClick={() => navigate("/biblioteca")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-teal-100 transition-all duration-200 hover:shadow-md hover:bg-teal-200">
-        <span className="text-5xl leading-none">📚</span>
+        <img src={iconBiblioteca} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground text-center">Biblioteca</span>
       </button>
     ) },
