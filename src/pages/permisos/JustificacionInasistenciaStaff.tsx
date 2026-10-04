@@ -1,17 +1,14 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { formatTelefono } from "@/utils/telefono";
 import { getSession, isProfesor, puedeAccederDashboard, isAdmin } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
 import { supabase } from "@/integrations/supabase/client";
-import { CalendarOff, ChevronDown, Check, Paperclip, Eye, Download, Search, X, Plus, Trash2, Loader2 } from "lucide-react";
-import { apiRequest } from "@/lib/apiClient";
+import { CalendarOff, ChevronDown, Check, Paperclip, Eye, Download, Search, X, Plus } from "lucide-react";
 import { useColegioConfig } from "@/hooks/useColegioConfig";
-import { ROLES_INASISTENCIA_DIA, type ReporteInasistenciaDia } from "./InasistenciaDiaRegistro";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { useEstructuraOrden } from "@/utils/estructuraOrden";
+import InasistenciasDiaLista from "@/components/InasistenciasDiaLista";
+import { ROLES_INASISTENCIA_DIA } from "./InasistenciaDiaRegistro";
 import { coincideBusqueda } from "@/utils/busqueda";
 import { getCleanFilename, handleVerArchivo, handleDescargarArchivo } from "@/utils/archivoUtils";
 import FirmaImage from "@/components/FirmaImage";
@@ -71,32 +68,13 @@ const JustificacionInasistenciaStaff = () => {
 
   const backLink = isAdmin() ? "/dashboard" : puedeAccederDashboard() ? "/dashboard" : "/dashboard";
 
-  // Inasistencias del día reportadas por coordinación/rectoría: van en este mismo registro
-  // (como los permisos de salida registrados por el personal en Retiro).
+  // Inasistencias reportadas por coordinación/rectoría: botón para reportar y pestaña
+  // propia para el registro (como Faltas de uniforme); el calendario es solo de excusas.
   const { config } = useColegioConfig();
-  const puedeReportarDia = config.inasistencia_dia === true && ROLES_INASISTENCIA_DIA.includes(getSession().cargo || "");
-  const [reportesDia, setReportesDia] = useState<ReporteInasistenciaDia[]>([]);
-  const [puedeGestionarDia, setPuedeGestionarDia] = useState(false);
-  const [eliminandoDia, setEliminandoDia] = useState<ReporteInasistenciaDia | null>(null);
-  const [borrandoDia, setBorrandoDia] = useState(false);
-  const [errorDia, setErrorDia] = useState<string | null>(null);
-  useEffect(() => {
-    apiRequest<{ reportes: ReporteInasistenciaDia[]; puede_gestionar: boolean }>("/api/asistencia/dia")
-      .then((r) => { setReportesDia(r.reportes); setPuedeGestionarDia(r.puede_gestionar); })
-      .catch(() => setReportesDia([]));
-  }, []);
-  const eliminarDia = async () => {
-    if (!eliminandoDia) return;
-    setBorrandoDia(true);
-    try {
-      await apiRequest(`/api/asistencia/dia/${eliminandoDia.id}`, { method: "DELETE" });
-      setReportesDia((p) => p.filter((r) => r.id !== eliminandoDia.id));
-    } catch (err: any) {
-      setErrorDia(`No se pudo eliminar: ${err?.body?.detail || err?.message || err}`);
-    }
-    setEliminandoDia(null);
-    setBorrandoDia(false);
-  };
+  const { gradoRank } = useEstructuraOrden();
+  const puedeReportes = config.inasistencia_dia === true && ROLES_INASISTENCIA_DIA.includes(getSession().cargo || "");
+  const [params, setParams] = useSearchParams();
+  const vista = puedeReportes && params.get("vista") === "reportes" ? "reportes" : "justificaciones";
 
   useEffect(() => {
     const session = getSession();
@@ -117,23 +95,19 @@ const JustificacionInasistenciaStaff = () => {
   // Nivel del grado según la estructura real del colegio (los grados del PFC no están en la lista fija).
   const { nivelDe } = useNivelDeGrado();
   const { aulasProfesor } = useAulasProfesor();
-  const diaVisibles = reportesDia.filter(r => {
-    if (nivelesCoordina && !nivelesCoordina.includes(nivelDe(r.estudiante_grado))) return false;
-    if (aulasProfesor && !aulasProfesor.has(`${r.estudiante_grado}|${String(r.estudiante_salon)}`)) return false;
-    return true;
-  });
   const visibles = justificaciones.filter(j => {
     if (nivelesCoordina && !nivelesCoordina.includes(nivelDe(j.estudiante_grado))) return false;
     if (aulasProfesor && !aulasProfesor.has(`${j.estudiante_grado}|${String(j.estudiante_salon)}`)) return false;
     return true;
   });
 
-  const gradosUnicos = [...new Set([...visibles.map(j => j.estudiante_grado), ...diaVisibles.map(r => r.estudiante_grado)])]
+  const gradosUnicos = [...new Set(visibles.map(j => j.estudiante_grado))]
     .sort((a, b) => (GRADO_ORDEN[a] ?? 99) - (GRADO_ORDEN[b] ?? 99));
-  const salonesUnicos = [...new Set([
-    ...visibles.filter(j => !filtroGrado || j.estudiante_grado === filtroGrado).map(j => j.estudiante_salon),
-    ...diaVisibles.filter(r => !filtroGrado || r.estudiante_grado === filtroGrado).map(r => r.estudiante_salon),
-  ])].sort();
+  const salonesUnicos = [...new Set(
+    visibles
+      .filter(j => !filtroGrado || j.estudiante_grado === filtroGrado)
+      .map(j => j.estudiante_salon)
+  )].sort();
 
   // La búsqueda entra ANTES de diasMarcados: el calendario solo marca días con resultados.
   const justFiltradas = visibles.filter(j => {
@@ -145,14 +119,8 @@ const JustificacionInasistenciaStaff = () => {
   // Calendario lateral: días con registros (naranja) y filtro por día elegido.
   // Cada registro se ubica en los DÍAS QUE CUBRE (no en el día en que se creó); la fecha de creación sigue en la tarjeta.
   const diasDe = (j: (typeof justFiltradas)[number]) => diasCubiertos(j.fecha_inicio, j.fecha_fin);
-  const diaFiltrados = diaVisibles.filter(r => {
-    if (filtroGrado && r.estudiante_grado !== filtroGrado) return false;
-    if (filtroSalon && r.estudiante_salon !== filtroSalon) return false;
-    return coincideBusqueda(busqueda, r.estudiante_nombre, r.estudiante_apellidos, String(r.estudiante_id));
-  });
-  const diasMarcados = [...new Set([...justFiltradas.flatMap(diasDe), ...diaFiltrados.map(r => r.fecha)])];
+  const diasMarcados = [...new Set(justFiltradas.flatMap(diasDe))];
   const listaFinal = diaCal ? justFiltradas.filter(j => diasDe(j).includes(keyDeDate(diaCal))) : justFiltradas;
-  const diaFinal = diaCal ? diaFiltrados.filter(r => r.fecha === keyDeDate(diaCal)) : diaFiltrados;
 
   const cantidadSeleccionada = Object.keys(seleccion).length;
   const toggleImprimirMode = () => {
@@ -220,19 +188,30 @@ const JustificacionInasistenciaStaff = () => {
 
         <div className="bg-card rounded-lg shadow-soft p-6">
           <h2 className="text-xl font-bold text-foreground flex items-center justify-center gap-2 mb-6">
-            <CalendarOff className="h-5 w-5 text-primary" /> Justificaciones por Inasistencia
+            <CalendarOff className="h-5 w-5 text-primary" /> {vista === "reportes" ? "Inasistencias reportadas" : "Justificaciones por Inasistencia"}
           </h2>
 
-          {puedeReportarDia && (
-            <div className="flex justify-center mb-6">
+          {puedeReportes && (
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center sm:justify-center gap-2 mb-6">
+              <button data-guia="inasistencia_staff.tab_justificaciones" onClick={() => setParams({}, { replace: true })}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors cursor-pointer ${vista === "justificaciones" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"}`}>
+                Justificaciones
+              </button>
+              <button data-guia="inasistencia_staff.tab_reportes" onClick={() => setParams({ vista: "reportes" }, { replace: true })}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors cursor-pointer ${vista === "reportes" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"}`}>
+                Inasistencias reportadas
+              </button>
               <button data-guia="inasistencia_staff.reportar_dia" onClick={() => navigate("/permisos-excusas/inasistencia-dia")}
-                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg border-2 border-primary text-primary font-semibold hover:bg-primary/5 transition-colors cursor-pointer">
+                className="col-span-2 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg border-2 border-primary text-primary font-semibold hover:bg-primary/5 transition-colors cursor-pointer">
                 <Plus className="w-4 h-4" /> Reportar inasistencia
               </button>
             </div>
           )}
 
-          {loading ? <div className="text-center py-8 text-muted-foreground">Cargando...</div> : (
+          {vista === "reportes" ? (
+            <InasistenciasDiaLista gradoRank={gradoRank}
+              filtro={(r) => !nivelesCoordina || nivelesCoordina.includes(nivelDe(r.estudiante_grado))} />
+          ) : loading ? <div className="text-center py-8 text-muted-foreground">Cargando...</div> : (
             <div className="space-y-4">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div className="relative col-span-2 sm:col-span-1">
@@ -258,12 +237,12 @@ const JustificacionInasistenciaStaff = () => {
               <div className="flex flex-col lg:flex-row lg:items-start gap-6">
                 <CalendarioFiltroDia diasMarcados={diasMarcados} dia={diaCal} onDia={setDiaCal} />
                 <div className="flex-1 min-w-0">
-              {listaFinal.length === 0 && diaFinal.length === 0 ? (
+              {listaFinal.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">{diaCal ? "No hay justificaciones para este día" : "No hay justificaciones con estos filtros"}</p>
               ) : (
                 <div className="space-y-6">
                   <ImprimirToggle imprimirMode={imprimirMode} onToggle={toggleImprimirMode} cantidadSeleccionada={cantidadSeleccionada} onDescargar={handleDescargar} descargando={descargando} />
-                  <p className="text-sm text-muted-foreground">{listaFinal.length} {listaFinal.length === 1 ? "justificación" : "justificaciones"}{diaFinal.length > 0 && ` · ${diaFinal.length} ${diaFinal.length === 1 ? "inasistencia reportada" : "inasistencias reportadas"} por coordinación o rectoría`}</p>
+                  <p className="text-sm text-muted-foreground">{listaFinal.length} {listaFinal.length === 1 ? "justificación" : "justificaciones"}</p>
                   {(() => {
                     const grupos: { key: string; items: typeof listaFinal }[] = [];
                     const byKey = new Map<string, typeof listaFinal>();
@@ -273,34 +252,12 @@ const JustificacionInasistenciaStaff = () => {
                       if (!arr) { arr = []; byKey.set(k, arr); grupos.push({ key: k, items: arr }); }
                       arr.push(j);
                     }
-                    const diaPorKey = new Map<string, typeof diaFinal>();
-                    for (const r of diaFinal) {
-                      if (!byKey.has(r.fecha)) { const arr: typeof listaFinal = []; byKey.set(r.fecha, arr); grupos.push({ key: r.fecha, items: arr }); }
-                      if (!diaPorKey.has(r.fecha)) diaPorKey.set(r.fecha, []);
-                      diaPorKey.get(r.fecha)!.push(r);
-                    }
                     grupos.sort((a, b) => b.key.localeCompare(a.key));
                     return grupos.map(({ key, items }) => (
                       <div key={key} className="space-y-3">
                         <h3 className="text-lg font-bold text-blue-700 border-b-2 border-blue-200 pb-2">
                           {fmtDiaHeader(key)}
                         </h3>
-                        {(diaPorKey.get(key) || []).map(r => (
-                          <div key={`dia-${r.id}`} data-guia="inasistencia_staff.tarjeta_dia" className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <span className="inline-block px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 rounded-full mb-0.5">Inasistencia del día · {r.estudiante_grado} {r.estudiante_salon}</span>
-                              <p className="font-semibold text-foreground text-sm">{r.estudiante_apellidos} {r.estudiante_nombre}</p>
-                              <p className="text-xs text-muted-foreground">Reportada por {r.reportado_por_cargo} {r.reportado_por_nombre} · {new Date(r.created_at).toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit" })}</p>
-                              {r.marcado_presente_en.length > 0 && (
-                                <p className="text-xs text-amber-700 mt-0.5">Marcado presente en: {r.marcado_presente_en.join(", ")}</p>
-                              )}
-                            </div>
-                            {puedeGestionarDia && (
-                              <button data-guia="inasistencia_staff.eliminar_dia" onClick={() => setEliminandoDia(r)} title="Eliminar"
-                                className="p-2 rounded hover:bg-red-100 text-muted-foreground hover:text-destructive shrink-0"><Trash2 className="w-4 h-4" /></button>
-                            )}
-                          </div>
-                        ))}
                         {items.map(j => {
                           const isExp = expandedIds.has(j.id);
                           const fechaCreacion = new Date(j.created_at).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -373,33 +330,6 @@ const JustificacionInasistenciaStaff = () => {
           )}
         </div>
       </main>
-
-      <AlertDialog open={!!eliminandoDia} onOpenChange={(o) => !borrandoDia && !o && setEliminandoDia(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar la inasistencia?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {eliminandoDia && `${eliminandoDia.estudiante_nombre} ${eliminandoDia.estudiante_apellidos}`} ya no aparecerá ausente en las clases de ese día y se avisará a sus acudientes que la inasistencia fue anulada.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={borrandoDia}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.preventDefault(); eliminarDia(); }} disabled={borrandoDia}>
-              {borrandoDia ? <Loader2 className="w-4 h-4 animate-spin" /> : "Eliminar"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={!!errorDia} onOpenChange={(o) => !o && setErrorDia(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>No se pudo completar</AlertDialogTitle>
-            <AlertDialogDescription>{errorDia}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter><AlertDialogAction onClick={() => setErrorDia(null)}>Entendido</AlertDialogAction></AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
