@@ -128,9 +128,6 @@ const InasistenciasDiaLista = ({ filtro, gradoRank }: Props) => {
                           <div className="min-w-0 space-y-1">
                             <p className="font-medium text-foreground first-letter:uppercase">{fmtFecha(r.fecha)}</p>
                             <p className="text-xs text-muted-foreground">Reportada por {r.reportado_por_cargo} {r.reportado_por_nombre} · {new Date(r.created_at).toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit" })}</p>
-                            {r.marcado_presente_en.length > 0 && (
-                              <p className="text-xs text-amber-700">Marcado presente en: {r.marcado_presente_en.join(", ")}</p>
-                            )}
                           </div>
                           {puedeGestionar && (
                             <button data-guia="inasistencia_staff.eliminar_dia" onClick={() => setEliminando(r)} title="Eliminar"

@@ -33,7 +33,7 @@ const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,
 export type ReporteInasistenciaDia = {
   id: number; estudiante_id: number; estudiante_nombre: string; estudiante_apellidos: string;
   estudiante_grado: string; estudiante_salon: string; fecha: string; created_at: string;
-  reportado_por_nombre: string; reportado_por_cargo: string; marcado_presente_en: string[];
+  reportado_por_nombre: string; reportado_por_cargo: string;
 };
 
 const InasistenciaDiaRegistro = () => {
