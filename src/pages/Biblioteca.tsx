@@ -174,7 +174,7 @@ const CodigoRapido = ({ onIr }: { onIr: (k: string, extra?: Record<string, strin
       {error && <p className="mt-2 flex items-center gap-2 text-sm bg-white/15 rounded-lg px-3 py-2"><AlertTriangle className="w-4 h-4" /> {error}</p>}
       {e && (
         <div className="mt-3 rounded-2xl bg-white text-foreground p-3 flex gap-3 items-center shadow-lg">
-          <PortadaLibro url={e.Biblioteca_Obras?.portada_url} titulo={e.Biblioteca_Obras?.titulo || ""} genero={null} className="w-12 h-16 rounded-lg shrink-0" />
+          <PortadaLibro url={e.Biblioteca_Obras?.portada_url} titulo={e.Biblioteca_Obras?.titulo || ""} genero={null} className="w-12 h-16 rounded-lg shrink-0" mini />
           <div className="min-w-0 flex-1">
             <p className="font-semibold truncate">{e.Biblioteca_Obras?.titulo}</p>
             <p className="text-xs text-muted-foreground"><span className="font-semibold">N.° {e.codigo}</span> · <span className={`px-1.5 py-0.5 rounded ${ESTADOS[e.estado]?.cls || ""}`}>{ESTADOS[e.estado]?.label}</span></p>
