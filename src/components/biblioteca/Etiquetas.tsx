@@ -80,7 +80,9 @@ const Etiquetas = () => {
       {rango && (
         <p className="text-sm text-muted-foreground">
           {rango.pendientes
-            ? <>Faltan por imprimir {rango.pendientes === 1 ? "la etiqueta" : "las etiquetas"} del N.° {rango.pendientes_desde} al N.° {rango.pendientes_hasta}.</>
+            ? (rango.pendientes_hasta! - rango.pendientes_desde! + 1 === rango.pendientes
+              ? <>Faltan por imprimir {rango.pendientes === 1 ? `la etiqueta del N.° ${rango.pendientes_desde}` : `las etiquetas del N.° ${rango.pendientes_desde} al N.° ${rango.pendientes_hasta}`}.</>
+              : <>Faltan por imprimir {rango.pendientes} etiquetas, entre el N.° {rango.pendientes_desde} y el N.° {rango.pendientes_hasta}.</>)
             : <>Todas las etiquetas ya están impresas. Los libros van del N.° {rango.primero} al N.° {rango.ultimo}.</>}
         </p>
       )}

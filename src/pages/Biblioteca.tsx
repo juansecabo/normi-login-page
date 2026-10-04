@@ -48,14 +48,16 @@ const Biblioteca = () => {
 
   const ir = (k: string | null, extra: Record<string, string> = {}) => setParams(k ? { seccion: k, ...extra } : {}, { replace: false });
 
+  // Orden lógico de la vida de un libro (Juan 2026-10-04): registrarlo, etiquetarlo, prestarlo,
+  // recibirlo, seguir los préstamos y, al final del año, el paz y salvo.
   const secciones: Seccion[] = [
+    { k: "catalogo", titulo: "Catálogo", desc: gestiona ? "Registrar y buscar libros" : "Buscar libros", Icono: Library, color: "from-teal-500 to-teal-700" },
     ...(gestiona ? [
+      { k: "etiquetas", titulo: "Etiquetas", desc: resumen?.etiquetas_pendientes ? `${resumen.etiquetas_pendientes} ${resumen.etiquetas_pendientes === 1 ? "etiqueta" : "etiquetas"} sin imprimir` : "Todas impresas", Icono: Tags, color: "from-violet-500 to-purple-600" },
       { k: "prestar", titulo: "Prestar", desc: "Registrar la salida de un libro", Icono: BookUp, color: "from-emerald-500 to-emerald-600" },
       { k: "devolver", titulo: "Devolver", desc: "Recibir un libro", Icono: BookDown, color: "from-sky-500 to-sky-600" },
     ] : []),
-    { k: "catalogo", titulo: "Catálogo", desc: gestiona ? "Buscar y agregar libros" : "Buscar libros", Icono: Library, color: "from-teal-500 to-teal-700" },
-    ...(consulta ? [{ k: "prestamos", titulo: "Préstamos", desc: resumen?.vencidos ? `${resumen.vencidos} vencidos` : "En préstamo e historial", Icono: AlarmClock, color: "from-amber-500 to-orange-500", badge: (resumen?.vencidos || 0) + (resumen?.perdidos || 0) }] : []),
-    ...(gestiona ? [{ k: "etiquetas", titulo: "Etiquetas", desc: resumen?.etiquetas_pendientes ? `${resumen.etiquetas_pendientes} ${resumen.etiquetas_pendientes === 1 ? "etiqueta" : "etiquetas"} sin imprimir` : "Todas impresas", Icono: Tags, color: "from-violet-500 to-purple-600" }] : []),
+    ...(consulta ? [{ k: "prestamos", titulo: "Préstamos", desc: resumen?.vencidos ? `${resumen.vencidos} vencidos` : "Quién tiene cada libro", Icono: AlarmClock, color: "from-amber-500 to-orange-500", badge: (resumen?.vencidos || 0) + (resumen?.perdidos || 0) }] : []),
     ...(consulta ? [
       { k: "paz", titulo: "Paz y salvo", desc: "Quién debe libros por salón", Icono: ShieldCheck, color: "from-green-600 to-emerald-700" },
       { k: "reglas", titulo: "Reglas", desc: "Libros y días de préstamo", Icono: SlidersHorizontal, color: "from-slate-500 to-slate-700" },
