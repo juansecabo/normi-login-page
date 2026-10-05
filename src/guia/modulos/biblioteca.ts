@@ -2,10 +2,10 @@
 //
 // Una ficha para todos los perfiles (/biblioteca, secciones por ?seccion=; todo por el NÚMERO del libro (1, 2, 3…), sin cámara ni lector):
 //  - Todos: Catálogo (búsqueda y disponibilidad) y Mis préstamos (el acudiente: los de sus hijos).
-//  - Bibliotecario(a) y Administrador: Prestar, Devolver, Préstamos
-//    (vencidos, renovar, perdido/repuesto), Etiquetas (PDF), Paz y salvo, Reglas.
+//  - Bibliotecario(a) y Administrador: Catálogo (prestar desde la ficha del libro), Etiquetas, Prestar, Devolver, Préstamos
+//    (vencidos, renovar, perdido/repuesto), Etiquetas (PDF), Paz y salvo. Sin límites ni reglas.
 //  - Rector, coordinación, secretaría y administrativos: Préstamos y Paz y salvo (solo ver) y
-//    Reglas (el rector las puede cambiar).
+//    nada más.
 
 import type { Capacidad } from "../tipos";
 
@@ -35,7 +35,7 @@ export const BIBLIOTECA: Capacidad[] = [
     titulo: "Ver mis libros prestados y renovarlos",
     descripcion: "Ver qué libros tiene prestados, hasta cuándo, y renovarlos en línea si aún no vencen. El acudiente ve los de cada hijo y si están a paz y salvo.",
     categoria: "Biblioteca",
-    roles: [...TODOS],
+    roles: ["profesor", "rector", "coordinador", "secretaria", "administrativo", "orientador", "portero", "estudiante", "acudiente"],
     ruta: "/biblioteca?seccion=mis",
     endpoint: "GET /api/biblioteca/mis-prestamos",
     sinonimos: ["mis libros prestados", "cuándo devuelvo el libro", "renovar un libro", "libros de mi hijo", "paz y salvo de biblioteca de mi hijo"],
@@ -68,7 +68,7 @@ export const BIBLIOTECA: Capacidad[] = [
   {
     id: "biblioteca.prestar",
     titulo: "Prestar un libro",
-    descripcion: "Buscar a la persona, escribir el número del libro (el de su etiqueta) y prestarlo. Si tiene libros vencidos o perdidos, o está suspendida, no deja prestar.",
+    descripcion: "Buscar a la persona, escribir el número del libro (el de su etiqueta), escoger la fecha de devolución y prestarlo. Sin límite de libros.",
     categoria: "Biblioteca",
     roles: [...GESTIONAN],
     ruta: "/biblioteca?seccion=prestar",
@@ -80,7 +80,8 @@ export const BIBLIOTECA: Capacidad[] = [
       tab("prestar", "Prestar"),
       { narracion: "Escribe el nombre o documento de quien pide el libro y elígelo.", accion: "escribir", ancla: "biblioteca.buscar_lector", campo: "persona" },
       { narracion: "Escribe el número del libro (está en su etiqueta) y da Enter.", accion: "escribir", ancla: "biblioteca.codigo_prestar", campo: "libro" },
-      { narracion: "Toca 'Prestar'. Te muestra la fecha de devolución.", accion: "click", ancla: "biblioteca.boton_prestar" },
+      { narracion: "Escoge la fecha en que debe devolverlo (viene sugerida a 15 días).", accion: "seleccionar", ancla: "biblioteca.fecha_devolucion", campo: "fecha" },
+      { narracion: "Toca 'Prestar'.", accion: "click", ancla: "biblioteca.boton_prestar" },
     ],
   },
   {
@@ -142,21 +143,6 @@ export const BIBLIOTECA: Capacidad[] = [
       LLEGAR,
       tab("paz", "Paz y salvo"),
       { narracion: "Elige el grado y, si quieres, el salón.", accion: "seleccionar", ancla: "biblioteca.paz_y_salvo", campo: "grado" },
-    ],
-  },
-  {
-    id: "biblioteca.reglas",
-    titulo: "Cambiar las reglas de préstamo de la biblioteca",
-    descripcion: "Cuántos libros y por cuántos días puede llevar cada tipo de persona, cuántas renovaciones, y si al devolver tarde queda suspendido.",
-    categoria: "Biblioteca",
-    roles: ["bibliotecario", "admin", "rector"],
-    ruta: "/biblioteca?seccion=reglas",
-    endpoint: "PUT /api/biblioteca/config",
-    sinonimos: ["reglas de préstamo", "cuántos libros puede llevar", "días de préstamo", "suspensión por retraso"],
-    pasos: [
-      LLEGAR,
-      tab("reglas", "Reglas"),
-      { narracion: "Ajusta los libros a la vez y los días para estudiantes, profesores y demás personal, y toca 'Guardar'.", accion: "explicar", ancla: "biblioteca.config" },
     ],
   },
 ];

@@ -25,7 +25,7 @@ const Lista = ({ b, hoy, max, propio, onRenovar, renovando }: { b: Bloque; hoy: 
                 {p.perdido ? "Perdido: hay que reponerlo" : vencido ? `Venció el ${fechaLarga(p.fecha_vencimiento)}: hay que devolverlo` : `Devolver el ${fechaLarga(p.fecha_vencimiento)}`}
               </p>
             </div>
-            {propio && !p.perdido && !vencido && p.renovaciones < max && (
+            {propio && !p.perdido && !vencido && (
               <button disabled={renovando === p.id} onClick={() => onRenovar(p.id)} className="self-center text-xs px-2 py-1 rounded border border-border hover:bg-muted shrink-0">
                 {renovando === p.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Renovar"}
               </button>

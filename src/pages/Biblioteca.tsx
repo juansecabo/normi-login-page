@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
-  BookUp, BookDown, Library, AlarmClock, Tags, ShieldCheck, SlidersHorizontal, BookMarked,
+  BookUp, BookDown, Library, AlarmClock, Tags, ShieldCheck, BookMarked,
   Search, X, Loader2, type LucideIcon,
 } from "lucide-react";
 import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNormi";
@@ -14,7 +14,6 @@ import { Prestar, Devolver } from "@/components/biblioteca/Mostrador";
 import PrestamosLista from "@/components/biblioteca/PrestamosLista";
 import Etiquetas from "@/components/biblioteca/Etiquetas";
 import PazYSalvo from "@/components/biblioteca/PazYSalvo";
-import ConfigBiblioteca from "@/components/biblioteca/ConfigBiblioteca";
 import MisPrestamos from "@/components/biblioteca/MisPrestamos";
 import PortadaLibro from "@/components/biblioteca/PortadaLibro";
 import ObraDetalle from "@/components/biblioteca/ObraDetalle";
@@ -60,9 +59,9 @@ const Biblioteca = () => {
     ...(consulta ? [{ k: "prestamos", titulo: "Préstamos", desc: resumen?.vencidos ? `${resumen.vencidos} vencidos` : "Quién tiene cada libro", Icono: AlarmClock, color: "bg-orange-500", badge: (resumen?.vencidos || 0) + (resumen?.perdidos || 0) }] : []),
     ...(consulta ? [
       { k: "paz", titulo: "Paz y salvo", desc: "Quién debe libros por salón", Icono: ShieldCheck, color: "bg-green-600" },
-      { k: "reglas", titulo: "Reglas", desc: "Libros y días de préstamo", Icono: SlidersHorizontal, color: "bg-slate-500" },
     ] : []),
-    { k: "mis", titulo: acudiente ? "Préstamos de mis hijos" : "Mis préstamos", desc: acudiente ? "Libros que tienen tus hijos" : "Libros que tienes", Icono: BookMarked, color: "bg-rose-500" },
+    // La bibliotecaria no pide libros prestados: no tiene "Mis préstamos".
+    ...(gestiona ? [] : [{ k: "mis", titulo: acudiente ? "Préstamos de mis hijos" : "Mis préstamos", desc: acudiente ? "Libros que tienen tus hijos" : "Libros que tienes", Icono: BookMarked, color: "bg-rose-500"  }]),
   ];
   const actual = secciones.find((s) => s.k === seccion) || null;
 
@@ -130,7 +129,6 @@ const Biblioteca = () => {
               {actual.k === "prestamos" && <PrestamosLista gestiona={gestiona} />}
               {actual.k === "etiquetas" && <Etiquetas />}
               {actual.k === "paz" && <PazYSalvo />}
-              {actual.k === "reglas" && <ConfigBiblioteca editable={gestiona || session.cargo === "Rector"} />}
               {actual.k === "mis" && <MisPrestamos />}
             </div>
           </div>

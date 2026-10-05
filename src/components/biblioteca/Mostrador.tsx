@@ -99,7 +99,7 @@ export const Prestar = ({ codigoInicial }: { codigoInicial?: string | null }) =>
     if (!lector || !carrito.length) return;
     setOcupado(true); setError("");
     try {
-      const r = await apiRequest<{ fecha_vencimiento: string }>("/api/biblioteca/prestamos", { method: "POST", body: JSON.stringify({ usuario_id: lector.id, codigos: carrito.map((c) => c.codigo) }) });
+      const r = await apiRequest<{ fecha_vencimiento: string }>("/api/biblioteca/prestamos", { method: "POST", body: JSON.stringify({ usuario_id: lector.id, codigos: carrito.map((c) => c.codigo), fecha_vencimiento: vence }) });
       setHecho({ nombre: lector.nombre, libros: carrito.map((c) => c.titulo), fecha: r.fecha_vencimiento });
       setCarrito([]); setLector(null); setSit(null); setBusca("");
     } catch (err) { setError(errorDe(err)); }
@@ -108,7 +108,7 @@ export const Prestar = ({ codigoInicial }: { codigoInicial?: string | null }) =>
 
   const hoy = hoyYmd();
   const enCurso = sit ? sit.abiertos.filter((p) => !p.perdido).length : 0;
-  const cupo = sit ? sit.politica.max - enCurso : 0;
+  void enCurso;
 
   return (
     <div className="space-y-5">
@@ -153,7 +153,7 @@ export const Prestar = ({ codigoInicial }: { codigoInicial?: string | null }) =>
                 <span className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 font-semibold">{lector.nombre.charAt(0)}</span>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-foreground truncate">{lector.nombre}</p>
-                  <p className="text-xs text-muted-foreground">{lector.cargo || `${lector.grado} ${lector.salon}`} · hasta {sit?.politica.max} {sit?.politica.max === 1 ? "libro" : "libros"} por {sit?.politica.dias} días</p>
+                  <p className="text-xs text-muted-foreground">{lector.cargo || `${lector.grado} ${lector.salon}`}</p>
                 </div>
                 <button onClick={() => { setLector(null); setSit(null); setBusca(""); }} className="text-xs text-primary hover:underline shrink-0">Cambiar</button>
               </div>
@@ -167,14 +167,14 @@ export const Prestar = ({ codigoInicial }: { codigoInicial?: string | null }) =>
                   ))}
                 </div>
               )}
-              {sit && !sit.puede_prestar && (
-                <p className="flex items-start gap-2 text-sm text-rose-700 bg-rose-50 rounded-xl p-3"><AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" /> {sit.motivo_bloqueo}</p>
+              {sit?.motivo_bloqueo && (
+                <p className="flex items-start gap-2 text-sm text-amber-800 bg-amber-50 rounded-xl p-3"><AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" /> {sit.motivo_bloqueo}</p>
               )}
             </div>
           )}
         </Paso>
 
-        <Paso n={2} titulo="¿Qué libros?" activo={!lector || !!sit?.puede_prestar}>
+        <Paso n={2} titulo="¿Qué libros?" activo>
           <div className="space-y-3">
             <CampoCodigo onCodigo={agregarLibro} ocupado={ocupado} autoFocus={!!lector} guia="biblioteca.codigo_prestar" />
             {carrito.length === 0 ? (
@@ -200,14 +200,18 @@ export const Prestar = ({ codigoInicial }: { codigoInicial?: string | null }) =>
       </div>
 
       {error && <p className="flex items-start gap-2 text-sm text-rose-700 bg-rose-50 rounded-xl p-3"><AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" /> {error}</p>}
-      {lector && sit?.puede_prestar && carrito.length > cupo && <p className="text-sm text-rose-700">Solo puede llevar {Math.max(0, cupo)} más.</p>}
 
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl bg-muted/50 p-4">
         <p className="text-sm text-muted-foreground">
-          {lector && vence ? <>Devolución: <strong className="text-foreground">{fechaLarga(vence)}</strong></> : "Elige a la persona y agrega los libros."}
+          {lector ? (
+            <span className="flex flex-wrap items-center gap-2">Devolver el
+              <input type="date" value={vence || ""} min={hoy} onChange={(e) => setVence(e.target.value)} data-guia="biblioteca.fecha_devolucion"
+                className="px-3 py-2 border border-input rounded-lg text-sm bg-background font-medium text-foreground" />
+            </span>
+          ) : "Elige a la persona y agrega los libros."}
         </p>
         <Button data-guia="biblioteca.boton_prestar" size="lg" className="w-full sm:w-auto rounded-xl px-8"
-          disabled={!lector || !sit?.puede_prestar || !carrito.length || ocupado || carrito.length > cupo} onClick={prestar}>
+          disabled={!lector || !carrito.length || ocupado || !vence} onClick={prestar}>
           {ocupado ? <Loader2 className="w-4 h-4 animate-spin" /> : `Prestar${carrito.length ? ` ${carrito.length} ${carrito.length === 1 ? "libro" : "libros"}` : ""}`}
         </Button>
       </div>

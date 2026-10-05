@@ -5,7 +5,7 @@ import { Loader2, Pencil, Plus, EyeOff, Eye, Search, UserRound, CheckCircle2 } f
 import { apiRequest } from "@/lib/apiClient";
 import PortadaLibro from "./PortadaLibro";
 import Contador from "./Contador";
-import { ESTADOS, autoresBonitos, generoLabel, nivelLabel, fechaLarga, errorDe } from "./comun";
+import { ESTADOS, autoresBonitos, generoLabel, nivelLabel, fechaLarga, errorDe, hoyYmd } from "./comun";
 
 /**
  * Ficha de un libro. Todos ven sus datos y qué copias están disponibles (o hasta cuándo
@@ -148,6 +148,9 @@ const PrestarAqui = ({ ejemplar, onCancelar, onListo }: { ejemplar: Ejemplar; on
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState("");
   const [hecho, setHecho] = useState<{ nombre: string; fecha: string } | null>(null);
+  // Fecha de devolución: la escoge la bibliotecaria (viene sugerida a 15 días).
+  const [fecha, setFecha] = useState("");
+  useEffect(() => { apiRequest<{ fecha: string }>("/api/biblioteca/vencimiento").then((r) => setFecha(r.fecha)).catch(() => null); }, []);
   useEffect(() => {
     if (busca.trim().length < 2) { setLista([]); return; }
     const t = setTimeout(async () => {
@@ -161,7 +164,7 @@ const PrestarAqui = ({ ejemplar, onCancelar, onListo }: { ejemplar: Ejemplar; on
   const prestar = async (l: { id: string; nombre: string }) => {
     setOcupado(true); setError("");
     try {
-      const r = await apiRequest<{ fecha_vencimiento: string }>("/api/biblioteca/prestamos", { method: "POST", body: JSON.stringify({ usuario_id: l.id, codigos: [ejemplar.codigo || String(ejemplar.numero_inventario)] }) });
+      const r = await apiRequest<{ fecha_vencimiento: string }>("/api/biblioteca/prestamos", { method: "POST", body: JSON.stringify({ usuario_id: l.id, codigos: [ejemplar.codigo || String(ejemplar.numero_inventario)], fecha_vencimiento: fecha || undefined }) });
       setHecho({ nombre: l.nombre, fecha: r.fecha_vencimiento });
     } catch (err) { setError(errorDe(err)); }
     setOcupado(false);
@@ -176,6 +179,9 @@ const PrestarAqui = ({ ejemplar, onCancelar, onListo }: { ejemplar: Ejemplar; on
   return (
     <div className="mt-2 rounded-md bg-muted/40 border border-border p-3 space-y-2" data-guia="biblioteca.detalle_prestar_panel">
       <p className="text-sm font-medium text-foreground">¿A quién le prestas la copia N.° {ejemplar.codigo || ejemplar.numero_inventario}?</p>
+      <div className="flex flex-wrap items-center gap-2 text-sm">Devolver el
+        <input type="date" value={fecha} min={hoyYmd()} onChange={(e) => setFecha(e.target.value)} className="px-2 py-1.5 border border-input rounded-md bg-background font-medium" data-guia="biblioteca.detalle_fecha" />
+      </div>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <input autoFocus value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Nombre, apellido o documento"
