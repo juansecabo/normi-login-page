@@ -7,6 +7,7 @@ import { subirArchivo } from "@/lib/storage";
 import { NIVELES, errorDe, useGeneros } from "./comun";
 import GenerosEditor from "./GenerosEditor";
 import Contador from "./Contador";
+import NumerosCopias from "./NumerosCopias";
 
 /**
  * Agregar o editar un libro (obra). Al crear, también se crean sus ejemplares (copias) con
@@ -25,6 +26,7 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
   const editando = !!obra;
   const [d, setD] = useState<Datos>(VACIO);
   const [cantidad, setCantidad] = useState("1");
+  const [numeros, setNumeros] = useState<number[] | null>(null);
   const [mas, setMas] = useState(false);
   const [editarGeneros, setEditarGeneros] = useState(false);
   const { generos, guardar: guardarGeneros } = useGeneros();
@@ -61,7 +63,7 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
     if (!repetida) return;
     setGuardando(true); setError("");
     try {
-      await apiRequest(`/api/biblioteca/obras/${repetida.id}/ejemplares`, { method: "POST", body: JSON.stringify({ cantidad: Number(cantidad) || 1 }) });
+      await apiRequest(`/api/biblioteca/obras/${repetida.id}/ejemplares`, { method: "POST", body: JSON.stringify({ cantidad: Number(cantidad) || 1, numeros: numeros || undefined }) });
       onGuardado(repetida.id);
     } catch (err) { setError(errorDe(err)); }
     setGuardando(false);
@@ -101,7 +103,7 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
     setGuardando(true); setError("");
     try {
       const body: Record<string, unknown> = { ...d };
-      if (!editando) Object.assign(body, { cantidad: Number(cantidad) || 0 });
+      if (!editando) Object.assign(body, { cantidad: Number(cantidad) || 0, numeros: numeros || undefined });
       const r = editando
         ? await apiRequest<{ obra: { id: number } }>(`/api/biblioteca/obras/${obra!.id}`, { method: "PATCH", body: JSON.stringify(body) })
         : await apiRequest<{ obra: { id: number } }>("/api/biblioteca/obras", { method: "POST", body: JSON.stringify(body) });
@@ -140,7 +142,7 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
             <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm space-y-2" data-guia="biblioteca.form_repetido">
               <p className="text-amber-900"><strong>«{repetida.titulo}»</strong> ya está en el catálogo ({repetida.copias} {repetida.copias === 1 ? "copia" : "copias"}).{editando ? " Usa otro título." : " No se agrega dos veces: súmale las copias."}</p>
               {!editando && (
-                <Button size="sm" onClick={sumarCopias} disabled={guardando}>
+                <Button size="sm" onClick={sumarCopias} disabled={guardando || !numeros}>
                   {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : `Agregar ${Number(cantidad) || 1} ${(Number(cantidad) || 1) === 1 ? "copia" : "copias"} a ese libro`}
                 </Button>
               )}
@@ -169,10 +171,8 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
           {!editando && (
             <div className="space-y-1">
               <label className={lbl}>¿Cuántas copias hay?</label>
-              <div className="flex items-center gap-3">
-                <Contador valor={cantidad} onCambio={setCantidad} guia="biblioteca.form_cantidad" />
-                <span className="text-xs text-muted-foreground">Cada copia recibe su número para la etiqueta.</span>
-              </div>
+              <Contador valor={cantidad} onCambio={setCantidad} guia="biblioteca.form_cantidad" />
+              <NumerosCopias cantidad={Number(cantidad) || 0} onCambio={setNumeros} />
             </div>
           )}
 
@@ -212,7 +212,7 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
         </div>
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={onCerrar} disabled={guardando}>Cancelar</Button>
-          <Button data-guia="biblioteca.form_guardar" onClick={guardar} disabled={guardando || subiendo || !!repetida}>{guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar"}</Button>
+          <Button data-guia="biblioteca.form_guardar" onClick={guardar} disabled={guardando || subiendo || !!repetida || (!editando && !numeros)}>{guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

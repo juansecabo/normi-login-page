@@ -19,7 +19,7 @@ export const BIBLIOTECA: Capacidad[] = [
   {
     id: "biblioteca.buscar_libro",
     titulo: "Buscar un libro en la biblioteca y ver si está disponible",
-    descripcion: "Buscar en el catálogo por título, autor, materia, ISBN o número del libro y ver cuántas copias hay disponibles o cuándo vuelve el libro.",
+    descripcion: "Buscar en el catálogo por título, autor o número del libro y ver cuántas copias hay disponibles o cuándo vuelve el libro.",
     categoria: "Biblioteca",
     roles: [...TODOS],
     ruta: "/biblioteca?seccion=catalogo",
@@ -49,7 +49,7 @@ export const BIBLIOTECA: Capacidad[] = [
   {
     id: "biblioteca.agregar_libro",
     titulo: "Agregar libros al catálogo de la biblioteca",
-    descripcion: "Registrar un libro con su título (lo único obligatorio), el autor y cuántas copias hay; cada copia recibe su número (1, 2, 3…) para la etiqueta.",
+    descripcion: "Registrar un libro con su título (lo único obligatorio), el autor y cuántas copias hay; cada copia recibe su número (1, 2, 3…), que viene sugerido y se puede cambiar si ningún otro libro lo tiene.",
     categoria: "Biblioteca",
     roles: [...GESTIONAN],
     ruta: "/biblioteca?seccion=catalogo",
@@ -61,7 +61,7 @@ export const BIBLIOTECA: Capacidad[] = [
       { narracion: "Toca 'Agregar libro'.", accion: "click", ancla: "biblioteca.agregar_libro" },
       { narracion: "Escribe el título (es lo único obligatorio) y, si lo tienes, el autor.", accion: "escribir", ancla: "biblioteca.form_titulo", campo: "titulo" },
       { narracion: "Elige el género y para qué edades es el libro.", accion: "seleccionar", ancla: "biblioteca.form_genero", campo: "genero", opcional: true },
-      { narracion: "Indica cuántas copias hay con las flechitas: cada una recibe su número para la etiqueta.", accion: "click", ancla: "biblioteca.form_cantidad", campo: "cantidad" },
+      { narracion: "Indica cuántas copias hay con las flechitas. Debajo salen los números con que entran; puedes cambiarlos si ningún otro libro tiene ese número.", accion: "click", ancla: "biblioteca.form_cantidad", campo: "cantidad" },
       { narracion: "Si quieres, en 'Más datos (opcional)' puedes poner el ISBN, la portada y lo demás.", accion: "explicar", ancla: "biblioteca.form_mas", opcional: true },
       { narracion: "Toca 'Guardar'.", accion: "click", ancla: "biblioteca.form_guardar" },
     ],

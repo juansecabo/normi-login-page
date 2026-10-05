@@ -5,6 +5,7 @@ import { Loader2, Pencil, Plus, EyeOff, Eye, Search, UserRound, CheckCircle2 } f
 import { apiRequest } from "@/lib/apiClient";
 import PortadaLibro from "./PortadaLibro";
 import Contador from "./Contador";
+import NumerosCopias from "./NumerosCopias";
 import { ESTADOS, autoresBonitos, generoLabel, nivelLabel, fechaLarga, errorDe, hoyYmd } from "./comun";
 
 /**
@@ -27,6 +28,7 @@ const ObraDetalle = ({ obraId, onCerrar, onEditar, onCambio }: {
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
   const [agregar, setAgregar] = useState<{ cantidad: string } | null>(null);
+  const [numeros, setNumeros] = useState<number[] | null>(null);
   const [baja, setBaja] = useState<{ ej: Ejemplar; motivo: string } | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const [prestando, setPrestando] = useState<Ejemplar | null>(null);
@@ -110,13 +112,16 @@ const ObraDetalle = ({ obraId, onCerrar, onEditar, onCambio }: {
               </div>
             )}
             {gestiona && agregar && (
-              <div className="mt-2 rounded-md bg-muted/40 border border-border p-3 flex flex-wrap items-center gap-3">
+              <div className="mt-2 rounded-md bg-muted/40 border border-border p-3 space-y-3">
+                <div className="flex flex-wrap items-center gap-3">
                 <label className="text-sm font-medium text-foreground">¿Cuántas copias más?</label>
                 <Contador valor={agregar.cantidad} onCambio={(v) => setAgregar({ cantidad: v })} />
-                <span className="flex gap-2 ml-auto">
+                </div>
+                <NumerosCopias cantidad={Number(agregar.cantidad) || 0} onCambio={setNumeros} />
+                <span className="flex gap-2 justify-end">
                   <Button size="sm" variant="outline" onClick={() => setAgregar(null)}>Cancelar</Button>
-                  <Button size="sm" disabled={ocupado || !Number(agregar.cantidad)} onClick={() => accion(async () => {
-                    await apiRequest(`/api/biblioteca/obras/${obra.id}/ejemplares`, { method: "POST", body: JSON.stringify({ cantidad: Number(agregar.cantidad) }) });
+                  <Button size="sm" disabled={ocupado || !Number(agregar.cantidad) || !numeros} onClick={() => accion(async () => {
+                    await apiRequest(`/api/biblioteca/obras/${obra.id}/ejemplares`, { method: "POST", body: JSON.stringify({ cantidad: Number(agregar.cantidad), numeros }) });
                     setAgregar(null);
                   })}>Agregar</Button>
                 </span>
