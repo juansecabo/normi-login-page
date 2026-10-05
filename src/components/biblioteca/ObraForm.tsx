@@ -98,7 +98,7 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
             <div className="space-y-1">
               <label className={lbl}>¿Cuántas copias hay?</label>
               <div className="flex items-center gap-3">
-                <input data-guia="biblioteca.form_cantidad" value={cantidad} onChange={(e) => setCantidad(e.target.value.replace(/\D/g, "").slice(0, 3))} className={`${inp} w-24 text-center font-semibold`} inputMode="numeric" />
+                <input data-guia="biblioteca.form_cantidad" value={cantidad} onChange={(e) => setCantidad(e.target.value.replace(/\D/g, "").slice(0, 3))} className="w-24 px-3 py-2 border border-input rounded-md text-sm bg-background text-center font-semibold" inputMode="numeric" />
                 <span className="text-xs text-muted-foreground">Cada copia recibe su número para la etiqueta.</span>
               </div>
             </div>
