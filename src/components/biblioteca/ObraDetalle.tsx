@@ -4,12 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Pencil, Plus, EyeOff, Eye } from "lucide-react";
 import { apiRequest } from "@/lib/apiClient";
 import PortadaLibro from "./PortadaLibro";
-import { ESTADOS, PROCEDENCIAS, autoresBonitos, generoLabel, nivelLabel, fechaLarga, errorDe } from "./comun";
+import { ESTADOS, autoresBonitos, generoLabel, nivelLabel, fechaLarga, errorDe } from "./comun";
 
 /**
  * Ficha de un libro. Todos ven sus datos y qué copias están disponibles (o hasta cuándo
  * están prestadas). Quien gestiona ve además el número de inventario, a quién se le prestó,
- * y puede editar, agregar copias, mandar a reparación, dar de baja u ocultar el libro.
+ * y puede editar, agregar copias (varias de una vez), dar de baja u ocultar el libro.
  */
 interface Ejemplar {
   id: number; numero_inventario: number; signatura: string | null; estado: string; tipo_prestamo: string; vence: string | null; mio?: boolean;
@@ -25,7 +25,7 @@ const ObraDetalle = ({ obraId, onCerrar, onEditar, onCambio }: {
   const [gestiona, setGestiona] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
-  const [agregar, setAgregar] = useState<{ cantidad: string; procedencia: string; tipo: string } | null>(null);
+  const [agregar, setAgregar] = useState<{ cantidad: string } | null>(null);
   const [baja, setBaja] = useState<{ ej: Ejemplar; motivo: string } | null>(null);
   const [ocupado, setOcupado] = useState(false);
 
@@ -80,7 +80,6 @@ const ObraDetalle = ({ obraId, onCerrar, onEditar, onCambio }: {
               {visibles.map((e) => (
                 <div key={e.id} className="py-2 flex flex-wrap items-center gap-2 text-sm">
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ESTADOS[e.estado]?.cls || ""}`}>{ESTADOS[e.estado]?.label || e.estado}</span>
-                  {e.tipo_prestamo === "sala" && <span className="px-2 py-0.5 rounded-full text-xs bg-sky-100 text-sky-700">Solo en sala</span>}
                   {gestiona && e.codigo && <span className="text-xs font-semibold bg-muted px-2 py-0.5 rounded">N.° {e.codigo}</span>}
                   {e.vence && e.estado === "prestado" && <span className="text-muted-foreground">{e.mio ? "Lo tienes tú · " : ""}vuelve el {fechaLarga(e.vence)}</span>}
                   {gestiona && e.prestamo && <span className="text-foreground">· {e.prestamo.usuario_nombre}{e.prestamo.usuario_grado ? ` (${e.prestamo.usuario_grado} ${e.prestamo.usuario_salon})` : ""}</span>}
@@ -108,24 +107,16 @@ const ObraDetalle = ({ obraId, onCerrar, onEditar, onCambio }: {
               </div>
             )}
             {gestiona && agregar && (
-              <div className="mt-2 rounded-md bg-muted/40 border border-border p-3 space-y-2">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  <input value={agregar.cantidad} onChange={(e) => setAgregar({ ...agregar, cantidad: e.target.value.replace(/\D/g, "").slice(0, 3) })} placeholder="Cantidad" className={inp} inputMode="numeric" />
-                  <select value={agregar.procedencia} onChange={(e) => setAgregar({ ...agregar, procedencia: e.target.value })} className={inp}>
-                    {PROCEDENCIAS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
-                  </select>
-                  <select value={agregar.tipo} onChange={(e) => setAgregar({ ...agregar, tipo: e.target.value })} className={inp}>
-                    <option value="normal">Se presta</option>
-                    <option value="sala">Solo en sala</option>
-                  </select>
-                </div>
-                <div className="flex gap-2 justify-end">
+              <div className="mt-2 rounded-md bg-muted/40 border border-border p-3 flex flex-wrap items-center gap-3">
+                <label className="text-sm font-medium text-foreground">¿Cuántas copias más?</label>
+                <input autoFocus value={agregar.cantidad} onChange={(e) => setAgregar({ cantidad: e.target.value.replace(/\D/g, "").slice(0, 3) })} className="w-20 px-2 py-1.5 border border-input rounded-md text-sm bg-background text-center font-semibold" inputMode="numeric" />
+                <span className="flex gap-2 ml-auto">
                   <Button size="sm" variant="outline" onClick={() => setAgregar(null)}>Cancelar</Button>
                   <Button size="sm" disabled={ocupado || !Number(agregar.cantidad)} onClick={() => accion(async () => {
-                    await apiRequest(`/api/biblioteca/obras/${obra.id}/ejemplares`, { method: "POST", body: JSON.stringify({ cantidad: Number(agregar.cantidad), procedencia: agregar.procedencia, tipo_prestamo: agregar.tipo }) });
+                    await apiRequest(`/api/biblioteca/obras/${obra.id}/ejemplares`, { method: "POST", body: JSON.stringify({ cantidad: Number(agregar.cantidad) }) });
                     setAgregar(null);
                   })}>Agregar</Button>
-                </div>
+                </span>
               </div>
             )}
           </div>
@@ -133,7 +124,7 @@ const ObraDetalle = ({ obraId, onCerrar, onEditar, onCambio }: {
           {gestiona && (
             <DialogFooter className="flex-row flex-wrap gap-2 sm:justify-start">
               <Button variant="outline" size="sm" onClick={() => onEditar(obra)}><Pencil className="w-4 h-4 mr-1" /> Editar</Button>
-              <Button variant="outline" size="sm" onClick={() => setAgregar({ cantidad: "1", procedencia: "compra", tipo: "normal" })}><Plus className="w-4 h-4 mr-1" /> Agregar copias</Button>
+              <Button variant="outline" size="sm" onClick={() => setAgregar({ cantidad: "1" })}><Plus className="w-4 h-4 mr-1" /> Agregar copias</Button>
               <Button variant="outline" size="sm" disabled={ocupado} onClick={() => accion(() => apiRequest(`/api/biblioteca/obras/${obra.id}`, { method: "PATCH", body: JSON.stringify({ activa: !obra.activa }) }))}>
                 {obra.activa ? <><EyeOff className="w-4 h-4 mr-1" /> Ocultar del catálogo</> : <><Eye className="w-4 h-4 mr-1" /> Mostrar en el catálogo</>}
               </Button>
