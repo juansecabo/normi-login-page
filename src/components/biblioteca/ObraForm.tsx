@@ -25,6 +25,8 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
   const [d, setD] = useState<Datos>(VACIO);
   const [cantidad, setCantidad] = useState("1");
   const [mas, setMas] = useState(false);
+  // Libro con el mismo título (sin importar mayúsculas ni tildes): no se crea otro, se le suman copias.
+  const [repetida, setRepetida] = useState<{ id: number; titulo: string; copias: number } | null>(null);
   const [buscando, setBuscando] = useState(false);
   const [aviso, setAviso] = useState<{ ok: boolean; texto: string; obraId?: number } | null>(null);
   const [subiendo, setSubiendo] = useState(false);
@@ -35,11 +37,32 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
     if (!abierto) return;
     const base = { ...VACIO };
     if (obra) for (const k of Object.keys(VACIO)) base[k] = obra[k] == null ? "" : String(obra[k]);
-    setD(base); setCantidad("1"); setMas(!!obra);
+    setD(base); setCantidad("1"); setMas(!!obra); setRepetida(null);
     setAviso(null); setError("");
   }, [abierto, obra]);
 
   const set = (k: string, v: string) => setD((p) => ({ ...p, [k]: v }));
+
+  useEffect(() => {
+    const t0 = d.titulo.trim();
+    if (!abierto || t0.length < 2 || (editando && t0 === String(obra?.titulo || "").trim())) { setRepetida(null); return; }
+    const t = setTimeout(() => {
+      apiRequest<{ obra: { id: number; titulo: string; copias: number } | null }>(`/api/biblioteca/titulo-existe?titulo=${encodeURIComponent(t0)}${editando ? `&excluir=${obra!.id}` : ""}`)
+        .then((r) => setRepetida(r.obra)).catch(() => null);
+    }, 350);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [d.titulo, abierto]);
+
+  const sumarCopias = async () => {
+    if (!repetida) return;
+    setGuardando(true); setError("");
+    try {
+      await apiRequest(`/api/biblioteca/obras/${repetida.id}/ejemplares`, { method: "POST", body: JSON.stringify({ cantidad: Number(cantidad) || 1 }) });
+      onGuardado(repetida.id);
+    } catch (err) { setError(errorDe(err)); }
+    setGuardando(false);
+  };
 
   const buscarIsbn = async () => {
     const isbn = d.isbn.replace(/[^0-9Xx]/g, "");
@@ -80,7 +103,10 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
         ? await apiRequest<{ obra: { id: number } }>(`/api/biblioteca/obras/${obra!.id}`, { method: "PATCH", body: JSON.stringify(body) })
         : await apiRequest<{ obra: { id: number } }>("/api/biblioteca/obras", { method: "POST", body: JSON.stringify(body) });
       onGuardado(r.obra.id);
-    } catch (err) { setError(errorDe(err)); }
+    } catch (err: any) {
+      if (err?.body?.error === "duplicado" && err.body.obra) setRepetida(err.body.obra);
+      else setError(errorDe(err));
+    }
     setGuardando(false);
   };
 
@@ -94,6 +120,16 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
         <div className="space-y-4" data-guia="biblioteca.form_obra">
           {/* Lo esencial a la vista (Juan 2026-10-04): título, autor, género, edades y cuántas copias. */}
           <div className="space-y-1"><label className={lbl}>Título *</label><input data-guia="biblioteca.form_titulo" value={d.titulo} onChange={(e) => set("titulo", e.target.value)} className={inp} autoFocus={!editando} /></div>
+          {repetida && (
+            <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm space-y-2" data-guia="biblioteca.form_repetido">
+              <p className="text-amber-900"><strong>«{repetida.titulo}»</strong> ya está en el catálogo ({repetida.copias} {repetida.copias === 1 ? "copia" : "copias"}).{editando ? " Usa otro título." : " No se agrega dos veces: súmale las copias."}</p>
+              {!editando && (
+                <Button size="sm" onClick={sumarCopias} disabled={guardando}>
+                  {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : `Agregar ${Number(cantidad) || 1} ${(Number(cantidad) || 1) === 1 ? "copia" : "copias"} a ese libro`}
+                </Button>
+              )}
+            </div>
+          )}
           <div className="space-y-1"><label className={lbl}>Autor</label><input value={d.autores} onChange={(e) => set("autores", e.target.value)} placeholder="Ej. Gabriel García Márquez" className={inp} /></div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
@@ -168,7 +204,7 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
         </div>
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={onCerrar} disabled={guardando}>Cancelar</Button>
-          <Button data-guia="biblioteca.form_guardar" onClick={guardar} disabled={guardando || subiendo}>{guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar"}</Button>
+          <Button data-guia="biblioteca.form_guardar" onClick={guardar} disabled={guardando || subiendo || !!repetida}>{guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
