@@ -2,7 +2,7 @@
 //
 // Una ficha para todos los perfiles (/biblioteca, secciones por ?seccion=; todo por el NÚMERO del libro (1, 2, 3…), sin cámara ni lector):
 //  - Todos: Catálogo (búsqueda y disponibilidad) y Mis préstamos (el acudiente: los de sus hijos).
-//  - Bibliotecario(a) y Administrador: Catálogo (prestar desde la ficha del libro), Etiquetas, Prestar, Devolver, Préstamos
+//  - Bibliotecario(a) y Administrador: Catálogo (agregar y prestar), Comunidad (cada persona: prestar, recibir, filtros) y Etiquetas
 //    (vencidos, renovar, perdido/repuesto), Etiquetas (PDF), Paz y salvo. Sin límites ni reglas.
 //  - Rector, coordinación, secretaría y administrativos: Préstamos y Paz y salvo (solo ver) y
 //    nada más.
@@ -68,50 +68,49 @@ export const BIBLIOTECA: Capacidad[] = [
   {
     id: "biblioteca.prestar",
     titulo: "Prestar un libro",
-    descripcion: "Buscar a la persona, escribir el número del libro (el de su etiqueta), escoger la fecha de devolución y prestarlo. Sin límite de libros.",
+    descripcion: "Prestar desde el Catálogo (abrir el libro y tocar Prestar en una copia) o desde Comunidad (abrir a la persona y buscar el libro). Se escoge la fecha de devolución; no hay límite de libros.",
     categoria: "Biblioteca",
     roles: [...GESTIONAN],
-    ruta: "/biblioteca?seccion=prestar",
+    ruta: "/biblioteca?seccion=comunidad",
     endpoint: "POST /api/biblioteca/prestamos",
     requisitos: [{ entidad: "estudiante", descripcion: "Estudiante (o persona del personal) que pide el libro." }],
-    sinonimos: ["prestar un libro", "préstamo de libro", "sacar un libro", "registrar préstamo"],
+    sinonimos: ["prestar un libro", "préstamo de libro", "sacar un libro", "registrar préstamo", "prestarle un libro a un estudiante"],
     pasos: [
       LLEGAR,
-      tab("prestar", "Prestar"),
-      { narracion: "Escribe el nombre o documento de quien pide el libro y elígelo.", accion: "escribir", ancla: "biblioteca.buscar_lector", campo: "persona" },
-      { narracion: "Escribe el número del libro (está en su etiqueta) y da Enter.", accion: "escribir", ancla: "biblioteca.codigo_prestar", campo: "libro" },
-      { narracion: "Escoge la fecha en que debe devolverlo (viene sugerida a 15 días).", accion: "seleccionar", ancla: "biblioteca.fecha_devolucion", campo: "fecha" },
-      { narracion: "Toca 'Prestar'.", accion: "click", ancla: "biblioteca.boton_prestar" },
+      tab("comunidad", "Comunidad"),
+      { narracion: "Busca a la persona por su nombre o apellido y tócala.", accion: "escribir", ancla: "biblioteca.comunidad_buscar", campo: "persona" },
+      { narracion: "En 'Prestarle un libro' escribe el título, el autor o el número del libro, revisa la fecha de devolución y toca 'Prestar'.", accion: "explicar", ancla: "biblioteca.persona_prestar" },
     ],
   },
   {
     id: "biblioteca.devolver",
     titulo: "Recibir la devolución de un libro",
-    descripcion: "Escribir el número del libro que devuelven. Si llegó tarde, avisa los días de retraso y la suspensión.",
+    descripcion: "En Comunidad se abre a la persona y, en el libro que trae, se toca 'Devolvió'.",
     categoria: "Biblioteca",
     roles: [...GESTIONAN],
-    ruta: "/biblioteca?seccion=devolver",
+    ruta: "/biblioteca?seccion=comunidad",
     endpoint: "POST /api/biblioteca/devoluciones",
-    sinonimos: ["devolver un libro", "recibir libro", "devolución de libro"],
+    sinonimos: ["devolver un libro", "recibir libro", "devolución de libro", "trajo el libro"],
     pasos: [
       LLEGAR,
-      tab("devolver", "Devolver"),
-      { narracion: "Escribe el número del libro y da Enter. Puedes seguir con otro.", accion: "escribir", ancla: "biblioteca.codigo_devolver", campo: "libro" },
+      tab("comunidad", "Comunidad"),
+      { narracion: "Busca a la persona y tócala.", accion: "escribir", ancla: "biblioteca.comunidad_buscar", campo: "persona" },
+      { narracion: "En el libro que devuelve, toca 'Devolvió'.", accion: "explicar", ancla: "biblioteca.persona_devolver" },
     ],
   },
   {
     id: "biblioteca.vencidos",
-    titulo: "Ver los libros vencidos y quién los tiene",
-    descripcion: "Lista de préstamos vencidos y perdidos sin reponer, los que están en préstamo y el historial. Quien gestiona renueva, marca perdidos y registra reposiciones.",
+    titulo: "Ver quién tiene libros, quién está atrasado y quién está a paz y salvo",
+    descripcion: "En Comunidad están todos los estudiantes y el personal en orden alfabético, con su estado; se filtra por con libros, atrasados, perdidos o sin libros (paz y salvo).",
     categoria: "Biblioteca",
     roles: [...CONSULTAN],
-    ruta: "/biblioteca?seccion=prestamos",
-    endpoint: "GET /api/biblioteca/prestamos",
-    sinonimos: ["libros vencidos", "quién debe libros", "libros sin devolver", "libro perdido", "renovar préstamo", "historial de préstamos"],
+    ruta: "/biblioteca?seccion=comunidad",
+    endpoint: "GET /api/biblioteca/comunidad",
+    sinonimos: ["libros vencidos", "quién debe libros", "libros sin devolver", "libro perdido", "paz y salvo de biblioteca", "quién tiene libros prestados", "atrasados"],
     pasos: [
       LLEGAR,
-      tab("prestamos", "Préstamos"),
-      { narracion: "Escoge 'Vencidos', 'En préstamo' o 'Historial'.", accion: "click", ancla: "biblioteca.prestamos_vistas" },
+      tab("comunidad", "Comunidad"),
+      { narracion: "Usa los filtros de arriba: con libros prestados, atrasados, con libros perdidos o sin libros (paz y salvo).", accion: "click", ancla: "biblioteca.comunidad_filtros" },
     ],
   },
   {
@@ -128,21 +127,6 @@ export const BIBLIOTECA: Capacidad[] = [
       tab("etiquetas", "Etiquetas"),
       { narracion: "Escribe desde qué número y hasta qué número quieres las etiquetas (ya vienen llenos con las que faltan).", accion: "escribir", ancla: "biblioteca.etiquetas_desde", campo: "desde" },
       { narracion: "Toca 'Imprimir etiquetas', imprime el PDF en papel adhesivo tamaño carta y pega cada etiqueta en su libro.", accion: "click", ancla: "biblioteca.generar_etiquetas" },
-    ],
-  },
-  {
-    id: "biblioteca.paz_y_salvo",
-    titulo: "Consultar el paz y salvo de biblioteca por salón",
-    descripcion: "Ver qué estudiantes de un grado o salón deben libros (y cuáles) y descargarlo en Excel.",
-    categoria: "Biblioteca",
-    roles: [...CONSULTAN],
-    ruta: "/biblioteca?seccion=paz",
-    endpoint: "GET /api/biblioteca/paz-y-salvo",
-    sinonimos: ["paz y salvo de biblioteca", "quién debe libros en un salón", "paz y salvo para matrícula", "paz y salvo para grado"],
-    pasos: [
-      LLEGAR,
-      tab("paz", "Paz y salvo"),
-      { narracion: "Elige el grado y, si quieres, el salón.", accion: "seleccionar", ancla: "biblioteca.paz_y_salvo", campo: "grado" },
     ],
   },
 ];

@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
-  BookUp, BookDown, Library, AlarmClock, Tags, ShieldCheck, BookMarked,
-  Search, X, Loader2, type LucideIcon,
+  Library, Tags, BookMarked, Users, Search, X, Loader2, type LucideIcon,
 } from "lucide-react";
 import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNormi";
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
@@ -10,10 +9,8 @@ import { Button } from "@/components/ui/button";
 import { getSession } from "@/hooks/useSession";
 import { apiRequest } from "@/lib/apiClient";
 import Catalogo from "@/components/biblioteca/Catalogo";
-import { Prestar, Devolver } from "@/components/biblioteca/Mostrador";
-import PrestamosLista from "@/components/biblioteca/PrestamosLista";
+import Comunidad from "@/components/biblioteca/Comunidad";
 import Etiquetas from "@/components/biblioteca/Etiquetas";
-import PazYSalvo from "@/components/biblioteca/PazYSalvo";
 import MisPrestamos from "@/components/biblioteca/MisPrestamos";
 import PortadaLibro from "@/components/biblioteca/PortadaLibro";
 import ObraDetalle from "@/components/biblioteca/ObraDetalle";
@@ -49,19 +46,15 @@ const Biblioteca = () => {
 
   // Orden lógico de la vida de un libro (Juan 2026-10-04): registrarlo, etiquetarlo, prestarlo,
   // recibirlo, seguir los préstamos y, al final del año, el paz y salvo.
+  // Tres secciones (Juan 2026-10-04): Catálogo (agregar y prestar), Comunidad (cada persona: qué
+  // tiene, prestar, recibir, filtros por estado) y Etiquetas. Quien no gestiona ve sus préstamos.
+  const atencion = (resumen?.vencidos || 0) + (resumen?.perdidos || 0);
   const secciones: Seccion[] = [
-    { k: "catalogo", titulo: "Catálogo", desc: gestiona ? "Registrar y buscar libros" : "Buscar libros", Icono: Library, color: "bg-teal-600" },
-    ...(gestiona ? [
-      { k: "etiquetas", titulo: "Etiquetas", desc: resumen?.etiquetas_pendientes ? `${resumen.etiquetas_pendientes} ${resumen.etiquetas_pendientes === 1 ? "etiqueta" : "etiquetas"} sin imprimir` : "Todas impresas", Icono: Tags, color: "bg-violet-500" },
-      { k: "prestar", titulo: "Prestar", desc: "Registrar la salida de un libro", Icono: BookUp, color: "bg-emerald-500" },
-      { k: "devolver", titulo: "Devolver", desc: "Recibir un libro", Icono: BookDown, color: "bg-sky-500" },
-    ] : []),
-    ...(consulta ? [{ k: "prestamos", titulo: "Préstamos", desc: resumen?.vencidos ? `${resumen.vencidos} vencidos` : "Quién tiene cada libro", Icono: AlarmClock, color: "bg-orange-500", badge: (resumen?.vencidos || 0) + (resumen?.perdidos || 0) }] : []),
-    ...(consulta ? [
-      { k: "paz", titulo: "Paz y salvo", desc: "Quién debe libros por salón", Icono: ShieldCheck, color: "bg-green-600" },
-    ] : []),
+    { k: "catalogo", titulo: "Catálogo", desc: gestiona ? "Agregar, buscar y prestar libros" : "Buscar libros", Icono: Library, color: "bg-teal-600" },
+    ...(consulta ? [{ k: "comunidad", titulo: "Comunidad", desc: atencion ? `${resumen?.vencidos || 0} atrasados${resumen?.perdidos ? ` · ${resumen.perdidos} perdidos` : ""}` : "Prestar y recibir por persona", Icono: Users, color: "bg-sky-500", badge: atencion }] : []),
+    ...(gestiona ? [{ k: "etiquetas", titulo: "Etiquetas", desc: resumen?.etiquetas_pendientes ? `${resumen.etiquetas_pendientes} ${resumen.etiquetas_pendientes === 1 ? "etiqueta" : "etiquetas"} sin imprimir` : "Todas impresas", Icono: Tags, color: "bg-violet-500" }] : []),
     // La bibliotecaria no pide libros prestados: no tiene "Mis préstamos".
-    ...(gestiona ? [] : [{ k: "mis", titulo: acudiente ? "Préstamos de mis hijos" : "Mis préstamos", desc: acudiente ? "Libros que tienen tus hijos" : "Libros que tienes", Icono: BookMarked, color: "bg-rose-500"  }]),
+    ...(gestiona ? [] : [{ k: "mis", titulo: acudiente ? "Préstamos de mis hijos" : "Mis préstamos", desc: acudiente ? "Libros que tienen tus hijos" : "Libros que tienes", Icono: BookMarked, color: "bg-rose-500" }]),
   ];
   const actual = secciones.find((s) => s.k === seccion) || null;
 
@@ -123,12 +116,9 @@ const Biblioteca = () => {
           <div className="max-w-5xl mx-auto">
             <div className="bg-card rounded-lg shadow-soft p-4 md:p-6">
               <h2 className="text-xl font-bold text-foreground text-center mb-6">{actual.titulo}</h2>
-              {actual.k === "prestar" && <Prestar codigoInicial={params.get("codigo")} />}
-              {actual.k === "devolver" && <Devolver codigoInicial={params.get("codigo")} />}
               {actual.k === "catalogo" && <Catalogo gestiona={gestiona} qInicial={params.get("q") || ""} />}
-              {actual.k === "prestamos" && <PrestamosLista gestiona={gestiona} />}
+              {actual.k === "comunidad" && <Comunidad />}
               {actual.k === "etiquetas" && <Etiquetas />}
-              {actual.k === "paz" && <PazYSalvo />}
               {actual.k === "mis" && <MisPrestamos />}
             </div>
           </div>
@@ -198,8 +188,7 @@ const Buscador = ({ gestiona, onIr }: { gestiona: boolean; onIr: (k: string, ext
             <p className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">Libro N.° {e.codigo}</span> · <span className={`px-1.5 py-0.5 rounded ${ESTADOS[e.estado]?.cls || ""}`}>{ESTADOS[e.estado]?.label}</span></p>
             {ej?.prestamo && <p className="text-xs text-muted-foreground mt-0.5">Lo tiene {ej.prestamo.usuario_nombre} · vence {fechaLarga(ej.prestamo.fecha_vencimiento)}</p>}
           </div>
-          {e.estado === "disponible" && e.tipo_prestamo !== "sala" && <Button size="sm" className="rounded-lg" onClick={() => onIr("prestar", { codigo: e.codigo })}>Prestar</Button>}
-          {e.estado === "prestado" && ej?.prestamo && !ej.prestamo.perdido && <Button size="sm" className="rounded-lg" onClick={() => onIr("devolver", { codigo: e.codigo })}>Recibir</Button>}
+          <Button size="sm" variant="outline" className="rounded-lg" onClick={() => setAbierta(e.obra_id)}>Ver</Button>
         </div>
       )}
 
