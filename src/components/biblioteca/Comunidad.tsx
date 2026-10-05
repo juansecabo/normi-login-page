@@ -74,7 +74,7 @@ const Comunidad = () => {
             <button key={p.id} onClick={() => setAbierta(p)} className="w-full text-left flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 transition-colors">
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-foreground truncate">{p.apellidos} {p.nombres}</p>
-                <p className="text-xs text-muted-foreground">{p.cargo || `${p.grado} ${p.salon}`}</p>
+                <p className="text-xs text-muted-foreground">{p.cargo || `${p.grado} ${p.salon}`} · Doc. {p.id}</p>
               </div>
               <Estado p={p} />
             </button>
@@ -129,7 +129,7 @@ const PersonaBiblioteca = ({ persona, gestiona, onCerrar, onCambio }: { persona:
         {persona && (<>
           <DialogHeader>
             <DialogTitle>{persona.apellidos} {persona.nombres}</DialogTitle>
-            <p className="text-sm text-muted-foreground">{persona.cargo || `${persona.grado} ${persona.salon}`}</p>
+            <p className="text-sm text-muted-foreground">{persona.cargo || `${persona.grado} ${persona.salon}`} · Doc. {persona.id}</p>
           </DialogHeader>
 
           <div className="space-y-2">
