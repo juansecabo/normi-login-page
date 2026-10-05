@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Pencil, Plus, EyeOff, Eye } from "lucide-react";
+import { Loader2, Pencil, Plus, EyeOff, Eye, Search, UserRound, CheckCircle2 } from "lucide-react";
 import { apiRequest } from "@/lib/apiClient";
 import PortadaLibro from "./PortadaLibro";
 import Contador from "./Contador";
@@ -29,6 +29,7 @@ const ObraDetalle = ({ obraId, onCerrar, onEditar, onCambio }: {
   const [agregar, setAgregar] = useState<{ cantidad: string } | null>(null);
   const [baja, setBaja] = useState<{ ej: Ejemplar; motivo: string } | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  const [prestando, setPrestando] = useState<Ejemplar | null>(null);
 
   const cargar = async () => {
     if (!obraId) return;
@@ -39,7 +40,7 @@ const ObraDetalle = ({ obraId, onCerrar, onEditar, onCambio }: {
     } catch (err) { setError(errorDe(err)); }
     setCargando(false);
   };
-  useEffect(() => { setObra(null); setEjemplares([]); setAgregar(null); setBaja(null); cargar(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [obraId]);
+  useEffect(() => { setObra(null); setEjemplares([]); setAgregar(null); setBaja(null); setPrestando(null); cargar(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [obraId]);
 
   const accion = async (fn: () => Promise<unknown>) => {
     setOcupado(true); setError("");
@@ -65,7 +66,6 @@ const ObraDetalle = ({ obraId, onCerrar, onEditar, onCambio }: {
               {obra.autores && <p><span className="text-muted-foreground">Autor:</span> {autoresBonitos(obra.autores)}</p>}
               {(obra.editorial || obra.anio) && <p><span className="text-muted-foreground">Editorial:</span> {[obra.editorial, obra.anio].filter(Boolean).join(", ")}</p>}
               {obra.genero && <p><span className="text-muted-foreground">Género:</span> {generoLabel(obra.genero)}{obra.nivel_lector ? ` · ${nivelLabel(obra.nivel_lector)}` : ""}</p>}
-              {obra.materia && <p><span className="text-muted-foreground">Materia:</span> {obra.materia}</p>}
               {obra.isbn && <p><span className="text-muted-foreground">ISBN:</span> {obra.isbn}</p>}
               {!obra.activa && <p className="text-amber-700 font-medium">Oculto del catálogo</p>}
             </div>
@@ -88,12 +88,14 @@ const ObraDetalle = ({ obraId, onCerrar, onEditar, onCambio }: {
                   {gestiona && (
                     <span className="ml-auto flex gap-1">
                       {e.estado === "reparacion" && <button disabled={ocupado} onClick={() => cambiarEstado(e, "disponible")} className="text-xs px-2 py-1 rounded border border-border hover:bg-muted">Volver a disponible</button>}
-                      {(e.estado === "disponible" || e.estado === "reparacion") && <button disabled={ocupado} onClick={() => setBaja({ ej: e, motivo: "" })} className="text-xs px-2 py-1 rounded border border-border hover:bg-muted text-rose-700">Dar de baja</button>}
+                      {e.estado === "disponible" && <button disabled={ocupado} onClick={() => { setBaja(null); setPrestando(e); }} className="text-xs px-2 py-1 rounded bg-primary text-primary-foreground hover:bg-primary/90" data-guia="biblioteca.detalle_prestar">Prestar</button>}
+                      {(e.estado === "disponible" || e.estado === "reparacion") && <button disabled={ocupado} onClick={() => { setPrestando(null); setBaja({ ej: e, motivo: "" }); }} className="text-xs px-2 py-1 rounded border border-border hover:bg-muted text-rose-700">Dar de baja</button>}
                     </span>
                   )}
                 </div>
               ))}
             </div>
+            {prestando && <PrestarAqui ejemplar={prestando} onCancelar={() => setPrestando(null)} onListo={() => { setPrestando(null); cargar(); onCambio(); }} />}
             {baja && (
               <div className="mt-2 rounded-md bg-rose-50 border border-rose-200 p-3 space-y-2">
                 <p className="text-sm text-foreground">Dar de baja la copia n.° {baja.ej.codigo}. No se borra: queda en el registro.</p>
@@ -135,6 +137,65 @@ const ObraDetalle = ({ obraId, onCerrar, onEditar, onCambio }: {
         {error && !obra && <p className="text-sm text-destructive">{error}</p>}
       </DialogContent>
     </Dialog>
+  );
+};
+
+/** Prestar esta copia desde la ficha del libro: buscar a la persona y listo (Juan 2026-10-04). */
+const PrestarAqui = ({ ejemplar, onCancelar, onListo }: { ejemplar: Ejemplar; onCancelar: () => void; onListo: () => void }) => {
+  const [busca, setBusca] = useState("");
+  const [lista, setLista] = useState<{ id: string; nombre: string; cargo: string | null; grado: string | null; salon: string | null }[]>([]);
+  const [buscando, setBuscando] = useState(false);
+  const [ocupado, setOcupado] = useState(false);
+  const [error, setError] = useState("");
+  const [hecho, setHecho] = useState<{ nombre: string; fecha: string } | null>(null);
+  useEffect(() => {
+    if (busca.trim().length < 2) { setLista([]); return; }
+    const t = setTimeout(async () => {
+      setBuscando(true);
+      try { const r = await apiRequest<{ lectores: typeof lista }>(`/api/biblioteca/lectores?q=${encodeURIComponent(busca.trim())}`); setLista(r.lectores); }
+      catch { setLista([]); }
+      setBuscando(false);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [busca]);
+  const prestar = async (l: { id: string; nombre: string }) => {
+    setOcupado(true); setError("");
+    try {
+      const r = await apiRequest<{ fecha_vencimiento: string }>("/api/biblioteca/prestamos", { method: "POST", body: JSON.stringify({ usuario_id: l.id, codigos: [ejemplar.codigo || String(ejemplar.numero_inventario)] }) });
+      setHecho({ nombre: l.nombre, fecha: r.fecha_vencimiento });
+    } catch (err) { setError(errorDe(err)); }
+    setOcupado(false);
+  };
+  if (hecho) return (
+    <div className="mt-2 rounded-md bg-emerald-50 border border-emerald-200 p-3 text-sm flex items-start gap-2">
+      <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+      <div className="flex-1"><p className="text-emerald-900">Prestado a <strong>{hecho.nombre}</strong>. Debe devolverlo el <strong>{fechaLarga(hecho.fecha)}</strong>.</p></div>
+      <Button size="sm" onClick={onListo}>Listo</Button>
+    </div>
+  );
+  return (
+    <div className="mt-2 rounded-md bg-muted/40 border border-border p-3 space-y-2" data-guia="biblioteca.detalle_prestar_panel">
+      <p className="text-sm font-medium text-foreground">¿A quién le prestas la copia N.° {ejemplar.codigo || ejemplar.numero_inventario}?</p>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <input autoFocus value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Nombre, apellido o documento"
+          className="w-full pl-9 pr-3 py-2 border border-input rounded-md text-sm bg-background" />
+      </div>
+      {buscando && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+      {lista.length > 0 && (
+        <div className="rounded-md border border-border divide-y divide-border bg-card max-h-56 overflow-y-auto">
+          {lista.map((l) => (
+            <button key={l.id} disabled={ocupado} onClick={() => prestar(l)} className="w-full text-left px-3 py-2 hover:bg-primary/5 flex items-center gap-2 text-sm">
+              <UserRound className="w-4 h-4 text-muted-foreground shrink-0" />
+              <span className="min-w-0 truncate"><span className="font-medium text-foreground">{l.nombre}</span> <span className="text-muted-foreground">· {l.cargo || `${l.grado} ${l.salon}`}</span></span>
+            </button>
+          ))}
+        </div>
+      )}
+      {!buscando && busca.trim().length >= 2 && !lista.length && <p className="text-xs text-muted-foreground">No se encontró a nadie.</p>}
+      {error && <p className="text-sm text-rose-700">{error}</p>}
+      <div className="flex justify-end"><Button size="sm" variant="outline" onClick={onCancelar} disabled={ocupado}>Cancelar</Button></div>
+    </div>
   );
 };
 

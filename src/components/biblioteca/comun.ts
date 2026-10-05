@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { getSession } from "@/hooks/useSession";
+import { apiRequest } from "@/lib/apiClient";
 
 /**
  * Biblioteca (Juan 2026-10-04): constantes y tipos compartidos por la ficha.
@@ -10,19 +12,34 @@ export const ROLES_CONSULTAN = [...ROLES_GESTIONAN, "Rector", "Coordinador(a)", 
 export const puedeGestionar = () => ROLES_GESTIONAN.includes(getSession().cargo || "");
 export const puedeConsultar = () => ROLES_CONSULTAN.includes(getSession().cargo || "");
 
-/** Géneros con el color del tejuelo que propone el MEN para literatura. */
-export const GENEROS: { value: string; label: string; color: string; letra?: string }[] = [
-  { value: "informativo", label: "Informativo (por materia)", color: "#ffffff" },
-  { value: "referencia", label: "Referencia (diccionarios, enciclopedias)", color: "#ffffff" },
-  { value: "album", label: "Álbum", color: "#facc15", letra: "A" },
-  { value: "cuento", label: "Cuento", color: "#22c55e", letra: "C" },
-  { value: "novela", label: "Novela", color: "#3b82f6", letra: "N" },
-  { value: "poesia", label: "Poesía", color: "#f472b6", letra: "P" },
-  { value: "teatro", label: "Teatro", color: "#9ca3af", letra: "T" },
-  { value: "historieta", label: "Historieta", color: "#ef4444", letra: "H" },
-  { value: "mitos_leyendas", label: "Mitos y leyendas", color: "#f97316", letra: "LM" },
-];
-export const generoLabel = (g?: string | null) => GENEROS.find((x) => x.value === g)?.label.split(" (")[0] || "";
+/**
+ * Géneros: cada colegio tiene su lista y la bibliotecaria agrega o quita (Juan 2026-10-04).
+ * El libro guarda el nombre del género tal cual ("Novela", "Ciencia"…).
+ */
+export const generoLabel = (g?: string | null) => g || "";
+
+/** Color de la portada de respaldo: siempre el mismo para el mismo género. */
+const PALETA = ["#3b82f6", "#22c55e", "#f97316", "#ec4899", "#8b5cf6", "#0d9488", "#ef4444", "#eab308", "#0ea5e9", "#64748b"];
+export function colorGenero(g?: string | null): string {
+  if (!g) return "#0f766e";
+  let h = 0;
+  for (const c of g.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return PALETA[h % PALETA.length];
+}
+
+let generosCache: string[] | null = null;
+/** Lista de géneros del colegio (con caché); `guardar` la actualiza (solo quien gestiona). */
+export function useGeneros() {
+  const [generos, setGeneros] = useState<string[]>(generosCache || []);
+  useEffect(() => {
+    apiRequest<{ generos: string[] }>("/api/biblioteca/generos").then((r) => { generosCache = r.generos; setGeneros(r.generos); }).catch(() => null);
+  }, []);
+  const guardar = async (lista: string[]) => {
+    const r = await apiRequest<{ generos: string[] }>("/api/biblioteca/generos", { method: "PUT", body: JSON.stringify({ generos: lista }) });
+    generosCache = r.generos; setGeneros(r.generos);
+  };
+  return { generos, guardar };
+}
 
 /** Nivel lector = cinta de color del tejuelo (MEN): amarilla, azul, roja. */
 export const NIVELES: { value: string; label: string; color: string }[] = [

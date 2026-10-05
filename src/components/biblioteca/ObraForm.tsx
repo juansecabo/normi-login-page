@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Search, ImagePlus, X, ChevronDown } from "lucide-react";
 import { apiRequest } from "@/lib/apiClient";
 import { subirArchivo } from "@/lib/storage";
-import { GENEROS, NIVELES, errorDe } from "./comun";
+import { NIVELES, errorDe, useGeneros } from "./comun";
+import GenerosEditor from "./GenerosEditor";
 import Contador from "./Contador";
 
 /**
@@ -25,6 +26,8 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
   const [d, setD] = useState<Datos>(VACIO);
   const [cantidad, setCantidad] = useState("1");
   const [mas, setMas] = useState(false);
+  const [editarGeneros, setEditarGeneros] = useState(false);
+  const { generos, guardar: guardarGeneros } = useGeneros();
   // Libro con el mismo título (sin importar mayúsculas ni tildes): no se crea otro, se le suman copias.
   const [repetida, setRepetida] = useState<{ id: number; titulo: string; copias: number } | null>(null);
   const [buscando, setBuscando] = useState(false);
@@ -119,7 +122,20 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
         <DialogHeader><DialogTitle>{editando ? "Editar libro" : "Agregar libro"}</DialogTitle></DialogHeader>
         <div className="space-y-4" data-guia="biblioteca.form_obra">
           {/* Lo esencial a la vista (Juan 2026-10-04): título, autor, género, edades y cuántas copias. */}
-          <div className="space-y-1"><label className={lbl}>Título *</label><input data-guia="biblioteca.form_titulo" value={d.titulo} onChange={(e) => set("titulo", e.target.value)} className={inp} autoFocus={!editando} /></div>
+          <div className="flex gap-4 items-start">
+            <div className="shrink-0 text-center">
+              <label className="block w-20 h-28 rounded-md border border-dashed border-input bg-muted/40 overflow-hidden relative cursor-pointer hover:bg-muted" title="Foto de la portada (opcional)" data-guia="biblioteca.form_portada">
+                {d.portada_url ? <img src={d.portada_url} alt="" className="w-full h-full object-cover" />
+                  : <span className="w-full h-full flex flex-col items-center justify-center gap-1 text-muted-foreground">{subiendo ? <Loader2 className="w-5 h-5 animate-spin" /> : <ImagePlus className="w-5 h-5" />}<span className="text-[10px] leading-tight px-1">Foto<br />(opcional)</span></span>}
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => subirPortada(e.target.files?.[0])} />
+              </label>
+              {d.portada_url && <button type="button" onClick={() => set("portada_url", "")} className="mt-1 text-xs text-muted-foreground hover:text-destructive">Quitar foto</button>}
+            </div>
+            <div className="flex-1 min-w-0 space-y-3">
+              <div className="space-y-1"><label className={lbl}>Título *</label><input data-guia="biblioteca.form_titulo" value={d.titulo} onChange={(e) => set("titulo", e.target.value)} className={inp} autoFocus={!editando} /></div>
+              <div className="space-y-1"><label className={lbl}>Autor</label><input value={d.autores} onChange={(e) => set("autores", e.target.value)} placeholder="Ej. Gabriel García Márquez" className={inp} /></div>
+            </div>
+          </div>
           {repetida && (
             <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm space-y-2" data-guia="biblioteca.form_repetido">
               <p className="text-amber-900"><strong>«{repetida.titulo}»</strong> ya está en el catálogo ({repetida.copias} {repetida.copias === 1 ? "copia" : "copias"}).{editando ? " Usa otro título." : " No se agrega dos veces: súmale las copias."}</p>
@@ -130,13 +146,15 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
               )}
             </div>
           )}
-          <div className="space-y-1"><label className={lbl}>Autor</label><input value={d.autores} onChange={(e) => set("autores", e.target.value)} placeholder="Ej. Gabriel García Márquez" className={inp} /></div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className={lbl}>Género</label>
+              <div className="flex items-center justify-between">
+                <label className={lbl}>Género</label>
+                <button type="button" onClick={() => setEditarGeneros((v) => !v)} className="text-xs text-primary hover:underline" data-guia="biblioteca.form_editar_generos">{editarGeneros ? "Listo" : "Agregar o quitar géneros"}</button>
+              </div>
               <select data-guia="biblioteca.form_genero" value={d.genero} onChange={(e) => set("genero", e.target.value)} className={inp}>
                 <option value="">Sin definir</option>
-                {GENEROS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
+                {[...generos, ...(d.genero && !generos.includes(d.genero) ? [d.genero] : [])].map((g) => <option key={g} value={g}>{g}</option>)}
               </select>
             </div>
             <div className="space-y-1">
@@ -147,6 +165,7 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
               </select>
             </div>
           </div>
+          {editarGeneros && <GenerosEditor generos={generos} guardar={guardarGeneros} />}
           {!editando && (
             <div className="space-y-1">
               <label className={lbl}>¿Cuántas copias hay?</label>
@@ -175,18 +194,8 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
                 {aviso && <p className={`text-xs ${aviso.ok ? "text-emerald-700" : "text-amber-700"}`}>{aviso.texto}</p>}
               </div>
 
-              <div className="flex gap-4 items-start">
-                <div className="shrink-0">
-                  <div className="w-20 h-28 rounded-md border border-border bg-muted flex items-center justify-center overflow-hidden relative">
-                    {d.portada_url ? <img src={d.portada_url} alt="" className="w-full h-full object-cover" /> : <span className="text-2xl">📕</span>}
-                    {d.portada_url && <button type="button" onClick={() => set("portada_url", "")} className="absolute top-1 right-1 bg-white/90 rounded-full p-0.5" title="Quitar"><X className="w-3 h-3" /></button>}
-                  </div>
-                  <label className="mt-1 flex items-center justify-center gap-1 text-xs text-primary cursor-pointer hover:underline">
-                    {subiendo ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImagePlus className="w-3 h-3" />} Portada
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => subirPortada(e.target.files?.[0])} />
-                  </label>
-                </div>
-                <div className="flex-1 grid grid-cols-2 gap-3 min-w-0">
+              <div>
+                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1 col-span-2"><label className={lbl}>Editorial</label><input value={d.editorial} onChange={(e) => set("editorial", e.target.value)} className={inp} /></div>
                   <div className="space-y-1"><label className={lbl}>Año</label><input value={d.anio} onChange={(e) => set("anio", e.target.value.replace(/\D/g, "").slice(0, 4))} className={inp} inputMode="numeric" /></div>
                   <div className="space-y-1"><label className={lbl}>Páginas</label><input value={d.paginas} onChange={(e) => set("paginas", e.target.value.replace(/\D/g, ""))} className={inp} inputMode="numeric" /></div>
@@ -194,7 +203,6 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1"><label className={lbl}>Materia</label><input value={d.materia} onChange={(e) => set("materia", e.target.value)} placeholder="Ej. Matemáticas" className={inp} /></div>
                 <div className="space-y-1"><label className={lbl}>Subtítulo</label><input value={d.subtitulo} onChange={(e) => set("subtitulo", e.target.value)} className={inp} /></div>
               </div>
               <div className="space-y-1"><label className={lbl}>Resumen</label><textarea value={d.resumen} onChange={(e) => set("resumen", e.target.value)} className={`${inp} min-h-[70px] resize-y`} /></div>

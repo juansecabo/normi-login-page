@@ -5,7 +5,7 @@ import { apiRequest } from "@/lib/apiClient";
 import ObraDetalle from "./ObraDetalle";
 import ObraForm from "./ObraForm";
 import PortadaLibro from "./PortadaLibro";
-import { GENEROS, NIVELES, autoresBonitos, generoLabel, fechaCorta, errorDe, type ObraResumen } from "./comun";
+import { NIVELES, autoresBonitos, generoLabel, fechaCorta, errorDe, useGeneros, type ObraResumen } from "./comun";
 
 /** Catálogo con búsqueda y disponibilidad (todos los perfiles). Quien gestiona agrega y edita libros. */
 const Catalogo = ({ gestiona, qInicial = "" }: { gestiona: boolean; qInicial?: string }) => {
@@ -13,6 +13,7 @@ const Catalogo = ({ gestiona, qInicial = "" }: { gestiona: boolean; qInicial?: s
   const [genero, setGenero] = useState("");
   const [nivel, setNivel] = useState("");
   const [soloDisponibles, setSoloDisponibles] = useState(false);
+  const { generos } = useGeneros();
   const [obras, setObras] = useState<ObraResumen[]>([]);
   const [total, setTotal] = useState(0);
   const [cargando, setCargando] = useState(true);
@@ -58,7 +59,7 @@ const Catalogo = ({ gestiona, qInicial = "" }: { gestiona: boolean; qInicial?: s
       <div className="flex flex-wrap items-center gap-2">
         <select value={genero} onChange={(e) => setGenero(e.target.value)} className={sel}>
           <option value="">Todos los géneros</option>
-          {GENEROS.map((g) => <option key={g.value} value={g.value}>{g.label.split(" (")[0]}</option>)}
+          {generos.map((g) => <option key={g} value={g}>{g}</option>)}
         </select>
         <select value={nivel} onChange={(e) => setNivel(e.target.value)} className={sel}>
           <option value="">Todos los niveles</option>
