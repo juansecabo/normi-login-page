@@ -76,6 +76,7 @@ const Catalogo = ({ gestiona, qInicial = "" }: { gestiona: boolean; qInicial?: s
         <p className="text-center text-muted-foreground py-10">{q || genero || nivel ? "No se encontraron libros." : gestiona ? "El catálogo está vacío. Empieza con «Agregar libro»." : "La biblioteca todavía no tiene libros en el catálogo."}</p>
       )}
 
+      {!cargando && total > 0 && <p className="text-sm text-muted-foreground" data-guia="biblioteca.total_titulos">{q || genero || nivel || soloDisponibles ? `${total} ${total === 1 ? "título encontrado" : "títulos encontrados"}` : `${total} ${total === 1 ? "título" : "títulos"} en la biblioteca`}</p>}
       {/* Lista (Juan 2026-10-04: en lista, no tarjetas grandes). */}
       {obras.length > 0 && (
         <div className="rounded-lg border border-border divide-y divide-border overflow-hidden" data-guia="biblioteca.catalogo">

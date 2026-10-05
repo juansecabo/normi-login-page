@@ -22,12 +22,13 @@ export const BIBLIOTECA: Capacidad[] = [
     descripcion: "Buscar en el catálogo por título, autor, materia, ISBN o número del libro y ver cuántas copias hay disponibles o cuándo vuelve el libro.",
     categoria: "Biblioteca",
     roles: [...TODOS],
-    ruta: "/biblioteca",
+    ruta: "/biblioteca?seccion=catalogo",
     endpoint: "GET /api/biblioteca/catalogo",
     sinonimos: ["buscar un libro", "hay tal libro en la biblioteca", "está disponible el libro", "catálogo de la biblioteca", "qué libros hay"],
     pasos: [
       LLEGAR,
-      { narracion: "Escribe en el buscador el título, el autor o el número del libro (sin preocuparte por tildes). Los resultados salen mientras escribes y dicen si está disponible o cuándo vuelve; toca uno para ver el detalle.", accion: "escribir", ancla: "biblioteca.buscador", campo: "busqueda" },
+      tab("catalogo", "Catálogo"),
+      { narracion: "Escribe el título, el autor o el número del libro (sin preocuparte por tildes). Cada libro dice si está disponible o cuándo vuelve; tócalo para ver el detalle.", accion: "escribir", ancla: "biblioteca.buscar", campo: "busqueda" },
     ],
   },
   {
