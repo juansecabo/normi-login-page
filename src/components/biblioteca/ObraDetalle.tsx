@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Pencil, Plus, EyeOff, Eye } from "lucide-react";
 import { apiRequest } from "@/lib/apiClient";
 import PortadaLibro from "./PortadaLibro";
+import Contador from "./Contador";
 import { ESTADOS, autoresBonitos, generoLabel, nivelLabel, fechaLarga, errorDe } from "./comun";
 
 /**
@@ -109,7 +110,7 @@ const ObraDetalle = ({ obraId, onCerrar, onEditar, onCambio }: {
             {gestiona && agregar && (
               <div className="mt-2 rounded-md bg-muted/40 border border-border p-3 flex flex-wrap items-center gap-3">
                 <label className="text-sm font-medium text-foreground">¿Cuántas copias más?</label>
-                <input autoFocus value={agregar.cantidad} onChange={(e) => setAgregar({ cantidad: e.target.value.replace(/\D/g, "").slice(0, 3) })} className="w-20 px-2 py-1.5 border border-input rounded-md text-sm bg-background text-center font-semibold" inputMode="numeric" />
+                <Contador valor={agregar.cantidad} onCambio={(v) => setAgregar({ cantidad: v })} />
                 <span className="flex gap-2 ml-auto">
                   <Button size="sm" variant="outline" onClick={() => setAgregar(null)}>Cancelar</Button>
                   <Button size="sm" disabled={ocupado || !Number(agregar.cantidad)} onClick={() => accion(async () => {

@@ -5,6 +5,7 @@ import { Loader2, Search, ImagePlus, X, ChevronDown } from "lucide-react";
 import { apiRequest } from "@/lib/apiClient";
 import { subirArchivo } from "@/lib/storage";
 import { GENEROS, NIVELES, errorDe } from "./comun";
+import Contador from "./Contador";
 
 /**
  * Agregar o editar un libro (obra). Al crear, también se crean sus ejemplares (copias) con
@@ -98,7 +99,7 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
             <div className="space-y-1">
               <label className={lbl}>¿Cuántas copias hay?</label>
               <div className="flex items-center gap-3">
-                <input data-guia="biblioteca.form_cantidad" value={cantidad} onChange={(e) => setCantidad(e.target.value.replace(/\D/g, "").slice(0, 3))} className="w-24 px-3 py-2 border border-input rounded-md text-sm bg-background text-center font-semibold" inputMode="numeric" />
+                <Contador valor={cantidad} onCambio={setCantidad} guia="biblioteca.form_cantidad" />
                 <span className="text-xs text-muted-foreground">Cada copia recibe su número para la etiqueta.</span>
               </div>
             </div>
