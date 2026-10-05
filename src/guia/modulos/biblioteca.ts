@@ -110,7 +110,7 @@ export const BIBLIOTECA: Capacidad[] = [
     pasos: [
       LLEGAR,
       tab("comunidad", "Comunidad"),
-      { narracion: "Usa los filtros de arriba: con libros prestados, atrasados, con libros perdidos o sin libros (paz y salvo).", accion: "click", ancla: "biblioteca.comunidad_filtros" },
+      { narracion: "Usa los filtros de arriba: Con libros, Atrasados, Perdidos o Paz y salvo.", accion: "click", ancla: "biblioteca.comunidad_filtros" },
     ],
   },
   {

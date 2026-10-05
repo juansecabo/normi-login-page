@@ -16,10 +16,10 @@ interface PersonaCom { id: string; nombres: string; apellidos: string; cargo: st
 type Filtro = "todos" | "con" | "atrasados" | "perdidos" | "sin";
 const FILTROS: { k: Filtro; label: string; pasa: (p: PersonaCom) => boolean }[] = [
   { k: "todos", label: "Todos", pasa: () => true },
-  { k: "con", label: "Con libros prestados", pasa: (p) => p.libros > 0 },
+  { k: "con", label: "Con libros", pasa: (p) => p.libros > 0 },
   { k: "atrasados", label: "Atrasados", pasa: (p) => p.atrasados > 0 },
-  { k: "perdidos", label: "Con libros perdidos", pasa: (p) => p.perdidos > 0 },
-  { k: "sin", label: "Sin libros (paz y salvo)", pasa: (p) => p.libros === 0 && p.perdidos === 0 },
+  { k: "perdidos", label: "Perdidos", pasa: (p) => p.perdidos > 0 },
+  { k: "sin", label: "Paz y salvo", pasa: (p) => p.libros === 0 && p.perdidos === 0 },
 ];
 const PASO = 100;
 
@@ -55,7 +55,11 @@ const Comunidad = () => {
           className="w-full pl-9 pr-9 py-2.5 border-2 border-input rounded-lg text-sm bg-background focus:border-primary focus:outline-none" data-guia="biblioteca.comunidad_buscar" />
         {busca && <button onClick={() => setBusca("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" title="Borrar"><X className="w-4 h-4" /></button>}
       </div>
-      <div className="flex flex-wrap gap-2" data-guia="biblioteca.comunidad_filtros">
+      {/* Celular: lista desplegable; computador: botones en una fila. */}
+      <select value={filtro} onChange={(e) => setFiltro(e.target.value as Filtro)} className="sm:hidden w-full px-3 py-2.5 border-2 border-input rounded-lg text-sm bg-background font-medium">
+        {FILTROS.map((f) => <option key={f.k} value={f.k}>Mostrar: {f.label} ({cuenta(f.k)})</option>)}
+      </select>
+      <div className="hidden sm:flex flex-wrap gap-2" data-guia="biblioteca.comunidad_filtros">
         {FILTROS.map((f) => (
           <button key={f.k} onClick={() => setFiltro(f.k)}
             className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${filtro === f.k ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border hover:bg-muted"}`}>
