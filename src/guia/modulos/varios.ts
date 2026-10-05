@@ -277,14 +277,14 @@ export const VARIOS: Capacidad[] = [
     id: "varios.menu_descargar_app",
     titulo: "Descargar la app (instalar en el dispositivo)",
     descripcion:
-      "Instalar Notas Normi como aplicación en el teléfono o computador desde el menú del encabezado. Solo aparece si el navegador permite instalarla.",
+      "Instalar Mundo Normi como aplicación en el teléfono o computador desde el menú del encabezado. Solo aparece si el navegador permite instalarla.",
     categoria: "Varios",
     roles: [...TODOS_INTERNOS],
     ruta: "/dashboard",
     sinonimos: [
       "descargar la app",
       "instalar la aplicación",
-      "poner Notas Normi en el celular",
+      "poner Mundo Normi en el celular",
       "cómo instalo la app",
     ],
     pasos: [

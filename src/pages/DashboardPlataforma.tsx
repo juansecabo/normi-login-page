@@ -201,7 +201,7 @@ const DashboardPlataforma = () => {
               Panel de Plataforma
             </h1>
             <p className="text-muted-foreground mt-1">
-              Gestiona los colegios y administradores de Notas Normi.
+              Gestiona los colegios y administradores de Mundo Normi.
             </p>
           </div>
 

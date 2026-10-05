@@ -143,7 +143,7 @@ export default function RegistroCorrecciones() {
           )}
           <div>
             <h1 className="text-lg font-bold leading-tight">Registro</h1>
-            <p className="text-xs opacity-90">{colegioSel ? colegioSel.nombre : "Notas Normi"}</p>
+            <p className="text-xs opacity-90">{colegioSel ? colegioSel.nombre : "Mundo Normi"}</p>
           </div>
         </div>
       </header>

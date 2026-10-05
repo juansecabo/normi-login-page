@@ -146,7 +146,7 @@ function localizarZona(paso: Paso): HTMLElement | null {
       !el.closest("[data-guia-ui]"),
   );
   for (const clave of claves) {
-    // Palabra COMPLETA: "nota" no debe matchear "Notas Normi".
+    // Palabra COMPLETA: "nota" no debe matchear "Mundo Normi".
     const re = new RegExp(`(^|[^a-z0-9ñ])${clave}([^a-z0-9ñ]|$)`);
     const t = titulos.find((el) => re.test(normTxt(el.textContent || "")));
     if (t) {

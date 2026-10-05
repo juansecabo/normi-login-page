@@ -295,7 +295,7 @@ export const ESTUDIANTE: Capacidad[] = [
       },
       {
         narracion:
-          "Para volver a tus consultas usa el logo 'Notas Normi' de arriba (no el botón Volver, que es para acudientes).",
+          "Para volver a tus consultas usa el logo 'Mundo Normi' de arriba (no el botón Volver, que es para acudientes).",
         accion: "explicar",
       },
     ],

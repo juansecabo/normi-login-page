@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 /**
- * Notas Normi como app de tienda (Google Play / App Store).
+ * Mundo Normi como app de tienda (Google Play / App Store).
  *
  * La app es un cascarón nativo que carga la misma página de producción
  * (notasnormi.com). Así, cada deploy del frontend se ve en la app al
@@ -10,7 +10,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
  */
 const config: CapacitorConfig = {
   appId: "com.cailico.notasnormi",
-  appName: "Notas Normi",
+  appName: "Mundo Normi",
   webDir: "dist",
   server: {
     // Carga la plataforma en vivo. Sin esto, la app usaría la copia empaquetada

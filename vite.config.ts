@@ -43,8 +43,8 @@ export default defineConfig(({ mode }) => ({
       registerType: "prompt",
       includeAssets: ["favicon.png", "apple-touch-icon.png"],
       manifest: {
-        name: "Notas Normi - Plataforma de Gestión Académica",
-        short_name: "Notas Normi",
+        name: "Mundo Normi - Plataforma de Gestión Académica",
+        short_name: "Mundo Normi",
         description: "Plataforma de gestión académica",
         theme_color: "#2D6A4F",
         background_color: "#ffffff",

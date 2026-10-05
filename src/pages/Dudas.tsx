@@ -119,7 +119,7 @@ export default function Dudas() {
           )}
           <div>
             <h1 className="text-lg font-bold leading-tight">Buzón de dudas</h1>
-            <p className="text-xs opacity-90">{colegioSel ? colegioSel.nombre : "Notas Normi"}</p>
+            <p className="text-xs opacity-90">{colegioSel ? colegioSel.nombre : "Mundo Normi"}</p>
           </div>
         </div>
       </header>

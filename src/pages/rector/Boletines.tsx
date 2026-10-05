@@ -220,7 +220,7 @@ const Boletines = () => {
       registerBoletinFonts(pdf); // tipografía condensada idéntica al informe SISNOTAS
       const W = papel.w, H = papel.h, MX = 10;
       const LIMITE = H - 16;   // nada se dibuja por debajo de esta línea
-      const PIE_Y = H - 6;     // "Generado con Notas Normi"
+      const PIE_Y = H - 6;     // "Generado con Mundo Normi"
       const ANCHO = W - 2 * MX;
       const k = ANCHO / 196;   // los anchos del encabezado se diseñaron para 196 mm útiles
       const fmt = (n: number | null) => (n == null ? "" : n.toFixed(1));
@@ -554,7 +554,7 @@ const Boletines = () => {
         }
         // Pie de la última hoja de este estudiante.
         pdf.setFont("HelveticaCond", "normal").setFontSize(5.2);
-        pdf.text("Generado con Notas Normi — notasnormi.com", MX, PIE_Y);
+        pdf.text("Generado con Mundo Normi — notasnormi.com", MX, PIE_Y);
       }
 
       const nombreArchivo = soloEstudiante

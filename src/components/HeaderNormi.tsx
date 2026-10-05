@@ -141,7 +141,7 @@ const HeaderNormi = ({ backLink }: HeaderNormiProps) => {
                   </div>
                 </>
               )}
-              <h1 className="text-base md:text-xl font-bold whitespace-nowrap">Notas Normi</h1>
+              <h1 className="text-base md:text-xl font-bold whitespace-nowrap">Mundo Normi</h1>
             </Link>
             {/* Todas las acciones viven en un menú desplegable (mismo en PC y
                 celular), en el mismo orden, con el texto completo. */}

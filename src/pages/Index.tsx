@@ -54,7 +54,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // "Quiero Notas Normi en mi institución": formulario de contacto de la landing.
+  // "Quiero Mundo Normi en mi institución": formulario de contacto de la landing.
   // Al enviar, el server manda un correo a Juan (juansecabo14@gmail.com).
   const [contactoOpen, setContactoOpen] = useState(false);
   const [contactoLoading, setContactoLoading] = useState(false);
@@ -92,7 +92,7 @@ const Index = () => {
   };
 
   // Si llegan desde el correo de campaña (notasnormi.com/?interes=1), abrir directo
-  // el formulario "Quiero Notas Normi en mi institución".
+  // el formulario "Quiero Mundo Normi en mi institución".
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("interes")) setContactoOpen(true);
   }, []);
@@ -291,7 +291,7 @@ const Index = () => {
         <div className="animate-scale-in">
           <img
             src={normiImg}
-            alt="Normi - Mascota de Notas Normi"
+            alt="Normi - Mascota de Mundo Normi"
             className="w-64 h-64 lg:w-80 lg:h-80 object-cover rounded-full shadow-soft border-4 border-primary/20"
           />
         </div>
@@ -309,7 +309,7 @@ const Index = () => {
           {/* Títulos */}
           <div className="text-center space-y-2">
             <h1 className="text-3xl lg:text-4xl font-bold text-foreground tracking-tight">
-              Notas Normi
+              Mundo Normi
             </h1>
             <p className="text-muted-foreground text-sm lg:text-base">
               {memberships
@@ -456,10 +456,10 @@ const Index = () => {
               </button>
             </div>
 
-            {/* Interesados en llevar Notas Normi a su colegio (deja sus datos → correo a Juan) */}
+            {/* Interesados en llevar Mundo Normi a su colegio (deja sus datos → correo a Juan) */}
             <div className="text-center">
               <button type="button" onClick={() => setContactoOpen(true)} className="text-sm font-semibold text-primary hover:underline">
-                Soy administrativo y quiero Notas Normi en mi institución
+                Soy administrativo y quiero Mundo Normi en mi institución
               </button>
             </div>
           </form>
@@ -518,7 +518,7 @@ const Index = () => {
         </DialogContent>
       </Dialog>
 
-      {/* "Quiero Notas Normi en mi institución" — deja tus datos → correo a Juan */}
+      {/* "Quiero Mundo Normi en mi institución" — deja tus datos → correo a Juan */}
       <Dialog open={contactoOpen} onOpenChange={(o) => { if (!o) cerrarContacto(); else setContactoOpen(true); }}>
         <DialogContent className="max-w-md">
           {contactoDone ? (
@@ -526,7 +526,7 @@ const Index = () => {
               <DialogHeader>
                 <DialogTitle>¡Gracias por tu interés! 🎉</DialogTitle>
                 <DialogDescription className="pt-2 text-base text-foreground">
-                  Recibimos tus datos. Nos pondremos en contacto contigo muy pronto para mostrarte Notas Normi.
+                  Recibimos tus datos. Nos pondremos en contacto contigo muy pronto para mostrarte Mundo Normi.
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>
@@ -536,7 +536,7 @@ const Index = () => {
           ) : (
             <>
               <DialogHeader>
-                <DialogTitle>Quiero Notas Normi en mi institución</DialogTitle>
+                <DialogTitle>Quiero Mundo Normi en mi institución</DialogTitle>
                 <DialogDescription>
                   Déjanos tus datos y te contactamos para mostrarte cómo funciona.
                 </DialogDescription>

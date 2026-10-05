@@ -187,7 +187,7 @@ const RegistroAcudiente = () => {
       <div className="w-full max-w-lg relative z-10 py-6">
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-foreground">Registro de acudientes</h1>
-          <p className="text-sm text-muted-foreground mt-1">Notas Normi</p>
+          <p className="text-sm text-muted-foreground mt-1">Mundo Normi</p>
         </div>
 
       <Card className="w-full shadow-soft">
@@ -225,7 +225,7 @@ const RegistroAcudiente = () => {
                   privacidad, NO se muestran ni se piden. */}
               {usuarioExiste ? (
                 <div className="border border-primary/30 bg-primary/5 rounded-lg p-4 text-sm space-y-1">
-                  <p className="font-medium text-primary">✓ Esta cédula ya está registrada en Notas Normi.</p>
+                  <p className="font-medium text-primary">✓ Esta cédula ya está registrada en Mundo Normi.</p>
                   <p className="text-muted-foreground">Usaremos los datos que ya tenemos (por seguridad no se muestran aquí) y tu contraseña sigue siendo la de siempre. Solo falta indicar tus estudiantes a cargo.</p>
                 </div>
               ) : (<>
