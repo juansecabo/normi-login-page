@@ -92,9 +92,25 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
       <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader><DialogTitle>{editando ? "Editar libro" : "Agregar libro"}</DialogTitle></DialogHeader>
         <div className="space-y-4" data-guia="biblioteca.form_obra">
-          {/* Lo esencial a la vista (Juan 2026-10-04): título, autor y cuántas copias. */}
+          {/* Lo esencial a la vista (Juan 2026-10-04): título, autor, género, edades y cuántas copias. */}
           <div className="space-y-1"><label className={lbl}>Título *</label><input data-guia="biblioteca.form_titulo" value={d.titulo} onChange={(e) => set("titulo", e.target.value)} className={inp} autoFocus={!editando} /></div>
           <div className="space-y-1"><label className={lbl}>Autor</label><input value={d.autores} onChange={(e) => set("autores", e.target.value)} placeholder="Ej. Gabriel García Márquez" className={inp} /></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className={lbl}>Género</label>
+              <select data-guia="biblioteca.form_genero" value={d.genero} onChange={(e) => set("genero", e.target.value)} className={inp}>
+                <option value="">Sin definir</option>
+                {GENEROS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className={lbl}>Para qué edades</label>
+              <select value={d.nivel_lector} onChange={(e) => set("nivel_lector", e.target.value)} className={inp}>
+                <option value="">Sin definir</option>
+                {NIVELES.map((n) => <option key={n.value} value={n.value}>{n.label}</option>)}
+              </select>
+            </div>
+          </div>
           {!editando && (
             <div className="space-y-1">
               <label className={lbl}>¿Cuántas copias hay?</label>
@@ -142,20 +158,6 @@ const ObraForm = ({ abierto, obra, onCerrar, onGuardado }: {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className={lbl}>Género</label>
-                  <select data-guia="biblioteca.form_genero" value={d.genero} onChange={(e) => set("genero", e.target.value)} className={inp}>
-                    <option value="">Sin definir</option>
-                    {GENEROS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className={lbl}>Para qué edades</label>
-                  <select value={d.nivel_lector} onChange={(e) => set("nivel_lector", e.target.value)} className={inp}>
-                    <option value="">Sin definir</option>
-                    {NIVELES.map((n) => <option key={n.value} value={n.value}>{n.label}</option>)}
-                  </select>
-                </div>
                 <div className="space-y-1"><label className={lbl}>Materia</label><input value={d.materia} onChange={(e) => set("materia", e.target.value)} placeholder="Ej. Matemáticas" className={inp} /></div>
                 <div className="space-y-1"><label className={lbl}>Subtítulo</label><input value={d.subtitulo} onChange={(e) => set("subtitulo", e.target.value)} className={inp} /></div>
               </div>
