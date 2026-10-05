@@ -97,7 +97,7 @@ const Biblioteca = () => {
 
             {/* Secciones */}
             <div className="bg-card rounded-lg shadow-soft p-4 md:p-6">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" data-guia="biblioteca.secciones">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4" data-guia="biblioteca.secciones">
                 {secciones.map((s) => (
                   <button key={s.k} data-guia={`biblioteca.tab_${s.k}`} onClick={() => ir(s.k)}
                     className="relative text-left rounded-xl bg-card border border-border p-5 hover:bg-muted/50 hover:border-primary/40 transition-colors">
