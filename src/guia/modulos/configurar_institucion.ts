@@ -1317,7 +1317,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
     pasos: [
       ...abrirFicha("chatwoot", "Abrimos Bandeja de conversaciones (solo Administrador)."),
       { narracion: "Escribe el correo de ingreso.", accion: "escribir", ancla: "configurar_institucion.cw_email", campo: "correo" },
-      { narracion: "Escribe la contraseña (la primera vez, mínimo 6 caracteres; déjala en blanco para no cambiarla).", accion: "escribir", ancla: "configurar_institucion.cw_password", campo: "contrasena" },
+      { narracion: "Escribe la contraseña: debe tener 6 caracteres o más, una mayúscula, una minúscula, un número y un símbolo; debajo se marca cada requisito que ya cumple. Si ya está configurada, déjala en blanco para no cambiarla.", accion: "escribir", ancla: "configurar_institucion.cw_password", campo: "contrasena" },
       { narracion: "Toca 'Configurar bandeja' (o 'Guardar cambios'). Cambiar el acceso no afecta las conversaciones.", accion: "click", ancla: "configurar_institucion.cw_guardar" },
     ],
   },

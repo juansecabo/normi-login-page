@@ -40,12 +40,21 @@ const ChatwootColegioEditor = ({ colegioId }: { colegioId?: string }) => {
   };
   useEffect(() => { cargar(); /* eslint-disable-next-line */ }, [colegioId]);
 
+  // Chatwoot exige: mínimo 6 caracteres, mayúscula, minúscula, número y símbolo.
+  const reglasPass = [
+    { ok: password.length >= 6, texto: "6 caracteres o más" },
+    { ok: /[A-ZÁÉÍÓÚÑ]/.test(password), texto: "Una mayúscula" },
+    { ok: /[a-záéíóúñ]/.test(password), texto: "Una minúscula" },
+    { ok: /[0-9]/.test(password), texto: "Un número" },
+    { ok: /[^A-Za-zÁÉÍÓÚÑáéíóúñ0-9\s]/.test(password), texto: "Un símbolo (! @ # $ % * .)" },
+  ];
+
   const guardar = async () => {
     setOk(null); setError(null);
     const correo = email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) { setError("Escribe un correo válido."); return; }
-    if (!provisionado && password.trim().length < 6) { setError("La primera vez debes definir una contraseña de al menos 6 caracteres."); return; }
-    if (password.trim() && password.trim().length < 6) { setError("La contraseña debe tener al menos 6 caracteres."); return; }
+    if (!provisionado && !password.trim()) { setError("La primera vez debes definir una contraseña."); return; }
+    if (password.trim() && reglasPass.some((r) => !r.ok)) { setError("La contraseña aún no cumple todos los requisitos de abajo."); return; }
     setGuardando(true);
     try {
       const r = await apiClient.institucion.setChatwoot(correo, password.trim() || undefined, colegioId);
@@ -98,12 +107,21 @@ const ChatwootColegioEditor = ({ colegioId }: { colegioId?: string }) => {
               </label>
               <div className="relative">
                 <Input data-guia="configurar_institucion.cw_password" type={verPass ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)}
-                  placeholder={provisionado ? "••••••••" : "Mínimo 6 caracteres"} autoComplete="new-password" readOnly={!editable} onFocus={desbloquear} className="pr-10" />
+                  placeholder={provisionado ? "••••••••" : "Ej. Colegio2027*"} autoComplete="new-password" readOnly={!editable} onFocus={desbloquear} className="pr-10" />
                 <button type="button" onClick={() => setVerPass((v) => !v)} tabIndex={-1}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                   {verPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+              {(!provisionado || password) && (
+                <ul className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1 text-xs">
+                  {reglasPass.map((r) => (
+                    <li key={r.texto} className={`flex items-center gap-1 ${r.ok ? "text-emerald-700" : "text-muted-foreground"}`}>
+                      {r.ok ? <CheckCircle2 className="h-3.5 w-3.5" /> : <span className="inline-block h-3.5 w-3.5 rounded-full border border-current" />} {r.texto}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
 
             {ok && <div className="flex items-start gap-2 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm px-3 py-2"><CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" /> {ok}</div>}
