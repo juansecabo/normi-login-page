@@ -1303,7 +1303,7 @@ export const CONFIGURAR_INSTITUCION: Capacidad[] = [
   {
     id: "configurar_institucion.configurar_chatwoot",
     titulo: "Configurar la bandeja de conversaciones (Chatwoot)",
-    descripcion: "Fijar el correo y la contraseña para entrar a chat.notasnormi.com y ver los chats del colegio.",
+    descripcion: "Fijar el correo y la contraseña para entrar a chat.mundonormi.com y ver los chats del colegio.",
     categoria: "Configurar Institución",
     roles: ["admin"],
     ruta: RUTA,

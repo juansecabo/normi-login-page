@@ -90,7 +90,7 @@ const colorOpcion = (op: string, i: number): string => {
   return i % 2 === 0 ? "bg-sky-100 text-sky-800 border-sky-200" : "bg-amber-100 text-amber-800 border-amber-200";
 };
 
-const CONSULTAS_BASE = "https://notasnormi.com/consulta";
+const CONSULTAS_BASE = "https://mundonormi.com/consulta";
 
 export default function Consultas() {
   const navigate = useNavigate();
@@ -921,7 +921,7 @@ export default function Consultas() {
                     rows={4}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    El sistema añade automáticamente el link (notasnormi.com/consulta/&lt;id&gt;) al final.
+                    El sistema añade automáticamente el link (mundonormi.com/consulta/&lt;id&gt;) al final.
                   </p>
                 </div>
               </CardContent>

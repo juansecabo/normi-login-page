@@ -8,7 +8,7 @@ import { apiClient } from "@/lib/apiClient";
 /**
  * Ficha "Bandeja de conversaciones (Chatwoot)" en Configurar Institución.
  * Fija/cambia el correo y la contraseña con los que se ingresa a
- * chat.notasnormi.com para ver los chats de ESTE colegio. Cambiar cualquiera
+ * chat.mundonormi.com para ver los chats de ESTE colegio. Cambiar cualquiera
  * de los dos NO altera las conversaciones — solo la forma de entrar.
  *
  * Solo Administrador (el backend además restringe a SuperAdmin/Administrador).
@@ -51,7 +51,7 @@ const ChatwootColegioEditor = ({ colegioId }: { colegioId?: string }) => {
       const r = await apiClient.institucion.setChatwoot(correo, password.trim() || undefined, colegioId);
       setPassword("");
       setOk(r.creado
-        ? "Bandeja configurada. Ya puedes ingresar a chat.notasnormi.com con ese correo y contraseña."
+        ? "Bandeja configurada. Ya puedes ingresar a chat.mundonormi.com con ese correo y contraseña."
         : "Datos actualizados. Las conversaciones siguen igual; solo cambió la forma de ingresar.");
       await cargar();
     } catch (e: any) {
@@ -70,8 +70,8 @@ const ChatwootColegioEditor = ({ colegioId }: { colegioId?: string }) => {
         </CardTitle>
         <p className="text-sm text-muted-foreground">
           Correo y contraseña con los que se ingresa a{" "}
-          <a href="https://chat.notasnormi.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-0.5">
-            chat.notasnormi.com <ExternalLink className="h-3 w-3" />
+          <a href="https://chat.mundonormi.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-0.5">
+            chat.mundonormi.com <ExternalLink className="h-3 w-3" />
           </a>{" "}
           para ver los chats de este colegio. Cambiar el correo o la contraseña <strong>no afecta las conversaciones</strong>, solo la forma de entrar.
         </p>

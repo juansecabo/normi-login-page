@@ -554,7 +554,7 @@ const Boletines = () => {
         }
         // Pie de la última hoja de este estudiante.
         pdf.setFont("HelveticaCond", "normal").setFontSize(5.2);
-        pdf.text("Generado con Mundo Normi — notasnormi.com", MX, PIE_Y);
+        pdf.text("Generado con Mundo Normi — mundonormi.com", MX, PIE_Y);
       }
 
       const nombreArchivo = soloEstudiante

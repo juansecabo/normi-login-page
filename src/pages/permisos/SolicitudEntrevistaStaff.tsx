@@ -325,7 +325,7 @@ const SolicitudEntrevistaStaff = () => {
       const nuevaHora = `${reH}:${reM} ${reAP}`;
       const fechaTexto = reFecha.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
       const conNombre = entrevistadoresDeSolicitud(reSol, "el/la ");
-      const mensaje = `Se le informa que se ha REPROGRAMADO la entrevista para el acudiente del estudiante ${reSol.estudiante_nombre} ${reSol.estudiante_apellidos} de ${reSol.estudiante_grado} ${reSol.estudiante_salon}.\n\nNueva fecha: ${fechaTexto}\nNueva hora: ${nuevaHora}\nCon: ${conNombre}\n\nPor favor ingrese a notasnormi.com y en el inicio haga click en la ficha "Solicitud de Entrevista", busque el día indicado, haga click sobre la citación y confirme su asistencia.`;
+      const mensaje = `Se le informa que se ha REPROGRAMADO la entrevista para el acudiente del estudiante ${reSol.estudiante_nombre} ${reSol.estudiante_apellidos} de ${reSol.estudiante_grado} ${reSol.estudiante_salon}.\n\nNueva fecha: ${fechaTexto}\nNueva hora: ${nuevaHora}\nCon: ${conNombre}\n\nPor favor ingrese a mundonormi.com y en el inicio haga click en la ficha "Solicitud de Entrevista", busque el día indicado, haga click sobre la citación y confirme su asistencia.`;
       await apiRequest('/api/comunicados/enviar', {
         method: 'POST',
         body: JSON.stringify({
@@ -474,7 +474,7 @@ const SolicitudEntrevistaStaff = () => {
       if ((insRow as any)?.id) idsCreados.push(Number((insRow as any).id));
       // Notificar SOLO a los acudientes de ESTE estudiante → cada padre recibe su
       // propia citación, sin ver a los demás. El remitente lo arma el server.
-      const mensaje = `Se le informa que se ha solicitado una entrevista para el acudiente del estudiante ${est.nombres} ${est.apellidos} de ${est.grado} ${est.salon}.\n\nFecha: ${fechaEntrevistaTexto}\nHora: ${horaEntrevista}\nCon: ${entrevistaConNombre}${bloqueMensaje}\n\nPor favor ingrese a notasnormi.com y en el inicio haga click en la ficha "Solicitud de Entrevista", busque el día indicado, haga click sobre la citación y confirme su asistencia.`;
+      const mensaje = `Se le informa que se ha solicitado una entrevista para el acudiente del estudiante ${est.nombres} ${est.apellidos} de ${est.grado} ${est.salon}.\n\nFecha: ${fechaEntrevistaTexto}\nHora: ${horaEntrevista}\nCon: ${entrevistaConNombre}${bloqueMensaje}\n\nPor favor ingrese a mundonormi.com y en el inicio haga click en la ficha "Solicitud de Entrevista", busque el día indicado, haga click sobre la citación y confirme su asistencia.`;
       apiRequest('/api/comunicados/enviar', {
         method: 'POST',
         body: JSON.stringify({

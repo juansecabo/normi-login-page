@@ -91,7 +91,7 @@ const Index = () => {
     }
   };
 
-  // Si llegan desde el correo de campaña (notasnormi.com/?interes=1), abrir directo
+  // Si llegan desde el correo de campaña (mundonormi.com/?interes=1), abrir directo
   // el formulario "Quiero Mundo Normi en mi institución".
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("interes")) setContactoOpen(true);

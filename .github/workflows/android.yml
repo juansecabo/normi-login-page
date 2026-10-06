@@ -50,7 +50,7 @@ jobs:
       - name: Publicar el APK de depuración
         uses: actions/upload-artifact@v4
         with:
-          name: notas-normi-debug-apk
+          name: mundo-normi-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
@@ -86,6 +86,6 @@ jobs:
         if: ${{ steps.firma.outputs.hay_firma == 'si' }}
         uses: actions/upload-artifact@v4
         with:
-          name: notas-normi-release-aab
+          name: mundo-normi-release-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error

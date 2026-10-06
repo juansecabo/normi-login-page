@@ -659,9 +659,9 @@ const RegistrosComportamiento = () => {
         // Link directo al registro recién creado (la página lo abre expandido)
         const nuevoId = Array.isArray(insertado) ? (insertado[0] as any)?.id : (insertado as any)?.id;
         const linkDirecto = nuevoId != null
-          ? `, o entrando a este link:\nhttps://notasnormi.com/registros-comportamiento?registro=${nuevoId}`
+          ? `, o entrando a este link:\nhttps://mundonormi.com/registros-comportamiento?registro=${nuevoId}`
           : ".";
-        const mensaje = `${autor.nombreSimple} envió un Registro de Comportamiento (${tipoLabel}) sobre ${estLabel}, ${asigLabel}.\n\nPueden consultarlo y descargarlo entrando a notasnormi.com → Registros de Comportamiento${linkDirecto}`;
+        const mensaje = `${autor.nombreSimple} envió un Registro de Comportamiento (${tipoLabel}) sobre ${estLabel}, ${asigLabel}.\n\nPueden consultarlo y descargarlo entrando a mundonormi.com → Registros de Comportamiento${linkDirecto}`;
 
         // Coordinadores SOLO los del nivel del estudiante (decisión de Juan
         // 2026-08-31): el segmento lleva el grado y el resolver del server lo

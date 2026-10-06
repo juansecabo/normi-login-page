@@ -18,6 +18,32 @@
     <meta property="og:type" content="website" />
 
     <meta name="twitter:card" content="summary_large_image" />
+    <script>
+      // Dominio nuevo (2026-10-06): notasnormi.com → mundonormi.com SIN cerrar la sesión.
+      // En el dominio viejo se copia lo guardado en este navegador (sesión) en el fragmento
+      // (#, no viaja al servidor) y en mundonormi.com se restaura y se borra de la barra.
+      // Solo se acepta si viene de notasnormi.com y no hay ya una sesión abierta.
+      (function () {
+        var VIEJO = /^(www\.)?notasnormi\.com$/;
+        try {
+          if (VIEJO.test(location.hostname) && !window.Capacitor) {
+            var datos = {}, n = 0;
+            for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); datos[k] = localStorage.getItem(k); n++; }
+            var frag = n ? "#__migrar=" + encodeURIComponent(JSON.stringify(datos)) : "";
+            location.replace("https://mundonormi.com" + location.pathname + location.search + frag);
+            return;
+          }
+          if (location.hash.indexOf("#__migrar=") === 0) {
+            var crudo = decodeURIComponent(location.hash.slice(10));
+            history.replaceState(null, "", location.pathname + location.search);
+            if (/^https:\/\/(www\.)?notasnormi\.com\//.test(document.referrer || "") && !localStorage.getItem("normi_jwt")) {
+              var d = JSON.parse(crudo);
+              for (var c in d) if (Object.prototype.hasOwnProperty.call(d, c)) localStorage.setItem(c, d[c]);
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
 
   <body>

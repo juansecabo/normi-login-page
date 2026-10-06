@@ -260,7 +260,7 @@ const DashboardRector = () => {
   }
   if (cargo === 'Coordinador(a)') {
     items.push({ id: 'conversaciones', render: (
-      <button onClick={() => window.open("https://chat.notasnormi.com", "_blank")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-blue-100 transition-all duration-200 hover:shadow-md hover:bg-blue-200">
+      <button onClick={() => window.open("https://chat.mundonormi.com", "_blank")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-blue-100 transition-all duration-200 hover:shadow-md hover:bg-blue-200">
         <img src={iconConversaciones} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground text-center">Conversaciones</span>
       </button>
@@ -283,7 +283,7 @@ const DashboardRector = () => {
   );
   if (cargo === 'Rector') {
     items.push({ id: 'conversaciones', render: (
-      <button onClick={() => window.open("https://chat.notasnormi.com", "_blank")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-blue-100 transition-all duration-200 hover:shadow-md hover:bg-blue-200">
+      <button onClick={() => window.open("https://chat.mundonormi.com", "_blank")} className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-blue-100 transition-all duration-200 hover:shadow-md hover:bg-blue-200">
         <img src={iconConversaciones} alt="" className="w-16 h-16 object-contain" />
         <span className="font-semibold text-foreground text-center">Conversaciones</span>
       </button>
