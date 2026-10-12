@@ -67,7 +67,7 @@ const DISPONIBLES = new Set([
   "permisos-y-excusas-rose", "porteria-orange", "registro-agente-cyan", "registros-comportamiento-amber",
   "retiro-estudiantes-rose", "uso-agente-orange", "normi-examinadora-green", "logros-lime", "aprende-normi-rose",
 ]);
-const VERSION = 1; // subir al reemplazar imágenes (rompe la caché)
+const VERSION = 2; // subir al reemplazar imágenes (rompe la caché)
 
 type Partes = { icono?: string; titulo?: ReactNode; extras: ReactNode[] };
 
