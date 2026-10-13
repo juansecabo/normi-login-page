@@ -1,4 +1,5 @@
 import { Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from "react";
+import { getSession } from "@/hooks/useSession";
 import iconActividades from "@/assets/icons/actividades.webp";
 import iconAsistencia from "@/assets/icons/asistencia.webp";
 import iconBiblioteca from "@/assets/icons/biblioteca.webp";
@@ -29,14 +30,14 @@ import iconRegistroAgente from "@/assets/icons/registro-agente.webp";
 import iconRegistros from "@/assets/icons/registros-comportamiento.png";
 import iconRetiro from "@/assets/icons/retiro-estudiantes.webp";
 import iconUsoAgente from "@/assets/icons/uso-agente.webp";
-import normiExaminadoraImg from "@/assets/normi-examinadora.webp";
+import iconInasistencia from "@/assets/icons/inasistencia.webp";
+import iconUniforme from "@/assets/icons/uniforme.webp";
 
 /**
- * Fichas del tablero con ilustración 3D (estilo Mundo Nexus) — piloto en el colegio de
- * prueba Cailico (2026-10-12). Imagen arriba (4:3, el fondo pastel viene en la imagen y es
- * el mismo color que la ficha tenía) y el título debajo; sin descripción ni animación.
- * Se toma el <button> que ya arma cada tablero y se re-dibuja: mismo onClick, data-guia y
- * burbuja de notificaciones. Si no hay ilustración para esa ficha, queda como estaba.
+ * Íconos 3D en las fichas (piloto colegio de prueba Cailico, 2026-10-12). La ficha queda
+ * EXACTAMENTE como siempre (fondo de color, texto adentro, mismo tamaño); solo el ícono plano
+ * se cambia por su versión 3D sin fondo, del mismo tamaño. Normi Examinadora conserva la
+ * imagen real de Normi. Si un ícono no tiene versión 3D, queda el de siempre.
  */
 export const COLEGIOS_FICHAS_3D = new Set(["2f96f076-83df-4b84-8bbc-9c1df79a372b"]);
 
@@ -51,61 +52,49 @@ const NOMBRE_ICONO: Record<string, string> = {
   [iconOrientacion]: "orientacion-escolar", [iconPanelControl]: "panel-de-control", [iconPerfil]: "perfil",
   [iconPermisos]: "permisos-y-excusas", [iconPorteria]: "porteria", [iconRegistroAgente]: "registro-agente",
   [iconRegistros]: "registros-comportamiento", [iconRetiro]: "retiro-estudiantes", [iconUsoAgente]: "uso-agente",
-  [normiExaminadoraImg]: "normi-examinadora",
+  [iconInasistencia]: "inasistencia", [iconUniforme]: "uniforme",
 };
 const NOMBRE_EMOJI: Record<string, string> = { "🎯": "logros", "🎮": "aprende-normi" };
 
-/** Ilustraciones disponibles en public/fichas3d/<icono>-<color>.webp */
+/** Íconos 3D disponibles en public/fichas3d/iconos/<icono>.webp (con transparencia). */
 const DISPONIBLES = new Set([
-  "actividades-cyan", "actividades-green", "asistencia-blue", "biblioteca-teal", "boletines-emerald",
-  "calendario-indigo", "casos-amber", "citas-violet", "comunicados-lime", "comunicados-violet",
-  "comunicados-recibidos-indigo", "comunicados-recibidos-teal", "configurar-institucion-teal",
-  "consultas-pink", "consultas-violet", "conversaciones-blue", "direccion-grupo-lime", "documentos-amber",
-  "documentos-cyan", "entrevista-indigo", "enviar-comunicado-teal", "enviar-comunicado-violet",
-  "estadisticas-green", "estadisticas-orange", "estadisticas-teal", "formatos-orange", "horario-cyan",
-  "notas-emerald", "observador-sky", "orientacion-escolar-sky", "panel-de-control-purple", "perfil-sky",
-  "permisos-y-excusas-rose", "porteria-orange", "registro-agente-cyan", "registros-comportamiento-amber",
-  "retiro-estudiantes-rose", "uso-agente-orange", "normi-examinadora-green", "logros-lime", "aprende-normi-rose",
+  "actividades", "asistencia", "biblioteca", "boletines", "calendario", "casos", "citas", "comunicados",
+  "comunicados-recibidos", "configurar-institucion", "consultas", "conversaciones", "direccion-grupo",
+  "documentos", "entrevista", "enviar-comunicado", "estadisticas", "formatos", "horario", "notas",
+  "observador", "orientacion-escolar", "panel-de-control", "perfil", "permisos-y-excusas", "porteria",
+  "registro-agente", "registros-comportamiento", "retiro-estudiantes", "uso-agente", "inasistencia",
+  "uniforme", "logros", "aprende-normi",
 ]);
-const VERSION = 3; // subir al reemplazar imágenes (rompe la caché)
+const VERSION = 4; // subir al reemplazar imágenes (rompe la caché)
 
-type Partes = { icono?: string; titulo?: ReactNode; extras: ReactNode[] };
+const url3d = (nombre?: string) => (nombre && DISPONIBLES.has(nombre) ? `/fichas3d/iconos/${nombre}.webp?v=${VERSION}` : undefined);
+const activo = () => COLEGIOS_FICHAS_3D.has(getSession().colegio_id ?? "");
 
-function separar(nodos: ReactNode, p: Partes) {
-  Children.forEach(nodos, (n) => {
-    if (!isValidElement(n)) return;
+/** Para pantallas con <img src={icono}>: devuelve el 3D si aplica, si no el mismo icono. */
+export function icono3d(src: string): string {
+  return (activo() && url3d(NOMBRE_ICONO[src])) || src;
+}
+
+function cambiarIconos(nodos: ReactNode): ReactNode {
+  return Children.map(nodos, (n) => {
+    if (!isValidElement(n)) return n;
     const el = n as ReactElement<{ src?: string; className?: string; children?: ReactNode }>;
-    if (el.type === "img") { p.icono ??= NOMBRE_ICONO[el.props.src ?? ""]; return; }
-    if (el.type === "span") {
-      const cls = el.props.className ?? "";
-      if (cls.includes("text-5xl")) { p.icono ??= NOMBRE_EMOJI[String(el.props.children).trim()]; return; }
-      if (cls.includes("font-semibold") && p.titulo === undefined) { p.titulo = el.props.children; return; }
+    if (el.type === "img") {
+      const u = url3d(NOMBRE_ICONO[el.props.src ?? ""]);
+      return u ? cloneElement(el, { src: u }) : el;
     }
-    if (el.type === "div" && el.props.children && !el.props.className?.includes("absolute")) { separar(el.props.children, p); return; }
-    p.extras.push(el); // burbujas de notificaciones y similares
+    if (el.type === "span" && (el.props.className ?? "").includes("text-5xl")) {
+      const u = url3d(NOMBRE_EMOJI[String(el.props.children).trim()]);
+      return u ? <img src={u} alt="" className="w-12 h-12 object-contain" /> : el;
+    }
+    if (el.type === "div" && el.props.children) return cloneElement(el, { children: cambiarIconos(el.props.children) });
+    return el;
   });
 }
 
+/** Ficha del tablero (su <button>) con el ícono 3D; todo lo demás igual. */
 export function fichaConImagen3d(render: ReactNode): ReactNode {
   if (!isValidElement(render) || render.type !== "button") return render;
-  const btn = render as ReactElement<{ className?: string; children?: ReactNode }>;
-  const color = /\bbg-([a-z]+)-100\b/.exec(btn.props.className ?? "")?.[1];
-  const p: Partes = { extras: [] };
-  separar(btn.props.children, p);
-  const clave = p.icono && color ? `${p.icono}-${color}` : "";
-  if (!DISPONIBLES.has(clave) || p.titulo === undefined) return render;
-  return cloneElement(btn, {
-    className: "relative w-full h-full flex flex-col rounded-[20px] lg:rounded-3xl bg-white border border-[#E3E5F2] shadow-[0_10px_30px_-18px_rgba(22,26,61,.35)]",
-    children: (
-      <>
-        {p.extras}
-        <div className="relative w-full aspect-[4/3] overflow-hidden rounded-t-[19px] lg:rounded-t-[23px] bg-[#F4F4FB]">
-          <img src={`/fichas3d/${clave}.webp?v=${VERSION}`} alt="" draggable={false} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
-        </div>
-        <div className="flex-1 flex items-center justify-center px-2 py-2 lg:px-3 lg:py-3">
-          <span className="font-bold text-[#12163A] text-center text-sm lg:text-[15px] leading-tight">{p.titulo}</span>
-        </div>
-      </>
-    ),
-  });
+  const btn = render as ReactElement<{ children?: ReactNode }>;
+  return cloneElement(btn, { children: cambiarIconos(btn.props.children) });
 }

@@ -6,6 +6,7 @@ import HeaderNormi from "@/components/HeaderNormi";
 import iconRetiro from "@/assets/icons/retiro-estudiantes.webp";
 import iconInasistencia from "@/assets/icons/inasistencia.webp";
 import iconUniforme from "@/assets/icons/uniforme.webp";
+import { icono3d } from "@/lib/fichas3d";
 import { getAllLastSeen } from "@/utils/notificaciones";
 
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
@@ -95,7 +96,7 @@ const PermisosExcusas = () => {
               className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-red-50 border-2 border-red-200 transition-all duration-200 hover:shadow-md hover:bg-red-100 hover:scale-[1.02] cursor-pointer"
             >
               <Badge count={badges.retiro} />
-              <img src={iconRetiro} alt="" className="w-16 h-16 object-contain" />
+              <img src={icono3d(iconRetiro)} alt="" className="w-16 h-16 object-contain" />
               <span className="font-semibold text-foreground text-center">
                 Retiro de Estudiantes
               </span>
@@ -106,7 +107,7 @@ const PermisosExcusas = () => {
               className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-amber-50 border-2 border-amber-200 transition-all duration-200 hover:shadow-md hover:bg-amber-100 hover:scale-[1.02] cursor-pointer"
             >
               <Badge count={badges.inasistencia} />
-              <img src={iconInasistencia} alt="" className="w-16 h-16 object-contain" />
+              <img src={icono3d(iconInasistencia)} alt="" className="w-16 h-16 object-contain" />
               <span className="font-semibold text-foreground text-center">
                 Justificación por Inasistencia
               </span>
@@ -117,7 +118,7 @@ const PermisosExcusas = () => {
               className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-lg bg-orange-50 border-2 border-orange-200 transition-all duration-200 hover:shadow-md hover:bg-orange-100 hover:scale-[1.02] cursor-pointer"
             >
               <Badge count={badges.uniforme} />
-              <img src={iconUniforme} alt="" className="w-16 h-16 object-contain" />
+              <img src={icono3d(iconUniforme)} alt="" className="w-16 h-16 object-contain" />
               <span className="font-semibold text-foreground text-center">
                 Justificación por Uniforme
               </span>
