@@ -101,9 +101,10 @@ function GrupoCard({ grupo, items, onAbrir }: { grupo: GrupoFichas; items: Reord
       {notificaciones > 0 && (
         <span data-guia="dashboard.grupo_notificaciones" className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 shadow-sm z-10 animate-badge-pop">{notificaciones}</span>
       )}
-      <div className="grid grid-cols-2 gap-1.5 w-full flex-1 min-h-[96px] rounded-xl bg-muted/70 p-2 overflow-hidden">
+      {/* Miniaturas centradas: 1 en el centro real, 2 en una fila al centro, 3 con la última centrada abajo. */}
+      <div className="flex flex-wrap justify-center content-center gap-1.5 w-full flex-1 min-h-[96px] rounded-xl bg-muted/70 p-2 overflow-hidden">
         {minis.map((it, i) => (
-          <div key={it.id} className="relative overflow-hidden rounded-md bg-background/80 pointer-events-none aspect-square">
+          <div key={it.id} className="relative overflow-hidden rounded-md bg-background/80 pointer-events-none aspect-square w-[calc(50%-0.1875rem)]">
             {/* Miniatura: la ficha real escalada; no recibe clics. Su burbuja se oculta (la muestra el grupo, sumada). */}
             <div className="absolute inset-0 origin-top-left [&_.animate-badge-pop]:hidden" style={{ transform: "scale(0.36)", width: "278%", height: "278%" }}>
               {it.render}
@@ -113,7 +114,6 @@ function GrupoCard({ grupo, items, onAbrir }: { grupo: GrupoFichas; items: Reord
             )}
           </div>
         ))}
-        {minis.length < 4 && Array.from({ length: 4 - minis.length }).map((_, i) => <div key={`v${i}`} className="rounded-md bg-background/30 aspect-square" />)}
       </div>
       <span className="font-semibold text-foreground text-center text-sm leading-tight">{grupo.nombre || "Grupo"}</span>
     </button>
