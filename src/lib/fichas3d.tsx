@@ -93,8 +93,8 @@ function cambiarIconos(nodos: ReactNode): ReactNode {
 }
 
 /**
- * Ficha del tablero con el ícono 3D pequeño arriba sobre el color de la ficha y el título
- * abajo en una franja blanca aparte (estilo Mundo Nexus). Mismo onClick, data-guia y burbuja.
+ * Ficha del tablero con el ícono 3D pequeño arriba y el título abajo, todo sobre el color de
+ * la ficha; el título con espacio fijo de dos líneas para que se acomode. Mismo onClick, data-guia y burbuja.
  */
 export function fichaConImagen3d(render: ReactNode): ReactNode {
   if (!isValidElement(render) || render.type !== "button") return render;
@@ -114,13 +114,13 @@ export function fichaConImagen3d(render: ReactNode): ReactNode {
   const src = isValidElement(icono) ? String((icono as ReactElement<{ src?: string }>).props.src ?? "") : "";
   if (!color || titulo === undefined || !src) return render; // Normi Examinadora conserva su imagen real
   return cloneElement(btn, {
-    className: "relative w-full h-full flex flex-col rounded-[20px] lg:rounded-3xl bg-white border border-[#E3E5F2] shadow-[0_10px_30px_-18px_rgba(22,26,61,.35)]",
+    className: `relative w-full h-full flex flex-col rounded-[20px] lg:rounded-3xl shadow-[0_10px_30px_-18px_rgba(22,26,61,.35)] ${FONDO[color] ?? ""}`,
     children: (
       <>
         {extras}
-        <div className={`flex-1 flex items-center justify-center p-6 rounded-t-[19px] lg:rounded-t-[23px] ${FONDO[color] ?? ""}`}>{icono}</div>
-        <div className="px-2 py-2.5 lg:px-3 lg:py-3 flex items-center justify-center min-h-[3.25rem]">
-          <span className="font-semibold text-foreground text-center text-sm lg:text-[15px] leading-tight">{titulo}</span>
+        <div className="flex-1 flex items-center justify-center px-6 pt-6 pb-2">{icono}</div>
+        <div className="px-2 pb-3 lg:px-3 lg:pb-4 flex items-start justify-center min-h-[3.25rem] lg:min-h-[3.5rem]">
+          <span className="font-semibold text-foreground text-center text-sm lg:text-[15px] leading-tight [text-wrap:balance]">{titulo}</span>
         </div>
       </>
     ),
