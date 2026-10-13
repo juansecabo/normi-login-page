@@ -15,6 +15,8 @@ interface ComunicadoEnviadoDialogProps {
   /** Se llama UNA sola vez cuando el envío se completa CON ÉXITO (no cuando se cancela).
    *  El formulario (mensaje/archivos) solo se limpia aquí; si se cancela, se conserva. */
   onCompleted?: () => void;
+  /** Fuera del horario hábil: cuándo saldrán los WhatsApp ("el lunes 13 de octubre a las 6:00 a. m."). */
+  saldra?: string;
 }
 
 interface Progress {
@@ -26,7 +28,7 @@ interface Progress {
   fallos_detalle?: Array<{ nombre: string; telefono: string }>;
 }
 
-const ComunicadoEnviadoDialog = ({ open, onOpenChange, jobId, total, onCompleted }: ComunicadoEnviadoDialogProps) => {
+const ComunicadoEnviadoDialog = ({ open, onOpenChange, jobId, total, onCompleted, saldra }: ComunicadoEnviadoDialogProps) => {
   const [progress, setProgress] = useState<Progress | null>(null);
   const [cancelando, setCancelando] = useState(false);
   const [verFallos, setVerFallos] = useState(false);
@@ -105,12 +107,14 @@ const ComunicadoEnviadoDialog = ({ open, onOpenChange, jobId, total, onCompleted
           <DialogHeader>
             <DialogTitle className={`flex items-center gap-2 ${cancelado ? "text-orange-600" : "text-green-700"}`}>
               {cancelado ? <XCircle className="w-6 h-6" /> : <CheckCircle2 className="w-6 h-6" />}
-              {cancelado ? "Envío cancelado" : "¡Comunicado enviado!"}
+              {cancelado ? "Envío cancelado" : saldra ? "¡Comunicado registrado!" : "¡Comunicado enviado!"}
             </DialogTitle>
             <DialogDescription>
               {cancelado
                 ? `Se detuvo el envío. Los ${enviados} mensajes que ya habían salido llegaron y no se pueden revertir; los pendientes no se enviaron.`
-                : "El mensaje ha sido correctamente enviado y está llegando a sus destinatarios."}
+                : saldra
+                  ? `Es fuera del horario hábil: los WhatsApp saldrán ${saldra}.`
+                  : "El mensaje ha sido correctamente enviado y está llegando a sus destinatarios."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">

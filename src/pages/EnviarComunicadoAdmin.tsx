@@ -104,7 +104,7 @@ const EnviarComunicadoAdmin = () => {
   const [enviando, setEnviando] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showSentDialog, setShowSentDialog] = useState(false);
-  const [sentInfo, setSentInfo] = useState<{ jobId?: string; total?: number }>({});
+  const [sentInfo, setSentInfo] = useState<{ jobId?: string; total?: number; saldra?: string }>({});
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
   // Destinatarios state — perfiles (multi-select con checkboxes)
@@ -718,7 +718,7 @@ const EnviarComunicadoAdmin = () => {
         segmentos.push({ perfil: internosTodos });
       }
 
-      const response = await apiRequest<{ ok: true; enviados: number; fallos: number; total: number }>(
+      const response = await apiRequest<{ ok: true; enviados: number; fallos: number; total: number; job_id?: string; saldra?: string }>(
         '/api/comunicados/enviar',
         {
           method: "POST",
@@ -732,7 +732,7 @@ const EnviarComunicadoAdmin = () => {
         },
       );
 
-      setSentInfo({ jobId: response.job_id, total: response.total });
+      setSentInfo({ jobId: response.job_id, total: response.total, saldra: response.saldra });
       setShowSentDialog(true);
       // El mensaje/archivos se limpian SOLO al completarse el envío (onCompleted
       // del diálogo). Si se cancela, se conservan para corregir.
@@ -1684,6 +1684,7 @@ const EnviarComunicadoAdmin = () => {
         onOpenChange={setShowSentDialog}
         jobId={sentInfo.jobId}
         total={sentInfo.total}
+        saldra={sentInfo.saldra}
         onCompleted={() => {
           setMensaje("");
           setArchivosSeleccionados([]);
