@@ -475,7 +475,27 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
             senalarEl(link, "enlace");
             return;
           }
-          const nombreFichaRuta = paso.ruta && RUTAS_FICHAS[paso.ruta] ? nombreFicha(RUTAS_FICHAS[paso.ruta]) : undefined;
+          // El destino puede ser un botón de ESTA pantalla que navega con onClick (no <a href>),
+          // como las tarjetas de Permisos y Excusas: se busca por el texto citado en la narración
+          // ("Elige 'Justificación por Inasistencia'"). Sin esto, la guía mandaba al Inicio.
+          const citado = etiquetaDe(paso.narracion || "");
+          if (citado) {
+            // "contiene" y no "igual": la burbuja de notificaciones se pega al texto del botón.
+            const plano = (el: HTMLElement) => normTxt(textoDe(el)).replace(/\s+/g, " ");
+            const boton = Array.from(document.querySelectorAll<HTMLElement>("button, a"))
+              .filter((el) => esVisible(el) && !el.closest("[data-guia-ui]") && plano(el).includes(normTxt(citado)))
+              .sort((a, b) => plano(a).length - plano(b).length)[0];
+            if (boton) {
+              senalarEl(boton, "boton_por_texto", { el: citado });
+              return;
+            }
+          }
+          // Subpágina de una ficha (p. ej. /permisos-excusas/inasistencia): si el usuario no está
+          // dentro de esa ficha, primero se le lleva a la ficha padre (/permisos-excusas).
+          const padre = paso.ruta && !RUTAS_FICHAS[paso.ruta] ? "/" + paso.ruta.split("/")[1] : undefined;
+          const fueraDelPadre = !!padre && RUTAS_FICHAS[padre] && !window.location.pathname.startsWith(padre);
+          const rutaFicha = paso.ruta && RUTAS_FICHAS[paso.ruta] ? paso.ruta : fueraDelPadre ? padre : undefined;
+          const nombreFichaRuta = rutaFicha ? nombreFicha(RUTAS_FICHAS[rutaFicha]) : undefined;
           if (nombreFichaRuta) {
             const ficha = Array.from(document.querySelectorAll<HTMLElement>("button, a")).find(
               (el) => esVisible(el) && !el.closest("[data-guia-ui]") && normTxt(textoDe(el)) === normTxt(nombreFichaRuta),
@@ -491,7 +511,9 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
           // "Inicio" o el escudo de arriba) para volver. Al llegar al dashboard,
           // el vigilante de ruta re-evalúa este mismo paso y ahí sí encuentra la
           // ficha. NO armamos avance: del cambio de página se encarga el vigilante.
-          if (window.location.pathname !== "/dashboard" && paso.ruta !== "/dashboard") {
+          // Solo cuando el destino ES una ficha del inicio: si es una subpágina de donde ya está
+          // el usuario, se le pregunta al cerebro con la pantalla actual.
+          if (nombreFichaRuta && window.location.pathname !== "/dashboard" && paso.ruta !== "/dashboard") {
             const inicio =
               Array.from(document.querySelectorAll<HTMLElement>("a, button")).find(
                 (el) => esVisible(el) && !el.closest("[data-guia-ui]") && normTxt(textoDe(el)) === "inicio",
