@@ -99,7 +99,7 @@ function cambiarIconos(nodos: ReactNode): ReactNode {
 export function fichaConImagen3d(render: ReactNode): ReactNode {
   if (!isValidElement(render) || render.type !== "button") return render;
   const btn = render as ReactElement<{ className?: string; children?: ReactNode }>;
-  const color = /bg-([a-z]+)-100/.exec(btn.props.className ?? "")?.[1];
+  const color = /\bbg-([a-z]+)-100\b/.exec(btn.props.className ?? "")?.[1];
   let icono: ReactNode = null, titulo: ReactNode = undefined;
   const extras: ReactNode[] = [];
   const recorrer = (nodos: ReactNode) => Children.forEach(cambiarIconos(nodos), (n) => {
