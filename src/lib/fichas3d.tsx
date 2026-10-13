@@ -65,7 +65,7 @@ const DISPONIBLES = new Set([
   "registro-agente", "registros-comportamiento", "retiro-estudiantes", "uso-agente", "inasistencia",
   "uniforme", "logros", "aprende-normi", "bib-catalogo", "bib-comunidad", "bib-etiquetas", "bib-prestamos",
 ]);
-const VERSION = 4; // subir al reemplazar imágenes (rompe la caché)
+const VERSION = 5; // subir al reemplazar imágenes (rompe la caché)
 
 const url3d = (nombre?: string) => (nombre && DISPONIBLES.has(nombre) ? `/fichas3d/iconos/${nombre}.webp?v=${VERSION}` : undefined);
 const activo = () => COLEGIOS_FICHAS_3D.has(getSession().colegio_id ?? "");
