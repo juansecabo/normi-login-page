@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession } from "@/hooks/useSession";
-import { COLEGIOS_FICHAS_3D, fichaConImagen3d } from "@/lib/fichas3d";
+import { fichaConImagen3d } from "@/lib/fichas3d";
 import {
   DndContext,
   closestCenter,
@@ -140,10 +140,8 @@ export default function ReordenableDashboard({ dashboardKey, items: itemsProp, g
   items: ReordItem[];
   gridClassName: string;
 }) {
-  // Piloto fichas con ilustración 3D (colegio de prueba): mismo orden, grilla y grupos.
-  const items = COLEGIOS_FICHAS_3D.has(getSession().colegio_id ?? "")
-    ? itemsProp.map((it) => ({ ...it, render: fichaConImagen3d(it.render) }))
-    : itemsProp;
+  // Fichas con ícono 3D (todos los colegios): mismo orden, grilla y grupos.
+  const items = itemsProp.map((it) => ({ ...it, render: fichaConImagen3d(it.render) }));
   const colegioConGrupos = true; // grupos activos en todos los colegios (2026-09-18)
   // Interruptor por usuario (apagado por defecto): con él apagado el arrastre es EXACTAMENTE el
   // de siempre; los grupos que ya existan se siguen mostrando y usando.

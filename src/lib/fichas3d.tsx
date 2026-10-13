@@ -1,5 +1,4 @@
 import { Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from "react";
-import { getSession } from "@/hooks/useSession";
 import iconActividades from "@/assets/icons/actividades.webp";
 import iconAsistencia from "@/assets/icons/asistencia.webp";
 import iconBiblioteca from "@/assets/icons/biblioteca.webp";
@@ -36,12 +35,12 @@ import iconSugerencias from "@/assets/icons/sugerencias.webp";
 import iconFotosGrupo from "@/assets/icons/fotos-grupo.webp";
 
 /**
- * Íconos 3D en las fichas (piloto colegio de prueba Cailico, 2026-10-12). La ficha queda
+ * Íconos 3D en las fichas (piloto Cailico 2026-10-12; todos los colegios desde 2026-10-13). La ficha queda
  * EXACTAMENTE como siempre (fondo de color, texto adentro, mismo tamaño); solo el ícono plano
  * se cambia por su versión 3D sin fondo, del mismo tamaño. Normi Examinadora conserva la
  * imagen real de Normi. Si un ícono no tiene versión 3D, queda el de siempre.
  */
-export const COLEGIOS_FICHAS_3D = new Set(["2f96f076-83df-4b84-8bbc-9c1df79a372b"]);
+// Activo en TODOS los colegios (actuales y futuros) desde 2026-10-13; antes piloto solo en Cailico.
 
 const NOMBRE_ICONO: Record<string, string> = {
   [iconActividades]: "actividades", [iconAsistencia]: "asistencia", [iconBiblioteca]: "biblioteca",
@@ -71,9 +70,9 @@ const DISPONIBLES = new Set([
 const VERSION = 5; // subir al reemplazar imágenes (rompe la caché)
 
 const url3d = (nombre?: string) => (nombre && DISPONIBLES.has(nombre) ? `/fichas3d/iconos/${nombre}.webp?v=${VERSION}` : undefined);
-const activo = () => COLEGIOS_FICHAS_3D.has(getSession().colegio_id ?? "");
+const activo = () => true;
 
-/** Ícono 3D por nombre (p. ej. "bib-catalogo") si el colegio está en el piloto; si no, undefined. */
+/** Ícono 3D por nombre (p. ej. "bib-catalogo"); undefined si no existe. */
 export function icono3dNombre(nombre: string): string | undefined {
   return activo() ? url3d(nombre) : undefined;
 }
@@ -83,11 +82,11 @@ export function icono3d(src: string): string {
   return (activo() && url3d(NOMBRE_ICONO[src])) || src;
 }
 
-/** ¿El colegio de la sesión está en el piloto de íconos 3D? */
+/** ¿Están activos los íconos 3D? (hoy en todos los colegios) */
 export const fichas3dActivas = activo;
 
 /**
- * Ícono 3D por nombre en el piloto; en los demás colegios muestra lo de siempre (children).
+ * Ícono 3D por nombre; si no existe muestra lo de siempre (children).
  * Uso: <Ico3d nombre="l-barras" className="w-12 h-12"><BarChart3 className="w-12 h-12 ..." /></Ico3d>
  */
 export function Ico3d({ nombre, className, children }: { nombre: string; className: string; children: ReactNode }) {
