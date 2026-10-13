@@ -32,7 +32,6 @@ import HeaderNormi from "@/components/HeaderNormi";
 import EncabezadoColegio from "@/components/EncabezadoColegio";
 import AvatarUploader from "@/components/AvatarUploader";
 import ReordenableDashboard, { type ReordItem } from "@/components/ReordenableDashboard";
-import { fichaConImagen3d, fichas3dActivas, Ico3d } from "@/lib/fichas3d";
 import { getAllLastSeen } from "@/utils/notificaciones";
 
 const Badge = ({ count }: { count: number }) => {
@@ -45,8 +44,7 @@ const Badge = ({ count }: { count: number }) => {
 };
 
 /** Una tarjeta del dashboard del admin. */
-const Card = ({ bg, badge, icon, label, onClick }: { bg: string; badge?: number; icon: ReactNode; label: string; onClick: () => void }) => {
-  const btn = (
+const Card = ({ bg, badge, icon, label, onClick }: { bg: string; badge?: number; icon: ReactNode; label: string; onClick: () => void }) => (
   <button
     onClick={onClick}
     className={`relative w-full h-full flex flex-col items-center justify-center gap-4 p-8 rounded-lg ${bg} transition-all duration-200 hover:shadow-md`}
@@ -55,10 +53,7 @@ const Card = ({ bg, badge, icon, label, onClick }: { bg: string; badge?: number;
     {icon}
     <span className="font-semibold text-foreground text-center">{label}</span>
   </button>
-  );
-  // Piloto íconos 3D (colegio de prueba): misma ficha que en los demás tableros.
-  return <>{fichas3dActivas() ? fichaConImagen3d(btn) : btn}</>;
-};
+);
 
 const DashboardAdmin = () => {
   const navigate = useNavigate();
@@ -131,8 +126,8 @@ const DashboardAdmin = () => {
     { id: 'registros-comportamiento', render: <Card bg="bg-amber-100 hover:bg-amber-200" icon={<img src={iconRegistros} alt="" className="w-16 h-16 object-contain" />} label="Registros de Comportamiento" onClick={() => navigate("/registros-comportamiento")} /> },
     { id: 'observador', render: <Card bg="bg-sky-100 hover:bg-sky-200" icon={<img src={iconObservador} alt="" className="w-16 h-16 object-contain" />} label="Observador Estudiantil" onClick={() => navigate("/observador-estudiantil")} /> },
     { id: 'porteria', render: <Card bg="bg-orange-100 hover:bg-orange-200" icon={<img src={iconPorteria} alt="" className="w-16 h-16 object-contain" />} label={nombreFicha("Portería")} onClick={() => navigate("/porteria")} /> },
-    { id: 'solicitudes-registro', render: <Card bg="bg-sky-100 hover:bg-sky-200" icon={<Ico3d nombre="l-portapapeles" className="w-16 h-16"><ClipboardList className="w-16 h-16 text-sky-700" strokeWidth={1.5} /></Ico3d>} label="Solicitudes de Registro" onClick={() => navigate("/admin/correcciones-registro")} /> },
-    { id: 'dudas-personal', render: <Card bg="bg-violet-100 hover:bg-violet-200" icon={<Ico3d nombre="l-pregunta" className="w-16 h-16"><MessageCircleQuestion className="w-16 h-16 text-violet-700" strokeWidth={1.5} /></Ico3d>} label="Dudas del Personal" onClick={() => navigate("/admin/dudas")} /> },
+    { id: 'solicitudes-registro', render: <Card bg="bg-sky-100 hover:bg-sky-200" icon={<ClipboardList className="w-16 h-16 text-sky-700" strokeWidth={1.5} />} label="Solicitudes de Registro" onClick={() => navigate("/admin/correcciones-registro")} /> },
+    { id: 'dudas-personal', render: <Card bg="bg-violet-100 hover:bg-violet-200" icon={<MessageCircleQuestion className="w-16 h-16 text-violet-700" strokeWidth={1.5} />} label="Dudas del Personal" onClick={() => navigate("/admin/dudas")} /> },
     { id: 'asistencia', render: <Card bg="bg-blue-100 hover:bg-blue-200" icon={<img src={iconAsistencia} alt="" className="w-16 h-16 object-contain" />} label="Asistencia" onClick={() => navigate("/asistencia")} /> },
     { id: 'perfil', render: <Card bg="bg-sky-100 hover:bg-sky-200" icon={<img src={iconPerfil} alt="" className="w-16 h-16 object-contain" />} label="Perfil" onClick={() => navigate("/perfil")} /> },
   ];
