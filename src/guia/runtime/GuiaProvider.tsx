@@ -21,6 +21,7 @@ import { guiaChat, guiaObjetivo, resumenPantalla, type GuiaTurn } from "./api";
 import { GuiaCursor } from "./GuiaCursor";
 import { guiaLog } from "./logger";
 import { RUTAS_FICHAS } from "../rutas.generated";
+import { MAPA_NAV } from "../mapa.generated";
 import { aliasTexto, nombreFicha } from "@/lib/aliasColegio";
 
 /** Narración que se muestra: para "navegar" se arma con el nombre REAL de la ficha
@@ -94,6 +95,46 @@ function buscarPorTexto(label: string): HTMLElement | null {
     cands.find((el) => normTxt(textoDe(el)).includes(objetivo)) ||
     null
   );
+}
+
+/** Botón visible cuyo texto es EXACTAMENTE la etiqueta (ignora la burbuja de notificaciones). */
+function botonExacto(label: string): HTMLElement | null {
+  const objetivo = normTxt(label);
+  const limpio = (el: HTMLElement) => normTxt(textoDe(el)).replace(/\s+/g, " ").replace(/^\d+\+?\s*/, "");
+  return (
+    Array.from(document.querySelectorAll<HTMLElement>("button, a")).find(
+      (el) => esVisible(el) && !el.closest("[data-guia-ui]") && limpio(el) === objetivo,
+    ) || null
+  );
+}
+
+/**
+ * Camino más corto en el MAPA DE NAVEGACIÓN (generado en cada build) desde la pantalla
+ * actual hasta la ruta destino. Devuelve el PRIMER salto: qué botón tocar y adónde lleva.
+ */
+function primerSalto(desde: string, hasta: string): { destino: string; boton: string } | null {
+  const norm = (r: string) => r.replace(/\/$/, "") || "/";
+  const origen = norm(desde);
+  const meta = norm(hasta);
+  if (origen === meta || !MAPA_NAV[origen]) return null;
+  const previo = new Map<string, { padre: string; boton: string }>();
+  const vistos = new Set([origen]);
+  const cola = [origen];
+  while (cola.length) {
+    const r = cola.shift() as string;
+    for (const [d, b] of Object.entries(MAPA_NAV[r] || {})) {
+      if (vistos.has(d)) continue;
+      vistos.add(d);
+      previo.set(d, { padre: r, boton: b });
+      if (d === meta) {
+        let x = d;
+        while (previo.get(x)?.padre !== origen) x = previo.get(x)?.padre as string;
+        return { destino: x, boton: previo.get(x)?.boton as string };
+      }
+      cola.push(d);
+    }
+  }
+  return null;
 }
 
 /** Localiza el objetivo de un paso: por ancla (data-guia) o por su texto. */
@@ -473,6 +514,27 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
           ).find((el) => esVisible(el) && !el.closest("[data-guia-ui]"));
           if (link) {
             senalarEl(link, "enlace");
+            return;
+          }
+          // MAPA DE NAVEGACIÓN (todas las pantallas y roles, generado en cada build): camino más
+          // corto hasta el destino; se señala el primer botón. Si ese botón lleva directo al
+          // destino, el click avanza la guía; si es un paso intermedio, se señala SIN armar
+          // avance y, al cambiar de página, el vigilante de ruta re-evalúa este mismo paso.
+          const salto = primerSalto(window.location.pathname, paso.ruta);
+          const botonSalto = salto ? botonExacto(salto.boton) : null;
+          if (salto && botonSalto) {
+            if (salto.destino === paso.ruta.replace(/\/$/, "")) {
+              senalarEl(botonSalto, "mapa", { el: salto.boton });
+              return;
+            }
+            setRespuesta(`Primero toca '${salto.boton}'.`);
+            botonSalto.scrollIntoView({ block: "center", behavior: "smooth" });
+            window.setTimeout(() => {
+              if (!vivo) return;
+              setRect(botonSalto.getBoundingClientRect());
+              senaladoRef.current = botonSalto;
+              guiaLog("senalado", { modo: "mapa_intermedio", el: salto.boton, destino: paso.ruta });
+            }, 150);
             return;
           }
           // El destino puede ser un botón de ESTA pantalla que navega con onClick (no <a href>),
