@@ -478,7 +478,10 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
           // El destino puede ser un botón de ESTA pantalla que navega con onClick (no <a href>),
           // como las tarjetas de Permisos y Excusas: se busca por el texto citado en la narración
           // ("Elige 'Justificación por Inasistencia'"). Sin esto, la guía mandaba al Inicio.
-          const citado = etiquetaDe(paso.narracion || "");
+          // Solo cuando el destino es una SUBPÁGINA de donde está el usuario (así un botón de
+          // contenido, como un libro llamado "Actividades…", no se toma por el destino).
+          const subpaginaDeAqui = paso.ruta.startsWith(window.location.pathname.replace(/\/$/, "") + "/");
+          const citado = subpaginaDeAqui ? etiquetaDe(paso.narracion || "") : null;
           if (citado) {
             // Palabras completas ("asistencia" no debe caer en "Inasistencia"); "contiene" y no
             // "igual" porque la burbuja de notificaciones se pega al texto del botón.
@@ -532,9 +535,9 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
           // "Inicio" o el escudo de arriba) para volver. Al llegar al dashboard,
           // el vigilante de ruta re-evalúa este mismo paso y ahí sí encuentra la
           // ficha. NO armamos avance: del cambio de página se encarga el vigilante.
-          // Solo cuando el destino ES una ficha del inicio: si es una subpágina de donde ya está
-          // el usuario, se le pregunta al cerebro con la pantalla actual.
-          if (nombreFichaRuta && window.location.pathname !== "/dashboard" && paso.ruta !== "/dashboard") {
+          // Excepto cuando el destino es una subpágina de donde ya está el usuario: ahí se le
+          // pregunta al cerebro con la pantalla actual en vez de mandarlo al Inicio.
+          if (!subpaginaDeAqui && window.location.pathname !== "/dashboard" && paso.ruta !== "/dashboard") {
             const inicio =
               Array.from(document.querySelectorAll<HTMLElement>("a, button")).find(
                 (el) => esVisible(el) && !el.closest("[data-guia-ui]") && normTxt(textoDe(el)) === "inicio",
