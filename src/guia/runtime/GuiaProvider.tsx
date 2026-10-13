@@ -480,10 +480,19 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
           // ("Elige 'Justificación por Inasistencia'"). Sin esto, la guía mandaba al Inicio.
           const citado = etiquetaDe(paso.narracion || "");
           if (citado) {
-            // "contiene" y no "igual": la burbuja de notificaciones se pega al texto del botón.
+            // Palabras completas ("asistencia" no debe caer en "Inasistencia"); "contiene" y no
+            // "igual" porque la burbuja de notificaciones se pega al texto del botón.
             const plano = (el: HTMLElement) => normTxt(textoDe(el)).replace(/\s+/g, " ");
+            const buscado = normTxt(citado);
+            const esLetra = (c?: string) => !!c && c.toLowerCase() !== c.toUpperCase();
+            const contienePalabra = (texto: string) => {
+              for (let i = texto.indexOf(buscado); i !== -1; i = texto.indexOf(buscado, i + 1)) {
+                if (!esLetra(texto[i - 1]) && !esLetra(texto[i + buscado.length])) return true;
+              }
+              return false;
+            };
             const boton = Array.from(document.querySelectorAll<HTMLElement>("button, a"))
-              .filter((el) => esVisible(el) && !el.closest("[data-guia-ui]") && plano(el).includes(normTxt(citado)))
+              .filter((el) => esVisible(el) && !el.closest("[data-guia-ui]") && contienePalabra(plano(el)))
               .sort((a, b) => plano(a).length - plano(b).length)[0];
             if (boton) {
               senalarEl(boton, "boton_por_texto", { el: citado });
@@ -500,6 +509,18 @@ export function GuiaProvider({ children }: { children: ReactNode }) {
             const ficha = Array.from(document.querySelectorAll<HTMLElement>("button, a")).find(
               (el) => esVisible(el) && !el.closest("[data-guia-ui]") && normTxt(textoDe(el)) === normTxt(nombreFichaRuta),
             );
+            if (ficha && rutaFicha !== paso.ruta) {
+              // Ficha PADRE de la subpágina destino: se señala SIN armar avance; al entrar, el
+              // vigilante de ruta re-evalúa este mismo paso y señala el botón de la subpágina.
+              ficha.scrollIntoView({ block: "center", behavior: "smooth" });
+              window.setTimeout(() => {
+                if (!vivo) return;
+                setRect(ficha.getBoundingClientRect());
+                senaladoRef.current = ficha;
+                guiaLog("senalado", { modo: "ficha_padre", el: nombreFichaRuta, destino: paso.ruta });
+              }, 150);
+              return;
+            }
             if (ficha) {
               senalarEl(ficha, "ficha_por_nombre", { el: nombreFichaRuta });
               return;
