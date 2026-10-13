@@ -12,6 +12,7 @@ import Comunidad from "@/components/biblioteca/Comunidad";
 import Etiquetas from "@/components/biblioteca/Etiquetas";
 import MisPrestamos from "@/components/biblioteca/MisPrestamos";
 import { puedeGestionar, puedeConsultar } from "@/components/biblioteca/comun";
+import { icono3dNombre } from "@/lib/fichas3d";
 
 /**
  * Ficha Biblioteca (Juan 2026-10-04): portada con cifras, código rápido y secciones.
@@ -79,17 +80,22 @@ const Biblioteca = () => {
             <div className="bg-card rounded-lg shadow-soft p-6">
               <h2 className="text-xl font-bold text-foreground text-center mb-6">Biblioteca</h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4" data-guia="biblioteca.secciones">
-                {secciones.map((s) => (
+                {secciones.map((s) => {
+                  // Piloto íconos 3D (colegio de prueba): imagen 3D y textos centrados.
+                  const img3d = icono3dNombre(`bib-${s.k === "mis" ? "prestamos" : s.k}`);
+                  return (
                   <button key={s.k} data-guia={`biblioteca.tab_${s.k}`} onClick={() => ir(s.k)}
-                    className="relative text-left rounded-xl bg-card border border-border p-5 hover:bg-muted/50 hover:border-primary/40 transition-colors">
+                    className={`relative rounded-xl bg-card border border-border p-5 hover:bg-muted/50 hover:border-primary/40 transition-colors ${img3d ? "text-center flex flex-col items-center" : "text-left"}`}>
                     {!!s.badge && <span className="absolute top-3 right-3 min-w-[22px] h-[22px] px-1.5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center">{s.badge > 99 ? "99+" : s.badge}</span>}
+                    {img3d ? <img src={img3d} alt="" className="w-16 h-16 object-contain" /> : (
                     <span className={`w-12 h-12 rounded-xl ${s.color} text-white flex items-center justify-center`}>
                       <s.Icono className="w-6 h-6" />
-                    </span>
+                    </span>)}
                     <p className="mt-4 font-semibold text-foreground">{s.titulo}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">{s.desc}</p>
                   </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>

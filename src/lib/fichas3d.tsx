@@ -63,12 +63,17 @@ const DISPONIBLES = new Set([
   "documentos", "entrevista", "enviar-comunicado", "estadisticas", "formatos", "horario", "notas",
   "observador", "orientacion-escolar", "panel-de-control", "perfil", "permisos-y-excusas", "porteria",
   "registro-agente", "registros-comportamiento", "retiro-estudiantes", "uso-agente", "inasistencia",
-  "uniforme", "logros", "aprende-normi",
+  "uniforme", "logros", "aprende-normi", "bib-catalogo", "bib-comunidad", "bib-etiquetas", "bib-prestamos",
 ]);
 const VERSION = 4; // subir al reemplazar imágenes (rompe la caché)
 
 const url3d = (nombre?: string) => (nombre && DISPONIBLES.has(nombre) ? `/fichas3d/iconos/${nombre}.webp?v=${VERSION}` : undefined);
 const activo = () => COLEGIOS_FICHAS_3D.has(getSession().colegio_id ?? "");
+
+/** Ícono 3D por nombre (p. ej. "bib-catalogo") si el colegio está en el piloto; si no, undefined. */
+export function icono3dNombre(nombre: string): string | undefined {
+  return activo() ? url3d(nombre) : undefined;
+}
 
 /** Para pantallas con <img src={icono}>: devuelve el 3D si aplica, si no el mismo icono. */
 export function icono3d(src: string): string {
