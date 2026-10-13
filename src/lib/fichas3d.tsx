@@ -112,9 +112,11 @@ export function fichaConImagen3d(render: ReactNode): ReactNode {
   });
   recorrer(btn.props.children);
   const src = isValidElement(icono) ? String((icono as ReactElement<{ src?: string }>).props.src ?? "") : "";
+  const hover = (btn.props.className ?? "").split(/\s+/).filter((c) => c.startsWith("hover:") || c.startsWith("transition") || c.startsWith("duration-")).join(" ");
   if (!color || titulo === undefined || !src) return render; // Normi Examinadora conserva su imagen real
   return cloneElement(btn, {
-    className: `relative w-full h-full flex flex-col rounded-[20px] lg:rounded-3xl shadow-[0_10px_30px_-18px_rgba(22,26,61,.35)] ${FONDO[color] ?? ""}`,
+    // Se conserva el efecto de la ficha original al pasar el mouse (color más oscuro + sombra).
+    className: `relative w-full h-full flex flex-col rounded-[20px] lg:rounded-3xl shadow-[0_10px_30px_-18px_rgba(22,26,61,.35)] ${FONDO[color] ?? ""} ${hover}`,
     children: (
       <>
         {extras}
