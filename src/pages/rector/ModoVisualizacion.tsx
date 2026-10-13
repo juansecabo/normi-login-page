@@ -5,6 +5,7 @@ import HeaderNormi from "@/components/HeaderNormi";
 import { BookOpen, Users } from "lucide-react";
 
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
+import { Ico3d } from "@/lib/fichas3d";
 const ModoVisualizacion = () => {
   const navigate = useNavigate();
   const [gradoSeleccionado, setGradoSeleccionado] = useState("");
@@ -106,7 +107,7 @@ const ModoVisualizacion = () => {
               className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg border-2 border-border bg-background transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/10"
               data-guia="estadisticas.modo_por_asignatura"
             >
-              <BookOpen className="w-16 h-16 text-primary" />
+              <Ico3d nombre="l-libro-abierto" className="w-16 h-16"><BookOpen className="w-16 h-16 text-primary" /></Ico3d>
               <span className="font-semibold text-lg text-foreground">Por Asignatura</span>
               <span className="text-sm text-muted-foreground text-center">
                 Ver todas las asignaturas y seleccionar una
@@ -119,7 +120,7 @@ const ModoVisualizacion = () => {
               className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg border-2 border-border bg-background transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/10"
               data-guia="estadisticas.modo_por_estudiante"
             >
-              <Users className="w-16 h-16 text-primary" />
+              <Ico3d nombre="bib-comunidad" className="w-16 h-16"><Users className="w-16 h-16 text-primary" /></Ico3d>
               <span className="font-semibold text-lg text-foreground">Por Estudiante</span>
               <span className="text-sm text-muted-foreground text-center">
                 Ver la situación académica de cada estudiante

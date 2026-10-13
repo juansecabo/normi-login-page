@@ -18,6 +18,7 @@ import { useEstructuraOrden } from "@/utils/estructuraOrden";
 import { es } from "date-fns/locale";
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 import { useNivelesAdultos } from "@/utils/esquema";
+import { Ico3d } from "@/lib/fichas3d";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -541,7 +542,7 @@ const SolicitudEntrevistaStaff = () => {
                 onClick={() => irA("crear")}
                 className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg border-2 border-border bg-background transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/5"
               >
-                <Plus className="w-12 h-12 text-lime-700" />
+                <Ico3d nombre="l-mas" className="w-12 h-12"><Plus className="w-12 h-12 text-lime-700" /></Ico3d>
                 <span className="font-semibold text-foreground text-center">Crear solicitud</span>
                 <span className="text-xs text-muted-foreground text-center">Cita a un acudiente a una entrevista.</span>
               </button>
@@ -555,7 +556,7 @@ const SolicitudEntrevistaStaff = () => {
                     {respuestasNuevas}
                   </span>
                 )}
-                <ClipboardList className="w-12 h-12 text-orange-600" />
+                <Ico3d nombre="l-portapapeles" className="w-12 h-12"><ClipboardList className="w-12 h-12 text-orange-600" /></Ico3d>
                 <span className="font-semibold text-foreground text-center">Solicitudes creadas</span>
                 <span className="text-xs text-muted-foreground text-center">Revisa estados, reprograma y deja anotaciones.</span>
               </button>

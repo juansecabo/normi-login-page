@@ -3,6 +3,7 @@ import HeaderNormi, { computeBackLinkFromSession } from "@/components/HeaderNorm
 import { Camera, BarChart3, ClipboardList } from "lucide-react";
 
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
+import { Ico3d } from "@/lib/fichas3d";
 /**
  * "Dirección de grupo": menú del director de grupo. Agrupa sus dos herramientas
  * — Fotos de mi grupo (/mi-grupo), Consolidado de mi grupo (/consolidado-grupo) y
@@ -31,7 +32,7 @@ const DireccionGrupo = () => {
               data-guia="varios.direccion_ficha_fotos"
               className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg border-2 border-border bg-background transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/5"
             >
-              <Camera className="w-12 h-12 text-lime-700" />
+              <Ico3d nombre="fotos-grupo" className="w-12 h-12"><Camera className="w-12 h-12 text-lime-700" /></Ico3d>
               <span className="font-semibold text-foreground text-center">Fotos de mi grupo</span>
               <span className="text-xs text-muted-foreground text-center">Agrega o edita la foto de tus estudiantes.</span>
             </button>
@@ -40,7 +41,7 @@ const DireccionGrupo = () => {
               data-guia="varios.direccion_ficha_consolidado"
               className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg border-2 border-border bg-background transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/5"
             >
-              <BarChart3 className="w-12 h-12 text-orange-600" />
+              <Ico3d nombre="l-barras" className="w-12 h-12"><BarChart3 className="w-12 h-12 text-orange-600" /></Ico3d>
               <span className="font-semibold text-foreground text-center">Consolidado de mi grupo</span>
               <span className="text-xs text-muted-foreground text-center">Notas de todos tus estudiantes en todas las asignaturas.</span>
             </button>
@@ -49,7 +50,7 @@ const DireccionGrupo = () => {
               data-guia="varios.direccion_ficha_comportamiento"
               className="flex flex-col items-center justify-center gap-4 p-8 rounded-lg border-2 border-border bg-background transition-all duration-200 hover:shadow-md hover:border-primary hover:bg-primary/5"
             >
-              <ClipboardList className="w-12 h-12 text-sky-700" />
+              <Ico3d nombre="l-portapapeles" className="w-12 h-12"><ClipboardList className="w-12 h-12 text-sky-700" /></Ico3d>
               <span className="font-semibold text-foreground text-center">Comportamiento y disciplina</span>
               <span className="text-xs text-muted-foreground text-center">Lo que sale en el boletín de cada estudiante.</span>
             </button>

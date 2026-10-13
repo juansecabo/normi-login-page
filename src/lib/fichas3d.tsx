@@ -32,6 +32,8 @@ import iconRetiro from "@/assets/icons/retiro-estudiantes.webp";
 import iconUsoAgente from "@/assets/icons/uso-agente.webp";
 import iconInasistencia from "@/assets/icons/inasistencia.webp";
 import iconUniforme from "@/assets/icons/uniforme.webp";
+import iconSugerencias from "@/assets/icons/sugerencias.webp";
+import iconFotosGrupo from "@/assets/icons/fotos-grupo.webp";
 
 /**
  * Íconos 3D en las fichas (piloto colegio de prueba Cailico, 2026-10-12). La ficha queda
@@ -52,7 +54,7 @@ const NOMBRE_ICONO: Record<string, string> = {
   [iconOrientacion]: "orientacion-escolar", [iconPanelControl]: "panel-de-control", [iconPerfil]: "perfil",
   [iconPermisos]: "permisos-y-excusas", [iconPorteria]: "porteria", [iconRegistroAgente]: "registro-agente",
   [iconRegistros]: "registros-comportamiento", [iconRetiro]: "retiro-estudiantes", [iconUsoAgente]: "uso-agente",
-  [iconInasistencia]: "inasistencia", [iconUniforme]: "uniforme",
+  [iconInasistencia]: "inasistencia", [iconUniforme]: "uniforme", [iconSugerencias]: "sugerencias", [iconFotosGrupo]: "fotos-grupo",
 };
 const NOMBRE_EMOJI: Record<string, string> = { "🎯": "logros", "🎮": "aprende-normi" };
 
@@ -64,6 +66,7 @@ const DISPONIBLES = new Set([
   "observador", "orientacion-escolar", "panel-de-control", "perfil", "permisos-y-excusas", "porteria",
   "registro-agente", "registros-comportamiento", "retiro-estudiantes", "uso-agente", "inasistencia",
   "uniforme", "logros", "aprende-normi", "bib-catalogo", "bib-comunidad", "bib-etiquetas", "bib-prestamos",
+  "sugerencias", "fotos-grupo", "l-portapapeles", "l-pregunta", "l-barras", "l-libro-abierto", "l-mas",
 ]);
 const VERSION = 5; // subir al reemplazar imágenes (rompe la caché)
 
@@ -80,10 +83,27 @@ export function icono3d(src: string): string {
   return (activo() && url3d(NOMBRE_ICONO[src])) || src;
 }
 
+/** ¿El colegio de la sesión está en el piloto de íconos 3D? */
+export const fichas3dActivas = activo;
+
+/**
+ * Ícono 3D por nombre en el piloto; en los demás colegios muestra lo de siempre (children).
+ * Uso: <Ico3d nombre="l-barras" className="w-12 h-12"><BarChart3 className="w-12 h-12 ..." /></Ico3d>
+ */
+export function Ico3d({ nombre, className, children }: { nombre: string; className: string; children: ReactNode }) {
+  const u = icono3dNombre(nombre);
+  return u ? <img src={u} alt="" className={`${className} object-contain`} /> : <>{children}</>;
+}
+
 function cambiarIconos(nodos: ReactNode): ReactNode {
   return Children.map(nodos, (n) => {
     if (!isValidElement(n)) return n;
     const el = n as ReactElement<{ src?: string; className?: string; children?: ReactNode }>;
+    if (el.type === Ico3d) {
+      const pr = el.props as unknown as { nombre: string; className: string; children: ReactNode };
+      const u = url3d(pr.nombre);
+      return u ? <img src={u} alt="" className={`${pr.className} object-contain`} /> : pr.children;
+    }
     if (el.type === "img") {
       const u = url3d(NOMBRE_ICONO[el.props.src ?? ""]);
       return u ? cloneElement(el, { src: u }) : el;
