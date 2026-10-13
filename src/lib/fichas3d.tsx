@@ -92,9 +92,44 @@ function cambiarIconos(nodos: ReactNode): ReactNode {
   });
 }
 
-/** Ficha del tablero (su <button>) con el ícono 3D; todo lo demás igual. */
+/**
+ * Ficha del tablero con el ícono 3D pequeño arriba sobre el color de la ficha y el título
+ * abajo en una franja blanca aparte (estilo Mundo Nexus). Mismo onClick, data-guia y burbuja.
+ */
 export function fichaConImagen3d(render: ReactNode): ReactNode {
   if (!isValidElement(render) || render.type !== "button") return render;
-  const btn = render as ReactElement<{ children?: ReactNode }>;
-  return cloneElement(btn, { children: cambiarIconos(btn.props.children) });
+  const btn = render as ReactElement<{ className?: string; children?: ReactNode }>;
+  const color = /bg-([a-z]+)-100/.exec(btn.props.className ?? "")?.[1];
+  let icono: ReactNode = null, titulo: ReactNode = undefined;
+  const extras: ReactNode[] = [];
+  const recorrer = (nodos: ReactNode) => Children.forEach(cambiarIconos(nodos), (n) => {
+    if (!isValidElement(n)) return;
+    const el = n as ReactElement<{ src?: string; className?: string; children?: ReactNode }>;
+    if (el.type === "img" && !icono) { icono = el; return; }
+    if (el.type === "span" && (el.props.className ?? "").includes("font-semibold") && titulo === undefined) { titulo = el.props.children; return; }
+    if (el.type === "div" && el.props.children && !(el.props.className ?? "").includes("absolute")) { recorrer(el.props.children); return; }
+    extras.push(el);
+  });
+  recorrer(btn.props.children);
+  const src = isValidElement(icono) ? String((icono as ReactElement<{ src?: string }>).props.src ?? "") : "";
+  if (!color || titulo === undefined || !src) return render; // Normi Examinadora conserva su imagen real
+  return cloneElement(btn, {
+    className: "relative w-full h-full flex flex-col rounded-[20px] lg:rounded-3xl bg-white border border-[#E3E5F2] shadow-[0_10px_30px_-18px_rgba(22,26,61,.35)]",
+    children: (
+      <>
+        {extras}
+        <div className={`flex-1 flex items-center justify-center p-6 rounded-t-[19px] lg:rounded-t-[23px] ${FONDO[color] ?? ""}`}>{icono}</div>
+        <div className="px-2 py-2.5 lg:px-3 lg:py-3 flex items-center justify-center min-h-[3.25rem]">
+          <span className="font-semibold text-foreground text-center text-sm lg:text-[15px] leading-tight">{titulo}</span>
+        </div>
+      </>
+    ),
+  });
 }
+
+/** Clases completas (Tailwind no detecta clases armadas con variables). */
+const FONDO: Record<string, string> = {
+  green: "bg-green-100", cyan: "bg-cyan-100", blue: "bg-blue-100", teal: "bg-teal-100", emerald: "bg-emerald-100",
+  indigo: "bg-indigo-100", amber: "bg-amber-100", violet: "bg-violet-100", lime: "bg-lime-100", pink: "bg-pink-100",
+  orange: "bg-orange-100", sky: "bg-sky-100", purple: "bg-purple-100", rose: "bg-rose-100", red: "bg-red-100", yellow: "bg-yellow-100",
+};
