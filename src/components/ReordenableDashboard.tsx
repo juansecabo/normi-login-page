@@ -178,14 +178,6 @@ export default function ReordenableDashboard({ dashboardKey, items: itemsProp, g
     } catch { return []; }
   });
   const [jiggling, setJiggling] = useState(false);
-  // Mientras se arrastra, la ficha puede salir de la pantalla pero la página no se ensancha ni se corre de lado.
-  useEffect(() => {
-    if (!jiggling) return;
-    const html = document.documentElement;
-    const antes = html.style.overflowX;
-    html.style.overflowX = "hidden";
-    return () => { html.style.overflowX = antes; };
-  }, [jiggling]);
   const [destinoAgrupar, setDestinoAgrupar] = useState<string | null>(null);
   /** Ficha (o grupo) sobre cuyo tercio CENTRAL está el centro de la ficha arrastrada (lo fija la colisión). */
   const centroSobre = useRef<string | null>(null);
@@ -474,7 +466,7 @@ export default function ReordenableDashboard({ dashboardKey, items: itemsProp, g
 
       <style>{`@keyframes normiJiggle{0%{transform:rotate(-1.4deg)}50%{transform:rotate(1.4deg)}100%{transform:rotate(-1.4deg)}}.normi-jiggle{animation:normiJiggle .22s ease-in-out infinite;transform-origin:center}`}</style>
 
-      <DndContext sensors={sensors} autoScroll={!abierto && { threshold: { x: 0, y: 0.2 } }} collisionDetection={colisionTercios} onDragStart={handleDragStart} onDragMove={handleDragMove} onDragEnd={handleDragEnd} onDragCancel={() => { setJiggling(false); limpiarHold(); holdCandidato.current = null; centroSobre.current = null; setDestinoAgrupar(null); }}>
+      <DndContext sensors={sensors} autoScroll={!abierto} collisionDetection={colisionTercios} onDragStart={handleDragStart} onDragMove={handleDragMove} onDragEnd={handleDragEnd} onDragCancel={() => { setJiggling(false); limpiarHold(); holdCandidato.current = null; centroSobre.current = null; setDestinoAgrupar(null); }}>
         <SortableContext items={idsTop} strategy={rectSortingStrategy}>
           <div className={gridClassName}>
             {entradas.map((en, idx) => (
