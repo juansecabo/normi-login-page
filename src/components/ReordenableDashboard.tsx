@@ -12,9 +12,23 @@ import {
   useSensors,
   type DragEndEvent,
   type DragMoveEvent,
+  type Modifier,
 } from "@dnd-kit/core";
 import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+
+// La ficha arrastrada no sale de la pantalla (si sale, la página se estira y se corre de lado).
+const dentroDeLaPantalla: Modifier = ({ transform, draggingNodeRect, windowRect }) => {
+  if (!draggingNodeRect || !windowRect) return transform;
+  const t = { ...transform };
+  const abajo = windowRect.top + windowRect.height;
+  const derecha = windowRect.left + windowRect.width;
+  if (draggingNodeRect.top + t.y < windowRect.top) t.y = windowRect.top - draggingNodeRect.top;
+  else if (draggingNodeRect.bottom + t.y > abajo) t.y = abajo - draggingNodeRect.bottom;
+  if (draggingNodeRect.left + t.x < windowRect.left) t.x = windowRect.left - draggingNodeRect.left;
+  else if (draggingNodeRect.right + t.x > derecha) t.x = derecha - draggingNodeRect.right;
+  return t;
+};
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -466,7 +480,7 @@ export default function ReordenableDashboard({ dashboardKey, items: itemsProp, g
 
       <style>{`@keyframes normiJiggle{0%{transform:rotate(-1.4deg)}50%{transform:rotate(1.4deg)}100%{transform:rotate(-1.4deg)}}.normi-jiggle{animation:normiJiggle .22s ease-in-out infinite;transform-origin:center}`}</style>
 
-      <DndContext sensors={sensors} autoScroll={!abierto} collisionDetection={colisionTercios} onDragStart={handleDragStart} onDragMove={handleDragMove} onDragEnd={handleDragEnd} onDragCancel={() => { setJiggling(false); limpiarHold(); holdCandidato.current = null; centroSobre.current = null; setDestinoAgrupar(null); }}>
+      <DndContext sensors={sensors} autoScroll={!abierto && { threshold: { x: 0, y: 0.2 } }} modifiers={[dentroDeLaPantalla]} collisionDetection={colisionTercios} onDragStart={handleDragStart} onDragMove={handleDragMove} onDragEnd={handleDragEnd} onDragCancel={() => { setJiggling(false); limpiarHold(); holdCandidato.current = null; centroSobre.current = null; setDestinoAgrupar(null); }}>
         <SortableContext items={idsTop} strategy={rectSortingStrategy}>
           <div className={gridClassName}>
             {entradas.map((en, idx) => (
