@@ -39,7 +39,7 @@ const BreadcrumbDeslizable = ({ clave, children }: { clave?: string; children: R
   const mover = (dir: 1 | -1) => ref.current?.scrollBy({ left: dir * 140, behavior: "smooth" });
 
   return (
-    <div className="relative">
+    <div className="relative min-w-0 max-w-full">
       <div
         ref={ref}
         onScroll={recalcular}

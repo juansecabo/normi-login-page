@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 
 const SeleccionarSalon = () => {
   const navigate = useNavigate();
@@ -81,7 +82,7 @@ const SeleccionarSalon = () => {
       <main className="flex-1 container mx-auto p-8">
         {/* Breadcrumb */}
         <div className="bg-card rounded-lg shadow-soft p-4 max-w-4xl mx-auto mb-6">
-          <div className="flex flex-wrap items-center gap-2 text-sm">
+          <BreadcrumbDeslizable>
             <button
               onClick={() => navigate("/dashboard")}
               className="text-primary hover:underline"
@@ -97,7 +98,7 @@ const SeleccionarSalon = () => {
             </button>
             <span className="text-muted-foreground">→</span>
             <span className="text-foreground font-medium">{gradoSeleccionado}</span>
-          </div>
+          </BreadcrumbDeslizable>
         </div>
 
         {/* Sección de Salones */}

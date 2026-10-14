@@ -4512,7 +4512,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                 <span className="text-foreground font-medium">{asignaturaSeleccionada}</span>
               </BreadcrumbDeslizable>
             ) : (
-            <div className="flex flex-wrap items-center gap-2 text-sm">
+            <BreadcrumbDeslizable>
               <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
               <span className="text-muted-foreground">→</span>
               <button onClick={() => navigate("/seleccionar-grado")} className="text-primary hover:underline">{asignaturaSeleccionada}</button>
@@ -4520,7 +4520,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               <button onClick={() => navigate("/seleccionar-salon")} className="text-primary hover:underline">{gradoSeleccionado}</button>
               <span className="text-muted-foreground">→</span>
               <span className="text-foreground font-medium">{salonSeleccionado}</span>
-            </div>
+            </BreadcrumbDeslizable>
             )}
           </div>
           <div className="bg-card rounded-lg shadow-soft p-6 md:p-8">
@@ -4626,7 +4626,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                 </span>
               </BreadcrumbDeslizable>
             ) : (
-            <div className="flex flex-wrap items-center gap-2 text-sm">
+            <BreadcrumbDeslizable>
               <button
                 onClick={() => navigate("/dashboard")}
                 className="text-primary hover:underline"
@@ -4655,7 +4655,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
               <span className="text-foreground font-medium">
                 {periodoActivo === 0 ? 'Definitiva Anual' : (periodos[periodoActivo - 1]?.nombre || `Periodo ${periodoActivo}`)}
               </span>
-            </div>
+            </BreadcrumbDeslizable>
             )}
             <div className="flex flex-wrap gap-2">
               <Button

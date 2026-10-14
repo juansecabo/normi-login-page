@@ -7,6 +7,7 @@ import { subirArchivo } from "@/lib/storage";
 import { apiRequest } from "@/lib/apiClient";
 import { getSession } from "@/hooks/useSession";
 import HeaderNormi from "@/components/HeaderNormi";
+import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 import {
   Dialog,
   DialogContent,
@@ -461,7 +462,7 @@ const ActividadesCalendario = () => {
         {/* Breadcrumb + Actions */}
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-2 text-sm">
+            <BreadcrumbDeslizable>
               <button
                 onClick={() => navigate("/dashboard")}
                 className="text-primary hover:underline"
@@ -491,7 +492,7 @@ const ActividadesCalendario = () => {
               </button>
               <span className="text-muted-foreground">→</span>
               <span className="text-foreground font-medium">Actividades Asignadas</span>
-            </div>
+            </BreadcrumbDeslizable>
             <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
