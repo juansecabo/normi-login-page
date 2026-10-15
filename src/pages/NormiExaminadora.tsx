@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ import HeaderNormi from "@/components/HeaderNormi";
 import { Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useEstructuraOrden } from "@/utils/estructuraOrden";
 
 interface Asignacion {
   "Asignatura(s)": string[];
@@ -46,6 +47,9 @@ const NormiExaminadora = () => {
   const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
   const [asignaturas, setAsignaturas] = useState<string[]>([]);
   const [grados, setGrados] = useState<string[]>([]);
+  // Grados en el orden configurado en Configurar Institución (no alfabético).
+  const orden = useEstructuraOrden();
+  const gradosOrdenados = useMemo(() => [...grados].sort((a, b) => orden.gradoRank(a) - orden.gradoRank(b)), [grados, orden.gradoRank]);
   const [salones, setSalones] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [idProfesor, setIdProfesor] = useState<string>("");
@@ -340,7 +344,7 @@ const NormiExaminadora = () => {
                     <SelectValue placeholder={asignaturaSeleccionada ? "Selecciona el grado" : "Primero selecciona una asignatura"} />
                   </SelectTrigger>
                   <SelectContent className="bg-background z-50">
-                    {grados.map((grado) => (
+                    {gradosOrdenados.map((grado) => (
                       <SelectItem key={grado} value={grado}>
                         {grado}
                       </SelectItem>
