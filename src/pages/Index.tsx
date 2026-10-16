@@ -200,6 +200,16 @@ const Index = () => {
     }
   };
 
+  // Enlace corto de WhatsApp de otro perfil de la misma persona (EnlaceCorto):
+  // ya sabe cuál perfil corresponde, así que se elige solo y vuelve al enlace.
+  const elegir = (location.state as { elegir?: { colegio_id?: string; rol?: string } } | null)?.elegir;
+  useEffect(() => {
+    if (!elegir || !initialMemberships) return;
+    const m = initialMemberships.find((x) => x.colegio_id === elegir.colegio_id && x.rol === elegir.rol);
+    if (m) handleSelectMembership(m);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Si ya hay sesión activa, redirigir sin pedir contraseña.
   // EXCEPCIÓN: si veninos del botón "Cambiar perfil" con memberships en
   // location.state, mostramos el selector aunque la sesión vieja siga viva
