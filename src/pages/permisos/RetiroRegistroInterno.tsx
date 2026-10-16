@@ -23,6 +23,7 @@ import { useNivelDeGrado } from "@/utils/esquema";
 import { useEstructuraOrden } from "@/utils/estructuraOrden";
 import { cargoSegunGenero, cargoConArticulo } from "@/lib/entrevistadores";
 import { notifyRectorCoord } from "@/lib/notifyStaff";
+import { enlaceCorto } from "@/utils/enlaceCorto";
 
 /**
  * Permiso de salida registrado por el PERSONAL (Juan 2026-09-23): rector,
@@ -218,7 +219,7 @@ const RetiroRegistroInterno = () => {
         const [grado, salon] = k.split("|");
         const lista = ests.map((e) => `${e.nombres} ${e.apellidos} (id ${e.id})`).join(", ");
         // Enlace al primero del salón: la pantalla abre ese día, donde están todos.
-        const idEnlace = (creadas || []).find((c: any) => String(c.estudiante_id) === String(ests[0].id))?.id;
+        const enlace = await enlaceCorto("s", (creadas || []).find((c: any) => String(c.estudiante_id) === String(ests[0].id))?.id);
         const mensaje =
           `Nuevo permiso de salida registrado por ${cargoConArticulo(cargoFirma)} ${nombreFirma}.\n\n` +
           `${ests.length === 1 ? "Estudiante" : "Estudiantes"} de ${grado} ${salon}: ${lista}.\n` +
@@ -226,7 +227,7 @@ const RetiroRegistroInterno = () => {
           `Hora de retiro: ${horaH}:${horaM} ${horaAP}.\n` +
           `Tipo de salida: ${tipoLabel}.${persona}\n` +
           `Motivo: ${motivo}.\n` +
-          (idEnlace ? `Pueden revisarlo aquí:\nhttps://mundonormi.com/s/${idEnlace}` : `Pueden revisarlo en la plataforma en Permisos y Excusas.`);
+          (enlace ? `Pueden revisarlo aquí:\n${enlace}` : `Pueden revisarlo en la plataforma en Permisos y Excusas.`);
         notifyRectorCoord(mensaje, "Sistema Normi (Retiro)", { grado, salon, horario: { fecha_inicio: fechaYmd, desde: hora } }, "retiro", { incluirPorteros: true, programarEn: `${fechaYmd}T${hora}:00-05:00` });
       }
 

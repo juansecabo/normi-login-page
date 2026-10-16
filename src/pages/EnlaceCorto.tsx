@@ -4,9 +4,9 @@ import { getSession, isPadreDeFamilia, clearSession } from "@/hooks/useSession";
 import { apiClient, apiRequest } from "@/lib/apiClient";
 
 /**
- * Enlaces cortos de los avisos de WhatsApp (mundonormi.com/e/274, /x/3124…).
- * La letra dice qué es (entrevista, salida, excusa…) y el número es el id del
- * registro, único en toda la tabla: no se repite entre colegios.
+ * Enlaces cortos de los avisos de WhatsApp (mundonormi.com/e/K7P2Q).
+ * La letra dice qué es (entrevista, salida, excusa…) y el código, al azar, lo
+ * traduce el server al registro (no deja ver cuántos hay ni adivinar otros).
  * Sin sesión: al login y, al entrar, de vuelta a este mismo enlace.
  * Con sesión: el server dice si el perfil abierto sirve para ese registro; si
  * es de otro perfil de la misma persona (otro colegio, o acudiente/personal),
@@ -39,14 +39,14 @@ const EnlaceCorto = ({ tipo }: { tipo: keyof typeof DESTINOS }) => {
       navigate(`/?redirect=${encodeURIComponent(aqui)}`, { replace: true });
       return;
     }
-    const limpio = id.replace(/\D/g, "");
-    const ir = () => navigate(DESTINOS[tipo](limpio, isPadreDeFamilia()), { replace: true });
-    if (!limpio) { ir(); return; }
+    const codigo = id.replace(/[^A-Za-z0-9]/g, "");
+    const ir = (registro = "") => navigate(DESTINOS[tipo](registro, isPadreDeFamilia()), { replace: true });
+    if (!codigo) { ir(); return; }
 
     (async () => {
       try {
-        const r = await apiRequest<{ estado: "ok" | "cambiar" | "ajeno"; colegio_id?: string; rol?: string }>(`/api/enlace/${tipo}/${limpio}`);
-        if (r.estado === "ok") { ir(); return; }
+        const r = await apiRequest<{ estado: "ok" | "cambiar" | "ajeno"; id?: number; colegio_id?: string; rol?: string }>(`/api/enlace/${tipo}/${codigo}`);
+        if (r.estado === "ok") { ir(String(r.id ?? "")); return; }
         if (r.estado === "ajeno") { setAjeno(true); return; }
         // Otro perfil suyo: el login lo elige solo y vuelve a este enlace.
         const sp = await apiClient.auth.switchProfile();

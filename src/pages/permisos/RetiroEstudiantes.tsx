@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useAbrirDesdeEnlace, fechaLocal } from "@/hooks/useAbrirDesdeEnlace";
+import { enlaceCorto } from "@/utils/enlaceCorto";
 
 type Tab = "crear" | "historial";
 
@@ -244,6 +245,7 @@ const RetiroEstudiantes = () => {
       const personaLinea = tipoSalida === "motocicleta_vehiculo"
         ? ""
         : `\nPersona autorizada: ${nombrePersona}${tipoSalida === "familiar" && parentesco ? ` (${parentesco})` : ""}.`;
+      const enlace = await enlaceCorto("s", creada?.id);
       const mensaje =
         `Nueva autorización de retiro registrada.\n\n` +
         `Estudiante: ${acudidoSeleccionado.nombre} ${acudidoSeleccionado.apellidos} — ${acudidoSeleccionado.grado} ${acudidoSeleccionado.salon} (id ${acudidoSeleccionado.id}).\n` +
@@ -252,7 +254,7 @@ const RetiroEstudiantes = () => {
         `Tipo de salida: ${tipoLabel}.${personaLinea}\n` +
         `Motivo: ${motivo}.\n` +
         `Acudiente: ${nombreAcudiente} (C.C. ${idAcudiente}${telefonoAcudiente ? `, tel. ${telefonoAcudiente}` : ""}).\n` +
-        (creada?.id ? `Pueden revisarla aquí:\nhttps://mundonormi.com/s/${creada.id}` : `Pueden revisarla en la plataforma en Permisos y Excusas.`);
+        (enlace ? `Pueden revisarla aquí:\n${enlace}` : `Pueden revisarla en la plataforma en Permisos y Excusas.`);
       // Con horario: solo los profesores con clase ese día desde la hora del retiro.
       notifyRectorCoord(mensaje, "Sistema Normi (Retiro)", {
         grado: acudidoSeleccionado.grado,

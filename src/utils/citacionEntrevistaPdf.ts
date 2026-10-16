@@ -152,7 +152,8 @@ export async function descargarCitacionEntrevista(s: any): Promise<void> {
   font("normal", 7, MUTE);
   pdf.text("SOLICITUD N.º", bx + 5, y + 6.5, { charSpace: 0.3 });
   font("bold", 15);
-  pdf.text(String(s.id ?? "").padStart(5, "0"), bx + 5, y + 13.5);
+  // Consecutivo propio del colegio (el id es de toda la plataforma).
+  pdf.text(String((s as any).consecutivo ?? s.id ?? "").padStart(5, "0"), bx + 5, y + 13.5);
   font("normal", 7.5, INK2);
   pdf.text(fmtFecha(s.fecha_solicitud), bx + 5, y + 18.5);
   const horaSol = s.created_at

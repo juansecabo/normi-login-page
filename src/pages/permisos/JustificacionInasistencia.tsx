@@ -1,3 +1,4 @@
+import { enlaceCorto } from "@/utils/enlaceCorto";
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatTelefono } from "@/utils/telefono";
@@ -193,6 +194,7 @@ const JustificacionInasistencia = () => {
       const fechasTexto = diasAusente === 1
         ? fmtFecha(payload.fecha_inicio)
         : `${fmtFecha(payload.fecha_inicio)} — ${fmtFecha(payload.fecha_fin)} (${diasAusente} días)`;
+      const enlace = await enlaceCorto("x", creada?.id);
       const mensaje =
         `Nueva justificación por inasistencia registrada.\n\n` +
         `Estudiante: ${acudidoSeleccionado.nombre} ${acudidoSeleccionado.apellidos} — ${acudidoSeleccionado.grado} ${acudidoSeleccionado.salon} (id ${acudidoSeleccionado.id}).\n` +
@@ -200,7 +202,7 @@ const JustificacionInasistencia = () => {
         `Motivo: ${motivoTexto}.\n` +
         `Descripción: ${motivoDescripcion}.\n` +
         `Acudiente: ${nombreAcudiente} (C.C. ${idAcudiente}${telefonoAcudiente ? `, tel. ${telefonoAcudiente}` : ""}).\n` +
-        (creada?.id ? `Pueden revisarla aquí:\nhttps://mundonormi.com/x/${creada.id}` : `Pueden revisarla en la plataforma en Permisos y Excusas.`);
+        (enlace ? `Pueden revisarla aquí:\n${enlace}` : `Pueden revisarla en la plataforma en Permisos y Excusas.`);
       notifyRectorCoord(mensaje, "Sistema Normi (Excusas)", {
         grado: acudidoSeleccionado.grado,
         salon: acudidoSeleccionado.salon,

@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { coincideBusqueda } from "@/utils/busqueda";
 import { useAbrirDesdeEnlace, fechaLocal } from "@/hooks/useAbrirDesdeEnlace";
+import { enlaceCorto } from "@/utils/enlaceCorto";
 
 interface Estudiante { id: string; nombres: string; apellidos: string; grado: string; salon: string; }
 interface Interno { id: number; nombres: string; apellidos: string; cargo: string; genero?: string | null; }
@@ -346,7 +347,8 @@ const SolicitudEntrevistaStaff = () => {
       const nuevaHora = `${reH}:${reM} ${reAP}`;
       const fechaTexto = reFecha.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
       const conNombre = entrevistadoresDeSolicitud(reSol, "el/la ");
-      const mensaje = `Se le informa que se ha REPROGRAMADO la entrevista para el acudiente del estudiante ${reSol.estudiante_nombre} ${reSol.estudiante_apellidos} de ${reSol.estudiante_grado} ${reSol.estudiante_salon}.\n\nNueva fecha: ${fechaTexto}\nNueva hora: ${nuevaHora}\nCon: ${conNombre}\n\nConfirme su asistencia aquí:\nhttps://mundonormi.com/e/${reSol.id}`;
+      const enlaceRe = await enlaceCorto("e", reSol.id);
+      const mensaje = `Se le informa que se ha REPROGRAMADO la entrevista para el acudiente del estudiante ${reSol.estudiante_nombre} ${reSol.estudiante_apellidos} de ${reSol.estudiante_grado} ${reSol.estudiante_salon}.\n\nNueva fecha: ${fechaTexto}\nNueva hora: ${nuevaHora}\nCon: ${conNombre}\n\n${enlaceRe ? `Confirme su asistencia aquí:\n${enlaceRe}` : `Por favor ingrese a mundonormi.com y en el inicio haga click en la ficha "Solicitud de Entrevista", busque el día indicado, haga click sobre la citación y confirme su asistencia.`}`;
       await apiRequest('/api/comunicados/enviar', {
         method: 'POST',
         body: JSON.stringify({
@@ -493,9 +495,10 @@ const SolicitudEntrevistaStaff = () => {
       creadas++;
       creadosOk.push(est);
       if ((insRow as any)?.id) idsCreados.push(Number((insRow as any).id));
+      const enlace = await enlaceCorto("e", (insRow as any)?.id);
       // Notificar SOLO a los acudientes de ESTE estudiante → cada padre recibe su
       // propia citación, sin ver a los demás. El remitente lo arma el server.
-      const mensaje = `Se le informa que se ha solicitado una entrevista para el acudiente del estudiante ${est.nombres} ${est.apellidos} de ${est.grado} ${est.salon}.\n\nFecha: ${fechaEntrevistaTexto}\nHora: ${horaEntrevista}\nCon: ${entrevistaConNombre}${bloqueMensaje}\n\n${(insRow as any)?.id ? `Confirme su asistencia aquí:\nhttps://mundonormi.com/e/${(insRow as any).id}` : `Por favor ingrese a mundonormi.com y en el inicio haga click en la ficha "Solicitud de Entrevista", busque el día indicado, haga click sobre la citación y confirme su asistencia.`}`;
+      const mensaje = `Se le informa que se ha solicitado una entrevista para el acudiente del estudiante ${est.nombres} ${est.apellidos} de ${est.grado} ${est.salon}.\n\nFecha: ${fechaEntrevistaTexto}\nHora: ${horaEntrevista}\nCon: ${entrevistaConNombre}${bloqueMensaje}\n\n${enlace ? `Confirme su asistencia aquí:\n${enlace}` : `Por favor ingrese a mundonormi.com y en el inicio haga click en la ficha "Solicitud de Entrevista", busque el día indicado, haga click sobre la citación y confirme su asistencia.`}`;
       apiRequest('/api/comunicados/enviar', {
         method: 'POST',
         body: JSON.stringify({
