@@ -28,6 +28,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useAbrirDesdeEnlace, fechaLocal } from "@/hooks/useAbrirDesdeEnlace";
 
 type Tab = "crear" | "historial";
 
@@ -50,7 +51,8 @@ const RetiroEstudiantes = () => {
   const { toast } = useToast();
   const sigCanvas = useRef<SignatureCanvas>(null);
 
-  const [tab, setTab] = useState<Tab>("crear");
+  // Si llega desde el enlace del aviso de WhatsApp (?abrir=ID), abre directo el historial.
+  const [tab, setTab] = useState<Tab>(() => (new URLSearchParams(window.location.search).get("abrir") ? "historial" : "crear"));
   const [aceptoTerminos, setAceptoTerminos] = useState(false);
 
   // Form state
@@ -88,10 +90,12 @@ const RetiroEstudiantes = () => {
   const [historial, setHistorial] = useState<any[]>([]);
   const [loadingHistorial, setLoadingHistorial] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  useAbrirDesdeEnlace(historial, (a) => setExpandedId(a.id));
 
   useEffect(() => {
     const session = getSession();
-    if (!session.id || !isPadreDeFamilia()) {
+    if (!session.id) { navigate(`/?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`, { replace: true }); return; }
+    if (!isPadreDeFamilia()) {
       navigate("/");
       return;
     }
@@ -226,7 +230,7 @@ const RetiroEstudiantes = () => {
       archivos_url: archivosUrls.length > 0 ? archivosUrls : null,
     };
 
-    const { error } = await supabase.from("Autorizaciones_Retiro").insert(payload);
+    const { data: creada, error } = await supabase.from("Autorizaciones_Retiro").insert(payload).select("id").maybeSingle();
 
     if (error) {
       toast({ title: "Error", description: "No se pudo crear la autorización: " + error.message, variant: "destructive" });
@@ -248,7 +252,7 @@ const RetiroEstudiantes = () => {
         `Tipo de salida: ${tipoLabel}.${personaLinea}\n` +
         `Motivo: ${motivo}.\n` +
         `Acudiente: ${nombreAcudiente} (C.C. ${idAcudiente}${telefonoAcudiente ? `, tel. ${telefonoAcudiente}` : ""}).\n` +
-        `Pueden revisarla en la plataforma en Permisos y Excusas.`;
+        (creada?.id ? `Pueden revisarla aquí:\nhttps://mundonormi.com/s/${creada.id}` : `Pueden revisarla en la plataforma en Permisos y Excusas.`);
       // Con horario: solo los profesores con clase ese día desde la hora del retiro.
       notifyRectorCoord(mensaje, "Sistema Normi (Retiro)", {
         grado: acudidoSeleccionado.grado,
@@ -592,7 +596,7 @@ const RetiroEstudiantes = () => {
                   const fechaCreacion = new Date(auth.created_at).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
                   return (
-                    <div key={auth.id} className="border border-border rounded-lg overflow-hidden">
+                    <div key={auth.id} data-abrir-id={auth.id} className="border border-border rounded-lg overflow-hidden">
                       {/* Header - always visible, clickable */}
                       <button
                         onClick={() => setExpandedId(isExpanded ? null : auth.id)}

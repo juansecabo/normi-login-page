@@ -21,6 +21,7 @@ import { cargoSegunGenero, cargoConArticulo } from "@/lib/entrevistadores";
 import { fetchNombresPorIds } from "@/lib/nombresUsuarios";
 
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
+import { useAbrirDesdeEnlace, fechaLocal } from "@/hooks/useAbrirDesdeEnlace";
 const GRADO_ORDEN: Record<string, number> = {
   "Párvulo": 0, "Prejardín": 1, "Jardín": 2, "Transición": 3,
   "Primero": 4, "Segundo": 5, "Tercero": 6, "Cuarto": 7, "Quinto": 8,
@@ -99,7 +100,7 @@ const RetiroEstudiantesStaff = () => {
 
   useEffect(() => {
     const session = getSession();
-    if (!session.id) { navigate("/"); return; }
+    if (!session.id) { navigate(`/?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`, { replace: true }); return; }
     if (!isProfesor() && !puedeAccederDashboard() && !isAdmin()) { navigate("/"); return; }
 
     const cargar = async () => {
@@ -152,6 +153,14 @@ const RetiroEstudiantesStaff = () => {
   // Cada registro se ubica en los DÍAS QUE CUBRE (no en el día en que se creó); la fecha de creación sigue en la tarjeta.
   const diasDe = (a: (typeof authFiltradas)[number]) => diasCubiertos(a.fecha_autorizacion);
   const diasMarcados = [...new Set(authFiltradas.flatMap(diasDe))];
+
+  // Enlace directo del aviso de WhatsApp: abre ese registro en su día, sin filtros.
+  useAbrirDesdeEnlace(visibles, (a) => {
+    setBusqueda(""); setFiltroGrado(""); setFiltroSalon("");
+    const k = diasDe(a as any)[0];
+    if (k) setDiaCal(fechaLocal(k));
+    setExpandedIds((prev) => new Set(prev).add(a.id));
+  });
   const listaFinal = diaCal ? authFiltradas.filter(a => diasDe(a).includes(keyDeDate(diaCal))) : authFiltradas;
 
   const cantidadSeleccionada = Object.keys(seleccion).length;
@@ -295,7 +304,7 @@ const RetiroEstudiantesStaff = () => {
                           const fechaAut = new Date(auth.fecha_autorizacion + "T12:00:00").toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" });
                           const fechaCreacion = new Date(auth.created_at).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
                           return (
-                      <div key={auth.id} className="border border-border rounded-lg overflow-hidden">
+                      <div key={auth.id} data-abrir-id={auth.id} className="border border-border rounded-lg overflow-hidden">
                         {imprimirMode && (
                           <CardSelector
                             isSelected={auth.id in seleccion}

@@ -121,7 +121,7 @@ const JustificacionUniforme = () => {
       firma_url: firmaUrl,
     };
 
-    const { error } = await supabase.from("Justificaciones_Uniforme").insert(payload);
+    const { data: creada, error } = await supabase.from("Justificaciones_Uniforme").insert(payload).select("id").maybeSingle();
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
@@ -133,7 +133,7 @@ const JustificacionUniforme = () => {
         `Fecha: ${fmtFecha(payload.fecha)}.\n` +
         `Justificación: ${justificacion.trim()}.\n` +
         `Acudiente: ${nombreAcudiente} (C.C. ${idAcudiente}${telefonoAcudiente ? `, tel. ${telefonoAcudiente}` : ""}).\n` +
-        `Pueden revisarla en la plataforma en Permisos y Excusas.`;
+        (creada?.id ? `Pueden revisarla aquí:\nhttps://mundonormi.com/u/${creada.id}` : `Pueden revisarla en la plataforma en Permisos y Excusas.`);
       notifyRectorCoord(mensaje, "Sistema Normi (Uniforme)", {
         grado: acudidoSeleccionado.grado,
         salon: acudidoSeleccionado.salon,

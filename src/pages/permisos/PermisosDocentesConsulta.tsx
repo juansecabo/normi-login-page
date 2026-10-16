@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { FileText, Download, Loader2 } from "lucide-react";
 
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
+import { useAbrirDesdeEnlace } from "@/hooks/useAbrirDesdeEnlace";
 interface Cargo { hora?: string; grado?: string; asignatura?: string; docente?: string; }
 interface Permiso {
   id: number;
@@ -28,9 +29,13 @@ const PermisosDocentesConsulta = () => {
   const s = getSession();
   const [permisos, setPermisos] = useState<Permiso[]>([]);
   const [cargando, setCargando] = useState(true);
+  // Enlace directo del aviso de WhatsApp: resalta ese permiso y lleva la pantalla hasta él.
+  const [destacado, setDestacado] = useState<number | null>(null);
+  useAbrirDesdeEnlace(permisos, (p) => setDestacado(Number(p.id)));
 
   useEffect(() => {
-    if (!s.id || (!puedeAccederDashboard() && !isAdmin() && !isProfesor())) { navigate("/"); return; }
+    if (!s.id) { navigate(`/?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`, { replace: true }); return; }
+    if (!puedeAccederDashboard() && !isAdmin() && !isProfesor()) { navigate("/"); return; }
     (async () => {
       try {
         const r = await apiRequest<{ permisos: Permiso[] }>("/api/permisos/docente");
@@ -116,7 +121,7 @@ const PermisosDocentesConsulta = () => {
         ) : (
           <div className="mt-6 space-y-3" data-guia="permisosconsulta.lista">
             {permisos.map((p) => (
-              <div key={p.id} className="rounded-lg border border-border p-4 flex items-start justify-between gap-4">
+              <div key={p.id} data-abrir-id={p.id} className={`rounded-lg border p-4 flex items-start justify-between gap-4 ${destacado === Number(p.id) ? "border-primary ring-2 ring-primary/30" : "border-border"}`}>
                 <div className="min-w-0">
                   <div className="font-semibold text-foreground">{p.solicitante_nombre}</div>
                   <div className="text-sm text-muted-foreground">

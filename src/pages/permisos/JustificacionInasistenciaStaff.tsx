@@ -23,6 +23,7 @@ import { NIVEL_DE_GRADO } from "@/utils/grados";
 import CalendarioFiltroDia, { keyDeDate } from "@/components/CalendarioFiltroDia";
 
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
+import { useAbrirDesdeEnlace, fechaLocal } from "@/hooks/useAbrirDesdeEnlace";
 const GRADO_ORDEN: Record<string, number> = {
   "Párvulo": 0, "Prejardín": 1, "Jardín": 2, "Transición": 3,
   "Primero": 4, "Segundo": 5, "Tercero": 6, "Cuarto": 7, "Quinto": 8,
@@ -78,7 +79,8 @@ const JustificacionInasistenciaStaff = () => {
 
   useEffect(() => {
     const session = getSession();
-    if (!session.id || (!isProfesor() && !puedeAccederDashboard() && !isAdmin())) { navigate("/"); return; }
+    if (!session.id) { navigate(`/?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`, { replace: true }); return; }
+    if (!isProfesor() && !puedeAccederDashboard() && !isAdmin()) { navigate("/"); return; }
     supabase.from("Justificaciones_Inasistencia").select("*").order("created_at", { ascending: false })
       .then(({ data }) => {
         const lista = data || [];
@@ -120,6 +122,14 @@ const JustificacionInasistenciaStaff = () => {
   // Cada registro se ubica en los DÍAS QUE CUBRE (no en el día en que se creó); la fecha de creación sigue en la tarjeta.
   const diasDe = (j: (typeof justFiltradas)[number]) => diasCubiertos(j.fecha_inicio, j.fecha_fin);
   const diasMarcados = [...new Set(justFiltradas.flatMap(diasDe))];
+
+  // Enlace directo del aviso de WhatsApp: abre ese registro en su día, sin filtros.
+  useAbrirDesdeEnlace(visibles, (j) => {
+    setBusqueda(""); setFiltroGrado(""); setFiltroSalon("");
+    const k = diasDe(j as any)[0];
+    if (k) setDiaCal(fechaLocal(k));
+    setExpandedIds((prev) => new Set(prev).add(j.id));
+  });
   const listaFinal = diaCal ? justFiltradas.filter(j => diasDe(j).includes(keyDeDate(diaCal))) : justFiltradas;
 
   const cantidadSeleccionada = Object.keys(seleccion).length;
@@ -262,7 +272,7 @@ const JustificacionInasistenciaStaff = () => {
                           const isExp = expandedIds.has(j.id);
                           const fechaCreacion = new Date(j.created_at).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
                           return (
-                      <div key={j.id} className="bg-primary/10 border border-primary/20 rounded-lg p-1.5">
+                      <div key={j.id} data-abrir-id={j.id} className="bg-primary/10 border border-primary/20 rounded-lg p-1.5">
                         {imprimirMode && (
                           <CardSelector
                             isSelected={j.id in seleccion}

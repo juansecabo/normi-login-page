@@ -213,7 +213,8 @@ const ProgramarActividad = () => {
   const [filtroAsig, setFiltroAsig] = useState("todas");
   const [filtroGrado, setFiltroGrado] = useState("todos");
   const [filtroSalon, setFiltroSalon] = useState("todos");
-  const [soloConEntrega, setSoloConEntrega] = useState(false);
+  // Enlace del resumen diario de entregas (mundonormi.com/t): abre la lista solo con actividades con entrega.
+  const [soloConEntrega, setSoloConEntrega] = useState(() => new URLSearchParams(window.location.search).get("entregas") === "1");
   const [busquedaAct, setBusquedaAct] = useState("");
 
   // Edit modal state
@@ -239,7 +240,11 @@ const ProgramarActividad = () => {
       const session = getSession();
 
       // Estudiantes/acudientes no entran. Profesores y demás internos sí.
-      if (!session.id || isEstudiante() || isPadreDeFamilia()) {
+      if (!session.id) {
+        navigate(`/?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`, { replace: true });
+        return;
+      }
+      if (isEstudiante() || isPadreDeFamilia()) {
         navigate("/");
         return;
       }

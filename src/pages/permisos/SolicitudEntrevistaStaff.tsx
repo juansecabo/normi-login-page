@@ -24,6 +24,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { coincideBusqueda } from "@/utils/busqueda";
+import { useAbrirDesdeEnlace, fechaLocal } from "@/hooks/useAbrirDesdeEnlace";
 
 interface Estudiante { id: string; nombres: string; apellidos: string; grado: string; salon: string; }
 interface Interno { id: number; nombres: string; apellidos: string; cargo: string; genero?: string | null; }
@@ -96,6 +97,14 @@ const SolicitudEntrevistaStaff = () => {
       .sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric: true })),
     [historial, fGrado],
   );
+  // Enlace directo del aviso de WhatsApp (mundonormi.com/e/ID): abre esa solicitud en su día.
+  useAbrirDesdeEnlace(historial, (sol) => {
+    const d = fechaLocal(sol.fecha_entrevista);
+    setFNombre(""); setFGrado(""); setFSalon(""); setFTipo("todas");
+    setMesStaff(d);
+    setDiaStaff(d);
+    setExpandedId(sol.id);
+  });
   const historialFiltrado = useMemo(() => {
     const q = fNombre.trim().toLowerCase();
     return historial.filter(s => {
@@ -188,7 +197,8 @@ const SolicitudEntrevistaStaff = () => {
   }, []);
 
   useEffect(() => {
-    if (!session.id || (!isProfesor() && !puedeAccederDashboard() && !isAdmin())) { navigate("/"); return; }
+    if (!session.id) { navigate(`/?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`, { replace: true }); return; }
+    if (!isProfesor() && !puedeAccederDashboard() && !isAdmin()) { navigate("/"); return; }
     // Fetch internos for the "entrevista con" dropdown
     (async () => {
       // Fase 10.E.19: nombres/apellidos viven en Usuarios.
@@ -336,7 +346,7 @@ const SolicitudEntrevistaStaff = () => {
       const nuevaHora = `${reH}:${reM} ${reAP}`;
       const fechaTexto = reFecha.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
       const conNombre = entrevistadoresDeSolicitud(reSol, "el/la ");
-      const mensaje = `Se le informa que se ha REPROGRAMADO la entrevista para el acudiente del estudiante ${reSol.estudiante_nombre} ${reSol.estudiante_apellidos} de ${reSol.estudiante_grado} ${reSol.estudiante_salon}.\n\nNueva fecha: ${fechaTexto}\nNueva hora: ${nuevaHora}\nCon: ${conNombre}\n\nPor favor ingrese a mundonormi.com y en el inicio haga click en la ficha "Solicitud de Entrevista", busque el día indicado, haga click sobre la citación y confirme su asistencia.`;
+      const mensaje = `Se le informa que se ha REPROGRAMADO la entrevista para el acudiente del estudiante ${reSol.estudiante_nombre} ${reSol.estudiante_apellidos} de ${reSol.estudiante_grado} ${reSol.estudiante_salon}.\n\nNueva fecha: ${fechaTexto}\nNueva hora: ${nuevaHora}\nCon: ${conNombre}\n\nConfirme su asistencia aquí:\nhttps://mundonormi.com/e/${reSol.id}`;
       await apiRequest('/api/comunicados/enviar', {
         method: 'POST',
         body: JSON.stringify({
@@ -485,7 +495,7 @@ const SolicitudEntrevistaStaff = () => {
       if ((insRow as any)?.id) idsCreados.push(Number((insRow as any).id));
       // Notificar SOLO a los acudientes de ESTE estudiante → cada padre recibe su
       // propia citación, sin ver a los demás. El remitente lo arma el server.
-      const mensaje = `Se le informa que se ha solicitado una entrevista para el acudiente del estudiante ${est.nombres} ${est.apellidos} de ${est.grado} ${est.salon}.\n\nFecha: ${fechaEntrevistaTexto}\nHora: ${horaEntrevista}\nCon: ${entrevistaConNombre}${bloqueMensaje}\n\nPor favor ingrese a mundonormi.com y en el inicio haga click en la ficha "Solicitud de Entrevista", busque el día indicado, haga click sobre la citación y confirme su asistencia.`;
+      const mensaje = `Se le informa que se ha solicitado una entrevista para el acudiente del estudiante ${est.nombres} ${est.apellidos} de ${est.grado} ${est.salon}.\n\nFecha: ${fechaEntrevistaTexto}\nHora: ${horaEntrevista}\nCon: ${entrevistaConNombre}${bloqueMensaje}\n\n${(insRow as any)?.id ? `Confirme su asistencia aquí:\nhttps://mundonormi.com/e/${(insRow as any).id}` : `Por favor ingrese a mundonormi.com y en el inicio haga click en la ficha "Solicitud de Entrevista", busque el día indicado, haga click sobre la citación y confirme su asistencia.`}`;
       apiRequest('/api/comunicados/enviar', {
         method: 'POST',
         body: JSON.stringify({
@@ -861,7 +871,7 @@ const SolicitudEntrevistaStaff = () => {
                     ? { borderLeft: "4px solid transparent", borderImage: "linear-gradient(135deg, #f59e0b 50%, #4f46e5 50%) 1" }
                     : { borderLeftColor: acento };
                   return (
-                    <div key={s.id} className="border border-border rounded-lg overflow-hidden border-l-4" style={barra}>
+                    <div key={s.id} data-abrir-id={s.id} className="border border-border rounded-lg overflow-hidden border-l-4" style={barra}>
                       <div role="button" tabIndex={0} aria-expanded={isExp}
                         onClick={() => setExpandedId(isExp ? null : s.id)}
                         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpandedId(isExp ? null : s.id); } }}

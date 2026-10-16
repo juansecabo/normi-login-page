@@ -16,6 +16,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useAbrirDesdeEnlace, fechaLocal } from "@/hooks/useAbrirDesdeEnlace";
 
 const GRADO_ORDEN: Record<string, number> = {
   "Párvulo":0,"Prejardín":1,"Jardín":2,"Transición":3,"Primero":4,"Segundo":5,"Tercero":6,
@@ -36,7 +37,8 @@ const SolicitudEntrevistaAcudiente = () => {
 
   useEffect(() => {
     const session = getSession();
-    if (!session.id || !isPadreDeFamilia()) { navigate("/"); return; }
+    if (!session.id) { navigate(`/?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`, { replace: true }); return; }
+    if (!isPadreDeFamilia()) { navigate("/"); return; }
     setAcudidos(session.acudidos || []);
 
     const hijosNombres = (session.acudidos || []).map(h => h.nombre);
@@ -54,6 +56,14 @@ const SolicitudEntrevistaAcudiente = () => {
         setLoading(false);
       });
   }, [navigate]);
+
+  // Enlace directo del aviso de WhatsApp (mundonormi.com/e/ID): abre esa citación.
+  useAbrirDesdeEnlace(solicitudes, (sol) => {
+    const d = fechaLocal(sol.fecha_entrevista);
+    setMesActual(d);
+    setDiaSeleccionado(d);
+    setExpandedId(sol.id);
+  });
 
   // Group by date
   const porFecha: Record<string, any[]> = {};
@@ -168,7 +178,7 @@ const SolicitudEntrevistaAcudiente = () => {
                       {solDelDia.map(s => {
                         const isExp = expandedId === s.id;
                         return (
-                          <div key={s.id} className="border border-border rounded-lg overflow-hidden">
+                          <div key={s.id} data-abrir-id={s.id} className="border border-border rounded-lg overflow-hidden">
                             <button data-guia="entrevista.item" onClick={() => setExpandedId(isExp ? null : s.id)} className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors cursor-pointer">
                               <div>
                                 <p className="font-semibold text-foreground text-sm">{s.estudiante_nombre} {s.estudiante_apellidos}</p>

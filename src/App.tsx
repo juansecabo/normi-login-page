@@ -96,6 +96,7 @@ import FaltaUniformeRegistro from "./pages/permisos/FaltaUniformeRegistro";
 import InasistenciaDiaRegistro from "./pages/permisos/InasistenciaDiaRegistro";
 import SolicitudEntrevistaStaff from "./pages/permisos/SolicitudEntrevistaStaff";
 import SolicitudEntrevistaAcudiente from "./pages/permisos/SolicitudEntrevistaAcudiente";
+import EnlaceCorto from "./pages/EnlaceCorto";
 import Consultas from "./pages/Consultas";
 import ConsultaDetalle from "./pages/ConsultaDetalle";
 import ConsultaPublica from "./pages/ConsultaPublica";
@@ -354,6 +355,14 @@ const Raiz = () => (
           <Route path="/padre/comunicados" element={<Navigate to="/acudiente/comunicados" replace />} />
           <Route path="/padre/documentos" element={<Navigate to="/acudiente/documentos" replace />} />
 
+          {/* Enlaces cortos de los avisos de WhatsApp: llevan al elemento según quién los abre. */}
+          <Route path="/e/:id" element={<EnlaceCorto tipo="e" />} />
+          <Route path="/s/:id" element={<EnlaceCorto tipo="s" />} />
+          <Route path="/x/:id" element={<EnlaceCorto tipo="x" />} />
+          <Route path="/u/:id" element={<EnlaceCorto tipo="u" />} />
+          <Route path="/p/:id" element={<EnlaceCorto tipo="p" />} />
+          <Route path="/b" element={<EnlaceCorto tipo="b" />} />
+          <Route path="/t" element={<EnlaceCorto tipo="t" />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
   </GuiaProvider>
