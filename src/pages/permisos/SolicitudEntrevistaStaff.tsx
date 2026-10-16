@@ -147,21 +147,30 @@ const SolicitudEntrevistaStaff = () => {
     const t = new Date(`${s.fecha_entrevista}T${String(hh).padStart(2, "0")}:${m[2]}:00-05:00`).getTime();
     return !isNaN(t) && t < Date.now();
   };
+  // Orden de las solicitudes del día: por hora de la entrevista o alfabético (interruptor).
+  const [ordenDia, setOrdenDia] = useState<"hora" | "alfabetico">(() => {
+    try { return localStorage.getItem("entrevistas_orden_dia") === "alfabetico" ? "alfabetico" : "hora"; } catch { return "hora"; }
+  });
+  const cambiarOrdenDia = (v: "hora" | "alfabetico") => {
+    setOrdenDia(v);
+    try { localStorage.setItem("entrevistas_orden_dia", v); } catch { /* sin almacenamiento */ }
+  };
   const solDelDia = useMemo(() => {
     if (!diaStaff) return [];
     const k = fechaKey(diaStaff);
+    const nombreDe = (s: any) => `${s.estudiante_apellidos || ""} ${s.estudiante_nombre || ""}`;
     return historialFiltrado
       .filter(s => s.fecha_entrevista === k)
       .sort((a, b) => {
-        // 1º hora de la entrevista, 2º grado, 3º nombre del estudiante.
+        // Alfabético: por apellidos y nombres. Por hora: 1º hora, 2º grado, 3º nombre.
+        if (ordenDia === "alfabetico") return nombreDe(a).localeCompare(nombreDe(b), "es");
         const dh = horaEnMin(a.hora_entrevista) - horaEnMin(b.hora_entrevista);
         if (dh !== 0) return dh;
         const dg = orden.gradoRank(a.estudiante_grado) - orden.gradoRank(b.estudiante_grado);
         if (dg !== 0) return dg;
-        return `${a.estudiante_apellidos || ""} ${a.estudiante_nombre || ""}`
-          .localeCompare(`${b.estudiante_apellidos || ""} ${b.estudiante_nombre || ""}`, "es");
+        return nombreDe(a).localeCompare(nombreDe(b), "es");
       });
-  }, [historialFiltrado, diaStaff]);
+  }, [historialFiltrado, diaStaff, ordenDia]);
 
   const backLink = isAdmin() ? "/dashboard" : puedeAccederDashboard() ? "/dashboard" : "/dashboard";
   const session = getSession();
@@ -763,11 +772,16 @@ const SolicitudEntrevistaStaff = () => {
             )}
             {!loadingHistorial && historial.length > 0 && (
               <div className="grid grid-cols-2 gap-3 mb-4 sm:flex sm:flex-wrap">
-                <input
-                  value={fNombre} onChange={(e) => setFNombre(e.target.value)}
-                  placeholder="Buscar por nombre del estudiante…"
-                  className="col-span-2 order-last sm:order-none sm:flex-1 min-w-0 sm:min-w-[200px] px-3 py-2 border border-input rounded-md text-sm bg-background"
-                />
+                <div className="relative col-span-2 order-last sm:order-none sm:flex-1 min-w-0 sm:min-w-[200px]">
+                  <input
+                    value={fNombre} onChange={(e) => setFNombre(e.target.value)}
+                    placeholder="Buscar por nombre del estudiante…"
+                    className="w-full pl-3 pr-9 py-2 border border-input rounded-md text-sm bg-background"
+                  />
+                  {fNombre && (
+                    <button type="button" onClick={() => setFNombre("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer" title="Borrar búsqueda" aria-label="Borrar búsqueda"><X className="w-4 h-4" /></button>
+                  )}
+                </div>
                 <select value={fGrado} onChange={(e) => { setFGrado(e.target.value); setFSalon(""); }} className="w-full sm:w-auto min-w-0 pl-2 pr-1 sm:px-3 py-2 border border-input rounded-md text-[13px] sm:text-sm bg-background cursor-pointer">
                   <option value="">Todos los grados</option>
                   {gradosHistorial.map(g => <option key={g} value={g}>{g}</option>)}
@@ -820,9 +834,21 @@ const SolicitudEntrevistaStaff = () => {
                   </div>
                 ) : (
                 <div className="space-y-3" data-guia="entrevistas.ficha_solicitud">
-                <div className="flex items-center justify-between mb-1">
-                  <h4 className="text-base font-semibold text-foreground capitalize">{diaStaff.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</h4>
-                  <button onClick={() => { setDiaStaff(undefined); setExpandedId(null); }} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
+                <div className="flex items-center justify-between gap-3 mb-1">
+                  <h4 className="text-base font-semibold text-foreground first-letter:uppercase">{diaStaff.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</h4>
+                  <div className="flex items-center gap-3">
+                    {solDelDia.length > 1 && (
+                      <div role="radiogroup" aria-label="Ordenar" className="inline-flex rounded-full bg-muted p-0.5 text-xs font-medium">
+                        {([["hora", "Por hora"], ["alfabetico", "A–Z"]] as const).map(([v, t]) => (
+                          <button key={v} type="button" role="radio" aria-checked={ordenDia === v} onClick={() => cambiarOrdenDia(v)}
+                            className={`px-3 py-1 rounded-full transition-colors cursor-pointer ${ordenDia === v ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <button onClick={() => { setDiaStaff(undefined); setExpandedId(null); }} className="text-muted-foreground hover:text-foreground" aria-label="Cerrar día"><X className="h-5 w-5" /></button>
+                  </div>
                 </div>
                 {solDelDia.map(s => {
                   const isExp = expandedId === s.id;
