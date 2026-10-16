@@ -86,7 +86,7 @@ export async function descargarCitacionEntrevista(s: any): Promise<void> {
     cargarPoppins(pdf),
   ]);
   const F = poppins ? "Poppins" : "helvetica";
-  pdf.setLineHeightFactor(1.45);
+  pdf.setLineHeightFactor(1.4);
   const SEMI = poppins ? "semibold" : "bold";
   const nombreColegio = String(colegio?.nombre || "").trim();
   const [escudo, firma] = await Promise.all([
@@ -99,7 +99,7 @@ export async function descargarCitacionEntrevista(s: any): Promise<void> {
     pdf.setFontSize(size);
     pdf.setTextColor(...color);
   };
-  const lh = (size: number, f = 1.45) => (size * f * 25.4) / 72; // alto de línea en mm
+  const lh = (size: number, f = 1.4) => (size * f * 25.4) / 72; // alto de línea en mm
 
   let y = M;
   const PIE = 18; // reserva para el pie de página
@@ -134,11 +134,11 @@ export async function descargarCitacionEntrevista(s: any): Promise<void> {
   pdf.text(String(s.id ?? "").padStart(5, "0"), bx + 5, y + 13.5);
   font("normal", 7.5, INK2);
   pdf.text(fmtFecha(s.fecha_solicitud), bx + 5, y + 18.5);
-  y += 28;
+  y += 26;
   pdf.setDrawColor(...INK);
   pdf.setLineWidth(0.6);
   pdf.line(M, y, W - M, y);
-  y += 11;
+  y += 10;
 
   // ── Título ───────────────────────────────────────────────────────────────
   font(SEMI, 21);
@@ -201,9 +201,19 @@ export async function descargarCitacionEntrevista(s: any): Promise<void> {
   y += 3;
 
   // ── Secciones de texto ───────────────────────────────────────────────────
-  const seccion = (titulo: string, texto: string, recuadro = false) => {
+  // `reserva`: alto que debe quedar en la MISMA hoja que el final de la sección
+  // (la firma va pegada a la citación, nunca sola en una hoja).
+  const seccion = (titulo: string, texto: string, recuadro = false, reserva = 0) => {
     const limpio = texto.replace(/\*([^*\n]+)\*/g, "$1").replace(/_([^_\n]+)_/g, "$1").trim();
     if (!limpio) return;
+    font("normal", 9.5, INK2);
+    const pad = recuadro ? 5 : 0;
+    const lineas: string[] = pdf.splitTextToSize(limpio, CW - pad * 2);
+    const paso = lh(9.5);
+    const limite = H - PIE;
+    const altoTotal = 9 + lineas.length * paso + pad * 2 + 6 + reserva;
+    // Si no caben ni el título y 4 líneas, la sección empieza en la hoja siguiente (si cabe entera allí).
+    if (y + 9 + 4 * paso + pad * 2 > limite && M + altoTotal <= limite) { pdf.addPage(); y = M; }
     font(SEMI, 11);
     asegurar(16);
     pdf.text(titulo, M, y);
@@ -212,13 +222,12 @@ export async function descargarCitacionEntrevista(s: any): Promise<void> {
     pdf.setLineWidth(0.3);
     pdf.line(M, y, W - M, y);
     y += 6;
-    font("normal", 9.5, INK2);
-    const pad = recuadro ? 5 : 0;
-    const lineas: string[] = pdf.splitTextToSize(limpio, CW - pad * 2);
-    const paso = lh(9.5);
     let i = 0;
     while (i < lineas.length) {
-      const caben = Math.max(1, Math.floor((H - PIE - y - pad * 2) / paso));
+      let caben = Math.max(1, Math.floor((limite - y - pad * 2) / paso));
+      const resto = lineas.length - i;
+      // Último tramo: si no deja espacio para la reserva, se pasan 3 líneas a la hoja siguiente.
+      if (caben >= resto && reserva && y + resto * paso + pad * 2 + 6 + reserva > limite) caben = Math.max(1, resto - 3);
       const trozo = lineas.slice(i, i + caben);
       const alto = trozo.length * paso + pad * 2;
       if (recuadro) {
@@ -236,30 +245,35 @@ export async function descargarCitacionEntrevista(s: any): Promise<void> {
       }
     }
   };
-  seccion("Citación enviada al acudiente por WhatsApp", textoCitacion(s, entrevistadoresDeSolicitud(s, "el/la ")), true);
-  seccion("Anotaciones de la entrevista", String(s.anotaciones || ""));
 
-  // ── Firma del solicitante ────────────────────────────────────────────────
-  asegurar(48);
-  y += 6;
-  const fw = 70;
-  if (firma) {
-    const fh = Math.min(26, (firma.h / firma.w) * fw);
-    pdf.addImage(firma.dataUrl, "PNG", M, y + 26 - fh, fw, fh);
-  } else if (s.firma_url) {
-    font("normal", 8.5, MUTE);
-    pdf.text("(no se pudo cargar la imagen de la firma)", M, y + 20);
-  }
-  y += 28;
-  pdf.setDrawColor(...INK);
-  pdf.setLineWidth(0.4);
-  pdf.line(M, y, M + fw + 10, y);
-  y += 5;
-  font(SEMI, 9.5);
-  pdf.text(s.creado_por_nombre || con, M, y);
-  y += 4.5;
-  font("normal", 8, MUTE);
-  pdf.text("Firma de quien solicita la entrevista", M, y);
+  // ── Firma del solicitante (justo después de la citación que firma) ───────
+  const FIRMA_H = 36;
+  const dibujarFirma = () => {
+    asegurar(FIRMA_H);
+    const fw = 62;
+    if (firma) {
+      const fh = Math.min(19, (firma.h / firma.w) * fw);
+      pdf.addImage(firma.dataUrl, "PNG", M, y + 19 - fh, fw, fh);
+    } else if (s.firma_url) {
+      font("normal", 8.5, MUTE);
+      pdf.text("(no se pudo cargar la imagen de la firma)", M, y + 15);
+    }
+    y += 21;
+    pdf.setDrawColor(...INK);
+    pdf.setLineWidth(0.4);
+    pdf.line(M, y, M + fw + 10, y);
+    y += 5;
+    font(SEMI, 9.5);
+    pdf.text(s.creado_por_nombre || con, M, y);
+    y += 4.5;
+    font("normal", 8, MUTE);
+    pdf.text("Firma de quien solicita la entrevista", M, y);
+    y += 10;
+  };
+
+  seccion("Citación enviada al acudiente por WhatsApp", textoCitacion(s, entrevistadoresDeSolicitud(s, "el/la ")), true, FIRMA_H);
+  dibujarFirma();
+  seccion("Anotaciones de la entrevista", String(s.anotaciones || ""));
 
   // ── Pie de página en todas las hojas ─────────────────────────────────────
   const total = pdf.getNumberOfPages();

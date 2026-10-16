@@ -862,7 +862,10 @@ const SolicitudEntrevistaStaff = () => {
                     : { borderLeftColor: acento };
                   return (
                     <div key={s.id} className="border border-border rounded-lg overflow-hidden border-l-4" style={barra}>
-                      <button onClick={() => setExpandedId(isExp ? null : s.id)} className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors cursor-pointer">
+                      <div role="button" tabIndex={0} aria-expanded={isExp}
+                        onClick={() => setExpandedId(isExp ? null : s.id)}
+                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpandedId(isExp ? null : s.id); } }}
+                        className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors cursor-pointer">
                         <div>
                           <p className="font-semibold text-foreground text-base">{s.estudiante_apellidos} {s.estudiante_nombre}</p>
                           <p className="text-sm text-muted-foreground">{s.estudiante_grado} {s.estudiante_salon} — Entrevista: {fmtFecha(s.fecha_entrevista)} a las {s.hora_entrevista}</p>
@@ -881,9 +884,14 @@ const SolicitudEntrevistaStaff = () => {
                               <CheckCircle2 className="w-5 h-5" /> Ya pasó
                             </span>
                           )}
+                          <button type="button" onClick={(e) => { e.stopPropagation(); descargarCitacionEntrevista(s); }}
+                            title="Descargar la citación en PDF" aria-label="Descargar la citación en PDF"
+                            className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-border text-muted-foreground hover:text-primary hover:border-primary transition-colors cursor-pointer">
+                            <Download className="w-4 h-4" />
+                          </button>
                           <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${isExp ? "rotate-180" : ""}`} />
                         </div>
-                      </button>
+                      </div>
                       {isExp && (
                         <div className="border-t border-border p-4 bg-muted/10 text-sm text-foreground leading-relaxed space-y-2">
                           <p className="font-bold text-center">SOLICITUD DE ENTREVISTA CON ACUDIENTES</p>
@@ -982,15 +990,6 @@ const SolicitudEntrevistaStaff = () => {
                             <p className="text-xs text-muted-foreground mt-2">Al notificar, el acudiente recibe estas anotaciones por WhatsApp.</p>
                           </div>
 
-                          {/* Descargar la citación (con firma y anotaciones) en PDF */}
-                          <div className="border-t border-border pt-3 mt-1">
-                            <button
-                              onClick={() => descargarCitacionEntrevista(s)}
-                              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-border font-medium text-sm hover:border-primary cursor-pointer"
-                            >
-                              <Download className="w-4 h-4" /> Descargar citación
-                            </button>
-                          </div>
                         </div>
                       )}
                     </div>
