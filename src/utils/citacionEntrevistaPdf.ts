@@ -30,16 +30,37 @@ const ahoraBogota = () =>
     minute: "2-digit",
   });
 
-/** Carga una imagen (PNG, JPG o WebP) y la devuelve como PNG para jsPDF. */
-async function cargarImagen(url: string): Promise<{ dataUrl: string; w: number; h: number } | null> {
+/** Carga una imagen (PNG, JPG o WebP) y la devuelve como PNG para jsPDF.
+ *  Con `recortar`, quita el margen vacío (transparente o blanco) alrededor del trazo:
+ *  la firma se dibuja en un lienzo grande y sin recorte se vería diminuta. */
+async function cargarImagen(url: string, recortar = false): Promise<{ dataUrl: string; w: number; h: number } | null> {
   try {
     const blob = await (await fetch(url)).blob();
     const bmp = await createImageBitmap(blob);
     const c = document.createElement("canvas");
     c.width = bmp.width;
     c.height = bmp.height;
-    c.getContext("2d")!.drawImage(bmp, 0, 0);
-    return { dataUrl: c.toDataURL("image/png"), w: bmp.width, h: bmp.height };
+    const ctx = c.getContext("2d")!;
+    ctx.drawImage(bmp, 0, 0);
+    if (!recortar) return { dataUrl: c.toDataURL("image/png"), w: bmp.width, h: bmp.height };
+    const { data } = ctx.getImageData(0, 0, c.width, c.height);
+    let x0 = c.width, y0 = c.height, x1 = -1, y1 = -1;
+    for (let yy = 0; yy < c.height; yy++) {
+      for (let xx = 0; xx < c.width; xx++) {
+        const i = (yy * c.width + xx) * 4;
+        const tinta = data[i + 3] > 20 && (data[i] < 235 || data[i + 1] < 235 || data[i + 2] < 235);
+        if (tinta) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; }
+      }
+    }
+    if (x1 < 0) return { dataUrl: c.toDataURL("image/png"), w: bmp.width, h: bmp.height };
+    const m = 6;
+    x0 = Math.max(0, x0 - m); y0 = Math.max(0, y0 - m);
+    x1 = Math.min(c.width - 1, x1 + m); y1 = Math.min(c.height - 1, y1 + m);
+    const r = document.createElement("canvas");
+    r.width = x1 - x0 + 1;
+    r.height = y1 - y0 + 1;
+    r.getContext("2d")!.drawImage(c, x0, y0, r.width, r.height, 0, 0, r.width, r.height);
+    return { dataUrl: r.toDataURL("image/png"), w: r.width, h: r.height };
   } catch {
     return null;
   }
@@ -91,7 +112,7 @@ export async function descargarCitacionEntrevista(s: any): Promise<void> {
   const nombreColegio = String(colegio?.nombre || "").trim();
   const [escudo, firma] = await Promise.all([
     colegio?.logo_url ? cargarImagen(colegio.logo_url) : Promise.resolve(null),
-    s.firma_url ? cargarImagen(s.firma_url) : Promise.resolve(null),
+    s.firma_url ? cargarImagen(s.firma_url, true) : Promise.resolve(null),
   ]);
 
   const font = (estilo: string, size: number, color: RGB = INK) => {
@@ -127,14 +148,18 @@ export async function descargarCitacionEntrevista(s: any): Promise<void> {
   // Recuadro de referencia (número y fecha de solicitud)
   const bx = W - M - 44, bw = 44;
   pdf.setFillColor(...SOFT);
-  pdf.roundedRect(bx, y, bw, 22, 2.5, 2.5, "F");
+  pdf.roundedRect(bx, y, bw, 26, 2.5, 2.5, "F");
   font("normal", 7, MUTE);
   pdf.text("SOLICITUD N.º", bx + 5, y + 6.5, { charSpace: 0.3 });
   font("bold", 15);
   pdf.text(String(s.id ?? "").padStart(5, "0"), bx + 5, y + 13.5);
   font("normal", 7.5, INK2);
   pdf.text(fmtFecha(s.fecha_solicitud), bx + 5, y + 18.5);
-  y += 26;
+  const horaSol = s.created_at
+    ? new Date(s.created_at).toLocaleTimeString("es-CO", { timeZone: "America/Bogota", hour: "numeric", minute: "2-digit" })
+    : "";
+  if (horaSol) pdf.text(horaSol, bx + 5, y + 22.5);
+  y += 30;
   pdf.setDrawColor(...INK);
   pdf.setLineWidth(0.6);
   pdf.line(M, y, W - M, y);
@@ -156,7 +181,7 @@ export async function descargarCitacionEntrevista(s: any): Promise<void> {
     ["Estudiante", `${nombreEst}\n${`${s.estudiante_grado || ""} ${s.estudiante_salon || ""}`.trim()}`],
     ["Fecha y hora de la entrevista", `${fmtFecha(s.fecha_entrevista, true).replace(/^./, (c) => c.toUpperCase())}\n${s.hora_entrevista || ""}${s.reprogramada ? " · Reprogramada" : ""}`],
     ["Entrevista con", con],
-    ["Solicitada por", s.creado_por_nombre || con],
+    ["Solicitada por", `${s.creado_por_nombre || con}${horaSol ? `\n${fmtFecha(s.fecha_solicitud)}, ${horaSol}` : ""}`],
   ];
   const colW = (CW - 6) / 2;
   for (let i = 0; i < celdas.length; i += 2) {
@@ -236,7 +261,22 @@ export async function descargarCitacionEntrevista(s: any): Promise<void> {
         pdf.roundedRect(M, y - 1, CW, alto, 2.5, 2.5, "S");
       }
       font("normal", 9.5, INK2);
-      pdf.text(trozo, M + pad, y + pad + paso * 0.6);
+      // Etiquetas de la citación (Fecha, Hora, Con, Mensaje) en negrilla.
+      trozo.forEach((linea, k) => {
+        const ly = y + pad + paso * 0.6 + k * paso;
+        const m = recuadro ? linea.match(/^((?:Nueva )?(?:Fecha|Hora)|Con|Mensaje):/) : null;
+        if (m) {
+          const etiqueta = m[0];
+          font(SEMI, 9.5, INK);
+          pdf.text(etiqueta, M + pad, ly);
+          const ancho = pdf.getTextWidth(etiqueta + " ");
+          font("normal", 9.5, INK2);
+          pdf.text(linea.slice(etiqueta.length).trimStart(), M + pad + ancho, ly);
+        } else {
+          font("normal", 9.5, INK2);
+          pdf.text(linea, M + pad, ly);
+        }
+      });
       y += alto + 6;
       i += trozo.length;
       if (i < lineas.length) {
@@ -252,8 +292,9 @@ export async function descargarCitacionEntrevista(s: any): Promise<void> {
     asegurar(FIRMA_H);
     const fw = 62;
     if (firma) {
-      const fh = Math.min(19, (firma.h / firma.w) * fw);
-      pdf.addImage(firma.dataUrl, "PNG", M, y + 19 - fh, fw, fh);
+      const esc = Math.min(fw / firma.w, 19 / firma.h);
+      const iw = firma.w * esc, ih = firma.h * esc;
+      pdf.addImage(firma.dataUrl, "PNG", M + 2, y + 19 - ih, iw, ih);
     } else if (s.firma_url) {
       font("normal", 8.5, MUTE);
       pdf.text("(no se pudo cargar la imagen de la firma)", M, y + 15);

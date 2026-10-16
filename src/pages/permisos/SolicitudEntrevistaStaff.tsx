@@ -865,8 +865,8 @@ const SolicitudEntrevistaStaff = () => {
                       <div role="button" tabIndex={0} aria-expanded={isExp}
                         onClick={() => setExpandedId(isExp ? null : s.id)}
                         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpandedId(isExp ? null : s.id); } }}
-                        className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors cursor-pointer">
-                        <div>
+                        className="w-full flex items-start sm:items-center justify-between gap-3 p-4 text-left hover:bg-muted/30 transition-colors cursor-pointer">
+                        <div className="min-w-0 flex-1">
                           <p className="font-semibold text-foreground text-base">{s.estudiante_apellidos} {s.estudiante_nombre}</p>
                           <p className="text-sm text-muted-foreground">{s.estudiante_grado} {s.estudiante_salon} — Entrevista: {fmtFecha(s.fecha_entrevista)} a las {s.hora_entrevista}</p>
                           <div className="flex flex-wrap gap-1 mt-1">
@@ -878,18 +878,20 @@ const SolicitudEntrevistaStaff = () => {
                             {s.reprogramada && <span className="ml-2 text-sm font-semibold text-blue-700">· Reprogramada</span>}
                           </p>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex flex-col-reverse sm:flex-row items-end sm:items-center gap-2 shrink-0">
                           {entrevistaYaPaso(s) && (
-                            <span title="Esta entrevista ya pasó" className="inline-flex items-center gap-1 text-green-600 text-sm font-semibold">
+                            <span title="Esta entrevista ya pasó" className="inline-flex items-center gap-1 text-green-600 text-sm font-semibold whitespace-nowrap">
                               <CheckCircle2 className="w-5 h-5" /> Ya pasó
                             </span>
                           )}
+                          <div className="flex items-center gap-2">
                           <button type="button" onClick={(e) => { e.stopPropagation(); descargarCitacionEntrevista(s); }}
                             title="Descargar la citación en PDF" aria-label="Descargar la citación en PDF"
                             className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-border text-muted-foreground hover:text-primary hover:border-primary transition-colors cursor-pointer">
                             <Download className="w-4 h-4" />
                           </button>
                           <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${isExp ? "rotate-180" : ""}`} />
+                          </div>
                         </div>
                       </div>
                       {isExp && (
