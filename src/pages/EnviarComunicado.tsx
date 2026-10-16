@@ -24,6 +24,7 @@ import CharCircle from "@/components/CharCircle";
 import { buildTemplateBodyPreview, MAX_WA_TEMPLATE_BODY, WA_TEMPLATE_OVERHEAD } from "@/lib/wapBody";
 
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
+import { coincideBusqueda } from "@/utils/busqueda";
 // Migrado de n8n → normi-server: ya no llamamos a webhook externo. El endpoint
 // /api/comunicados/enviar del server hace toda la lógica (resolver
 // destinatarios + WhatsApp + guardar) en proceso, con multi-tenant filtrado
@@ -1518,9 +1519,7 @@ const EnviarComunicado = () => {
                     historial.forEach((c, i) => numeroByIdHist.set(c.id, totalHist - i));
                     return historial.filter((c) => {
                       if (!busqueda.trim()) return true;
-                      const normalize = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-                      const term = normalize(busqueda);
-                      return normalize(c.destinatarios).includes(term) || normalize(c.mensaje).includes(term);
+                      return coincideBusqueda(busqueda, c.destinatarios, c.mensaje);
                     }).map((c) => (
                     <div key={c.id} className="bg-primary/10 border-2 border-primary/40 rounded-lg p-4 space-y-2 cursor-pointer hover:bg-primary/15 hover:border-primary/60 transition-colors" onClick={() => setSelectedHistorial(c)}>
                       <div className="flex items-center justify-between">

@@ -23,6 +23,7 @@ import CharCircle from "@/components/CharCircle";
 import { buildTemplateBodyPreview, MAX_WA_TEMPLATE_BODY, WA_TEMPLATE_OVERHEAD } from "@/lib/wapBody";
 
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
+import { coincideBusqueda } from "@/utils/busqueda";
 // Comunicados con firma. La pestaña "Enviar" replica EXACTAMENTE la interfaz de
 // Enviar Comunicado (mismo selector de perfiles, filtros en cascada, editor y
 // adjuntos). La diferencia es que el envío va a /api/comunicados-firma/enviar y
@@ -1045,9 +1046,7 @@ const ComunicadosFirma = () => {
           </div>
           {enviados.filter((c) => {
             if (!busqueda.trim()) return true;
-            const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-            const term = norm(busqueda);
-            return norm(c.destinatarios_label || "").includes(term) || norm(c.mensaje || "").includes(term);
+            return coincideBusqueda(busqueda, c.destinatarios_label, c.mensaje);
           }).map((c) => (
             <div key={c.id} className="bg-primary/10 border-2 border-primary/40 rounded-lg p-4 space-y-2 cursor-pointer hover:bg-primary/15" onClick={() => abrirDetalle(c)}>
               <div className="flex items-center justify-between gap-2">

@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { apiRequest, ApiError } from "@/lib/apiClient";
 import { rankGrado } from "@/utils/grados";
+import { coincideBusqueda } from "@/utils/busqueda";
 
 /**
  * "Revisar carga académica" — página propia de Configurar Institución.
@@ -166,7 +167,7 @@ const RevisarCargaEditor = ({ colegioId }: Props) => {
     const norm = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
     const base = asignaturas.filter((a) => a.nombre !== corAsig).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
     const q = norm(busqDest.trim());
-    return q ? base.filter((a) => norm(a.nombre).includes(q)) : base;
+    return q ? base.filter((a) => coincideBusqueda(busqDest, a.nombre)) : base;
   }, [asignaturas, corAsig, busqDest]);
 
   if (loading) {

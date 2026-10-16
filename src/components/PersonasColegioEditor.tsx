@@ -20,6 +20,7 @@ import PhoneInput from "@/components/PhoneInput";
 import { capitalizarNombre } from "@/utils/texto";
 import { formatTelefono } from "@/utils/telefono";
 import { cargoSegunGenero } from "@/lib/entrevistadores";
+import { coincideBusqueda } from "@/utils/busqueda";
 
 /** Búsqueda flexible: ignora tildes y mayúsculas. */
 const normSearch = (s: string) => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
@@ -152,7 +153,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   }, []);
   const asignaturasVisibles = useMemo(() => {
     const f = normSearch(filtroAsig);
-    return f ? asignaturasCol.filter((a) => normSearch(a).includes(f)) : asignaturasCol;
+    return f ? asignaturasCol.filter((a) => coincideBusqueda(filtroAsig, a)) : asignaturasCol;
   }, [asignaturasCol, filtroAsig]);
   // Estilo de grilla con llenado por COLUMNAS (el navegador baja la col 1 y sigue
   // en la 2). Filas = ceil(n/cols) para que cada columna quede a la misma altura.
@@ -561,7 +562,7 @@ const PersonasColegioEditor = ({ colegioId, rol: rolProp, setRol: setRolProp, on
   // celular). Si escribes texto o una contraseña, no debe "colar" por sus dígitos.
   const qEsNumerico = /^[0-9+\-\s]+$/.test(busqueda.trim());
   const listaBuscada = !q ? listaDelRol : listaDelRol.filter((p) =>
-    normalizar(`${p.nombres} ${p.apellidos}`).includes(q) || String(p.id).includes(q) ||
+    coincideBusqueda(busqueda, p.nombres, p.apellidos) || String(p.id).includes(q) ||
     ("contrasena" in p && normalizar(String((p as any).contrasena || "")).includes(q)) ||
     (qEsNumerico && !!qDigitos && String(p.numero_de_telefono || "").includes(qDigitos)));
   const listaActual = rol === "Profesor(a)" && !colegioId

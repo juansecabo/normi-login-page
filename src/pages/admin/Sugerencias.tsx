@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Search, Trash2, Loader2 } from "lucide-react";
 
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
+import { coincideBusqueda } from "@/utils/busqueda";
 interface Sugerencia {
   id: number;
   id: string;
@@ -74,8 +75,7 @@ const Sugerencias = () => {
   };
 
   const filtered = sugerencias.filter((s) =>
-    normalize(`${s.nombres} ${s.apellidos || ""} ${s.rol} ${s.contacto} ${s.mensaje}`)
-      .includes(normalize(search))
+    coincideBusqueda(search, s.nombres, s.apellidos, s.rol, s.contacto, s.mensaje)
   );
 
   const formatDate = (iso: string) => {

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { CheckCircle2, Clock, Download, Eye, FileText, Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/apiClient";
+import { coincideBusqueda } from "@/utils/busqueda";
 
 /**
  * Entregas de una actividad, para el PROFESOR (pedido de la coordinadora
@@ -109,8 +110,8 @@ export function EntregasDeActividad({ autoId }: { autoId: number | null }) {
   }
 
   const q = norm(busqueda.trim());
-  const entregas = q ? data.entregas.filter((e) => norm(e.nombre).includes(q)) : data.entregas;
-  const faltantes = q ? data.faltantes.filter((f) => norm(f.nombre).includes(q)) : data.faltantes;
+  const entregas = q ? data.entregas.filter((e) => coincideBusqueda(busqueda, e.nombre)) : data.entregas;
+  const faltantes = q ? data.faltantes.filter((f) => coincideBusqueda(busqueda, f.nombre)) : data.faltantes;
 
   return (
     <div className="space-y-4">

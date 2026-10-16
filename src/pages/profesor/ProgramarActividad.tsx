@@ -47,6 +47,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Calendar, Paperclip, FileText, X, Loader2, Pencil, Trash2, Eye, Download, RotateCcw, Search } from "lucide-react";
+import { coincideBusqueda } from "@/utils/busqueda";
 
 const diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 
@@ -1049,7 +1050,7 @@ const ProgramarActividad = () => {
                                 ) : (() => {
                                   const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
                                   const q = norm(busquedaEst.trim());
-                                  const lista = q ? estudiantesAula.filter(e => norm(e.nombre).includes(q)) : estudiantesAula;
+                                  const lista = q ? estudiantesAula.filter(e => coincideBusqueda(busquedaEst, e.nombre)) : estudiantesAula;
                                   if (lista.length === 0) return <p className="text-xs text-muted-foreground px-2 py-1">Sin coincidencias.</p>;
                                   return lista.map((e) => {
                                     const marcado = estudiantesDestino.includes(e.id);
@@ -1258,7 +1259,7 @@ const ProgramarActividad = () => {
                       (filtroGrado === "todos" || a.Grado === filtroGrado) &&
                       (filtroSalon === "todos" || a.Salon === filtroSalon) &&
                       (!soloConEntrega || !!a.permite_entregas) &&
-                      (!q || norm(a.Descripción).includes(q))
+                      (!q || coincideBusqueda(busquedaAct, a.Descripción))
                     );
                     const porFecha: Record<string, ActividadCalendario[]> = {};
                     for (const a of actividadesFiltradas) {

@@ -21,6 +21,7 @@ import { Progress } from "@/components/ui/progress";
 import { Loader2, Search, Download, X } from "lucide-react";
 
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
+import { coincideBusqueda } from "@/utils/busqueda";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const SALONES = ["1", "2", "3", "4", "5", "6"];
@@ -220,8 +221,7 @@ const RegistroNormi = () => {
       if (gradoFilter !== "todos" && e.grado !== gradoFilter) return false;
       if (salonFilter !== "todos" && e.salon !== salonFilter) return false;
       if (search) {
-        const hay = normalize(`${e.apellidos} ${e.nombres} ${e.id}`);
-        if (!hay.includes(normalize(search))) return false;
+        if (!coincideBusqueda(search, e.apellidos, e.nombres, String(e.id))) return false;
       }
       return true;
     });

@@ -23,6 +23,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { coincideBusqueda } from "@/utils/busqueda";
 
 interface Estudiante { id: string; nombres: string; apellidos: string; grado: string; salon: string; }
 interface Interno { id: number; nombres: string; apellidos: string; cargo: string; genero?: string | null; }
@@ -102,7 +103,7 @@ const SolicitudEntrevistaStaff = () => {
       if (fSalon && s.estudiante_salon !== fSalon) return false;
       if (fTipo === "creadas" && !s._creada) return false;
       if (fTipo === "entrevistador" && !s._entrev) return false;
-      if (q && !`${s.estudiante_apellidos || ""} ${s.estudiante_nombre || ""}`.toLowerCase().includes(q)) return false;
+      if (q && !coincideBusqueda(q, s.estudiante_apellidos, s.estudiante_nombre)) return false;
       return true;
     });
   }, [historial, fNombre, fGrado, fSalon, fTipo]);

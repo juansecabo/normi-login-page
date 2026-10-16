@@ -19,6 +19,7 @@ import imgProfesora from "@/assets/salon/profesora.webp";
 import imgAlumno from "@/assets/salon/alumno.webp";
 import imgAlumna from "@/assets/salon/alumna.webp";
 import { cargoSegunGenero } from "@/lib/entrevistadores";
+import { coincideBusqueda } from "@/utils/busqueda";
 
 /**
  * "Armar salón" — vista cenital del aula para armar los salones de forma
@@ -132,7 +133,7 @@ const ArmarSalon = () => {
   const [guardandoDir, setGuardandoDir] = useState(false);
   // Búsqueda flexible: sin tildes ni mayúsculas.
   const normalizar = (v: string) => v.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-  const profesFiltrados = profes.filter((p) => !buscaProfe.trim() || normalizar(p.nombre).includes(normalizar(buscaProfe)));
+  const profesFiltrados = profes.filter((p) => coincideBusqueda(buscaProfe, p.nombre));
 
   const abrirDirDialog = async () => {
     setSelProfe("");

@@ -3,6 +3,7 @@ import { Clock, Search, FileUp, Download, Eye, Paperclip } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { remitenteVisible } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { coincideBusqueda } from "@/utils/busqueda";
 
 interface Comunicado {
   id: number;
@@ -107,12 +108,10 @@ const ListaComunicados = ({ comunicados, loading, showDocumentLink = false }: Li
     );
   }
 
-  const normalize = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
   const filtrados = comunicados.filter((c) => {
     if (!busqueda.trim()) return true;
-    const term = normalize(busqueda);
-    return normalize(c.remitente || '').includes(term) || normalize(c.mensaje || '').includes(term);
+    return coincideBusqueda(busqueda, c.remitente, c.mensaje);
   });
 
   // Numerar cada comunicado del usuario (oldest = #1, newest = N) basado en

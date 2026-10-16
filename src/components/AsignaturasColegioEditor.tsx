@@ -9,6 +9,7 @@ import { apiRequest, ApiError } from "@/lib/apiClient";
 import { rankGrado } from "@/utils/grados";
 import { aclarar, estiloAsignatura, colorAlAzar } from "@/lib/coloresAsignaturas";
 import CirculoColor from "@/components/CirculoColor";
+import { coincideBusqueda } from "@/utils/busqueda";
 
 /**
  * Editor de Asignaturas del colegio + Plan de estudios por grado, compartido por:
@@ -396,8 +397,7 @@ const AsignaturasColegioEditor = ({ colegioId }: Props) => {
               <div className="divide-y rounded-lg border" data-guia="configurar_institucion.plan_asignatura_check">
                 {activasPlanOrden
                   .filter((a) => {
-                    const norm = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-                    return !busquedaPlan.trim() || norm(a.nombre).includes(norm(busquedaPlan.trim()));
+                    return coincideBusqueda(busquedaPlan, a.nombre);
                   })
                   .map((a) => {
                   const fila = planDelGrado.get(a.id);

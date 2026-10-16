@@ -4,6 +4,7 @@ import { Download, X, Search } from "lucide-react";
 import { apiClient, type AsistenciaEstado, type AsistenciaHistorial, type AsistenciaHistorialEstudiante } from "@/lib/apiClient";
 import { useToast } from "@/hooks/use-toast";
 import { ESTADO_UI, ESTADOS_LISTA, resumen } from "./estados";
+import { coincideBusqueda } from "@/utils/busqueda";
 
 interface Props {
   asignatura: string;
@@ -63,7 +64,7 @@ const MatrizCurso = ({ asignatura, grado, salon, desde, hasta, rangoLabel, puede
   const estudiantesVisibles = useMemo(() => {
     const f = filtro.trim().toLowerCase();
     if (!f) return data.estudiantes;
-    return data.estudiantes.filter((e) => `${e.apellidos} ${e.nombres}`.toLowerCase().includes(f));
+    return data.estudiantes.filter((e) => coincideBusqueda(f, e.apellidos, e.nombres));
   }, [data.estudiantes, filtro]);
 
   // Un solo día → el % no aporta (siempre 0 o 100%): se oculta.

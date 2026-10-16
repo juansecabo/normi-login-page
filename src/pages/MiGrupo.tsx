@@ -8,6 +8,7 @@ import AvatarUploader from "@/components/AvatarUploader";
 import { Search, Users } from "lucide-react";
 
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
+import { coincideBusqueda } from "@/utils/busqueda";
 type Est = {
   id: string;
   grado: string;
@@ -74,7 +75,7 @@ const MiGrupo = () => {
   const visibles = useMemo(() => {
     const f = filtro.trim().toLowerCase();
     if (!f) return ests;
-    return ests.filter((e) => `${e.apellidos} ${e.nombres}`.toLowerCase().includes(f));
+    return ests.filter((e) => coincideBusqueda(f, e.apellidos, e.nombres));
   }, [ests, filtro]);
 
   const setAvatar = (id: string, url: string | null) =>
