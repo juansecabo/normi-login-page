@@ -257,6 +257,8 @@ const JustificacionUniformeStaff = () => {
                       arr.push(j);
                     }
                     grupos.sort((a, b) => b.key.localeCompare(a.key));
+                    // dentro de cada día, por orden alfabético del estudiante (apellidos y nombres)
+                    for (const g of grupos) g.items.sort((x, y) => `${x.estudiante_apellidos || ""} ${x.estudiante_nombre || ""}`.localeCompare(`${y.estudiante_apellidos || ""} ${y.estudiante_nombre || ""}`, "es", { sensitivity: "base" }));
                     return grupos.map(({ key, items }) => (
                       <div key={key} className="space-y-3">
                         <h3 className="text-lg font-bold text-blue-700 border-b-2 border-blue-200 pb-2">
