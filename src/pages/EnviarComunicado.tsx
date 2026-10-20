@@ -311,8 +311,10 @@ const EnviarComunicado = () => {
     // el envío sí filtraba por nivel — confundía y permitía marcar un profesor
     // por fuera de los niveles elegidos).
     const nivelesSel = Object.keys(nivelesMarcados).filter(n => nivelesMarcados[n]);
+    // Misma regla por nivel que el envío: grados elegidos + los niveles marcados sin grados elegidos, completos
+    const nivelesSinGrado = nivelesSel.filter(n => !(nivelesGrados[n] || []).some(g => gradosSel.includes(g)));
     const gradosFiltro = gradosSel.length > 0
-      ? gradosSel
+      ? [...gradosSel, ...nivelesSinGrado.flatMap(n => nivelesGrados[n] || [])]
       : nivelesSel.flatMap(n => nivelesGrados[n] || []);
 
     const fetchProfes = async () => {
@@ -328,7 +330,9 @@ const EnviarComunicado = () => {
         const grados = (r["Grado(s)"] as string[]) || [];
         const salones = (r["Salon(es)"] as string[]) || [];
         if (gradosFiltro.length > 0 && !gradosFiltro.some(g => grados.includes(g))) return false;
-        if (salonesSel.length > 0 && !salonesSel.some(s => salones.includes(s))) return false;
+        // los salones elegidos solo filtran a los grados elegidos; un nivel completo no lleva filtro de salón
+        const deNivelCompleto = nivelesSinGrado.some(n => (nivelesGrados[n] || []).some(g => grados.includes(g)));
+        if (salonesSel.length > 0 && !deNivelCompleto && !salonesSel.some(s => salones.includes(s))) return false;
         return true;
       });
       const byId = new Map<string, { id: string; nombre: string; genero?: string | null; grados: string[]; salones: string[] }>();
@@ -500,6 +504,12 @@ const EnviarComunicado = () => {
     return res;
   };
 
+  // Regla por nivel (Juan 2026-10-20): en un nivel con grados elegidos van solo esos grados;
+  // un nivel marcado sin ningún grado elegido va completo. Ej.: Primaria + Media marcados con
+  // Cuarto y Quinto elegidos = Cuarto, Quinto y todo Media.
+  const nivelesCompletosDe = (nivelesSel: string[], gradosSel: string[]): string[] =>
+    gradosSel.length === 0 ? nivelesSel : nivelesSel.filter((n) => !(nivelesGrados[n] || []).some((g) => gradosSel.includes(g)));
+
   const buildDestinatarios = (): string => {
     const sel = perfilesMarcados;
     const partes: string[] = [];
@@ -507,7 +517,12 @@ const EnviarComunicado = () => {
     const gradosSel = Object.keys(gradosMarcados).filter((g) => gradosMarcados[g]);
     const salonesSel = Object.keys(salonesMarcados).filter((s) => salonesMarcados[s]);
 
-    const aulaFrase = (prefijo: string): string => {
+    const completos = nivelesCompletosDe(nivelesSel, gradosSel);
+    const yNiveles = gradosSel.length > 0 && completos.length > 0
+      ? ` y ${completos.length === 1 ? `del nivel ${completos[0]}` : `de los niveles ${joinConY(completos)}`}`
+      : "";
+    const aulaFrase = (prefijo: string): string => yNiveles && aulaFraseGrados(prefijo) ? aulaFraseGrados(prefijo) + yNiveles : aulaFraseGrados(prefijo);
+    const aulaFraseGrados = (prefijo: string): string => {
       if (gradosSel.length === 0) {
         if (nivelesSel.length === 0) return "";
         return `${prefijo} de ${nivelesSel.join(", ")}`;
@@ -670,11 +685,10 @@ const EnviarComunicado = () => {
       // Si el usuario marcó varios niveles, los pasamos como array (vía
       // múltiples segmentos abajo). Pero hoy lo simplificamos a UN nivel
       // por segmento — si hay varios, expandimos a grados.
-      // Si el usuario eligió grados, van SOLO esos grados (es lo que muestra el texto de
-      // destinatarios). Los niveles se expanden a todos sus grados únicamente cuando no
-      // eligió ningún grado. Antes se sumaban los grados de todos los niveles marcados a
-      // los elegidos: "Profesores de Cuarto, Quinto" con Primaria y Media marcados salió
-      // también a Primero-Tercero, Décimo y Undécimo (Pestalozziano, 2026-10-20).
+      // Misma regla por nivel que el texto de destinatarios (nivelesCompletosDe): los grados
+      // elegidos van con sus salones; cada nivel marcado sin grados elegidos va completo, en su
+      // propio segmento y sin filtro de salón (los salones se eligieron para los grados).
+      const nivelesCompletos = nivelesCompletosDe(nivelesSel, gradosSel);
       let gradosFinal: string[] | null = gradosSel.length > 0 ? gradosSel : null;
       if (!gradosFinal && nivelesSel.length > 1) {
         const gradosDeNiveles: string[] = [];
@@ -685,6 +699,14 @@ const EnviarComunicado = () => {
         }
         gradosFinal = gradosDeNiveles;
       }
+      // Segmento extra de niveles completos, solo cuando además hay grados elegidos
+      const extraNiveles = gradosSel.length > 0 && nivelesCompletos.length > 0
+        ? (nivelesCompletos.length === 1
+            ? { nivel: nivelesCompletos[0], grados: null as string[] | null }
+            : { nivel: null as string | null, grados: [...new Set(nivelesCompletos.flatMap((n) => nivelesGrados[n] || []))] })
+        : null;
+      // Con grados elegidos, el nivel no viaja en ese segmento (los niveles completos van aparte)
+      const nivelSegmento = gradosSel.length > 0 && nivelesSel.length > 1 ? null : nivelUnico;
       const salonesFinal = salonesSel.length > 0 ? salonesSel : null;
 
       // Estrategia: agrupar perfiles que comparten filtros en UN solo segmento.
@@ -715,7 +737,8 @@ const EnviarComunicado = () => {
           // Ids específicos: un solo segmento con esos ids para ambos perfiles.
           segmentos.push({ perfil: perfilesEstPadres, id_destinatarios: estudiantesSeleccionados });
         } else {
-          segmentos.push({ perfil: perfilesEstPadres, nivel: nivelUnico, grados: gradosFinal, salones: salonesFinal });
+          segmentos.push({ perfil: perfilesEstPadres, nivel: nivelSegmento, grados: gradosFinal, salones: salonesFinal });
+          if (extraNiveles) segmentos.push({ perfil: perfilesEstPadres, ...extraNiveles, salones: null });
         }
       }
 
@@ -731,7 +754,8 @@ const EnviarComunicado = () => {
         (nivelUnico || gradosFinal || salonesFinal);
 
       if (profesoresConFiltroAula) {
-        segmentos.push({ perfil: ["Profesores"], nivel: nivelUnico, grados: gradosFinal, salones: salonesFinal });
+        segmentos.push({ perfil: ["Profesores"], nivel: nivelSegmento, grados: gradosFinal, salones: salonesFinal });
+        if (extraNiveles) segmentos.push({ perfil: ["Profesores"], ...extraNiveles, salones: null });
       }
 
       // Combinar TODOS los internos con ids específicos en UN solo segmento.
