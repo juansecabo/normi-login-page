@@ -670,19 +670,20 @@ const EnviarComunicado = () => {
       // Si el usuario marcó varios niveles, los pasamos como array (vía
       // múltiples segmentos abajo). Pero hoy lo simplificamos a UN nivel
       // por segmento — si hay varios, expandimos a grados.
+      // Si el usuario eligió grados, van SOLO esos grados (es lo que muestra el texto de
+      // destinatarios). Los niveles se expanden a todos sus grados únicamente cuando no
+      // eligió ningún grado. Antes se sumaban los grados de todos los niveles marcados a
+      // los elegidos: "Profesores de Cuarto, Quinto" con Primaria y Media marcados salió
+      // también a Primero-Tercero, Décimo y Undécimo (Pestalozziano, 2026-10-20).
       let gradosFinal: string[] | null = gradosSel.length > 0 ? gradosSel : null;
-      if (nivelesSel.length > 1) {
+      if (!gradosFinal && nivelesSel.length > 1) {
         const gradosDeNiveles: string[] = [];
         for (const niv of nivelesSel) {
           for (const g of (nivelesGrados[niv] || [])) {
             if (!gradosDeNiveles.includes(g)) gradosDeNiveles.push(g);
           }
         }
-        if (gradosFinal) {
-          for (const g of gradosDeNiveles) if (!gradosFinal.includes(g)) gradosFinal.push(g);
-        } else {
-          gradosFinal = gradosDeNiveles;
-        }
+        gradosFinal = gradosDeNiveles;
       }
       const salonesFinal = salonesSel.length > 0 ? salonesSel : null;
 
