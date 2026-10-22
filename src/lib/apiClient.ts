@@ -33,6 +33,17 @@ function setToken(token: string | null) {
     else localStorage.setItem(JWT_KEY, token);
   } catch {}
 }
+/** El server recuenta los perfiles al renovar la sesión: si a la persona le
+ *  agregaron uno, se muestra "Cambiar perfil" sin que tenga que cerrar sesión. */
+function sincronizarMultiPerfil(token: string) {
+  try {
+    const parte = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(parte.padEnd(parte.length + (4 - parte.length % 4) % 4, '=')));
+    if (typeof payload.multi_membership !== 'boolean') return;
+    if (payload.multi_membership) localStorage.setItem('multi_membership', '1');
+    else localStorage.removeItem('multi_membership');
+  } catch {}
+}
 function getTempToken(): string | null {
   try { return sessionStorage.getItem(TEMP_JWT_KEY); } catch { return null; }
 }
@@ -62,7 +73,10 @@ async function request<T = unknown>(
   // Sesión deslizante: si el server mandó un token renovado, lo guardamos. Así
   // la sesión se mantiene viva mientras la persona use la plataforma.
   const renewed = res.headers.get('X-Renewed-Token');
-  if (renewed && !opts?.useTempToken) setToken(renewed);
+  if (renewed && !opts?.useTempToken) {
+    setToken(renewed);
+    sincronizarMultiPerfil(renewed);
+  }
   const text = await res.text();
   let body: unknown = text;
   try { body = text ? JSON.parse(text) : null; } catch {}
