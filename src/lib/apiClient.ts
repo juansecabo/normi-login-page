@@ -8,6 +8,7 @@
  *   y devuelve { token, user } final.
  */
 
+import { diagSesion } from './diagSesion';
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || '';
 
@@ -29,6 +30,7 @@ function getToken(): string | null {
 }
 function setToken(token: string | null) {
   try {
+    if (token === null && localStorage.getItem(JWT_KEY)) diagSesion('setToken_null');
     if (token === null) localStorage.removeItem(JWT_KEY);
     else localStorage.setItem(JWT_KEY, token);
   } catch {}

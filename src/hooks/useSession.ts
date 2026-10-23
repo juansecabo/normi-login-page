@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
+import { diagSesion } from '@/lib/diagSesion';
 
 // Función para obtener el dominio base para cookies compartidas
 const getCookieDomain = (): string | undefined => {
@@ -177,6 +178,7 @@ export const getSession = (): SessionData => {
   // Sesión abierta si existe la cookie O la marca de localStorage (esta última
   // sobrevive cuando la app nativa mata el proceso). Si ninguna existe → limpiar.
   if (!Cookies.get(SESSION_COOKIE) && localStorage.getItem(SESSION_COOKIE) !== "1") {
+    if (localStorage.getItem("id")) diagSesion("getSession_sin_marca");
     localStorage.removeItem("id");
     localStorage.removeItem("nombres");
     localStorage.removeItem("apellidos");
@@ -336,6 +338,7 @@ export const restaurarSesionSuperAdmin = (): boolean => {
 };
 
 export const clearSession = () => {
+  diagSesion("clearSession");
   const cookieOptions = getCookieOptions();
 
   localStorage.removeItem("id");
