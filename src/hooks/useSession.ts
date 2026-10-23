@@ -115,6 +115,12 @@ export const saveSession = (
 ) => {
   const cookieOptions = getCookieOptions();
 
+  // La marca de sesión abierta va PRIMERO: si se pusiera al final, otra pestaña que
+  // revise la sesión mientras se guardan los datos no la vería y borraría la cédula
+  // recién guardada (sesión sin id → todas las pestañas al login). 2026-10-23.
+  Cookies.set(SESSION_COOKIE, '1', cookieOptions);
+  try { localStorage.setItem(SESSION_COOKIE, '1'); } catch { /* noop */ }
+
   // Guardar datos en localStorage (persiste entre pestañas)
   localStorage.setItem("id", id);
   localStorage.setItem("nombres", nombres);
@@ -155,12 +161,8 @@ export const saveSession = (
   if (genero === "M" || genero === "F") localStorage.setItem("genero", genero);
   else localStorage.removeItem("genero");
 
-  // Persistente: la sesión sigue abierta al reabrir la app o el navegador.
-  Cookies.set(SESSION_COOKIE, '1', cookieOptions);
-  // Respaldo en localStorage: en la app nativa (Capacitor) la cookie puede
-  // perderse cuando Android mata el proceso al cerrar la app; localStorage sí
-  // sobrevive. La sesión sigue abierta si existe la cookie O esta marca.
-  try { localStorage.setItem(SESSION_COOKIE, '1'); } catch { /* noop */ }
+  // Persistente: la sesión sigue abierta al reabrir la app o el navegador (la
+  // cookie y su respaldo en localStorage, para la app nativa, ya se pusieron arriba).
 
   // Salvaguarda: si NO es Administrador, eliminar cualquier backup de
   // SuperAdmin que pudiera haber quedado en sessionStorage (de una
