@@ -201,7 +201,7 @@ export const getSession = (): SessionData => {
   let id = localStorage.getItem("id") || null;
   // Si falta la cédula pero el token es válido, se recupera del token (su "sub"):
   // así una sesión a la que se le perdió el id no bota a la persona al login.
-  if (!id && localStorage.getItem("cargo")) {
+  if (!id) {
     const sub = decodeJwtPayload(localStorage.getItem(JWT_KEY) || "")?.sub;
     if (sub) {
       id = String(sub);
