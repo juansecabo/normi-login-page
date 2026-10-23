@@ -3,21 +3,6 @@
 // en pantalla; si falla, no pasa nada.
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
-// Vigila la cédula guardada: avisa cuando algo la borra o la guarda vacía.
-try {
-  const proto = Storage.prototype;
-  const quitar = proto.removeItem;
-  const poner = proto.setItem;
-  proto.removeItem = function (k: string) {
-    if (this === window.localStorage && k === 'id' && this.getItem('id')) diagSesion('id_borrado');
-    return quitar.call(this, k);
-  };
-  proto.setItem = function (k: string, v: string) {
-    if (this === window.localStorage && k === 'id' && !v) diagSesion('id_guardado_vacio');
-    return poner.call(this, k, v);
-  };
-} catch { /* noop */ }
-
 export function diagSesion(evento: string) {
   try {
     const datos = {

@@ -198,17 +198,7 @@ export const getSession = (): SessionData => {
     return { id: null, nombres: null, apellidos: null, cargo: null, nivel: null, grado: null, salon: null, acudidos: null, multi_membership: false, sin_contrasena: false, avatar_url: null, colegio_id: null, colegio_nombre: null, colegio_logo_url: null, colegio_slug: null, genero: null };
   }
 
-  let id = localStorage.getItem("id") || null;
-  // Si falta la cédula pero el token es válido, se recupera del token (su "sub"):
-  // así una sesión a la que se le perdió el id no bota a la persona al login.
-  if (!id) {
-    const sub = decodeJwtPayload(localStorage.getItem(JWT_KEY) || "")?.sub;
-    if (sub) {
-      id = String(sub);
-      localStorage.setItem("id", id);
-      diagSesion("id_recuperado_del_token");
-    }
-  }
+  const id = localStorage.getItem("id") || null;
   const nombres = localStorage.getItem("nombres") || null;
   const apellidos = localStorage.getItem("apellidos") || null;
   const cargo = localStorage.getItem("cargo") || null;
