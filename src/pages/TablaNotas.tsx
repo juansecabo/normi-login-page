@@ -240,10 +240,9 @@ interface ComentarioEditando {
 }
 
 /**
- * Botón "+ Agregar" con comportamiento dual:
- *  - Click rápido (release antes de HOLD_MS) → ejecuta `onActividad`.
- *  - Mantener presionado >= HOLD_MS         → ejecuta `onGrupo`.
- * Muestra una barra de progreso mientras se está presionando.
+ * Botón "+ Agregar" del final de las columnas: al tocarlo se elige si crear una
+ * actividad o un grupo (antes un toque creaba actividad y mantenerlo presionado
+ * creaba grupo; Juan 2026-10-24: no era intuitivo).
  */
 const BotonAgregarConLongPress = ({
   onActividad,
@@ -259,83 +258,30 @@ const BotonAgregarConLongPress = ({
   label?: string;
   compact?: boolean;
   title?: string;
-}) => {
-  const HOLD_MS = 1200;
-  const [pressing, setPressing] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const intervalRef = useRef<number | null>(null);
-  const triggeredGrupoRef = useRef(false);
-
-  const cleanup = () => {
-    if (intervalRef.current) {
-      window.clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    setPressing(false);
-    setProgress(0);
-  };
-
-  const start = (e: React.PointerEvent) => {
-    if (disabled) return;
-    e.preventDefault();
-    triggeredGrupoRef.current = false;
-    setPressing(true);
-    setProgress(0);
-    const startTime = Date.now();
-    intervalRef.current = window.setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const p = Math.min(100, (elapsed / HOLD_MS) * 100);
-      setProgress(p);
-      if (p >= 100 && !triggeredGrupoRef.current) {
-        triggeredGrupoRef.current = true;
-        cleanup();
-        onGrupo();
-      }
-    }, 30);
-  };
-
-  const end = () => {
-    if (!triggeredGrupoRef.current && intervalRef.current) {
-      cleanup();
-      onActividad();
-    } else {
-      cleanup();
-    }
-  };
-
-  return (
-    <button
-      type="button"
-      data-guia="notas.boton_mas_columna"
-      disabled={disabled}
-      onPointerDown={start}
-      onPointerUp={end}
-      onPointerLeave={cleanup}
-      onContextMenu={(e) => e.preventDefault()}
-      className={`relative ${compact ? 'h-6 px-1.5 text-[10px]' : 'h-8 px-2 text-xs'} rounded-md bg-green-100 hover:bg-green-200 text-green-800 border border-green-300 inline-flex items-center justify-center gap-1 overflow-hidden select-none w-full transition-colors disabled:opacity-50`}
-      title={title || 'Click rápido: nueva actividad. Mantener presionado: nuevo grupo'}
-    >
-      {pressing && (
-        <span
-          className="absolute inset-y-0 left-0 bg-emerald-500/40 transition-[width]"
-          style={{ width: `${progress}%` }}
-        />
-      )}
-      <Plus className={`${compact ? 'w-2.5 h-2.5' : 'w-3 h-3'} relative shrink-0`} />
-      {/* Durante el long-press el texto cambia a "Creando grupo…" pero se
-          encoge un poco (text-[10px]) para que quepa dentro del ancho actual
-          del botón sin ensancharlo. Cuando el botón ya es grande (porque hay
-          muchas columnas) el cambio es imperceptible. */}
-      <span
-        className={`relative font-medium whitespace-nowrap ${
-          pressing && progress > 25 ? 'text-[10px]' : ''
-        }`}
+}) => (
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <button
+        type="button"
+        data-guia="notas.boton_mas_columna"
+        disabled={disabled}
+        className={`relative ${compact ? 'h-6 px-1.5 text-[10px]' : 'h-8 px-2 text-xs'} rounded-md bg-green-100 hover:bg-green-200 text-green-800 border border-green-300 inline-flex items-center justify-center gap-1 select-none w-full transition-colors disabled:opacity-50`}
+        title={title || 'Agregar una actividad o un grupo'}
       >
-        {pressing && progress > 25 ? 'Creando grupo…' : (label || 'Agregar')}
-      </span>
-    </button>
-  );
-};
+        <Plus className={`${compact ? 'w-2.5 h-2.5' : 'w-3 h-3'} shrink-0`} />
+        <span className="font-medium whitespace-nowrap">{label || 'Agregar'}</span>
+      </button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="center" className="bg-background z-50">
+      <DropdownMenuItem data-guia="notas.menu_agregar_actividad" onClick={onActividad}>
+        <Plus className="w-4 h-4 mr-2" /> Agregar actividad
+      </DropdownMenuItem>
+      <DropdownMenuItem data-guia="notas.menu_agregar_grupo" onClick={onGrupo}>
+        <Plus className="w-4 h-4 mr-2" /> Agregar grupo
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>
+);
 
 const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => {
   const navigate = useNavigate();

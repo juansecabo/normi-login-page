@@ -319,10 +319,14 @@ export const NOTAS: Capacidad[] = [
     pasos: [
       ...abrirTablaDeNotas(),
       {
-        narracion:
-          "Toca el botón verde 'Agregar' al final de las columnas; se abre el formulario de la actividad.",
+        narracion: "Toca el botón verde 'Agregar' al final de las columnas.",
         accion: "click",
         ancla: "notas.boton_mas_columna",
+      },
+      {
+        narracion: "Elige 'Agregar actividad'; se abre el formulario de la actividad.",
+        accion: "click",
+        ancla: "notas.menu_agregar_actividad",
       },
       {
         narracion: "Escribe el nombre de la actividad.",
@@ -445,10 +449,14 @@ export const NOTAS: Capacidad[] = [
     pasos: [
       ...abrirTablaDeNotas(),
       {
-        narracion:
-          "Mantén presionado un segundo el botón verde 'Agregar' al final de las columnas; se abre el formulario del grupo (un toque rápido crea una actividad, mantenerlo crea el grupo).",
+        narracion: "Toca el botón verde 'Agregar' al final de las columnas.",
         accion: "click",
         ancla: "notas.boton_mas_columna",
+      },
+      {
+        narracion: "Elige 'Agregar grupo'; se abre el formulario del grupo.",
+        accion: "click",
+        ancla: "notas.menu_agregar_grupo",
       },
       {
         narracion: "Ponle nombre al grupo.",
