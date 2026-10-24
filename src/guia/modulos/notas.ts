@@ -470,6 +470,48 @@ export const NOTAS: Capacidad[] = [
     ],
   },
   {
+    id: "notas.llenar_grupo_vacio",
+    titulo: "Agregar la primera actividad o un subgrupo a un grupo vacío",
+    descripcion:
+      "Un grupo o subgrupo recién creado muestra un botón '+' debajo de su nombre. Ahí se crea su primera actividad (y, en un grupo, también un subgrupo). Las notas se ponen cuando el grupo ya tiene actividades.",
+    categoria: "Notas",
+    roles: [...ESCRIBEN_NOTAS],
+    ruta: "/tabla-notas",
+    endpoint: "POST /api/db (Nombre de Actividades insert) o POST /api/grupos-notas",
+    sinonimos: [
+      "no me deja poner notas en el grupo",
+      "el grupo está vacío",
+      "cómo pongo notas en un grupo nuevo",
+      "agregar actividad dentro de un grupo",
+      "crear subgrupo en un grupo vacío",
+    ],
+    pasos: [
+      ...abrirTablaDeNotas(),
+      {
+        narracion: "Toca el '+' que aparece debajo del nombre del grupo vacío.",
+        accion: "click",
+        ancla: "notas.boton_mas_grupo_vacio",
+      },
+      {
+        narracion: "Elige 'Agregar actividad' (en un subgrupo se abre directo, porque un subgrupo solo lleva actividades).",
+        accion: "click",
+        ancla: "notas.menu_vacio_actividad",
+        opcional: true,
+      },
+      {
+        narracion: "Escribe el nombre de la actividad.",
+        accion: "escribir",
+        ancla: "notas.modal_actividad_nombre",
+        campo: "nombre_actividad",
+      },
+      {
+        narracion: "Toca 'Crear Actividad'. Ya puedes poner las notas en esa columna.",
+        accion: "click",
+        ancla: "notas.modal_actividad_guardar",
+      },
+    ],
+  },
+  {
     id: "notas.editar_grupo",
     titulo: "Editar un grupo de notas",
     descripcion: "Cambiar el nombre o el porcentaje de un grupo existente.",

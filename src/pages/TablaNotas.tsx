@@ -5230,11 +5230,11 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                             {estructura.secciones.flatMap((sec, secIdx) => {
                               if (sec.tipo === 'sin-grupo') return []; // ya consumidas con rowSpan
                               // Construye lista de items en orden (actividades o placeholders)
-                              type Item = { tipo: 'act'; act: Actividad } | { tipo: 'ph'; key: string } | { tipo: 'prom'; grupoId: string };
+                              type Item = { tipo: 'act'; act: Actividad } | { tipo: 'ph'; key: string; grupoId: string; esSub: boolean } | { tipo: 'prom'; grupoId: string };
                               let items: Item[] = [];
                               if (sec.tipo === 'grupo-hoja') {
                                 if (sec.actividades.length === 0) {
-                                  items.push({ tipo: 'ph', key: `ph-h-${sec.grupo.id}` });
+                                  items.push({ tipo: 'ph', key: `ph-h-${sec.grupo.id}`, grupoId: sec.grupo.id, esSub: false });
                                 } else {
                                   items.push(...sec.actividades.map(a => ({ tipo: 'act' as const, act: a })));
                                 }
@@ -5245,7 +5245,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                   // renderizar nada acá.
                                   if (sub.grupo === null) continue;
                                   if (sub.actividades.length === 0) {
-                                    items.push({ tipo: 'ph', key: `ph-s-${sub.grupo.id}` });
+                                    items.push({ tipo: 'ph', key: `ph-s-${sub.grupo.id}`, grupoId: sub.grupo.id, esSub: true });
                                   } else {
                                     items.push(...sub.actividades.map(a => ({ tipo: 'act' as const, act: a })));
                                   }
@@ -5261,9 +5261,36 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                                   );
                                 }
                                 if (it.tipo === 'ph') {
+                                  // Grupo o subgrupo recién creado y vacío: un "+" para empezar
+                                  // (el profe no sabía que primero se crea la actividad).
+                                  // Grupo: elige actividad o subgrupo. Subgrupo: solo actividad
+                                  // (no hay sub-subgrupos), así que abre directo.
+                                  const botonMas = (
+                                    <button
+                                      type="button"
+                                      data-guia="notas.boton_mas_grupo_vacio"
+                                      title={it.esSub ? "Agregar actividad" : "Agregar actividad o subgrupo"}
+                                      onClick={it.esSub ? () => handleAbrirModal(periodoActivo, 'actividad', it.grupoId) : undefined}
+                                      className="mx-auto flex items-center justify-center w-8 h-8 rounded-full bg-white/70 text-emerald-800 hover:bg-white hover:text-emerald-900 shadow-sm transition-colors"
+                                    >
+                                      <Plus className="w-4 h-4" />
+                                    </button>
+                                  );
                                   return (
                                     <th key={it.key} className="border-r border-b border-border/30 p-2 text-center text-xs font-medium bg-emerald-200 text-emerald-700 min-w-[120px]">
-                                      —
+                                      {soloLectura ? '—' : it.esSub ? botonMas : (
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>{botonMas}</DropdownMenuTrigger>
+                                          <DropdownMenuContent align="center" className="bg-background z-50">
+                                            <DropdownMenuItem data-guia="notas.menu_vacio_actividad" onClick={() => handleAbrirModal(periodoActivo, 'actividad', it.grupoId)}>
+                                              <Plus className="w-4 h-4 mr-2" /> Agregar actividad
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem data-guia="notas.menu_vacio_subgrupo" onClick={() => handleAbrirModal(periodoActivo, 'grupo', it.grupoId)}>
+                                              <Plus className="w-4 h-4 mr-2" /> Agregar subgrupo
+                                            </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
+                                      )}
                                     </th>
                                   );
                                 }
