@@ -2155,7 +2155,7 @@ const PanelControl = ({ embedded = false, tabFija, soloGrupo }: { embedded?: boo
                       {acus.map((a, i) => (
                         <div key={i} className="rounded-md border bg-muted/30 p-2 text-sm">
                           <div className="font-medium">{a.nom || "Sin nombre"}</div>
-                          <div className="text-xs text-muted-foreground">CC {a.ced || "—"} · Tel {a.tel || "—"}</div>
+                          <div className="text-xs text-muted-foreground">CC {a.ced || "—"} · Cel {a.tel || "—"}</div>
                         </div>
                       ))}
                     </div>
