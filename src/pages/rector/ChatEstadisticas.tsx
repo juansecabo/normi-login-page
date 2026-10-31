@@ -398,7 +398,7 @@ const ChatEstadisticas = () => {
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            <div className="px-4 md:px-8 py-6 space-y-6">
+            <div className="mx-auto w-full max-w-4xl px-4 md:px-6 py-6 space-y-6">
               {cargandoConv ? (
                 <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
               ) : mensajes.length === 0 ? (
@@ -425,7 +425,7 @@ const ChatEstadisticas = () => {
                 mensajes.map((m, i) =>
                   m.role === "user" ? (
                     <div key={i} className="flex justify-end">
-                      <div className="max-w-[85%] rounded-2xl rounded-br-md bg-primary text-primary-foreground px-4 py-2.5 whitespace-pre-wrap">{m.content}</div>
+                      <div className="max-w-[85%] rounded-2xl bg-primary/10 text-foreground px-4 py-2.5 whitespace-pre-wrap">{m.content}</div>
                     </div>
                   ) : (
                     <div key={i} className="flex gap-3">
@@ -455,8 +455,8 @@ const ChatEstadisticas = () => {
             </div>
           </div>
 
-          <form onSubmit={(e) => { e.preventDefault(); enviar(texto); }} className="border-t border-border px-4 md:px-8 py-3 md:py-4 bg-card/40">
-            <div className="flex items-end gap-2 rounded-2xl border border-border bg-background px-3 py-2 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+          <form onSubmit={(e) => { e.preventDefault(); enviar(texto); }} className="px-4 md:px-6 pb-4 pt-2">
+            <div className="mx-auto w-full max-w-4xl flex items-end gap-2 rounded-2xl border border-border bg-background shadow-sm px-3 py-2 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
               <textarea
                 ref={inputRef}
                 data-guia="estadisticas.chat_input"
