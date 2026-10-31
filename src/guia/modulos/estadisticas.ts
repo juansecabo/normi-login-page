@@ -120,7 +120,7 @@ export const ESTADISTICAS: Capacidad[] = [
     id: "estadisticas.conversaciones_normi",
     titulo: "Volver a una conversación anterior con Normi",
     descripcion:
-      "En «Pregúntale a Normi» las conversaciones quedan guardadas a la izquierda (en el celular, en el botón de la esquina). Se puede abrir una anterior, empezar una nueva o borrarla.",
+      "En «Pregúntale a Normi» las conversaciones quedan guardadas a la izquierda (en el celular, en el botón de la esquina). Se puede abrir una anterior, empezar una nueva, fijarla arriba, cambiarle el nombre o eliminarla.",
     categoria: "Estadísticas",
     roles: ["admin", "rector", "coordinador"],
     ruta: "/preguntale-a-normi",
@@ -145,7 +145,7 @@ export const ESTADISTICAS: Capacidad[] = [
         opcional: true,
       },
       {
-        narracion: "Aquí están tus conversaciones, ordenadas por fecha. Toca una para abrirla; la papelera junto a cada una la borra.",
+        narracion: "Aquí están tus conversaciones: arriba las fijadas y luego por fecha. Toca una para abrirla. Con los tres puntos de cada una puedes fijarla, cambiarle el nombre o eliminarla.",
         accion: "click",
         ancla: "estadisticas.chat_conversaciones",
       },

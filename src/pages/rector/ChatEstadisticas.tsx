@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowUp, Download, Loader2, PanelLeft, Plus, Table2, Trash2 } from "lucide-react";
+import { ArrowUp, Download, Loader2, MoreHorizontal, PanelLeft, Pencil, Pin, PinOff, Plus, Table2, Trash2 } from "lucide-react";
 import {
   ResponsiveContainer, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, CartesianGrid,
@@ -12,6 +12,10 @@ import { apiRequest } from "@/lib/apiClient";
 import { precargarSonidoRespuesta, reproducirSonidoRespuesta } from "@/lib/sonidoRespuesta";
 import DictadoMic from "@/components/DictadoMic";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -42,7 +46,11 @@ interface Mensaje {
   tablas?: Tabla[];
   error?: boolean;
 }
-interface ConversacionLite { id: string; titulo: string; actualizado_at: string }
+interface ConversacionLite { id: string; titulo: string; actualizado_at: string; fijada?: boolean }
+
+/** Fijadas primero; luego de la más reciente a la más antigua. */
+const ordenar = (cs: ConversacionLite[]) =>
+  [...cs].sort((a, b) => Number(!!b.fijada) - Number(!!a.fijada) || b.actualizado_at.localeCompare(a.actualizado_at));
 
 /** Agrupa las conversaciones por fecha, como en los chats de los grandes modelos. */
 function grupoFecha(iso: string): string {
@@ -228,6 +236,8 @@ const ChatEstadisticas = () => {
   const [pensando, setPensando] = useState(false);
   const [panelMovil, setPanelMovil] = useState(false);
   const [borrar, setBorrar] = useState<ConversacionLite | null>(null);
+  const [renombrar, setRenombrar] = useState<ConversacionLite | null>(null);
+  const [nuevoTitulo, setNuevoTitulo] = useState("");
   const finRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   // Evita recargar desde el servidor la conversación que se acaba de crear al responder.
@@ -284,6 +294,25 @@ const ChatEstadisticas = () => {
     setPanelMovil(false);
   };
 
+  const fijar = async (c: ConversacionLite) => {
+    const fijada = !c.fijada;
+    setConversaciones((cs) => ordenar(cs.map((x) => (x.id === c.id ? { ...x, fijada } : x))));
+    try {
+      await apiRequest(`/api/estadisticas/chat/conversaciones/${c.id}`, { method: "PATCH", body: JSON.stringify({ fijada }) });
+    } catch { cargarLista(); }
+  };
+
+  const guardarNombre = async () => {
+    const c = renombrar;
+    const titulo = nuevoTitulo.replace(/\s+/g, " ").trim();
+    if (!c || !titulo) return;
+    setRenombrar(null);
+    setConversaciones((cs) => cs.map((x) => (x.id === c.id ? { ...x, titulo } : x)));
+    try {
+      await apiRequest(`/api/estadisticas/chat/conversaciones/${c.id}`, { method: "PATCH", body: JSON.stringify({ titulo }) });
+    } catch { cargarLista(); }
+  };
+
   const confirmarBorrar = async () => {
     const c = borrar;
     setBorrar(null);
@@ -309,7 +338,10 @@ const ChatEstadisticas = () => {
       reproducirSonidoRespuesta();
       if (r.conversacion_id) {
         const ahora = new Date().toISOString();
-        setConversaciones((cs) => [{ id: r.conversacion_id!, titulo: r.titulo, actualizado_at: ahora }, ...cs.filter((x) => x.id !== r.conversacion_id)]);
+        setConversaciones((cs) => {
+          const previa = cs.find((x) => x.id === r.conversacion_id);
+          return ordenar([{ id: r.conversacion_id!, titulo: previa?.titulo || r.titulo, actualizado_at: ahora, fijada: previa?.fijada }, ...cs.filter((x) => x.id !== r.conversacion_id)]);
+        });
         if (r.conversacion_id !== actualId) { recienCreada.current = r.conversacion_id; setSearchParams({ c: r.conversacion_id }, { replace: true }); }
       }
     } catch {
@@ -340,8 +372,9 @@ const ChatEstadisticas = () => {
           <p className="px-3 py-4 text-sm text-muted-foreground">Aquí aparecerán tus conversaciones.</p>
         ) : (
           conversaciones.map((c, i) => {
-            const g = grupoFecha(c.actualizado_at);
-            const nuevoGrupo = i === 0 || grupoFecha(conversaciones[i - 1].actualizado_at) !== g;
+            const grupo = (x: ConversacionLite) => (x.fijada ? "Fijadas" : grupoFecha(x.actualizado_at));
+            const g = grupo(c);
+            const nuevoGrupo = i === 0 || grupo(conversaciones[i - 1]) !== g;
             return (
               <div key={c.id}>
                 {nuevoGrupo && <div className="px-3 pt-4 pb-1 text-xs font-semibold text-muted-foreground">{g}</div>}
@@ -349,14 +382,31 @@ const ChatEstadisticas = () => {
                   <button type="button" onClick={() => abrir(c.id)} className="flex-1 min-w-0 text-left px-3 py-2 text-sm truncate" title={c.titulo}>
                     {c.titulo}
                   </button>
-                  <button
-                    type="button"
-                    aria-label="Borrar conversación"
-                    onClick={() => setBorrar(c)}
-                    className="p-1.5 mr-1 rounded text-muted-foreground hover:text-destructive opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-opacity"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label="Opciones de la conversación"
+                        data-guia="estadisticas.chat_menu_conversacion"
+                        className="p-1.5 mr-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 data-[state=open]:opacity-100 transition-opacity"
+                      >
+                        <MoreHorizontal className="w-4 h-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-48 bg-background z-50">
+                      <DropdownMenuItem onClick={() => fijar(c)} className="gap-2">
+                        {c.fijada ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
+                        {c.fijada ? "Desfijar" : "Fijar"}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => { setNuevoTitulo(c.titulo); setRenombrar(c); }} className="gap-2">
+                        <Pencil className="w-4 h-4" /> Cambiar nombre
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setBorrar(c)} className="gap-2 text-destructive focus:text-destructive">
+                        <Trash2 className="w-4 h-4" /> Eliminar
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             );
@@ -483,15 +533,30 @@ const ChatEstadisticas = () => {
         </section>
       </div>
 
+      <Dialog open={!!renombrar} onOpenChange={(o) => { if (!o) setRenombrar(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cambiar nombre</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); guardarNombre(); }}>
+            <Input value={nuevoTitulo} onChange={(e) => setNuevoTitulo(e.target.value)} maxLength={120} autoFocus />
+            <DialogFooter className="mt-4 gap-2">
+              <Button type="button" variant="outline" onClick={() => setRenombrar(null)}>Cancelar</Button>
+              <Button type="submit" disabled={!nuevoTitulo.trim()}>Guardar</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog open={!!borrar} onOpenChange={(o) => { if (!o) setBorrar(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Borrar esta conversación?</AlertDialogTitle>
-            <AlertDialogDescription>«{borrar?.titulo}» se borrará y no se puede recuperar.</AlertDialogDescription>
+            <AlertDialogTitle>¿Eliminar esta conversación?</AlertDialogTitle>
+            <AlertDialogDescription>«{borrar?.titulo}» se eliminará y no se puede recuperar.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmarBorrar} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Borrar</AlertDialogAction>
+            <AlertDialogAction onClick={confirmarBorrar} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Eliminar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
