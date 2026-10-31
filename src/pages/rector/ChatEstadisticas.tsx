@@ -176,7 +176,7 @@ function TablaResultado({ t }: { t: Tabla }) {
             <thead className="sticky top-0 z-10">
               <tr>
                 {t.columnas.map((c) => (
-                  <th key={c} className="bg-primary text-primary-foreground text-left font-semibold px-3 py-2 whitespace-nowrap">{c}</th>
+                  <th key={c} className={`bg-primary text-primary-foreground font-semibold px-3 py-2 whitespace-nowrap ${typeof t.filas[0]?.[c] === "number" ? "text-right" : "text-left"}`}>{c}</th>
                 ))}
               </tr>
             </thead>
@@ -247,7 +247,8 @@ const ChatEstadisticas = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <HeaderNormi backLink="/estadisticas" />
-      <main className="flex-1 container mx-auto p-4 md:p-8 flex flex-col max-w-4xl">
+      {/* pb-36 en celular: el botón flotante de Normi (recordatorio de recuperación) no tapa la flecha de enviar. */}
+      <main className="flex-1 container mx-auto p-4 pb-36 md:p-8 flex flex-col max-w-4xl">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6 flex items-center justify-between gap-3">
           <BreadcrumbDeslizable>
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
