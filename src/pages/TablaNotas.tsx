@@ -4542,9 +4542,9 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     );
   }
 
-  // En PC, cuando existe la franja de acciones (Notificar pendientes), los profesores y el
-  // estado del periodo se muestran en esa franja en vez de en una barra propia: así la
-  // tabla gana alto. En celular todo sigue igual.
+  // En PC los profesores y el estado del periodo van SIEMPRE en la franja bajo las pestañas
+  // (con o sin actividades, en cualquier periodo), en vez de una barra propia: así la tabla
+  // gana alto y no cambian de lugar al pasar de periodo. En celular todo sigue igual.
   const mostrarFranjaAcciones = !soloLectura && !esFinalDefinitiva && !loading && estudiantes.length > 0 && getActividadesPorPeriodo(periodoActivo).length > 0;
   const infoProfesores = (
     <>
@@ -4672,7 +4672,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         </div>
 
         {/* Barra de info: profesor(es) del aula + estado del periodo (visible para todos) */}
-        <div className={`bg-card rounded-lg shadow-soft px-4 py-2.5 mb-3 flex flex-wrap items-center justify-between gap-2${mostrarFranjaAcciones ? ' md:hidden' : ''}`}>
+        <div className="bg-card rounded-lg shadow-soft px-4 py-2.5 mb-3 flex flex-wrap items-center justify-between gap-2 md:hidden">
           {infoProfesores}
         </div>
 
@@ -4745,6 +4745,33 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
             })()}
           </div>
 
+            {/* Franja bajo las pestañas. En PC siempre (lleva los profesores); en celular solo
+              cuando hay acciones (Notificar pendientes / Ver promedios). */}
+          <div className={`${mostrarFranjaAcciones ? 'flex' : 'hidden md:flex'} items-center justify-between md:justify-end gap-2 md:gap-4 px-3 py-2 border-l border-t border-border bg-muted/20 md:min-h-[52px]`}>
+              <div className="hidden md:flex flex-wrap items-center gap-3 mr-auto min-w-0">
+                {infoProfesores}
+              </div>
+              {mostrarFranjaAcciones && (<>
+              <button
+                onClick={() => abrirPendientes(periodoActivo, null)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 text-sm font-semibold transition-colors whitespace-nowrap shrink-0"
+                title="Avisar a estudiantes y acudientes las actividades sin nota"
+              >
+                📭 Notificar pendientes
+              </button>
+              {getEstructuraThead(periodoActivo).hayJerarquia && (
+                <label className="flex items-center gap-2 text-sm font-medium text-foreground cursor-pointer select-none whitespace-nowrap shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={verPromedios}
+                    onChange={(e) => setVerPromedios(e.target.checked)}
+                    className="w-4 h-4 accent-primary cursor-pointer"
+                  />
+                  Ver promedios
+                </label>
+              )}
+              </>)}
+            </div>
           {/* Tabla de Notas */}
           {loading ? (
             <div className="p-8 text-center text-muted-foreground">
@@ -4756,31 +4783,6 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
             </div>
           ) : (
             <>
-            {!soloLectura && !esFinalDefinitiva && getActividadesPorPeriodo(periodoActivo).length > 0 && (
-              <div className="flex items-center justify-between md:justify-end gap-2 md:gap-4 px-3 py-2 border-l border-t border-border bg-muted/20">
-                <div className="hidden md:flex flex-wrap items-center gap-3 mr-auto min-w-0">
-                  {infoProfesores}
-                </div>
-                <button
-                  onClick={() => abrirPendientes(periodoActivo, null)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 text-sm font-semibold transition-colors whitespace-nowrap shrink-0"
-                  title="Avisar a estudiantes y acudientes las actividades sin nota"
-                >
-                  📭 Notificar pendientes
-                </button>
-                {getEstructuraThead(periodoActivo).hayJerarquia && (
-                  <label className="flex items-center gap-2 text-sm font-medium text-foreground cursor-pointer select-none whitespace-nowrap shrink-0">
-                    <input
-                      type="checkbox"
-                      checked={verPromedios}
-                      onChange={(e) => setVerPromedios(e.target.checked)}
-                      className="w-4 h-4 accent-primary cursor-pointer"
-                    />
-                    Ver promedios
-                  </label>
-                )}
-              </div>
-            )}
             <div ref={tableContainerRef} data-guia="notas.tabla" className="overflow-auto max-h-[75dvh] md:max-h-none md:flex-1 md:min-h-0 border-l border-t border-border">
               {soloLectura && (
                 <style>{`.ro-notas thead button{display:none!important;}`}</style>
