@@ -104,15 +104,56 @@ export const ESTADISTICAS: Capacidad[] = [
         ancla: "estadisticas.boton_preguntar",
       },
       {
-        narracion: "Escribe tu pregunta como se la harías a una persona, por ejemplo: '¿qué estudiantes de Séptimo 1 perdieron una asignatura en el primer periodo?'. También puedes tocar una de las preguntas de ejemplo.",
+        narracion: "Escribe tu pregunta como se la harías a una persona, por ejemplo: '¿qué estudiantes de Séptimo 1 perdieron una asignatura en el primer periodo?'. También puedes dictarla con el micrófono o tocar una de las preguntas de ejemplo.",
         accion: "escribir",
         ancla: "estadisticas.chat_input",
         campo: "pregunta",
       },
       {
-        narracion: "Envíala con la flecha (o con Enter). Normi consulta los datos del colegio y responde; si hay una lista, aparece en una tabla que puedes descargar en Excel.",
+        narracion: "Envíala con la flecha (o con Enter). Normi consulta los datos del colegio y responde; si hay una lista, aparece en una tabla que puedes descargar en Excel. La conversación queda guardada a la izquierda.",
         accion: "click",
         ancla: "estadisticas.chat_enviar",
+      },
+    ],
+  },
+  {
+    id: "estadisticas.conversaciones_normi",
+    titulo: "Volver a una conversación anterior con Normi",
+    descripcion:
+      "En «Pregúntale a Normi» las conversaciones quedan guardadas a la izquierda (en el celular, en el botón de la esquina). Se puede abrir una anterior, empezar una nueva o borrarla.",
+    categoria: "Estadísticas",
+    roles: ["admin", "rector", "coordinador"],
+    ruta: "/estadisticas/preguntar",
+    endpoint: "GET /api/estadisticas/chat/conversaciones",
+    requisitos: [],
+    sinonimos: [
+      "conversaciones anteriores con Normi",
+      "historial del chat de estadísticas",
+      "nueva conversación con Normi",
+      "borrar una conversación",
+    ],
+    pasos: [
+      {
+        narracion: "Entramos a Pregúntale a Normi.",
+        accion: "navegar",
+        ruta: "/estadisticas/preguntar",
+      },
+      {
+        narracion: "En el celular, toca el botón de la esquina superior izquierda para ver tus conversaciones.",
+        accion: "click",
+        ancla: "estadisticas.chat_panel_movil",
+        opcional: true,
+      },
+      {
+        narracion: "Aquí están tus conversaciones, ordenadas por fecha. Toca una para abrirla; la papelera junto a cada una la borra.",
+        accion: "click",
+        ancla: "estadisticas.chat_conversaciones",
+      },
+      {
+        narracion: "Para empezar de cero, toca 'Nueva conversación'.",
+        accion: "click",
+        ancla: "estadisticas.chat_nueva",
+        opcional: true,
       },
     ],
   },

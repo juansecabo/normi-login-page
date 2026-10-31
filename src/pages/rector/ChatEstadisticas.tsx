@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowUp, Download, Loader2, RotateCcw, Table2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { ArrowUp, Download, Loader2, PanelLeft, Plus, Table2, Trash2 } from "lucide-react";
 import {
   ResponsiveContainer, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, CartesianGrid,
@@ -9,12 +9,21 @@ import HeaderNormi from "@/components/HeaderNormi";
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 import { getSession } from "@/hooks/useSession";
 import { apiRequest } from "@/lib/apiClient";
+import { precargarSonidoRespuesta, reproducirSonidoRespuesta } from "@/lib/sonidoRespuesta";
+import DictadoMic from "@/components/DictadoMic";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import normiImg from "@/assets/normi-guia.png";
 
 // "Pregúntale a Normi" (Estadísticas): el directivo pregunta en lenguaje natural
 // y Normi responde con datos del colegio (servidor: /api/estadisticas/chat, que
 // consulta la base solo-lectura por las vistas del esquema chat). Por ahora para
-// rectoría, coordinación (solo sus niveles) y administración.
+// rectoría, coordinación (solo sus niveles) y administración. Las conversaciones se
+// guardan en el servidor (barra lateral, como en los chats de los grandes modelos);
+// el micrófono es el mismo de Enviar Comunicado (DictadoMic).
 
 export const ROLES_CHAT_ESTADISTICAS = ["Rector", "Coordinador(a)", "Administrador"];
 
@@ -33,6 +42,19 @@ interface Mensaje {
   tablas?: Tabla[];
   error?: boolean;
 }
+interface ConversacionLite { id: string; titulo: string; actualizado_at: string }
+
+/** Agrupa las conversaciones por fecha, como en los chats de los grandes modelos. */
+function grupoFecha(iso: string): string {
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  const dia = new Date(iso); dia.setHours(0, 0, 0, 0);
+  const dias = Math.round((hoy.getTime() - dia.getTime()) / 86400000);
+  if (dias <= 0) return "Hoy";
+  if (dias === 1) return "Ayer";
+  if (dias < 7) return "Últimos 7 días";
+  if (dias < 30) return "Últimos 30 días";
+  return "Anteriores";
+}
 
 const SUGERENCIAS = [
   "¿Qué estudiantes perdieron una sola asignatura en el primer periodo?",
@@ -44,8 +66,6 @@ const SUGERENCIAS = [
 ];
 
 const COLORES = ["#16a34a", "#0ea5e9", "#f59e0b", "#8b5cf6", "#ef4444", "#14b8a6", "#ec4899", "#64748b"];
-
-const claveAlmacen = () => `chat_estadisticas_${getSession().id || ""}`;
 
 /** Negritas (**x**), listas con "- " y párrafos. Suficiente para las respuestas de Normi. */
 function TextoNormi({ texto }: { texto: string }) {
@@ -198,21 +218,50 @@ function TablaResultado({ t }: { t: Tabla }) {
 
 const ChatEstadisticas = () => {
   const navigate = useNavigate();
-  const [mensajes, setMensajes] = useState<Mensaje[]>(() => {
-    try { return JSON.parse(sessionStorage.getItem(claveAlmacen()) || "[]"); } catch { return []; }
-  });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const actualId = searchParams.get("c");
+  const [conversaciones, setConversaciones] = useState<ConversacionLite[]>([]);
+  const [cargandoLista, setCargandoLista] = useState(true);
+  const [mensajes, setMensajes] = useState<Mensaje[]>([]);
+  const [cargandoConv, setCargandoConv] = useState(false);
   const [texto, setTexto] = useState("");
   const [pensando, setPensando] = useState(false);
+  const [panelMovil, setPanelMovil] = useState(false);
+  const [borrar, setBorrar] = useState<ConversacionLite | null>(null);
   const finRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  // Evita recargar desde el servidor la conversación que se acaba de crear al responder.
+  const recienCreada = useRef<string | null>(null);
   const nombre = (getSession().nombres || "").split(" ")[0];
 
   useEffect(() => {
     if (!ROLES_CHAT_ESTADISTICAS.includes(getSession().cargo || "")) navigate("/estadisticas", { replace: true });
+    precargarSonidoRespuesta();
   }, [navigate]);
 
+  const cargarLista = useCallback(async () => {
+    try {
+      const r = await apiRequest<{ conversaciones: ConversacionLite[] }>("/api/estadisticas/chat/conversaciones");
+      setConversaciones(r.conversaciones || []);
+    } catch { /* sin red: la lista queda como estaba */ }
+    finally { setCargandoLista(false); }
+  }, []);
+  useEffect(() => { cargarLista(); }, [cargarLista]);
+
+  // Abrir la conversación elegida (o empezar en blanco).
   useEffect(() => {
-    try { sessionStorage.setItem(claveAlmacen(), JSON.stringify(mensajes.slice(-30))); } catch { /* noop */ }
+    if (!actualId) { setMensajes([]); return; }
+    if (recienCreada.current === actualId) { recienCreada.current = null; return; }
+    let vivo = true;
+    setCargandoConv(true);
+    apiRequest<{ mensajes: Mensaje[] }>(`/api/estadisticas/chat/conversaciones/${actualId}`)
+      .then((r) => { if (vivo) setMensajes(r.mensajes || []); })
+      .catch(() => { if (vivo) { setMensajes([]); setSearchParams({}, { replace: true }); } })
+      .finally(() => { if (vivo) setCargandoConv(false); });
+    return () => { vivo = false; };
+  }, [actualId, setSearchParams]);
+
+  useEffect(() => {
     finRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [mensajes, pensando]);
 
@@ -223,19 +272,46 @@ const ChatEstadisticas = () => {
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, [texto]);
 
+  const nueva = () => {
+    setSearchParams({});
+    setMensajes([]);
+    setPanelMovil(false);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  };
+
+  const abrir = (id: string) => {
+    if (id !== actualId) setSearchParams({ c: id });
+    setPanelMovil(false);
+  };
+
+  const confirmarBorrar = async () => {
+    const c = borrar;
+    setBorrar(null);
+    if (!c) return;
+    setConversaciones((cs) => cs.filter((x) => x.id !== c.id));
+    if (c.id === actualId) nueva();
+    try { await apiRequest(`/api/estadisticas/chat/conversaciones/${c.id}`, { method: "DELETE" }); } catch { cargarLista(); }
+  };
+
   const enviar = async (pregunta: string) => {
     const p = pregunta.trim();
     if (!p || pensando) return;
-    const historial = mensajes.filter((m) => !m.error).map((m) => ({ role: m.role, content: m.content }));
     setMensajes((ms) => [...ms, { role: "user", content: p }]);
     setTexto("");
     setPensando(true);
     try {
-      const r = await apiRequest<{ respuesta: string; tablas: Tabla[] }>("/api/estadisticas/chat", {
+      // La memoria la arma el servidor con la conversación guardada (últimas 20 intervenciones).
+      const r = await apiRequest<{ respuesta: string; tablas: Tabla[]; conversacion_id: string | null; titulo: string }>("/api/estadisticas/chat", {
         method: "POST",
-        body: JSON.stringify({ mensaje: p, historial }),
+        body: JSON.stringify({ mensaje: p, conversacion_id: actualId }),
       });
       setMensajes((ms) => [...ms, { role: "assistant", content: r.respuesta, tablas: r.tablas }]);
+      reproducirSonidoRespuesta();
+      if (r.conversacion_id) {
+        const ahora = new Date().toISOString();
+        setConversaciones((cs) => [{ id: r.conversacion_id!, titulo: r.titulo, actualizado_at: ahora }, ...cs.filter((x) => x.id !== r.conversacion_id)]);
+        if (r.conversacion_id !== actualId) { recienCreada.current = r.conversacion_id; setSearchParams({ c: r.conversacion_id }, { replace: true }); }
+      }
     } catch {
       setMensajes((ms) => [...ms, { role: "assistant", content: "No pude responder en este momento. Intenta de nuevo en unos segundos.", error: true }]);
     } finally {
@@ -244,89 +320,142 @@ const ChatEstadisticas = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <HeaderNormi backLink="/estadisticas" />
-      <main className="flex-1 container mx-auto p-4 md:p-8 flex flex-col">
-        <div className="bg-card rounded-lg shadow-soft p-4 mb-6 flex items-center justify-between gap-3">
-          <BreadcrumbDeslizable>
-            <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
-            <span className="text-muted-foreground">→</span>
-            <button onClick={() => navigate("/estadisticas")} className="text-primary hover:underline">Estadísticas</button>
-            <span className="text-muted-foreground">→</span>
-            <span className="text-foreground font-medium">Pregúntale a Normi</span>
-          </BreadcrumbDeslizable>
-          {mensajes.length > 0 && (
-            <button
-              type="button"
-              data-guia="estadisticas.chat_nueva"
-              onClick={() => { setMensajes([]); inputRef.current?.focus(); }}
-              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground shrink-0"
-            >
-              <RotateCcw className="w-4 h-4" /> Nueva conversación
-            </button>
-          )}
-        </div>
+  // Lista de conversaciones agrupada por fecha (barra lateral en PC y panel en el celular).
+  const listaConversaciones = (
+    <div className="flex flex-col h-full">
+      <div className="p-3">
+        <button
+          type="button"
+          data-guia="estadisticas.chat_nueva"
+          onClick={nueva}
+          className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border bg-background hover:border-primary hover:bg-primary/5 text-sm font-medium transition-colors"
+        >
+          <Plus className="w-4 h-4 text-primary" /> Nueva conversación
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto px-2 pb-3" data-guia="estadisticas.chat_conversaciones">
+        {cargandoLista ? (
+          <div className="flex justify-center py-6"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div>
+        ) : conversaciones.length === 0 ? (
+          <p className="px-3 py-4 text-sm text-muted-foreground">Aquí aparecerán tus conversaciones.</p>
+        ) : (
+          conversaciones.map((c, i) => {
+            const g = grupoFecha(c.actualizado_at);
+            const nuevoGrupo = i === 0 || grupoFecha(conversaciones[i - 1].actualizado_at) !== g;
+            return (
+              <div key={c.id}>
+                {nuevoGrupo && <div className="px-3 pt-4 pb-1 text-xs font-semibold text-muted-foreground">{g}</div>}
+                <div className={`group flex items-center rounded-lg ${c.id === actualId ? "bg-primary/10 text-foreground" : "hover:bg-muted/60 text-foreground/80"}`}>
+                  <button type="button" onClick={() => abrir(c.id)} className="flex-1 min-w-0 text-left px-3 py-2 text-sm truncate" title={c.titulo}>
+                    {c.titulo}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Borrar conversación"
+                    onClick={() => setBorrar(c)}
+                    className="p-1.5 mr-1 rounded text-muted-foreground hover:text-destructive opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
 
-        <div className="flex-1 bg-card rounded-lg shadow-soft flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
-            {mensajes.length === 0 ? (
-              <div className="flex flex-col items-center text-center pt-4 md:pt-8">
-                <img src={normiImg} alt="Normi" className="w-28 h-28 object-contain mb-4" />
-                <h1 className="text-2xl font-bold text-foreground">Pregúntale a Normi</h1>
-                <p className="text-muted-foreground mt-2 max-w-md">
-                  {nombre ? `${nombre}, pregúntame` : "Pregúntame"} lo que quieras saber de notas, asistencia o convivencia del colegio.
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mt-8 w-full max-w-5xl" data-guia="estadisticas.chat_sugerencias">
-                  {SUGERENCIAS.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => enviar(s)}
-                      className="text-left text-sm px-4 py-3 rounded-xl border border-border bg-background hover:border-primary hover:bg-primary/5 transition-colors"
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              mensajes.map((m, i) =>
-                m.role === "user" ? (
-                  <div key={i} className="flex justify-end">
-                    <div className="max-w-[85%] rounded-2xl rounded-br-md bg-primary text-primary-foreground px-4 py-2.5 whitespace-pre-wrap">{m.content}</div>
-                  </div>
-                ) : (
-                  <div key={i} className="flex gap-3">
-                    <img src={normiImg} alt="" className="w-9 h-9 rounded-full object-cover bg-primary/10 shrink-0" />
-                    <div className={`min-w-0 flex-1 text-[15px] ${m.error ? "text-destructive" : "text-foreground/90"}`}>
-                      <TextoNormi texto={m.content} />
-                      {m.tablas?.map((t, j) => <TablaResultado key={j} t={t} />)}
-                    </div>
-                  </div>
-                ),
-              )
-            )}
-            {pensando && (
-              <div className="flex gap-3 items-center">
-                <img src={normiImg} alt="" className="w-9 h-9 rounded-full object-cover bg-primary/10 shrink-0" />
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span className="flex gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" />
-                  </span>
-                  Consultando los datos del colegio
-                </div>
-              </div>
-            )}
-            <div ref={finRef} />
+  return (
+    <div className="h-[100dvh] bg-background flex flex-col overflow-hidden">
+      <HeaderNormi backLink="/estadisticas" />
+      <div className="flex-1 min-h-0 flex">
+        {/* Barra lateral de conversaciones (PC) */}
+        <aside className="hidden md:flex w-72 shrink-0 flex-col border-r border-border bg-card/60">
+          {listaConversaciones}
+        </aside>
+
+        {/* Panel de conversaciones (celular) */}
+        <Sheet open={panelMovil} onOpenChange={setPanelMovil}>
+          <SheetContent side="left" className="w-80 p-0 pt-10">
+            <SheetTitle className="sr-only">Conversaciones</SheetTitle>
+            {listaConversaciones}
+          </SheetContent>
+        </Sheet>
+
+        <section className="flex-1 min-w-0 flex flex-col">
+          <div className="flex items-center gap-2 px-4 md:px-8 py-3 border-b border-border bg-card/40">
+            <button type="button" onClick={() => setPanelMovil(true)} aria-label="Conversaciones" data-guia="estadisticas.chat_panel_movil" className="md:hidden p-1.5 -ml-1 rounded hover:bg-muted text-muted-foreground">
+              <PanelLeft className="w-5 h-5" />
+            </button>
+            <BreadcrumbDeslizable>
+              <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
+              <span className="text-muted-foreground">→</span>
+              <button onClick={() => navigate("/estadisticas")} className="text-primary hover:underline">Estadísticas</button>
+              <span className="text-muted-foreground">→</span>
+              <span className="text-foreground font-medium">Pregúntale a Normi</span>
+            </BreadcrumbDeslizable>
           </div>
 
-          <form
-            onSubmit={(e) => { e.preventDefault(); enviar(texto); }}
-            className="border-t border-border p-3 md:p-4"
-          >
+          <div className="flex-1 overflow-y-auto">
+            <div className="px-4 md:px-8 py-6 space-y-6">
+              {cargandoConv ? (
+                <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+              ) : mensajes.length === 0 ? (
+                <div className="flex flex-col items-center text-center pt-4 md:pt-10">
+                  <img src={normiImg} alt="Normi" className="w-28 h-28 object-contain mb-4" />
+                  <h1 className="text-2xl font-bold text-foreground">Pregúntale a Normi</h1>
+                  <p className="text-muted-foreground mt-2 max-w-md">
+                    {nombre ? `${nombre}, pregúntame` : "Pregúntame"} lo que quieras saber de notas, asistencia o convivencia del colegio.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mt-8 w-full max-w-5xl" data-guia="estadisticas.chat_sugerencias">
+                    {SUGERENCIAS.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => enviar(s)}
+                        className="text-left text-sm px-4 py-3 rounded-xl border border-border bg-card hover:border-primary hover:bg-primary/5 transition-colors"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                mensajes.map((m, i) =>
+                  m.role === "user" ? (
+                    <div key={i} className="flex justify-end">
+                      <div className="max-w-[85%] rounded-2xl rounded-br-md bg-primary text-primary-foreground px-4 py-2.5 whitespace-pre-wrap">{m.content}</div>
+                    </div>
+                  ) : (
+                    <div key={i} className="flex gap-3">
+                      <img src={normiImg} alt="" className="w-9 h-9 rounded-full object-cover bg-primary/10 shrink-0" />
+                      <div className={`min-w-0 flex-1 text-[15px] ${m.error ? "text-destructive" : "text-foreground/90"}`}>
+                        <TextoNormi texto={m.content} />
+                        {m.tablas?.map((t, j) => <TablaResultado key={j} t={t} />)}
+                      </div>
+                    </div>
+                  ),
+                )
+              )}
+              {pensando && (
+                <div className="flex gap-3 items-center">
+                  <img src={normiImg} alt="" className="w-9 h-9 rounded-full object-cover bg-primary/10 shrink-0" />
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span className="flex gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" />
+                    </span>
+                    Consultando los datos del colegio
+                  </div>
+                </div>
+              )}
+              <div ref={finRef} />
+            </div>
+          </div>
+
+          <form onSubmit={(e) => { e.preventDefault(); enviar(texto); }} className="border-t border-border px-4 md:px-8 py-3 md:py-4 bg-card/40">
             <div className="flex items-end gap-2 rounded-2xl border border-border bg-background px-3 py-2 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
               <textarea
                 ref={inputRef}
@@ -336,22 +465,38 @@ const ChatEstadisticas = () => {
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviar(texto); } }}
                 rows={1}
                 autoFocus
-                placeholder="Escribe tu pregunta"
-                className="flex-1 resize-none bg-transparent outline-none py-1.5 text-[15px] max-h-40"
+                placeholder="Escribe o dicta tu pregunta"
+                className="flex-1 resize-none bg-transparent outline-none py-2 text-[15px] max-h-40"
               />
+              <div className="shrink-0" data-guia="estadisticas.chat_microfono">
+                <DictadoMic valor={texto} setValor={setTexto} />
+              </div>
               <button
                 type="submit"
                 data-guia="estadisticas.chat_enviar"
                 disabled={!texto.trim() || pensando}
                 aria-label="Enviar"
-                className="w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-40 shrink-0"
+                className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-40 shrink-0"
               >
                 {pensando ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
               </button>
             </div>
           </form>
-        </div>
-      </main>
+        </section>
+      </div>
+
+      <AlertDialog open={!!borrar} onOpenChange={(o) => { if (!o) setBorrar(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Borrar esta conversación?</AlertDialogTitle>
+            <AlertDialogDescription>«{borrar?.titulo}» se borrará y no se puede recuperar.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmarBorrar} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Borrar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
