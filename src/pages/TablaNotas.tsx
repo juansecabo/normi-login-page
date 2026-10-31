@@ -4768,7 +4768,7 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                 )}
               </div>
             )}
-            <div ref={tableContainerRef} data-guia="notas.tabla" className="overflow-x-auto md:overflow-auto md:flex-1 md:min-h-0 border-l border-t border-border">
+            <div ref={tableContainerRef} data-guia="notas.tabla" className="overflow-auto max-h-[75dvh] md:max-h-none md:flex-1 md:min-h-0 border-l border-t border-border">
               {soloLectura && (
                 <style>{`.ro-notas thead button{display:none!important;}`}</style>
               )}
@@ -4782,7 +4782,9 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
                 onDragCancel={() => { setDragAct(null); setDropTarget(null); setDragGroup(null); setDropGroupTarget(null); }}
               >
               <table className={`w-full border-separate border-spacing-0${soloLectura ? ' ro-notas' : ''}`}>
-                <thead>
+                {/* Filas de encabezado fijas al bajar (grupos, subgrupos y actividades siempre visibles).
+                    En celular la tabla baja dentro de su recuadro (max-h) para que puedan quedarse arriba. */}
+                <thead className="sticky top-0 z-30">
                   {(() => {
                     const estructura = !esFinalDefinitiva ? getEstructuraThead(periodoActivo) : null;
                     const usarJerarquia = !!estructura && estructura.hayJerarquia;
