@@ -72,6 +72,16 @@ const NotaCelda = ({
       const esMovil = window.matchMedia("(max-width: 767px)").matches;
       if (!el || !esMovil) { setTip(null); return; }
       const r = el.getBoundingClientRect();
+      // Si la celda ya no se ve (quedó bajo el encabezado fijo o fuera del recuadro
+      // de la tabla al desplazarse), el bocadillo se oculta en vez de quedar flotando.
+      const caja = el.closest('[data-guia="notas.tabla"]');
+      if (caja) {
+        const c = caja.getBoundingClientRect();
+        const finEncabezado = caja.querySelector("thead")?.getBoundingClientRect().bottom ?? c.top;
+        const cy = r.top + r.height / 2;
+        const cx = r.left + r.width / 2;
+        if (cy < Math.max(c.top, finEncabezado) || cy > c.bottom || cx < c.left || cx > c.right) { setTip(null); return; }
+      }
       const side: "left" | "right" = r.left > window.innerWidth / 2 ? "left" : "right";
       setTip({ top: r.top + r.height / 2, left: side === "right" ? r.right + 8 : r.left - 8, side });
     };
