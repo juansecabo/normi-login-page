@@ -71,6 +71,52 @@ const abrirTablero = () =>
 
 export const ESTADISTICAS: Capacidad[] = [
   // ─────────────────────────────────────────────────────────────────────────
+  // Pregúntale a Normi: chat con los datos del colegio (rector, coordinador, admin)
+  // ─────────────────────────────────────────────────────────────────────────
+  {
+    id: "estadisticas.preguntar_normi",
+    titulo: "Preguntarle a Normi por los datos del colegio",
+    descripcion:
+      "Hacer cualquier pregunta en palabras propias sobre notas, asignaturas perdidas, promedios, asistencia, llegadas tarde o convivencia, y recibir la respuesta con tabla, gráfica y descarga en Excel. Un coordinador solo ve los niveles que coordina.",
+    categoria: "Estadísticas",
+    roles: ["admin", "rector", "coordinador"],
+    ruta: "/estadisticas/preguntar",
+    endpoint: "POST /api/estadisticas/chat",
+    requisitos: [],
+    sinonimos: [
+      "pregúntale a Normi",
+      "chat de estadísticas",
+      "quiénes perdieron asignaturas",
+      "estudiantes que perdieron una materia",
+      "preguntar por los datos del colegio",
+      "consultar estadísticas en palabras",
+      "reporte de estudiantes ilesos",
+    ],
+    pasos: [
+      {
+        narracion: "Entramos a Estadísticas desde el tablero.",
+        accion: "navegar",
+        ruta: "/estadisticas",
+      },
+      {
+        narracion: "Toca 'Pregúntale a Normi', arriba de las estadísticas.",
+        accion: "click",
+        ancla: "estadisticas.boton_preguntar",
+      },
+      {
+        narracion: "Escribe tu pregunta como se la harías a una persona, por ejemplo: '¿qué estudiantes de Séptimo 1 perdieron una asignatura en el primer periodo?'. También puedes tocar una de las preguntas de ejemplo.",
+        accion: "escribir",
+        ancla: "estadisticas.chat_input",
+        campo: "pregunta",
+      },
+      {
+        narracion: "Envíala con la flecha (o con Enter). Normi consulta los datos del colegio y responde; si hay una lista, aparece en una tabla que puedes descargar en Excel.",
+        accion: "click",
+        ancla: "estadisticas.chat_enviar",
+      },
+    ],
+  },
+  // ─────────────────────────────────────────────────────────────────────────
   // Tablero de directivos: los 5 niveles de análisis
   // ─────────────────────────────────────────────────────────────────────────
   {

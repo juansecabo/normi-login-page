@@ -22,6 +22,7 @@ import ListaAsignaturas from "./pages/rector/ListaAsignaturas";
 import ListaEstudiantes from "./pages/rector/ListaEstudiantes";
 import EstudianteConsolidado from "./pages/rector/EstudianteConsolidado";
 import EstadisticasDashboard from "./pages/rector/EstadisticasDashboard";
+import ChatEstadisticas from "./pages/rector/ChatEstadisticas";
 import EstudiantesEnRiesgo from "./pages/rector/EstudiantesEnRiesgo";
 import PanelControl from "./pages/rector/PanelControl";
 import HorariosAvisos from "./pages/rector/HorariosAvisos";
@@ -208,6 +209,7 @@ const Raiz = () => (
           <Route path="/lista-estudiantes" element={<ListaEstudiantes />} />
           <Route path="/estudiante-consolidado" element={<EstudianteConsolidado />} />
           <Route path="/estadisticas" element={<EstadisticasDashboard />} />
+          <Route path="/estadisticas/preguntar" element={<ChatEstadisticas />} />
           <Route path="/boletines" element={<Boletines />} />
           <Route path="/boletines/ponte-al-dia" element={<PonteAlDiaBoletines />} />
           <Route path="/formatos" element={<Formatos />} />
