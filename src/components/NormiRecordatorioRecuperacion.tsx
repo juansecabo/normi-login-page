@@ -29,7 +29,7 @@ const NormiRecordatorioRecuperacion = () => {
   const [cerrado, setCerrado] = useState(estaCerrado);
 
   // En Perfil ya está la sección; en el chat de Estadísticas taparía la caja de escribir y la flecha de enviar.
-  const enPerfil = location.pathname.startsWith("/perfil") || location.pathname.startsWith("/estadisticas/preguntar");
+  const enPerfil = location.pathname.startsWith("/perfil") || location.pathname.startsWith("/preguntale-a-normi");
 
   // Un login nuevo cambia el JWT y la marca deja de coincidir: reaparece.
   useEffect(() => { setCerrado(estaCerrado()); }, [location.pathname]);

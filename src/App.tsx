@@ -209,7 +209,8 @@ const Raiz = () => (
           <Route path="/lista-estudiantes" element={<ListaEstudiantes />} />
           <Route path="/estudiante-consolidado" element={<EstudianteConsolidado />} />
           <Route path="/estadisticas" element={<EstadisticasDashboard />} />
-          <Route path="/estadisticas/preguntar" element={<ChatEstadisticas />} />
+          <Route path="/preguntale-a-normi" element={<ChatEstadisticas />} />
+          <Route path="/estadisticas/preguntar" element={<Navigate to="/preguntale-a-normi" replace />} />
           <Route path="/boletines" element={<Boletines />} />
           <Route path="/boletines/ponte-al-dia" element={<PonteAlDiaBoletines />} />
           <Route path="/formatos" element={<Formatos />} />

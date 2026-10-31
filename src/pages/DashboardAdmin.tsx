@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import TarjetaPreguntaleNormi from "@/components/TarjetaPreguntaleNormi";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useBienvenida, getSession, isAdmin } from "@/hooks/useSession";
@@ -162,6 +163,8 @@ const DashboardAdmin = () => {
             <AvatarUploader />
           </div>
         </div>
+
+        <TarjetaPreguntaleNormi />
 
         <div className="bg-card rounded-lg shadow-soft p-8 max-w-7xl mx-auto mt-8">
           <h3 className="text-xl font-bold text-foreground mb-1 text-center">

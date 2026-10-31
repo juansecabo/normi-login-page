@@ -80,7 +80,7 @@ export const ESTADISTICAS: Capacidad[] = [
       "Hacer cualquier pregunta en palabras propias sobre notas, asignaturas perdidas, promedios, asistencia, llegadas tarde o convivencia, y recibir la respuesta con tabla, gráfica y descarga en Excel. Un coordinador solo ve los niveles que coordina.",
     categoria: "Estadísticas",
     roles: ["admin", "rector", "coordinador"],
-    ruta: "/estadisticas/preguntar",
+    ruta: "/preguntale-a-normi",
     endpoint: "POST /api/estadisticas/chat",
     requisitos: [],
     sinonimos: [
@@ -94,12 +94,12 @@ export const ESTADISTICAS: Capacidad[] = [
     ],
     pasos: [
       {
-        narracion: "Entramos a Estadísticas desde el tablero.",
+        narracion: "Vamos al inicio.",
         accion: "navegar",
-        ruta: "/estadisticas",
+        ruta: "/dashboard",
       },
       {
-        narracion: "Toca 'Pregúntale a Normi', arriba de las estadísticas.",
+        narracion: "Toca 'Pregúntale a Normi', justo antes de '¿Qué deseas consultar?'.",
         accion: "click",
         ancla: "estadisticas.boton_preguntar",
       },
@@ -123,7 +123,7 @@ export const ESTADISTICAS: Capacidad[] = [
       "En «Pregúntale a Normi» las conversaciones quedan guardadas a la izquierda (en el celular, en el botón de la esquina). Se puede abrir una anterior, empezar una nueva o borrarla.",
     categoria: "Estadísticas",
     roles: ["admin", "rector", "coordinador"],
-    ruta: "/estadisticas/preguntar",
+    ruta: "/preguntale-a-normi",
     endpoint: "GET /api/estadisticas/chat/conversaciones",
     requisitos: [],
     sinonimos: [
@@ -136,7 +136,7 @@ export const ESTADISTICAS: Capacidad[] = [
       {
         narracion: "Entramos a Pregúntale a Normi.",
         accion: "navegar",
-        ruta: "/estadisticas/preguntar",
+        ruta: "/preguntale-a-normi",
       },
       {
         narracion: "En el celular, toca el botón de la esquina superior izquierda para ver tus conversaciones.",

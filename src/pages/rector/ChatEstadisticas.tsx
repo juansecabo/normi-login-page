@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import normiImg from "@/assets/normi-guia.png";
 
-// "Pregúntale a Normi" (Estadísticas): el directivo pregunta en lenguaje natural
+// "Pregúntale a Normi" (entrada en el tablero, antes de "¿Qué deseas consultar?"): el directivo pregunta en lenguaje natural
 // y Normi responde con datos del colegio (servidor: /api/estadisticas/chat, que
 // consulta la base solo-lectura por las vistas del esquema chat). Por ahora para
 // rectoría, coordinación (solo sus niveles) y administración. Las conversaciones se
@@ -235,7 +235,7 @@ const ChatEstadisticas = () => {
   const nombre = (getSession().nombres || "").split(" ")[0];
 
   useEffect(() => {
-    if (!ROLES_CHAT_ESTADISTICAS.includes(getSession().cargo || "")) navigate("/estadisticas", { replace: true });
+    if (!ROLES_CHAT_ESTADISTICAS.includes(getSession().cargo || "")) navigate("/dashboard", { replace: true });
     precargarSonidoRespuesta();
   }, [navigate]);
 
@@ -368,7 +368,7 @@ const ChatEstadisticas = () => {
 
   return (
     <div className="h-[100dvh] bg-background flex flex-col overflow-hidden">
-      <HeaderNormi backLink="/estadisticas" />
+      <HeaderNormi backLink="/dashboard" />
       <div className="flex-1 min-h-0 flex">
         {/* Barra lateral de conversaciones (PC) */}
         <aside className="hidden md:flex w-72 shrink-0 flex-col border-r border-border bg-card/60">
@@ -390,8 +390,6 @@ const ChatEstadisticas = () => {
             </button>
             <BreadcrumbDeslizable>
               <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
-              <span className="text-muted-foreground">→</span>
-              <button onClick={() => navigate("/estadisticas")} className="text-primary hover:underline">Estadísticas</button>
               <span className="text-muted-foreground">→</span>
               <span className="text-foreground font-medium">Pregúntale a Normi</span>
             </BreadcrumbDeslizable>

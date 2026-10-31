@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import TarjetaPreguntaleNormi from "@/components/TarjetaPreguntaleNormi";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { cargoSegunGenero } from "@/lib/entrevistadores";
@@ -396,6 +397,8 @@ const DashboardRector = () => {
         </div>
 
         {/* Botones principales */}
+        <TarjetaPreguntaleNormi />
+
         <div className="bg-card rounded-lg shadow-soft p-8 max-w-7xl mx-auto mt-8">
           <h3 className="text-xl font-bold text-foreground mb-1 text-center">
             ¿Qué deseas consultar?
