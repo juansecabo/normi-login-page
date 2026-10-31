@@ -167,7 +167,7 @@ function TablaResultado({ t }: { t: Tabla }) {
           </button>
         )}
       </div>
-      {t.grafica && t.filas.length > 0 && <div className="px-2 pt-4 pb-2 border-b border-border"><GraficaTabla t={t} /></div>}
+      {t.grafica && t.filas.length >= 2 && t.filas.length <= 20 && new Set(t.filas.map((f) => Number(f[t.grafica!.y]))).size > 1 && <div className="px-2 pt-4 pb-2 border-b border-border"><GraficaTabla t={t} /></div>}
       {t.filas.length === 0 ? (
         <p className="px-4 py-6 text-sm text-muted-foreground text-center">Sin resultados.</p>
       ) : (
@@ -247,7 +247,7 @@ const ChatEstadisticas = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <HeaderNormi backLink="/estadisticas" />
-      <main className="flex-1 container mx-auto p-4 md:p-8 flex flex-col max-w-4xl">
+      <main className="flex-1 container mx-auto p-4 md:p-8 flex flex-col">
         <div className="bg-card rounded-lg shadow-soft p-4 mb-6 flex items-center justify-between gap-3">
           <BreadcrumbDeslizable>
             <button onClick={() => navigate("/dashboard")} className="text-primary hover:underline">Inicio</button>
@@ -277,7 +277,7 @@ const ChatEstadisticas = () => {
                 <p className="text-muted-foreground mt-2 max-w-md">
                   {nombre ? `${nombre}, pregúntame` : "Pregúntame"} lo que quieras saber de notas, asistencia o convivencia del colegio.
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-8 w-full max-w-2xl" data-guia="estadisticas.chat_sugerencias">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mt-8 w-full max-w-5xl" data-guia="estadisticas.chat_sugerencias">
                   {SUGERENCIAS.map((s) => (
                     <button
                       key={s}
