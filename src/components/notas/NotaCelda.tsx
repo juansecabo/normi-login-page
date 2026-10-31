@@ -58,6 +58,22 @@ const NotaCelda = ({
   // Defensa: una nota null se trata como casilla vacía (no se le llama toFixed).
   const nota = notaProp === null ? undefined : notaProp;
   const [showMenu, setShowMenu] = useState(false);
+  const [showMenuVacia, setShowMenuVacia] = useState(false);
+  // En celular el menú ⋮ se abría al TOCAR (pointerdown): si el dedo empezaba a deslizar
+  // sobre el botón, aparecía el menú y había que tocar afuera para cerrarlo. Con dedo/lápiz
+  // ahora se abre solo con un toque completo (click, que el navegador no dispara si desliza);
+  // con mouse sigue igual.
+  const tipoPuntero = useRef<string>("");
+  const abrirConToque = (setOpen: (fn: (o: boolean) => boolean) => void) => ({
+    onPointerDown: (e: React.PointerEvent) => {
+      tipoPuntero.current = e.pointerType;
+      if (e.pointerType !== "mouse") e.preventDefault();
+    },
+    onClick: () => {
+      if (tipoPuntero.current === "touch" || tipoPuntero.current === "pen") setOpen((o) => !o);
+      tipoPuntero.current = "";
+    },
+  });
   const localInputRef = useRef<HTMLInputElement | null>(null);
   const [tip, setTip] = useState<{ top: number; left: number; side: "left" | "right" } | null>(null);
 
@@ -166,9 +182,9 @@ const NotaCelda = ({
               comentario, completar, notificar. Sin nota: solo No aplica / Quitar No aplica. */}
           {nota === undefined && (noAplica ? !!onQuitarNoAplica : !!onNoAplica) && (
             <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-              <DropdownMenu>
+              <DropdownMenu open={showMenuVacia} onOpenChange={setShowMenuVacia}>
                 <DropdownMenuTrigger asChild>
-                  <button data-guia="notas.menu_celda_vacia" className="p-1 hover:bg-muted rounded transition-colors">
+                  <button data-guia="notas.menu_celda_vacia" className="p-1 hover:bg-muted rounded transition-colors" {...abrirConToque(setShowMenuVacia)}>
                     <MoreVertical className="w-3 h-3 text-muted-foreground" />
                   </button>
                 </DropdownMenuTrigger>
@@ -192,7 +208,7 @@ const NotaCelda = ({
             <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
               <DropdownMenu open={showMenu} onOpenChange={setShowMenu}>
                 <DropdownMenuTrigger asChild>
-                  <button data-guia="notas.menu_celda" className="p-1 hover:bg-muted rounded transition-colors">
+                  <button data-guia="notas.menu_celda" className="p-1 hover:bg-muted rounded transition-colors" {...abrirConToque(setShowMenu)}>
                     <MoreVertical className="w-3 h-3 text-muted-foreground" />
                   </button>
                 </DropdownMenuTrigger>
