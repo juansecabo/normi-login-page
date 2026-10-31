@@ -15,7 +15,7 @@ const TarjetaPreguntaleNormi = () => {
       type="button"
       data-guia="estadisticas.boton_preguntar"
       onClick={() => navigate("/preguntale-a-normi")}
-      className="w-full max-w-7xl mx-auto mt-8 flex items-center gap-4 rounded-lg bg-card shadow-soft p-4 md:p-5 text-left border-2 border-transparent hover:border-primary transition-colors"
+      className="w-full max-w-2xl mx-auto mt-8 flex items-center gap-4 rounded-lg bg-card shadow-soft p-4 md:p-5 text-left border-2 border-transparent hover:border-primary transition-colors"
     >
       <img src={normiImg} alt="" className="w-12 h-12 md:w-14 md:h-14 object-contain shrink-0" />
       <div className="min-w-0 flex-1">
