@@ -20,7 +20,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import normiImg from "@/assets/normi-guia.png";
+import normiAvatar from "@/assets/normi-graficas.webp";
+import normiPresenta from "@/assets/normi-presenta.webp";
 
 // "Pregúntale a Normi" (entrada en el tablero, antes de "¿Qué deseas consultar?"): el directivo pregunta en lenguaje natural
 // y Normi responde con datos del colegio (servidor: /api/estadisticas/chat, que
@@ -70,7 +71,7 @@ const SUGERENCIAS = [
   "¿Qué asignatura tiene más estudiantes perdiendo?",
   "¿Qué estudiantes tienen más faltas sin excusa este mes?",
   "Compara los salones de Séptimo en Matemáticas",
-  "¿Cuántos estudiantes hay por nivel?",
+  "¿Quiénes son los profesores de Matemáticas de todo el colegio?",
 ];
 
 const COLORES = ["#16a34a", "#0ea5e9", "#f59e0b", "#8b5cf6", "#ef4444", "#14b8a6", "#ec4899", "#64748b"];
@@ -451,10 +452,10 @@ const ChatEstadisticas = () => {
                 <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
               ) : mensajes.length === 0 ? (
                 <div className="flex flex-col items-center text-center pt-4 md:pt-10">
-                  <img src={normiImg} alt="Normi" className="w-28 h-28 object-contain mb-4" />
+                  <img src={normiPresenta} alt="Normi" className="w-40 h-40 object-contain mb-2" />
                   <h1 className="text-2xl font-bold text-foreground">Pregúntale a Normi</h1>
                   <p className="text-muted-foreground mt-2 max-w-md">
-                    {nombre ? `${nombre}, pregúntame` : "Pregúntame"} lo que quieras saber de notas, asistencia o convivencia del colegio.
+                    {nombre ? `${nombre}, pregúntame` : "Pregúntame"} lo que quieras saber del colegio.
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mt-8 w-full max-w-5xl" data-guia="estadisticas.chat_sugerencias">
                     {SUGERENCIAS.map((s) => (
@@ -477,7 +478,7 @@ const ChatEstadisticas = () => {
                     </div>
                   ) : (
                     <div key={i} className="flex gap-3">
-                      <img src={normiImg} alt="" className="w-9 h-9 rounded-full object-cover bg-primary/10 shrink-0" />
+                      <img src={normiAvatar} alt="" className="w-9 h-9 rounded-full object-cover object-[60%_8%] scale-150 bg-emerald-100 shrink-0" />
                       <div className={`min-w-0 flex-1 text-[15px] ${m.error ? "text-destructive" : "text-foreground/90"}`}>
                         <TextoNormi texto={m.content} />
                         {m.tablas?.map((t, j) => <TablaResultado key={j} t={t} />)}
@@ -488,7 +489,7 @@ const ChatEstadisticas = () => {
               )}
               {pensando && (
                 <div className="flex gap-3 items-center">
-                  <img src={normiImg} alt="" className="w-9 h-9 rounded-full object-cover bg-primary/10 shrink-0" />
+                  <img src={normiAvatar} alt="" className="w-9 h-9 rounded-full object-cover object-[60%_8%] scale-150 bg-emerald-100 shrink-0" />
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span className="flex gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />

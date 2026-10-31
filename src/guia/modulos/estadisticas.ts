@@ -77,7 +77,7 @@ export const ESTADISTICAS: Capacidad[] = [
     id: "estadisticas.preguntar_normi",
     titulo: "Preguntarle a Normi por los datos del colegio",
     descripcion:
-      "Hacer cualquier pregunta en palabras propias sobre notas, asignaturas perdidas, promedios, asistencia, llegadas tarde o convivencia, y recibir la respuesta con tabla, gráfica y descarga en Excel. Un coordinador solo ve los niveles que coordina.",
+      "Hacer cualquier pregunta en palabras propias sobre el colegio (notas, asignaturas perdidas, promedios, asistencia, convivencia, profesores y sus asignaturas, horarios, actividades, comunicados, eventos, biblioteca, entrevistas, permisos y consultas) y recibir la respuesta con tabla, gráfica y descarga en Excel. Un coordinador solo ve los niveles que coordina.",
     categoria: "Estadísticas",
     roles: ["admin", "rector", "coordinador"],
     ruta: "/preguntale-a-normi",

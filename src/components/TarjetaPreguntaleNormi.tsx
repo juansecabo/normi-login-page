@@ -1,10 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { MessageCircle } from "lucide-react";
 import { getSession } from "@/hooks/useSession";
-import normiImg from "@/assets/normi-guia.png";
+import normiImg from "@/assets/normi-graficas.webp";
 
-// Entrada a "Pregúntale a Normi" en el tablero (antes de "¿Qué deseas consultar?").
-// Solo para los cargos con acceso al chat de datos del colegio.
+// Entrada a "Pregúntale a Normi" en el tablero (antes de "¿Qué deseas consultar?"),
+// con el estilo de las fichas (fondo verde claro). Solo para los cargos con acceso.
 export const ROLES_PREGUNTALE_NORMI = ["Rector", "Coordinador(a)", "Administrador"];
 
 const TarjetaPreguntaleNormi = () => {
@@ -15,14 +15,14 @@ const TarjetaPreguntaleNormi = () => {
       type="button"
       data-guia="estadisticas.boton_preguntar"
       onClick={() => navigate("/preguntale-a-normi")}
-      className="w-full max-w-2xl mx-auto mt-8 flex items-center gap-4 rounded-lg bg-card shadow-soft p-4 md:p-5 text-left border-2 border-transparent hover:border-primary transition-colors"
+      className="w-full max-w-2xl mx-auto mt-8 flex items-center gap-4 rounded-lg bg-emerald-100 hover:bg-emerald-200 hover:shadow-md p-4 md:p-5 text-left transition-all duration-200"
     >
-      <img src={normiImg} alt="" className="w-12 h-12 md:w-14 md:h-14 object-contain shrink-0" />
+      <img src={normiImg} alt="" className="w-16 h-16 md:w-20 md:h-20 object-contain shrink-0" />
       <div className="min-w-0 flex-1">
-        <div className="font-bold text-foreground text-base md:text-lg">Pregúntale a Normi</div>
-        <div className="text-sm text-muted-foreground">Cualquier pregunta sobre notas, asistencia o convivencia del colegio.</div>
+        <div className="font-bold text-foreground text-lg md:text-xl">Pregúntale a Normi</div>
+        <div className="text-sm text-foreground/70">Pregúntale lo que quieras sobre el colegio.</div>
       </div>
-      <MessageCircle className="w-5 h-5 text-primary shrink-0" />
+      <MessageCircle className="w-6 h-6 text-primary shrink-0" />
     </button>
   );
 };
