@@ -20,7 +20,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import normiAvatar from "@/assets/normi-graficas.webp";
+import normiAvatar from "@/assets/normi-avatar.webp";
 import normiPresenta from "@/assets/normi-presenta.webp";
 
 // "Pregúntale a Normi" (entrada en el tablero, antes de "¿Qué deseas consultar?"): el directivo pregunta en lenguaje natural
@@ -478,7 +478,7 @@ const ChatEstadisticas = () => {
                     </div>
                   ) : (
                     <div key={i} className="flex gap-3">
-                      <img src={normiAvatar} alt="" className="w-9 h-9 rounded-full object-cover object-[60%_8%] scale-150 bg-emerald-100 shrink-0" />
+                      <img src={normiAvatar} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
                       <div className={`min-w-0 flex-1 text-[15px] ${m.error ? "text-destructive" : "text-foreground/90"}`}>
                         <TextoNormi texto={m.content} />
                         {m.tablas?.map((t, j) => <TablaResultado key={j} t={t} />)}
@@ -489,7 +489,7 @@ const ChatEstadisticas = () => {
               )}
               {pensando && (
                 <div className="flex gap-3 items-center">
-                  <img src={normiAvatar} alt="" className="w-9 h-9 rounded-full object-cover object-[60%_8%] scale-150 bg-emerald-100 shrink-0" />
+                  <img src={normiAvatar} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span className="flex gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
