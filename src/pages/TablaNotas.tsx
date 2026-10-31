@@ -4542,16 +4542,48 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
     );
   }
 
+  // En PC, cuando existe la franja de acciones (Notificar pendientes), los profesores y el
+  // estado del periodo se muestran en esa franja en vez de en una barra propia: así la
+  // tabla gana alto. En celular todo sigue igual.
+  const mostrarFranjaAcciones = !soloLectura && !esFinalDefinitiva && !loading && estudiantes.length > 0 && getActividadesPorPeriodo(periodoActivo).length > 0;
+  const infoProfesores = (
+    <>
+      <div className="text-sm text-foreground">
+        {nombresProfesores ? (
+          <span>
+            <span className="font-semibold">{nombresProfesores.includes(',') ? 'Profesores(as): ' : `${cargoSegunGenero('Profesor(a)', generoProfesorAula)}: `}</span>
+            {nombresProfesores}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">Sin profesor asignado</span>
+        )}
+      </div>
+      {periodoActivo >= 1 && (
+        // Ambos modos: "completo" solo si el profe marcó la casilla
+        // "Periodo completo" (ya no se cierra solo por %-suma en plano).
+        (getPeriodoCompleto(periodoActivo)) ? (
+          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-semibold">
+            ✓ {UNIDAD} completo
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-medium">
+            {UNIDAD} no completo
+          </span>
+        )
+      )}
+    </>
+  );
+
   return (
     <div className="min-h-screen md:h-screen bg-background flex flex-col">
       <HeaderNormi backLink={soloLectura ? (isAdmin() ? "/dashboard" : "/dashboard") : "/dashboard"} />
 
       {/* Main Content */}
-      <main className="flex-1 min-w-0 md:flex md:flex-col md:overflow-hidden container mx-auto p-4 md:p-8">
+      <main className="flex-1 min-w-0 md:flex md:flex-col md:overflow-hidden container mx-auto p-4 md:px-8 md:py-4">
         {/* Breadcrumb — el orden y los enlaces dependen del flujo de entrada:
             profesor entra por Asignaturas; admin/rector (soloLectura) entra por
             Notas → grado → salón → Por Asignatura, con la asignatura al final. */}
-        <div className="bg-card rounded-lg shadow-soft p-4 mb-6">
+        <div className="bg-card rounded-lg shadow-soft p-4 md:py-2 mb-6 md:mb-3">
           <div className="flex flex-wrap items-center justify-between gap-4">
             {soloLectura ? (
               <BreadcrumbDeslizable>
@@ -4640,30 +4672,8 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
         </div>
 
         {/* Barra de info: profesor(es) del aula + estado del periodo (visible para todos) */}
-        <div className="bg-card rounded-lg shadow-soft px-4 py-2.5 mb-3 flex flex-wrap items-center justify-between gap-2">
-          <div className="text-sm text-foreground">
-            {nombresProfesores ? (
-              <span>
-                <span className="font-semibold">{nombresProfesores.includes(',') ? 'Profesores(as): ' : `${cargoSegunGenero('Profesor(a)', generoProfesorAula)}: `}</span>
-                {nombresProfesores}
-              </span>
-            ) : (
-              <span className="text-muted-foreground">Sin profesor asignado</span>
-            )}
-          </div>
-          {periodoActivo >= 1 && (
-            // Ambos modos: "completo" solo si el profe marcó la casilla
-            // "Periodo completo" (ya no se cierra solo por %-suma en plano).
-            (getPeriodoCompleto(periodoActivo)) ? (
-              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-semibold">
-                ✓ {UNIDAD} completo
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-medium">
-                {UNIDAD} no completo
-              </span>
-            )
-          )}
+        <div className={`bg-card rounded-lg shadow-soft px-4 py-2.5 mb-3 flex flex-wrap items-center justify-between gap-2${mostrarFranjaAcciones ? ' md:hidden' : ''}`}>
+          {infoProfesores}
         </div>
 
         {/* Pestañas de Períodos */}
@@ -4748,6 +4758,9 @@ const TablaNotas = ({ soloLectura = false }: { soloLectura?: boolean } = {}) => 
             <>
             {!soloLectura && !esFinalDefinitiva && getActividadesPorPeriodo(periodoActivo).length > 0 && (
               <div className="flex items-center justify-between md:justify-end gap-2 md:gap-4 px-3 py-2 border-l border-t border-border bg-muted/20">
+                <div className="hidden md:flex flex-wrap items-center gap-3 mr-auto min-w-0">
+                  {infoProfesores}
+                </div>
                 <button
                   onClick={() => abrirPendientes(periodoActivo, null)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 text-sm font-semibold transition-colors whitespace-nowrap shrink-0"
