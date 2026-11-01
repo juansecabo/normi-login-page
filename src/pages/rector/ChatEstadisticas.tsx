@@ -620,7 +620,7 @@ const ChatEstadisticas = () => {
       </Dialog>
 
       <AlertDialog open={!!borrar} onOpenChange={(o) => { if (!o) setBorrar(null); }}>
-        <AlertDialogContent>
+        <AlertDialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar esta conversación?</AlertDialogTitle>
             <AlertDialogDescription>«{borrar?.titulo}» se eliminará y no se puede recuperar.</AlertDialogDescription>
