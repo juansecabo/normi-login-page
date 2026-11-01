@@ -405,8 +405,14 @@ const ChatEstadisticas = () => {
       setMensajes((ms) => [...ms, { role: "assistant", content: "No pude responder en este momento. Intenta de nuevo en unos segundos.", error: true }]);
     } finally {
       setPensando(false);
-      // Solo en PC: en el celular el foco abre el teclado y tapa la respuesta.
-      if (window.matchMedia("(pointer: fine)").matches) setTimeout(() => inputRef.current?.focus(), 50);
+      // En el celular, como la app de Claude: el cursor queda en la barra pero el
+      // teclado no se abre hasta que la persona la toque (inputmode="none").
+      setTimeout(() => {
+        const el = inputRef.current;
+        if (!el) return;
+        if (!window.matchMedia("(pointer: fine)").matches) el.setAttribute("inputmode", "none");
+        el.focus();
+      }, 50);
     }
   };
 
@@ -418,9 +424,9 @@ const ChatEstadisticas = () => {
           type="button"
           data-guia="estadisticas.chat_nueva"
           onClick={nueva}
-          className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border bg-background hover:border-primary hover:bg-primary/5 text-sm font-medium transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-medium transition-colors"
         >
-          <Plus className="w-4 h-4 text-primary" /> Nueva conversación
+          <Plus className="w-4 h-4" /> Nueva conversación
         </button>
       </div>
       <div className="flex-1 overflow-y-auto px-2 pb-3" data-guia="estadisticas.chat_conversaciones">
@@ -570,6 +576,12 @@ const ChatEstadisticas = () => {
                 value={texto}
                 onChange={(e) => setTexto(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviar(texto); } }}
+                onClick={(e) => {
+                  // Al tocar la barra se devuelve el teclado (ver el foco tras cada respuesta).
+                  const el = e.currentTarget;
+                  if (el.getAttribute("inputmode") === "none") { el.removeAttribute("inputmode"); el.blur(); el.focus(); }
+                }}
+                onBlur={(e) => e.currentTarget.removeAttribute("inputmode")}
                 rows={1}
                 autoFocus
                 placeholder="Escribe o dicta tu pregunta"
