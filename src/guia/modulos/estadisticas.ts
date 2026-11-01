@@ -157,6 +157,49 @@ export const ESTADISTICAS: Capacidad[] = [
       },
     ],
   },
+  {
+    id: "estadisticas.documento_normi",
+    titulo: "Pedirle a Normi que redacte un documento",
+    descripcion:
+      "Pedirle a Normi cualquier documento con los datos del colegio (actas de compromiso, citaciones, informes, circulares, constancias, cartas) y descargarlo en Word o PDF. Si es uno por persona, por ejemplo un acta para cada estudiante que perdió asignaturas, Normi lo arma para todos, uno por página. También funciona por WhatsApp.",
+    categoria: "Estadísticas",
+    roles: ["admin", "rector", "coordinador"],
+    ruta: "/preguntale-a-normi",
+    endpoint: "POST /api/estadisticas/chat/documento",
+    requisitos: [],
+    sinonimos: [
+      "redactar un acta",
+      "actas de compromiso",
+      "citación a acudientes",
+      "hacer un informe",
+      "documento en Word",
+      "documento en PDF",
+      "carta o circular",
+    ],
+    pasos: [
+      {
+        narracion: "Vamos al inicio.",
+        accion: "navegar",
+        ruta: "/dashboard",
+      },
+      {
+        narracion: "Toca 'Pregúntale a Normi'.",
+        accion: "click",
+        ancla: "estadisticas.boton_preguntar",
+      },
+      {
+        narracion: "Pide el documento con tus palabras, por ejemplo: 'hazme un acta de compromiso para cada estudiante de Séptimo que perdió asignaturas en el tercer periodo'.",
+        accion: "escribir",
+        ancla: "estadisticas.chat_input",
+        campo: "pedido",
+      },
+      {
+        narracion: "Envíalo. Normi lo redacta y aparece en la conversación con los botones Word y PDF para descargarlo. Si quieres cambios, pídeselos y lo vuelve a hacer.",
+        accion: "click",
+        ancla: "estadisticas.chat_enviar",
+      },
+    ],
+  },
   // ─────────────────────────────────────────────────────────────────────────
   // Tablero de directivos: los 5 niveles de análisis
   // ─────────────────────────────────────────────────────────────────────────

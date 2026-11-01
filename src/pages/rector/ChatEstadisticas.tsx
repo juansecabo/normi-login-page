@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowUp, Download, Loader2, MoreHorizontal, PanelLeft, Pencil, Pin, PinOff, Plus, Table2, Trash2 } from "lucide-react";
+import { ArrowUp, Download, FileText, Loader2, MoreHorizontal, PanelLeft, Pencil, Pin, PinOff, Plus, Table2, Trash2 } from "lucide-react";
 import {
   ResponsiveContainer, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, CartesianGrid,
@@ -41,10 +41,18 @@ interface Tabla {
   recortado: boolean;
   grafica?: Grafica | null;
 }
+interface Documento {
+  titulo: string;
+  contenido: string;
+  formato: "word" | "pdf";
+  sql_combinar?: string;
+  copias?: number;
+}
 interface Mensaje {
   role: "user" | "assistant";
   content: string;
   tablas?: Tabla[];
+  documentos?: Documento[];
   error?: boolean;
 }
 interface ConversacionLite { id: string; titulo: string; actualizado_at: string; fijada?: boolean }
@@ -158,6 +166,53 @@ function GraficaTabla({ t }: { t: Tabla }) {
           </BarChart>
         )}
       </ResponsiveContainer>
+    </div>
+  );
+}
+
+/** Primeras líneas del documento sin marcas, para reconocerlo en la conversación. */
+function vistaPrevia(contenido: string): string {
+  return contenido
+    .split("\n")
+    .map((l) => l.replace(/^#{1,3}\s+|^[-*]\s+|^\d+[.)]\s+/, "").replace(/\*\*|\{\{|\}\}/g, "").trim())
+    .filter((l) => l && !l.startsWith("|") && !l.startsWith("[") && !/^-{3,}$/.test(l))
+    .slice(1, 3)
+    .join(" ");
+}
+
+/** Documento redactado por Normi: el servidor lo arma en Word o PDF al descargarlo. */
+function DocumentoResultado({ d }: { d: Documento }) {
+  const [bajando, setBajando] = useState<"word" | "pdf" | null>(null);
+  const [fallo, setFallo] = useState(false);
+  const bajar = async (formato: "word" | "pdf") => {
+    setBajando(formato); setFallo(false);
+    try {
+      const blob = await apiDescargar("/api/estadisticas/chat/documento", { formato, titulo: d.titulo, contenido: d.contenido, sql_combinar: d.sql_combinar });
+      const { saveAs } = await import("file-saver");
+      saveAs(blob, `${d.titulo.replace(/[\\/:*?"<>|]/g, "").slice(0, 80) || "Documento"}.${formato === "pdf" ? "pdf" : "docx"}`);
+    } catch { setFallo(true); } finally { setBajando(null); }
+  };
+  return (
+    <div className="mt-3 rounded-xl border border-border bg-background p-4 flex gap-4 items-start" data-guia="estadisticas.chat_documento">
+      <div className="w-10 h-12 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+        <FileText className="w-5 h-5 text-primary" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="font-semibold text-sm text-foreground">{d.titulo}</div>
+        <div className="text-xs text-muted-foreground mt-0.5">
+          {d.copias ? `${d.copias} ${d.copias === 1 ? "copia" : "copias"}, una por página` : "Documento"}
+        </div>
+        {vistaPrevia(d.contenido) && <p className="text-sm text-foreground/70 mt-2 line-clamp-2">{vistaPrevia(d.contenido)}</p>}
+        <div className="flex flex-wrap items-center gap-2 mt-3">
+          {(["word", "pdf"] as const).map((f) => (
+            <Button key={f} type="button" size="sm" variant={f === "word" ? "default" : "outline"} disabled={!!bajando} onClick={() => bajar(f)}>
+              {bajando === f ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              {f === "word" ? "Word" : "PDF"}
+            </Button>
+          ))}
+          {fallo && <span className="text-xs text-destructive">No se pudo descargar</span>}
+        </div>
+      </div>
     </div>
   );
 }
@@ -332,11 +387,11 @@ const ChatEstadisticas = () => {
     setPensando(true);
     try {
       // La memoria la arma el servidor con la conversación guardada (últimas 20 intervenciones).
-      const r = await apiRequest<{ respuesta: string; tablas: Tabla[]; conversacion_id: string | null; titulo: string }>("/api/estadisticas/chat", {
+      const r = await apiRequest<{ respuesta: string; tablas: Tabla[]; documentos?: Documento[]; conversacion_id: string | null; titulo: string }>("/api/estadisticas/chat", {
         method: "POST",
         body: JSON.stringify({ mensaje: p, conversacion_id: actualId }),
       });
-      setMensajes((ms) => [...ms, { role: "assistant", content: r.respuesta, tablas: r.tablas }]);
+      setMensajes((ms) => [...ms, { role: "assistant", content: r.respuesta, tablas: r.tablas, documentos: r.documentos }]);
       reproducirSonidoRespuesta();
       if (r.conversacion_id) {
         const ahora = new Date().toISOString();
@@ -483,6 +538,7 @@ const ChatEstadisticas = () => {
                       <div className={`min-w-0 flex-1 text-[15px] ${m.error ? "text-destructive" : "text-foreground/90"}`}>
                         <TextoNormi texto={m.content} />
                         {m.tablas?.map((t, j) => <TablaResultado key={j} t={t} />)}
+                        {m.documentos?.map((d, j) => <DocumentoResultado key={j} d={d} />)}
                       </div>
                     </div>
                   ),
