@@ -19,7 +19,7 @@ const TarjetaPreguntaleNormi = () => {
       {/* Normi a la derecha: mira hacia la izquierda, hacia el texto. */}
       <div className="min-w-0 flex-1">
         <div className="font-bold text-foreground text-lg md:text-xl">Pregúntale a Normi</div>
-        <div className="text-sm text-foreground/70">Pregúntale lo que quieras sobre el colegio.</div>
+        <div className="text-sm text-foreground">Pregúntale lo que quieras sobre el colegio.</div>
       </div>
       <img src={normiImg} alt="" className="w-16 h-16 md:w-20 md:h-20 object-contain shrink-0" />
     </button>
