@@ -405,7 +405,8 @@ const ChatEstadisticas = () => {
       setMensajes((ms) => [...ms, { role: "assistant", content: "No pude responder en este momento. Intenta de nuevo en unos segundos.", error: true }]);
     } finally {
       setPensando(false);
-      setTimeout(() => inputRef.current?.focus(), 50);
+      // Solo en PC: en el celular el foco abre el teclado y tapa la respuesta.
+      if (window.matchMedia("(pointer: fine)").matches) setTimeout(() => inputRef.current?.focus(), 50);
     }
   };
 
