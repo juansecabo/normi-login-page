@@ -77,7 +77,7 @@ export const ESTADISTICAS: Capacidad[] = [
     id: "estadisticas.preguntar_normi",
     titulo: "Preguntarle a Normi por los datos del colegio",
     descripcion:
-      "Hacer cualquier pregunta en palabras propias sobre el colegio (notas, asignaturas perdidas, promedios, asistencia, convivencia, profesores y sus asignaturas, horarios, actividades, comunicados, eventos, biblioteca, entrevistas, permisos y consultas) y recibir la respuesta con tabla, gráfica y descarga en Excel. Un coordinador solo ve los niveles que coordina.",
+      "Hacer cualquier pregunta en palabras propias sobre el colegio (notas, asignaturas perdidas, promedios, asistencia, convivencia, profesores y sus asignaturas, horarios, actividades, comunicados, eventos, biblioteca, entrevistas, permisos y consultas) y recibir la respuesta con tabla, gráfica y descarga en Excel, PDF o Word. Un coordinador solo ve los niveles que coordina.",
     categoria: "Estadísticas",
     roles: ["admin", "rector", "coordinador"],
     ruta: "/preguntale-a-normi",
@@ -110,7 +110,7 @@ export const ESTADISTICAS: Capacidad[] = [
         campo: "pregunta",
       },
       {
-        narracion: "Envíala con la flecha (o con Enter). Normi consulta los datos del colegio y responde; si hay una lista, aparece en una tabla que puedes descargar en Excel. La conversación queda guardada a la izquierda.",
+        narracion: "Envíala con la flecha (o con Enter). Normi consulta los datos del colegio y responde; si hay una lista, aparece en una tabla que puedes descargar en Excel, PDF o Word. La conversación queda guardada a la izquierda.",
         accion: "click",
         ancla: "estadisticas.chat_enviar",
       },

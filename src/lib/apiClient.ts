@@ -893,3 +893,15 @@ export const apiClient = {
 };
 
 export { request as apiRequest };
+
+/** POST que devuelve un archivo (Blob) con la sesión del usuario (ej. PDF/Word/Excel de Pregúntale a Normi). */
+export async function apiDescargar(path: string, body: unknown): Promise<Blob> {
+  const token = getToken();
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new ApiError(res.status, 'descarga_fallida');
+  return res.blob();
+}

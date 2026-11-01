@@ -8,7 +8,7 @@ import {
 import HeaderNormi from "@/components/HeaderNormi";
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 import { getSession } from "@/hooks/useSession";
-import { apiRequest } from "@/lib/apiClient";
+import { apiRequest, apiDescargar } from "@/lib/apiClient";
 import { precargarSonidoRespuesta, reproducirSonidoRespuesta } from "@/lib/sonidoRespuesta";
 import DictadoMic from "@/components/DictadoMic";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -117,23 +117,14 @@ function valorCelda(v: unknown): string {
   return String(v);
 }
 
-async function descargarExcel(t: Tabla) {
-  const ExcelJS = (await import("exceljs")).default;
+type Formato = "excel" | "pdf" | "word";
+const EXT: Record<Formato, string> = { excel: "xlsx", pdf: "pdf", word: "docx" };
+
+/** El servidor arma el archivo (mismo formato que los que Normi manda por WhatsApp). */
+async function descargarArchivo(t: Tabla, formato: Formato) {
+  const blob = await apiDescargar("/api/estadisticas/chat/archivo", { formato, titulo: t.titulo, columnas: t.columnas, filas: t.filas });
   const { saveAs } = await import("file-saver");
-  const wb = new ExcelJS.Workbook();
-  const ws = wb.addWorksheet("Resultado");
-  ws.addRow([t.titulo]).font = { bold: true, size: 13 };
-  ws.addRow([]);
-  const enc = ws.addRow(t.columnas);
-  enc.font = { bold: true, color: { argb: "FFFFFFFF" } };
-  enc.eachCell((c) => { c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF16A34A" } }; });
-  for (const f of t.filas) ws.addRow(t.columnas.map((c) => { const v = f[c]; return typeof v === "number" ? v : valorCelda(v); }));
-  t.columnas.forEach((c, i) => {
-    const largo = Math.max(c.length, ...t.filas.slice(0, 300).map((f) => valorCelda(f[c]).length));
-    ws.getColumn(i + 1).width = Math.min(largo + 4, 50);
-  });
-  const buffer = await wb.xlsx.writeBuffer();
-  saveAs(new Blob([buffer]), `${t.titulo.replace(/[\\/:*?"<>|]/g, "").slice(0, 80) || "Resultado"}.xlsx`);
+  saveAs(blob, `${t.titulo.replace(/[\\/:*?"<>|]/g, "").slice(0, 80) || "Resultado"}.${EXT[formato]}`);
 }
 
 function GraficaTabla({ t }: { t: Tabla }) {
@@ -172,7 +163,12 @@ function GraficaTabla({ t }: { t: Tabla }) {
 }
 
 function TablaResultado({ t }: { t: Tabla }) {
-  const [bajando, setBajando] = useState(false);
+  const [bajando, setBajando] = useState<Formato | null>(null);
+  const [fallo, setFallo] = useState(false);
+  const bajar = async (f: Formato) => {
+    setBajando(f); setFallo(false);
+    try { await descargarArchivo(t, f); } catch { setFallo(true); } finally { setBajando(null); }
+  };
   return (
     <div className="mt-3 rounded-xl border border-border bg-background overflow-hidden" data-guia="estadisticas.chat_tabla">
       <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border bg-muted/30">
@@ -184,16 +180,21 @@ function TablaResultado({ t }: { t: Tabla }) {
           </span>
         </div>
         {t.filas.length > 0 && (
-          <button
-            type="button"
-            data-guia="estadisticas.chat_excel"
-            disabled={bajando}
-            onClick={async () => { setBajando(true); try { await descargarExcel(t); } finally { setBajando(false); } }}
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline shrink-0 disabled:opacity-50"
-          >
-            {bajando ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-            Excel
-          </button>
+          <div className="flex items-center gap-3 shrink-0" data-guia="estadisticas.chat_excel">
+            {fallo && <span className="text-xs text-destructive">No se pudo descargar</span>}
+            {(["excel", "pdf", "word"] as Formato[]).map((f) => (
+              <button
+                key={f}
+                type="button"
+                disabled={!!bajando}
+                onClick={() => bajar(f)}
+                className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline disabled:opacity-50"
+              >
+                {bajando === f ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                {f === "excel" ? "Excel" : f === "pdf" ? "PDF" : "Word"}
+              </button>
+            ))}
+          </div>
         )}
       </div>
       {t.grafica && t.filas.length >= 2 && t.filas.length <= 20 && new Set(t.filas.map((f) => Number(f[t.grafica!.y]))).size > 1 && <div className="px-2 pt-4 pb-2 border-b border-border"><GraficaTabla t={t} /></div>}
