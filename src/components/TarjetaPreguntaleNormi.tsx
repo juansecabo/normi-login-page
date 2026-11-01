@@ -14,7 +14,7 @@ const TarjetaPreguntaleNormi = () => {
       type="button"
       data-guia="estadisticas.boton_preguntar"
       onClick={() => navigate("/preguntale-a-normi")}
-      className="w-full max-w-lg mx-auto mt-8 flex items-center gap-4 rounded-lg border-2 border-emerald-300 bg-emerald-100 hover:bg-emerald-200 hover:shadow-md pl-5 pr-3 py-3 text-left transition-all duration-200"
+      className="w-full max-w-lg mx-auto mt-8 flex items-center gap-4 rounded-lg border-2 border-green-300 bg-green-100 hover:bg-green-200 hover:shadow-md pl-5 pr-3 py-3 text-left transition-all duration-200"
     >
       {/* Normi a la derecha: mira hacia la izquierda, hacia el texto. */}
       <div className="min-w-0 flex-1 text-center">
