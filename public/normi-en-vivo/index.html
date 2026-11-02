@@ -407,7 +407,8 @@ $('btnIniciar').onclick = async () => {
     });
     cam.srcObject = new MediaStream(stream.getVideoTracks());
     await iniciarMicrofono(new MediaStream(stream.getAudioTracks()));
-    voz.muted = false; await voz.play().catch(() => {});
+    // Desbloquea el audio dentro del toque (iOS). Sin await: sin fuente aún, la promesa no resuelve.
+    voz.muted = false; voz.play().catch(() => {});
     $('btnIniciar').textContent = 'Cargando…';
     await human.load(); await human.warmup();
     try { await navigator.wakeLock?.request('screen'); } catch {}
