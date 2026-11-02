@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="robots" content="noindex">
+<title>Normi en vivo · Cailico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Normi en vivo: stand de Cailico (Startup Day Uninorte 2026). Identidad Cailico: azul marino + naranja + Poppins. */
+  :root { --marino:#0B315A; --marino-2:#072340; --naranja:#F2931B; --blanco:#fff; --gris:#C9D3DF; }
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html, body { height:100%; background:var(--marino-2); color:var(--blanco); font-family:Poppins, system-ui, sans-serif; overflow:hidden; }
+  body { background:radial-gradient(120% 80% at 50% 30%, #12437a 0%, var(--marino) 45%, var(--marino-2) 100%); }
+  .escena { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; }
+  header { width:100%; display:flex; align-items:center; justify-content:space-between; padding:calc(env(safe-area-inset-top) + 18px) 28px 0; }
+  header img { height:44px; }
+  header .lema { font-size:15px; font-weight:500; color:var(--gris); letter-spacing:.02em; text-align:right; max-width:60%; line-height:1.35; }
+  header .lema b { color:var(--naranja); font-weight:600; }
+  .marco { position:relative; flex:1; width:100%; display:flex; align-items:flex-end; justify-content:center; min-height:0; }
+  .marco img, .marco video { position:absolute; bottom:0; height:100%; max-width:100%; aspect-ratio:9/16; object-fit:cover; transition:opacity .6s ease; }
+  #reposo { animation:respira 5.5s ease-in-out infinite; transform-origin:50% 100%; }
+  @keyframes respira { 0%,100% { transform:scale(1); } 50% { transform:scale(1.012); } }
+  #avatar { opacity:0; }
+  .en-vivo #avatar { opacity:1; }
+  .en-vivo #reposo { opacity:0; }
+  /* Subtítulos */
+  .subtitulos { position:absolute; left:50%; bottom:28px; transform:translateX(-50%); width:min(92%, 860px); display:flex; flex-direction:column; gap:10px; align-items:center; pointer-events:none; }
+  .sub { padding:14px 22px; border-radius:18px; font-size:24px; line-height:1.35; text-align:center; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); transition:opacity .4s; }
+  .sub.normi { background:rgba(7,35,64,.72); border:1px solid rgba(255,255,255,.12); }
+  .sub.persona { background:rgba(242,147,27,.9); color:#1b1206; font-size:19px; font-weight:500; }
+  .sub:empty { opacity:0; padding:0; border:0; }
+  /* Pie */
+  footer { width:100%; padding:12px 24px calc(env(safe-area-inset-bottom) + 14px); display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--gris); }
+  .estado { display:flex; align-items:center; gap:8px; }
+  .punto { width:10px; height:10px; border-radius:50%; background:#6b7a8c; }
+  .estado.vivo .punto { background:#34d399; box-shadow:0 0 0 0 rgba(52,211,153,.6); animation:pulso 1.8s infinite; }
+  .estado.escucha .punto { background:var(--naranja); }
+  @keyframes pulso { 0% { box-shadow:0 0 0 0 rgba(52,211,153,.55); } 100% { box-shadow:0 0 0 12px rgba(52,211,153,0); } }
+  /* Pantalla de inicio */
+  #inicio { position:fixed; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:26px; background:rgba(7,35,64,.94); text-align:center; padding:32px; }
+  #inicio h1 { font-size:34px; font-weight:700; }
+  #inicio p { color:var(--gris); max-width:520px; line-height:1.5; }
+  #inicio button { font:600 22px Poppins, sans-serif; padding:18px 44px; border:0; border-radius:999px; background:var(--naranja); color:#1b1206; cursor:pointer; }
+  #inicio .error { color:#fca5a5; min-height:1.4em; }
+  /* Panel de diagnóstico (3 toques en la esquina superior izquierda) */
+  #diag { position:fixed; top:80px; left:16px; z-index:30; width:300px; background:rgba(0,0,0,.78); border-radius:14px; padding:12px; font:12px/1.45 ui-monospace, monospace; display:none; }
+  #diag video { width:100%; border-radius:8px; transform:scaleX(-1); }
+  #diag label { display:block; margin-top:8px; }
+  #diag input[type=range] { width:100%; }
+  #diag button { margin-top:8px; font:12px Poppins; padding:6px 10px; border-radius:8px; border:0; cursor:pointer; }
+  #esquina { position:fixed; top:0; left:0; width:70px; height:70px; z-index:25; }
+</style>
+</head>
+<body>
+<div class="escena" id="escena">
+  <header>
+    <img src="cailico-blanco.png" alt="Cailico">
+    <div class="lema">La superinteligencia,<br><b>integrada a la vida de todos</b></div>
+  </header>
+  <div class="marco">
+    <img id="reposo" src="normi-reposo.webp" alt="Normi">
+    <video id="avatar" autoplay playsinline></video>
+    <audio id="voz" autoplay></audio>
+    <div class="subtitulos">
+      <div class="sub persona" id="subPersona"></div>
+      <div class="sub normi" id="subNormi"></div>
+    </div>
+  </div>
+  <footer>
+    <div class="estado" id="estado"><span class="punto"></span><span id="estadoTxt">Normi está esperando</span></div>
+    <div>Normi te ve y te escucha para conversar contigo. No guardamos imágenes.</div>
+  </footer>
+</div>
+
+<div id="esquina"></div>
+<div id="diag">
+  <video id="cam" autoplay playsinline muted></video>
+  <div id="diagTxt"></div>
+  <label>Distancia "cerca" (ancho de cara): <span id="umbralTxt"></span>
+    <input type="range" id="umbral" min="0.06" max="0.4" step="0.01"></label>
+  <button id="olvidar">Olvidar rostros</button>
+  <button id="cerrarDiag">Cerrar</button>
+</div>
+
+<div id="inicio">
+  <img src="cailico-blanco.png" alt="Cailico" style="height:56px">
+  <h1>Normi en vivo</h1>
+  <p>Toca para empezar. El iPad pedirá permiso para usar la cámara y el micrófono.</p>
+  <button id="btnIniciar">Iniciar a Normi</button>
+  <div class="error" id="errorInicio"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/human@3/dist/human.js"></script>
+<script type="module">
+import { SimliClient, LogLevel } from 'https://esm.sh/simli-client';
+
+// ───────────────────────── Configuración ─────────────────────────
+const API = 'https://normy-api.srv966880.hstgr.cloud';
+const url = new URL(location.href);
+const CLAVE = url.searchParams.get('clave') || localStorage.getItem('feria_clave') || '';
+if (url.searchParams.get('clave')) localStorage.setItem('feria_clave', CLAVE);
+const OPENAI_WS = (modelo) => `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(modelo)}`;
+
+let UMBRAL_CERCA = Number(localStorage.getItem('feria_umbral') || url.searchParams.get('cerca') || 0.15); // ancho de cara / ancho de imagen
+const SIMILITUD_MISMA = 0.58;     // misma persona (Human: 0..1)
+const SIMILITUD_CAMBIO = 0.42;    // por debajo de esto, la persona de enfrente cambió
+const MS_PARA_SALUDAR = 900;      // tiempo cerca antes de saludar
+const MS_SIN_CERCA_FIN = 9000;    // sin nadie cerca: termina la conversación
+const MS_SIN_NADIE_CIERRE = 70000;// sin ver a nadie: cierra la sesión (ahorra minutos)
+const MS_ENTRE_INVITACIONES = 32000;
+const MS_ENTRE_IMAGENES = 10000;
+
+const $ = (id) => document.getElementById(id);
+const escena = $('escena'), avatar = $('avatar'), voz = $('voz'), cam = $('cam');
+
+// ───────────────────────── Estado ─────────────────────────
+let ws = null, simli = null, sesionAbierta = false, conectando = false, simliOk = false;
+let estado = 'reposo';          // reposo | esperando | conversando
+let audioCtx = null, micNode = null;
+let finHabla = 0;               // hasta cuándo se estima que Normi está hablando (ms)
+let tCercaDesde = 0, tSinCerca = 0, ultimaCaraVista = 0, ultimaInvitacion = 0, ultimaImagen = 0;
+let actual = null;              // { emb, rec } persona que está conversando
+let cambiosSeguidos = 0, saludoPendiente = null;
+let ultimoCerca = null;         // última cara cercana detectada { emb, ancho }
+let rolSistema = 'system';
+let pendientesFuncion = [];
+
+// Memoria de rostros: solo en este iPad (localStorage), nunca se envía al servidor.
+let memoria = JSON.parse(localStorage.getItem('feria_rostros') || '[]');
+const guardarMemoria = () => localStorage.setItem('feria_rostros', JSON.stringify(memoria));
+
+const hablando = () => performance.now() < finHabla + 500;
+function setEstadoUI(txt, clase) { $('estadoTxt').textContent = txt; $('estado').className = 'estado ' + (clase || ''); }
+
+// ───────────────────────── Detección de rostros (local) ─────────────────────────
+const human = new Human.Human({
+  backend: 'webgl',
+  modelBasePath: 'https://cdn.jsdelivr.net/npm/@vladmandic/human@3/models/',
+  cacheSensitivity: 0,
+  face: { enabled: true, detector: { maxDetected: 6, rotation: true, minConfidence: 0.5 }, mesh: { enabled: true },
+          description: { enabled: true }, iris: { enabled: false }, emotion: { enabled: false }, antispoof: { enabled: false }, liveness: { enabled: false } },
+  body: { enabled: false }, hand: { enabled: false }, object: { enabled: false }, gesture: { enabled: false }, segmentation: { enabled: false },
+});
+const similitud = (a, b) => (a && b ? human.match.similarity(a, b) : 0);
+
+function identificar(emb) {
+  let mejor = null, sim = 0;
+  for (const r of memoria) for (const e of r.embs) { const s = similitud(emb, e); if (s > sim) { sim = s; mejor = r; } }
+  return sim >= SIMILITUD_MISMA ? mejor : null;
+}
+
+async function bucleDeteccion() {
+  try {
+    if (cam.readyState >= 2) {
+      const r = await human.detect(cam);
+      const caras = (r.face || []).filter((f) => (f.score || 0) > 0.55);
+      const W = cam.videoWidth || 640;
+      const conAncho = caras.map((f) => ({ ancho: f.box[2] / W, emb: f.embedding })).sort((a, b) => b.ancho - a.ancho);
+      const cerca = conAncho[0] && conAncho[0].ancho >= UMBRAL_CERCA && conAncho[0].emb ? conAncho[0] : null;
+      const cuantosCerca = conAncho.filter((c) => c.ancho >= UMBRAL_CERCA * 0.75).length;
+      ultimoCerca = cerca;
+      await logica(conAncho.length, cerca, cuantosCerca);
+      $('diagTxt').textContent = `estado: ${estado} · caras: ${conAncho.length} · mayor: ${(conAncho[0]?.ancho || 0).toFixed(2)}\n` +
+        `persona: ${actual?.rec?.nombre || (actual ? 'nueva' : '-')} · hablando: ${hablando()} · simli: ${simliOk} · memoria: ${memoria.length}`;
+    }
+  } catch (e) { console.warn('detección', e); }
+  setTimeout(bucleDeteccion, 350);
+}
+
+// ───────────────────────── Lógica del stand ─────────────────────────
+async function logica(nCaras, cerca, cuantosCerca) {
+  const ahora = performance.now();
+  if (nCaras > 0) { ultimaCaraVista = ahora; if (!sesionAbierta && !conectando) abrirSesion(); }
+  if (cerca) { if (!tCercaDesde) tCercaDesde = ahora; tSinCerca = 0; } else { tCercaDesde = 0; if (!tSinCerca) tSinCerca = ahora; }
+  if (!sesionAbierta) return;
+
+  if (estado === 'esperando') {
+    if (cerca && ahora - tCercaDesde > MS_PARA_SALUDAR) return iniciarConversacion(cerca, cuantosCerca);
+    if (!cerca && nCaras > 0 && !hablando() && ahora - ultimaInvitacion > MS_ENTRE_INVITACIONES) { ultimaInvitacion = ahora; return invitar(nCaras); }
+    if (nCaras === 0 && ahora - ultimaCaraVista > MS_SIN_NADIE_CIERRE) return cerrarSesion();
+  }
+
+  if (estado === 'conversando') {
+    if (cerca) {
+      const s = similitud(cerca.emb, actual.emb);
+      if (s < SIMILITUD_CAMBIO) { cambiosSeguidos++; } else { cambiosSeguidos = 0; if (s > 0.7) actual.emb = cerca.emb; }
+      if (cambiosSeguidos >= 3) { cambiosSeguidos = 0; return cambioDePersona(cerca, cuantosCerca); }
+      if (ahora - ultimaImagen > MS_ENTRE_IMAGENES && !hablando()) enviarImagen();
+    } else if (tSinCerca && ahora - tSinCerca > MS_SIN_CERCA_FIN) {
+      return terminarConversacion();
+    }
+    if (saludoPendiente && !hablando()) { const t = saludoPendiente; saludoPendiente = null; contexto(t); enviarImagen(); responder(); }
+  }
+}
+
+function describirPersona(rec, n) {
+  const grupo = n > 1 ? ` Frente a ti hay ${n} personas; la más cercana es la que te habla.` : '';
+  if (rec) {
+    const min = Math.max(1, Math.round((Date.now() - rec.visto) / 60000));
+    return `Es ${rec.nombre}: ya la conoces (hablaron hace unos ${min} minutos). Salúdala por su nombre con alegría por verla de nuevo y retoma la conversación.${grupo}`;
+  }
+  return `Es una persona nueva: NO sabes su nombre, así que no uses ningún nombre. Salúdala, preséntate en una o dos frases y pregúntale algo para conocerla.${grupo}`;
+}
+
+function iniciarConversacion(cara, n) {
+  const rec = identificar(cara.emb);
+  if (rec) rec.visto = Date.now();
+  actual = { emb: cara.emb, rec };
+  estado = 'conversando'; cambiosSeguidos = 0;
+  setEstadoUI(rec ? `Conversando con ${rec.nombre}` : 'Conversando', 'vivo');
+  activarEscucha(true);
+  contexto(`[Cámara] Alguien se acercó y está frente a ti. ${describirPersona(rec, n)}`);
+  enviarImagen();
+  responder();
+}
+
+function cambioDePersona(cara, n) {
+  const rec = identificar(cara.emb);
+  if (rec) rec.visto = Date.now();
+  actual = { emb: cara.emb, rec };
+  setEstadoUI(rec ? `Conversando con ${rec.nombre}` : 'Conversando', 'vivo');
+  const texto = `[Cámara] Cambió la persona que tienes enfrente: ya no es con quien hablabas. ${describirPersona(rec, n)}`;
+  if (hablando()) saludoPendiente = texto; else { contexto(texto); enviarImagen(); responder(); }
+}
+
+function terminarConversacion() {
+  estado = 'esperando'; actual = null; saludoPendiente = null;
+  activarEscucha(false);
+  contexto('[Cámara] La persona se fue. Espera a la siguiente sin decir nada.');
+  setEstadoUI('Normi está esperando', 'vivo');
+  setTimeout(() => { $('subPersona').textContent = ''; }, 3000);
+}
+
+function invitar(n) {
+  contexto(`[Cámara] Pasan ${n > 1 ? 'varias personas' : 'una persona'} frente al stand, pero nadie se ha acercado. Invítalos a acercarse con UNA frase corta, simpática y distinta a las anteriores.`);
+  enviarImagen();
+  responder();
+}
+
+// ───────────────────────── OpenAI Realtime ─────────────────────────
+function enviar(obj) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj)); }
+function contexto(texto) {
+  enviar({ type: 'conversation.item.create', item: { type: 'message', role: rolSistema, content: [{ type: 'input_text', text: texto }] } });
+}
+function responder() { enviar({ type: 'response.create' }); }
+function activarEscucha(si) {
+  enviar({ type: 'session.update', session: { type: 'realtime', audio: { input: { turn_detection: si
+    ? { type: 'semantic_vad', eagerness: 'medium', create_response: true, interrupt_response: false } : null } } } });
+  if (!si) enviar({ type: 'input_audio_buffer.clear' });
+}
+function enviarImagen() {
+  if (!ws || cam.readyState < 2) return;
+  ultimaImagen = performance.now();
+  const c = document.createElement('canvas'); const w = 512; c.width = w; c.height = Math.round(w * cam.videoHeight / cam.videoWidth);
+  c.getContext('2d').drawImage(cam, 0, 0, c.width, c.height);
+  enviar({ type: 'conversation.item.create', item: { type: 'message', role: 'user', content: [{ type: 'input_image', image_url: c.toDataURL('image/jpeg', 0.7) }] } });
+}
+
+async function abrirSesion() {
+  conectando = true; setEstadoUI('Normi se está conectando…');
+  try {
+    const r = await fetch(`${API}/api/feria/sesion`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clave: CLAVE }) });
+    if (!r.ok) throw new Error('sesión ' + r.status);
+    const t = await r.json();
+    // Cara (Simli)
+    try {
+      simli = new SimliClient(t.simli, avatar, voz, null, LogLevel.ERROR);
+      simli.on('stop', () => { simliOk = false; escena.classList.remove('en-vivo'); });
+      await simli.start();
+      simliOk = true; escena.classList.add('en-vivo');
+    } catch (e) { console.warn('Simli no arrancó, sigo con voz', e); simliOk = false; simli = null; }
+    // Voz, oído y vista (OpenAI)
+    ws = new WebSocket(OPENAI_WS(t.modelo), ['realtime', 'openai-insecure-api-key.' + t.openai]);
+    ws.onmessage = (ev) => alEvento(JSON.parse(ev.data));
+    ws.onclose = () => { if (sesionAbierta) cerrarSesion(); };
+    await new Promise((ok, mal) => { ws.onopen = ok; ws.onerror = mal; });
+    sesionAbierta = true; estado = 'esperando';
+    setEstadoUI('Normi está esperando', 'vivo');
+  } catch (e) {
+    console.error(e); setEstadoUI('Sin conexión, reintentando…');
+    await cerrarSesion();
+    setTimeout(() => { conectando = false; }, 8000); return;
+  }
+  conectando = false;
+}
+
+async function cerrarSesion() {
+  sesionAbierta = false; estado = 'reposo'; actual = null;
+  try { ws && ws.close(); } catch {}
+  ws = null;
+  try { simli && await simli.stop(); } catch {}
+  simli = null; simliOk = false; escena.classList.remove('en-vivo');
+  setEstadoUI('Normi está esperando');
+}
+
+// Audio de salida 24 kHz → 16 kHz para Simli (o reproducción directa si Simli falló)
+let restoPos = 0;
+function a16k(int16) {
+  const salida = []; let pos = restoPos;
+  while (pos < int16.length - 1) { const i = Math.floor(pos), f = pos - i; salida.push(int16[i] * (1 - f) + int16[i + 1] * f); pos += 1.5; }
+  restoPos = pos - int16.length;
+  return Int16Array.from(salida);
+}
+const b64aInt16 = (b64) => { const bin = atob(b64); const u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i); return new Int16Array(u8.buffer); };
+let tiempoReproduccion = 0;
+function reproducirDirecto(int16) {
+  const buf = audioCtx.createBuffer(1, int16.length, 24000); const ch = buf.getChannelData(0);
+  for (let i = 0; i < int16.length; i++) ch[i] = int16[i] / 32768;
+  const src = audioCtx.createBufferSource(); src.buffer = buf; src.connect(audioCtx.destination);
+  tiempoReproduccion = Math.max(tiempoReproduccion, audioCtx.currentTime + 0.05); src.start(tiempoReproduccion); tiempoReproduccion += buf.duration;
+}
+
+let textoNormi = '';
+async function alEvento(ev) {
+  switch (ev.type) {
+    case 'response.output_audio.delta': {
+      const pcm = b64aInt16(ev.delta);
+      const ahora = performance.now();
+      finHabla = Math.max(finHabla, ahora + (simliOk ? 350 : 80)) + (pcm.length / 24000) * 1000;
+      if (simliOk && simli) {
+        const s = a16k(pcm); const u8 = new Uint8Array(s.buffer);
+        for (let i = 0; i < u8.length; i += 6000) simli.sendAudioData(u8.subarray(i, i + 6000));
+      } else reproducirDirecto(pcm);
+      break;
+    }
+    case 'response.created': textoNormi = ''; restoPos = 0; break;
+    case 'response.output_audio_transcript.delta': textoNormi += ev.delta; $('subNormi').textContent = textoNormi; break;
+    case 'conversation.item.input_audio_transcription.completed': if (ev.transcript?.trim()) $('subPersona').textContent = ev.transcript.trim(); break;
+    case 'input_audio_buffer.speech_started': $('subPersona').textContent = '…'; break;
+    case 'response.done': {
+      const llamadas = (ev.response?.output || []).filter((o) => o.type === 'function_call');
+      if (llamadas.length) {
+        for (const ll of llamadas) {
+          const salida = await ejecutarFuncion(ll.name, safeJSON(ll.arguments));
+          enviar({ type: 'conversation.item.create', item: { type: 'function_call_output', call_id: ll.call_id, output: salida } });
+        }
+        responder();
+      }
+      break;
+    }
+    case 'error': {
+      const m = ev.error?.message || '';
+      console.warn('OpenAI:', m);
+      if (/role/i.test(m) && rolSistema === 'system') rolSistema = 'user';
+      break;
+    }
+  }
+}
+const safeJSON = (s) => { try { return JSON.parse(s || '{}'); } catch { return {}; } };
+
+async function ejecutarFuncion(nombre, args) {
+  if (nombre === 'recordar_nombre') {
+    const n = String(args.nombre || '').trim().slice(0, 40);
+    const emb = ultimoCerca?.emb || actual?.emb;
+    if (!n || !emb) return 'No se ve un rostro claro ahora; no se pudo recordar.';
+    let rec = actual?.rec || identificar(emb);
+    if (rec) { rec.nombre = n; if (rec.embs.length < 6) rec.embs.push(emb); rec.visto = Date.now(); }
+    else { rec = { id: crypto.randomUUID(), nombre: n, embs: [emb], visto: Date.now() }; memoria.push(rec); }
+    if (actual) actual.rec = rec;
+    guardarMemoria(); setEstadoUI(`Conversando con ${n}`, 'vivo');
+    return `Listo: ya recuerdas a ${n} por su rostro.`;
+  }
+  if (nombre === 'guardar_contacto') {
+    try {
+      const r = await fetch(`${API}/api/feria/contacto`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clave: CLAVE, ...args }) });
+      return r.ok ? 'Contacto guardado. Agradécele y dile que el equipo de Cailico le escribirá.' : 'No se pudo guardar. Pídele que deje sus datos con el equipo del stand.';
+    } catch { return 'No se pudo guardar. Pídele que deje sus datos con el equipo del stand.'; }
+  }
+  return 'Función desconocida.';
+}
+
+// Micrófono → PCM16 24 kHz → OpenAI (solo mientras alguien conversa y Normi no está hablando)
+async function iniciarMicrofono(stream) {
+  const codigo = `class Cap extends AudioWorkletProcessor { process(i){ const c=i[0]&&i[0][0]; if(c) this.port.postMessage(c.slice(0)); return true; } } registerProcessor('cap', Cap);`;
+  await audioCtx.audioWorklet.addModule(URL.createObjectURL(new Blob([codigo], { type: 'application/javascript' })));
+  const fuente = audioCtx.createMediaStreamSource(stream);
+  micNode = new AudioWorkletNode(audioCtx, 'cap');
+  const ratio = audioCtx.sampleRate / 24000; let acum = [], pos = 0;
+  micNode.port.onmessage = (e) => {
+    if (!ws || estado !== 'conversando' || hablando()) { acum = []; pos = 0; return; }
+    const x = e.data;
+    for (; pos < x.length; pos += ratio) acum.push(Math.max(-1, Math.min(1, x[Math.floor(pos)])));
+    pos -= x.length;
+    if (acum.length >= 2400) { // ~100 ms
+      const i16 = new Int16Array(acum.length); for (let k = 0; k < acum.length; k++) i16[k] = acum[k] * 32767;
+      acum = [];
+      let bin = ''; const u8 = new Uint8Array(i16.buffer); for (let k = 0; k < u8.length; k++) bin += String.fromCharCode(u8[k]);
+      enviar({ type: 'input_audio_buffer.append', audio: btoa(bin) });
+    }
+  };
+  fuente.connect(micNode);
+}
+
+// ───────────────────────── Inicio ─────────────────────────
+$('btnIniciar').onclick = async () => {
+  $('errorInicio').textContent = '';
+  if (!CLAVE) { $('errorInicio').textContent = 'Falta la clave del stand en el enlace (?clave=…).'; return; }
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    await audioCtx.resume();
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 960 }, height: { ideal: 720 } },
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+    });
+    cam.srcObject = new MediaStream(stream.getVideoTracks());
+    await iniciarMicrofono(new MediaStream(stream.getAudioTracks()));
+    voz.muted = false; await voz.play().catch(() => {});
+    $('btnIniciar').textContent = 'Cargando…';
+    await human.load(); await human.warmup();
+    try { await navigator.wakeLock?.request('screen'); } catch {}
+    $('inicio').style.display = 'none';
+    bucleDeteccion();
+  } catch (e) {
+    console.error(e); $('errorInicio').textContent = 'No se pudo iniciar: ' + (e.message || e);
+  }
+};
+
+// Diagnóstico: 3 toques seguidos en la esquina superior izquierda
+let toques = [];
+$('esquina').onclick = () => { const t = Date.now(); toques = toques.filter((x) => t - x < 900); toques.push(t); if (toques.length >= 3) { $('diag').style.display = 'block'; toques = []; } };
+$('cerrarDiag').onclick = () => { $('diag').style.display = 'none'; };
+$('umbral').value = UMBRAL_CERCA; $('umbralTxt').textContent = UMBRAL_CERCA.toFixed(2);
+$('umbral').oninput = (e) => { UMBRAL_CERCA = Number(e.target.value); $('umbralTxt').textContent = UMBRAL_CERCA.toFixed(2); localStorage.setItem('feria_umbral', UMBRAL_CERCA); };
+$('olvidar').onclick = () => { if (confirm('¿Olvidar todos los rostros recordados en este iPad?')) { memoria = []; guardarMemoria(); } };
+</script>
+</body>
+</html>

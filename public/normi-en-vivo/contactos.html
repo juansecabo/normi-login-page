@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Contactos del stand · Cailico</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --marino:#0B315A; --naranja:#F2931B; --gris:#5b6b7f; --linea:#e3e8ef; --fondo:#f6f8fb; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:Poppins, system-ui, sans-serif; background:var(--fondo); color:#14202e; }
+  header { background:var(--marino); color:#fff; padding:22px 32px; display:flex; align-items:center; gap:18px; }
+  header img { height:36px; }
+  header h1 { font-size:20px; font-weight:600; }
+  header .total { margin-left:auto; font-size:15px; }
+  header .total b { color:var(--naranja); font-size:22px; }
+  main { padding:24px 32px; }
+  .barra { display:flex; gap:12px; margin-bottom:16px; align-items:center; color:var(--gris); font-size:14px; }
+  button { font:500 14px Poppins; padding:10px 16px; border-radius:10px; border:1px solid var(--linea); background:#fff; cursor:pointer; }
+  button.prim { background:var(--marino); color:#fff; border-color:var(--marino); }
+  table { width:100%; border-collapse:separate; border-spacing:0; background:#fff; border:1px solid var(--linea); border-radius:14px; overflow:hidden; font-size:14px; }
+  th { text-align:left; font-weight:600; color:var(--marino); background:#eef3f9; padding:12px 14px; position:sticky; top:0; }
+  td { padding:12px 14px; border-top:1px solid var(--linea); vertical-align:top; }
+  td.nombre { font-weight:600; }
+  .vacio { padding:48px; text-align:center; color:var(--gris); }
+</style>
+</head>
+<body>
+<header>
+  <img src="cailico-blanco.png" alt="Cailico">
+  <h1>Contactos del stand</h1>
+  <div class="total"><b id="total">0</b> contactos</div>
+</header>
+<main>
+  <div class="barra">
+    <button class="prim" id="excel">Descargar en Excel (CSV)</button>
+    <span id="hora"></span>
+  </div>
+  <table>
+    <thead><tr><th>Hora</th><th>Nombre</th><th>Cargo</th><th>Entidad</th><th>WhatsApp</th><th>Correo</th><th>Interés</th><th>Notas</th></tr></thead>
+    <tbody id="filas"><tr><td colspan="8" class="vacio">Cargando…</td></tr></tbody>
+  </table>
+</main>
+<script>
+const API = 'https://normy-api.srv966880.hstgr.cloud';
+const u = new URL(location.href);
+const CLAVE = u.searchParams.get('clave') || localStorage.getItem('feria_clave') || '';
+if (u.searchParams.get('clave')) localStorage.setItem('feria_clave', CLAVE);
+let datos = [];
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+async function cargar() {
+  try {
+    const r = await fetch(`${API}/api/feria/contactos?clave=${encodeURIComponent(CLAVE)}`);
+    if (!r.ok) throw new Error(r.status === 403 ? 'Falta la clave del stand en el enlace.' : 'Error ' + r.status);
+    datos = (await r.json()).contactos;
+    document.getElementById('total').textContent = datos.length;
+    document.getElementById('filas').innerHTML = datos.length ? datos.map((c) => `<tr>
+      <td>${new Date(c.creado_at).toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit' })}</td>
+      <td class="nombre">${esc(c.nombre)}</td><td>${esc(c.cargo)}</td><td>${esc(c.entidad)}</td>
+      <td>${esc(c.telefono)}</td><td>${esc(c.correo)}</td><td>${esc(c.interes)}</td><td>${esc(c.notas)}</td></tr>`).join('')
+      : '<tr><td colspan="8" class="vacio">Todavía no hay contactos.</td></tr>';
+    document.getElementById('hora').textContent = 'Actualizado ' + new Date().toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', second: '2-digit' });
+  } catch (e) { document.getElementById('filas').innerHTML = `<tr><td colspan="8" class="vacio">${esc(e.message)}</td></tr>`; }
+}
+document.getElementById('excel').onclick = () => {
+  const cols = ['creado_at', 'nombre', 'cargo', 'entidad', 'telefono', 'correo', 'interes', 'notas'];
+  const csv = [['Fecha', 'Nombre', 'Cargo', 'Entidad', 'WhatsApp', 'Correo', 'Interés', 'Notas'].join(';')]
+    .concat(datos.map((d) => cols.map((k) => `"${String(d[k] ?? '').replace(/"/g, '""')}"`).join(';'))).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = 'Contactos Startup Day 2026.csv'; a.click();
+};
+cargar(); setInterval(cargar, 15000);
+</script>
+</body>
+</html>
