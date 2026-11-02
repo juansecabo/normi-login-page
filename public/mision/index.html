@@ -297,6 +297,11 @@ $('sonido').onclick = () => {
   const mute = !tema.paused; if (mute) tema.pause(); else tema.play().catch(() => {});
   guardar('mision_mute', mute ? '1' : '0'); $('sonido').textContent = mute ? '🔈' : '🔊';
 };
+// Al salir de la página (otra app, WhatsApp, pantalla bloqueada) la música se pausa; al volver sigue si no estaba silenciada
+let sonabaAlSalir = false;
+const pausarSiSale = () => { if (document.hidden) { sonabaAlSalir = !tema.paused; tema.pause(); } else if (sonabaAlSalir && leer('mision_mute') !== '1') { tema.play().catch(() => {}); } };
+document.addEventListener('visibilitychange', pausarSiSale);
+window.addEventListener('pagehide', () => tema.pause());
 document.addEventListener('click', (e) => { if (e.target.closest('.sig, #otraVez, #resolver') && tema.paused && leer('mision_mute') !== '1') musica(true); });
 function nombre() { return (leer('mision_nombre') || '').trim(); }
 $('nombre').value = nombre();
