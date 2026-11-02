@@ -109,7 +109,7 @@ const SIMILITUD_MISMA = 0.58;     // misma persona (Human: 0..1)
 const SIMILITUD_CAMBIO = 0.42;    // por debajo de esto, la persona de enfrente cambió
 const MS_PARA_SALUDAR = 900;      // tiempo cerca antes de saludar
 const MS_SIN_CERCA_FIN = 9000;    // sin nadie cerca: termina la conversación
-const MS_SIN_NADIE_CIERRE = 70000;// sin ver a nadie: cierra la sesión (ahorra minutos)
+const MS_SIN_NADIE_CIERRE = 10 * 60000; // sin ver a nadie 10 min: cierra la sesión (ahorra minutos); vuelve al ver a alguien
 const MS_ENTRE_INVITACIONES = 32000;
 const MS_ENTRE_IMAGENES = 10000;
 
@@ -259,36 +259,63 @@ function enviarImagen() {
   enviar({ type: 'conversation.item.create', item: { type: 'message', role: 'user', content: [{ type: 'input_image', image_url: c.toDataURL('image/jpeg', 0.7) }] } });
 }
 
+async function pedirTokens() {
+  const r = await fetch(`${API}/api/feria/sesion`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clave: CLAVE }) });
+  if (!r.ok) throw new Error('sesión ' + r.status);
+  return r.json();
+}
+
+// Cara (Simli). Si tarda más de 20 s, Normi sigue con la voz sobre la foto y la cara se reintenta sola.
+let reintentoCara = null;
+async function conectarCara(token) {
+  try {
+    const cli = new SimliClient(token, avatar, voz, null, LogLevel.ERROR);
+    cli.on('stop', () => {
+      if (simli === cli) { simli = null; simliOk = false; escena.classList.remove('en-vivo'); programarCara(); }
+    });
+    await Promise.race([cli.start(), new Promise((_, mal) => setTimeout(() => mal(new Error('Simli tardó más de 20 s')), 20000))]);
+    simli = cli; simliOk = true; escena.classList.add('en-vivo');
+  } catch (e) {
+    console.warn('Cara no disponible, sigo con voz:', e);
+    simliOk = false; programarCara();
+  }
+}
+function programarCara() {
+  if (reintentoCara || !sesionAbierta) return;
+  reintentoCara = setTimeout(async () => {
+    reintentoCara = null;
+    if (!sesionAbierta || simliOk) return;
+    try { const t = await pedirTokens(); await conectarCara(t.simli); } catch { programarCara(); }
+  }, 15000);
+}
+
 async function abrirSesion() {
   conectando = true; setEstadoUI('Normi se está conectando…');
+  const t0 = performance.now();
   try {
-    const r = await fetch(`${API}/api/feria/sesion`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clave: CLAVE }) });
-    if (!r.ok) throw new Error('sesión ' + r.status);
-    const t = await r.json();
-    // Cara (Simli)
-    try {
-      simli = new SimliClient(t.simli, avatar, voz, null, LogLevel.ERROR);
-      simli.on('stop', () => { simliOk = false; escena.classList.remove('en-vivo'); });
-      await simli.start();
-      simliOk = true; escena.classList.add('en-vivo');
-    } catch (e) { console.warn('Simli no arrancó, sigo con voz', e); simliOk = false; simli = null; }
-    // Voz, oído y vista (OpenAI)
+    const t = await pedirTokens();
+    // Voz, oído y vista (OpenAI) y cara (Simli) al mismo tiempo.
     ws = new WebSocket(OPENAI_WS(t.modelo), ['realtime', 'openai-insecure-api-key.' + t.openai]);
     ws.onmessage = (ev) => alEvento(JSON.parse(ev.data));
-    ws.onclose = () => { if (sesionAbierta) cerrarSesion(); };
-    await new Promise((ok, mal) => { ws.onopen = ok; ws.onerror = mal; });
+    ws.onclose = () => { if (sesionAbierta) { cerrarSesion(); setTimeout(() => { if (!sesionAbierta && !conectando) abrirSesion(); }, 3000); } };
+    const wsAbierto = new Promise((ok, mal) => { ws.onopen = ok; ws.onerror = mal; });
+    const cara = conectarCara(t.simli);
+    await wsAbierto;
     sesionAbierta = true; estado = 'esperando';
     setEstadoUI('Normi está esperando', 'vivo');
+    await cara;
+    console.log(`Normi conectada en ${Math.round(performance.now() - t0)} ms (cara: ${simliOk ? 'sí' : 'no'})`);
   } catch (e) {
     console.error(e); setEstadoUI('Sin conexión, reintentando…');
     await cerrarSesion();
-    setTimeout(() => { conectando = false; }, 8000); return;
+    setTimeout(() => { conectando = false; abrirSesion(); }, 8000); return;
   }
   conectando = false;
 }
 
 async function cerrarSesion() {
   sesionAbierta = false; estado = 'reposo'; actual = null;
+  if (reintentoCara) { clearTimeout(reintentoCara); reintentoCara = null; }
   try { ws && ws.close(); } catch {}
   ws = null;
   try { simli && await simli.stop(); } catch {}
@@ -410,6 +437,8 @@ $('btnIniciar').onclick = async () => {
     // Desbloquea el audio dentro del toque (iOS). Sin await: sin fuente aún, la promesa no resuelve.
     voz.muted = false; voz.play().catch(() => {});
     $('btnIniciar').textContent = 'Cargando…';
+    ultimaCaraVista = performance.now();
+    if (!sesionAbierta && !conectando) abrirSesion(); // Normi se conecta ya, mientras carga el detector
     await human.load(); await human.warmup();
     try { await navigator.wakeLock?.request('screen'); } catch {}
     $('inicio').style.display = 'none';
