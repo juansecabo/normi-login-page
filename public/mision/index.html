@@ -131,6 +131,8 @@
   .firma { margin-top:20px; display:flex; align-items:center; gap:10px; font-size:13px; }
   .firma img { height:26px; }
 
+  .sonido { position:fixed; top:calc(env(safe-area-inset-top) + 12px); right:12px; z-index:10; width:46px; height:46px; padding:0; border-radius:50%; font-size:20px; display:none; }
+  .sonido.visible { display:inline-flex; }
   @media (min-width: 900px) {
     .tarjeta { padding:26px 48px 28px; }
     .tarjeta p.narra { font-size:21px; }
@@ -255,6 +257,8 @@
   </div>
 </section>
 
+<audio id="tema" src="tema.mp3" loop preload="auto"></audio>
+<button id="sonido" class="sonido" aria-label="Música">🔊</button>
 <script>
 const API = 'https://normy-api.srv966880.hstgr.cloud';
 const waLink = () => 'https://wa.me/573003774342';
@@ -283,6 +287,17 @@ function ir(id) {
   if (id === 'final') confeti();
   if (id === 'mision') $('tituloMision').textContent = (nombre() ? nombre() + ', descubre' : 'Descubre') + ' por qué Valentina está triste';
 }
+// Música: arranca con el toque de «Empezar» (los celulares no dejan sonar sin un toque)
+const tema = $('tema'); tema.volume = 0.4;
+function musica(si) {
+  $('sonido').classList.add('visible');
+  if (si && leer('mision_mute') !== '1') tema.play().catch(() => {});
+}
+$('sonido').onclick = () => {
+  const mute = !tema.paused; if (mute) tema.pause(); else tema.play().catch(() => {});
+  guardar('mision_mute', mute ? '1' : '0'); $('sonido').textContent = mute ? '🔈' : '🔊';
+};
+document.addEventListener('click', (e) => { if (e.target.closest('.sig, #otraVez, #resolver') && tema.paused && leer('mision_mute') !== '1') musica(true); });
 function nombre() { return (leer('mision_nombre') || '').trim(); }
 $('nombre').value = nombre();
 $('celular').value = leer('mision_celular') || '';
@@ -298,6 +313,7 @@ $('formNombre').onsubmit = async (e) => {
     const r = await fetch(API + '/api/mision/registrar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre: nom, celular: cel }) });
     if (!r.ok) throw new Error((await r.json()).error || 'error');
     guardar('mision_nombre', nom); guardar('mision_celular', cel);
+    musica(true);
     ir('e1');
   } catch (x) { err.textContent = String(x.message) === 'celular' ? 'Ese número no parece válido.' : 'No pudimos empezar. Intenta de nuevo.'; }
   b.disabled = false;
