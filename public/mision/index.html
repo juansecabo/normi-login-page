@@ -12,10 +12,10 @@
      Estilo animación UPA de los años 60: formas planas, verde azulado, mostaza, coral, crema y negro. */
   :root { --tinta:#1B1A17; --crema:#F4EBD8; --papel:#EFE3CB; --azul:#2F6F73; --mostaza:#E2A93B; --coral:#E06A45; --verde:#1F8A4C; }
   * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
-  html, body { height:100%; }
+  html, body { height:100%; touch-action:manipulation; overscroll-behavior:none; -webkit-text-size-adjust:100%; }
   body { font-family:Poppins, system-ui, sans-serif; color:var(--tinta); background:var(--tinta); overflow:hidden; }
   .papel { background-color:var(--papel); background-image:radial-gradient(rgba(0,0,0,.05) 1px, transparent 1px); background-size:4px 4px; }
-  .pantalla { position:fixed; inset:0; display:none; flex-direction:column; }
+  .pantalla { position:fixed; inset:0; height:100dvh; display:none; flex-direction:column; overflow-x:hidden; }
   .pantalla.activa { display:flex; animation:aparecer .7s ease both; }
   @keyframes aparecer { from { opacity:0; } to { opacity:1; } }
 
@@ -27,7 +27,9 @@
   /* Texto tipo tarjeta de título de caricatura */
   .tarjeta { flex:0 0 auto; padding:22px 22px calc(env(safe-area-inset-bottom) + 20px); border-top:4px solid var(--tinta); }
   .tarjeta .kicker { font-size:12px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--coral); }
-  .tarjeta p.narra { margin-top:6px; font-size:18px; line-height:1.45; font-weight:500; max-width:720px; min-height:3em; }
+  .tarjeta p.narra { margin-top:6px; font-size:18px; line-height:1.45; font-weight:500; max-width:720px; display:grid; }
+  .tarjeta p.narra > span { grid-area:1/1; }
+  .tarjeta p.narra .molde { visibility:hidden; }
   .fila { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:14px; max-width:720px; }
   .puntos { display:flex; gap:7px; }
   .puntos i { width:9px; height:9px; border-radius:50%; background:rgba(27,26,23,.25); }
@@ -76,7 +78,7 @@
 
   /* ── ESCENA 2: la puerta ── */
   #e2 .fondo { object-position:70% 50%; animation:camara2 9s ease-out both, toc 2.2s ease-in-out 1.6s 1; transform-origin:75% 55%; }
-  @keyframes camara2 { from { transform:scale(1.02); } to { transform:scale(1.15); } }
+  @keyframes camara2 { from { transform:scale(1.08); } to { transform:scale(1.18); } }
   @keyframes toc { 0%,100% { translate:0 0; } 8% { translate:-6px 0; } 16% { translate:0 0; } 30% { translate:-6px 0; } 38% { translate:0 0; } 52% { translate:-6px 0; } 60% { translate:0 0; } }
   .luz { position:absolute; left:73%; width:22%; bottom:3%; height:1.6%; background:#FFD27A; filter:blur(5px); animation:titila 3s ease-in-out infinite; }
   @keyframes titila { 0%,100% { opacity:.9; } 50% { opacity:.4; } }
@@ -264,8 +266,11 @@ const leer = (k) => { try { return localStorage.getItem(k); } catch { return nul
 let tipeo = null;
 function escribir(p) {
   clearInterval(tipeo);
-  const t = (p.dataset.texto || '').replace(/\{n\}/g, nombre() || 'Acudiente'); let i = 0; p.textContent = '';
-  tipeo = setInterval(() => { p.textContent = t.slice(0, ++i); if (i >= t.length) clearInterval(tipeo); }, 28);
+  const t = (p.dataset.texto || '').replace(/\{n\}/g, nombre() || 'Acudiente'); let i = 0;
+  p.innerHTML = '<span class="molde"></span><span class="vivo"></span>';
+  p.querySelector('.molde').textContent = t;
+  const vivo = p.querySelector('.vivo');
+  tipeo = setInterval(() => { vivo.textContent = t.slice(0, ++i); if (i >= t.length) clearInterval(tipeo); }, 28);
 }
 function ir(id) {
   document.querySelectorAll('.pantalla').forEach((s) => s.classList.remove('activa'));
@@ -307,7 +312,7 @@ $('resolver').onclick = async () => {
   if (r.length < 4) { aviso.className = 'aviso mal'; aviso.textContent = 'Escribe lo que descubriste con tus palabras.'; return; }
   b.disabled = true; b.textContent = 'Revisando...';
   try {
-    const res = await fetch(API + '/api/mision/verificar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ respuesta: r }) });
+    const res = await fetch(API + '/api/mision/verificar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ respuesta: r, celular: leer('mision_celular') || '' }) });
     const { resultado } = await res.json();
     if (resultado === 'correcta') { ir('final'); }
     else if (resultado === 'parcial') { aviso.className = 'aviso parcial'; aviso.textContent = 'Eso es cierto... pero no es lo que más le duele. Sigue preguntándole a Normi: ¿pasó algo más hoy?'; }
