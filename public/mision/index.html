@@ -283,7 +283,7 @@ function ir(id) {
   s.querySelectorAll('.fondo, .lienzo, .sprite, .valentina img, .bocadillo, .luz, .brillo, .burb').forEach((el) => { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; });
   s.classList.add('activa'); s.scrollTop = 0;
   const narra = s.querySelector('.narra'); if (narra) escribir(narra);
-  if (id === 'mision' || id === 'final') guardar('mision_paso', id);
+  if (id === 'mision' || id === 'final') { try { sessionStorage.setItem('mision_paso', id); } catch {} }
   if (id === 'final') confeti();
   if (id === 'mision') $('tituloMision').textContent = (nombre() ? nombre() + ', descubre' : 'Descubre') + ' por qué Valentina está triste';
 }
@@ -321,7 +321,7 @@ $('formNombre').onsubmit = async (e) => {
 document.querySelectorAll('.sig').forEach((b) => b.onclick = () => { const id = b.closest('.pantalla').id; ir(ORDEN[ORDEN.indexOf(id) + 1]); });
 $('irWhatsApp').href = waLink();
 $('otraVez').onclick = () => ir('e1');
-$('reiniciar').onclick = () => { guardar('mision_paso', ''); $('resp').value = ''; $('aviso').className = 'aviso'; ir('portada'); };
+$('reiniciar').onclick = () => { try { sessionStorage.removeItem('mision_paso'); } catch {} $('resp').value = ''; $('aviso').className = 'aviso'; ir('portada'); };
 
 $('resolver').onclick = async () => {
   const aviso = $('aviso'), b = $('resolver'), r = $('resp').value.trim();
@@ -349,8 +349,9 @@ function confeti() {
   }
 }
 
-// Si vuelve de WhatsApp, retoma donde iba
-const paso = leer('mision_paso');
+// Si vuelve de WhatsApp a la misma pestaña, retoma donde iba; un escaneo nuevo abre otra pestaña y empieza desde la portada
+try { localStorage.removeItem('mision_paso'); } catch {}
+let paso = null; try { paso = sessionStorage.getItem('mision_paso'); } catch {}
 if (paso === 'mision' || paso === 'final') ir(paso);
 </script>
 </body>
