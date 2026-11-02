@@ -30,7 +30,6 @@
   .subtitulos { position:absolute; left:50%; bottom:28px; transform:translateX(-50%); width:min(92%, 860px); display:flex; flex-direction:column; gap:10px; align-items:center; pointer-events:none; }
   .sub { padding:14px 22px; border-radius:18px; font-size:24px; line-height:1.35; text-align:center; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); transition:opacity .4s; }
   .sub.normi { background:rgba(7,35,64,.72); border:1px solid rgba(255,255,255,.12); }
-  .sub.persona { background:rgba(242,147,27,.9); color:#1b1206; font-size:19px; font-weight:500; }
   .sub:empty { opacity:0; padding:0; border:0; }
   /* Pie */
   footer { width:100%; padding:12px 24px calc(env(safe-area-inset-bottom) + 14px); display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--gris); }
@@ -65,7 +64,6 @@
     <video id="avatar" autoplay playsinline></video>
     <audio id="voz" autoplay></audio>
     <div class="subtitulos">
-      <div class="sub persona" id="subPersona"></div>
       <div class="sub normi" id="subNormi"></div>
     </div>
   </div>
@@ -234,7 +232,6 @@ function terminarConversacion() {
   activarEscucha(false);
   contexto('[Cámara] La persona se fue. Espera a la siguiente sin decir nada.');
   setEstadoUI('Normi está esperando', 'vivo');
-  setTimeout(() => { $('subPersona').textContent = ''; }, 3000);
 }
 
 function invitar(n) {
@@ -358,8 +355,6 @@ async function alEvento(ev) {
     }
     case 'response.created': textoNormi = ''; restoPos = 0; break;
     case 'response.output_audio_transcript.delta': textoNormi += ev.delta; $('subNormi').textContent = textoNormi.replace(/Ca[ií]lico/g, 'Cailico'); break; // se pronuncia Caílico, se escribe Cailico
-    case 'conversation.item.input_audio_transcription.completed': if (ev.transcript?.trim()) $('subPersona').textContent = ev.transcript.trim(); break;
-    case 'input_audio_buffer.speech_started': $('subPersona').textContent = '…'; break;
     case 'response.done': {
       const llamadas = (ev.response?.output || []).filter((o) => o.type === 'function_call');
       if (llamadas.length) {
