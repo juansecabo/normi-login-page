@@ -102,6 +102,9 @@ const API = 'https://normy-api.srv966880.hstgr.cloud';
 const url = new URL(location.href);
 const CLAVE = url.searchParams.get('clave') || localStorage.getItem('feria_clave') || '';
 if (url.searchParams.get('clave')) localStorage.setItem('feria_clave', CLAVE);
+// Encuadre de Normi: ?encuadre=cerca | medio | manos (se recuerda en el iPad)
+const ENCUADRE = url.searchParams.get('encuadre') || localStorage.getItem('feria_encuadre') || 'cerca';
+if (url.searchParams.get('encuadre')) localStorage.setItem('feria_encuadre', ENCUADRE);
 const OPENAI_WS = (modelo) => `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(modelo)}`;
 
 let UMBRAL_CERCA = Number(localStorage.getItem('feria_umbral') || url.searchParams.get('cerca') || 0.15); // ancho de cara / ancho de imagen
@@ -260,7 +263,7 @@ function enviarImagen() {
 }
 
 async function pedirTokens() {
-  const r = await fetch(`${API}/api/feria/sesion`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clave: CLAVE }) });
+  const r = await fetch(`${API}/api/feria/sesion`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clave: CLAVE, encuadre: ENCUADRE }) });
   if (!r.ok) throw new Error('sesión ' + r.status);
   return r.json();
 }
