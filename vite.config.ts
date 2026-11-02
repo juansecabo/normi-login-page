@@ -78,7 +78,7 @@ export default defineConfig(({ mode }) => ({
         clientsClaim: false,
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         // Normi en vivo (stand de ferias) es una página estática aparte, no la app.
-        navigateFallbackDenylist: [/^\/normi-en-vivo/],
+        navigateFallbackDenylist: [/^\/normi-en-vivo/, /^\/mision/],
       },
     }),
   ].filter(Boolean),
