@@ -425,13 +425,17 @@ async function iniciarMicrofono(stream) {
 $('btnIniciar').onclick = async () => {
   $('errorInicio').textContent = '';
   if (!CLAVE) { $('errorInicio').textContent = 'Falta la clave del stand en el enlace (?clave=…).'; return; }
+  // En iPad todo lo que necesita permiso va en el mismo instante del toque, sin esperas antes:
+  // cámara y micrófono, audio de la página y voz de Normi.
+  const pedirMedios = navigator.mediaDevices.getUserMedia({
+    video: { facingMode: 'user', width: { ideal: 960 }, height: { ideal: 720 } },
+    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+  });
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const reanudar = audioCtx.resume();
   try {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    await audioCtx.resume();
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user', width: { ideal: 960 }, height: { ideal: 720 } },
-      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-    });
+    const stream = await pedirMedios;
+    await reanudar;
     cam.srcObject = new MediaStream(stream.getVideoTracks());
     await iniciarMicrofono(new MediaStream(stream.getAudioTracks()));
     // Desbloquea el audio dentro del toque (iOS). Sin await: sin fuente aún, la promesa no resuelve.
@@ -444,7 +448,10 @@ $('btnIniciar').onclick = async () => {
     $('inicio').style.display = 'none';
     bucleDeteccion();
   } catch (e) {
-    console.error(e); $('errorInicio').textContent = 'No se pudo iniciar: ' + (e.message || e);
+    console.error(e);
+    $('errorInicio').textContent = e && e.name === 'NotAllowedError'
+      ? 'El iPad no dio permiso de cámara y micrófono. En Ajustes del iPad, busca el navegador (Safari o Chrome) y activa Cámara y Micrófono; luego recarga la página y vuelve a tocar el botón.'
+      : 'No se pudo iniciar: ' + (e.message || e);
   }
 };
 
