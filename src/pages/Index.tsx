@@ -297,14 +297,14 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-background">
       {/* Columna Izquierda - Imagen de Normi */}
-      <div className="relative lg:w-1/2 h-80 sm:h-96 lg:h-auto lg:min-h-screen overflow-hidden flex items-end justify-center bg-[radial-gradient(120%_90%_at_50%_100%,#DCEFE3_0%,#EEF6F1_45%,#F8FAF9_100%)]">
-        {/* Halo suave detrás de Normi */}
-        <div className="absolute left-1/2 bottom-[-12%] -translate-x-1/2 w-[34rem] h-[34rem] lg:w-[46rem] lg:h-[46rem] rounded-full bg-[radial-gradient(circle,rgba(46,138,87,0.22)_0%,rgba(46,138,87,0.08)_45%,rgba(46,138,87,0)_70%)]" />
-        <img
-          src={normiImg}
-          alt="Normi - Mascota de Mundo Normi"
-          className="relative h-[92%] lg:h-[88vh] max-h-[52rem] w-auto object-contain object-bottom animate-fade-in drop-shadow-[0_18px_30px_rgba(25,89,53,0.18)]"
-        />
+      <div className="lg:w-1/2 flex items-center justify-center p-8 lg:p-12 bg-secondary/50">
+        <div className="animate-scale-in">
+          <img
+            src={normiImg}
+            alt="Normi - Mascota de Mundo Normi"
+            className="w-64 h-64 lg:w-80 lg:h-80 object-cover rounded-full shadow-soft border-4 border-primary/20"
+          />
+        </div>
       </div>
 
       {/* Columna Derecha - Formulario de Login */}
