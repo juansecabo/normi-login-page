@@ -60,16 +60,16 @@
   /* ── ESCENA 1: llega a casa ── */
   /* El lienzo mantiene el 16:9 de la ilustración y la cubre (como object-fit: cover), para que Valentina siga pegada a la puerta en cualquier pantalla */
   #e1 .escenario { container-type:size; }
-  #e1 .lienzo { position:absolute; top:50%; left:50%; width:max(100cqw, calc(100cqh * 16 / 9)); aspect-ratio:16/9; transform:translate(-62%,-50%); animation:camara1 9s ease-out both; transform-origin:70% 55%; }
+  #e1 .lienzo { position:absolute; top:50%; left:50%; width:max(104cqw, calc(104cqh * 16 / 9)); aspect-ratio:16/9; transform:translate(-62%,-50%); animation:camara1 9s ease-out both; transform-origin:70% 55%; }
   @media (min-aspect-ratio: 16/9) { #e1 .lienzo { transform:translate(-50%,-50%); } }
   #e1 .lienzo .fondo { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; animation:none; }
   @keyframes camara1 { from { scale:1; } to { scale:1.08; } }
   /* Entra desde la calle por el vano de la puerta y camina hacia la izquierda */
-  #e1 .valentina { left:80%; bottom:30%; height:33%; transform-origin:50% 100%; animation:caminar 6s linear .8s both; }
+  #e1 .valentina { left:76%; bottom:27%; height:46%; transform-origin:50% 100%; animation:caminar 6s linear .8s both; }
   @keyframes caminar {
-    0% { left:80%; bottom:31%; height:31%; opacity:0; }
+    0% { left:76%; bottom:27%; height:46%; opacity:0; }
     6% { opacity:1; }
-    100% { left:56%; bottom:24%; height:37%; opacity:1; }
+    100% { left:50%; bottom:15%; height:58%; opacity:1; }
   }
   #e1 .valentina img { height:100%; display:block; transform:scaleX(-1); animation:paso .5s ease-in-out infinite alternate; animation-iteration-count:12; }
   @keyframes paso { from { transform:scaleX(-1) rotate(-1.5deg) translateY(0); } to { transform:scaleX(-1) rotate(1.5deg) translateY(-2.5%); } }
