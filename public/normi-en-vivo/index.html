@@ -354,7 +354,7 @@ async function alEvento(ev) {
       break;
     }
     case 'response.created': textoNormi = ''; restoPos = 0; break;
-    case 'response.output_audio_transcript.delta': textoNormi += ev.delta; $('subNormi').textContent = textoNormi; break;
+    case 'response.output_audio_transcript.delta': textoNormi += ev.delta; $('subNormi').textContent = textoNormi.replace(/Ca[ií]lico/g, 'Cailico'); break; // se pronuncia Caílico, se escribe Cailico
     case 'conversation.item.input_audio_transcription.completed': if (ev.transcript?.trim()) $('subPersona').textContent = ev.transcript.trim(); break;
     case 'input_audio_buffer.speech_started': $('subPersona').textContent = '…'; break;
     case 'response.done': {
