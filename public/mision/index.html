@@ -45,22 +45,30 @@
   .portada-txt .lupa { font-size:13px; letter-spacing:.3em; text-transform:uppercase; font-weight:700; color:var(--mostaza); }
   .portada-txt h1 { font-family:Shrikhand, serif; font-weight:400; font-size:clamp(46px, 13vw, 104px); line-height:.95; margin-top:8px; text-shadow:4px 4px 0 var(--coral); }
   .portada-txt h2 { font-size:clamp(18px, 4.6vw, 26px); font-weight:600; margin-top:14px; }
-  .portada-txt .boton { margin-top:28px; font-size:18px; }
+  .nombre { margin-top:26px; width:min(440px, 100%); }
+  .nombre label { display:block; font-weight:600; font-size:16px; margin-bottom:10px; }
+  .nombre .campo { display:flex; gap:10px; }
+  .nombre input { flex:1; min-width:0; font:600 17px Poppins, sans-serif; border:3px solid var(--tinta); border-radius:14px; padding:12px 14px; background:var(--crema); color:var(--tinta); }
   .portada-txt small { margin-top:18px; font-size:12px; opacity:.8; }
-  .silueta { position:absolute; right:6%; bottom:0; height:62%; filter:brightness(0) opacity(.35); animation:respira 4s ease-in-out infinite; }
+  .silueta { position:absolute; right:6%; bottom:0; height:62%; scale:-1 1; filter:brightness(0) opacity(.35); animation:respira 4s ease-in-out infinite; }
   @keyframes respira { 50% { transform:translateY(-1.5%); } }
 
   /* ── ESCENA 1: llega a casa ── */
-  #e1 .fondo { animation:camara1 9s ease-out both; transform-origin:70% 45%; }
-  @keyframes camara1 { from { transform:scale(1); } to { transform:scale(1.12); } }
-  #e1 .valentina { left:63%; bottom:23%; height:34%; transform-origin:50% 100%; animation:caminar 6.5s ease-in-out .6s both; }
+  /* El lienzo mantiene el 16:9 de la ilustración y la cubre (como object-fit: cover), para que Valentina siga pegada a la puerta en cualquier pantalla */
+  #e1 .escenario { container-type:size; }
+  #e1 .lienzo { position:absolute; top:50%; left:50%; width:max(100cqw, calc(100cqh * 16 / 9)); aspect-ratio:16/9; transform:translate(-62%,-50%); animation:camara1 9s ease-out both; transform-origin:70% 55%; }
+  @media (min-aspect-ratio: 16/9) { #e1 .lienzo { transform:translate(-50%,-50%); } }
+  #e1 .lienzo .fondo { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; animation:none; }
+  @keyframes camara1 { from { scale:1; } to { scale:1.08; } }
+  /* Entra desde la calle por el vano de la puerta y camina hacia la izquierda */
+  #e1 .valentina { left:80%; bottom:30%; height:33%; transform-origin:50% 100%; animation:caminar 6s linear .8s both; }
   @keyframes caminar {
-    0% { transform:translateX(0) scale(.62); opacity:0; }
-    10% { opacity:1; }
-    100% { transform:translateX(-55%) scale(1.25); opacity:1; }
+    0% { left:80%; bottom:31%; height:31%; opacity:0; }
+    6% { opacity:1; }
+    100% { left:56%; bottom:24%; height:37%; opacity:1; }
   }
-  #e1 .valentina img { height:100%; display:block; animation:paso .55s ease-in-out infinite alternate; }
-  @keyframes paso { from { transform:rotate(-2deg) translateY(0); } to { transform:rotate(2deg) translateY(-2%); } }
+  #e1 .valentina img { height:100%; display:block; transform:scaleX(-1); animation:paso .5s ease-in-out infinite alternate; animation-iteration-count:12; }
+  @keyframes paso { from { transform:scaleX(-1) rotate(-1.5deg) translateY(0); } to { transform:scaleX(-1) rotate(1.5deg) translateY(-2.5%); } }
   #e1 .manos { left:50%; bottom:-4%; height:46%; transform:translateX(-50%); animation:subir 1.4s ease-out 1.2s both; }
   @keyframes subir { from { transform:translate(-50%,40%); } to { transform:translate(-50%,0); } }
 
@@ -137,7 +145,10 @@
       <div class="lupa">🔍 Un misterio de Mundo Normi</div>
       <h1>Misión Normi</h1>
       <h2>¿Qué le pasa a Valentina?</h2>
-      <button class="boton" id="empezar">Quiero ser acudiente</button>
+      <form class="nombre" id="formNombre" autocomplete="off">
+        <label for="nombre">Eres acudiente de Valentina. ¿Cómo te llamas?</label>
+        <div class="campo"><input id="nombre" maxlength="30" placeholder="Tu nombre" required><button class="boton" type="submit">Empezar</button></div>
+      </form>
       <small>Stand de Cailico · Startup Day Uninorte 2026</small>
     </div>
   </div>
@@ -146,13 +157,15 @@
 <!-- ESCENA 1 -->
 <section class="pantalla" id="e1">
   <div class="escenario">
-    <img class="fondo" src="sala.webp" alt="La sala de la casa">
-    <div class="sprite valentina"><img src="valentina.webp" alt="Valentina"></div>
+    <div class="lienzo">
+      <img class="fondo" src="sala.webp" alt="La sala de la casa">
+      <div class="sprite valentina"><img src="valentina.webp" alt="Valentina"></div>
+    </div>
     <img class="sprite manos" src="manos.webp" alt="">
   </div>
   <div class="tarjeta papel">
     <div class="kicker">Capítulo 1 · 5:00 p. m.</div>
-    <p class="narra" data-texto="Eres el acudiente de Valentina, de Séptimo 2. Hoy llegó del colegio sin saludar, con la cabeza agachada, arrastrando la maleta."></p>
+    <p class="narra" data-texto="{n}, eres acudiente de Valentina, de Séptimo 2. Hoy llegó del colegio sin saludar, con la cabeza agachada, arrastrando la maleta."></p>
     <div class="fila"><div class="puntos"><i class="on"></i><i></i><i></i></div><button class="sig">Siguiente</button></div>
   </div>
 </section>
@@ -167,7 +180,7 @@
   </div>
   <div class="tarjeta papel">
     <div class="kicker">Capítulo 2 · 6:30 p. m.</div>
-    <p class="narra" data-texto="Se encerró en su cuarto. Tocas la puerta, pero no quiere contarte nada. Algo pasó hoy en el colegio."></p>
+    <p class="narra" data-texto="Se encerró en su cuarto. Tocas la puerta, {n}, pero no quiere contarte nada. Algo pasó hoy en el colegio."></p>
     <div class="fila"><div class="puntos"><i></i><i class="on"></i><i></i></div><button class="sig">Siguiente</button></div>
   </div>
 </section>
@@ -197,7 +210,7 @@
   </div>
   <div class="tarjeta papel">
     <div class="kicker">Tu misión</div>
-    <h3>Descubre por qué Valentina está triste</h3>
+    <h3 id="tituloMision">Descubre por qué Valentina está triste</h3>
     <p>Pregúntale a Normi por WhatsApp todo lo que quieras saber de su día en el colegio. Ojo: lo primero que descubras puede no ser lo que más le duele.</p>
     <div class="pasos">
       <a class="boton verde" id="irWhatsApp" href="#" target="_blank" rel="noopener">
@@ -236,7 +249,7 @@
 
 <script>
 const API = 'https://normy-api.srv966880.hstgr.cloud';
-const WA = 'https://wa.me/573003774342?text=' + encodeURIComponent('🔍 Misión Normi: quiero ser acudiente');
+const waLink = () => 'https://wa.me/573003774342?text=' + encodeURIComponent('🔍 Misión Normi: soy ' + (nombre() || 'acudiente') + ', acudiente de Valentina');
 const ORDEN = ['portada', 'e1', 'e2', 'e3', 'mision', 'final'];
 const $ = (id) => document.getElementById(id);
 const guardar = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
@@ -245,22 +258,32 @@ const leer = (k) => { try { return localStorage.getItem(k); } catch { return nul
 let tipeo = null;
 function escribir(p) {
   clearInterval(tipeo);
-  const t = p.dataset.texto || ''; let i = 0; p.textContent = '';
+  const t = (p.dataset.texto || '').replace(/\{n\}/g, nombre() || 'Acudiente'); let i = 0; p.textContent = '';
   tipeo = setInterval(() => { p.textContent = t.slice(0, ++i); if (i >= t.length) clearInterval(tipeo); }, 28);
 }
 function ir(id) {
   document.querySelectorAll('.pantalla').forEach((s) => s.classList.remove('activa'));
   const s = $(id);
   // reiniciar animaciones de la escena
-  s.querySelectorAll('.fondo, .sprite, .bocadillo, .luz, .brillo, .burb').forEach((el) => { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; });
+  s.querySelectorAll('.fondo, .lienzo, .sprite, .valentina img, .bocadillo, .luz, .brillo, .burb').forEach((el) => { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; });
   s.classList.add('activa'); s.scrollTop = 0;
   const narra = s.querySelector('.narra'); if (narra) escribir(narra);
   if (id === 'mision' || id === 'final') guardar('mision_paso', id);
   if (id === 'final') confeti();
+  if (id === 'mision') $('tituloMision').textContent = (nombre() ? nombre() + ', descubre' : 'Descubre') + ' por qué Valentina está triste';
 }
-$('empezar').onclick = () => ir('e1');
+function nombre() { return (leer('mision_nombre') || '').trim(); }
+$('nombre').value = nombre();
+$('formNombre').onsubmit = (e) => {
+  e.preventDefault();
+  const n = $('nombre').value.trim().replace(/\s+/g, ' ');
+  if (!n) return;
+  guardar('mision_nombre', n.charAt(0).toUpperCase() + n.slice(1));
+  $('irWhatsApp').href = waLink();
+  ir('e1');
+};
 document.querySelectorAll('.sig').forEach((b) => b.onclick = () => { const id = b.closest('.pantalla').id; ir(ORDEN[ORDEN.indexOf(id) + 1]); });
-$('irWhatsApp').href = WA;
+$('irWhatsApp').href = waLink();
 $('otraVez').onclick = () => ir('e1');
 $('reiniciar').onclick = () => { guardar('mision_paso', ''); $('resp').value = ''; $('aviso').className = 'aviso'; ir('portada'); };
 
