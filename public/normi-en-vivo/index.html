@@ -248,7 +248,7 @@ function contexto(texto) {
 function responder() { enviar({ type: 'response.create' }); }
 function activarEscucha(si) {
   enviar({ type: 'session.update', session: { type: 'realtime', audio: { input: { turn_detection: si
-    ? { type: 'semantic_vad', eagerness: 'medium', create_response: true, interrupt_response: false } : null } } } });
+    ? { type: 'semantic_vad', eagerness: 'low', create_response: true, interrupt_response: false } : null } } } });
   if (!si) enviar({ type: 'input_audio_buffer.clear' });
 }
 function enviarImagen() {
