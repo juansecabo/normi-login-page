@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulador de consumo</title>
+<link rel="icon" href="favicon.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0B315A; --navy-hondo: #061F3B; --navy-panel: #07213F; --navy-3: #164A82;
+    --naranja: #F2931B; --naranja-claro: #FFC27A; --blanco: #FFFFFF;
+    --tinta-2: #B9C8DB; --tinta-3: #8FA6C2;
+    --bajo: #7FB2E5; --moderado: #F2931B; --alto: #E2553A;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { background: var(--navy-hondo); color: var(--blanco); font-family: 'Poppins', sans-serif; overflow: hidden;
+    -webkit-font-smoothing: antialiased; }
+  ::selection { background: rgba(242,147,27,.45); color: #fff; }
+
+  /* ---------- escenario ---------- */
+  .escena { position: relative; overflow: hidden; height: 100vh;
+    background:
+      radial-gradient(70% 45% at 50% 92%, rgba(127,178,229,.22) 0%, rgba(127,178,229,0) 70%),
+      radial-gradient(120% 80% at 50% 110%, #1D5A99 0%, #0F3D6E 42%, var(--navy) 72%, var(--navy-hondo) 100%); }
+  .escena::before { content: ''; position: absolute; left: 50%; bottom: 10%; width: 78%; height: 9%; transform: translateX(-50%);
+    background: radial-gradient(closest-side, rgba(3,16,33,.55), rgba(3,16,33,0)); filter: blur(6px); pointer-events: none; }
+  .marca { position: absolute; top: 28px; left: 40px; z-index: 5; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+  .marca img { height: 28px; width: 88px; object-fit: contain; display: block; }
+  .marca h1 { font-size: 19px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+  .marca p { font-size: 12.5px; color: #D6E1EE; margin-top: -7px; }
+  .escenario { position: absolute; inset: 0; overflow: hidden; }
+  .mundo { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; }
+  .personaje { position: absolute; left: 0; top: 0; transform-origin: 50% 100%; }
+  .personaje .cuerpo { position: relative; transform-origin: 50% 100%; }
+  .personaje img { position: absolute; left: 50%; bottom: 0; height: 100%; transform: translateX(-50%); opacity: 0; user-select: none; -webkit-user-drag: none; }
+  .personaje img.ver { opacity: 1; }
+  .sombra { position: absolute; left: 50%; bottom: -6px; width: 70%; height: 16px; transform: translateX(-50%);
+    background: radial-gradient(closest-side, rgba(0,0,0,.38), rgba(0,0,0,0)); filter: blur(1px); }
+  .burbuja { position: absolute; left: 50%; padding: 7px 11px; background: var(--blanco); border-radius: 14px 14px 14px 4px;
+    display: flex; gap: 4px; box-shadow: 0 6px 18px rgba(0,0,0,.25); pointer-events: none; }
+  .burbuja i { width: 6px; height: 6px; border-radius: 50%; background: var(--navy); opacity: .35; animation: punto 1s infinite; }
+  .burbuja i:nth-child(2) { animation-delay: .15s; } .burbuja i:nth-child(3) { animation-delay: .3s; }
+  @keyframes punto { 0%, 100% { transform: translateY(0); opacity: .35; } 40% { transform: translateY(-3px); opacity: 1; } }
+
+  /* ---------- controles flotantes (arriba a la derecha, sin panel) ---------- */
+  .controles { position: absolute; top: 28px; right: 36px; width: 290px; z-index: 6; }
+  .control + .control { margin-top: 16px; }
+  .rotulo { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; color: var(--tinta-2); font-weight: 500; }
+  .rotulo .zona { font-size: 12px; font-weight: 700; }
+  /* número de estudiantes: se ve como un campo para escribir; el lápiz lo abre */
+  .cifra-edit { display: flex; align-items: center; gap: 6px; margin-top: 5px; padding: 3px 4px 3px 11px; border-radius: 10px;
+    background: rgba(2,19,37,.55); border: 1.5px solid rgba(255,255,255,.16); cursor: text; transition: border-color .2s, box-shadow .2s; }
+  .cifra-edit:hover { border-color: rgba(255,255,255,.32); }
+  .cifra-edit:focus-within { border-color: var(--naranja); box-shadow: 0 0 0 4px rgba(242,147,27,.18); }
+  .cifra-edit input { font: 700 21px/1.2 'Poppins', sans-serif; letter-spacing: -0.02em; color: var(--blanco); background: transparent;
+    border: 0; width: 100%; padding: 2px 0; outline: none; caret-color: var(--naranja); font-variant-numeric: tabular-nums; }
+  .cifra-edit button { flex: none; width: 30px; height: 30px; border-radius: 8px; border: 0; cursor: pointer; display: grid; place-items: center;
+    background: rgba(242,147,27,.16); color: var(--naranja); transition: background .2s, transform .15s; }
+  .cifra-edit button:hover { background: rgba(242,147,27,.3); }
+  .cifra-edit button:active { transform: scale(.94); }
+  .cifra-edit button svg { width: 15px; height: 15px; }
+  .sub { font-size: 11.5px; line-height: 1.45; color: var(--tinta-2); margin-top: 8px; min-height: calc(11.5px * 1.45 * 3); }  /* alto fijo de tres líneas: nada se corre al cambiar la cifra */
+  .sub b { color: var(--blanco); font-weight: 600; font-variant-numeric: tabular-nums; }
+  /* deslizador tipo tubo: canal hundido, líquido cilíndrico con brillo y perilla esférica */
+  .tubo { position: relative; height: 14px; margin-top: 10px; border-radius: 7px;
+    background: linear-gradient(180deg, #021325 0%, #062240 55%, #0B3260 100%);
+    box-shadow: inset 0 3px 7px rgba(0,0,0,.65), inset 0 -1px 2px rgba(255,255,255,.08), 0 6px 18px rgba(2,12,26,.35), 0 1px 0 rgba(255,255,255,.08); }
+  .tubo .zonas-fondo { position: absolute; inset: 3px; border-radius: 5px; opacity: .2;
+    background: linear-gradient(90deg, var(--bajo) 0 33.33%, var(--moderado) 33.33% 66.66%, var(--alto) 66.66% 100%); }
+  .tubo .relleno { position: absolute; left: 2px; top: 2px; bottom: 2px; border-radius: 5px; overflow: hidden;
+    background: linear-gradient(90deg, #E07F0A, var(--naranja) 60%, var(--naranja-claro)); }
+  .tubo .relleno.zonas { background: linear-gradient(90deg, var(--bajo) 0 33.33%, var(--moderado) 33.33% 66.66%, var(--alto) 66.66% 100%); background-repeat: no-repeat; }
+  .tubo .relleno::before { content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,.6) 0%, rgba(255,255,255,.14) 36%, rgba(0,0,0,0) 54%, rgba(0,0,0,.3) 100%); }
+  .tubo .relleno::after { content: ''; position: absolute; left: 6px; right: 6px; top: 2px; height: 2px; border-radius: 3px; background: rgba(255,255,255,.6); filter: blur(.4px); }
+  .tubo .vidrio { position: absolute; inset: 0; border-radius: 7px; pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 40%); }
+  .tubo input[type=range] { -webkit-appearance: none; appearance: none; position: absolute; left: -4px; top: -7px; width: calc(100% + 8px);
+    height: 28px; margin: 0; background: transparent; cursor: grab; outline: none; }
+  .tubo input[type=range]:active { cursor: grabbing; }
+  .tubo input[type=range]::-webkit-slider-runnable-track { height: 28px; background: transparent; }
+  .tubo input[type=range]::-moz-range-track { height: 28px; background: transparent; }
+  .tubo input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; margin-top: 4px; border-radius: 50%;
+    background: radial-gradient(circle at 33% 28%, #FFFFFF 0%, #F4F7FB 26%, #C9D5E3 72%, #93A6BD 100%);
+    box-shadow: 0 4px 10px rgba(0,0,0,.5), 0 0 0 2.5px var(--naranja), inset 0 -2px 3px rgba(0,0,0,.18);
+    transition: transform .15s cubic-bezier(.2,.8,.2,1); }
+  .tubo input[type=range]:active::-webkit-slider-thumb { transform: scale(1.08); }
+  .tubo input[type=range]::-moz-range-thumb { width: 17px; height: 17px; border: 0; border-radius: 50%;
+    background: radial-gradient(circle at 33% 28%, #FFFFFF 0%, #F4F7FB 26%, #C9D5E3 72%, #93A6BD 100%);
+    box-shadow: 0 6px 14px rgba(0,0,0,.5), 0 0 0 3px var(--naranja); }
+  .tubo input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 6px 14px rgba(0,0,0,.5), 0 0 0 3px #fff, 0 0 0 7px var(--naranja); }
+  .marcas { display: flex; justify-content: space-between; font-size: 11px; color: var(--tinta-3); margin-top: 8px; }
+  .marcas span.on { color: var(--blanco); font-weight: 600; }
+  .persona { font-size: 11.5px; color: var(--tinta-2); margin-top: 8px; }
+  .persona b { color: var(--blanco); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* ---------- precio: lo más importante, grande y centrado sobre el grupo ---------- */
+  .precio { position: absolute; left: 50%; top: 4.5%; transform: translateX(-50%); text-align: center; z-index: 4; width: min(calc(100% - 880px), 760px); min-width: 460px; pointer-events: none; }
+  .precio .que { font-size: 16px; color: var(--tinta-2); font-weight: 500; }
+  .precio .monto { display: flex; justify-content: center; align-items: baseline; gap: 14px; margin-top: 2px; }
+  .precio .monto b { font-size: clamp(44px, 4.6vw, 76px); font-weight: 700; letter-spacing: -0.04em; line-height: 1;
+    color: var(--naranja); font-variant-numeric: tabular-nums; text-shadow: 0 10px 34px rgba(2,12,26,.55); }
+  .precio .monto span { font-size: clamp(16px, 1.4vw, 22px); font-weight: 600; color: var(--naranja); }
+  .precio .desglose { display: flex; justify-content: center; gap: 6px 22px; margin-top: 12px; font-size: 13.5px; color: var(--tinta-2); flex-wrap: wrap; }
+  .precio .desglose b { color: var(--blanco); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .precio .desglose i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 7px; transform: translateY(-1px); }
+  .nota { position: absolute; left: 40px; bottom: 22px; right: 40px; z-index: 5; font-size: 11.5px; color: var(--tinta-3); text-align: center; }
+  /* celular y tableta: todo apilado, el grupo en su propio escenario */
+  @media (max-width: 1100px) {
+    body { overflow-y: auto; }
+    .escena { height: auto; min-height: 100vh; display: flex; flex-direction: column; padding: 22px 16px 18px; }
+    .marca, .precio, .controles, .nota { position: static; transform: none; width: 100%; min-width: 0; }
+    .marca { order: 1; gap: 8px; }
+    .precio { order: 2; margin-top: 22px; }
+    .precio .monto b { font-size: 46px; }
+    .precio .monto span { font-size: 17px; }
+    .precio .desglose { flex-direction: column; gap: 4px; align-items: center; font-size: 13px; }
+    .escenario { order: 3; position: relative; inset: auto; height: 25vh; min-height: 190px; max-height: 300px; margin: 6px -16px 0; }
+    .controles { order: 4; margin-top: 10px; }
+    .control + .control { margin-top: 18px; }
+    .cifra-edit input { font-size: 24px; }
+    .tubo input[type=range]::-webkit-slider-thumb { width: 26px; height: 26px; margin-top: 1px; }   /* más fácil de tocar */
+    .nota { order: 5; margin-top: 16px; }
+    .escena { padding-left: max(16px, 4vw); padding-right: max(16px, 4vw); }
+    .escenario { margin-left: calc(-1 * max(16px, 4vw)); margin-right: calc(-1 * max(16px, 4vw)); }
+    .ventana { padding: 22px 18px 18px; border-radius: 16px; }
+  }
+  @media (min-width: 600px) and (max-width: 1100px) {
+    .controles { display: grid; grid-template-columns: 1fr 1fr; gap: 0 32px; align-items: start; }
+    .control + .control { margin-top: 0; }
+    .fijo-btn { grid-column: 1 / -1; }
+    .precio .desglose { flex-direction: row; gap: 6px 22px; flex-wrap: wrap; justify-content: center; }
+    .escenario { height: 36vh; max-height: 440px; }
+  }
+  /* gasto fijo: botón bajo las barras */
+  .fijo-btn { margin-top: 16px; width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; cursor: pointer;
+    background: rgba(2,19,37,.55); border: 1.5px solid rgba(255,255,255,.14); color: var(--blanco); font: inherit; text-align: left;
+    transition: border-color .2s, background .2s; }
+  .fijo-btn:hover { border-color: rgba(255,255,255,.32); background: rgba(2,19,37,.75); }
+  .fijo-btn:focus-visible { outline: none; border-color: var(--naranja); box-shadow: 0 0 0 4px rgba(242,147,27,.18); }
+  .fijo-btn .t { flex: 1; font-size: 11.5px; color: var(--tinta-2); line-height: 1.3; }
+  .fijo-btn .t b { display: block; font-size: 15px; color: var(--blanco); font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 1px; }
+  .fijo-btn svg { flex: none; width: 16px; height: 16px; color: var(--naranja); }
+
+  /* ventana con el detalle */
+  .velo { position: fixed; inset: 0; z-index: 50; background: rgba(2,10,22,.62); display: grid; place-items: center; padding: 24px;
+    opacity: 0; pointer-events: none; transition: opacity .22s ease; }
+  .velo.abierto { opacity: 1; pointer-events: auto; }
+  .ventana { width: min(760px, 100%); max-height: min(86vh, 900px); overflow: auto; background: linear-gradient(180deg, #0D3462 0%, #08254A 100%);
+    border: 1px solid rgba(255,255,255,.1); border-radius: 18px; box-shadow: 0 30px 80px rgba(0,0,0,.55); padding: 28px 30px 24px;
+    transform: translateY(14px) scale(.98); transition: transform .3s cubic-bezier(.16,1,.3,1); }
+  .velo.abierto .ventana { transform: none; }
+  .ventana::-webkit-scrollbar { width: 8px; } .ventana::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 8px; }
+  .v-cab { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+  .v-cab h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+  .v-cab p { font-size: 13px; color: var(--tinta-2); margin-top: 4px; }
+  .v-cerrar { flex: none; width: 36px; height: 36px; border-radius: 10px; border: 0; cursor: pointer; display: grid; place-items: center;
+    background: rgba(255,255,255,.08); color: var(--blanco); transition: background .2s; }
+  .v-cerrar:hover { background: rgba(255,255,255,.16); }
+  .v-cerrar svg { width: 16px; height: 16px; }
+  .v-total { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; margin-top: 18px; }
+  .v-total b { white-space: nowrap; }
+  .v-total b { font-size: 40px; font-weight: 700; color: var(--naranja); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+  .v-total span { font-size: 15px; color: var(--naranja); font-weight: 600; }
+  /* cada sección es un bloque propio: banda de título con su color, filas más claras debajo */
+  .v-sec { margin-top: 26px; border-radius: 14px; overflow: hidden; background: rgba(2,19,37,.35); border: 1px solid rgba(255,255,255,.07); }
+  .v-sec h3 { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 0; padding: 14px 18px;
+    font-size: 17px; font-weight: 700; letter-spacing: -0.01em; background: var(--sec-fondo); border-left: 5px solid var(--sec-color); }
+  .v-sec h3 .icono { display: inline-flex; align-items: center; gap: 10px; }
+  .v-sec h3 .icono i { width: 10px; height: 10px; border-radius: 3px; background: var(--sec-color); }
+  .v-sec h3 b { font-variant-numeric: tabular-nums; font-size: 17px; color: var(--sec-color); white-space: nowrap; }
+  .v-sec .filas-sec { padding: 4px 18px 6px 23px; }
+  .v-sec.s0 { --sec-color: #7FB2E5; --sec-fondo: rgba(127,178,229,.14); }
+  .v-sec.s1 { --sec-color: #F2931B; --sec-fondo: rgba(242,147,27,.14); }
+  .v-sec.s2 { --sec-color: #9FD3A8; --sec-fondo: rgba(159,211,168,.13); }
+  .v-sec.s3 { --sec-color: #D7B4F0; --sec-fondo: rgba(215,180,240,.13); }
+  .v-fila { display: grid; grid-template-columns: 1fr auto auto; gap: 4px 18px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.06); font-size: 13.5px; font-weight: 500; color: #E4ECF5; }
+  .v-fila:last-child { border-bottom: 0; }
+  .v-fila.v-enc { padding: 10px 0 0; border-bottom: 0; }
+  .v-fila.v-enc span { font-size: 11px; font-weight: 600; color: var(--tinta-2); letter-spacing: .06em; text-transform: uppercase; }
+  .v-fila small { display: block; font-size: 12px; color: var(--tinta-3); margin-top: 2px; }
+  .v-fila .m { font-size: 12.5px; color: var(--tinta-2); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .v-fila .a { font-weight: 500; color: #E4ECF5; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; min-width: 170px; }
+  .v-pie { font-size: 11.5px; color: var(--tinta-3); margin-top: 18px; line-height: 1.5; }
+  /* ventana del gasto fijo en pantallas angostas: nombre arriba; mensual y anual debajo */
+  @media (max-width: 700px) {
+    .ventana { padding: 20px 16px 16px; }
+    .v-cab h2 { font-size: 19px; }
+    .v-total b { font-size: 32px; }
+    .v-sec h3 { flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px 14px; font-size: 16px; }
+    .v-sec .filas-sec { padding: 2px 14px 4px 19px; }
+    .v-fila { grid-template-columns: 1fr auto; gap: 3px 12px; font-size: 13px; }
+    .v-fila > span:first-child { grid-column: 1 / -1; }
+    .v-fila .m { text-align: left; white-space: normal; }
+    .v-fila .a { min-width: 0; }
+  }
+</style>
+</head>
+<body>
+<section class="escena" id="escena">
+  <div class="marca"><img src="img/cailico.webp" alt="Cailico"><h1>Simulador de consumo</h1><p>Mundo Normi para los colegios oficiales de su entidad territorial</p></div>
+  <div class="escenario" id="escenario"><div class="mundo" id="mundo"></div></div>
+
+  <div class="precio" aria-live="polite">
+    <div class="que">Inversión del primer año, antes de impuestos</div>
+    <div class="monto"><b id="total">COP 0</b><span>millones</span></div>
+    <div class="desglose">
+      <span><i style="background:var(--naranja)"></i>Tokens y API de Meta <b id="consumo">COP 0</b></span>
+    </div>
+  </div>
+
+  <div class="controles">
+    <div class="control">
+      <label class="rotulo" for="estNum">Estudiantes</label>
+      <div class="cifra-edit">
+        <input id="estNum" inputmode="numeric" autocomplete="off" spellcheck="false" value="100.000" aria-label="Número de estudiantes">
+        <button type="button" id="estLapiz" aria-label="Escribir el número de estudiantes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg></button>
+      </div>
+      <div class="tubo"><div class="relleno" id="rellEst"></div><div class="vidrio"></div><input type="range" id="est" min="0" max="1000" value="500" aria-label="Estudiantes"></div>
+      <p class="sub">El costo de acudientes y personal educativo está incluido en el de cada estudiante (<b id="personas">304.750</b> personas en total)</p>
+    </div>
+    <div class="control">
+      <div class="rotulo"><span>Uso de Normi</span><span class="zona" id="usoTxt">Moderado</span></div>
+      <div class="tubo"><div class="zonas-fondo"></div><div class="relleno zonas" id="rellUso"></div><div class="vidrio"></div><input type="range" id="uso" min="0" max="100" value="50" aria-label="Uso de Normi"></div>
+      <div class="marcas"><span id="z0">Bajo</span><span id="z1">Moderado</span><span id="z2">Alto</span></div>
+      <p class="persona">Por persona al mes: tokens <b id="pTok">COP 0</b> · API de Meta <b id="pMeta">COP 0</b></p>
+    </div>
+    <button type="button" class="fijo-btn" id="fijoBtn" aria-haspopup="dialog">
+      <span class="t">Operación del primer año, su parte de la plataforma<b id="fijo">COP 0</b></span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></svg>
+    </button>
+  </div>
+
+  <p class="nota">Pesos colombianos, primer año: 12 meses de uso. Incluye a toda la comunidad educativa (3,05 personas por estudiante). Antes de impuestos: no incluye IVA si aplica, estampillas, ICA, 4 por mil, retenciones, impuesto de renta ni pólizas de garantía.</p>
+
+  <div class="velo" id="velo">
+    <div class="ventana" role="dialog" aria-modal="true" aria-labelledby="vTitulo">
+      <div class="v-cab">
+        <div><h2 id="vTitulo">Su parte de la plataforma compartida</h2><p>Mundo Normi es una sola plataforma para muchos colegios. Su entidad paga la parte de la operación que corresponde a sus estudiantes: <b id="vPorEst">COP 0</b> por estudiante al año, con acudientes, docentes, directivos y demás personal incluidos.</p></div>
+        <button type="button" class="v-cerrar" id="vCerrar" aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="v-total"><b id="vTotal">COP 0</b><span id="vTotalU">millones el primer año</span></div>
+      <div id="vSecciones"></div>
+      <p class="v-pie">Precios de referencia de mercado en 2026. El costo de cada persona del equipo es su salario × 1,52: prima, cesantías, intereses, vacaciones, salud, pensión, ARL, caja de compensación, ICBF y SENA. Los montos de toda la plataforma están dimensionados para 1.000.000 de estudiantes con su comunidad; su parte es la proporción de sus estudiantes. Los planes empresariales se confirman con cotización de cada proveedor. Dólar a COP 3.197,65.</p>
+    </div>
+  </div>
+</section>
+<script>
+// ---------- costos ----------
+// Consumo por estudiante al año del informe de costos (incluye a su comunidad):
+// bajo $2.094, moderado $4.803, intenso $7.479. En el uso moderado, 33,2 % es superinteligencia
+// ($1.594,0 M de $4.803,5 M) y el resto, WhatsApp; esa proporción se usa en todos los niveles.
+// El informe calculó 10 meses de clases; Mundo Normi se usa los 12 meses del año: el consumo
+// mensual sale del informe (÷ 10) y el anual se cuenta con 12 meses.
+const PERSONAS_POR_ESTUDIANTE = 3.0475, MESES_INFORME = 10, MESES = 12, PARTE_TOKENS = 1594.0 / 4803.5;
+const ANCLAS = [[0, 1047], [1/6, 2094], [0.5, 4803], [5/6, 7479], [1, 8817]];   // [uso, $ por estudiante al año]
+function costoPorEstudiante(u) {
+  for (let i = 1; i < ANCLAS.length; i++) {
+    const [u0, c0] = ANCLAS[i - 1], [u1, c1] = ANCLAS[i];
+    if (u <= u1) return c0 + (c1 - c0) * (u - u0) / (u1 - u0);
+  }
+  return ANCLAS[ANCLAS.length - 1][1];
+}
+function costoPersonaMes(u) {
+  const mes = costoPorEstudiante(u) / PERSONAS_POR_ESTUDIANTE / MESES_INFORME;
+  return { tokens: mes * PARTE_TOKENS, meta: mes * (1 - PARTE_TOKENS) };
+}
+// Operación anual de toda la plataforma compartida (multicolegio), dimensionada para 1.000.000 de estudiantes.
+// Cada entidad paga su parte proporcional: anual × N / BASE_ESTUDIANTES.
+const TRM = 3197.65;
+const FACTOR_PRESTACIONAL = 1.52;
+const DETALLE_FIJO = [
+  { titulo: 'Servidores e infraestructura', items: [   // USD al mes
+    { c: 'Base de datos empresarial', d: 'Supabase Enterprise con acuerdo de servicio y soporte 24/7', usd: 10000 },
+    { c: 'Réplicas de lectura', d: 'Dos copias en vivo para repartir la carga', usd: 3700 },
+    { c: 'Servidores de la aplicación', d: '16 servidores de 8 núcleos y 32 GB, balanceados', usd: 4640 },
+    { c: 'Cola de envíos', d: 'Redis gestionado para avisos masivos sin pérdidas', usd: 1000 },
+    { c: 'Firewall y protección contra ataques', d: 'Cloudflare Enterprise', usd: 5000 },
+    { c: 'Almacenamiento y transferencia', d: 'Documentos, boletines, fotos y audios', usd: 1500 },
+    { c: 'Monitoreo 24/7', d: 'Alertas, registros y auditoría de accesos', usd: 2000 },
+    { c: 'Respaldo en otra nube', d: 'Copia diaria fuera del proveedor principal', usd: 500 },
+  ] },
+  { titulo: 'Seguridad y certificaciones', items: [     // pesos al año (o USD al mes)
+    { c: 'Pruebas de penetración', d: 'Dos al año: plataforma, API y canal de WhatsApp', cop: 30e6 },
+    { c: 'Certificación ISO/IEC 27001', d: 'Seguridad de la información', cop: 30e6 },
+    { c: 'Auditoría SOC 2', d: 'Controles de seguridad y disponibilidad', cop: 40e6 },
+    { c: 'Póliza de ciberriesgos', d: 'Cobertura ante incidentes', cop: 40e6 },
+    { c: 'Asesoría en protección de datos', d: 'Ley 1581 de 2012', cop: 15e6 },
+    { c: 'Protección permanente', d: 'Escaneo de vulnerabilidades y gestión de accesos', usd: 2000 },
+  ] },
+  { titulo: 'Equipo humano', items: [                  // personas y salario mensual
+    { c: 'Gerente del proyecto', n: 1, sal: 8e6 },
+    { c: 'Desarrolladores backend sénior', n: 3, sal: 10e6 },
+    { c: 'Desarrollador frontend', n: 1, sal: 7e6 },
+    { c: 'Ingenieros DevOps', n: 2, sal: 9e6 },
+    { c: 'Especialista en seguridad y datos', n: 1, sal: 9e6 },
+    { c: 'Analista de datos', n: 1, sal: 7e6 },
+    { c: 'Operadores de monitoreo 24/7', n: 4, sal: 4.5e6 },
+    { c: 'Coordinador de soporte', n: 1, sal: 4.5e6 },
+    { c: 'Agentes de mesa de ayuda', n: 15, sal: 2.5e6 },
+    { c: 'Formadores', n: 8, sal: 3.5e6 },
+  ] },
+  { titulo: 'Banco de material', items: [               // para reunir la información de los colegios
+    { c: 'Agente de superinteligencia del banco', d: 'Revisa y ordena la información de cada colegio: USD 2,50 por colegio, el máximo medido', cop: 1042.5 * TRM },
+    { c: 'Base de datos y archivos del banco', d: 'Supabase Pro durante 12 meses', usd: 25 },
+  ] },
+];
+const anualItem = (it) => it.usd ? it.usd * 12 * TRM : it.cop ? it.cop : it.n * it.sal * FACTOR_PRESTACIONAL * 12;
+DETALLE_FIJO.forEach((sec) => { sec.total = sec.items.reduce((a, it) => a + anualItem(it), 0); });
+const FIJO = { infra: DETALLE_FIJO[0].total, seguridad: DETALLE_FIJO[1].total, equipo: DETALLE_FIJO[2].total, banco: DETALLE_FIJO[3].total };
+FIJO.total = FIJO.infra + FIJO.seguridad + FIJO.equipo + FIJO.banco;
+const BASE_ESTUDIANTES = 1e6;
+const parte = (anual, N) => anual * N / BASE_ESTUDIANTES;   // parte proporcional de N estudiantes
+// Deslizador de 0 a 1000: la primera mitad sube de 1 a 100.000 (escala logarítmica, para
+// poder elegir colegios pequeños) y la segunda, de 100.000 a 1.000.000 en línea recta.
+function aEstudiantes(v) {
+  if (v <= 0) return 0;
+  if (v <= 500) return Math.round(Math.pow(10, 5 * v / 500));
+  return Math.round(100000 + (v - 500) / 500 * 900000);
+}
+const fmt = (n) => 'COP ' + Math.round(n).toLocaleString('es-CO');
+// cifras grandes en millones, para que se lean de un vistazo
+const fmtM = (n) => n >= 1e8 ? 'COP ' + (n / 1e6).toLocaleString('es-CO', { maximumFractionDigits: 0 }) + ' millones' : fmt(n);
+const num = (n) => Math.round(n).toLocaleString('es-CO');
+const $ = (id) => document.getElementById(id);
+let USO = 0.5;
+// Las cifras ruedan hacia su nuevo valor (un solo movimiento, rápido al inicio y suave al final).
+const mostrado = {};
+function rodar(id, valor, formato) {
+  const el = $(id); const ini = mostrado[id] ?? valor; mostrado[id] = valor;
+  if (el._raf) cancelAnimationFrame(el._raf);
+  const t0 = performance.now(), dur = 520;
+  const paso = (t) => {
+    const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 4);
+    el.textContent = formato(ini + (valor - ini) * e);
+    if (k < 1) el._raf = requestAnimationFrame(paso);
+  };
+  el._raf = requestAnimationFrame(paso);
+}
+// Estudiantes: se puede escribir el número o mover el tubo. Lo escrito manda (no se redondea).
+let N_ESCRITO = null;
+function aDeslizador(N) {
+  if (N <= 0) return 0;
+  if (N <= 100000) return Math.max(1, Math.round(500 * Math.log10(N) / 5));
+  return Math.round(500 + (Math.min(N, 1000000) - 100000) / 900000 * 500);
+}
+function actualizar() {
+  const N = N_ESCRITO ?? aEstudiantes(+$('est').value);
+  USO = +$('uso').value / 100;
+  const pm = costoPersonaMes(USO);
+  const personaAnio = (pm.tokens + pm.meta) * MESES;
+  const consumo = N * PERSONAS_POR_ESTUDIANTE * personaAnio;
+  const operacion = parte(FIJO.total, N);
+  const total = consumo + operacion;
+  if (document.activeElement !== $('estNum')) $('estNum').value = num(N);
+  rodar('personas', N * PERSONAS_POR_ESTUDIANTE, num);
+  const zona = USO < 1/3 ? 0 : USO < 2/3 ? 1 : 2;
+  $('usoTxt').textContent = ['Bajo', 'Moderado', 'Alto'][zona];
+  $('usoTxt').style.color = ['var(--bajo)', 'var(--moderado)', 'var(--alto)'][zona];
+  [0, 1, 2].forEach((i) => $('z' + i).classList.toggle('on', i === zona));
+  rodar('pTok', pm.tokens, fmt); rodar('pMeta', pm.meta, fmt);
+  rodar('total', total / 1e6, (v) => 'COP ' + Math.round(v).toLocaleString('es-CO'));
+  rodar('consumo', consumo, fmtM); rodar('fijo', operacion, fmtM);
+  // líquido de los tubos (la perilla mide 34 px: el líquido llega a su centro)
+  const llenar = (id, inp) => {
+    const el = $(id), t = el.parentElement.clientWidth, k = (+inp.value - inp.min) / (inp.max - inp.min);
+    el.style.width = Math.max(11, 8 + k * (t - 16)) + 'px';
+    if (el.classList.contains('zonas')) el.style.backgroundSize = (t - 4) + 'px 100%';
+  };
+  llenar('rellEst', $('est')); llenar('rellUso', $('uso'));
+}
+$('est').addEventListener('input', () => { N_ESCRITO = null; actualizar(); });
+const leerEscrito = () => {
+  const n = parseInt($('estNum').value.replace(/[^0-9]/g, ''), 10);
+  if (isNaN(n)) { $('estNum').value = num(estudiantes()); return; }
+  N_ESCRITO = Math.min(1000000, Math.max(0, n));
+  $('est').value = aDeslizador(N_ESCRITO);
+  actualizar();
+};
+$('estNum').addEventListener('input', () => {
+  // formatea con puntos mientras se escribe, sin mover el cursor al final de forma rara
+  // máximo un millón de estudiantes: si se escribe más, queda en 1.000.000
+  const crudo = $('estNum').value.replace(/[^0-9]/g, '').slice(0, 7);
+  $('estNum').value = crudo ? Math.min(1000000, Number(crudo)).toLocaleString('es-CO') : '';
+  if (crudo) leerEscrito();
+});
+$('estNum').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('estNum').blur(); });
+$('estNum').addEventListener('blur', leerEscrito);
+$('estNum').addEventListener('focus', () => $('estNum').select());
+$('estLapiz').addEventListener('click', () => { $('estNum').focus(); $('estNum').select(); });
+document.querySelector('.cifra-edit').addEventListener('click', (e) => { if (e.target === e.currentTarget) $('estNum').focus(); });
+addEventListener('resize', actualizar);
+// ventana de la operación: cada ítem muestra lo de toda la plataforma y la parte de la entidad
+// en la ventana cada valor dice su moneda (USD o COP) y si es al mes o al año
+const millones = (v) => v >= 1e6 ? 'COP ' + (v / 1e6).toLocaleString('es-CO', { maximumFractionDigits: 1 }) + ' M' : fmt(v);
+function armarVentana() {
+  const N = estudiantes(), op = parte(FIJO.total, N);
+  $('vPorEst').textContent = fmt(FIJO.total / BASE_ESTUDIANTES);
+  $('vTotal').textContent = op >= 1e6 ? 'COP ' + Math.round(op / 1e6).toLocaleString('es-CO') : fmt(op);
+  $('vTotalU').textContent = (op >= 1e6 ? 'millones ' : '') + 'el primer año, para ' + num(N) + (N === 1 ? ' estudiante' : ' estudiantes');
+  $('vSecciones').innerHTML = DETALLE_FIJO.map((sec, k) => `
+    <section class="v-sec s${k}">
+      <h3><span class="icono"><i></i>${sec.titulo}</span><b>${millones(parte(sec.total, N))} el primer año</b></h3>
+      <div class="filas-sec">
+      <div class="v-fila v-enc"><span></span><span class="m">Toda la plataforma</span><span class="a">Su parte</span></div>
+      ${sec.items.map((it) => {
+        const medio = it.usd ? `USD ${it.usd.toLocaleString('es-CO')} al mes` : it.n ? `${it.n} × ${millones(it.sal * FACTOR_PRESTACIONAL)} al mes` : `${millones(it.cop)} al año`;
+        // equipo: salario y lo que cuesta con prestaciones, seguridad social y parafiscales (× 1,52)
+        const det = it.d ? `<small>${it.d}</small>` : it.n ? `<small>Salario de ${millones(it.sal)} más prestaciones y seguridad social</small>` : '';
+        return `<div class="v-fila"><span>${it.c}${det}</span><span class="m">${medio}</span><span class="a">${millones(parte(anualItem(it), N))} el primer año</span></div>`;
+      }).join('')}
+      </div>
+    </section>`).join('');
+}
+let enfocadoAntes = null;
+function abrirVentana() { armarVentana(); enfocadoAntes = document.activeElement; $('velo').classList.add('abierto'); $('vCerrar').focus(); }
+function cerrarVentana() { $('velo').classList.remove('abierto'); if (enfocadoAntes) enfocadoAntes.focus(); }
+$('fijoBtn').addEventListener('click', abrirVentana);
+$('vCerrar').addEventListener('click', cerrarVentana);
+$('velo').addEventListener('click', (e) => { if (e.target === $('velo')) cerrarVentana(); });
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('velo').classList.contains('abierto')) cerrarVentana(); });
+$('uso').addEventListener('input', actualizar); actualizar();
+
+const estudiantes = () => N_ESCRITO ?? aEstudiantes(+$('est').value);
+// ---------- escena: las familias se reúnen en grupo ----------
+// Como gente reunida (no en filas): cada familia toma el lugar libre más cercano al
+// centro, algunas más adelante y otras más atrás. Reglas para que nadie se traspase:
+//  * Cada personaje ocupa un pequeño espacio en el piso (los niños, uno más chico) y
+//    ningún espacio puede pisar otro.
+//  * Un lugar solo sirve si la familia tiene un camino libre desde un borde hasta él.
+//    Los lugares se calculan una vez, en orden de llegada, contando a las anteriores.
+//  * Sale primero la última que llegó, por el mismo borde: su camino sigue libre.
+//  * Dentro de la familia entra primero quien va más lejos y sale primero quien está
+//    más cerca del borde. Todos caminan a la misma velocidad: nadie alcanza a nadie.
+// Unidades: "u" = alto de un adulto adelante (HA px con zoom 1).
+const DISENOS = 10, MAX_FAMILIAS = 30;
+const MIEMBROS = [
+  { rol: 'papa', alto: 1.00, dx: -0.30, dz: 0.00, r: 0.19 },
+  { rol: 'hijo', alto: 0.66, dx: 0.00, dz: -0.10, r: 0.13 },   // el hijo, un poquito adelante
+  { rol: 'mama', alto: 0.95, dx: 0.28, dz: 0.00, r: 0.18 },
+];
+// Con el celular la mano queda quieta: desde el frente los pulgares quedan detrás del teléfono
+// y alternar cuadros movía los otros dedos. La actividad se ve con la pantalla y las burbujas.
+const POSES = ['parado', 'parpadeo', 'celular', 'camina_0', 'camina_1', 'camina_2', 'camina_3'];
+const rnd = (a, b) => a + Math.random() * (b - a);
+const mundo = $('mundo'), escena = $('escenario');
+let W = 0, H = 0, HA = 0, Z = 1;
+const prof = (z) => Math.pow(0.9, z);   // escala por profundidad (más atrás, más chico)
+const ALTURA_Z = 0.23;                    // cuánto sube en pantalla cada unidad de profundidad
+
+// --- plan de lugares (determinista: el mismo cada vez) ---
+function ruido(i, x, z) { const s = Math.sin(i * 127.1 + x * 311.7 + z * 74.7) * 43758.5453; return s - Math.floor(s); }
+const LUGARES = (function planear() {
+  // En espejo: la primera familia al centro y luego parejas a la misma profundidad, una a la
+  // derecha y otra a la izquierda. Así el grupo siempre queda centrado y la cámara no se mueve.
+  const ocupados = [], lugares = [];
+  const libre = (x, z, r) => ocupados.every((o) => Math.hypot(x - o.x, z - o.z) >= r + o.r);
+  const caminoLibre = (m, cx, cz, lado) => {
+    const x0 = cx + m.dx, z = cz + m.dz;
+    for (let x = x0; Math.abs(x) < 7.5; x += lado * 0.05) if (!libre(x, z, m.r)) return false;
+    return true;
+  };
+  const cabe = (x, z) => MIEMBROS.every((m) => libre(x + m.dx, z + m.dz, m.r));
+  const sale = (x, z, lado) => MIEMBROS.every((m) => caminoLibre(m, x, z, lado));
+  const ocupar = (x, z) => MIEMBROS.forEach((m) => ocupados.push({ x: x + m.dx, z: z + m.dz, r: m.r }));
+  lugares.push({ x: 0, z: 0, lado: 1 }); ocupar(0, 0);
+  for (let i = 1; lugares.length < MAX_FAMILIAS; i++) {
+    let puesto = false;
+    if (lugares.length === MAX_FAMILIAS - 1) {
+      // la última va al centro, atrás, para no romper la simetría
+      for (let z = 0.2; z <= 3.4 && !puesto; z += 0.2) {
+        if (cabe(0, z) && (sale(0, z, 1) || sale(0, z, -1))) { lugares.push({ x: 0, z, lado: sale(0, z, 1) ? 1 : -1 }); ocupar(0, z); puesto = true; }
+      }
+      if (puesto) break;
+    }
+    const cand = [];
+    for (let z = 0; z <= 3.2; z += 0.2) for (let x = 0.1; x <= 7; x += 0.1) cand.push({ x, z, s: x * 0.95 + z * 0.75 + ruido(i, x, z) * 0.45 });
+    cand.sort((a, b) => a.s - b.s);
+    for (const c of cand) {
+      if (!cabe(c.x, c.z) || !sale(c.x, c.z, 1)) continue;
+      const antes = ocupados.length;
+      ocupar(c.x, c.z);
+      if (!cabe(-c.x, c.z) || !sale(-c.x, c.z, -1)) { ocupados.length = antes; continue; }
+      lugares.push({ x: c.x, z: c.z, lado: 1 });
+      if (lugares.length < MAX_FAMILIAS) { lugares.push({ x: -c.x, z: c.z, lado: -1 }); ocupar(-c.x, c.z); }
+      puesto = true; break;
+    }
+    if (!puesto) break;
+  }
+  return lugares;
+})();
+
+// Diseño de cada lugar. Reglas: las 10 primeras en llegar son las 10 familias distintas;
+// en una misma fila no se repite ninguna (la de adelante es la que más se ve); una copia
+// nunca queda cerca de otra; cada familia aparece a lo sumo 3 veces. Búsqueda con retroceso.
+const DISENO_DE = (function () {
+  const n = LUGARES.length, tope = Math.ceil(n / DISENOS), out = Array(n).fill(0), cuenta = Array(DISENOS + 1).fill(0);
+  const misma_fila = (a, b) => Math.abs(LUGARES[a].z - LUGARES[b].z) < 0.3;
+  const cerca = (a, b) => Math.abs(LUGARES[a].x - LUGARES[b].x) < 2.6 && Math.abs(LUGARES[a].z - LUGARES[b].z) < 1.3;
+  const sirve = (i, d) => {
+    if (cuenta[d] >= tope) return false;
+    for (let j = 0; j < i; j++) {
+      if (out[j] !== d) continue;
+      if (i < DISENOS || misma_fila(i, j) || cerca(i, j)) return false;
+    }
+    return true;
+  };
+  const poner = (i) => {
+    if (i === n) return true;
+    const orden = Array.from({ length: DISENOS }, (_, k) => ((i + k) % DISENOS) + 1).sort((a, b) => cuenta[a] - cuenta[b]);
+    for (const d of orden) {
+      if (!sirve(i, d)) continue;
+      out[i] = d; cuenta[d]++;
+      if (poner(i + 1)) return true;
+      cuenta[d]--; out[i] = 0;
+    }
+    return false;
+  };
+  if (!poner(0)) for (let i = 0; i < n; i++) out[i] = (i % DISENOS) + 1;   // sin solución: orden normal
+  return out;
+})();
+function familiasPara(N) {
+  if (N <= 0) return 0;
+  const L = Math.log10(N);   // 1 → 1 familia, 1.000 → 3, 10.000 → 6, 100.000 → 13, 1.000.000 → 30
+  const T = [[0, 1], [3, 3], [4, 7], [5, 13], [6, 30]];
+  for (let i = 1; i < T.length; i++) if (L <= T[i][0]) {
+    const [a, fa] = T[i - 1], [b, fb] = T[i]; return Math.max(1, Math.round(fa + (fb - fa) * (L - a) / (b - a)));
+  }
+  return Math.min(MAX_FAMILIAS, LUGARES.length);
+}
+
+// la cámara se aleja lo justo para que quepa todo el grupo (y deja arriba el espacio del precio);
+// además se corre para que el grupo quede centrado en la pantalla.
+function extension(n) {
+  let izq = -0.4, der = 0.4, alto = 1.1;
+  for (let i = 0; i < n; i++) {
+    const L = LUGARES[i];
+    for (const m of MIEMBROS) {
+      const k = prof(L.z + m.dz), x = (L.x + m.dx) * k;
+      izq = Math.min(izq, x - 0.32 * k); der = Math.max(der, x + 0.32 * k);
+      alto = Math.max(alto, (L.z + m.dz) * ALTURA_Z + k * m.alto * 1.08);
+    }
+  }
+  return { izq, der, alto };
+}
+function zoomPara(n) {
+  const e = extension(n);
+  const movil = innerWidth <= 1100;
+  return Math.min(1, (W - (movil ? 24 : 120)) / ((e.der - e.izq) * HA), (H * (movil ? 0.8 : 0.5)) / (e.alto * HA));
+}
+const OX = 0;   // la cámara no se corre de lado: el grupo ya está centrado (en espejo)
+const TRAMOS = [1, 3, 7, 13, 19, 25, 30];
+function centroPara(n) { const e = extension(n); return -(e.izq + e.der) / 2 * HA; }
+
+// --- personajes ---
+function crearPersonaje(fam, m) {
+  const el = document.createElement('div'); el.className = 'personaje';
+  const cuerpo = document.createElement('div'); cuerpo.className = 'cuerpo';
+  const sombra = document.createElement('div'); sombra.className = 'sombra';
+  const imgs = {};
+  POSES.forEach((p) => { const im = new Image(); im.src = `img/f${fam.diseno}_${m.rol}_${p}.webp`; im.alt = ''; im.decoding = 'sync'; cuerpo.appendChild(im); imgs[p] = im; });
+  el.appendChild(sombra); el.appendChild(cuerpo); mundo.appendChild(el);
+  imgs.parado.classList.add('ver');
+  return { ...m, fam, el, cuerpo, imgs, pose: 'parado', estado: 'esperando', x: 0, dist: 0, dir: 1, salida: 0,
+    respira: rnd(3.2, 4.4), fase: rnd(0, 6), proxParpadeo: 0, proxDecision: 0, finCelular: 0, proxTecla: 0, proxBurbuja: 0, pop: -1 };
+}
+function verPose(p, nueva) { if (p.pose === nueva) return; p.imgs[p.pose].classList.remove('ver'); p.imgs[nueva].classList.add('ver'); p.pose = nueva; }
+
+const familias = [], salientes = [];
+const bordeX = (lado, k) => (lado * (W / 2) - OX) / (Z * HA) / k + lado * 0.45 / k;   // justo fuera de cámara (u)
+
+function agregarFamilia(t) {
+  const i = familias.length, L = LUGARES[i];
+  const fam = { i, diseno: DISENO_DE[i], L, lado: L.lado, miembros: [] };
+  fam.miembros = MIEMBROS.map((m) => crearPersonaje(fam, m));
+  // entra primero quien va más lejos del borde de entrada
+  [...fam.miembros].sort((a, b) => (a.dx - b.dx) * fam.lado).forEach((p, j) => { p.salida = t + j * 280; });
+  familias.push(fam);
+}
+function quitarFamilia(t) {
+  const fam = familias.pop(); if (!fam) return;
+  // sale primero quien está más cerca de su borde
+  [...fam.miembros].sort((a, b) => (b.dx - a.dx) * fam.lado).forEach((p, j) => {
+    if (p.estado === 'esperando') { p.estado = 'fuera'; return; }   // no alcanzó a entrar
+    p.estado = 'por_salir'; p.salida = t + j * 200;
+  });
+  salientes.push(fam);
+}
+
+function tam() { W = escena.clientWidth; H = escena.clientHeight; HA = H * (innerWidth <= 1100 ? 0.62 : 0.5); }
+addEventListener('resize', tam); tam();
+
+function revisarFamilias(t) {
+  const N = estudiantes(), objetivo = familiasPara(N);
+  if (familias.length < objetivo && (!revisarFamilias.prox || t > revisarFamilias.prox)) { agregarFamilia(t); revisarFamilias.prox = t + 260; }
+  if (familias.length > objetivo && (!revisarFamilias.proxS || t > revisarFamilias.proxS)) { quitarFamilia(t); revisarFamilias.proxS = t + 120; }
+  // la cámara espera a que terminen de salir las que se van (sus lugares son los últimos)
+  // Cámara fija de lado (el grupo ya queda casi centrado: así nadie se desliza). El zoom solo
+  // cambia por tramos de familias, rápido, y no un poquito con cada familia que llega o se va.
+  const n = Math.max(familias.length + salientes.length, 1);
+  const tramo = TRAMOS.find((x) => x >= n) || MAX_FAMILIAS;
+  const zObj = zoomPara(tramo);
+  Z += (zObj - Z) * 0.14; if (Math.abs(zObj - Z) < 0.0008) Z = zObj;
+}
+
+function burbuja(p, h) {
+  const b = document.createElement('div'); b.className = 'burbuja';
+  b.innerHTML = '<i></i><i></i><i></i>';
+  b.style.bottom = h * 1.0 + 'px'; p.el.appendChild(b);
+  const ini = performance.now(), dx = rnd(-30, 30);
+  (function sube(t) {
+    const k = (t - ini) / 1800; if (k >= 1 || p.estado !== 'celular') { b.remove(); return; }
+    b.style.transform = `translate(calc(-50% + ${dx * k}px), ${-k * h * 0.18}px) scale(${0.6 + Math.min(k * 4, 1) * 0.4})`;
+    b.style.opacity = k < 0.15 ? k / 0.15 : k > 0.75 ? (1 - k) / 0.25 : 1;
+    requestAnimationFrame(sube);
+  })(ini);
+}
+
+let tPrev = performance.now();
+function cuadro(t) {
+  const dt = Math.min(0.05, (t - tPrev) / 1000); tPrev = t;
+  revisarFamilias(t);
+  mundo.style.transform = `translate(${W / 2 + OX}px, ${H * 0.88}px) scale(${Z})`;
+  for (const fam of familias.concat(salientes)) {
+    for (const p of fam.miembros) {
+      const zz = fam.L.z + p.dz, k = prof(zz);
+      const h = HA * k * p.alto, ancho = h * 0.62;
+      if (p.cuerpo._h !== h) { p.cuerpo.style.height = h + 'px'; p.cuerpo.style.width = ancho + 'px'; p.el.style.width = ancho + 'px'; p.cuerpo._h = h; }
+      const dest = fam.L.x + p.dx;   // en u (coordenadas del piso)
+      let y = 0, rot = 0, sx = 1, sy = 1;
+      if (p.estado === 'esperando' && t > p.salida) { p.estado = 'entrando'; p.dist = 0; p.x = bordeX(fam.lado, k); }
+      if (p.estado === 'por_salir' && t > p.salida) { p.estado = 'saliendo'; p.dist = 0; }
+      const camina = p.estado === 'entrando' || p.estado === 'saliendo';
+      if (camina) {
+        // al salir camina hacia su borde hasta quedar fuera de la pantalla (no hacia un punto que se corre con la cámara)
+        const meta = p.estado === 'entrando' ? dest : fam.lado * 1e6;
+        p.dir = meta >= p.x ? 1 : -1;
+        const paso = 1.5 * dt;   // misma velocidad en el piso para todos: nadie alcanza a nadie
+        p.x += paso * p.dir; p.dist += paso * HA * k;
+        verPose(p, 'camina_' + (Math.floor(p.dist / (h * 0.19)) % 4));
+        y = -Math.abs(Math.sin(p.dist / (h * 0.38) * Math.PI)) * h * 0.012;
+        if (p.estado === 'entrando' && (p.dir > 0 ? p.x >= dest : p.x <= dest)) {
+          p.x = dest; p.estado = 'quieto'; p.pop = t; verPose(p, 'parado');
+          p.proxParpadeo = t + rnd(1200, 3500); p.proxDecision = t + rnd(1500, 3500);
+        }
+        if (p.estado === 'saliendo') {
+          const xPant = W / 2 + OX + Z * p.x * k * HA;
+          if (xPant < -ancho * Z * 1.2 || xPant > W + ancho * Z * 1.2) p.estado = 'fuera';
+        }
+      } else if (p.estado !== 'esperando' && p.estado !== 'fuera') {
+        const r = Math.sin(t / 1000 * Math.PI * 2 / p.respira + p.fase);
+        sy = 1 + r * 0.011; sx = 1 - r * 0.005;
+        rot = Math.sin(t / 1000 * 0.9 / p.respira * Math.PI + p.fase) * 0.7;
+        if (p.estado === 'quieto') {
+          if (t > p.proxParpadeo) { verPose(p, 'parpadeo'); if (t > p.proxParpadeo + 130) { verPose(p, 'parado'); p.proxParpadeo = t + rnd(2200, 6000); } }
+          if (t > p.proxDecision) {
+            p.proxDecision = t + rnd(1200, 3000);
+            if (Math.random() < 0.05 + USO * 0.6) { p.estado = 'celular'; p.finCelular = t + rnd(1.5, 3) * 1000 * (0.6 + USO * 3.4); p.pop = t; verPose(p, 'celular'); p.proxTecla = t + 300; p.proxBurbuja = t + rnd(400, 1200); }
+          }
+        } else if (p.estado === 'celular') {
+          if (t > p.proxBurbuja && (innerWidth <= 1100 || Z * k > 0.45)) { burbuja(p, h); p.proxBurbuja = t + rnd(2600, 4200) * (1.3 - USO * 0.85); }
+          if (t > p.finCelular) { p.estado = 'quieto'; p.pop = t; verPose(p, 'parado'); p.proxDecision = t + rnd(1500, 4500) * (1.4 - USO); }
+        } else if (p.estado === 'por_salir' && p.pose !== 'parado') verPose(p, 'parado');
+        if (p.pop > 0) {
+          const kk = (t - p.pop) / 360;
+          if (kk < 1) { const e = Math.sin(kk * Math.PI * 2.2) * Math.exp(-kk * 4); sy *= 1 + e * 0.045; sx *= 1 - e * 0.03; } else p.pop = -1;
+        }
+      }
+      const oculto = p.estado === 'esperando' || p.estado === 'fuera';
+      p.el.style.visibility = oculto ? 'hidden' : 'visible';
+      p.el.style.zIndex = Math.round((10 - zz) * 1000) * 100 + (fam.i % 30) * 3 + MIEMBROS.findIndex((m) => m.rol === p.rol);
+      const X = p.x * k * HA, Y = -zz * ALTURA_Z * HA;
+      p.el.style.transform = `translate(${X - ancho / 2}px, ${Y + y - h}px) rotate(${rot}deg)`;
+      p.cuerpo.style.transform = `scale(${camina && p.dir < 0 ? -sx : sx}, ${sy})`;
+    }
+  }
+  // limpia las familias que ya salieron
+  for (let i = salientes.length - 1; i >= 0; i--) {
+    if (salientes[i].miembros.every((p) => p.estado === 'fuera')) { salientes[i].miembros.forEach((p) => p.el.remove()); salientes.splice(i, 1); }
+  }
+  requestAnimationFrame(cuadro);
+}
+// Todas las imágenes cargadas y decodificadas antes de empezar: así ningún cuadro sale en blanco.
+const CACHE = [];
+Promise.all(Array.from({ length: DISENOS }, (_, i) => i + 1).flatMap((f) => MIEMBROS.flatMap((m) => POSES.map((p) => {
+  const im = new Image(); im.src = `img/f${f}_${m.rol}_${p}.webp`; CACHE.push(im); return im.decode().catch(() => {});
+})))).then(() => { tPrev = performance.now(); requestAnimationFrame(cuadro); });
+</script>
+</body>
+</html>
