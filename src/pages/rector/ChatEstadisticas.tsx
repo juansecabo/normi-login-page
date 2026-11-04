@@ -560,7 +560,7 @@ const ChatEstadisticas = () => {
                       <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />
                       <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" />
                     </span>
-                    Consultando los datos del colegio
+                    Pensando...
                   </div>
                 </div>
               )}
