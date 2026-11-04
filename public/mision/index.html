@@ -129,6 +129,22 @@
   #final .tarjeta p { margin-top:10px; font-size:16px; line-height:1.55; max-width:640px; }
   #final .tarjeta .cree { margin-top:16px; padding:14px 16px; border:3px solid var(--tinta); border-radius:14px; background:var(--crema); font-weight:500; }
   #final .acciones { margin-top:18px; display:flex; gap:12px; flex-wrap:wrap; }
+  /* Retos extra después del misterio: preguntas a Normi con opciones */
+  .retos { margin-top:22px; max-width:640px; border-top:3px dashed rgba(27,26,23,.35); padding-top:18px; }
+  .retos h4 { font-family:Shrikhand, serif; font-weight:400; font-size:clamp(22px,5.6vw,30px); line-height:1.1; color:var(--azul); }
+  .retos > p { margin-top:6px; font-size:15px; line-height:1.5; }
+  .retos .boton { margin-top:12px; display:inline-flex; align-items:center; gap:8px; text-decoration:none; }
+  .reto { margin-top:16px; padding:16px; border:3px solid var(--tinta); border-radius:16px; background:var(--crema); }
+  .reto .kicker { color:var(--azul); }
+  .reto .preg { margin-top:6px; font-weight:700; font-size:17px; line-height:1.4; }
+  .reto .pista { margin-top:6px; font-size:14px; line-height:1.45; }
+  .opciones { margin-top:12px; display:grid; gap:8px; }
+  .opciones button { text-align:left; background:#FFFBF2; font-weight:500; font-size:15px; padding:11px 14px; box-shadow:3px 3px 0 var(--tinta); }
+  .opciones button.bien { background:#BFE8C9; font-weight:700; }
+  .opciones button.mal { background:#F8D2C5; text-decoration:line-through; }
+  .opciones button:disabled { cursor:default; }
+  .reto .eco { margin-top:10px; font-weight:600; min-height:1.4em; }
+  .reto .fila-reto { margin-top:10px; display:flex; justify-content:flex-end; }
   .firma { margin-top:20px; display:flex; align-items:center; gap:10px; font-size:13px; }
   .firma img { height:26px; }
 
@@ -249,6 +265,12 @@
   <div class="tarjeta papel">
     <h3>¡Misión cumplida!</h3>
     <p><b>Valentina había discutido con su mejor amiga, Sofía.</b> Lo descubriste en minutos, sin llamar al colegio ni esperar la reunión de padres, y esta noche pudiste estar ahí para ella. Así acompaña Normi a las familias todos los días.</p>
+    <div class="retos">
+      <h4>¿Te quedaste con ganas? Sigue preguntándole a Normi</h4>
+      <p>Normi sabe mucho más de Valentina. Pregúntale por WhatsApp y elige la respuesta correcta.</p>
+      <a class="boton verde" id="retoWhatsApp" href="#" target="_blank" rel="noopener">Preguntarle a Normi</a>
+      <div class="reto" id="reto"></div>
+    </div>
     <p class="cree">En <b>Cailico</b> creemos que la superinteligencia es el motor de desarrollo más grande de la historia. <b>Mundo Normi</b> es nuestra infraestructura de superinteligencia para la gestión y comunicación educativa.</p>
     <div class="acciones">
       <a class="boton verde" href="https://wa.me/573016241863?text=Hola%2C%20jugu%C3%A9%20Misi%C3%B3n%20Normi%20y%20quiero%20Mundo%20Normi%20en%20mi%20colegio" target="_blank" rel="noopener">Quiero Mundo Normi en mi colegio</a>
@@ -342,6 +364,54 @@ $('resolver').onclick = async () => {
   } catch { aviso.className = 'aviso mal'; aviso.textContent = 'No pude revisar tu respuesta. Intenta de nuevo en un momento.'; }
   b.disabled = false; b.textContent = 'Resolver el misterio';
 };
+
+// Retos con opciones: cada respuesta sale de los datos reales de Valentina en el colegio de demostración.
+const RETOS = [
+  { p: '¿Cuál fue la nota definitiva de Valentina en Matemáticas en el tercer periodo?', pista: '¿Cómo le fue a Valentina en Matemáticas en el tercer periodo?',
+    o: ['7,0', '8,2', '8,6', '9,1'], c: 1 },
+  { p: '¿En qué asignatura le fue mejor en el tercer periodo?', pista: '¿Cómo le fue a Valentina en el tercer periodo?',
+    o: ['Inglés', 'Castellano', 'Educación Artística', 'Matemáticas'], c: 2 },
+  { p: '¿Qué tiene que entregar en Ciencias Naturales el 11 de noviembre?', pista: '¿Qué tareas tiene Valentina para la próxima semana?',
+    o: ['Un taller sobre la célula', 'La maqueta del sistema solar', 'Una exposición sobre los ecosistemas', 'Un quiz de la materia'], c: 1 },
+  { p: '¿Quién le dicta Inglés a Valentina?', pista: '¿Quién es la profesora de Inglés de Valentina?',
+    o: ['Ana Salomé Navarro Herrera', 'Renata Paula Agudelo Jiménez', 'Diana Helena Castaño Gómez', 'Agustina Gabriela Cárdenas Bedoya'], c: 2 },
+  { p: '¿Con qué clase empieza Valentina los lunes?', pista: '¿Cuál es el horario de Valentina los lunes?',
+    o: ['Matemáticas', 'Cátedra de Estudios Afrocolombianos', 'Inglés', 'Ciencias Naturales'], c: 1 },
+  { p: '¿Por qué la felicitaron en el observador en marzo?', pista: '¿Qué anotaciones tiene Valentina en el observador?',
+    o: ['Por ganar la olimpiada de Matemáticas', 'Por leer en la izada de bandera', 'Por su exposición sobre la célula', 'Por ayudar a un compañero'], c: 2 },
+];
+let retoActual = 0, aciertos = 0;
+function pintarReto() {
+  const caja = $('reto');
+  if (retoActual >= RETOS.length) {
+    caja.innerHTML = `<div class="kicker">Retos completados</div><div class="preg">Acertaste ${aciertos} de ${RETOS.length}.</div>
+      <p class="pista">Así de fácil es saber cómo va tu hijo en el colegio: le escribes a Normi y te responde con los datos reales.</p>
+      <div class="fila-reto"><button class="volver" id="retosOtraVez">Hacer los retos otra vez</button></div>`;
+    $('retosOtraVez').onclick = () => { retoActual = 0; aciertos = 0; pintarReto(); };
+    return;
+  }
+  const r = RETOS[retoActual];
+  caja.innerHTML = `<div class="kicker">Reto ${retoActual + 1} de ${RETOS.length}</div><div class="preg"></div>
+    <p class="pista">Pregúntale a Normi: <i></i></p><div class="opciones"></div><div class="eco"></div><div class="fila-reto"></div>`;
+  caja.querySelector('.preg').textContent = r.p;
+  caja.querySelector('.pista i').textContent = '«' + r.pista + '»';
+  const ops = caja.querySelector('.opciones');
+  r.o.forEach((txt, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = txt;
+    b.onclick = () => {
+      const bien = i === r.c; if (bien) aciertos++;
+      ops.querySelectorAll('button').forEach((x, j) => { x.disabled = true; if (j === r.c) x.classList.add('bien'); });
+      if (!bien) b.classList.add('mal');
+      caja.querySelector('.eco').textContent = bien ? '¡Correcto! Eso es lo que dice Normi.' : 'No es esa. Pregúntale a Normi y compara.';
+      const sig = document.createElement('button'); sig.type = 'button'; sig.textContent = retoActual + 1 < RETOS.length ? 'Siguiente reto' : 'Ver resultado';
+      sig.onclick = () => { retoActual++; pintarReto(); caja.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+      caja.querySelector('.fila-reto').appendChild(sig);
+    };
+    ops.appendChild(b);
+  });
+}
+$('retoWhatsApp').href = waLink();
+pintarReto();
 
 function confeti() {
   const esc = document.querySelector('#final .escenario');
