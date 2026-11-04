@@ -317,6 +317,17 @@ const ChatEstadisticas = () => {
   }, []);
   useEffect(() => { cargarLista(); }, [cargarLista]);
 
+  // Deja el cursor en la barra, como en Claude. En el celular el teclado no se abre
+  // hasta que la persona la toque (inputmode="none").
+  const enfocarBarra = useCallback(() => {
+    setTimeout(() => {
+      const el = inputRef.current;
+      if (!el) return;
+      if (!window.matchMedia("(pointer: fine)").matches) el.setAttribute("inputmode", "none");
+      el.focus();
+    }, 50);
+  }, []);
+
   // Abrir la conversación elegida (o empezar en blanco).
   useEffect(() => {
     if (!actualId) { setMensajes([]); return; }
@@ -326,9 +337,9 @@ const ChatEstadisticas = () => {
     apiRequest<{ mensajes: Mensaje[] }>(`/api/estadisticas/chat/conversaciones/${actualId}`)
       .then((r) => { if (vivo) setMensajes(r.mensajes || []); })
       .catch(() => { if (vivo) { setMensajes([]); setSearchParams({}, { replace: true }); } })
-      .finally(() => { if (vivo) setCargandoConv(false); });
+      .finally(() => { if (vivo) { setCargandoConv(false); enfocarBarra(); } });
     return () => { vivo = false; };
-  }, [actualId, setSearchParams]);
+  }, [actualId, setSearchParams, enfocarBarra]);
 
   useEffect(() => {
     finRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -350,6 +361,7 @@ const ChatEstadisticas = () => {
 
   const abrir = (id: string) => {
     if (id !== actualId) setSearchParams({ c: id });
+    else enfocarBarra();
     setPanelMovil(false);
   };
 
@@ -418,14 +430,7 @@ const ChatEstadisticas = () => {
     } finally {
       setEscribiendo("");
       setPensando(false);
-      // En el celular, como la app de Claude: el cursor queda en la barra pero el
-      // teclado no se abre hasta que la persona la toque (inputmode="none").
-      setTimeout(() => {
-        const el = inputRef.current;
-        if (!el) return;
-        if (!window.matchMedia("(pointer: fine)").matches) el.setAttribute("inputmode", "none");
-        el.focus();
-      }, 50);
+      enfocarBarra();
     }
   };
 
