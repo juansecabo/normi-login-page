@@ -8,7 +8,7 @@ import {
 import HeaderNormi from "@/components/HeaderNormi";
 import BreadcrumbDeslizable from "@/components/BreadcrumbDeslizable";
 import { getSession } from "@/hooks/useSession";
-import { apiRequest, apiDescargar } from "@/lib/apiClient";
+import { apiRequest, apiDescargar, apiStream } from "@/lib/apiClient";
 import { precargarSonidoRespuesta, reproducirSonidoRespuesta } from "@/lib/sonidoRespuesta";
 import DictadoMic from "@/components/DictadoMic";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -291,6 +291,8 @@ const ChatEstadisticas = () => {
   const [cargandoConv, setCargandoConv] = useState(false);
   const [texto, setTexto] = useState("");
   const [pensando, setPensando] = useState(false);
+  // Texto de la respuesta mientras Normi lo escribe (como en Claude o ChatGPT).
+  const [escribiendo, setEscribiendo] = useState("");
   const [panelMovil, setPanelMovil] = useState(false);
   const [borrar, setBorrar] = useState<ConversacionLite | null>(null);
   const [renombrar, setRenombrar] = useState<ConversacionLite | null>(null);
@@ -330,7 +332,7 @@ const ChatEstadisticas = () => {
 
   useEffect(() => {
     finRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [mensajes, pensando]);
+  }, [mensajes, pensando, escribiendo]);
 
   useEffect(() => {
     const el = inputRef.current;
@@ -387,23 +389,34 @@ const ChatEstadisticas = () => {
     setPensando(true);
     try {
       // La memoria la arma el servidor con la conversación guardada (últimas 20 intervenciones).
-      const r = await apiRequest<{ respuesta: string; tablas: Tabla[]; documentos?: Documento[]; conversacion_id: string | null; titulo: string }>("/api/estadisticas/chat", {
-        method: "POST",
-        body: JSON.stringify({ mensaje: p, conversacion_id: actualId }),
+      type Respuesta = { respuesta: string; tablas: Tabla[]; documentos?: Documento[]; conversacion_id: string | null; titulo: string };
+      let r: Respuesta | null = null;
+      let sono = false;
+      await apiStream("/api/estadisticas/chat", { mensaje: p, conversacion_id: actualId, stream: true }, (e) => {
+        if (e.tipo === "texto") {
+          if (!sono) { sono = true; reproducirSonidoRespuesta(); }
+          setEscribiendo((t) => t + e.delta);
+        } else if (e.tipo === "reiniciar") setEscribiendo("");
+        else if (e.tipo === "fin") r = e as Respuesta;
+        else if (e.tipo === "error") throw new Error("chat_error");
       });
-      setMensajes((ms) => [...ms, { role: "assistant", content: r.respuesta, tablas: r.tablas, documentos: r.documentos }]);
-      reproducirSonidoRespuesta();
-      if (r.conversacion_id) {
+      const fin = r as Respuesta | null;
+      if (!fin) throw new Error("sin_respuesta");
+      setEscribiendo("");
+      setMensajes((ms) => [...ms, { role: "assistant", content: fin.respuesta, tablas: fin.tablas, documentos: fin.documentos }]);
+      if (!sono) reproducirSonidoRespuesta();
+      if (fin.conversacion_id) {
         const ahora = new Date().toISOString();
         setConversaciones((cs) => {
-          const previa = cs.find((x) => x.id === r.conversacion_id);
-          return ordenar([{ id: r.conversacion_id!, titulo: previa?.titulo || r.titulo, actualizado_at: ahora, fijada: previa?.fijada }, ...cs.filter((x) => x.id !== r.conversacion_id)]);
+          const previa = cs.find((x) => x.id === fin.conversacion_id);
+          return ordenar([{ id: fin.conversacion_id!, titulo: previa?.titulo || fin.titulo, actualizado_at: ahora, fijada: previa?.fijada }, ...cs.filter((x) => x.id !== fin.conversacion_id)]);
         });
-        if (r.conversacion_id !== actualId) { recienCreada.current = r.conversacion_id; setSearchParams({ c: r.conversacion_id }, { replace: true }); }
+        if (fin.conversacion_id !== actualId) { recienCreada.current = fin.conversacion_id; setSearchParams({ c: fin.conversacion_id }, { replace: true }); }
       }
     } catch {
       setMensajes((ms) => [...ms, { role: "assistant", content: "No pude responder en este momento. Intenta de nuevo en unos segundos.", error: true }]);
     } finally {
+      setEscribiendo("");
       setPensando(false);
       // En el celular, como la app de Claude: el cursor queda en la barra pero el
       // teclado no se abre hasta que la persona la toque (inputmode="none").
@@ -551,7 +564,15 @@ const ChatEstadisticas = () => {
                   ),
                 )
               )}
-              {pensando && (
+              {pensando && escribiendo && (
+                <div className="flex gap-3">
+                  <img src={normiAvatar} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
+                  <div className="min-w-0 flex-1 text-[15px] text-foreground/90">
+                    <TextoNormi texto={escribiendo} />
+                  </div>
+                </div>
+              )}
+              {pensando && !escribiendo && (
                 <div className="flex gap-3 items-center">
                   <img src={normiAvatar} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">

@@ -894,6 +894,38 @@ export const apiClient = {
 
 export { request as apiRequest };
 
+/** POST que responde por partes (una línea JSON por evento), para mostrar la
+ *  respuesta de Pregúntale a Normi a medida que se escribe. */
+export async function apiStream(path: string, body: unknown, onEvento: (e: any) => void): Promise<void> {
+  const token = getToken();
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: JSON.stringify(body),
+  });
+  const renewed = res.headers.get('X-Renewed-Token');
+  if (renewed) { setToken(renewed); sincronizarMultiPerfil(renewed); }
+  if (!res.ok || !res.body) {
+    if (res.status === 401 && token && typeof window !== 'undefined' && window.location.pathname !== '/') {
+      setToken(null);
+      const actual = window.location.pathname + window.location.search;
+      window.location.replace(`/?expired=1&redirect=${encodeURIComponent(actual)}`);
+    }
+    throw new ApiError(res.status, 'stream_fallido');
+  }
+  const lector = res.body.getReader();
+  const dec = new TextDecoder();
+  let pendiente = '';
+  for (;;) {
+    const { done, value } = await lector.read();
+    pendiente += dec.decode(value || new Uint8Array(), { stream: !done });
+    const lineas = pendiente.split('\n');
+    pendiente = done ? '' : lineas.pop() || '';
+    for (const l of lineas) if (l.trim()) onEvento(JSON.parse(l));
+    if (done) break;
+  }
+}
+
 /** POST que devuelve un archivo (Blob) con la sesión del usuario (ej. PDF/Word/Excel de Pregúntale a Normi). */
 export async function apiDescargar(path: string, body: unknown): Promise<Blob> {
   const token = getToken();
