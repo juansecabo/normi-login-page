@@ -100,6 +100,7 @@
   #mision .escenario { flex:0 0 auto; height:min(52vh, 460px); background:radial-gradient(120% 90% at 50% 100%, #2F6F73 0%, #163638 60%, #0E2324 100%); }
   #mision .cel { position:absolute; left:50%; bottom:-4%; height:92%; aspect-ratio:1400/1119; transform:translateX(-50%); }
   #mision .cel > img { width:100%; height:100%; display:block; }
+  #mision .cel > .pulgares { position:absolute; inset:0; pointer-events:none; } /* el pulgar va por encima de los mensajes */
   .telefono { position:absolute; left:40.4%; top:5.6%; width:20.6%; height:52%; display:flex; flex-direction:column; gap:5px; padding:7% 4%; overflow:hidden; container-type:inline-size; }
   .chat-cab { display:flex; align-items:center; gap:6px; font-size:11cqw; font-weight:700; color:#0E5A3A; border-bottom:1px solid rgba(0,0,0,.1); padding-bottom:5px; }
   .chat-cab img { width:20%; max-width:26px; border-radius:50%; }
@@ -216,7 +217,7 @@
       <div class="chat-cab"><img src="normi.webp" alt="">Normi</div>
       <div class="burb y" style="animation-delay:.4s">Normi, ¿qué le pasó hoy a Valentina?</div>
       <div class="burb n" style="animation-delay:1.4s">Hola 👋 Revisemos su día en el colegio juntos...</div>
-    </div></div>
+    </div><img class="pulgares" src="pulgares.webp?v=1" alt=""></div>
   </div>
   <div class="tarjeta papel">
     <div class="kicker">Tu misión</div>
