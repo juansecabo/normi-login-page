@@ -369,17 +369,17 @@ $('resolver').onclick = async () => {
 
 // Retos con opciones: cada respuesta sale de los datos reales de Valentina en el colegio de demostración.
 const RETOS = [
-  { p: '¿Cuál fue la nota definitiva de Valentina en Matemáticas en el tercer periodo?', pista: '¿Cómo le fue a Valentina en Matemáticas en el tercer periodo?',
+  { p: '¿Cuál fue la nota definitiva de Valentina en Matemáticas en el tercer periodo?',
     o: ['7,0', '8,2', '8,6', '9,1'], c: 1 },
-  { p: '¿En qué asignatura le fue mejor en el tercer periodo?', pista: '¿Cómo le fue a Valentina en el tercer periodo?',
+  { p: '¿En qué asignatura le fue mejor en el tercer periodo?',
     o: ['Inglés', 'Castellano', 'Educación Artística', 'Matemáticas'], c: 2 },
-  { p: '¿Qué tiene que entregar en Ciencias Naturales el 11 de noviembre?', pista: '¿Qué tareas tiene Valentina para la próxima semana?',
+  { p: '¿Qué tiene que entregar en Ciencias Naturales el 11 de noviembre?',
     o: ['Un taller sobre la célula', 'La maqueta del sistema solar', 'Una exposición sobre los ecosistemas', 'Un quiz de la materia'], c: 1 },
-  { p: '¿Quién le dicta Inglés a Valentina?', pista: '¿Quién es la profesora de Inglés de Valentina?',
+  { p: '¿Quién le dicta Inglés a Valentina?',
     o: ['Ana Salomé Navarro Herrera', 'Renata Paula Agudelo Jiménez', 'Diana Helena Castaño Gómez', 'Agustina Gabriela Cárdenas Bedoya'], c: 2 },
-  { p: '¿Con qué clase empieza Valentina los lunes?', pista: '¿Cuál es el horario de Valentina los lunes?',
+  { p: '¿Con qué clase empieza Valentina los lunes?',
     o: ['Matemáticas', 'Cátedra de Estudios Afrocolombianos', 'Inglés', 'Ciencias Naturales'], c: 1 },
-  { p: '¿Por qué la felicitaron en el observador en marzo?', pista: '¿Qué anotaciones tiene Valentina en el observador?',
+  { p: '¿Por qué la felicitaron en el observador en marzo?',
     o: ['Por ganar la olimpiada de Matemáticas', 'Por leer en la izada de bandera', 'Por su exposición sobre la célula', 'Por ayudar a un compañero'], c: 2 },
 ];
 let retoActual = 0, aciertos = 0;
@@ -394,9 +394,8 @@ function pintarReto() {
   }
   const r = RETOS[retoActual];
   caja.innerHTML = `<div class="kicker">Reto ${retoActual + 1} de ${RETOS.length}</div><div class="preg"></div>
-    <p class="pista">Pregúntale a Normi: <i></i></p><div class="opciones"></div><div class="eco"></div><div class="fila-reto"></div>`;
+    <div class="opciones"></div><div class="eco"></div><div class="fila-reto"></div>`;
   caja.querySelector('.preg').textContent = r.p;
-  caja.querySelector('.pista i').textContent = '«' + r.pista + '»';
   const ops = caja.querySelector('.opciones');
   r.o.forEach((txt, i) => {
     const b = document.createElement('button'); b.type = 'button'; b.textContent = txt;
