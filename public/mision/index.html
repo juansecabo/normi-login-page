@@ -264,7 +264,10 @@
   </div>
   <div class="tarjeta papel">
     <h3>¡Misión cumplida!</h3>
-    <p><b>Valentina había discutido con su mejor amiga, Sofía.</b> Lo descubriste en minutos, sin llamar al colegio ni esperar la reunión de padres, y esta noche pudiste estar ahí para ella. Así acompaña Normi a las familias todos los días.</p>
+    <p><b>Valentina discutió con su mejor amiga, Sofía, porque Sofía contó un secreto que ella le había confiado.</b> Lo descubriste en minutos, sin llamar al colegio ni esperar la reunión de padres, y esta noche pudiste estar ahí para ella. Así acompaña Normi a las familias todos los días.</p>
+    <div class="acciones">
+      <a class="boton verde" href="https://wa.me/573016241863?text=Hola%2C%20jugu%C3%A9%20Misi%C3%B3n%20Normi%20y%20quiero%20Mundo%20Normi%20en%20mi%20colegio" target="_blank" rel="noopener">Quiero Mundo Normi en mi colegio</a>
+    </div>
     <div class="retos">
       <h4>¿Te quedaste con ganas? Sigue preguntándole a Normi</h4>
       <p>Normi sabe mucho más de Valentina. Pregúntale por WhatsApp y elige la respuesta correcta.</p>
@@ -273,7 +276,6 @@
     </div>
     <p class="cree">En <b>Cailico</b> creemos que la superinteligencia es el motor de desarrollo más grande de la historia. <b>Mundo Normi</b> es nuestra infraestructura de superinteligencia para la gestión y comunicación educativa.</p>
     <div class="acciones">
-      <a class="boton verde" href="https://wa.me/573016241863?text=Hola%2C%20jugu%C3%A9%20Misi%C3%B3n%20Normi%20y%20quiero%20Mundo%20Normi%20en%20mi%20colegio" target="_blank" rel="noopener">Quiero Mundo Normi en mi colegio</a>
       <button class="volver" id="reiniciar">Jugar otra vez</button>
     </div>
     <div class="firma"><img src="/cailico-logo.webp" alt="Cailico" onerror="this.remove()"><span>Mundo Normi, un producto de Cailico</span></div>
@@ -359,6 +361,7 @@ $('resolver').onclick = async () => {
     const res = await fetch(API + '/api/mision/verificar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ respuesta: r, celular: leer('mision_celular') || '' }) });
     const { resultado } = await res.json();
     if (resultado === 'correcta') { ir('final'); }
+    else if (resultado === 'incompleta') { aviso.className = 'aviso parcial'; aviso.textContent = '¡Vas muy bien! Pero ¿por qué discutieron? Pregúntale a Normi qué pasó exactamente.'; }
     else if (resultado === 'parcial') { aviso.className = 'aviso parcial'; aviso.textContent = 'Eso es cierto... pero no es lo que más le duele. Sigue preguntándole a Normi: ¿pasó algo más hoy?'; }
     else { aviso.className = 'aviso mal'; aviso.textContent = 'Todavía no. Pregúntale a Normi por su día: sus notas, el recreo, el observador...'; }
   } catch { aviso.className = 'aviso mal'; aviso.textContent = 'No pude revisar tu respuesta. Intenta de nuevo en un momento.'; }
