@@ -308,7 +308,8 @@ function ir(id) {
   s.querySelectorAll('.fondo, .lienzo, .sprite, .valentina img, .bocadillo, .luz, .brillo, .burb').forEach((el) => { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; });
   s.classList.add('activa'); s.scrollTop = 0;
   const narra = s.querySelector('.narra'); if (narra) escribir(narra);
-  if (id === 'mision' || id === 'final') { try { sessionStorage.setItem('mision_paso', id); } catch {} }
+  // Solo se recuerda la misión (para volver de WhatsApp a investigar); al ganar se olvida y al entrar de nuevo empieza desde la portada.
+  try { if (id === 'mision') sessionStorage.setItem('mision_paso', id); else if (id === 'final') sessionStorage.removeItem('mision_paso'); } catch {}
   if (id === 'final') confeti();
   if (id === 'mision') $('tituloMision').textContent = (nombre() ? nombre() + ', descubre' : 'Descubre') + ' por qué Valentina está triste';
 }
@@ -429,7 +430,7 @@ function confeti() {
 // Si vuelve de WhatsApp a la misma pestaña, retoma donde iba; un escaneo nuevo abre otra pestaña y empieza desde la portada
 try { localStorage.removeItem('mision_paso'); } catch {}
 let paso = null; try { paso = sessionStorage.getItem('mision_paso'); } catch {}
-if (paso === 'mision' || paso === 'final') ir(paso);
+if (paso === 'mision') ir(paso);
 </script>
 </body>
 </html>
