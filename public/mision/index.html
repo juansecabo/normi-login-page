@@ -361,7 +361,6 @@ $('resolver').onclick = async () => {
     const res = await fetch(API + '/api/mision/verificar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ respuesta: r, celular: leer('mision_celular') || '' }) });
     const { resultado } = await res.json();
     if (resultado === 'correcta') { ir('final'); }
-    else if (resultado === 'incompleta') { aviso.className = 'aviso parcial'; aviso.textContent = '¡Vas muy bien! Pero ¿por qué discutieron? Pregúntale a Normi qué pasó exactamente.'; }
     else if (resultado === 'parcial') { aviso.className = 'aviso parcial'; aviso.textContent = 'Eso es cierto... pero no es lo que más le duele. Sigue preguntándole a Normi: ¿pasó algo más hoy?'; }
     else { aviso.className = 'aviso mal'; aviso.textContent = 'Todavía no. Pregúntale a Normi por su día: sus notas, el recreo, el observador...'; }
   } catch { aviso.className = 'aviso mal'; aviso.textContent = 'No pude revisar tu respuesta. Intenta de nuevo en un momento.'; }
