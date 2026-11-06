@@ -511,8 +511,11 @@ const EnviarComunicado = () => {
   const aulasElegidasDe = (gradosSel: string[], salonesSel: string[]): { grado: string; salones: string[] }[] | null => {
     if (!aulasExactas || gradosSel.length < 2 || salonesSel.length === 0) return null;
     if (!gradosSel.some((g) => salonesSel.some((sl) => aulasQuitadas[`${g}|${sl}`]))) return null;
-    return gradosSel
-      .map((g) => ({ grado: g, salones: salonesSel.filter((sl) => (salonesPorGrado[g] || []).includes(sl) && !aulasQuitadas[`${g}|${sl}`]) }))
+    // Grados en el orden configurado del colegio y salones en orden numérico.
+    const orden = Object.values(nivelesGrados).flat();
+    const sals = [...salonesSel].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    return [...gradosSel].sort((a, b) => orden.indexOf(a) - orden.indexOf(b))
+      .map((g) => ({ grado: g, salones: sals.filter((sl) => (salonesPorGrado[g] || []).includes(sl) && !aulasQuitadas[`${g}|${sl}`]) }))
       .filter((x) => x.salones.length > 0);
   };
 
@@ -1154,8 +1157,9 @@ const EnviarComunicado = () => {
                           </div>
                         )}
                         {aulasExactas && gradosSelCount > 1 && salonesSelCount > 0 && (() => {
-                          const gs = Object.keys(gradosMarcados).filter(g => gradosMarcados[g]);
-                          const ss = Object.keys(salonesMarcados).filter(x => salonesMarcados[x]);
+                          // En el orden configurado de los grados y con los salones en orden numérico.
+                          const gs = gradosDisponibles.filter(g => gradosMarcados[g]);
+                          const ss = salonesDisponibles.filter(x => salonesMarcados[x]);
                           const combos = gs.flatMap(g => ss.filter(x => (salonesPorGrado[g] || []).includes(x)).map(x => ({ g, x, k: `${g}|${x}` })));
                           const activas = combos.filter(c => !aulasQuitadas[c.k]).length;
                           return (
