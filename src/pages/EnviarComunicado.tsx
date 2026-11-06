@@ -168,9 +168,9 @@ const EnviarComunicado = () => {
   // Salones REALES de los grados seleccionados (derivados de Estudiantes del
   // colegio) — cada colegio tiene distinta cantidad de salones por grado.
   const [salonesDisponibles, setSalonesDisponibles] = useState<string[]>([]);
-  // Piloto en Cailico (Juan 2026-11-06): con varios grados y salones, escoger los salones exactos
-  // (ej. Sexto 1 y Séptimo 2) en vez de todas las combinaciones grado × salón.
-  const aulasExactas = getSession().colegio_id === "2f96f076-83df-4b84-8bbc-9c1df79a372b";
+  // Con varios grados y salones se escogen los salones exactos (ej. Sexto 1 y Séptimo 2) en vez
+  // de todas las combinaciones grado × salón. Probado en Cailico y activo en todos los colegios desde 2026-11-06.
+  const aulasExactas = true;
   const [salonesPorGrado, setSalonesPorGrado] = useState<Record<string, string[]>>({});
   const [aulasQuitadas, setAulasQuitadas] = useState<Record<string, boolean>>({});
 

@@ -117,6 +117,14 @@ const abrirFormularioEnvio = (ruta: string) =>
     },
     {
       narracion:
+        "Si marcaste varios grados y salones, en 'Salones que lo recibirán' desmarca los que no van. Así puedes mandarlo, por ejemplo, solo a Sexto 1 y Séptimo 2.",
+      accion: "seleccionar" as const,
+      ancla: "comunicados.salones_exactos",
+      campo: "salones_exactos",
+      opcional: true,
+    },
+    {
+      narracion:
         "Si quieres mandarlo solo a personas puntuales, abre 'Estudiantes específicos' o 'Profesores específicos' y márcalas (vacío = todos los que coinciden con los filtros).",
       accion: "seleccionar" as const,
       ancla: "comunicados.destinatarios_especificos",

@@ -38,6 +38,9 @@ export const MAPA_NAV: Record<string, Record<string, string>> = {
   "/asistencia": {
     "/profesor/asistencia": "Asistencia",
   },
+  "/b": {
+    "/dashboard": "Ir al inicio",
+  },
   "/boletines": {
     "/dashboard": "Inicio",
   },
@@ -260,6 +263,9 @@ export const MAPA_NAV: Record<string, Record<string, string>> = {
     "/permisos-excusas": "Permisos y Excusas",
     "/permisos-excusas/uniforme-falta": "Registrar falta de uniforme",
   },
+  "/preguntale-a-normi": {
+    "/dashboard": "Inicio",
+  },
   "/profesor/asistencia": {
     "/asistencia": "Registro de Asistencia",
     "/profesor/asistencia/tomar": "Tomar Asistencia",
@@ -287,5 +293,8 @@ export const MAPA_NAV: Record<string, Record<string, string>> = {
   },
   "/solicitud-entrevista": {
     "/dashboard": "Inicio",
+  },
+  "/t": {
+    "/dashboard": "Ir al inicio",
   },
 };
