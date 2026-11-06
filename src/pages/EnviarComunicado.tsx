@@ -168,6 +168,11 @@ const EnviarComunicado = () => {
   // Salones REALES de los grados seleccionados (derivados de Estudiantes del
   // colegio) — cada colegio tiene distinta cantidad de salones por grado.
   const [salonesDisponibles, setSalonesDisponibles] = useState<string[]>([]);
+  // Piloto en Cailico (Juan 2026-11-06): con varios grados y salones, escoger los salones exactos
+  // (ej. Sexto 1 y Séptimo 2) en vez de todas las combinaciones grado × salón.
+  const aulasExactas = getSession().colegio_id === "2f96f076-83df-4b84-8bbc-9c1df79a372b";
+  const [salonesPorGrado, setSalonesPorGrado] = useState<Record<string, string[]>>({});
+  const [aulasQuitadas, setAulasQuitadas] = useState<Record<string, boolean>>({});
 
   // Profesores específicos (filtrados por grados/salones marcados)
   const [listaProfesoresFiltrada, setListaProfesoresFiltrada] = useState<{ id: string; nombre: string; genero?: string | null; grados: string[]; salones: string[] }[]>([]);
@@ -261,7 +266,8 @@ const EnviarComunicado = () => {
         .order("grado", { ascending: true })
         .order("salon", { ascending: true });
       const { enrichWithNombres, sortByApellidosNombres } = await import("@/lib/nombresUsuarios");
-      const data = sortByApellidosNombres(await enrichWithNombres((rawData || []) as any));
+      const data = sortByApellidosNombres(await enrichWithNombres((rawData || []) as any))
+        .filter((e: any) => !(aulasExactas && gradosSel.length > 1 && aulasQuitadas[`${e.grado}|${e.salon}`]));
       setListaEstudiantesFiltrada(
         data.map((e: any) => ({
           id: String(e.id),
@@ -274,16 +280,23 @@ const EnviarComunicado = () => {
       setLoadingListaEstudiantes(false);
     };
     fetchLista();
-  }, [gradosMarcados, salonesMarcados, perfilesMarcados.Estudiantes, perfilesMarcados.Padres]);
+  }, [gradosMarcados, salonesMarcados, aulasQuitadas, perfilesMarcados.Estudiantes, perfilesMarcados.Padres]);
 
   // Salones disponibles = los que de verdad existen en los grados marcados.
   useEffect(() => {
     const gradosSel = Object.keys(gradosMarcados).filter(g => gradosMarcados[g]);
     if (gradosSel.length === 0) { setSalonesDisponibles([]); return; }
     (async () => {
-      const { data } = await supabase.from("Estudiantes").select("salon").in("grado", gradosSel as any);
+      const { data } = await supabase.from("Estudiantes").select("grado, salon").in("grado", gradosSel as any);
       const set = new Set<string>();
-      for (const r of (data || []) as { salon: string | null }[]) if (r.salon) set.add(String(r.salon));
+      const porGrado: Record<string, string[]> = {};
+      for (const r of (data || []) as { grado: string; salon: string | null }[]) {
+        if (!r.salon) continue;
+        set.add(String(r.salon));
+        const l = (porGrado[r.grado] ||= []);
+        if (!l.includes(String(r.salon))) l.push(String(r.salon));
+      }
+      setSalonesPorGrado(porGrado);
       const lista = [...set].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
       setSalonesDisponibles(lista);
       // Desmarcar salones que ya no existen para los grados elegidos.
@@ -493,12 +506,24 @@ const EnviarComunicado = () => {
     return arr.slice(0, -1).join(", ") + " y " + arr[arr.length - 1];
   };
 
+  // Salones exactos que recibirán el comunicado (grado + salón que existen y no se quitaron).
+  // null = se usa la regla de siempre (todas las combinaciones de grados y salones marcados).
+  const aulasElegidasDe = (gradosSel: string[], salonesSel: string[]): { grado: string; salones: string[] }[] | null => {
+    if (!aulasExactas || gradosSel.length < 2 || salonesSel.length === 0) return null;
+    if (!gradosSel.some((g) => salonesSel.some((sl) => aulasQuitadas[`${g}|${sl}`]))) return null;
+    return gradosSel
+      .map((g) => ({ grado: g, salones: salonesSel.filter((sl) => (salonesPorGrado[g] || []).includes(sl) && !aulasQuitadas[`${g}|${sl}`]) }))
+      .filter((x) => x.salones.length > 0);
+  };
+
   const getAulasTexto = (): string[] => {
     const nivelesSel = Object.keys(nivelesMarcados).filter(n => nivelesMarcados[n]);
     const gradosSel = Object.keys(gradosMarcados).filter(g => gradosMarcados[g]);
     const salonesSel = Object.keys(salonesMarcados).filter(s => salonesMarcados[s]);
     if (gradosSel.length === 0) return nivelesSel.length > 0 ? nivelesSel : [];
     if (salonesSel.length === 0) return gradosSel.slice();
+    const exactas = aulasElegidasDe(gradosSel, salonesSel);
+    if (exactas) return exactas.flatMap((x) => x.salones.map((sl) => `${x.grado} ${sl}`));
     const res: string[] = [];
     for (const g of gradosSel) for (const s of salonesSel) res.push(`${g} ${s}`);
     return res;
@@ -530,6 +555,8 @@ const EnviarComunicado = () => {
       if (salonesSel.length === 0) {
         return `${prefijo} de ${gradosSel.join(", ")}`;
       }
+      const exactas = aulasElegidasDe(gradosSel, salonesSel);
+      if (exactas) return `${prefijo} de ${joinConY(exactas.flatMap((x) => x.salones.map((sl) => `${x.grado} ${sl}`)))}`;
       if (gradosSel.length === 1 && salonesSel.length === 1) {
         return `${prefijo} de ${gradosSel[0]} ${salonesSel[0]}`;
       }
@@ -708,6 +735,7 @@ const EnviarComunicado = () => {
       // Con grados elegidos, el nivel no viaja en ese segmento (los niveles completos van aparte)
       const nivelSegmento = gradosSel.length > 0 && nivelesSel.length > 1 ? null : nivelUnico;
       const salonesFinal = salonesSel.length > 0 ? salonesSel : null;
+      const aulasExactasSel = aulasElegidasDe(gradosSel, salonesSel);
 
       // Estrategia: agrupar perfiles que comparten filtros en UN solo segmento.
       // Solo separar en segmentos distintos cuando un perfil tiene ids
@@ -737,7 +765,8 @@ const EnviarComunicado = () => {
           // Ids específicos: un solo segmento con esos ids para ambos perfiles.
           segmentos.push({ perfil: perfilesEstPadres, id_destinatarios: estudiantesSeleccionados });
         } else {
-          segmentos.push({ perfil: perfilesEstPadres, nivel: nivelSegmento, grados: gradosFinal, salones: salonesFinal });
+          if (aulasExactasSel) for (const a of aulasExactasSel) segmentos.push({ perfil: perfilesEstPadres, nivel: null, grados: [a.grado], salones: a.salones });
+          else segmentos.push({ perfil: perfilesEstPadres, nivel: nivelSegmento, grados: gradosFinal, salones: salonesFinal });
           if (extraNiveles) segmentos.push({ perfil: perfilesEstPadres, ...extraNiveles, salones: null });
         }
       }
@@ -754,7 +783,8 @@ const EnviarComunicado = () => {
         (nivelUnico || gradosFinal || salonesFinal);
 
       if (profesoresConFiltroAula) {
-        segmentos.push({ perfil: ["Profesores"], nivel: nivelSegmento, grados: gradosFinal, salones: salonesFinal });
+        if (aulasExactasSel) for (const a of aulasExactasSel) segmentos.push({ perfil: ["Profesores"], nivel: null, grados: [a.grado], salones: a.salones });
+        else segmentos.push({ perfil: ["Profesores"], nivel: nivelSegmento, grados: gradosFinal, salones: salonesFinal });
         if (extraNiveles) segmentos.push({ perfil: ["Profesores"], ...extraNiveles, salones: null });
       }
 
@@ -1123,6 +1153,31 @@ const EnviarComunicado = () => {
                             ))}
                           </div>
                         )}
+                        {aulasExactas && gradosSelCount > 1 && salonesSelCount > 0 && (() => {
+                          const gs = Object.keys(gradosMarcados).filter(g => gradosMarcados[g]);
+                          const ss = Object.keys(salonesMarcados).filter(x => salonesMarcados[x]);
+                          const combos = gs.flatMap(g => ss.filter(x => (salonesPorGrado[g] || []).includes(x)).map(x => ({ g, x, k: `${g}|${x}` })));
+                          const activas = combos.filter(c => !aulasQuitadas[c.k]).length;
+                          return (
+                            <div data-guia="comunicados.salones_exactos" className="border rounded p-2 bg-primary/5 space-y-1.5 mt-1">
+                              <p className="text-xs font-medium">Salones que lo recibirán</p>
+                              <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                                {combos.map(c => (
+                                  <label key={c.k} className="flex items-center gap-2 cursor-pointer text-sm">
+                                    <input
+                                      type="checkbox"
+                                      checked={!aulasQuitadas[c.k]}
+                                      disabled={!aulasQuitadas[c.k] && activas === 1}
+                                      onChange={() => setAulasQuitadas(prev => ({ ...prev, [c.k]: !prev[c.k] }))}
+                                      className="w-4 h-4 accent-primary cursor-pointer"
+                                    />
+                                    <span>{c.g} {c.x}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                       )}
                     </div>
